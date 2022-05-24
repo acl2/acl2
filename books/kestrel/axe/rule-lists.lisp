@@ -139,6 +139,7 @@
             ifix-does-nothing
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
 
+            ;; TODO: eventually phase out myif in favor of if
             myif-becomes-boolif-axe
             myif-of-not
             myif-of-nil
@@ -160,6 +161,7 @@
             acl2-numberp-of-fix
             = ;Sun Dec  5 14:57:44 2010
             double-rewrite
+            eql ; can arise from CASE
             )
           (mv-nth-rules)
           (booleanp-rules)))
@@ -201,7 +203,9 @@
     integerp-of-bvshl natp-of-bvshl
     integerp-of-bvshr natp-of-bvshr
     integerp-of-bvashr natp-of-bvashr
-    ;other shift? ;other math ones?
+    integerp-of-repeatbit natp-of-repeatbit
+
+    ;;other shift? ;other math ones?
     integerp-of-logext ;move to logext rules?
 
     integerp-of--
@@ -327,6 +331,7 @@
      ;; Handling rotates (32 bit):
      rightrotate32-becomes-leftrotate32-gen ;turn rightrotate32 into leftrotate32
      getbit-of-leftrotate32-simple
+     ;; getbit-of-leftrotate32-high
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
      leftrotate32-of-bvchop-arg2
@@ -343,7 +348,6 @@
      ;;leftrotate-becomes-leftrotate64
      equal-of-leftrotate32-and-leftrotate32
      equal-of-constant-and-leftrotate32
-     getbit-of-leftrotate32-high
      slice-of-leftrotate32-high
 
      not-sbvlt-when-sbvlt-rev-cheap-2
@@ -434,6 +438,11 @@
      sbvdiv-of-sbvdiv-arg2-combine-constants
      bvcat-combine-constants
 
+     bvshr-of-0-arg1
+     bvshr-of-0-arg2
+     bvshr-of-0-arg3
+
+     bvashr-of-0-arg2 ; todo: rules for arg1 and arg3?
 
      bvshl-of-0-arg2
      bvshl-of-0-arg3
@@ -454,9 +463,6 @@
      bvcat-of-ifix-arg4
 
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
-
-     getbit-too-high-cheap-free
-     getbit-too-high-is-0-bind-free-axe
 
      bvplus-of-bvplus-of-bvuminus
      natp-when-unsigned-byte-p ;uses the dag assumptions, has a free var so should be cheap? (put last of the natp rules?) moved from yet-more-rules
@@ -517,7 +523,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvsx2          ;new
-     bvchop-of-bvshr            ;new, introduces slice
+     bvchop-of-bvshr            ;new, introduces slice ; todo: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
@@ -709,7 +715,9 @@
 
      getbit-test-is-self ;make a myif version?
 
-     ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free-axe
+     getbit-too-high-is-0-bind-free-axe
+     getbit-too-high-cheap-free
+     ;; high-getbit-of-getbit-is-0 ; handled by getbit-too-high-is-0-bind-free-axe
      getbit-of-if
 ;            getbit-of-bvif ;could be expensive? newww
 ;            GETBIT-OF-SLICE-TOO-HIGH ;handled by getbit-too-high-is-0-bind-free-axe
@@ -726,12 +734,12 @@
      getbit-of-bitxor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitand-all-cases ;covered by the too-high and identity rules if n is a constant
-     getbit-of-bvchop-too-high ;done by getbit-identity-axe uh, no!
+     ;; getbit-of-bvchop-too-high ; covered by getbit-too-high-is-0-bind-free-axe
      getbit-of-bvchop
 
      slice-out-of-order ;trying the real version
-     slice-too-high-is-0-bind-free
-;            slice-of-getbit-too-high see slice-too-high-is-0-bind-free
+     slice-too-high-is-0-bind-free-axe
+     ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
      slice-becomes-bvchop
      slice-of-slice-gen-better
@@ -875,14 +883,12 @@
 
     ;; logtail-of-bvchop-becomes-slice ;drop?
 
-    equal-bvcat-0-left
-    equal-bvcat-0-right
+    equal-bvcat-0-left ; gen and move
+    equal-bvcat-0-right ; gen and move
 
     slice-of-myif-consant-branches
     bvcat-bound-hack-2
 ;                          bvor-1-bound-2
-    natp-of-repeatbit
-    integerp-of-repeatbit
 
     bvcat-0-<-hack
     repeatbit-equal-0-rewrite-1
@@ -1154,15 +1160,14 @@
     unsigned-byte-p-of-sbvdiv
     unsigned-byte-p-of-bvsx
     unsigned-byte-p-of-repeatbit
-    unsigned-byte-p-of-leftrotate ;gen
+    unsigned-byte-p-of-leftrotate
     unsigned-byte-p-of-leftrotate32
-    unsigned-byte-p-of-rightrotate ;gen
-    unsigned-byte-p-of-rightrotate32 ;gen
+    unsigned-byte-p-of-rightrotate
+    unsigned-byte-p-of-rightrotate32
     unsigned-byte-p-of-bv-array-read-gen ;todo name
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above
-;todo: what about shift operators?
 (defun unsigned-byte-p-forced-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-forced-of-bvchop
@@ -1187,11 +1192,14 @@
     unsigned-byte-p-forced-of-sbvrem
     unsigned-byte-p-forced-of-sbvdiv
     unsigned-byte-p-forced-of-bvsx
+    unsigned-byte-p-forced-of-leftrotate
+    unsigned-byte-p-forced-of-rightrotate
     unsigned-byte-p-forced-of-leftrotate32
     unsigned-byte-p-forced-of-rightrotate32
-    ;todo: repeatbit
-    ;;todo leftrotate
-    ;;todo rightrotate?
+    unsigned-byte-p-forced-of-repeatbit
+    ;;todo bvshl
+    ;;todo bvshr
+    ;;todo bvashr
     unsigned-byte-p-forced-of-bv-array-read
     ))
 

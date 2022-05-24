@@ -1,7 +1,7 @@
 ; BV Library: leftrotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "bvcat"))
+(local (include-book "unsigned-byte-p"))
 
 (local (in-theory (disable expt)))
 
@@ -35,9 +36,16 @@
              amt
              (slice (+ -1 width) (+ width (- amt)) val)))))
 
-(defthm unsigned-byte-p-of-leftrotate
+(defthm unsigned-byte-p-of-leftrotate-same
   (implies (natp size)
            (unsigned-byte-p size (leftrotate size x y)))
+  :hints (("Goal" :in-theory (enable leftrotate natp))))
+
+(defthm unsigned-byte-p-of-leftrotate
+  (implies (and (<= size2 size1)
+                (integerp size1)
+                (natp size2))
+           (unsigned-byte-p size1 (leftrotate size2 x y)))
   :hints (("Goal" :in-theory (enable leftrotate natp))))
 
 (defthm leftrotate-of-0-arg2
@@ -211,6 +219,7 @@
 
 ;; no mod in rhs
 ;; todo: restrict to the case when we can resolve the (< n width) test?
+;; "Simple" because there is no mod in the RHS.
 (defthmd getbit-of-leftrotate-simple
   (implies (and (< amt width) ; avoids mod in rhs
                 (natp n)
@@ -218,7 +227,7 @@
                 (natp width))
            (equal (getbit n (leftrotate width amt x))
                   (if (< n width)
-                      (if (< n amt) ; this case
+                      (if (< n amt)
                           (getbit (+ width (- amt) n) x)
                         (getbit (- n amt) x))
                     0)))

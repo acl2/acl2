@@ -1314,7 +1314,7 @@
 
 ;todo: separate out jvm?
 ;this includes the jvm rules:
-;used by many axe examples
+;used by many axe examples.  try using amazing-rules-spec-and-dag instead, for miter proofs.
 (defun amazing-rules ()
   (declare (xargs :guard t))
   (append (amazing-rules-spec-and-dag)
@@ -1434,14 +1434,6 @@
      ;;array-reduction-when-all-same-improved2 ;looped?
      update-nth-becomes-update-nth2)))
 
-;; ;separate out
-;; (defun more-type-rules ()
-;;   (declare (xargs :guard t))
-;;   '(acl2-numberp-of-len
-;;     jvm::acl2-numberp-of-call-stack-size
-;;     len-equal-impossible
-;;     ))
-
 (defun first-loop-top-rules ()
   (declare (xargs :guard t))
   (set-difference-equal
@@ -1494,19 +1486,6 @@
             integerp-implies-acl2-numberp
             )))
 
-;; ;add to arbit-loop-rules and just use that?
-;; (defun invariant-rules ()
-;;   (declare (xargs :guard t))
-;;   (append (arbit-loop-rules)
-;;           '(;set-pc ;can we drop some rules?
-;;             heap
-;;             jvm::jvm-statep-of-make-state
-;;             jvm::make-state-equal-rewrite-2
-;;             bind-equal-same-rewrite2
-;; ;            alist-of-thread-table-of-one-loop-iteration
-;;             IDENTITY
-;;             )))
-
 ;fixme get rid of this? used in lifter.
 ;todo: this contains some duplicates (other rule lists in this file may too)
 (defun rule-list-1001 ()
@@ -1531,6 +1510,7 @@
 ;            alist-of-thread-table-of-one-loop-iteration
             )))
 
+;todo: rename?  Maybe to miter-rules?
 ;fixme build this from smaller lists of rules?
 ;GETBIT-OF-BVXOR-ERIC ;seemed to be bad for dag prover Tue Jan 12 06:24:08 2010
 (defun axe-rules ()
@@ -2044,7 +2024,6 @@
              ;;                                      equal-of-bvxor-and-bvxor-same-7
              ;;                                      equal-of-bvxor-and-bvxor-same-8
              ;;                                      BVCAT-EQUAL-REWRITE
-             ;;                                      GETBIT-OF-LEFTROTATE32-HIGH
              ;;                                      BVMULT-OF-EXPT2-constant-version
              ;;end of new stuff
 
@@ -2057,8 +2036,8 @@
              getbit-of-bvmult-of-expt-constant-version
              equal-of-myif-same-1
              equal-of-myif-same-2
-             bvif-of-myif-1
-             bvif-of-myif-2
+             bvif-of-myif-arg3
+             bvif-of-myif-arg4
              bvplus-of-plus-arg3
              bvplus-of-plus-arg2
              slice-of-+ ;ffixme complete set..
