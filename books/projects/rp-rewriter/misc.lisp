@@ -51,6 +51,20 @@
 (local
  (include-Book "proofs/rp-state-functions-lemmas"))
 
+
+(defund pull-keys-from-rest-args (rest-args keys)
+  (if (or (atom rest-args)
+          (atom (cdr rest-args)))
+      (mv nil rest-args)
+    (b* (((mv rest-pulled rest-rest)
+          (pull-keys-from-rest-args (cdr rest-args) keys)))
+      (if (member-equal (car rest-args) keys)
+          (mv (acons (car rest-args)
+                     (cadr rest-args)
+                     rest-pulled)
+              (cdr rest-rest))
+        (mv rest-pulled (cons-with-hint (car rest-args) rest-rest rest-args))))))
+
 (encapsulate
   nil
 
@@ -118,7 +132,8 @@
     `(def-rp-rule ,(sa base-name 'lambda-opener)
        (and ,@openers)))
 
-  (defun lambdas-to-other-rules (rule-name rule untranslated-rule hints)
+  (defun lambdas-to-other-rules (rule-name rule untranslated-rule
+                                           from-add-rp-rule hints)
     (declare (xargs :mode :program))
     (b* (((mv hyp lhs rhs iff)
           (case-match rule
@@ -143,7 +158,11 @@
          (sigs (append hyp-sigs rhs-sigs lhs-sigs))
          (fncs (append hyp-fncs rhs-fncs lhs-fncs))
          (fnc-names (append hyp-fnc-names rhs-fnc-names lhs-fnc-names))
-         (openers (append hyp-openers rhs-openers lhs-openers)))
+         (openers (append hyp-openers rhs-openers lhs-openers))
+
+         (rule-name-for-rp (intern$ (str::cat (symbol-name rule-name)
+                                              "-FOR-RP")
+                                    (symbol-package-name rule-name))))
       (if (or (and sigs fncs openers)
               (and (or sigs fncs openers)
                    (hard-error
@@ -176,14 +195,30 @@
                :stack :pop
                :on (acl2::summary acl2::event)
                :summary-off (:other-than acl2::time acl2::rules)
-               (defthm ,rule-name
+               (defthmd ,rule-name-for-rp
                  (and (implies ,hyp-body
                                (,(if iff `iff `equal)
                                 ,lhs-body
                                 ,rhs-body))
                       ,@openers)
                  ,@hints))
-             (add-rp-rule ,rule-name))
+             
+             
+             ,@(if from-add-rp-rule
+                   nil
+                 `((defthm ,rule-name
+                     ,rule
+                     :hints (("Goal"
+                              :use ((:instance ,rule-name-for-rp))
+                              :in-theory '(,rule-name-for-rp))))))
+
+             (add-rp-rule ,rule-name
+                          :beta-reduce nil)
+             (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
+             #|(acl2::extend-pe-table ,rule-name-for-rp
+                                    (def-rp-rule ,rule-name-for-rp
+                                      ,body
+                                      :hints ,',hints))|#)
         `(progn
            (with-output
              :stack :pop
@@ -192,7 +227,8 @@
              (defthm ,rule-name
                ,untranslated-rule
                ,@hints))
-           (add-rp-rule ,rule-name)))))
+           (add-rp-rule ,rule-name
+                        :beta-reduce nil)))))
 
   ;; (case-match rule
   ;;   (('implies p ('equal a b))
@@ -239,17 +275,22 @@
   ;;         ,rule
   ;;         ,@hints))))
 
-  (defmacro defthm-lambda (rule-name rule &rest hints)
+  (defmacro defthm-lambda (rule-name rule &rest rest)
     `(make-event
       (b* (((mv err term & state)
             (acl2::translate1 ',rule t nil nil 'top-level (w state) state))
+
+           ((mv pulled-entries rest)
+            (pull-keys-from-rest-args ',rest '(:from-add-rp-rule)))
+           
            (- (if err (hard-error 'defthm-lambda "Error translating term ~%" nil) nil)))
         (mv err
             (lambdas-to-other-rules
              ',rule-name
              term
              ',rule
-             ',hints)
+             (cdr (hons-assoc-equal :from-add-rp-rule pulled-entries))
+             rest)
             state)))))
 
 (xdoc::defxdoc
@@ -391,6 +432,7 @@ nothing to bump!" nil)))
                         (meta-extract-formula ',rule-name state)))
              (beta-reduce (and ,beta-reduce
                                (contains-lambda-expression body)))
+             (rule-name ',rule-name)
              (new-rule-name (if beta-reduce
                                 (intern$ (str::cat (symbol-name ',rule-name)
                                                    "-FOR-RP")
@@ -411,16 +453,13 @@ nothing to bump!" nil)))
                                     ,(not disabled)))))))))
           (if beta-reduce
               `(progn
-                 (defthm-lambda ,new-rule-name
+                 (defthm-lambda ,rule-name
                    ,body
+                   :from-add-rp-rule t
                    :hints ,',hints)
                  (with-output :off :all :gag-mode nil :on error
                    (progn
-                     (acl2::extend-pe-table ,new-rule-name
-                                            (def-rp-rule ,new-rule-name
-                                              ,body
-                                              :hints ,',hints))
-                     (in-theory (disable ,new-rule-name))
+                     ;;(in-theory (disable ,new-rule-name))
                      (value-triple (cw "This rule has a lambda expression, ~
 and it is automatically put through rp::defthm-lambda  and a ~
 new rule is created to be used by RP-Rewriter. You can disable this by setting ~
@@ -431,8 +470,8 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
   (defun def-rp-rule-fn (rule-name rule hints)
     `(progn
        (defthm-lambda ,rule-name ,rule ,@hints)
-       (acl2::extend-pe-table ,rule-name
-                              (def-rp-rule ,rule-name ,rule ,@hints))
+       #|(acl2::extend-pe-table ,rule-name
+                              (def-rp-rule ,rule-name ,rule ,@hints))|#
        (value-triple ',rule-name)))
 
   (defmacro def-rp-rule (rule-name rule &rest hints)
@@ -447,7 +486,8 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
        (,(if defthmd 'defthmd 'defthm)
         ,rule-name ,rule ,@hints)
        (with-output :off :all :gag-mode nil :on error
-         (add-rp-rule  ,rule-name :disabled ,disabled)))))
+         (add-rp-rule  ,rule-name :disabled ,disabled
+                       :beta-reduce nil)))))
 
 (encapsulate
   nil

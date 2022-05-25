@@ -1495,7 +1495,8 @@
        (let ((e (car new-pp-lst)))
          (case-match e
            (('and-list & ('list . lst))
-            (equal (len lst) 4))))))
+            (<= (len lst) 4)
+            )))))
 
 (define c-pattern2-reduce ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
@@ -1539,7 +1540,8 @@
       ((pp1 pp2)
        (b* (((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 ''0)))
          (if (and success
-                  (or (equal pp1 ''1)
+                  (or t
+                      (equal pp1 ''1)
                       (and (and-subsetp pp2 pp1))
                       (c-pattern2-reduce-aux-cond new-pp-lst)))
              (mv new-pp-lst t)
