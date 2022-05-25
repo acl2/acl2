@@ -1108,8 +1108,16 @@
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-index-okp
+          (pack afixtype '-array-index-okp))
          (atype-array-read-itype
           (pack afixtype '-array-read- ifixtype))
+         (atype-array-read
+          (pack afixtype '-array-read))
+         (atype-array-length
+          (pack afixtype '-array-length))
+         (atype-array->elements
+          (pack afixtype '-array->elements))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -1132,7 +1140,20 @@
                    :enable (exec-arrsub
                             exec-integer
                             ,atype-array-itype-index-okp
-                            ,atype-array-read-itype))))
+                            ,atype-array-read-itype
+                            ,atype-array-index-okp
+                            ,atype-array-length
+                            ,atype-array-read
+                            value-array-read
+                            value-array->length)
+                   :prep-lemmas
+                   ((defrule lemma
+                      (implies (,apred x)
+                               (equal (value-array->elements x)
+                                      (,atype-array->elements x)))
+                      :enable (value-array->elements
+                               ,atype-array->elements
+                               ,apred))))))
       (mv name event)))
 
   (define atc-exec-arrsub-rules-gen-loop-itypes ((atype typep)
