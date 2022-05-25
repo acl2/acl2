@@ -458,7 +458,9 @@ particular shape of input env."
    :output-parts output-part-list
    :hyp hypothesis-term
    :concl conclusion-term
-   :enable rules-list)
+   :enable rules-list
+   :unsigned-byte-hyps nil
+   :no-lemmas nil)
  })
 
 <p>For each of the keyword arguments, if absent a default will be looked up in
@@ -519,6 +521,8 @@ and tries to prove the final theorem directly, with the hints given by the user.
 
 <li>@(':hints') are hints for the final theorem, only used if @(':no-lemmas') is set.</li>
 
+<li>@(':unsigned-byte-hyps') says to automatically add @('unsigned-byte-p')
+hypotheses for each input and override variable.</li>
 </ul>
 
 <h3>Initial override theorem</h3>
