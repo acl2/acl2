@@ -12,7 +12,7 @@
 (in-package "C")
 
 (include-book "arrays")
-(include-book "structures")
+(include-book "values")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 

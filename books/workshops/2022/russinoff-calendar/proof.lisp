@@ -64,7 +64,7 @@
 (defund expand (x)
   (+ (* 1080
         (+ (* 24 (day x))
-           (hour x)))        
+           (hour x)))
      (part x)))
 
 (defthm expand=
@@ -115,7 +115,7 @@
 		           (multime (monthsinyear y) (lunation)))))
   :hints (("Goal" :in-theory (enable molad-loop-0 common monthsinyear molad expand+ expand*)
                   :expand ((molad-loop-0 y (+ 1 y) (molad-loop-0 1 y 0)))
-                  :use ((:instance molad-loop-decomp (prior 0) (y 1) (year (1+ y)) (k y)) 
+                  :use ((:instance molad-loop-decomp (prior 0) (y 1) (year (1+ y)) (k y))
 		        (:instance expand= (x (molad (1+ y)))
 		                           (y (addtime (molad y) (multime (if1 (common y) 12 13) (lunation)))))))))
 
@@ -230,7 +230,7 @@
 (defthmd monthsinyear-mod
   (implies (and (natp y) (natp k))
            (equal (monthsinyear (+ k (mod y 19)))
-	          (monthsinyear (+ k y))))	          
+	          (monthsinyear (+ k y))))
   :hints (("Goal" :in-theory (e/d (monthsinyear leap) (ACL2::MOD-SUMS-CANCEL-1))
                   :use ((:instance mod-sum (a k) (b y) (n 19))))))
 
@@ -363,7 +363,7 @@
 (defthmd check-yearlength
   (implies (posp y)
            (iff (check-rh y (dmolad y))
-	        (member (yearlength y) 
+	        (member (yearlength y)
                         (if1 (leap y)
 	                     '(383 384 385)
 	                   '(353 354 355)))))
@@ -380,13 +380,17 @@
 (defthmd check-all-lemma
   (implies (and (posp i) (posp k) (posp y) (<= i k) (< k y)
                 (check-all i y (dmolad i)))
-	   (check-rh k (dmolad k)))	   
+	   (check-rh k (dmolad k)))
   :hints (("Subgoal *1/4" :use ((:instance dmolad-next (y i))))))
-  
-;; We won't check the following explicitly.  The computation is done in the course of the proof of 
+
+;; We won't check the following explicitly.  The computation is done in the course of the proof of
 ;; check-small-yearlength, which takes about 4 seconds:
 
 ;; (check-all 1 689473 (beharad))
+
+;; Added by Matt K. to avoid stack overflow in Allegro CL (and perhaps other
+;; Lisps that don't compile on-the-fly):
+(comp t)
 
 (defthmd check-small-yearlength
   (implies (and (posp y) (<= y 689472))
@@ -408,13 +412,13 @@
   :hints (("Goal" :in-theory (enable leap-rewrite)
                   :use (yearlength-equal-mod
                         (:instance check-small-yearlength (y 689472))
-			(:instance check-small-yearlength (y (mod y 689472)))			
+			(:instance check-small-yearlength (y (mod y 689472)))
 			(:instance mod-of-mod (x y) (k 36288) (n 19))
 			(:instance mod-0-int (m y) (n 19))))))
 
 
 ;;-----------------------------------------------------------------------------------------------------------
-;; Admissibility of year lengths: second proof 
+;; Admissibility of year lengths: second proof
 ;;-----------------------------------------------------------------------------------------------------------
 
 ;; Complement of a time of day:

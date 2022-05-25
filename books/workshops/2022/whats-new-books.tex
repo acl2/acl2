@@ -89,12 +89,21 @@
 
 \subtitle{Since the ACL2-2020 Workshop}
 
-\author{Alessandro Coglio\inst{1} (presenter),
-        Matt Kaufmann\inst{2}, \\
-        J Strother Moore\inst{2}}
+\author{Jagadish Bapanapally\inst{7}\inst{4},
+        Cuong Chau\inst{2}, \\
+        Alessandro Coglio\inst{1}\inst{4}\inst{5} (presenter),
+        Shilpi Goel\inst{3},\\
+        Matt Kaufmann\inst{6},
+        J Strother Moore\inst{6},
+        David Russinoff\inst{2}}
 
-\institute{\inst{1}Kestrel Institute,
-           \inst{2}University of Texas at Austin}
+\institute{\inst{1}Aleo,
+           \inst{1}ARM,
+           \inst{3}Centaur,
+           \inst{4}Kestrel Institute,
+           \inst{5}Kestrel Technology,\\
+           \inst{6}University of Texas at Austin (retired),
+           \inst{7}University of Wyoming}
 
 \date{ACL2-2022 Workshop}
 
@@ -105,6 +114,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame[noframenumbering,plain]{\titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+
+\newlibtitle
+
+\bookpath{centaur/bigmem}:
+A library that defines a big array (up to 2$^{64}$ bytes).
+\begin{itemize}
+\item Offers the reasoning efficiency of records.
+\item Offers efficient execution via nested stobjs containing resizable arrays.
+\end{itemize}
+
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -281,12 +305,48 @@ Models and proofs for the Zcash blockchain.
 
 \newlibtitle
 
+\bookpath{projects/execloader}:
+Binary loaders.
+\begin{itemize}
+\item Read in sections of ELF/Mach-O files into ACL2. An older version
+      of these books used to live in the \code{x86isa} library.
+\item Simplified \code{elf-reader}; ELF binary header, all section
+      headers, and all section contents are now stored in the \code{elf}
+      stobj. Previously, only a handful of commonly-used sections (e.g.,
+      \code{.text}, \code{.data}, \code{.rodata}, etc.) were parsed.
+\item Added support for getting information from ELF symbol table
+      using functions \code{get-symtab-entries} and
+      \code{get-label-address}.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{std/obags}:
 Ordered bags (obags).
 \begin{itemize}
 \item Similar to osets and omaps, for bags (i.e.\ multisets).
 \item Modeled as totally (non-strictly) ordered lists.
 \item Include operations and theorems.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/defrstobj2}:
+Record-like stobjs.
+\begin{itemize}
+\item \code{defrstobj2} can now be used to define stobjs with child
+      stobj fields, i.e., fields based on another stobj.
 \end{itemize}
 
 \end{frame}
@@ -424,6 +484,19 @@ Models, proofs, and tools for Java.
 
 \implibtitle
 
+\bookpath{kestrel/number-theory}:
+Number theory library.
+\begin{itemize}
+\item Verified Tonelli-Shanks algorithm for modular square roots.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/soft}:
 Second-Order Functions and Theorems (SOFT).
 \begin{itemize}
@@ -480,12 +553,17 @@ Utilities in the Kestrel books.
 
 \implibtitle
 
-\bookpath{projects/x86isa}:
-X86ISA, the formal model of the x86 Instruction Set Architecture.
+\bookpath{nonstd}:
+Non-standard analysis.
 \begin{itemize}
-\item Simplified the treatment of CPUID features.
-\item Added the \code{MOVD} and \code{MOVQ} instruction variants
-      that move data from/to the XMM registers.
+\item Formalization of Banach-Tarski paradox in ACL2(r),
+      at \code{nonstd/nsa/Banach-Tarski/}.
+\item Properties of 3D rotations
+      using the \code{array2p} data structure in ACL2(r),
+      at \code{nonstd/nsa/Banach-Tarski/rotations.lisp}.
+\item Integration by substitution in ACL2(r),
+      and proof of the area of a circle in ACL2(r),
+      at \code{nonstd/integrals/u-substitution.lisp}.
 \end{itemize}
 
 \end{frame}
@@ -509,6 +587,58 @@ X86ISA, the formal model of the x86 Instruction Set Architecture.
             and is thus the same as \code{loop.lisp}.
       \end{itemize}
 \item Made the inclusion of certain supporting books local.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/rac}:
+Restricted Algorithmic C (RAC).
+\begin{itemize}
+\item The \code{tuple} template can have up to {\em eight} arguments.
+\item Support the \code{struct} data type.
+\item Report more detailed error messages.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{rtl}:
+Register-transfer logic library.
+\begin{itemize}
+\item Added a signed version of the radix-4 Booth encoding algorithm.
+\item A new section of \code{books/rtl/rel11/lib/round.lisp} on
+      underflow detection, corresponding to Section 6.7 of ``Formal
+      Verification of Floating-Point Hardware Design'', 2nd edition.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/x86isa}:
+X86ISA, the formal model of the x86 Instruction Set Architecture.
+\begin{itemize}
+\item Simplified the treatment of CPUID features.
+\item Added the \code{MOVD} and \code{MOVQ} instruction variants
+      that move data from/to the XMM registers.
+\item Simplified state definition by using
+      \code{centaur/bigmem} and \code{centaur/defrstobj2}. See
+      \code{:doc x86isa-state-history} for details.
 \end{itemize}
 
 \end{frame}
