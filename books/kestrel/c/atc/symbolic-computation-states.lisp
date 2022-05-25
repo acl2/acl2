@@ -897,9 +897,13 @@
      only if the computation state is an ACL2 variable
      (as enforced by the @(tsee syntaxp) hypothesis).")
    (xdoc::p
+    "For now we only support top-level object designators,
+     but we plan to extend things to other object designators.")
+   (xdoc::p
     "Since @(tsee update-object) takes the base address,
-     the rule @('write-object-okp-of-update-object-same')
-     needs the hypothesis that the object designator is a top-level one.")
+     the rules @('write-object-okp-of-update-object-same')
+     and @('write-object-okp-when-valuep-of-read-object')
+     need the hypothesis that the object designator is a top-level one.")
    (xdoc::p
     "We include the rule for commutativity of @(tsee object-disjointp),
      so it does not matter the order of the disjoint objects
@@ -977,6 +981,7 @@
 
   (defruled write-object-okp-when-valuep-of-read-object
     (implies (and (syntaxp (symbolp compst))
+                  (equal (objdesign-kind objdes) :address)
                   (equal old-val (read-object objdes compst))
                   (valuep old-val))
              (equal (write-object-okp objdes val compst)
@@ -1218,6 +1223,7 @@
   (defruled update-object-of-read-object-same
     (implies (and (syntaxp (symbolp compst))
                   (compustatep compst1)
+                  (equal (objdesign-kind objdes) :address)
                   (valuep (read-object objdes compst))
                   (equal (read-object objdes compst)
                          (read-object objdes compst1)))
