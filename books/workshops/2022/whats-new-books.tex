@@ -172,6 +172,22 @@ Models, proofs, and tools for C (described in a paper at this workshop).
 
 \newlibtitle
 
+\bookpath{kestrel/crypto/mimc}:
+Minimal Multiplicative Complexity (MiMC) hash function.
+\begin{itemize}
+\item Formalization of the MiMC hash function.
+\item Uses a sponge construction.
+\item Used in Ethereum's Semaphore zero-knowledge gadget.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{kestrel/crypto/pfcs}:
 Prime Field Constraint Systems (PFCS).
 \begin{itemize}
@@ -214,6 +230,7 @@ Models and tools for JSON.
 \begin{itemize}
 \item Abstract syntax of JSON.
 \item Converter from parser's abstract syntax to this abstract syntax.
+\item Includes b* binder for pattern matching on JSON structures.
 \item Can be extended with semantics and tools.
 \end{itemize}
 
