@@ -1146,12 +1146,95 @@ Standard library extensions in the Kestrel books.
 
 \implibtitle
 
-\bookpath{kestrel/utilities}:
-Utilities in the Kestrel books.
+\bookpath{kestrel/utilities}: Utilities in the Kestrel books (1).
+
 \begin{itemize}
+
 \item Added macro \code{checkpoint-list},
-      which provides a programmatic, flexible interface
-      to the key checkpoint information.
+  which provides a programmatic, flexible interface
+  to the key checkpoint information.
+
+\item A new ACL2 Lint tool can detect common ACL2 errors.
+
+\item Reasoning about I/O channels has been improved.
+
+\item New utilities support computing a constant using make-event,
+  reading a value from a file into a defconst, and printing constants
+  nicely.
+
+\item A new tool, bind-from-rules can bind free variables in rules by
+  searching existing rules.
+
+\item Various improvements have been made to defopeners and
+  defopeners-mut-rec.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities}: Utilities in the Kestrel books (2).
+
+\begin{itemize}
+
+\item A new data structure, string trees, can efficiently represent a
+  sequence of strings (e.g., for writing to a file).
+
+\item A new tool supports polarity-based rewriting, whereby a term can
+  be either strengthened or weakened depending on whether it is an
+  assumption or a conclusion.
+
+\item New sorting utilities, including \code{split-list-fast},
+  \code{merge-sort-generic}, and \code{defmergesort}.
+
+\item New xdoc constructors, e.g., one that creates xdoc paragraphs
+  from blocks of text separated by blank lines.
+
+\item A new tool, \code{gen-xdoc-for-file}, to generate xdoc topics
+  for every event in a file by extracting the relevant lines of code
+  (the definition and any immediately preceding or following comment
+  lines).
+
+\item Helpful wrappers for xdoc archiving utilities.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities}: Utilities in the Kestrel books (3).
+
+\begin{itemize}
+
+\item New utilities about event forms, making fresh names,
+  manipulating hints, building simple list structures, dealing with
+  quoted entities, building strings, checking whether a symbol has
+  properties, dealing with runes, parsing options, processing keyword
+  args, and recognizing legal variable names.
+
+\item New utilities about imported symbols, format strings,
+  printing, translation, manipulating terms, invariant risk,
+  submitting events to ACL2, creating temp dirs, process IDs,
+  usernames, calling scripts, macroexpansion and translation, and asserts.
+
+\item New utilities about redundant events, guard-holders, ruler-extenders,
+  \code{let}s/\code{lambda}s, fake worlds, clause identifiers,
+  \code{progn}, unification, dependencies, ensuring rules are known,
+  quieting \code{make-event}, processing \code{defun} and \code{defthm} forms,
+  processing \code{declare}s, the ACL2 \code{state}, \code{system-books-dir},
+  fixing functions, \code{acl2-count}, \code{make-ord}, \code{coerce},
+  \code{map-symbol-name}, tuples, \code{myif}, and \code{mv-nth}.
+
 \end{itemize}
 
 \end{frame}
