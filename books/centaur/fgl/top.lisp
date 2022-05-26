@@ -41,6 +41,7 @@
 (include-book "gatecount")
 (include-book "sat-binder")
 (include-book "equivcheck")
+(include-book "extremize")
 
 (local (in-theory (disable w)))
 

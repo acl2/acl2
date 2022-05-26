@@ -359,6 +359,7 @@
    ;; keep-final-state
    ;; keep-all-states
    (define-macros :default t)
+   (define-mod :default t)
    parents
    short
    long)
@@ -529,7 +530,7 @@
         (raise "Failed to generate svtv: ~@0" err)
         (mv err nil state svtv-data))
        ((defsvtv-args x))
-       (events (defsvtv-events svtv x.design-const x.labels x.define-macros x.parents x.short x.long)))
+       (events (defsvtv-events svtv x.design-const x.labels x.define-macros x.define-mod x.parents x.short x.long)))
     (mv nil events state svtv-data)))
 
 

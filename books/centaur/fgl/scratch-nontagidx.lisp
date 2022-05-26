@@ -53,11 +53,13 @@
                   (natp x))
              (not (equal (loghead 4 x) 0))))
 
-  (defthm scratch-nontagidx-implies-linear
+  (defthmd scratch-nontagidx-implies-linear
     (implies (scratch-nontagidx-p x)
              (<= 1 (loghead 4 x)))
     :hints(("Goal" :in-theory (enable nfix)))
     :rule-classes :linear)
+
+  (local (in-theory (enable scratch-nontagidx-implies-linear)))
   
   (defthm scratch-nontagidx-p-when-loghead
     (implies (not (equal (loghead 4 (nfix x)) 0))
@@ -67,6 +69,8 @@
     (implies (scratch-nontagidx-p x)
              (posp x))
     :rule-classes :compound-recognizer))
+
+(local (in-theory (enable scratch-nontagidx-implies-linear)))
 
 (define scratch-nontagidx-fix ((x scratch-nontagidx-p))
   :inline t

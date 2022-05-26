@@ -1393,7 +1393,9 @@
          (fast-alist-free next-masks)
          ;; (mv next-masks 
          (svex-alist-reduce (svex-alist-keys loop-updates) orig-updates))
-        (next-updates (cwtime (svex-alist-rewrite-under-masks loop-updates next-masks)))
+        ;; NOTE: Rewriting these signals under masks actually makes svexes bigger and can screw up override triples
+        ;; Looking for a solution to this but for now just disabling it
+        (next-updates loop-updates) ;;(cwtime (svex-alist-rewrite-under-masks loop-updates next-masks)))
         (next-loop-updates (cwtime (svex-alist-filter-nonzero-masks next-updates next-masks)))
         (rest-composed ;; (mv final-masks rest-composed)
          (cwtime (svex-alist-maskcompose-iter-spec
@@ -1541,7 +1543,9 @@
        ;; we only check monotonicity on keys of loop-updates.  If we want to eliminate bindings,
        ;; even on variables whose masks are 0, then we have to ensure that those masks stay 0.
        (status (cwtime (check-masks-stats loop-updates masks next-masks)))
-       (next-updates (cwtime (svex-alist-rewrite-under-masks loop-updates next-masks)))
+        ;; NOTE: Rewriting these signals under masks actually makes svexes bigger and can screw up override triples
+        ;; Looking for a solution to this but for now just disabling it
+       (next-updates (svex-alist-fix loop-updates)) ;;(cwtime (svex-alist-rewrite-under-masks loop-updates next-masks)))
        ((unless status)
         (cw "Masks stopped shrinking~%")
         (fast-alist-free next-masks)
@@ -1637,8 +1641,9 @@
                  new-masks
                  (svex-alist-eval
                   (svex-alist-filter-nonzero-masks
-                   (svex-alist-rewrite-under-masks
-                    loop-updates new-masks)
+                   ;; (svex-alist-rewrite-under-masks
+                   ;;  loop-updates new-masks)
+                   loop-updates
                    new-masks)
                   env)
                  (svex-alist-eval (svex-alist-filter-nonzero-masks
@@ -1657,10 +1662,10 @@
                           (:instance 4vmask-subsumes-by-check-masks-decreasing
                            (vars (svex-alist-keys loop-updates))
                            (new-masks (svex-assigns-propagate-masks masks loop-updates)))
-                          (:instance lookup-of-svex-alist-rewrite-under-masks
-                           (x loop-updates)
-                           (masks (svex-assigns-propagate-masks masks loop-updates))
-                           (verbosep nil))
+                          ;; (:instance lookup-of-svex-alist-rewrite-under-masks
+                          ;;  (x loop-updates)
+                          ;;  (masks (svex-assigns-propagate-masks masks loop-updates))
+                          ;;  (verbosep nil))
                           (:instance mask-lookup-of-svex-lookup-of-svex-assigns-propagate-masks
                            (key var)
                            (assigns loop-updates)
@@ -1704,8 +1709,9 @@
                 (svex-alists-agree-on-masks
                  new-masks
                  (svex-alist-filter-nonzero-masks
-                  (svex-alist-rewrite-under-masks
-                   loop-updates new-masks)
+                  ;; (svex-alist-rewrite-under-masks
+                  ;;  loop-updates new-masks)
+                  loop-updates
                   new-masks)
                  (svex-alist-filter-nonzero-masks
                   (svex-alist-reduce (svex-alist-keys loop-updates) orig-updates)
@@ -1885,10 +1891,11 @@
           (SVEX-ENV-REDUCE
            decr-vars
            (SVEX-ALIST-EVAL
-            (SVEX-ALIST-REWRITE-UNDER-MASKS
-             LOOP-UPDATES
-             new-masks
-             :VERBOSEP NIL)
+            ;; (SVEX-ALIST-REWRITE-UNDER-MASKS
+            ;;  LOOP-UPDATES
+            ;;  new-masks
+            ;;  :VERBOSEP NIL)
+            loop-updates
             (APPEND (SVEX-ALIST-EVAL RES ENV) ENV)))
           (SVEX-ENV-EXTRACT (SVEX-ALIST-KEYS LOOP-UPDATES)
                             (APPEND (SVEX-ALIST-EVAL RES ENV)
@@ -1915,12 +1922,12 @@
                                ;;      loop-updates new-masks :verbosep nil))
                                ((when (member-equal (svar-fix var) decr-vars))
                                 `(:use ((:instance acl2::mark-clause-is-true (x 'decreasing-var))
-                                        (:instance lookup-of-svex-alist-rewrite-under-masks
-                                         (x loop-updates)
-                                         (masks ,(acl2::hq new-masks))
-                                         (verbosep nil)
-                                         (env (APPEND (SVEX-ALIST-EVAL RES ENV)
-                                                      ENV)))
+                                        ;; (:instance lookup-of-svex-alist-rewrite-under-masks
+                                        ;;  (x loop-updates)
+                                        ;;  (masks ,(acl2::hq new-masks))
+                                        ;;  (verbosep nil)
+                                        ;;  (env (APPEND (SVEX-ALIST-EVAL RES ENV)
+                                        ;;               ENV)))
                                         ;; (:instance 4vmask-subsumes-by-check-masks-decreasing
                                         ;;  (new-masks ,(acl2::hq new-masks))
                                         ;;  (assigns loop-updates))
@@ -1965,10 +1972,11 @@
       (SVEX-ENVS-AGREE-ON-MASKS
        MASKS
        (SVEX-ALIST-EVAL
-        (SVEX-ALIST-REWRITE-UNDER-MASKS
-         LOOP-UPDATES
-         (SVEX-ASSIGNS-PROPAGATE-MASKS MASKS LOOP-UPDATES)
-         :VERBOSEP NIL)
+        ;; (SVEX-ALIST-REWRITE-UNDER-MASKS
+        ;;  LOOP-UPDATES
+        ;;  (SVEX-ASSIGNS-PROPAGATE-MASKS MASKS LOOP-UPDATES)
+        ;;  :VERBOSEP NIL)
+        loop-updates
         ENV)
        (svex-env-reduce (svex-alist-keys loop-updates)
                         (SVEX-ALIST-EVAL ORIG-UPDATES ENV))))
@@ -1984,10 +1992,11 @@
                            (assigns loop-updates)
                            (m (svex-mask-lookup (svex-var var) masks))
                            (key var))
-                          (:instance lookup-of-svex-alist-rewrite-under-masks
-                           (x loop-updates)
-                           (masks (svex-assigns-propagate-masks masks loop-updates))
-                           (verbosep nil)))
+                          ;; (:instance lookup-of-svex-alist-rewrite-under-masks
+                          ;;  (x loop-updates)
+                          ;;  (masks (svex-assigns-propagate-masks masks loop-updates))
+                          ;;  (verbosep nil))
+                          )
                     :in-theory (disable mask-lookup-of-svex-lookup-of-svex-assigns-propagate-masks
                                         lookup-of-svex-alist-rewrite-under-masks))))
      :otf-flg t))
