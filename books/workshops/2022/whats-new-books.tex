@@ -90,13 +90,15 @@
 \subtitle{Since the ACL2-2020 Workshop}
 
 \author{Jagadish Bapanapally\inst{8}\inst{4},
-        Cuong Chau\inst{2}, \\
+        Cuong Chau\inst{2},\\
         Alessandro Coglio\inst{1}\inst{4}\inst{5} (presenter),
         Shilpi Goel\inst{3},\\
         Matt Kaufmann\inst{7},
-        Panagiotis Manolios\inst{6},
+        Panagiotis Manolios\inst{6},\\
+        Eric McCarthy\inst{4},
         J Strother Moore\inst{7},
-        David Russinoff\inst{2}}
+        David Russinoff\inst{2},
+        Eric W. Smith\inst{1}\inst{4}\inst{5}}
 
 \institute{\inst{1}Aleo,
            \inst{2}ARM,
@@ -134,6 +136,25 @@ A library that defines a big array (up to 2$^{64}$ bytes).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/acl2-arrays}:
+
+Support for reasoning about programs that use ACL2 arrays (e.g.,
+values satisfying \code{array1p}).
+
+\begin{itemize}
+\item Many rules about existing functions.
+\item New operations that make arrays exapandable.
+\item Tool for defining typed ACL2 arrays.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}[fragile]
 
 \newlibtitle
@@ -155,12 +176,97 @@ Preliminary model of the ACL2 programming (not logical) language.
 
 \newlibtitle
 
+\bookpath{kestrel/algorithm-theories}:
+A library to collect algorithm schemes.
+\begin{itemize}
+\item Scheme for a generic tail-recursive function.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/arrays-2d}:
+A formalization of two-dimensional arrays as lists of lists.
+\begin{itemize}
+
+\item Supports arrays with arbitrary elements, and with elements that
+  are known to be bit-vectors.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{kestrel/c}:
 Models, proofs, and tools for C (described in a paper at this workshop).
 \begin{itemize}
 \item ATC, the C code generator for ACL2.
 \item Deep embedding of C in ACL2.
 \item Shallow embedding of C in ACL2.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/crypto/blake}: BLAKE Library
+
+\begin{itemize}
+
+\item Formal specifications of the BLAKE2s, BLAKE2s-extended, and
+  BLAKE-256 hash functions.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/crypto/r1cs}: R1CS Library
+
+\begin{itemize}
+
+\item A formal semantics for rank-1 constraint systems (R1CSes). These
+  are often used in zero-knowledge proofs.
+
+\item Extensive support for reasoning about R1CSes.
+
+\item Verified R1CS gadgets.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/crypto/mimc}:
+Minimal Multiplicative Complexity (MiMC) hash function.
+\begin{itemize}
+\item Formalization of the MiMC hash function.
+\item Uses a sponge construction.
+\item Used in Ethereum's Semaphore zero-knowledge gadget.
 \end{itemize}
 
 \end{frame}
@@ -213,9 +319,90 @@ Models and tools for JSON.
 \begin{itemize}
 \item Abstract syntax of JSON.
 \item Converter from parser's abstract syntax to this abstract syntax.
+\item Includes b* binder for pattern matching on JSON structures.
 \item Can be extended with semantics and tools.
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/json-parser}:
+A JSON parser implemented in ACL2.
+\begin{itemize}
+\item Unicode support.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/jvm}:
+Kestrel's model of the Java Virtual Machine.
+\begin{itemize}
+\item Support for code proofs and lifting.
+\item Works with Kestrel's Axe toolkit.
+\item Includes a class file parser.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/number-theory}:
+
+A library about number theory,
+
+\begin{itemize}
+
+\item Primality, divisibility, quadratic residues, etc.
+
+\item Includes the \code{defprime} and \code{defprime-alias} tools to
+  introduce standard reasoning machinery for primes.
+
+\item Includes verified Tonelli-Shanks algorithm for modular square roots.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/random}:
+A lightweight library containing some simple random number generators.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/sequences}:
+A library for defining higher-order operations over lists
+\begin{itemize}
+\item \code{defforall}
+\item \code{defexists}
+\item \code{defmap}
+\item \code{deffilter}
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -255,6 +442,19 @@ the main smart contract language for Ethereum.
 
 \newlibtitle
 
+\bookpath{kestrel/strings-light}:
+
+A lightweight library about strings, including changing case,
+splitting strings and character lists, etc.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{kestrel/syntheto}:
 Models, proofs, and tools for Syntheto (described in a paper at this workshop).
 \begin{itemize}
@@ -264,6 +464,77 @@ Models, proofs, and tools for Syntheto (described in a paper at this workshop).
 \item Translation to ACL2 (Syntheto back end).
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/terms-light}:
+
+A lightweight library of operations on terms, e.g., finding free and
+bound vars and applying variable substitutions.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/typed-lists-light}:
+
+A lightweight library dealing with lists of objects of particular
+types (rather than lists in general).
+
+\begin{itemize}
+\item lists of integers, lists of symbols, lists of pseudo-terms, etc.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/unicode-light}:
+A lightweight library about Unicode.
+\begin{itemize}
+\item UTF-8 encoding
+\item UTF-16 surrogate code points
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/untranslated-terms}:
+A new library for manipulating untranslated terms.
+\begin{itemize}
+\item Allows structure to be maintained that would be lost by translation.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/x86}:
+Kestrel's x86 proof machinery, which complements the X86ISA model.
+\begin{itemize}
+\item Focus on readability of proof terms.
+\item Supports the lifting of x86 code into logic with the Axe toolkit.
+\item Includes parsers for PE and Mach-O executables.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,6 +646,295 @@ Augmented Backus-Naur Form (ABNF).
 
 \implibtitle
 
+\bookpath{kestrel/alists-light}: Lightweight alists library
+
+\begin{itemize}
+
+\item New rules and books, including books on \code{alistp},
+  \code{clear-key}, and \code{keep-pairs}.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/arithmetic-light}: Lightweight arithmetic library
+
+\begin{itemize}
+
+\item Many new rules and books have been added, including books on
+\code{integer-length} \code{ceiling-of-lg}, evenness and oddness,
+\code{truncate}, \code{rem}, \code{ash}, \code{min}, \code{max},
+\code{<=}, \code{abs}, and \code{natp}.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe}: Axe Toolkit
+
+\begin{itemize}
+
+\item Major additions; most of Axe is now open-source.
+
+\item Machinery for making customized Axe rewriters and provers.
+
+\item A new general-purpose prover and rewriter (guard-verified, \code{:logic}-mode code).
+
+\item Legacy prover and rewriter.
+
+\item Axe Tactic Prover.
+
+\item Connection to the STP SMT solver.
+
+\item Many rules useful in Axe proofs.
+
+\item Utilities to unroll specifications through rewriting.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe/jvm}: Axe toolkit for JVM
+
+\begin{itemize}
+
+\item Tools to lift JVM code into logic.
+
+\item Formal Unit Tester tool, for small solver-backed proofs about
+bounded executions of programs.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe/r1cs}: Axe toolkit for R1CS (rank-1 constraint systems)
+
+\begin{itemize}
+
+\item Tools to lift R1CSes into logic and verify them
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe/x86}: Axe toolkit for x86
+
+\begin{itemize}
+
+\item Tools to lift x86 code into logic.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/booleans}: Booleans Library
+
+\begin{itemize}
+
+\item New rules and defcongs.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/bv}: BV (bit-vector) Library
+
+\begin{itemize}
+
+\item Over 1000 new rules
+
+\item New books have been added covering many more BV operations,
+including subtraction, arithmetic negation, multiplicaton, shifts,
+bitwise \code{OR} and \code{AND}, logical negation, signed and
+unsigned comparisons, signed and unsigned division and remainder,
+trimming, sign extension, various single-bit operations,
+bit-vector-valued conditionals, converting between bits and booleans,
+recognizing bits and (signed and unsigned) bytes, repeating a bit, and
+counting the number of 1 bits.
+
+\item Rules to characterize signed addition overflow and underflow.
+
+\item Rules to turn BV ops into more common or more idiomatic operations.
+
+\item A formalization of one's complement numbers and addition.
+
+\item Various syntactic functions over BV-valued terms.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/bv-lists}: BV-Lists Library
+
+\begin{itemize}
+
+\item Many new rules.
+
+\item New books about \code{bv-arrayp}, \code{bv-array-read},
+\code{bv-array-write}, \code{all-all-unsigned-byte-p},
+\code{width-of-widest-int}, \code{bvnot-list}, \code{getbit-list},
+\code{map-slice}, \code{bvplus-list}, \code{logext-list},
+\code{bv-nth}, \code{map-packbv}, \code{all-signed-byte-p},
+conversions between lists and bv-arrays, \code{packbv-little}, and
+\code{byte-listp}.
+
+\item New utilities that deal with patterns in the elements of BV lists.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/ethereum}: Ethereum Library
+
+\begin{itemize}
+
+\item A new sub-library for the Semaphore gadget.  Includes various
+specifications and proofs of Semaphore-related R1CSes, including a
+mixing function from BLAKE2s and 3 variants of the MiMC hash function.
+
+\item Semaphore-specialized Axe tools to lift R1CSes into logic and
+verify them.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/file-io-light}: Lightweight File I/O Library
+
+\begin{itemize}
+
+\item Various new lightweight utilities to read and write files (of bytes, characters, and objects).
+
+\item New utility to read the bytes of a file into a \code{stobj} array.
+
+\item Reasoning support for various built-in I/O functions
+
+\item Utilities to check whether a file exists or is newer than a given date.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/library-wrappers}: Library Wrappers
+
+\begin{itemize}
+
+\item A new, robust variant of make-flag.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/lists-light}: Lightweight Lists Library
+
+\begin{itemize}
+
+\item Many new rules and congruences.
+
+\item New books about the functions \code{subsequencep}, \code{subsequencep-equal}, \code{last-elem}, \code{subrange}, \code{update-subrange}, \code{finalcdr}, \code{all-equal\$}, \code{all-eql\$}, \code{all-same}, \code{all-same-eql}, \code{add-to-end}, \code{first-non-member}, \code{group} and \code{ungroup} (for splitting and flattening), \code{count-occs}, \code{prefixp}, \code{len-at-least}, \code{remove-equal}, \code{remove-duplicates-equal}, \code{find-index}, and \code{remove-nth}.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/prime-fields}: Prime-Fields Library
+
+\begin{itemize}
+
+\item Many new / improved rules.
+
+\item Rules for recogizing R1CS gadgets.
+
+\item \code{bind-free} rules for canceling addends and moving negations.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{acl2s}: ACL2s Sedan.
 \begin{itemize}
 \item Added \code{properties} book with \code{definec}-like syntax
@@ -409,6 +969,23 @@ Automated Program Transformations (APT).
 \item Improved and extended existing
       \code{isodata}, \code{restrict}, \code{simplify}, and \code{tailrec}
       transformations.
+\item New \code{deftransformation} tool to generate transformations, handling
+      the boilerplate.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/bitcoin}:
+Bitcoin.
+\begin{itemize}
+\item Added formalization of the Bech32 and Bech32m checksummed base32 formats
+      used to encode addresses in Segwit.
 \end{itemize}
 
 \end{frame}
@@ -423,6 +1000,28 @@ Automated Program Transformations (APT).
 Build system.
 \begin{itemize}
 \item Now \code{cert.pl} makes use of useless runes just as \code{make} does.
+\item Now \code{make} of the community books also writes book dependency
+      information in S-expression form.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{doc}: Documentation
+
+\begin{itemize}
+
+\item Web-based manual now includes clickable links to GitHub for doc topics from the Community Books.
+
+\item The file \code{[books]/doc/top-slow.lisp} no longer actually builds a manual.  Instead, it serves as a top-level book to detect name conflicts between community books.
+
+\item Manual building is now taken care of by [books]/doc/top.lisp.
+
 \end{itemize}
 
 \end{frame}
@@ -507,19 +1106,6 @@ Models, proofs, and tools for Java.
 
 \implibtitle
 
-\bookpath{kestrel/number-theory}:
-Number theory library.
-\begin{itemize}
-\item Verified Tonelli-Shanks algorithm for modular square roots.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
 \bookpath{kestrel/soft}:
 Second-Order Functions and Theorems (SOFT).
 \begin{itemize}
@@ -560,12 +1146,95 @@ Standard library extensions in the Kestrel books.
 
 \implibtitle
 
-\bookpath{kestrel/utilities}:
-Utilities in the Kestrel books.
+\bookpath{kestrel/utilities}: Utilities in the Kestrel books (1).
+
 \begin{itemize}
+
 \item Added macro \code{checkpoint-list},
-      which provides a programmatic, flexible interface
-      to the key checkpoint information.
+  which provides a programmatic, flexible interface
+  to the key checkpoint information.
+
+\item A new ACL2 Lint tool can detect common ACL2 errors.
+
+\item Reasoning about I/O channels has been improved.
+
+\item New utilities support computing a constant using make-event,
+  reading a value from a file into a defconst, and printing constants
+  nicely.
+
+\item A new tool, bind-from-rules can bind free variables in rules by
+  searching existing rules.
+
+\item Various improvements have been made to defopeners and
+  defopeners-mut-rec.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities}: Utilities in the Kestrel books (2).
+
+\begin{itemize}
+
+\item A new data structure, string trees, can efficiently represent a
+  sequence of strings (e.g., for writing to a file).
+
+\item A new tool supports polarity-based rewriting, whereby a term can
+  be either strengthened or weakened depending on whether it is an
+  assumption or a conclusion.
+
+\item New sorting utilities, including \code{split-list-fast},
+  \code{merge-sort-generic}, and \code{defmergesort}.
+
+\item New xdoc constructors, e.g., one that creates xdoc paragraphs
+  from blocks of text separated by blank lines.
+
+\item A new tool, \code{gen-xdoc-for-file}, to generate xdoc topics
+  for every event in a file by extracting the relevant lines of code
+  (the definition and any immediately preceding or following comment
+  lines).
+
+\item Helpful wrappers for xdoc archiving utilities.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities}: Utilities in the Kestrel books (3).
+
+\begin{itemize}
+
+\item New utilities about event forms, making fresh names,
+  manipulating hints, building simple list structures, dealing with
+  quoted entities, building strings, checking whether a symbol has
+  properties, dealing with runes, parsing options, processing keyword
+  args, and recognizing legal variable names.
+
+\item New utilities about imported symbols, format strings,
+  printing, translation, manipulating terms, invariant risk,
+  submitting events to ACL2, creating temp dirs, process IDs,
+  usernames, calling scripts, macroexpansion and translation, and asserts.
+
+\item New utilities about redundant events, guard-holders, ruler-extenders,
+  \code{let}s/\code{lambda}s, fake worlds, clause identifiers,
+  \code{progn}, unification, dependencies, ensuring rules are known,
+  quieting \code{make-event}, processing \code{defun} and \code{defthm} forms,
+  processing \code{declare}s, the ACL2 \code{state}, \code{system-books-dir},
+  fixing functions, \code{acl2-count}, \code{make-ord}, \code{coerce},
+  \code{map-symbol-name}, tuples, \code{myif}, and \code{mv-nth}.
+
 \end{itemize}
 
 \end{frame}
