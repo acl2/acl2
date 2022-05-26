@@ -53,9 +53,10 @@
 (include-book "../rewriter" :ttags :all)
 (include-book "../make-axe-rules2")
 (include-book "../dag-to-term-with-lets")
+(include-book "../add-to-dag")
 ;(include-book "kestrel/bv/arith" :dir :system) ;todo?
 (include-book "jvm-rules-axe2") ;for smart if handling
-(include-book "../math-rules")
+(include-book "../math-rules") ; todo: why?
 (include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
@@ -698,9 +699,6 @@
 ;returns a list of lists of addresses
 (defun separate-pairs-by-class-name-and-field-name (pairs)
   (strip-cdrs (make-alist-by-seconds pairs nil)))
-
-;fixme make a compose-term-and-dags?
-;(defun compose-term-and-dags (term alist)
 
 ;; Returns (mv erp dag).
 (defun negate-dag (dag)
