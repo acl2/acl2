@@ -185,6 +185,60 @@
                              (fgl-object-p params)
                              (interp-st-fgl-bfr-objectp x)))
 
+
+(define env->env$-exec ((x fgl-env-p) env$ logicman)
+  :guard (stobj-let ((aignet (logicman->aignet logicman)))
+                    (ok)
+                    (eql (aignet::num-regs aignet) 0)
+                    ok)
+  :returns (new-env$ (equal new-env$ (env->env$ x logicman))
+                     :hints(("Goal" :in-theory (enable env->env$))))
+  (b* ((bfrstate (logicman->bfrstate))
+       ((fgl-env x))
+       (env$ (env$-init env$))
+       (env$ (update-env$->obj-alist x.obj-alist env$)))
+    (bfrstate-case
+      :bdd (stobj-let ((bitarr (env$->bitarr env$)))
+                      (bitarr)
+                      (non-exec (bools->bits x.bfr-vals))
+                      env$)
+      :aig (b* ((env$ (update-env$->alist x.bfr-vals env$)))
+             env$)
+      :aignet (stobj-let ((aignet (logicman->aignet logicman)))
+                         (env$)
+                         (stobj-let ((bitarr (env$->bitarr env$)))
+                                    (bitarr)
+                                    (b* (((acl2::local-stobjs aignet::invals aignet::regvals)
+                                          (mv bitarr aignet::invals aignet::regvals))
+                                         (aignet::invals (alist-to-bitarr (aignet::num-ins aignet) x.bfr-vals aignet::invals))
+                                         (bitarr
+                                          (aignet::aignet-record-vals bitarr aignet::invals aignet::regvals aignet)))
+                                      (mv bitarr aignet::invals aignet::regvals))
+                                    env$)
+                         env$))))
+
+
+(define interp-st-fgl-object-eval ((x fgl-object-p)
+                                   (env fgl-env-p)
+                                   (interp-st interp-st-bfrs-ok)
+                                   (state))
+  :guard (interp-st-bfr-listp (fgl-object-bfrlist x))
+  (b* (((acl2::local-stobjs env$)
+        (mv env$ err val)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (env$ err val)
+               (b* ((env$ (env->env$-exec env env$ logicman))
+                    (env$ (bfr-env$-fix env$ (logicman->bfrstate)))
+                    ((mv err val)
+                     (magic-fgl-object-eval x env$)))
+                 (mv env$ err val))
+               (mv env$ err val))))
+
+(fancy-ev-add-primitive interp-st-fgl-object-eval
+                        (and (fgl-object-p x)
+                             (fgl-env-p env)
+                             (interp-st-fgl-bfr-objectp x)))
+
 ;; Note: this function will just get interpreted by fancy-ev when running under
 ;; show-counterexample-rw below, so we don't bother verifying guards etc.
 (define show-counterexample-bind ((params fgl-object-p)

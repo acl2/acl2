@@ -204,6 +204,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "bitcoin::bitcoin" "Bitcoin Library"))
+
+   (xdoc::p
+    "Executable specifications of Bech32 and Bech32 address encoding
+     have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
