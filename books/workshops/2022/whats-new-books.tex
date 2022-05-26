@@ -141,7 +141,6 @@ A library that defines a big array (up to 2$^{64}$ bytes).
 \newlibtitle
 
 \bookpath{kestrel/acl2-arrays}:
-
 Support for reasoning about programs that use ACL2 arrays (e.g.,
 values satisfying \code{array1p}).
 
@@ -193,10 +192,8 @@ A library to collect algorithm schemes.
 \bookpath{kestrel/arrays-2d}:
 A formalization of two-dimensional arrays as lists of lists.
 \begin{itemize}
-
 \item Supports arrays with arbitrary elements, and with elements that
   are known to be bit-vectors.
-
 \end{itemize}
 
 \end{frame}
@@ -223,13 +220,10 @@ Models, proofs, and tools for C (described in a paper at this workshop).
 
 \newlibtitle
 
-\bookpath{kestrel/crypto/blake}: BLAKE Library
-
+\bookpath{kestrel/crypto/blake}: BLAKE Library.
 \begin{itemize}
-
 \item Formal specifications of the BLAKE2s, BLAKE2s-extended, and
   BLAKE-256 hash functions.
-
 \end{itemize}
 
 \end{frame}
@@ -240,17 +234,12 @@ Models, proofs, and tools for C (described in a paper at this workshop).
 
 \newlibtitle
 
-\bookpath{kestrel/crypto/r1cs}: R1CS Library
-
+\bookpath{kestrel/crypto/r1cs}: R1CS Library.
 \begin{itemize}
-
 \item A formal semantics for rank-1 constraint systems (R1CSes). These
   are often used in zero-knowledge proofs.
-
 \item Extensive support for reasoning about R1CSes.
-
 \item Verified R1CS gadgets.
-
 \end{itemize}
 
 \end{frame}
@@ -320,7 +309,6 @@ Models and tools for JSON.
 \item Abstract syntax of JSON.
 \item Converter from parser's abstract syntax to this abstract syntax.
 \item Includes b* binder for pattern matching on JSON structures.
-\item Can be extended with semantics and tools.
 \end{itemize}
 
 \end{frame}
@@ -362,18 +350,12 @@ Kestrel's model of the Java Virtual Machine.
 \newlibtitle
 
 \bookpath{kestrel/number-theory}:
-
-A library about number theory,
-
+A library about number theory.
 \begin{itemize}
-
 \item Primality, divisibility, quadratic residues, etc.
-
 \item Includes the \code{defprime} and \code{defprime-alias} tools to
   introduce standard reasoning machinery for primes.
-
 \item Includes verified Tonelli-Shanks algorithm for modular square roots.
-
 \end{itemize}
 
 \end{frame}
@@ -396,7 +378,7 @@ A lightweight library containing some simple random number generators.
 \newlibtitle
 
 \bookpath{kestrel/sequences}:
-A library for defining higher-order operations over lists
+A library for defining higher-order operations over lists.
 \begin{itemize}
 \item \code{defforall}
 \item \code{defexists}
@@ -443,7 +425,6 @@ the main smart contract language for Ethereum.
 \newlibtitle
 
 \bookpath{kestrel/strings-light}:
-
 A lightweight library about strings, including changing case,
 splitting strings and character lists, etc.
 
@@ -473,7 +454,6 @@ Models, proofs, and tools for Syntheto (described in a paper at this workshop).
 \newlibtitle
 
 \bookpath{kestrel/terms-light}:
-
 A lightweight library of operations on terms, e.g., finding free and
 bound vars and applying variable substitutions.
 
@@ -486,13 +466,12 @@ bound vars and applying variable substitutions.
 \newlibtitle
 
 \bookpath{kestrel/typed-lists-light}:
-
 A lightweight library dealing with lists of objects of particular
 types (rather than lists in general).
-
 \begin{itemize}
 \item lists of integers, lists of symbols, lists of pseudo-terms, etc.
 \end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -504,9 +483,10 @@ types (rather than lists in general).
 \bookpath{kestrel/unicode-light}:
 A lightweight library about Unicode.
 \begin{itemize}
-\item UTF-8 encoding
-\item UTF-16 surrogate code points
+\item UTF-8 encoding.
+\item UTF-16 surrogate code points.
 \end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -520,6 +500,7 @@ A new library for manipulating untranslated terms.
 \begin{itemize}
 \item Allows structure to be maintained that would be lost by translation.
 \end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -535,6 +516,7 @@ Kestrel's x86 proof machinery, which complements the X86ISA model.
 \item Supports the lifting of x86 code into logic with the Axe toolkit.
 \item Includes parsers for PE and Mach-O executables.
 \end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -646,13 +628,11 @@ Augmented Backus-Naur Form (ABNF).
 
 \implibtitle
 
-\bookpath{kestrel/alists-light}: Lightweight alists library
-
+\bookpath{kestrel/alists-light}:
+Lightweight alists library.
 \begin{itemize}
-
 \item New rules and books, including books on \code{alistp},
   \code{clear-key}, and \code{keep-pairs}.
-
 \end{itemize}
 
 \end{frame}
@@ -663,15 +643,13 @@ Augmented Backus-Naur Form (ABNF).
 
 \implibtitle
 
-\bookpath{kestrel/arithmetic-light}: Lightweight arithmetic library
-
+\bookpath{kestrel/arithmetic-light}:
+Lightweight arithmetic library.
 \begin{itemize}
-
 \item Many new rules and books have been added, including books on
 \code{integer-length} \code{ceiling-of-lg}, evenness and oddness,
 \code{truncate}, \code{rem}, \code{ash}, \code{min}, \code{max},
 \code{<=}, \code{abs}, and \code{natp}.
-
 \end{itemize}
 
 \end{frame}
@@ -682,26 +660,18 @@ Augmented Backus-Naur Form (ABNF).
 
 \implibtitle
 
-\bookpath{kestrel/axe}: Axe Toolkit
-
+\bookpath{kestrel/axe}:
+Axe Toolkit.
 \begin{itemize}
-
 \item Major additions; most of Axe is now open-source.
-
 \item Machinery for making customized Axe rewriters and provers.
-
-\item A new general-purpose prover and rewriter (guard-verified, \code{:logic}-mode code).
-
+\item A new general-purpose prover and rewriter
+      (guard-verified, \code{:logic}-mode code).
 \item Legacy prover and rewriter.
-
 \item Axe Tactic Prover.
-
 \item Connection to the STP SMT solver.
-
 \item Many rules useful in Axe proofs.
-
 \item Utilities to unroll specifications through rewriting.
-
 \end{itemize}
 
 \end{frame}
@@ -712,15 +682,12 @@ Augmented Backus-Naur Form (ABNF).
 
 \implibtitle
 
-\bookpath{kestrel/axe/jvm}: Axe toolkit for JVM
-
+\bookpath{kestrel/axe/jvm}:
+Axe toolkit for JVM.
 \begin{itemize}
-
 \item Tools to lift JVM code into logic.
-
 \item Formal Unit Tester tool, for small solver-backed proofs about
 bounded executions of programs.
-
 \end{itemize}
 
 \end{frame}
@@ -731,12 +698,10 @@ bounded executions of programs.
 
 \implibtitle
 
-\bookpath{kestrel/axe/r1cs}: Axe toolkit for R1CS (rank-1 constraint systems)
-
+\bookpath{kestrel/axe/r1cs}:
+Axe toolkit for R1CS (rank-1 constraint systems).
 \begin{itemize}
-
-\item Tools to lift R1CSes into logic and verify them
-
+\item Tools to lift R1CSes into logic and verify them.
 \end{itemize}
 
 \end{frame}
@@ -747,12 +712,10 @@ bounded executions of programs.
 
 \implibtitle
 
-\bookpath{kestrel/axe/x86}: Axe toolkit for x86
-
+\bookpath{kestrel/axe/x86}:
+Axe toolkit for x86.
 \begin{itemize}
-
 \item Tools to lift x86 code into logic.
-
 \end{itemize}
 
 \end{frame}
@@ -763,12 +726,10 @@ bounded executions of programs.
 
 \implibtitle
 
-\bookpath{kestrel/booleans}: Booleans Library
-
+\bookpath{kestrel/booleans}:
+Booleans library.
 \begin{itemize}
-
-\item New rules and defcongs.
-
+\item New rules and \code{defcong}s.
 \end{itemize}
 
 \end{frame}
@@ -779,12 +740,10 @@ bounded executions of programs.
 
 \implibtitle
 
-\bookpath{kestrel/bv}: BV (bit-vector) Library
-
+\bookpath{kestrel/bv}:
+BV (bit-vector) library.
 \begin{itemize}
-
-\item Over 1000 new rules
-
+\item Over 1000 new rules.
 \item New books have been added covering many more BV operations,
 including subtraction, arithmetic negation, multiplicaton, shifts,
 bitwise \code{OR} and \code{AND}, logical negation, signed and
@@ -793,15 +752,10 @@ trimming, sign extension, various single-bit operations,
 bit-vector-valued conditionals, converting between bits and booleans,
 recognizing bits and (signed and unsigned) bytes, repeating a bit, and
 counting the number of 1 bits.
-
 \item Rules to characterize signed addition overflow and underflow.
-
 \item Rules to turn BV ops into more common or more idiomatic operations.
-
 \item A formalization of one's complement numbers and addition.
-
 \item Various syntactic functions over BV-valued terms.
-
 \end{itemize}
 
 \end{frame}
@@ -812,12 +766,11 @@ counting the number of 1 bits.
 
 \implibtitle
 
-\bookpath{kestrel/bv-lists}: BV-Lists Library
+\bookpath{kestrel/bv-lists}:
+BV-Lists library.
 
 \begin{itemize}
-
 \item Many new rules.
-
 \item New books about \code{bv-arrayp}, \code{bv-array-read},
 \code{bv-array-write}, \code{all-all-unsigned-byte-p},
 \code{width-of-widest-int}, \code{bvnot-list}, \code{getbit-list},
@@ -825,9 +778,7 @@ counting the number of 1 bits.
 \code{bv-nth}, \code{map-packbv}, \code{all-signed-byte-p},
 conversions between lists and bv-arrays, \code{packbv-little}, and
 \code{byte-listp}.
-
 \item New utilities that deal with patterns in the elements of BV lists.
-
 \end{itemize}
 
 \end{frame}
@@ -838,17 +789,13 @@ conversions between lists and bv-arrays, \code{packbv-little}, and
 
 \implibtitle
 
-\bookpath{kestrel/ethereum}: Ethereum Library
-
+\bookpath{kestrel/ethereum}: Ethereum Library.
 \begin{itemize}
-
 \item A new sub-library for the Semaphore gadget.  Includes various
 specifications and proofs of Semaphore-related R1CSes, including a
 mixing function from BLAKE2s and 3 variants of the MiMC hash function.
-
 \item Semaphore-specialized Axe tools to lift R1CSes into logic and
 verify them.
-
 \end{itemize}
 
 \end{frame}
@@ -859,18 +806,14 @@ verify them.
 
 \implibtitle
 
-\bookpath{kestrel/file-io-light}: Lightweight File I/O Library
-
+\bookpath{kestrel/file-io-light}:
+Lightweight file I/O library.
 \begin{itemize}
-
-\item Various new lightweight utilities to read and write files (of bytes, characters, and objects).
-
+\item Various new lightweight utilities to read and write files
+      (of bytes, characters, and objects).
 \item New utility to read the bytes of a file into a \code{stobj} array.
-
 \item Reasoning support for various built-in I/O functions
-
 \item Utilities to check whether a file exists or is newer than a given date.
-
 \end{itemize}
 
 \end{frame}
@@ -881,12 +824,10 @@ verify them.
 
 \implibtitle
 
-\bookpath{kestrel/library-wrappers}: Library Wrappers
-
+\bookpath{kestrel/library-wrappers}:
+Library Wrappers.
 \begin{itemize}
-
-\item A new, robust variant of make-flag.
-
+\item A new, robust variant of \code{make-flag}.
 \end{itemize}
 
 \end{frame}
@@ -897,14 +838,19 @@ verify them.
 
 \implibtitle
 
-\bookpath{kestrel/lists-light}: Lightweight Lists Library
-
+\bookpath{kestrel/lists-light}:
+Lightweight lists library.
 \begin{itemize}
-
 \item Many new rules and congruences.
-
-\item New books about the functions \code{subsequencep}, \code{subsequencep-equal}, \code{last-elem}, \code{subrange}, \code{update-subrange}, \code{finalcdr}, \code{all-equal\$}, \code{all-eql\$}, \code{all-same}, \code{all-same-eql}, \code{add-to-end}, \code{first-non-member}, \code{group} and \code{ungroup} (for splitting and flattening), \code{count-occs}, \code{prefixp}, \code{len-at-least}, \code{remove-equal}, \code{remove-duplicates-equal}, \code{find-index}, and \code{remove-nth}.
-
+\item New books about the functions \code{subsequencep},
+      \code{subsequencep-equal}, \code{last-elem}, \code{subrange},
+      \code{update-subrange}, \code{finalcdr}, \code{all-equal\$},
+      \code{all-eql\$}, \code{all-same}, \code{all-same-eql},
+      \code{add-to-end}, \code{first-non-member}, \code{group}
+      and \code{ungroup} (for splitting and flattening),
+      \code{count-occs}, \code{prefixp}, \code{len-at-least},
+      \code{remove-equal}, \code{remove-duplicates-equal}, \code{find-index},
+      and \code{remove-nth}.
 \end{itemize}
 
 \end{frame}
@@ -915,16 +861,12 @@ verify them.
 
 \implibtitle
 
-\bookpath{kestrel/prime-fields}: Prime-Fields Library
-
+\bookpath{kestrel/prime-fields}:
+Prime fields library.
 \begin{itemize}
-
 \item Many new / improved rules.
-
 \item Rules for recogizing R1CS gadgets.
-
 \item \code{bind-free} rules for canceling addends and moving negations.
-
 \end{itemize}
 
 \end{frame}
@@ -1012,16 +954,15 @@ Build system.
 
 \implibtitle
 
-\bookpath{doc}: Documentation
-
+\bookpath{doc}:
+Documentation.
 \begin{itemize}
-
-\item Web-based manual now includes clickable links to GitHub for doc topics from the Community Books.
-
-\item The file \code{[books]/doc/top-slow.lisp} no longer actually builds a manual.  Instead, it serves as a top-level book to detect name conflicts between community books.
-
+\item Web-based manual now includes clickable links to GitHub for doc topics
+      from the Community Books.
+\item The file \code{[books]/doc/top-slow.lisp} no longer actually builds a
+      manual.  Instead, it serves as a top-level book to detect name conflicts
+      between community books.
 \item Manual building is now taken care of by [books]/doc/top.lisp.
-
 \end{itemize}
 
 \end{frame}
@@ -1146,28 +1087,21 @@ Standard library extensions in the Kestrel books.
 
 \implibtitle
 
-\bookpath{kestrel/utilities}: Utilities in the Kestrel books (1).
-
+\bookpath{kestrel/utilities}:
+Utilities in the Kestrel books (1).
 \begin{itemize}
-
 \item Added macro \code{checkpoint-list},
   which provides a programmatic, flexible interface
   to the key checkpoint information.
-
 \item A new ACL2 Lint tool can detect common ACL2 errors.
-
 \item Reasoning about I/O channels has been improved.
-
 \item New utilities support computing a constant using make-event,
-  reading a value from a file into a defconst, and printing constants
+  reading a value from a file into a \code{defconst}, and printing constants
   nicely.
-
-\item A new tool, bind-from-rules can bind free variables in rules by
+\item A new tool, \code{bind-from-rules} can bind free variables in rules by
   searching existing rules.
-
-\item Various improvements have been made to defopeners and
-  defopeners-mut-rec.
-
+\item Various improvements have been made to \code{defopeners} and
+  \code{defopeners-mut-rec}.
 \end{itemize}
 
 \end{frame}
@@ -1178,30 +1112,23 @@ Standard library extensions in the Kestrel books.
 
 \implibtitle
 
-\bookpath{kestrel/utilities}: Utilities in the Kestrel books (2).
-
+\bookpath{kestrel/utilities}:
+Utilities in the Kestrel books (2).
 \begin{itemize}
-
 \item A new data structure, string trees, can efficiently represent a
   sequence of strings (e.g., for writing to a file).
-
 \item A new tool supports polarity-based rewriting, whereby a term can
   be either strengthened or weakened depending on whether it is an
   assumption or a conclusion.
-
 \item New sorting utilities, including \code{split-list-fast},
   \code{merge-sort-generic}, and \code{defmergesort}.
-
-\item New xdoc constructors, e.g., one that creates xdoc paragraphs
+\item New XDOC constructors, e.g., one that creates XDOC paragraphs
   from blocks of text separated by blank lines.
-
-\item A new tool, \code{gen-xdoc-for-file}, to generate xdoc topics
+\item A new tool, \code{gen-xdoc-for-file}, to generate XDOC topics
   for every event in a file by extracting the relevant lines of code
   (the definition and any immediately preceding or following comment
   lines).
-
-\item Helpful wrappers for xdoc archiving utilities.
-
+\item Helpful wrappers for XDOC archiving utilities.
 \end{itemize}
 
 \end{frame}
@@ -1212,21 +1139,18 @@ Standard library extensions in the Kestrel books.
 
 \implibtitle
 
-\bookpath{kestrel/utilities}: Utilities in the Kestrel books (3).
-
+\bookpath{kestrel/utilities}:
+Utilities in the Kestrel books (3).
 \begin{itemize}
-
 \item New utilities about event forms, making fresh names,
   manipulating hints, building simple list structures, dealing with
   quoted entities, building strings, checking whether a symbol has
   properties, dealing with runes, parsing options, processing keyword
   args, and recognizing legal variable names.
-
 \item New utilities about imported symbols, format strings,
   printing, translation, manipulating terms, invariant risk,
   submitting events to ACL2, creating temp dirs, process IDs,
   usernames, calling scripts, macroexpansion and translation, and asserts.
-
 \item New utilities about redundant events, guard-holders, ruler-extenders,
   \code{let}s/\code{lambda}s, fake worlds, clause identifiers,
   \code{progn}, unification, dependencies, ensuring rules are known,
@@ -1234,7 +1158,6 @@ Standard library extensions in the Kestrel books.
   processing \code{declare}s, the ACL2 \code{state}, \code{system-books-dir},
   fixing functions, \code{acl2-count}, \code{make-ord}, \code{coerce},
   \code{map-symbol-name}, tuples, \code{myif}, and \code{mv-nth}.
-
 \end{itemize}
 
 \end{frame}
@@ -1375,9 +1298,10 @@ Standard library.
 
 \implibtitle
 
-\bookpath{centaur/fgl}: FGL symbolic execution engine.
+\bookpath{centaur/fgl}:
+FGL symbolic execution engine.
 \begin{itemize}
-\item Added incremental-minimize/maximize and minimize/maximize-ratio tools
+\item Added incremental-minimize/maximize and minimize/maximize-ratio tools.
 \end{itemize}
 \end{frame}
 
@@ -1387,13 +1311,16 @@ Standard library.
 
 \implibtitle
 
-\bookpath{centaur/sv}: Hardware verification backend.
+\bookpath{centaur/sv}:
+Hardware verification backend.
 \begin{itemize}
 \item New flow for producing a symbolic unrolling (SVTV)
-\item More complete logical story for process from hierarchical design to unrolling
-\item New utilities for proof (de)composition (def-svtv-override-fact)
-\item Improvements to SVTV-CHASE utility
+\item More complete logical story for process
+      from hierarchical design to unrolling.
+\item New utilities for proof (de)composition (\code{def-svtv-override-fact}).
+\item Improvements to \code{SVTV-CHASE} utility.
 \end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1402,11 +1329,14 @@ Standard library.
 
 \implibtitle
 
-\bookpath{centaur/vl}: SystemVerilog frontend.
+\bookpath{centaur/vl}:
+SystemVerilog frontend.
 \begin{itemize}
-\item New support for SystemVerilog calls of static methods of parametrized classes
-\item Improved preprocessor performance when there are lots of defines
+\item New support for SystemVerilog calls of
+      static methods of parametrized classes.
+\item Improved preprocessor performance when there are lots of \code{define}s.
 \end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
