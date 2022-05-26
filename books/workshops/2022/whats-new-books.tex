@@ -1318,8 +1318,12 @@ Register-transfer logic library.
 \bookpath{std}:
 Standard library.
 \begin{itemize}
-\item Added macro \code{add-io-pairs} to speed up execution
-      using verified input/output pairs.
+\item Added macros \code{add-io-pairs} and \code{merge-io-pairs}
+      to speed up execution using verified input/output pairs.
+      The idea is if you have a simple function that is infeasible to
+      execute but feasible to verify on a concrete I/O pair,
+      then that proof can be used to memoize the function to make execution
+      feasible on that input, without changing its definition or any callers.
 \item Moved macro \code{define-sk} from the Kestrel books.
 \item Added several typed alists.
 \end{itemize}
