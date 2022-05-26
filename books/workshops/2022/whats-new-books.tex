@@ -90,11 +90,12 @@
 \subtitle{Since the ACL2-2020 Workshop}
 
 \author{Jagadish Bapanapally\inst{8}\inst{4},
-        Cuong Chau\inst{2}, \\
+        Cuong Chau\inst{2},\\
         Alessandro Coglio\inst{1}\inst{4}\inst{5} (presenter),
         Shilpi Goel\inst{3},\\
         Matt Kaufmann\inst{7},
-        Panagiotis Manolios\inst{6},
+        Panagiotis Manolios\inst{6},\\
+        Eric McCarthy\inst{4},
         J Strother Moore\inst{7},
         David Russinoff\inst{2},
         Eric W. Smith\inst{1}\inst{4}\inst{5}}
@@ -250,6 +251,14 @@ Models, proofs, and tools for C (described in a paper at this workshop).
 
 \item Verified R1CS gadgets.
 
+=======
+\bookpath{kestrel/crypto/mimc}:
+Minimal Multiplicative Complexity (MiMC) hash function.
+\begin{itemize}
+\item Formalization of the MiMC hash function.
+\item Uses a sponge construction.
+\item Used in Ethereum's Semaphore zero-knowledge gadget.
+>>>>>>> refs/remotes/acl2/testing-kestrel
 \end{itemize}
 
 \end{frame}
@@ -302,6 +311,7 @@ Models and tools for JSON.
 \begin{itemize}
 \item Abstract syntax of JSON.
 \item Converter from parser's abstract syntax to this abstract syntax.
+\item Includes b* binder for pattern matching on JSON structures.
 \item Can be extended with semantics and tools.
 \end{itemize}
 
@@ -674,10 +684,27 @@ Automated Program Transformations (APT).
 
 \implibtitle
 
+\bookpath{kestrel/bitcoin}:
+Bitcoin.
+\begin{itemize}
+\item Added formalization of the Bech32 and Bech32m checksummed base32 formats
+      used to encode addresses in Segwit.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{build}:
 Build system.
 \begin{itemize}
 \item Now \code{cert.pl} makes use of useless runes just as \code{make} does.
+\item Now \code{make} of the community books also writes book dependency
+      information in S-expression form.
 \end{itemize}
 
 \end{frame}
