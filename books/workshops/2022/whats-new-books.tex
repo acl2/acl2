@@ -234,22 +234,6 @@ Models, proofs, and tools for C (described in a paper at this workshop).
 
 \newlibtitle
 
-\bookpath{kestrel/crypto/r1cs}: R1CS Library.
-\begin{itemize}
-\item A formal semantics for rank-1 constraint systems (R1CSes). These
-  are often used in zero-knowledge proofs.
-\item Extensive support for reasoning about R1CSes.
-\item Verified R1CS gadgets.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
-
 \bookpath{kestrel/crypto/mimc}:
 Minimal Multiplicative Complexity (MiMC) hash function.
 \begin{itemize}
@@ -273,6 +257,22 @@ Prime Field Constraint Systems (PFCS).
 \item Formal syntax and semantics.
 \item Preliminary reasoning support.
 \item Useful in zero-knowledge cryptographic proofs.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/crypto/r1cs}: R1CS Library.
+\begin{itemize}
+\item A formal semantics for rank-1 constraint systems (R1CSes). These
+  are often used in zero-knowledge proofs.
+\item Extensive support for reasoning about R1CSes.
+\item Verified R1CS gadgets.
 \end{itemize}
 
 \end{frame}
@@ -597,11 +597,114 @@ Ordered bags (obags).
 
 \implibtitle
 
+\bookpath{acl2s}: ACL2s Sedan.
+\begin{itemize}
+\item Added \code{properties} book with \code{definec}-like syntax
+  supporting property-based design, testing and verification.
+\item Various improvements to \code{definec} and \code{defunc}
+  regarding performance, debugging support, extensions.
+\item Updated utilities, such as \code{acl2s::match} macro, for pattern matching.
+\item More polymorphic support, built-in types, alias types, etc.
+  in \code{defdata}.
+\item Improvements for counterexample generations with \code{cgen},
+  including using fixers in ACL2s.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{build}:
+Build system.
+\begin{itemize}
+\item Now \code{cert.pl} makes use of useless runes just as \code{make} does.
+\item Now \code{make} of the community books also writes book dependency
+      information in S-expression form.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{centaur/defrstobj2}:
 Record-like stobjs.
 \begin{itemize}
 \item \code{defrstobj2} can now be used to define stobjs with child
       stobj fields, i.e., fields based on another stobj.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/fgl}:
+FGL symbolic execution engine.
+\begin{itemize}
+\item Added incremental-minimize/maximize and minimize/maximize-ratio tools.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/sv}:
+Hardware verification backend.
+\begin{itemize}
+\item New flow for producing a symbolic unrolling (SVTV).
+\item More complete logical story for process
+      from hierarchical design to unrolling.
+\item New utilities for proof (de)composition (\code{def-svtv-override-fact}).
+\item Improvements to \code{SVTV-CHASE} utility.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/vl}:
+SystemVerilog frontend.
+\begin{itemize}
+\item New support for SystemVerilog calls of
+      static methods of parametrized classes.
+\item Improved preprocessor performance when there are lots of \code{define}s.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{doc}:
+Documentation.
+\begin{itemize}
+\item Web-based manual now includes clickable links to GitHub for doc topics
+      from the Community Books.
+\item The file \code{[books]/doc/top-slow.lisp} no longer actually builds a
+      manual.  Instead, it serves as a top-level book to detect name conflicts
+      between community books.
+\item Manual building is now taken care of by [books]/doc/top.lisp.
 \end{itemize}
 
 \end{frame}
@@ -633,6 +736,31 @@ Lightweight alists library.
 \begin{itemize}
 \item New rules and books, including books on \code{alistp},
   \code{clear-key}, and \code{keep-pairs}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/apt}:
+Automated Program Transformations (APT).
+\begin{itemize}
+\item Added new \code{schemalg} transformation to apply algorithm schemas,
+      currently supporting divide-and-conquer schemas.
+\item Added new \code{solve} transformation to attempt to solve a specification,
+      currently supporting the ACL2 and Axe rewriters as solvers.
+\item Added new \code{expdata} transformation to refine data types
+      where each instance of the old data may be represented byte
+      multiple instances of the new data (i.e\ not isomorphic).
+\item Improved and extended existing
+      \code{isodata}, \code{restrict}, \code{simplify}, and \code{tailrec}
+      transformations.
+\item New \code{deftransformation} tool to generate transformations, handling
+      the boilerplate.
 \end{itemize}
 
 \end{frame}
@@ -726,6 +854,21 @@ Axe toolkit for x86.
 
 \implibtitle
 
+\bookpath{kestrel/bitcoin}:
+Bitcoin library.
+\begin{itemize}
+\item Added formalization of the Bech32 and Bech32m checksummed base32 formats
+      used to encode addresses in Segwit.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/booleans}:
 Booleans library.
 \begin{itemize}
@@ -789,13 +932,50 @@ conversions between lists and bv-arrays, \code{packbv-little}, and
 
 \implibtitle
 
-\bookpath{kestrel/ethereum}: Ethereum Library.
+\bookpath{kestrel/crypto/ecurve}:
+Elliptic curve cryptography.
+\begin{itemize}
+\item Extended and improved formalization of short Weierstrass curves.
+\item Added formalization of twisted Edwards curves.
+\item Added formalization of Montgomery curves.
+\item Added formalization of birational equivalence between
+      Montgomery and twisted Edwards.
+\item Added formalization of Edwards BLS12 curve.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/ethereum}:
+Ethereum library.
 \begin{itemize}
 \item A new sub-library for the Semaphore gadget.  Includes various
 specifications and proofs of Semaphore-related R1CSes, including a
 mixing function from BLAKE2s and 3 variants of the MiMC hash function.
 \item Semaphore-specialized Axe tools to lift R1CSes into logic and
 verify them.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/event-macros}:
+Tools for event macros.
+\begin{itemize}
+\item Added utilities to create events from structured information.
+\item Added utility to set up a more controlled proof environment
+      for generating proofs designed to never fail.
+\item Other improvements.
 \end{itemize}
 
 \end{frame}
@@ -814,6 +994,44 @@ Lightweight file I/O library.
 \item New utility to read the bytes of a file into a \code{stobj} array.
 \item Reasoning support for various built-in I/O functions
 \item Utilities to check whether a file exists or is newer than a given date.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/fty}:
+Fixtype library extensions in the Kestrel books.
+\begin{itemize}
+\item Mutual recursion (i.e.\ \code{deftypes})
+      now supports \code{defset} and \code{defomap}.
+\item Added a macro \code{defsubtype} for subtypes of existing fixtypes.
+\item Added a macro \code{defresult} for result types,
+      i.e.\ unions of good results and error results
+      (similar to Rust's \code{Result} type).
+\item Added several common fixtypes.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/java}:
+Models, proofs, and tools for Java.
+\begin{itemize}
+\item AIJ has been optimized,
+      and extended with more Java implementations of ACL2 built-in functions.
+\item ATJ has been extended and improved
+      (see the paper on ATJ at this Workshop).
+\item Extended the formalization of (some aspects of) the Java language.
 \end{itemize}
 
 \end{frame}
@@ -864,179 +1082,9 @@ Lightweight lists library.
 \bookpath{kestrel/prime-fields}:
 Prime fields library.
 \begin{itemize}
-\item Many new / improved rules.
+\item Many new/improved rules.
 \item Rules for recogizing R1CS gadgets.
 \item \code{bind-free} rules for canceling addends and moving negations.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{acl2s}: ACL2s Sedan.
-\begin{itemize}
-\item Added \code{properties} book with \code{definec}-like syntax
-  supporting property-based design, testing and verification.
-\item Various improvements to \code{definec} and \code{defunc}
-  regarding performance, debugging support, extensions.
-\item Updated utilities, such as \code{acl2s::match} macro, for pattern matching.
-\item More polymorphic support, built-in types, alias types, etc.
-  in \code{defdata}.
-\item Improvements for counterexample generations with \code{cgen},
-  including using fixers in ACL2s.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{kestrel/apt}:
-Automated Program Transformations (APT).
-\begin{itemize}
-\item Added new \code{schemalg} transformation to apply algorithm schemas,
-      currently supporting divide-and-conquer schemas.
-\item Added new \code{solve} transformation to attempt to solve a specification,
-      currently supporting the ACL2 and Axe rewriters as solvers.
-\item Added new \code{expdata} transformation to refine data types
-      where each instance of the old data may be represented byte
-      multiple instances of the new data (i.e\ not isomorphic).
-\item Improved and extended existing
-      \code{isodata}, \code{restrict}, \code{simplify}, and \code{tailrec}
-      transformations.
-\item New \code{deftransformation} tool to generate transformations, handling
-      the boilerplate.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{kestrel/bitcoin}:
-Bitcoin.
-\begin{itemize}
-\item Added formalization of the Bech32 and Bech32m checksummed base32 formats
-      used to encode addresses in Segwit.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{build}:
-Build system.
-\begin{itemize}
-\item Now \code{cert.pl} makes use of useless runes just as \code{make} does.
-\item Now \code{make} of the community books also writes book dependency
-      information in S-expression form.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{doc}:
-Documentation.
-\begin{itemize}
-\item Web-based manual now includes clickable links to GitHub for doc topics
-      from the Community Books.
-\item The file \code{[books]/doc/top-slow.lisp} no longer actually builds a
-      manual.  Instead, it serves as a top-level book to detect name conflicts
-      between community books.
-\item Manual building is now taken care of by [books]/doc/top.lisp.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{kestrel/crypto/ecurve}:
-Elliptic curve cryptography.
-\begin{itemize}
-\item Extended and improved formalization of short Weierstrass curves.
-\item Added formalization of twisted Edwards curves.
-\item Added formalization of Montgomery curves.
-\item Added formalization of birational equivalence between
-      Montgomery and twisted Edwards.
-\item Added formalization of Edwards BLS12 curve.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{kestrel/event-macros}:
-Tools for event macros.
-\begin{itemize}
-\item Added utilities to create events from structured information.
-\item Added utility to set up a more controlled proof environment
-      for generating proofs designed to never fail.
-\item Other improvements.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{kestrel/fty}:
-Fixtype library extensions in the Kestrel books.
-\begin{itemize}
-\item Mutual recursion (i.e.\ \code{deftypes})
-      now supports \code{defset} and \code{defomap}.
-\item Added a macro \code{defsubtype} for subtypes of existing fixtypes.
-\item Added a macro \code{defresult} for result types,
-      i.e.\ unions of good results and error results
-      (similar to Rust's \code{Result} type).
-\item Added several common fixtypes.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{kestrel/java}:
-Models, proofs, and tools for Java.
-\begin{itemize}
-\item AIJ has been optimized,
-      and extended with more Java implementations of ACL2 built-in functions.
-\item ATJ has been extended and improved
-      (see the paper on ATJ at this Workshop).
-\item Extended the formalization of (some aspects of) the Java language.
 \end{itemize}
 
 \end{frame}
@@ -1228,13 +1276,15 @@ Restricted Algorithmic C (RAC).
 
 \implibtitle
 
-\bookpath{rtl}:
-Register-transfer logic library.
+\bookpath{projects/x86isa}:
+X86ISA, the formal model of the x86 Instruction Set Architecture.
 \begin{itemize}
-\item Added a signed version of the radix-4 Booth encoding algorithm.
-\item A new section of \code{books/rtl/rel11/lib/round.lisp} on
-      underflow detection, corresponding to Section 6.7 of ``Formal
-      Verification of Floating-Point Hardware Design'', 2nd edition.
+\item Simplified the treatment of CPUID features.
+\item Added the \code{MOVD} and \code{MOVQ} instruction variants
+      that move data from/to the XMM registers.
+\item Simplified state definition by using
+      \code{centaur/bigmem} and \code{centaur/defrstobj2}. See
+      \code{:doc x86isa-state-history} for details.
 \end{itemize}
 
 \end{frame}
@@ -1245,15 +1295,13 @@ Register-transfer logic library.
 
 \implibtitle
 
-\bookpath{projects/x86isa}:
-X86ISA, the formal model of the x86 Instruction Set Architecture.
+\bookpath{rtl}:
+Register-transfer logic library.
 \begin{itemize}
-\item Simplified the treatment of CPUID features.
-\item Added the \code{MOVD} and \code{MOVQ} instruction variants
-      that move data from/to the XMM registers.
-\item Simplified state definition by using
-      \code{centaur/bigmem} and \code{centaur/defrstobj2}. See
-      \code{:doc x86isa-state-history} for details.
+\item Added a signed version of the radix-4 Booth encoding algorithm.
+\item A new section of \code{books/rtl/rel11/lib/round.lisp} on
+      underflow detection, corresponding to Section 6.7 of ``Formal
+      Verification of Floating-Point Hardware Design'', 2nd edition.
 \end{itemize}
 
 \end{frame}
@@ -1281,7 +1329,8 @@ Standard library.
 
 \implibtitle
 
-\bookpath{tools}: Miscellaneous tools.
+\bookpath{tools}:
+Miscellaneous tools.
 \begin{itemize}
 \item Added macro \code{rewrite\$},
       which provides a programmatic, flexible interface
@@ -1290,53 +1339,6 @@ Standard library.
       which provides a programmatic, flexible interface
       to the ACL2 prover.
 \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{centaur/fgl}:
-FGL symbolic execution engine.
-\begin{itemize}
-\item Added incremental-minimize/maximize and minimize/maximize-ratio tools.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{centaur/sv}:
-Hardware verification backend.
-\begin{itemize}
-\item New flow for producing a symbolic unrolling (SVTV)
-\item More complete logical story for process
-      from hierarchical design to unrolling.
-\item New utilities for proof (de)composition (\code{def-svtv-override-fact}).
-\item Improvements to \code{SVTV-CHASE} utility.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{centaur/vl}:
-SystemVerilog frontend.
-\begin{itemize}
-\item New support for SystemVerilog calls of
-      static methods of parametrized classes.
-\item Improved preprocessor performance when there are lots of \code{define}s.
-\end{itemize}
-
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
