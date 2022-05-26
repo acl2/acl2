@@ -922,6 +922,7 @@
                         (design-const symbolp)
                         labels
                         define-macros
+                        define-mod
                         parents short long)
   :prepwork ((local (in-theory (disable (tau-system) append))))
   :hooks nil
@@ -1006,11 +1007,12 @@ defined with @(see sv::defsvtv).</p>"
        (invar-defaults (defsvtv-default-names invars))
        (cmds `((defconst ,stvconst ',svtv)
 
-               (defconst ,modconst ,design-const)
-
-               (defund ,name-mod ()
-                 (declare (xargs :guard t))
-                 ,modconst)
+               ,@(and define-mod
+                      `((defconst ,modconst ,design-const)
+                        
+                        (defund ,name-mod ()
+                          (declare (xargs :guard t))
+                          ,modconst)))
 
                (define ,name ()
                  :returns (svtv svtv-p)
@@ -1237,6 +1239,7 @@ defined with @(see sv::defsvtv).</p>"
                     keep-final-state
                     keep-all-states
                     define-macros
+                    define-mod
                     parents short long)
   :guard (modalist-addr-p (design->modalist design))
   :irrelevant-formals-ok t
@@ -1248,7 +1251,7 @@ defined with @(see sv::defsvtv).</p>"
                keep-all-states))
        ((unless svtv)
         (raise "failed to generate svtv")))
-    (defsvtv-events svtv design-const labels define-macros parents short long)))
+    (defsvtv-events svtv design-const labels define-macros define-mod parents short long)))
 
 (defmacro defsvtv (name &key design mod
                         labels
@@ -1265,14 +1268,15 @@ defined with @(see sv::defsvtv).</p>"
                         keep-all-states
                         (simplify 't)
                         (pre-simplify 't) ;; should this be t by default?
-                        (define-macros 't))
+                        (define-macros 't)
+                        (define-mod 't))
   (b* (((unless (xor design mod))
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
                    ,(or design mod) ',(or design mod) ,labels ,simplify
                    ,pre-simplify
                    ,state-machine ,initial-state-vars ,keep-final-state ,keep-all-states
-                   ,define-macros ',parents ,short ,long))))
+                   ,define-macros ,define-mod ',parents ,short ,long))))
 
 (defxdoc svtv-stimulus-format
   :parents (defsvtv)

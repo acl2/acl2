@@ -977,7 +977,7 @@
              :in-theory (e/d (svexl-eval-aux
                               svexl-eval-aux-wog) ()))))
 
-  (rp::defthm-lambda
+  (def-rp-rule
       svexl-eval-aux-wog-cons
       (equal (svexl-eval-aux-wog (cons (cons node-id node) rest) env)
              (b* ((node-env (svexl-eval-aux-wog rest env))
