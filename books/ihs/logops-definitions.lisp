@@ -225,7 +225,7 @@
   reason you do want to use them then that is probably basically fine.  Note
   here that you have some choice for your fixing function.  You can fix to 0 as
   you've done in your examples, but you might instead prefer to fix to
-  @'(loghead n x)').  Why?  When you use loghead, it preserves the lower @('N')
+  @('(loghead n x)').  Why?  When you use loghead, it preserves the lower @('N')
   bits, and this may interact much more nicely with rules about true bit-vector
   functions.  This approach is also good for GL, where loghead is supported in
   an especially good way.</p>
