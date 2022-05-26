@@ -1597,7 +1597,7 @@
    @('first-non-member'), @('group')/@('ungroup') (for splitting and
    flattening), @('count-occs'), @('prefixp'), @('len-at-least'),
    @('remove-equal'), @('remove-duplicates-equal'), @('find-index'), and
-   @('remove-nth'). See @('[books]/kestrel/prime-fields/').")
+   @('remove-nth'). See @('[books]/kestrel/lists-light/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1898,7 +1898,7 @@
      for closed lambdas, processing @('defun') and @('defthm') forms, processing
      declares, the ACL2 state, @('system-books-dir'), fixing functions,
      @('acl2-count'), @('make-ord'), @('coerce'), @('map-symbol-name'), tuples,
-     @('myif'), and @'(mv-nth').")
+     @('myif'), and @('mv-nth').")
 
    (xdoc::p "Various improvements have been made to @('defopeners') and
    @('defopeners-mut-rec').")
