@@ -2041,8 +2041,12 @@
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-index-okp
+          (pack afixtype '-array-index-okp))
          (atype-array-write-itype
           (pack afixtype '-array-write- ifixtype))
+         (atype-array-write-alt-def
+          (pack afixtype '-array-write-alt-def))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -2081,7 +2085,23 @@
                    :enable (exec-expr-asg
                             exec-integer
                             ,atype-array-itype-index-okp
-                            ,atype-array-write-itype))))
+                            ,atype-array-write-itype
+                            ,atype-array-write-alt-def)
+                   :prep-lemmas
+                   ((defrule lemma1
+                      (implies (and (,atype-array-index-okp array index)
+                                    (integerp index))
+                               (not (< index 0)))
+                      :enable ,atype-array-index-okp)
+                    (defrule lemma2
+                      (implies (and (,apred array)
+                                    (integerp index)
+                                    (,atype-array-index-okp array index)
+                                    (,epred val))
+                               (not (errorp
+                                     (value-array-write index val array))))
+                      :use (:instance ,atype-array-write-alt-def
+                            (elem val)))))))
       (mv name event)))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
