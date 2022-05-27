@@ -14,7 +14,7 @@
 
 ;; Used only by the x86 lifter.
 
-(include-book "dags")
+(include-book "add-to-dag")
 (include-book "cars-increasing-by-1")
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)

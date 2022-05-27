@@ -13,8 +13,10 @@
 (in-package "ACL2")
 
 ;; Instead of this rewriter, consider using rewriter-basic or another newer
-;; rewriter.  But note that xor simplification is built into this one (and
+;; rewriter.  But note that BVXOR simplification is built into this one (and
 ;; also now rewriter-basic) in a deep way.
+
+;; TODO: Add special handling for BITXOR like this has for BVXOR.
 
 (include-book "rewriter-common")
 (include-book "equality-pairs")
