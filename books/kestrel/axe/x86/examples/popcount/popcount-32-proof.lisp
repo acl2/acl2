@@ -10,6 +10,8 @@
 
 (in-package "X")
 
+; cert_param: (uses-stp)
+
 ;; STATUS: COMPLETE
 
 ;; This book lifts the functionality of popcount_32 into logic using the
