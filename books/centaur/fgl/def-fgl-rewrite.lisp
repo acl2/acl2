@@ -807,23 +807,27 @@ them with their second arguments; otherwise, it just provides a body of @('nil')
 
 (defun def-fgl-program-fn (name args world)
   (declare (xargs :mode :program))
-  (b* (((std::defguts guts) (std::parse-define name args '(:equiv :fgl-hints) world))
+  (b* (((std::defguts guts) (std::parse-define name args '(:equiv :fgl-hints :def-body) world))
        ;; ugh, stores the fully constructed DEFUN in the guts, which we need to modify
        (body (car (last guts.main-def)))
-       (nil-body-p (not (assoc :equiv guts.kwd-alist)))
+       (nil-body-p (and (not (assoc :def-body guts.kwd-alist))
+                        (not (assoc :equiv guts.kwd-alist))))
        (def-body (if nil-body-p
                      nil
-                   (remove-bind-var-calls body)))
+                   (let ((look (assoc :def-body guts.kwd-alist)))
+                     (if look
+                         (cdr look)
+                       (remove-bind-var-calls body)))))
        (new-main-def (append (butlast guts.main-def 1)
                              (list def-body)))
        (new-rest-events (append guts.rest-events
-                                `((disable-definition ,name)
-                                  (disable-execution ,name)
+                                `((disable-definition ,guts.name-fn)
+                                  (disable-execution ,guts.name-fn)
                                   (def-fgl-rewrite ,(intern-in-package-of-symbol
                                                          (concatenate 'string (symbol-name name) "-FGL")
                                                          name)
                                     (,(std::getarg :equiv 'unequiv guts.kwd-alist)
-                                     (,name . ,(std::formallist->names guts.formals))
+                                     (,guts.name-fn . ,(std::formallist->names guts.formals))
                                      ,body)
                                     :hints ,(cdr (assoc :fgl-hints guts.kwd-alist))))))
        (new-kwd-alist (if nil-body-p
