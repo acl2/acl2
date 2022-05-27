@@ -159,10 +159,9 @@
             fix-when-acl2-numberp
             acl2-numberp-of-+
             acl2-numberp-of-fix
-            = ;Sun Dec  5 14:57:44 2010
-            double-rewrite
-            eql ; can arise from CASE
-            )
+            = ; introduces EQUAL
+            eql ; introduces EQUAL ; EQL can arise from CASE
+            double-rewrite)
           (mv-nth-rules)
           (booleanp-rules)))
 
@@ -769,10 +768,12 @@
      bvplus-of-bvuminus-same-2-alt)))
 
 ;todo combine this with core-rules-bv
-;some of these are not bv rules?
+;todo: some of these are not bv rules?
 (defun more-rules-bv-misc ()
   (declare (xargs :guard t))
-  '(bitnot-becomes-bitxor-with-1 ; todo: which way should we go here?
+  '(if-becomes-myif ;can ifs ever arise from simulation?  probably? ; todo: move
+
+    bitnot-becomes-bitxor-with-1 ; todo: which way should we go here?
 
     <-of-bvif-constants-false
     <-of-bvif-constants-true
@@ -868,13 +869,12 @@
     signed-byte-p-of-bvif
 ;    inst-length-of-myif
 ;    index-into-program-of-bvif ;or should we enable index-into-program?
-    lookup-of-bvif
+    lookup-of-bvif ; drop or more?
 
     myif-of-constants-becomes-bvif
 
     ;; myif-when-not-nil ;expensive! replaced 1/12/09
 
-    if-becomes-myif ;can ifs ever arise from simulation?  probably?
     ;;     BVAND-TRIM-CONSTANT-3
     ;;     BVAND-TRIM-CONSTANT-2
 
@@ -1528,7 +1528,7 @@
     bvif-trim-arg2-dag
     ;; bvif-trim-arg1-dag-all ; use instead?
     ;; bvif-trim-arg2-dag-all ; use instead?
-    ))
+    leftrotate32-trim-amt-all))
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
@@ -1631,8 +1631,6 @@
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
 
-            leftrotate32-trim-amt-all ;move to trim rules?
-
             ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
             bvplus-commutative-axe
             bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
@@ -1719,7 +1717,7 @@
           (trim-helper-rules)      ;many dups here with the above...
           (list-to-bv-array-rules) ;move to parents?
           ;;(yet-more-rules-jvm) ;TTODO: Drop this.  It includes JVM rules..  dropping this broke des-encrypt
-          (yet-more-rules-non-jvm)
+          (yet-more-rules-non-jvm) ; not bv rules?
           (array-reduction-rules)
           (more-rules-bv-misc)))
 
@@ -1756,7 +1754,6 @@
 ;;             fix)))
 
 ;;normalize boolif nests that are really ands?
-
 
 ;; TODO: add many more rules to this?
 (defun arithmetic-rules ()
