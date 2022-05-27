@@ -168,7 +168,7 @@ values satisfying \code{array1p}).
 
 \begin{itemize}
 \item Many rules about existing functions.
-\item New operations that make arrays exapandable.
+\item New operations that make arrays expandable.
 \item Tool for defining typed ACL2 arrays.
 \end{itemize}
 
@@ -196,8 +196,8 @@ Preliminary model of the ACL2 programming (not logical) language.
 
 \newlibtitle
 
-\bookpath{kestrel/algeba}:
-A library for abstarct algebra
+\bookpath{kestrel/algebra}:
+A library for abstract algebra.
 \begin{itemize}
 \item Add a formalization of groups.
 \item Prove some simple properties, in a calculational style.
@@ -259,7 +259,9 @@ Models, proofs, and tools for C (described in a paper at this workshop).
 \bookpath{kestrel/clause-processors}:
 Modular collection of clause-processors.
 \begin{itemize}
-\item Collect several clause-processors (subst, flatten literals, simple subsumption), many of which are verified.
+\item Collect several clause-processors
+      (subst, flatten literals, simple subsumption),
+      many of which are verified.
 \end{itemize}
 
 \end{frame}
@@ -276,24 +278,7 @@ Modular collection of clause-processors.
   BLAKE-256 hash functions.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
-
-\bookpath{kestrel/crypto/salsa}:
-Formal spec of the Salsa20 hash function.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/crypto/mimc}:
 Minimal Multiplicative Complexity (MiMC) hash function.
@@ -302,6 +287,11 @@ Minimal Multiplicative Complexity (MiMC) hash function.
 \item Uses a sponge construction.
 \item Used in Ethereum's Semaphore zero-knowledge gadget.
 \end{itemize}
+
+\separation
+
+\bookpath{kestrel/crypto/salsa}:
+Formal spec of the Salsa20 hash function.
 
 \end{frame}
 
@@ -320,13 +310,7 @@ Prime Field Constraint Systems (PFCS).
 \item Useful in zero-knowledge cryptographic proofs.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/crypto/r1cs}: R1CS Library.
 \begin{itemize}
@@ -348,7 +332,7 @@ Prime Field Constraint Systems (PFCS).
 Simple evaluators for verifying clause-processors and metafunctions.
 \begin{itemize}
 \item Several evaluations for common sets of functions.
-\item New defevaluator+ tool (better defaults, extra/better theorems,
+\item New \code{defevaluator+} tool (better defaults, extra/better theorems,
       support for lifting results to richer evaluators).
 \end{itemize}
 
@@ -388,13 +372,7 @@ Models and tools for JSON.
 \item Includes b* binder for pattern matching on JSON structures.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/json-parser}:
 A JSON parser implemented in ACL2.
@@ -502,15 +480,14 @@ the main smart contract language for Ethereum.
 \newlibtitle
 
 \bookpath{kestrel/strings-light}:
-A lightweight library about strings
+A lightweight library about strings.
 \begin{itemize}
 \item Changing case.
 \item Splitting strings and character lists.
 \item Checking suffixes.
 \item Books about reverse and length.
-\item Parsing chars as digits (lightweight)
+\item Parsing chars as digits (lightweight).
 \end{itemize}
-
 
 \end{frame}
 
@@ -561,7 +538,7 @@ A lightweight library of operations on terms.
 A lightweight library dealing with lists of objects of particular
 types (rather than lists in general).
 \begin{itemize}
-\item lists of integers, lists of symbols, lists of pseudo-terms, etc.
+\item Lists of integers, lists of symbols, lists of pseudo-terms, etc.
 \end{itemize}
 
 \end{frame}
@@ -816,7 +793,7 @@ Documentation.
 \item The file \code{[books]/doc/top-slow.lisp} is now \code{[books]/top.lisp}
       and no longer builds a manual.  Instead, it detects name conflicts between
       community books.
-\item Manual building is now taken care of by [books]/doc/top.lisp.
+\item Manual building is now taken care of by \code{[books]/doc/top.lisp}.
 \end{itemize}
 
 \end{frame}
@@ -860,7 +837,7 @@ Lightweight alists library.
 \implibtitle
 
 \bookpath{kestrel/apt}:
-Automated Program Transformations (APT).
+Automated Program Transformations (APT) (1).
 \begin{itemize}
 \item Added new \code{schemalg} transformation to apply algorithm schemas,
       currently supporting divide-and-conquer schemas.
@@ -869,15 +846,31 @@ Automated Program Transformations (APT).
 \item Added new \code{expdata} transformation to refine data types
       where each instance of the old data may be represented byte
       multiple instances of the new data (i.e\ not isomorphic).
-\item Added new \code{drop-irrelevant-params} and \code{rename-params} transformations.
-\item Added new \code{wrap-output} transformation to change a function's return type.
+\item Added new \code{drop-irrelevant-params} and \code{rename-params}
+      transformations.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/apt}:
+Automated Program Transformations (APT) (2).
+\begin{itemize}
+\item Added new \code{wrap-output} transformation
+      to change a function's return type.
 \item Added new \code{finite-difference} transformation for incrementalization.
 \item Added new \code{copy-function} example transformation.
 \item Improved and extended existing
       \code{isodata}, \code{restrict}, \code{simplify}, and \code{tailrec}
       transformations.
-\item New tools, \code{deftransformation} and \code{def-equality-transformation}, to generate transformations, handling
-      the boilerplate.
+\item New tools,
+      \code{deftransformation} and \code{def-equality-transformation},
+      to generate transformations, handling the boilerplate.
 \end{itemize}
 
 \end{frame}
@@ -937,13 +930,7 @@ Axe toolkit for JVM.
 bounded executions of programs.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\separation
 
 \bookpath{kestrel/axe/r1cs}:
 Axe toolkit for R1CS (rank-1 constraint systems).
@@ -951,13 +938,7 @@ Axe toolkit for R1CS (rank-1 constraint systems).
 \item Tools to lift R1CSes into logic and verify them.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\separation
 
 \bookpath{kestrel/axe/x86}:
 Axe toolkit for x86.
@@ -1147,7 +1128,7 @@ Fixtype library extensions in the Kestrel books.
 \implibtitle
 
 \bookpath{kestrel/helpers}:
-Proof helpers
+Proof helpers.
 \begin{itemize}
 \item Draft tool for auto-generating return type theorems.
 \item Rudimentary tools to discover simple proofs.
@@ -1366,7 +1347,7 @@ Utilities in the Kestrel books (4).
   \code{defstobj} that disables functions and proves many rules
   (scalar and array fields only).
 \item New utility \code{with-local-stobjs} (extends \code{with-local-stobj}
-  to support multiple stobjs)
+  to support multiple stobjs).
 \item Draft of a tool to specialize theorems.
 \item New \code{defcalculation} tool for proofs that chain equalities.
 \item New books about \code{assoc-keyword}, theory-invariants,
