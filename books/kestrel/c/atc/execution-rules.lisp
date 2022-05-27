@@ -2074,7 +2074,6 @@
                  (not (value-pointer-nullp ptr))
                  (equal array
                         (read-object (value-pointer->designator ptr) compst1))
-                 (value-case array :array)
                  (equal (value-pointer->reftype ptr)
                         (value-array->elemtype array))
                  (,apred array)
