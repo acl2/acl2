@@ -13,7 +13,7 @@
 ;; TODO: Add support for hash table fields!
 ;; TODO: Add support for stobj table fields!
 ;; TODO: Consider not disabling recognizers for non-array fields
-;; TODO: Restrcict the theories used in the hints
+;; TODO: Restrict the theories used in the hints
 
 (include-book "split-keyword-args")
 (include-book "pack") ; todo: reduce or drop?
@@ -111,7 +111,7 @@
                                                      ,this-updater-fn
                                                      nth-update-nth
                                                      (:e nfix)))))
-                      
+
                       (defthm ,(pack$ length-fn '-of- this-updater-fn)
                         (equal (,length-fn (,this-updater-fn v ,stobj-name))
                                (,length-fn ,stobj-name))
