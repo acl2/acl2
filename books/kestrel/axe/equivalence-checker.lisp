@@ -79,14 +79,44 @@
 ;;                     LIST::FIX-OF-NTHCDR))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
 (local (in-theory (disable acl2-count)))
+;move
+(defthm <-of-acl2-count-of-g-aux-and-acl2-count
+  (implies (and (not (ifrp rec))
+                (set::in key (key-set rec))
+                ;key
+                )
+           (< (acl2-count (g-aux key rec))
+              (acl2-count rec)))
+  :hints (("Goal" :in-theory (enable g-aux key-set))))
+
+;move
+(defthm <-of-acl2-count-of-g-and-acl2-count
+  (implies (and (set::in key (rkeys rec))
+                key)
+           (< (acl2-count (g key rec)) (acl2-count rec)))
+  :hints (("Goal" :expand (set::in key '(nil))
+           :in-theory (enable g acl2->rcd g-aux rkeys))))
+
+    ;move
+(defthm <-of-acl2-count-of-g-and-acl2-count-linear
+  (implies (and (set::in key (rkeys rec))
+                key)
+           (< (acl2-count (g key rec)) (acl2-count rec)))
+  :rule-classes :linear
+  :hints (("Goal" :expand (set::in key '(nil))
+           :in-theory (enable g acl2->rcd g-aux rkeys))))
+
+
 
 ;; (in-theory (disable LIST::MEMBER-EQ-IS-MEMBERP-PROPOSITIONALLY
 ;;                     LIST::MEMBER-IS-MEMBERP-PROPOSITIONALLY
@@ -491,6 +521,8 @@
 ;could do better?
 (mutual-recursion
  (defun call-appears-at-top-level (expr name)
+   (declare (xargs :guard (and (pseudo-termp expr)
+                               (symbolp name))))
    (if (atom expr)
        nil
      (let* ((fn (ffn-symb expr)))
@@ -505,10 +537,12 @@
                  (or (call-appears-at-top-level (third fn) name)
                      ;;(call-appears-at-top-level-lst (fargs expr) name) ;what if we bind the call to a var and then return it
                      )
-               ;if there is a recursive call in expr, it is inside another function call:
+               ;;if there is a recursive call in expr, it is inside another function call:
                nil)))))))
 
  (defun call-appears-at-top-level-lst (exprs name)
+   (declare (xargs :guard (and (pseudo-term-listp exprs)
+                               (symbolp name))))
    (if (endp exprs)
        nil
      (or (call-appears-at-top-level (car exprs) name)
@@ -517,19 +551,19 @@
 ;not quite right (assumes there is only 1 call)
 ;what does this enforce about the if-nest?
 (defun tail-recursivep (name state)
-  (declare (xargs :stobjs (state)
-                  :verify-guards nil))
+  (declare (xargs :guard (symbolp name)
+                  :stobjs state))
   (let* ((props (getprops name 'current-acl2-world (w state)))
          (body (lookup-eq 'unnormalized-body props)))
-    (if (not body)
+    (if (or (not body)
+            (not (pseudo-termp body)) ;not possible
+            )
         nil ;(hard-error 'tail-recursivep "No body for ~x0." (acons #\0 name nil))
     (call-appears-at-top-level body name))))
 
 ;ffixme what about packing functions?  we may not want to generate lemmas about them..
 (defun is-a-rec-fn-to-handle (fn state)
-  (declare (xargs :stobjs state
-;                  :guard (symbolp fn)
-                  ))
+  (declare (xargs :stobjs state))
   (and (symbolp fn) ;excludes lambdas (fixme but lambdas should not appear in dags, so drop this?)
        (not (member-eq fn *built-in-fns*))
        (recursive-functionp fn state)))
@@ -544,9 +578,13 @@
 ;find rec-fn nodes at or below index
 ;now only returns nodes that are tagged
 (defun filter-rec-fn-nodes2 (index dag-array-name dag-array tag-array-name tag-array state)
-  (declare (xargs :measure (nfix (+ 1 index))
-                  :stobjs state
-                  :verify-guards nil))
+  (declare (xargs :guard (and (array1p dag-array-name dag-array)
+                              (array1p tag-array-name tag-array)
+                              (integerp index)
+                              (< index (alen1 dag-array-name dag-array))
+                              (< index (alen1 tag-array-name tag-array)))
+                  :measure (nfix (+ 1 index))
+                  :stobjs state))
   (if (not (natp index))
       nil
     (let ((tag (aref1 tag-array-name tag-array index)))
@@ -557,21 +595,21 @@
               (cons index (filter-rec-fn-nodes2 (+ -1 index) dag-array-name dag-array tag-array-name tag-array state))
             (filter-rec-fn-nodes2 (+ -1 index) dag-array-name dag-array tag-array-name tag-array state)))))))
 
-(mutual-recursion
- (defun contains-a-lambda (term)
-   (if (atom term)
-       nil
-     (let ((fn (ffn-symb term)))
-       (if (eq fn 'quote)
-           nil
-         (if (consp fn)
-             t ;it's a lambda
-           (contains-a-lambda-list (fargs term)))))))
- (defun contains-a-lambda-list (terms)
-   (if (endp terms)
-       nil
-     (or (contains-a-lambda (car terms))
-         (contains-a-lambda-list (cdr terms))))))
+;; (mutual-recursion
+;;  (defun contains-a-lambda (term)
+;;    (if (atom term)
+;;        nil
+;;      (let ((fn (ffn-symb term)))
+;;        (if (eq fn 'quote)
+;;            nil
+;;          (if (consp fn)
+;;              t ;it's a lambda
+;;            (contains-a-lambda-list (fargs term)))))))
+;;  (defun contains-a-lambda-list (terms)
+;;    (if (endp terms)
+;;        nil
+;;      (or (contains-a-lambda (car terms))
+;;          (contains-a-lambda-list (cdr terms))))))
 
 ;; ;requires fn to be a symbol and so doesn't support lambdas
 ;; (mutual-recursion
@@ -596,8 +634,10 @@
 ;requires fn to be a symbol (not a lambda)
 ;does handle lambdas in expr
 
-
 (defun lambda-surrounded-fn-call-with-no-other-calls-of-fnp (fn term)
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (equal fn 'quote))
+                              (pseudo-termp term))))
   (or (and (call-of fn term)
            (not (some-expr-calls-fn fn (fargs term)))
            ;;(exprs-with-no-call fn (fargs term))
@@ -610,36 +650,45 @@
            )))
 
 ;handles lambdas in certain places
-(mutual-recursion
- (defun base-cases-in-ite (term fn)
-   (if (not (call-of 'if term))
-       (if (not (expr-calls-fn fn term))
-           (list term) ;it's a base case
-         (if (lambda-surrounded-fn-call-with-no-other-calls-of-fnp fn term) ;overkill to check this?
-             nil ;;recursive call
-           (hard-error 'base-cases-in-ite "Expected an ITE or a base-case or a recursive call but got ~x0."
-                       (acons #\0 term nil))))
-     ;;it's an ITE:
-     (let* ( ;(test (first (fargs term)))
-            (then-part (second (fargs term)))
-            (else-part (third (fargs term))))
-       ;;does not process the exit-test
-       (append (base-cases-in-ite then-part fn)
-               (base-cases-in-ite else-part fn))))))
+(defun base-cases-in-ite (term fn)
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (equal fn 'quote))
+                              (pseudo-termp term))))
+  (if (not (call-of 'if term))
+      (if (not (expr-calls-fn fn term))
+          (list term) ;it's a base case
+        (if (lambda-surrounded-fn-call-with-no-other-calls-of-fnp fn term) ;overkill to check this?
+            nil ;;recursive call
+          (hard-error 'base-cases-in-ite "Expected an ITE or a base-case or a recursive call but got ~x0."
+                      (acons #\0 term nil))))
+    ;;it's an ITE:
+    (let* ( ;(test (first (fargs term)))
+           (then-part (second (fargs term)))
+           (else-part (third (fargs term))))
+      ;;does not process the exit-test
+      (append (base-cases-in-ite then-part fn)
+              (base-cases-in-ite else-part fn)))))
 
 ;the items can appear in any order, but there can't be duplicates
 (defun cons-nest-of-unique-itemsp (nest items)
+  (declare (xargs :guard (and (pseudo-termp nest)
+                              (pseudo-term-listp items))))
   (or (equal *nil* nest)
       (and (call-of 'cons nest)
            (member-equal (first (fargs nest)) items)
            (cons-nest-of-unique-itemsp (second (fargs nest)) (remove-equal (first (fargs nest)) items)))))
 
 (defun trivial-base-case-termp (term formals)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp formals))))
   (if (consp term)
       (cons-nest-of-unique-itemsp term formals)
     (member-eq term formals)))
 
 (defun ite-nest-with-base-cases-and-lambda-wrapped-rec-callp (fn term)
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (equal fn 'quote))
+                              (pseudo-termp term))))
   (if (not (expr-calls-fn fn term))
       ;; it's a base case:
       t
@@ -660,8 +709,11 @@
 ;this routine is now a bit more flexible about lambdas
 ;is the result guaranteed to be a nice tail rec fn?
 (defun need-to-peel-off-base-casep (fn state)
-  (declare (xargs :stobjs (state)
-                  :verify-guards nil))
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (eq 'quote fn)))
+                  :stobjs state
+                  :verify-guards nil ; todo, need properties of BASE-CASES-IN-ITE
+                  ))
   (let* ((formals (fn-formals fn (w state)))
          (body (fn-body fn t (w state))))
     (and (ite-nest-with-base-cases-and-lambda-wrapped-rec-callp fn body) ;allows lambdas in certain places (must not intervene in the ITE nest) ffixme relax this restriction?!
@@ -832,12 +884,12 @@
   (get-function-args-allows-lambdas-aux 0 arity fn term))
 
 (defun getprops-non-nil (fn state)
-  (declare (xargs :stobjs (state)
-                  :verify-guards nil))
+  (declare (xargs :guard (symbolp fn)
+                  :stobjs state))
   (let ((result (getprops fn 'current-acl2-world (w state))))
     (if result
         result
-      (hard-error 'getprops-non-nil "couldn't get props for ~x0." (acons #\0 fn nil)))))
+      (er hard? 'getprops-non-nil "couldn't get props for ~x0." fn))))
 
 ;recognizes tail recursive functions of the form:
 ;; (defun <fn> (param0 param1 ...) (if <exit-test-expr> <base-case-expr> (<fn> <update-expr0> <update-expr1> ...)))
@@ -851,7 +903,8 @@
 ;fixme note that the update-expr-list may contain the same call of the update function in each update-expr (for example, call is-a-nice-tail-function on process-blocks for md5)
 ;--consider trying to recover that sharing?!
 (defun is-a-nice-tail-function (fn state)
-  (declare (xargs :stobjs (state) :verify-guards nil))
+  (declare (xargs :stobjs (state)
+                  :verify-guards nil))
   (let* ((props (getprops-non-nil fn state))
          (body (lookup-eq 'unnormalized-body props)))
     (if (not body) ;if it's a primitive function...
@@ -1031,16 +1084,51 @@
               (aref1 test-case-array-name test-case-array arg))
             (get-vals-of-args (rest args) test-case-array-name test-case-array)))))
 
+(defun num-true-nodes (n array-name array)
+  (declare (xargs :measure (nfix (+ 1 n))))
+  (if (not (natp n))
+      0
+      (if (aref1 array-name array n)
+          (+ 1
+             (num-true-nodes (+ -1 n) array-name array))
+          (num-true-nodes (+ -1 n) array-name array))))
+
+;; (defthm num-true-nodes-of-aset1
+;;   (implies (and (array1p array-name array)
+;;                 (natp n)
+;;                 (< n (alen1 array-name array))
+;;                 (natp index)
+;;                 (<= index n)
+;;                 val)
+;;            (equal (num-true-nodes n array-name (aset1 array-name array index val))
+;;                   (if (aref1 array-name array index)
+;;                       (num-true-nodes n array-name array)
+;;                     (+ 1 (num-true-nodes n array-name array)))))
+;;   :hints (("Goal" :expand ((num-true-nodes 0 array-name (aset1 array-name array 0 val))))))
+
 ;returns (mv test-case-array done-nodes-array), where TEST-CASE-ARRAY will have values for each node that is relevant (supports the nodes in the initial work-list) on this test case (note that because of ifs, the set of relevant nodes can differ between test cases).  nodes that have had their values set in TEST-CASE-ARRAY will be associated with t in DONE-NODES-ARRAY
 ;ffixme could speed this up using stobj arrays?
 ;fixme if there are no ifs in the dag, it would probably be faster to just evaluate every node in order?
 ;ffffixme add short-circuit evaluation for booland and boolor?
 (skip-proofs
- (defun evaluate-test-case-aux (nodenum-worklist dag-array-name dag-array
-                                                 var-value-alist ;the test case (gives values for variables)
-                                                 test-case-array done-nodes-array
-                                                 interpreted-function-alist test-case-array-name)
-   (declare (xargs :verify-guards nil))
+ (defun evaluate-test-case-aux (nodenum-worklist
+                                dag-array-name dag-array
+                                var-value-alist ;the test case (gives values for variables)
+                                test-case-array done-nodes-array
+                                interpreted-function-alist test-case-array-name)
+   (declare (xargs ;; :measure (make-ord 1 (+ 1 (- (nfix (alen1 'done-nodes-array done-nodes-array))
+                   ;;                              (num-true-nodes (+ -1 (alen1 'done-nodes-array done-nodes-array))
+                   ;;                                              'done-nodes-array done-nodes-array)))
+             ;;                    (len nodenum-worklist))
+             :guard (and (nat-listp nodenum-worklist)
+                         (array1p dag-array-name dag-array)
+                         (symbol-alistp var-value-alist)
+                         (array1p test-case-array-name test-case-array)
+                         (array1p 'done-nodes-array done-nodes-array)
+                         (all-< nodenum-worklist (alen1 'done-nodes-array done-nodes-array))
+                         (all-< nodenum-worklist (alen1 dag-array-name dag-array))
+                         (interpreted-function-alistp interpreted-function-alist))
+             :verify-guards nil))
    (if (endp nodenum-worklist)
        (mv test-case-array done-nodes-array)
      (let ((nodenum (first nodenum-worklist)))
@@ -1052,7 +1140,7 @@
            (if (variablep expr)
                (b* ((entry (assoc-eq expr var-value-alist))
                     (- (if (not entry)
-                           (cw "WARNING: No entry for ~x0 in alist.~%" expr)  ;previously this was an error
+                           (cw "WARNING: No entry for ~x0 in alist.~%" expr) ;previously this was an error
                          nil))
                     (value (cdr entry)))
                  (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
@@ -1118,10 +1206,10 @@
                                                                    (aref1 test-case-array-name test-case-array relevant-branch)))
                                           (value (if (eq fn 'bvif)
                                                      (bvchop (let ((size (first args)))
-                                                                (if (quotep-arg size)
-                                                                    (unquote size)
-                                                                  (aref1 test-case-array-name test-case-array size)))
-                                                              relevant-branch-value)
+                                                               (if (quotep-arg size)
+                                                                   (unquote size)
+                                                                 (aref1 test-case-array-name test-case-array size)))
+                                                             relevant-branch-value)
                                                    (if (eq fn 'boolif)
                                                        (bool-fix relevant-branch-value)
                                                      relevant-branch-value))))
@@ -1133,27 +1221,29 @@
                                                              interpreted-function-alist test-case-array-name))))))))
                      ;;regular function call:
                      (mv-let (nodenum-worklist worklist-extendedp)
-                             (add-args-not-done args done-nodes-array nodenum-worklist nil)
-                             (if worklist-extendedp
-                                 ;;will reanalyze this node once the args are done:
-                                 (evaluate-test-case-aux nodenum-worklist ;has been extended
-                                                         dag-array-name dag-array var-value-alist test-case-array
-                                                         done-nodes-array interpreted-function-alist test-case-array-name)
-                               ;;the args are done, so call the function:
-                               (let* ((arg-values (get-vals-of-args args test-case-array-name test-case-array))
-                                      (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0)))
-                                 (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                                         (aset1 ;-safe
-                                                          test-case-array-name test-case-array nodenum value)
-                                                         (aset1 ;-safe
-                                                          'done-nodes-array done-nodes-array nodenum t)
-                                                         interpreted-function-alist
-                                                         test-case-array-name)))))))))))))))
+                       (add-args-not-done args done-nodes-array nodenum-worklist nil)
+                       (if worklist-extendedp
+                           ;;will reanalyze this node once the args are done:
+                           (evaluate-test-case-aux nodenum-worklist ;has been extended
+                                                   dag-array-name dag-array var-value-alist test-case-array
+                                                   done-nodes-array interpreted-function-alist test-case-array-name)
+                         ;;the args are done, so call the function:
+                         (let* ((arg-values (get-vals-of-args args test-case-array-name test-case-array))
+                                (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0)))
+                           (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
+                                                   (aset1 ;-safe
+                                                    test-case-array-name test-case-array nodenum value)
+                                                   (aset1 ;-safe
+                                                    'done-nodes-array done-nodes-array nodenum t)
+                                                   interpreted-function-alist
+                                                   test-case-array-name)))))))))))))))
 
-(skip-proofs (verify-guards evaluate-test-case-aux))
+(skip-proofs
+ (verify-guards evaluate-test-case-aux :otf-flg t)
+ )
 
 ;returns test-case-array, which has the name test-case-array-name
-;ffixe use a separate array?
+;ffixme use a separate array?
 (defun tag-not-done-nodes-as-unused (current-nodenum done-nodes-array test-case-array test-case-array-name)
   (declare (xargs :measure (nfix (+ 1 current-nodenum))))
   (if (not (natp current-nodenum))
@@ -1169,7 +1259,7 @@
 
 ;returns TEST-CASE-ARRAY, which has the name TEST-CASE-ARRAY-NAME and which has values for each node that supports any node in NODES-TO-EVAL for this test case (different test cases may evaluate the ifs differently)
 ; TEST-CASE-ARRAY will associate irrelevant nodes with the value :unused - FFIXME what if a node actually evaluates to :unused?  could return done-nodes-array (but if we are keeping several done-node-arrays we might want to give them different names paralleling the test case array names)
-;fixme count and print the number of nodes that are not :unused
+;; todo: count and print the number of nodes that are not :unused
 (defun evaluate-test-case (nodes-to-eval
                            max-nodenum ;why pass this in?
                            dag-array-name dag-array var-value-alist interpreted-function-alist
@@ -1182,12 +1272,15 @@
                                   ;;would it be faster to reuse this array and just clear it out here?
                                   (make-empty-array 'done-nodes-array (+ 1 max-nodenum))
                                   interpreted-function-alist test-case-array-name)
-;can we avoid this step? just return the done-nodes-array?
+          ;;can we avoid this step? just return the done-nodes-array?
           (tag-not-done-nodes-as-unused max-nodenum done-nodes-array test-case-array test-case-array-name)))
 
 (skip-proofs (verify-guards evaluate-test-case))
 
-(local (in-theory (disable divisibility-in-terms-of-floor))) ;bozo
+(defthm integerp-of-mv-nth-0-of-genrandom
+  (implies (integerp max) ; gen?
+           (integerp (mv-nth 0 (genrandom max rand))))
+  :hints (("Goal" :in-theory (enable genrandom))))
 
 ;;returns an integer in the range [low, high)
 ;fffixme doesn't work if the range is too big?
@@ -1200,14 +1293,13 @@
           (mv (+ low value) rand)))
 
 ;returns (val rand)
-;since genrandom doesn't work for a BV of more than one 31 bits, we have to generate it in chunks
-(defun gen-random-bv (size rand)
+;since genrandom doesn't work for a BV of more than 31 bits, we have to generate it in chunks
+(defund gen-random-bv (size rand)
   (declare (xargs :stobjs (rand)
                   :measure (nfix size)
                   :guard (and (posp size))
                   :guard-hints (("Goal" :in-theory (enable genrandom)))
                   :verify-guards nil ;done below
-
                   ))
   (if (or (not (natp size))
           (< size 32))
@@ -1220,15 +1312,11 @@
         (mv (bvcat 31 first-chunk (- size 31) rest-chunk)
             rand)))))
 
-(defthm integerp-of-mv-nth-0-of-genrandom
-  (implies (integerp max)
-           (integerp (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
-
-;; i think mv-nth is preferable to val??
 (defthm integerp-of-mv-nth-0-of-gen-random-bv
   (integerp (mv-nth 0 (gen-random-bv size rand)))
-  :hints (("Goal" :in-theory (enable genrandom)))) ;why doesn't integerp-of-mv-nth-0-of-genrandom suffice here?
+  :hints (("Goal" :in-theory (enable gen-random-bv
+                                     genrandom ;todo
+                                     ))))
 
 (verify-guards gen-random-bv)
 
@@ -1237,10 +1325,14 @@
 ;should we allow tuples?
 (mutual-recursion
  (defun gen-random-value (type rand var-value-alist)
-   (declare (xargs :stobjs (rand)
+   (declare (xargs :guard (and (axe-typep type)
+                               (symbol-alistp var-value-alist))
+                   :stobjs (rand)
                    :measure (make-ord 1 (+ 1 (acl2-count type)) 0)
-                   :hints (("Goal" :in-theory (enable LIST-TYPE-ELEMENT-TYPE LIST-TYPE-LEN-TYPE BV-TYPEP list-typep)))
-                   :verify-guards nil))
+                   :verify-guards nil ; todo
+                   :hints (("Goal" :expand (axe-typep type)
+                            :in-theory (enable list-type-element-type list-type-len-type bv-typep list-typep
+                                                      axe-typep)))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (unquote type) rand))
          ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?)
@@ -1299,9 +1391,11 @@
 
  ;;returns (mv values rand)
  (defun gen-random-values (n type rand var-value-alist)
-   (declare (xargs :stobjs (rand)
-                   :measure (make-ord 1 (+ 1 (acl2-count type)) (+ 1 (nfix n)))
-                   :verify-guards nil))
+   (declare (xargs :guard (and (natp n)
+                               (axe-typep type)
+                               (symbol-alistp var-value-alist))
+                   :stobjs (rand)
+                   :measure (make-ord 1 (+ 1 (acl2-count type)) (+ 1 (nfix n)))))
    (if (zp n)
        (mv nil rand)
      (mv-let (value rand)
@@ -1522,18 +1616,19 @@
 
 (skip-proofs (verify-guards get-traces-for-two-nodes))
 
-(skip-proofs
- (defun flatten-trace (trace)
-   (declare (xargs :measure (acl2-count trace)))
-   (if (endp trace)
-       nil
-     (let* ((args (g :args trace))
-            (result (g :result trace))
-            (sub-traces (g :sub-traces trace)))
-       (if (<= (len sub-traces) 1) ;covers the base case of nil too
-           (cons (s :args args (s :return-value result nil))
-                 (flatten-trace (first sub-traces)))
-         (hard-error 'flatten-trace "We don't support traces where the function doesn't make exactly 1 recursive call" nil))))))
+(defun flatten-trace (trace)
+  (declare (xargs :measure (acl2-count trace)
+                  :hints (("Goal" :in-theory (enable acl2-count)
+                           :cases ((g :sub-traces trace))))))
+  (if (endp trace)
+      nil
+    (let* ((args (g :args trace))
+           (result (g :result trace))
+           (sub-traces (g :sub-traces trace)))
+      (if (<= (len sub-traces) 1) ;covers the base case of nil too
+          (cons (s :args args (s :return-value result nil))
+                (flatten-trace (first sub-traces)))
+        (hard-error 'flatten-trace "We don't support traces where the function doesn't make exactly 1 recursive call" nil)))))
 
 (defun flatten-traces (traces)
   (if (endp traces)
@@ -1622,13 +1717,13 @@
 
 
 
-(defun bvplus-list-list (n x y)
-  (if (endp x)
-      nil
-    (cons (bvplus-list n (car x) (car y))
-          (bvplus-list-list n (cdr x) (cdr y)))))
+;; (defun bvplus-list-list (n x y)
+;;   (if (endp x)
+;;       nil
+;;     (cons (bvplus-list n (car x) (car y))
+;;           (bvplus-list-list n (cdr x) (cdr y)))))
 
-(skip-proofs (verify-guards bvplus-list-list))
+;; (skip-proofs (verify-guards bvplus-list-list))
 
 (defun nth-list-aux (n items acc)
   (declare (type (integer 0 *) n)
@@ -5954,24 +6049,24 @@
 ;;                 (mv t (car terms) alist)
 ;;               (unify-any-term (cdr terms) pattern)))))
 
-;;return (mv lhs rhs) where one if x and the other is y
-;fixme does this do the right thing with old vars?
-(defun orient-equality (formals x y)
-  (let* ((vars-in-x (get-vars-from-term x))
-         (vars-in-y (get-vars-from-term x))
-         (formals-in-x (intersection-eq formals vars-in-x))
-         (formals-in-y (intersection-eq formals vars-in-y))
-         (x-smallerp (if formals-in-x
-                         (if formals-in-y
-                             t ;arbitrary
-                           nil)
-                       (if formals-in-y
-                           t
-                         t ; arbitrary
-                         )))
-         (lhs (if x-smallerp x y))
-         (rhs (if x-smallerp y x)))
-    (mv lhs rhs)))
+;; ;;return (mv lhs rhs) where one if x and the other is y
+;; ;fixme does this do the right thing with old vars?
+;; (defun orient-equality (formals x y)
+;;   (let* ((vars-in-x (get-vars-from-term x))
+;;          (vars-in-y (get-vars-from-term x))
+;;          (formals-in-x (intersection-eq formals vars-in-x))
+;;          (formals-in-y (intersection-eq formals vars-in-y))
+;;          (x-smallerp (if formals-in-x
+;;                          (if formals-in-y
+;;                              t ;arbitrary
+;;                            nil)
+;;                        (if formals-in-y
+;;                            t
+;;                          t ; arbitrary
+;;                          )))
+;;          (lhs (if x-smallerp x y))
+;;          (rhs (if x-smallerp y x)))
+;;     (mv lhs rhs)))
 
 
 
@@ -7766,22 +7861,22 @@
         (prog2$ (cw "dropping ~x0: (vars: ~x1, formals1: ~x2, formals2: ~x3)~%" item vars var-set1 var-set2)
                 (drop-items-that-dont-have-vars-from-both-sets (cdr items) var-set1 var-set2))))))
 
-(defun orient-equality2 (term)
-  (declare (xargs :mode :program))
-  (if (and (call-of 'equal term)
-           (not (symbolp (farg1 term))) ;new!! we keep this so that vars get substituted - can that loop?!
-           (smaller-termp (farg1 term) (farg2 term)))
-      `(equal ,(farg2 term) ,(farg1 term))
-    term))
+;; (defun orient-equality2 (term)
+;;   (declare (xargs :mode :program))
+;;   (if (and (call-of 'equal term)
+;;            (not (symbolp (farg1 term))) ;new!! we keep this so that vars get substituted - can that loop?!
+;;            (smaller-termp (farg1 term) (farg2 term)))
+;;       `(equal ,(farg2 term) ,(farg1 term))
+;;     term))
 
-;change each equality to have the bigger term first
-;ffixme what about when there is a var that's equated to something else
-(defun orient-equalities (terms)
-  (declare (xargs :mode :program))
-  (if (endp terms)
-      nil
-    (cons (orient-equality2 (first terms))
-          (orient-equalities (rest terms)))))
+;; ;change each equality to have the bigger term first
+;; ;ffixme what about when there is a var that's equated to something else
+;; (defun orient-equalities (terms)
+;;   (declare (xargs :mode :program))
+;;   (if (endp terms)
+;;       nil
+;;     (cons (orient-equality2 (first terms))
+;;           (orient-equalities (rest terms)))))
 
 ;for now this just skips a few specific functions - fixme add a check that the found function is recursive
 (skip-proofs
@@ -8348,14 +8443,14 @@
 ;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
 ;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
 ;returns (mv initial-probably-equal-node-sets initial-singleton-count)
-(defun initial-probably-equal-node-sets-better (dag-len test-case-array test-case-array-name)
+(defun initial-probably-equal-node-sets (dag-len test-case-array test-case-array-name)
   (let* ((signature-alist (array-to-alist test-case-array-name test-case-array dag-len))
          (sorted-signature-alist (merge-sort-lexorder-of-cdrs signature-alist)))
     (mv-let (sets singleton-count)
             (group-same-entries sorted-signature-alist nil 0) ;bozo should we disallow any nodes?
             (mv sets singleton-count))))
 
-(skip-proofs (verify-guards initial-probably-equal-node-sets-better))
+(skip-proofs (verify-guards initial-probably-equal-node-sets))
 
 ;; Returns (mv never-used-nodes probably-constant-node-alist ;pairs nodenums used on the first test case with their values
 ;;         )
@@ -8407,7 +8502,7 @@
                                                   traced-nodes)))
               (mv-let
                (initial-probably-equal-node-sets initial-singleton-count)
-               (initial-probably-equal-node-sets-better miter-len test-case-array first-test-case-array-name)
+               (initial-probably-equal-node-sets miter-len test-case-array first-test-case-array-name)
                (mv-let
                 (never-used-nodes
                  probably-constant-node-alist ;pairs nodenums used on the first test case with their values
