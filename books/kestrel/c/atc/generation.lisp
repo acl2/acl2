@@ -5120,8 +5120,8 @@
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id type))
        (fundef (make-fundef :tyspec tyspec
-                            :declor (make-fun-declor :name id
-                                                     :params params)
+                            :declor (make-fun-declor-base :name id
+                                                          :params params)
                             :body items))
        (finfo (fun-info-from-fundef fundef))
        (limit `(binary-+ '2 ,limit))

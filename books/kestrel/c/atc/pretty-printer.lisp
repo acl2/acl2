@@ -1059,10 +1059,13 @@
 (define pprint-fun-declor ((declor fun-declorp))
   :returns (part msgp)
   :short "Pretty-print a function declarator."
-  (b* (((fun-declor declor) declor))
-    (msg "~@0(~@1)"
-         (pprint-ident declor.name)
-         (pprint-comma-sep (pprint-param-declon-list declor.params))))
+  (fun-declor-case
+   declor
+   :base (msg "~@0(~@1)"
+              (pprint-ident declor.name)
+              (pprint-comma-sep (pprint-param-declon-list declor.params)))
+   :pointer (msg "*~@0" (pprint-fun-declor declor.to)))
+  :measure (fun-declor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

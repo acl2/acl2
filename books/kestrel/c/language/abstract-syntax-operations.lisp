@@ -156,6 +156,84 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define fun-declor-to-ident+adeclor ((declor fun-declorp))
+  :returns (mv (id identp) (adeclor fun-adeclorp))
+  :short "Decompose a function declarator into
+          an identifier and an abstract function declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This abstracts a function declarator to an abstract function declarator,
+     by removing the identifier and also returning it.
+     See @(tsee fun-adeclor)."))
+  (fun-declor-case
+   declor
+   :base (mv declor.name (fun-adeclor-base declor.params))
+   :pointer (b* (((mv id sub) (fun-declor-to-ident+adeclor declor.to)))
+              (mv id (fun-adeclor-pointer sub))))
+  :measure (fun-declor-count declor)
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ident+adeclor-to-fun-declor ((id identp) (adeclor fun-adeclorp))
+  :returns (declor fun-declorp)
+  :short "Compose an identifier and an abstract function declarator
+          into a function declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse of @(tsee fun-declor-to-ident+adeclor)."))
+  (fun-adeclor-case
+   adeclor
+   :base (make-fun-declor-base :name id :params adeclor.params)
+   :pointer (make-fun-declor-pointer
+             :to (ident+adeclor-to-fun-declor id adeclor.to)))
+  :measure (fun-adeclor-count adeclor)
+  :verify-guards :after-returns
+  :hooks (:fix)
+  ///
+
+  (defrule ident+adeclor-to-fun-declor-of-fun-declor-to-ident+adeclor
+    (b* (((mv id adeclor) (fun-declor-to-ident+adeclor declor)))
+      (equal (ident+adeclor-to-fun-declor id adeclor)
+             (fun-declor-fix declor)))
+    :enable fun-declor-to-ident+adeclor)
+
+  (defrule fun-declor-to-ident+adeclor-of-ident+adeclor-to-fun-declor
+    (equal (fun-declor-to-ident+adeclor
+            (ident+adeclor-to-fun-declor id adeclor))
+           (mv (ident-fix id) (fun-adeclor-fix adeclor)))
+    :enable fun-declor-to-ident+adeclor))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-adeclor-to-params+declor ((declor fun-adeclorp))
+  :returns (mv (params param-declon-listp)
+               (declor obj-adeclorp))
+  :short "Decompose an abstract function declarator into
+          a list of parameter declarations and an abstract object declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The inverse of this is not well-defined for every object declarator,
+     because the latter may include array declarators,
+     which are not allowed in function declarators.
+     We could define the inverse on object declarators
+     that are restricted not to use array declarators;
+     but we do not need the inverse for now."))
+  (fun-adeclor-case
+   declor
+   :base (mv declor.params (obj-adeclor-none))
+   :pointer (b* (((mv params sub) (fun-adeclor-to-params+declor declor.to)))
+              (mv params (make-obj-adeclor-pointer :to sub))))
+  :measure (fun-adeclor-count declor)
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tyspec+declor-to-ident+tyname ((tyspec tyspecseqp)
                                        (declor obj-declorp))
   :returns (mv (id identp) (tyname tynamep))
@@ -169,7 +247,7 @@
    (xdoc::p
     "The name of this ACL2 function does not mention @('obj') explicitly,
      but the fact that it deals with object declarators
-     is implicit in the fact that it deals with type names.")
+     is implicit in the fact that it returns an identifier and a type name.")
    (xdoc::p
     "In essence, we turn (the constituents of a) declaration
      into its name and type, which are somewhat mixed in the C syntax."))
@@ -210,6 +288,39 @@
       (equal (tyspec+declor-to-ident+tyname tyspec declor)
              (mv (ident-fix id) (tyname-fix tyname))))
     :enable tyspec+declor-to-ident+tyname))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tyspec+declor-to-ident+params+tyname ((tyspec tyspecseqp)
+                                              (declor fun-declorp))
+  :returns (mv (id identp) (params param-declon-listp) (tyname tynamep))
+  :short "Turn a type specifier sequence and a function declarator
+          into an identifier,a list of parameter declarations, and a type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We decompose the declarator into an identifier and an abstract declarator,
+     and we form a type name with the latter and the type specifier sequence.")
+   (xdoc::p
+    "The name of this ACL2 function does not mention @('fun') explicitly,
+     but the fact that it deals with object declarators
+     is implicit in the fact that it returns
+     an identifier, a list of parameter declarations, and a type name.")
+   (xdoc::p
+    "In essence, we turn (the constituents of a) declaration
+     into its name and parameters and type,
+     which are somewhat mixed in the C syntax.")
+   (xdoc::p
+    "The inverse of this is not well-defined for every type name,
+     because the latter may include array declarators,
+     which are not allowed in function declarators.
+     We could define the inverse on type names
+     that are restricted not to use array declarators;
+     but we do not need the inverse for now."))
+  (b* (((mv id fun-adeclor) (fun-declor-to-ident+adeclor declor))
+       ((mv params obj-adeclor) (fun-adeclor-to-params+declor fun-adeclor)))
+    (mv id params (make-tyname :tyspec tyspec :declor obj-adeclor)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -287,7 +398,8 @@
 (define fundef->name ((fundef fundefp))
   :returns (name identp)
   :short "Name of a function in a definition."
-  (fun-declor->name (fundef->declor fundef))
+  (b* (((mv name &) (fun-declor-to-ident+adeclor (fundef->declor fundef))))
+    name)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

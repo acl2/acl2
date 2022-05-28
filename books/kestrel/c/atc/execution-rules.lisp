@@ -2216,9 +2216,7 @@
                   (equal compst1 (mv-nth 1 val?+compst1))
                   (value-optionp val?)
                   (equal (type-of-value-option val?)
-                         (tyname-to-type
-                          (make-tyname :tyspec (fun-info->result info)
-                                       :declor (obj-adeclor-none)))))
+                         (tyname-to-type (fun-info->result info))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
     :enable exec-fun)

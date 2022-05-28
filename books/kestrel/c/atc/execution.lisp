@@ -1905,9 +1905,7 @@
          (compst (pop-frame compst))
          ((when (errorp val?)) (mv val? compst))
          ((unless (equal (type-of-value-option val?)
-                         (tyname-to-type
-                          (make-tyname :tyspec info.result
-                                       :declor (obj-adeclor-none)))))
+                         (tyname-to-type info.result)))
           (mv (error (list :return-value-mistype
                            :required info.result
                            :supplied (type-of-value-option val?)))

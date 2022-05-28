@@ -732,18 +732,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod fun-declor
+(fty::deftagsum fun-declor
   :short "Fixtype of function declarators [C:6.7.6]."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only model function declarators [C:6.7.6.3]
      consisting of an identifier as the direct declarator
-     and a (parenthesized) list of parameter declarations."))
-  ((name ident)
-   (params param-declon-list))
-  :tag :fun-declor
+     and a (parenthesized) list of parameter declarations,
+     preceded by zero or more pointer designations (i.e. @('*')).
+     The pointer designations are captured via a recursive structure,
+     which makes this fixtype more extensible in the future.")
+   (xdoc::p
+    "This is somewhat similar to @(tsee obj-declor),
+     except that there is an identifier and a list of parameters
+     instead of just an identifier (for the base case of the fixtype),
+     and except that there is no array designation possible.
+     The latter is because functions cannot return array types [C:6.7.6.3/1]."))
+  (:base ((name ident)
+          (params param-declon-list)))
+  (:pointer ((to fun-declor)))
   :pred fun-declorp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum fun-adeclor
+  :short "Fixtype of abstract function declarators [C:6.7.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The relation between this fixtype and @(tsee fun-declor)
+     is analogous to the one between @(tsee obj-adeclor) and @(tsee obj-declor).
+     Namely, an abstract function declarator is
+     a function declarator without the name."))
+  (:base ((params param-declon-list)))
+  (:pointer ((to fun-adeclor)))
+  :pred fun-adeclorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
