@@ -115,8 +115,8 @@
       (:e tyname->tyspec)
       (:e tyname->declor)
       (:e obj-adeclor-kind)
-      (:e obj-adeclor-pointer->to)
-      (:e obj-adeclor-array->of)
+      (:e obj-adeclor-pointer->decl)
+      (:e obj-adeclor-array->decl)
       tyspecseq-to-type
       (:e tyspecseq-kind)
       (:e tyspecseq-struct->tag))))

@@ -738,8 +738,8 @@
   (obj-adeclor-case
    declor
    :none :wellformed
-   :pointer (check-obj-adeclor declor.to)
-   :array (b* ((wf? (check-obj-adeclor declor.of))
+   :pointer (check-obj-adeclor declor.decl)
+   :array (b* ((wf? (check-obj-adeclor declor.decl))
                ((when (errorp wf?)) wf?)
                ((unless declor.size) :wellformed)
                (type? (check-iconst declor.size))
@@ -1750,7 +1750,7 @@
    :base (b* ((wf (check-ident declor.name))
               ((when (errorp wf)) wf))
            (check-param-declon-list declor.params (var-table-init) tagenv))
-   :pointer (check-fun-declor declor.to tagenv))
+   :pointer (check-fun-declor declor.decl tagenv))
   :measure (fun-declor-count declor)
   :hooks (:fix))
 

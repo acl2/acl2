@@ -363,8 +363,8 @@
      which we can nest under the @(':array') constructor,
      so we do not need to represent parentheses explicitly."))
   (:ident ((get ident)))
-  (:pointer ((to obj-declor)))
-  (:array ((of obj-declor)
+  (:pointer ((decl obj-declor)))
+  (:array ((decl obj-declor)
            (size iconst-option)))
   :pred obj-declorp)
 
@@ -395,8 +395,8 @@
      the correspondence between abstract declarators and declarators
      explained just above."))
   (:none ())
-  (:pointer ((to obj-adeclor)))
-  (:array ((of obj-adeclor)
+  (:pointer ((decl obj-adeclor)))
+  (:array ((decl obj-adeclor)
            (size iconst-option)))
   :pred obj-adeclorp)
 
@@ -751,7 +751,7 @@
      The latter is because functions cannot return array types [C:6.7.6.3/1]."))
   (:base ((name ident)
           (params param-declon-list)))
-  (:pointer ((to fun-declor)))
+  (:pointer ((decl fun-declor)))
   :pred fun-declorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -766,7 +766,7 @@
      Namely, an abstract function declarator is
      a function declarator without the name."))
   (:base ((params param-declon-list)))
-  (:pointer ((to fun-adeclor)))
+  (:pointer ((decl fun-adeclor)))
   :pred fun-adeclorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

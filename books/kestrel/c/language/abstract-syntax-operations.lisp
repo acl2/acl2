@@ -111,10 +111,10 @@
   (obj-declor-case
    declor
    :ident (mv declor.get (obj-adeclor-none))
-   :pointer (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.to)))
-              (mv id (make-obj-adeclor-pointer :to sub)))
-   :array (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.of)))
-            (mv id (make-obj-adeclor-array :of sub :size declor.size))))
+   :pointer (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.decl)))
+              (mv id (make-obj-adeclor-pointer :decl sub)))
+   :array (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.decl)))
+            (mv id (make-obj-adeclor-array :decl sub :size declor.size))))
   :measure (obj-declor-count declor)
   :verify-guards :after-returns
   :hooks (:fix))
@@ -133,9 +133,9 @@
    adeclor
    :none (obj-declor-ident id)
    :pointer (make-obj-declor-pointer
-             :to (ident+adeclor-to-obj-declor id adeclor.to))
+             :decl (ident+adeclor-to-obj-declor id adeclor.decl))
    :array (make-obj-declor-array
-           :of (ident+adeclor-to-obj-declor id adeclor.of)
+           :decl (ident+adeclor-to-obj-declor id adeclor.decl)
            :size adeclor.size))
   :measure (obj-adeclor-count adeclor)
   :verify-guards :after-returns
@@ -169,7 +169,7 @@
   (fun-declor-case
    declor
    :base (mv declor.name (fun-adeclor-base declor.params))
-   :pointer (b* (((mv id sub) (fun-declor-to-ident+adeclor declor.to)))
+   :pointer (b* (((mv id sub) (fun-declor-to-ident+adeclor declor.decl)))
               (mv id (fun-adeclor-pointer sub))))
   :measure (fun-declor-count declor)
   :verify-guards :after-returns
@@ -189,7 +189,7 @@
    adeclor
    :base (make-fun-declor-base :name id :params adeclor.params)
    :pointer (make-fun-declor-pointer
-             :to (ident+adeclor-to-fun-declor id adeclor.to)))
+             :decl (ident+adeclor-to-fun-declor id adeclor.decl)))
   :measure (fun-adeclor-count adeclor)
   :verify-guards :after-returns
   :hooks (:fix)
@@ -226,8 +226,8 @@
   (fun-adeclor-case
    declor
    :base (mv declor.params (obj-adeclor-none))
-   :pointer (b* (((mv params sub) (fun-adeclor-to-params+declor declor.to)))
-              (mv params (make-obj-adeclor-pointer :to sub))))
+   :pointer (b* (((mv params sub) (fun-adeclor-to-params+declor declor.decl)))
+              (mv params (make-obj-adeclor-pointer :decl sub))))
   :measure (fun-adeclor-count declor)
   :verify-guards :after-returns
   :hooks (:fix))
