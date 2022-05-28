@@ -21,7 +21,6 @@
 ;; TODO: To evaluate a function defined using MBE, we might prefer to evaluate the :exec part.
 
 ;try to include less (but we need the functions to eval them)
-(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "make-evaluator")
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
@@ -33,11 +32,9 @@
 (include-book "kestrel/lists-light/group2" :dir :system) ;drop?
 (include-book "kestrel/lists-light/ungroup" :dir :system) ;drop?
 (include-book "kestrel/lists-light/first-non-member" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;reduce?
+(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
-(include-book "kestrel/bv/bitnot" :dir :system)
-(include-book "kestrel/bv/bvshl" :dir :system)
-(include-book "kestrel/bv/bitxor" :dir :system)
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; reduce?
@@ -56,7 +53,7 @@
 (include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
 (include-book "safe-unquote")
 (include-book "interpreted-function-alists") ; for make-interpreted-function-alist
-(include-book "print-constant") ; drop?
+(include-book "print-constant") ; drop from the evaluator?
 (include-book "kestrel/maps/maps" :dir :system) ;for key-list
 (include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
