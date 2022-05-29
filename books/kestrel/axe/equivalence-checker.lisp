@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1320,7 +1320,7 @@
 
 (verify-guards gen-random-bv)
 
-;fixme where do we document the format of var-type-alist (see the TYPES section in size.lisp, but that is incomplete?)?  a naked integer is a bv, a quoted integer is that constant
+;fixme where do we document the format of var-type-alist (see axe-types.lisp, but that is incomplete?)?  a naked integer is a bv, a quoted integer is that constant
 ;returns (mv value rand)
 ;should we allow tuples?
 (mutual-recursion
@@ -1407,10 +1407,24 @@
 
 (skip-proofs (verify-guards gen-random-value))
 
+(defun test-casep (test-case)
+  (declare (xargs :guard t))
+  (symbol-alistp test-case))
+
+(defun test-casesp (test-cases)
+  (declare (xargs :guard t))
+  (if (atom test-cases)
+      (null test-cases)
+    (and (test-casep (first test-cases))
+         (test-casesp (rest test-cases)))))
+
 ;returns (mv alist rand)
-(defun make-test-case (var-type-alist acc rand)
-  (declare (xargs :stobjs rand
-                  :verify-guards nil))
+(defund make-test-case (var-type-alist acc rand)
+  (declare (xargs :guard (and (symbol-alistp var-type-alist)
+                              (symbol-alistp acc))
+                  :stobjs rand
+                  :verify-guards nil ; todo
+                  ))
   (if (endp var-type-alist)
       (mv acc rand)
     (let* ((entry (first var-type-alist))
@@ -1422,7 +1436,13 @@
 
 (skip-proofs (verify-guards make-test-case))
 
-;ffixme might we need to pass in interpreted-functions
+(defthm test-casep-of-mv-nth-0-of-make-test-case
+  (implies (and (symbol-alistp var-type-alist)
+                (test-casep acc))
+           (test-casep (mv-nth 0 (make-test-case var-type-alist acc rand))))
+  :hints (("Goal" :in-theory (enable make-test-case))))
+
+;;ffixme might we need to pass in interpreted-functions
 (defun test-case-satisfies-assumptionsp (test-case assumptions)
   (if (endp assumptions)
       t
