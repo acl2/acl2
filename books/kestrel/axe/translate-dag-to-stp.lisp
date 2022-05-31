@@ -1955,23 +1955,24 @@
             (if (boolean-typep type) ;; nothing to do:
                 (make-stp-range-assertions (rest nodenum-type-alist))
               (if (eq :range (car type))
-                  (let* ((low (second type))
-                         (high (third type))
-                         (width (integer-length high))
-                         (varname (makevarname nodenum)))
-                    (list* "ASSERT(BVLE("
-                           (translate-bv-constant low width)
-                           ","
-                           varname
-                           "));"
-                           (newline-string)
-                           "ASSERT(BVLE("
-                           varname
-                           ","
-                           (translate-bv-constant high width)
-                           "));"
-                           (newline-string)
-                           (make-stp-range-assertions (rest nodenum-type-alist))))
+                  (prog2$ (er hard 'make-stp-range-assertions "range type detected: ~x0." type)
+                          (let* ((low (second type))
+                                 (high (third type))
+                                 (width (integer-length high))
+                                 (varname (makevarname nodenum)))
+                            (list* "ASSERT(BVLE("
+                                   (translate-bv-constant low width)
+                                   ","
+                                   varname
+                                   "));"
+                                   (newline-string)
+                                   "ASSERT(BVLE("
+                                   varname
+                                   ","
+                                   (translate-bv-constant high width)
+                                   "));"
+                                   (newline-string)
+                                   (make-stp-range-assertions (rest nodenum-type-alist)))))
                 (er hard? 'make-stp-range-assertions "Unknown form for size: ~x0." type))))
         (make-stp-range-assertions (rest nodenum-type-alist))))))
 

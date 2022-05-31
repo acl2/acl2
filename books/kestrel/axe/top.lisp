@@ -200,6 +200,7 @@
 (include-book "supporting-vars")
 (include-book "tailtohead")
 (include-book "term-equal-dag")
+(include-book "test-cases")
 (include-book "translation-array")
 (include-book "tries")
 (include-book "unguarded-built-ins")
