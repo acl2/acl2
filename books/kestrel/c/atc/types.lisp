@@ -102,9 +102,9 @@
       :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
       :struct (mv (tyspecseq-struct type.tag) (obj-adeclor-none))
       :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.to)))
-                 (mv tyspec (make-obj-adeclor-pointer :to declor)))
+                 (mv tyspec (make-obj-adeclor-pointer :decl declor)))
       :array (b* (((mv tyspec declor) (type-to-tyname-aux type.of)))
-               (mv tyspec (make-obj-adeclor-array :of declor
+               (mv tyspec (make-obj-adeclor-array :decl declor
                                                   :size nil))))
      :measure (type-count type)
      :verify-guards :after-returns

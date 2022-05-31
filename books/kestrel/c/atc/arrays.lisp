@@ -13,6 +13,7 @@
 
 (include-book "integer-operations")
 (include-book "types")
+(include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -144,7 +145,14 @@
      that use ACL2 integers as indices.
      Note that indices are 0-indexed.
      We also generate the function that returns the length of an array,
-     as an ACL2 integer."))
+     as an ACL2 integer.")
+   (xdoc::p
+    "We also generate theorems @('...-alt-def') that provide
+     alternative definitions for the functions related to arrays.
+     We plan to reformulate the definition of these shallowly embedded arrays
+     to be like the aforementioned @('...-alt-def') theorems,
+     in which case the theorems will be of course eliminated.
+     We use the @('...-alt-def') theorems in certain proofs."))
 
   (b* ((type-string (integer-type-xdoc-string type))
        (<type> (integer-type-to-fixtype type))
@@ -154,20 +162,27 @@
        (<type>-listp (pack <type> '-listp))
        (<type>-array (pack <type> '-array))
        (<type>-arrayp (pack <type>-array 'p))
+       (<type>-arrayp-alt-def (pack <type>-arrayp '-alt-def))
        (<type>-array-of (pack <type>-array '-of))
+       (<type>-array-of-alt-def (pack <type>-array-of '-alt-def))
        (<type>-array-fix (pack <type>-array '-fix))
        (<type>-array->elemtype (pack <type>-array '->elemtype))
        (<type>-array->elements (pack <type>-array '->elements))
+       (<type>-array->elements-alt-def (pack <type>-array->elements '-alt-def))
        (<type>-array-length (pack <type>-array '-length))
+       (<type>-array-length-alt-def (pack <type>-array-length '-alt-def))
        (<type>-array-index-okp (pack <type> '-array-index-okp))
        (<type>-array-read (pack <type>-array '-read))
+       (<type>-array-read-alt-def (pack <type>-array-read '-alt-def))
        (<type>-array-write (pack <type>-array '-write))
+       (<type>-array-write-alt-def (pack <type>-array-write '-alt-def))
        (<type>-array-of-of-<type>-array->elements
         (pack <type>-array-of '-of- <type>-array->elements))
        (len-of-<type>-array->elements-of-<type>-array-write
         (pack 'len-of- <type>-array->elements '-of- <type>-array-write))
        (<type>-array-length-of-<type>-array-write
-        (pack <type> '-array-length-of- <type>-array-write)))
+        (pack <type> '-array-length-of- <type>-array-write))
+       (type-of-value-when-<type>p (pack 'type-of-value-when- <type>p)))
 
     `(progn
 
@@ -192,6 +207,32 @@
          :tag :array
          :pred ,<type>-arrayp)
 
+       (defsection ,(pack <type>-array '-ext)
+         :extension ,<type>-array
+
+         (defruled ,<type>-arrayp-alt-def
+           (equal (,<type>-arrayp x)
+                  (and (valuep x)
+                       (value-case x :array)
+                       (equal (value-array->elemtype x)
+                              ,(type-to-maker type))
+                       (,<type>-listp (value-array->elements x))))
+           :enable (,<type>-arrayp
+                    valuep
+                    value-kind
+                    value-array->elemtype
+                    value-array->elements))
+
+         (defruled ,<type>-array->elements-alt-def
+           (implies (,<type>-arrayp array)
+                    (equal (,<type>-array->elements array)
+                           (value-array->elements array)))
+           :enable (,<type>-array->elements
+                    value-array->elements
+                    ,<type>-arrayp
+                    valuep
+                    value-kind)))
+
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (define ,<type>-array-of ((elements ,<type>-listp))
@@ -202,13 +243,25 @@
                            "from a list of its elements.")
          (,<type>-array ,(type-to-maker type) elements)
          :hooks (:fix)
-
          ///
 
          (defrule ,<type>-array-of-of-<type>-array->elements
            (equal (,<type>-array-of (,<type>-array->elements array))
                   (,<type>-array-fix array))
-           :enable ,<type>-array->elemtype))
+           :enable ,<type>-array->elemtype)
+
+         (defruled ,<type>-array-of-alt-def
+           (implies (and (,<type>-listp elems)
+                         (consp elems))
+                    (equal (,<type>-array-of elems)
+                           (make-value-array :elemtype ,(type-to-maker type)
+                                             :elements elems)))
+           :enable (,<type>-array-of
+                    ,<type>-array
+                    value-array->elemtype
+                    value-array->elements
+                    valuep
+                    value-kind)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -218,7 +271,16 @@
                            type-string
                            ".")
          (len (,<type>-array->elements array))
-         :hooks (:fix))
+         :hooks (:fix)
+         ///
+
+         (defruled ,<type>-array-length-alt-def
+           (implies (,<type>-arrayp array)
+                    (equal (,<type>-array-length array)
+                           (value-array->length array)))
+           :enable (,<type>-array-length
+                    value-array->length
+                    ,<type>-array->elements-alt-def)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,7 +305,22 @@
          (,<type>-fix (nth index (,<type>-array->elements array)))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
                                                   ,<type>-array-length)))
-         :hooks (:fix))
+         :hooks (:fix)
+         ///
+
+         (defruled ,<type>-array-read-alt-def
+           (implies (and (,<type>-arrayp array)
+                         (integerp index)
+                         (,<type>-array-index-okp array index))
+                    (equal (,<type>-array-read array index)
+                           (value-array-read index array)))
+           :enable (,<type>-array-read
+                    value-array-read
+                    ,<type>-array->elements-alt-def
+                    ,<type>-array-index-okp
+                    ,<type>-array-length-alt-def
+                    value-array->length
+                    ,<type>-arrayp-alt-def)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,7 +360,24 @@
                   (,<type>-array-length array))
            :enable (,<type>-array-index-okp
                     ,<type>-array-length
-                    ,<type>-array-of)))
+                    ,<type>-array-of))
+
+         (defruled ,<type>-array-write-alt-def
+           (implies (and (,<type>-arrayp array)
+                         (integerp index)
+                         (,<type>p elem)
+                         (,<type>-array-index-okp array index))
+                    (equal (,<type>-array-write array index elem)
+                           (value-array-write index elem array)))
+           :enable (,<type>-array-write
+                    value-array-write
+                    ,<type>-arrayp-alt-def
+                    ,<type>-array-of-alt-def
+                    ,<type>-array-length-alt-def
+                    ,<type>-array->elements-alt-def
+                    ,<type>-array-index-okp
+                    value-array->length
+                    ,type-of-value-when-<type>p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
