@@ -838,7 +838,8 @@
       "A call of @('struct-<tag>-read-<member>')
        on an expression term for @('fn') returning @('U')
        when @('<tag>') is a @(tsee defstruct) name,
-       @('<member>') is the name of one of the members of that @(tsee defstruct),
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
        @('T') is the C integer type of @('<member>'), and
        @('U') is the pointer type to
        the C structure type represented by @('<tag>').
