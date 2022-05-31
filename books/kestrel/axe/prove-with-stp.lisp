@@ -234,7 +234,7 @@
                                   )
   (declare (xargs :guard (and (natp arg)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
-                              (alistp nodenum-type-alist)
+                              (nodenum-type-alistp nodenum-type-alist)
                               (< arg (alen1 dag-array-name dag-array)))))
   ;;first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
   (or (lookup arg nodenum-type-alist)
@@ -263,7 +263,7 @@
                               dag-array
                               nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
                               )
-  (declare (xargs :guard (and (alistp nodenum-type-alist)
+  (declare (xargs :guard (and (nodenum-type-alistp nodenum-type-alist)
                               (if (consp arg)
                                   (myquotep arg)
                                 (and (natp arg)
@@ -364,7 +364,7 @@
 ;Returns (mv nodenum-type-alist changep)
 (defund improve-type (nodenum new-type nodenum-type-alist)
   (declare (xargs :guard (and (natp nodenum)
-                              (alistp nodenum-type-alist)))) ;strengthen guard?
+                              (nodenum-type-alistp nodenum-type-alist)))) ;strengthen guard?
   (let ((binding (assoc nodenum nodenum-type-alist)))
     (if (not binding)
         (mv (acons nodenum new-type nodenum-type-alist)
@@ -426,7 +426,7 @@
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (< nodenum dag-len)
                               (all-< all-nodenums dag-len)
-                              (alistp known-nodenum-type-alist))
+                              (nodenum-type-alistp known-nodenum-type-alist))
                   :guard-hints (("Goal" :do-not-induct t
                                  :in-theory (e/d (nth-of-cdr
                                                   CAR-BECOMES-NTH-OF-0
@@ -439,15 +439,9 @@
                                                   axe-tree-vars
                                                   axe-tree-vars-lst
                                                   )
-                                                 (MYQUOTEP
+                                                 (myquotep
                                                   dargp
-                                                  ;LIST::NTH-WITH-LARGE-INDEX
-                                                  len
-                                                  ;LIST::LEN-POS-REWRITE
-                                                  ;LIST::LEN-WHEN-AT-MOST-1
-                                                  ;;LIST::LEN-EQUAL-0-REWRITE
-                                                  ;;>-CONSTANT-WHEN-INTEGER-STRENGTHEN
-                                                  ))))))
+                                                  len))))))
   (let ((expr (aref1 'dag-array dag-array nodenum)))
     (if (atom expr) ;expr is a variable
         (mv known-nodenum-type-alist
@@ -560,7 +554,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (all-< all-nodenums dag-len)
-                (alistp known-nodenum-type-alist))
+                )
            (nodenum-type-alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
                                                                                       all-nodenums
                                                                                       dag-array
@@ -576,7 +570,6 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (all-< all-nodenums dag-len)
-                (alistp known-nodenum-type-alist)
                 (ALL-< (STRIP-CARS KNOWN-NODENUM-TYPE-ALIST)
                        DAG-LEN))
            (all-< (strip-cars (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
@@ -600,7 +593,7 @@
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (all-< nodenums dag-len)
                               (all-< all-nodenums dag-len)
-                              (alistp known-nodenum-type-alist))))
+                              (nodenum-type-alistp known-nodenum-type-alist))))
   (if (endp nodenums)
       (mv known-nodenum-type-alist change-flg)
     (let* ((nodenum (first nodenums)))
@@ -631,8 +624,7 @@
                 (true-listp all-nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-< nodenums dag-len)
-                (all-< all-nodenums dag-len)
-                (alistp known-nodenum-type-alist))
+                (all-< all-nodenums dag-len))
            (nodenum-type-alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums
                                                                                        all-nodenums
                                                                                        dag-array
@@ -650,7 +642,6 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-< nodenums dag-len)
                 (all-< all-nodenums dag-len)
-                (alistp known-nodenum-type-alist)
                 (ALL-< (STRIP-CARS KNOWN-NODENUM-TYPE-ALIST)
                        DAG-LEN))
            (all-< (strip-cars (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums
@@ -673,7 +664,7 @@
                               (all-natp nodenums)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (all-< nodenums dag-len)
-                              (alistp known-nodenum-type-alist))))
+                              (nodenum-type-alistp known-nodenum-type-alist))))
   (if (zp limit) ;force termination
       (prog2$ (er hard? 'build-known-nodenum-type-alist-aux "Recursion limit reached.")
               known-nodenum-type-alist)
@@ -696,8 +687,7 @@
                 (true-listp nodenums)
                 (all-natp nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< nodenums dag-len)
-                (alistp known-nodenum-type-alist))
+                (all-< nodenums dag-len))
            (nodenum-type-alistp (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist)))
   :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux))))
 
@@ -708,7 +698,6 @@
                 (all-natp nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-< nodenums dag-len)
-                (alistp known-nodenum-type-alist)
                 (all-< (strip-cars known-nodenum-type-alist)
                        dag-len))
            (all-< (strip-cars (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist))
@@ -1303,7 +1292,7 @@
               (lookup nodenum-or-quotep known-nodenum-type-alist)))))))
 
 (defun any-node-is-given-empty-typep (known-nodenum-type-alist)
-  (declare (xargs :guard (alistp known-nodenum-type-alist)))
+  (declare (xargs :guard (nodenum-type-alistp known-nodenum-type-alist)))
   (if (endp known-nodenum-type-alist)
       nil
     (let* ((entry (first known-nodenum-type-alist))
