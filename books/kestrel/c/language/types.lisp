@@ -431,18 +431,18 @@
      (obj-adeclor-case
       declor
       :none (tyspecseq-to-type tyspec)
-      :pointer (type-pointer (tyname-to-type-aux tyspec declor.to))
+      :pointer (type-pointer (tyname-to-type-aux tyspec declor.decl))
       :array (if declor.size
                  (b* ((size (iconst->value declor.size)))
                    (if (= size 0)
                        (make-type-array :of (tyname-to-type-aux tyspec
-                                                                declor.of)
+                                                                declor.decl)
                                         :size nil)
                      (make-type-array :of (tyname-to-type-aux tyspec
-                                                              declor.of)
+                                                              declor.decl)
                                       :size size)))
                (make-type-array :of (tyname-to-type-aux tyspec
-                                                        declor.of)
+                                                        declor.decl)
                                 :size nil)))
      :measure (obj-adeclor-count declor)
      :verify-guards :after-returns

@@ -44,13 +44,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of the components of a function definition
-     (see @(tsee fundef))
-     without the name.
-     This is because names are used as keys in a function environment.
+    "This consists of
+     the components of a function definition (see @(tsee fundef))
+     without the name and
+     with the type specifier sequence and the declarator
+     combined into a type name.
+     The names are used as keys in a function environment.
      The other components form the value associated to the key."))
   ((params param-declon-list)
-   (result tyspecseq)
+   (result tyname)
    (body block-item-list))
   :pred fun-infop)
 
@@ -67,9 +69,10 @@
   :returns (finfo fun-infop)
   :short "Create information for a function definition."
   (b* (((fundef fundef) fundef)
-       ((fun-declor fundef.declor) fundef.declor))
-    (make-fun-info :params fundef.declor.params
-                   :result fundef.tyspec
+       ((mv & params tyname)
+        (tyspec+declor-to-ident+params+tyname fundef.tyspec fundef.declor)))
+    (make-fun-info :params params
+                   :result tyname
                    :body fundef.body))
   :hooks (:fix))
 
