@@ -19527,7 +19527,7 @@
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
                          test-case-count ;the total number of tests to generate?  some may not be used
-                         var-type-alist  ;compute this from the hyps?
+                         var-type-alist  ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          print
                          traced-nodes ;do we use this?
                          user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
