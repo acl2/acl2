@@ -581,17 +581,40 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only accept top-level object designators."))
-  (b* (((unless (objdesign-case objdes :address))
-        (error (list :non-top-level-object-designator-not-supported
-                     (objdesign-fix objdes))))
-       (addr (objdesign-address->get objdes))
-       (heap (compustate->heap compst))
-       (addr+obj (omap::in addr heap))
-       ((unless (consp addr+obj))
-        (error (list :object-designator-not-found (objdesign-fix objdes))))
-       (obj (cdr addr+obj)))
-    obj)
+    "If the object designator is an address,
+     we look up the object in the heap.
+     Otherwise, first we recursively read the super-object,
+     then we access the sub-object,
+     ensuring that the super-object is of the appropriate kind
+     for the object designator."))
+  (objdesign-case
+   objdes
+   :address
+   (b* ((addr objdes.get)
+        (heap (compustate->heap compst))
+        (addr+obj (omap::in addr heap))
+        ((unless (consp addr+obj))
+         (error (list :address-not-found addr)))
+        (obj (cdr addr+obj)))
+     obj)
+   :element
+   (b* ((obj (read-object objdes.super compst))
+        ((when (errorp obj)) obj)
+        ((unless (value-case obj :array))
+         (error (list :objdesign-mismatch (objdesign-fix objdes)
+                      :required :array
+                      :supplied obj))))
+     (value-array-read objdes.index obj))
+   :member
+   (b* ((obj (read-object objdes.super compst))
+        ((when (errorp obj)) obj)
+        ((unless (value-case obj :struct))
+         (error (list :objdesign-mismatch (objdesign-fix objdes)
+                      :required :struct
+                      :supplied obj))))
+     (value-struct-read objdes.name obj)))
+  :measure (objdesign-count objdes)
+  :verify-guards :after-returns
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -602,30 +625,55 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only accept top-level object designators.")
+    "If the object designator is an address,
+     we check whether the heap has an object at the address,
+     of the same type as the new object
+     (note that, for arrays, the type includes the number of elements).
+     If this checks succeed, we overwrite the object in the heap.")
    (xdoc::p
-    "We check whether the heap has an object at the address,
-     of the same type as the new object.
-     Note that, for arrays, the type includes the number of elements.")
-   (xdoc::p
-    "If this checks succeed, we overwrite the object in the heap."))
-  (b* (((unless (objdesign-case objdes :address))
-        (error (list :non-top-level-object-designator-not-supported
-                     (objdesign-fix objdes))))
-       (addr (objdesign-address->get objdes))
-       (heap (compustate->heap compst))
-       (addr+obj (omap::in addr heap))
-       ((unless (consp addr+obj))
-        (error (list :address-not-found addr)))
-       (obj (cdr addr+obj))
-       ((unless (equal (type-of-value val)
-                       (type-of-value obj)))
-        (error (list :write-object-mistype
-                     :old (type-of-value obj)
-                     :new (type-of-value val))))
-       (new-heap (omap::update addr (value-fix val) heap))
-       (new-compst (change-compustate compst :heap new-heap)))
-    new-compst)
+    "Otherwise,
+     we retrieve the super-object,
+     and we update its element or member,
+     provided that the super-object is of the right kind.
+     Then we recursively write the updated super-object."))
+  (objdesign-case
+   objdes
+   :address
+   (b* ((addr objdes.get)
+        (heap (compustate->heap compst))
+        (addr+obj (omap::in addr heap))
+        ((unless (consp addr+obj))
+         (error (list :address-not-found addr)))
+        (obj (cdr addr+obj))
+        ((unless (equal (type-of-value val)
+                        (type-of-value obj)))
+         (error (list :write-object-mistype
+                      :old (type-of-value obj)
+                      :new (type-of-value val))))
+        (new-heap (omap::update addr (value-fix val) heap))
+        (new-compst (change-compustate compst :heap new-heap)))
+     new-compst)
+   :element
+   (b* ((super (read-object objdes.super compst))
+        ((when (errorp super)) super)
+        ((unless (value-case super :array))
+         (error (list :objdesign-mismatch (objdesign-fix objdes)
+                      :required :array
+                      :supplied super)))
+        (new-super (value-array-write objdes.index val super))
+        ((when (errorp new-super)) new-super))
+     (write-object objdes.super new-super compst))
+   :member
+   (b* ((super (read-object objdes.super compst))
+        ((when (errorp super)) super)
+        ((unless (value-case super :struct))
+         (error (list :objdesign-mismatch (objdesign-fix objdes)
+                      :required :struct
+                      :supplied super)))
+        (new-super (value-struct-write objdes.name val super))
+        ((when (errorp new-super)) new-super))
+     (write-object objdes.super new-super compst)))
+  :measure (objdesign-count objdes)
   :hooks (:fix)
   ///
 

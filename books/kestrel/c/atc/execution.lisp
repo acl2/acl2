@@ -1362,52 +1362,11 @@
                                              :required (type-sint)
                                              :supplied (type-of-value sub))))
        (index (exec-integer sub))
-       (err (error (list :array-index-out-of-range
-                         :pointer arr
-                         :array array
-                         :index sub))))
-    (cond ((uchar-arrayp array)
-           (if (uchar-array-index-okp array index)
-               (uchar-array-read array index)
-             err))
-          ((schar-arrayp array)
-           (if (schar-array-index-okp array index)
-               (schar-array-read array index)
-             err))
-          ((ushort-arrayp array)
-           (if (ushort-array-index-okp array index)
-               (ushort-array-read array index)
-             err))
-          ((sshort-arrayp array)
-           (if (sshort-array-index-okp array index)
-               (sshort-array-read array index)
-             err))
-          ((uint-arrayp array)
-           (if (uint-array-index-okp array index)
-               (uint-array-read array index)
-             err))
-          ((sint-arrayp array)
-           (if (sint-array-index-okp array index)
-               (sint-array-read array index)
-             err))
-          ((ulong-arrayp array)
-           (if (ulong-array-index-okp array index)
-               (ulong-array-read array index)
-             err))
-          ((slong-arrayp array)
-           (if (slong-array-index-okp array index)
-               (slong-array-read array index)
-             err))
-          ((ullong-arrayp array)
-           (if (ullong-array-index-okp array index)
-               (ullong-array-read array index)
-             err))
-          ((sllong-arrayp array)
-           (if (sllong-array-index-okp array index)
-               (sllong-array-read array index)
-             err))
-          (t (error (list :array-element-type-not-supported
-                          :element-type reftype)))))
+       ((when (< index 0)) (error (list :negative-array-index
+                                        :pointer arr
+                                        :array array
+                                        :index sub))))
+    (value-array-read index array))
   :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
@@ -1734,82 +1693,20 @@
                (error (list :mistype-array-read
                             :pointer reftype
                             :array (value-array->elemtype array))))
-              (idx (exec-expr-pure sub compst))
-              ((when (errorp idx)) idx)
-              ((unless (value-integerp idx))
+              (index (exec-expr-pure sub compst))
+              ((when (errorp index)) index)
+              ((unless (value-integerp index))
                (error (list :mistype-array-index
                             :required :integer
-                            :found idx)))
-              (index (exec-integer idx))
-              (err-elem (error (list :mistype-array-write
-                                     :required (type-of-value ptr)
-                                     :found val)))
-              (err-idx (error (list :array-index-out-of-range
-                                    :pointer ptr
-                                    :array array
-                                    :index idx))))
-           (cond ((uchar-arrayp array)
-                  (b* (((unless (ucharp val)) err-elem)
-                       ((unless (uchar-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (uchar-array-write array index val)
-                                  compst)))
-                 ((schar-arrayp array)
-                  (b* (((unless (scharp val)) err-elem)
-                       ((unless (schar-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (schar-array-write array index val)
-                                  compst)))
-                 ((ushort-arrayp array)
-                  (b* (((unless (ushortp val)) err-elem)
-                       ((unless (ushort-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (ushort-array-write array index val)
-                                  compst)))
-                 ((sshort-arrayp array)
-                  (b* (((unless (sshortp val)) err-elem)
-                       ((unless (sshort-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (sshort-array-write array index val)
-                                  compst)))
-                 ((uint-arrayp array)
-                  (b* (((unless (uintp val)) err-elem)
-                       ((unless (uint-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (uint-array-write array index val)
-                                  compst)))
-                 ((sint-arrayp array)
-                  (b* (((unless (sintp val)) err-elem)
-                       ((unless (sint-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (sint-array-write array index val)
-                                  compst)))
-                 ((ulong-arrayp array)
-                  (b* (((unless (ulongp val)) err-elem)
-                       ((unless (ulong-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (ulong-array-write array index val)
-                                  compst)))
-                 ((slong-arrayp array)
-                  (b* (((unless (slongp val)) err-elem)
-                       ((unless (slong-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (slong-array-write array index val)
-                                  compst)))
-                 ((ullong-arrayp array)
-                  (b* (((unless (ullongp val)) err-elem)
-                       ((unless (ullong-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (ullong-array-write array index val)
-                                  compst)))
-                 ((sllong-arrayp array)
-                  (b* (((unless (sllongp val)) err-elem)
-                       ((unless (sllong-array-index-okp array index)) err-idx))
-                    (write-object objdes
-                                  (sllong-array-write array index val)
-                                  compst)))
-                 (t (error (list :array-element-type-not-supported
-                                 :element-type reftype))))))
+                            :found index)))
+              (index (exec-integer index))
+              ((when (< index 0)) (error (list :negative-array-index
+                                               :pointer ptr
+                                               :array array
+                                               :index index)))
+              (new-array (value-array-write index val array))
+              ((when (errorp new-array)) new-array))
+           (write-object objdes new-array compst)))
         (:memberp
          (b* ((str (expr-memberp->target left))
               (mem (expr-memberp->name left))
@@ -1905,9 +1802,7 @@
          (compst (pop-frame compst))
          ((when (errorp val?)) (mv val? compst))
          ((unless (equal (type-of-value-option val?)
-                         (tyname-to-type
-                          (make-tyname :tyspec info.result
-                                       :declor (obj-adeclor-none)))))
+                         (tyname-to-type info.result)))
           (mv (error (list :return-value-mistype
                            :required info.result
                            :supplied (type-of-value-option val?)))

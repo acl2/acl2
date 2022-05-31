@@ -1,7 +1,7 @@
 ; Utilities dealing with types that Axe knows about
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -43,14 +43,15 @@
   type)
 
 ;;
-;; The :list type: ;; TODO: Restrict the element type and length type
+;; The :list type: ;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
 ;;
 
 (defun list-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
        (eql 3 (len type)) ;this might be overkill to check in some cases?
-       (eq :list (first type))))
+       (eq :list (first type))
+       ))
 
 (defun make-list-type (element-type len-type)
   (declare (xargs :guard t))
@@ -63,6 +64,12 @@
 (defun list-type-len-type (type)
   (declare (xargs :guard (list-typep type)))
   (third type))
+
+;todo
+;; (thm
+;;  (implies (list-typep type)
+;;           (axe-typep (list-type-len-type type)))
+;;  :hints (("Goal" :in-theory (enable list-type-len-type list-typep))))
 
 ;;
 ;; The "BV array" type (changing this to be a certain kind of :list type - namely, one where the elements are BVs and the length is a constant)

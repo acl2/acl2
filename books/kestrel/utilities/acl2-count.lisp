@@ -66,6 +66,12 @@
                      (acl2-count (cdr x)))))
   :rule-classes :linear)
 
+(defthm <-of-0-and-acl2-count-when-consp-linear
+  (implies (consp x)
+           (< 0 (acl2-count x)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable acl2-count))))
+
 (defthm <=-of-acl2-count-of-nthcdr
   (<= (acl2-count (nthcdr n lst))
       (acl2-count lst))

@@ -115,8 +115,8 @@
       (:e tyname->tyspec)
       (:e tyname->declor)
       (:e obj-adeclor-kind)
-      (:e obj-adeclor-pointer->to)
-      (:e obj-adeclor-array->of)
+      (:e obj-adeclor-pointer->decl)
+      (:e obj-adeclor-array->decl)
       tyspecseq-to-type
       (:e tyspecseq-kind)
       (:e tyspecseq-struct->tag))))
@@ -1108,8 +1108,14 @@
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-index-okp
+          (pack afixtype '-array-index-okp))
          (atype-array-read-itype
           (pack afixtype '-array-read- ifixtype))
+         (atype-array-read
+          (pack afixtype '-array-read))
+         (atype-array-read-alt-def
+          (pack atype-array-read '-alt-def))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -1132,7 +1138,14 @@
                    :enable (exec-arrsub
                             exec-integer
                             ,atype-array-itype-index-okp
-                            ,atype-array-read-itype))))
+                            ,atype-array-read-itype
+                            ,atype-array-read-alt-def)
+                   :prep-lemmas
+                   ((defrule lemma
+                      (implies (and (,atype-array-index-okp array index)
+                                    (integerp index))
+                               (not (< index 0)))
+                      :enable ,atype-array-index-okp)))))
       (mv name event)))
 
   (define atc-exec-arrsub-rules-gen-loop-itypes ((atype typep)
@@ -2028,8 +2041,12 @@
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-index-okp
+          (pack afixtype '-array-index-okp))
          (atype-array-write-itype
           (pack afixtype '-array-write- ifixtype))
+         (atype-array-write-alt-def
+          (pack afixtype '-array-write-alt-def))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -2053,7 +2070,6 @@
                  (not (value-pointer-nullp ptr))
                  (equal array
                         (read-object (value-pointer->designator ptr) compst1))
-                 (value-case array :array)
                  (equal (value-pointer->reftype ptr)
                         (value-array->elemtype array))
                  (,apred array)
@@ -2069,7 +2085,23 @@
                    :enable (exec-expr-asg
                             exec-integer
                             ,atype-array-itype-index-okp
-                            ,atype-array-write-itype))))
+                            ,atype-array-write-itype
+                            ,atype-array-write-alt-def)
+                   :prep-lemmas
+                   ((defrule lemma1
+                      (implies (and (,atype-array-index-okp array index)
+                                    (integerp index))
+                               (not (< index 0)))
+                      :enable ,atype-array-index-okp)
+                    (defrule lemma2
+                      (implies (and (,apred array)
+                                    (integerp index)
+                                    (,atype-array-index-okp array index)
+                                    (,epred val))
+                               (not (errorp
+                                     (value-array-write index val array))))
+                      :use (:instance ,atype-array-write-alt-def
+                            (elem val)))))))
       (mv name event)))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
@@ -2216,9 +2248,7 @@
                   (equal compst1 (mv-nth 1 val?+compst1))
                   (value-optionp val?)
                   (equal (type-of-value-option val?)
-                         (tyname-to-type
-                          (make-tyname :tyspec (fun-info->result info)
-                                       :declor (obj-adeclor-none)))))
+                         (tyname-to-type (fun-info->result info))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
     :enable exec-fun)

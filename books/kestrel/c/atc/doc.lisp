@@ -504,7 +504,8 @@
       "A term
        @('(let ((var (struct-<tag>-write-<member> term var))) body)'),
        when @('<tag>') is a @(tsee defstruct) name,
-       @('<member>') is the name of of of the members of that @(tsee defstruct),
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
        @('var') is in scope,
        @('var') has a pointer type whose referenced type is
        the C structure type represented by @('<tag>'),
