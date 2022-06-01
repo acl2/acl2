@@ -17,6 +17,9 @@
 (include-book "misc/random" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
+
+(local (in-theory (disable randp symbol-alistp)))
 
 ;move
 (defthm integerp-of-mv-nth-0-of-genrandom
@@ -24,30 +27,33 @@
            (integerp (mv-nth 0 (genrandom max rand))))
   :hints (("Goal" :in-theory (enable genrandom))))
 
-;;returns an integer in the range [low, high)
-;fffixme doesn't work if the range is too big?
-(defun gen-random-integer-in-range (low high rand)
-  (declare (xargs :stobjs (rand)
-                  :guard-hints (("Goal" :in-theory (enable genrandom)))
-                  :guard (and (integerp low) (> low 0) (integerp high) (< low high))))
-  (mv-let (value rand)
-          (genrandom (- high low) rand)
-          (mv (+ low value) rand)))
+(defthm <=-of-0-and-mv-nth-0-of-genrandom
+  (implies (natp max) ; gen?
+           (<= 0 (mv-nth 0 (genrandom max rand))))
+  :hints (("Goal" :in-theory (enable genrandom))))
 
-;returns (val rand)
+(defthm natp-of-mv-nth-0-of-genrandom
+  (implies (natp max) ; gen?
+           (natp (mv-nth 0 (genrandom max rand))))
+  :hints (("Goal" :in-theory (enable genrandom))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv val rand).
 ;since genrandom doesn't work for a BV of more than 31 bits, we have to generate it in chunks
+;; TODO: Not quite uniform?
 (defund gen-random-bv (size rand)
-  (declare (xargs :stobjs (rand)
+  (declare (xargs :guard (posp size)
+                  :stobjs rand
                   :measure (nfix size)
-                  :guard (and (posp size))
                   :guard-hints (("Goal" :in-theory (enable genrandom)))
                   :verify-guards nil ;done below
                   ))
-  (if (or (not (natp size))
+  (if (or (not (mbt (natp size)))
           (< size 32))
       (genrandom (expt 2 size) rand)
     (mv-let (first-chunk rand)
-      (genrandom (expt 2 31) ;compute
+      (genrandom 2147483648 ; (expt 2 31)
                  rand)
       (mv-let (rest-chunk rand)
         (gen-random-bv (- size 31) rand)
@@ -62,19 +68,104 @@
 
 (verify-guards gen-random-bv)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Generate a random integer in the range [0, limit-1].
+;; TODO: Not quite uniform
+;; Handles larger integers than genrandom.
+(defund gen-random-integer (limit rand)
+  (declare (xargs :guard (posp limit)
+                  :stobjs rand))
+  (if (= 1 limit) ; special case (BV size of 0)
+      (mv 0 rand)
+    (mv-let (bv rand)
+      (gen-random-bv (ceiling-of-lg limit) rand)
+      (mv (mod bv limit) rand))))
+
+(defthm integerp-of-mv-nth-0-of-gen-random-integer
+  (implies (posp limit)
+           (integerp (mv-nth 0 (gen-random-integer limit rand))))
+  :hints (("Goal" :in-theory (enable gen-random-integer))))
+
+(defthm acl2-numberp-of-mv-nth-0-of-gen-random-integer
+  (acl2-numberp (mv-nth 0 (gen-random-integer limit rand)))
+  :hints (("Goal" :in-theory (enable gen-random-integer))))
+
+;;returns an integer in the range [low, high-1].
+(defun gen-random-integer-in-range (low high rand)
+  (declare (xargs :guard (and (integerp low)
+                              (integerp high)
+                              (< low high))
+                  :stobjs rand))
+  (mv-let (value rand)
+    (gen-random-integer (- high low) rand)
+    (mv (+ low value) rand)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun test-case-typep (type)
+  (declare (xargs :guard t
+                  :hints (("Goal" :in-theory (enable list-type-len-type
+                                                     list-type-element-type
+                                                     list-typep)))))
+  (or (myquotep type)
+      (symbolp type) ; look up a previous val
+      (bv-typep type)
+      (and (list-typep type)
+           (test-case-typep (list-type-element-type type))
+           ;; todo: must be a scalar type:
+           (test-case-typep (list-type-len-type type)))
+      (and (consp type)
+           (eq :range (ffn-symb type))
+           (consp (fargs type))
+           (consp (cdr (fargs type)))
+           (integerp (farg1 type))
+           (integerp (farg2 type))
+           (< (farg1 type) (farg2 type)) ; low < high
+           )
+      (and (consp type)
+           (eq :eval (ffn-symb type))
+           (consp (fargs type))
+           (pseudo-termp (farg1 type)))
+      (and (consp type)
+           (eq :element (ffn-symb type))
+           (true-listp (cdr type)) ; or make the elements the cadr?
+           (consp (cdr type)) ; must be at least one element
+           )))
+
+;; Recognize an alist from vars to their "test types"
+(defund test-case-type-alistp (alist)
+  (declare (xargs :guard t))
+  (if (atom alist)
+      (null alist)
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (let ((var (car entry))
+                 (type (cdr entry)))
+             (and (symbolp var)
+                  (test-case-typep type)
+                  (test-case-type-alistp (rest alist))))))))
+
+
 ;fixme where do we document the format of var-type-alist (see axe-types.lisp, but that is incomplete?)?  a naked integer is a bv, a quoted integer is that constant
 ;returns (mv value rand)
 ;should we allow tuples?
 (mutual-recursion
  (defun gen-random-value (type rand var-value-alist)
-   (declare (xargs :guard (and (axe-typep type)
+   (declare (xargs :guard (and (test-case-typep type)
                                (symbol-alistp var-value-alist))
-                   :stobjs (rand)
+                   :stobjs rand
                    :measure (make-ord 1 (+ 1 (acl2-count type)) 0)
-                   :verify-guards nil ; todo
                    :hints (("Goal" :expand (axe-typep type)
-                            :in-theory (enable list-type-element-type list-type-len-type bv-typep list-typep
-                                                      axe-typep)))))
+                            :in-theory (e/d (list-type-element-type
+                                             list-type-len-type
+                                             bv-typep
+                                             list-typep
+                                             axe-typep)
+                                            (natp))))
+                   :guard-hints (("Goal"
+                                  :in-theory (e/d (list-typep BV-TYPEP)
+                                                  (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (unquote type) rand))
          ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?) ; todo: just use :eval for this?
@@ -86,7 +177,9 @@
           (let* ((width (bv-type-width type))
                  ;;(max (expt 2 width)) ;bozo precompute this on small values?
                  )
-            (gen-random-bv width rand)))
+            (if (equal width 0)
+                (mv 0 rand)
+              (gen-random-bv width rand))))
          ;; a value in the given range: should we allow the bounds to be random? ;fixme are the args of this good types? if we allow random endpoints, what if the range is empty?  maybe :range should take a start value and am interval length?
          ((eq :range (car type)) ;here the bounds are both inclusive
           (let ((low (second type))
@@ -124,17 +217,19 @@
             (mv-let (len rand)
               ;;if the len-type is a quoted constant, this just unquotes it:
               (gen-random-value len-type rand var-value-alist)
-              (prog2$ (cw "List length: ~x0.~%" len)
-                      (gen-random-values len element-type rand var-value-alist)))))
+              (if (not (natp len)) ; todo: drop check if we restrict what the len-type of a list-type can be
+                  (mv (er hard? 'gen-random-value "List length not a natp.") rand)
+                (prog2$ (cw "List length: ~x0.~%" len)
+                        (gen-random-values len element-type rand var-value-alist))))))
          (t (mv (er hard? 'gen-random-value "Unknown type: ~x0" type)
                 rand))))
 
  ;;returns (mv values rand)
  (defun gen-random-values (n type rand var-value-alist)
    (declare (xargs :guard (and (natp n)
-                               (axe-typep type)
+                               (test-case-typep type)
                                (symbol-alistp var-value-alist))
-                   :stobjs (rand)
+                   :stobjs rand
                    :measure (make-ord 1 (+ 1 (acl2-count type)) (+ 1 (nfix n)))))
    (if (zp n)
        (mv nil rand)
@@ -145,14 +240,19 @@
          (mv (cons value values)
              rand))))))
 
-(skip-proofs (verify-guards gen-random-value))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a test case.
 (defund test-casep (test-case)
   (declare (xargs :guard t))
   (symbol-alistp test-case))
+
+(defthm test-casep-of-cons-of-cons
+  (equal (test-casep (cons (cons var val) test-case))
+         (and (symbolp var)
+              (test-casep test-case)))
+  :hints (("Goal" :in-theory (enable test-casep))))
+
 
 ;; Recognize a true list of test cases.
 (defund test-casesp (test-cases)
@@ -162,34 +262,45 @@
     (and (test-casep (first test-cases))
          (test-casesp (rest test-cases)))))
 
+(defthm test-casesp-of-cons
+  (equal (test-casesp (cons case cases))
+         (and (test-casep case)
+              (test-casesp cases)))
+  :hints (("Goal" :in-theory (enable test-casesp))))
+
+(defthm test-casesp-forward-to-true-listp
+  (implies (test-casesp cases)
+           (true-listp cases))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable test-casesp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv alist rand)
-(defund make-test-case (var-type-alist acc rand)
-  (declare (xargs :guard (and (symbol-alistp var-type-alist)
-                              (symbol-alistp acc))
+(defund make-test-case (test-case-type-alist acc rand)
+  (declare (xargs :guard (and (test-case-type-alistp test-case-type-alist)
+                              (test-casep acc))
                   :stobjs rand
-                  :verify-guards nil ; todo
-                  ))
-  (if (endp var-type-alist)
+                  :guard-hints (("Goal" :in-theory (enable TEST-CASE-TYPE-ALISTP)))))
+  (if (endp test-case-type-alist)
       (mv acc rand)
-    (let* ((entry (first var-type-alist))
+    (let* ((entry (first test-case-type-alist))
            (var (car entry))
            (type (cdr entry)))
       (mv-let (value rand)
               (gen-random-value type rand acc)
-              (make-test-case (rest var-type-alist) (acons-fast var value acc) rand)))))
-
-(skip-proofs (verify-guards make-test-case))
+              (make-test-case (rest test-case-type-alist) (acons-fast var value acc) rand)))))
 
 (defthm test-casep-of-mv-nth-0-of-make-test-case
-  (implies (and (symbol-alistp var-type-alist)
+  (implies (and (test-case-type-alistp test-case-type-alist)
                 (test-casep acc))
-           (test-casep (mv-nth 0 (make-test-case var-type-alist acc rand))))
-  :hints (("Goal" :in-theory (enable test-casep make-test-case))))
+           (test-casep (mv-nth 0 (make-test-case test-case-type-alist acc rand))))
+  :hints (("Goal" :in-theory (enable test-casep make-test-case TEST-CASE-TYPE-ALISTP))))
 
 ;;ffixme might we need to pass in interpreted-functions
 (defun test-case-satisfies-assumptionsp (test-case assumptions)
+  (declare (xargs :guard (and (test-casep test-case)
+                              (pseudo-term-listp assumptions))))
   (if (endp assumptions)
       t
     (let ((assumption (first assumptions)))
@@ -198,25 +309,27 @@
            (test-case-satisfies-assumptionsp test-case (rest assumptions))
            ))))
 
-(skip-proofs (verify-guards test-case-satisfies-assumptionsp))
-
 ;returns (mv test-cases rand), where each test case is an alist from vars to values
 ;should we give them numbers?
-(defun make-test-cases-aux (test-cases-left test-case-number var-type-alist assumptions print acc rand)
-  (declare (xargs :stobjs rand
-                  :verify-guards nil))
+(defun make-test-cases-aux (test-cases-left test-case-number test-case-type-alist assumptions print acc rand)
+  (declare (xargs :guard (and (natp test-cases-left)
+                              (natp test-case-number)
+                              (test-case-type-alistp test-case-type-alist)
+                              (pseudo-term-listp assumptions)
+                              (test-casesp acc))
+            :stobjs rand))
   (if (zp test-cases-left)
       (mv (reverse acc)
           rand)
     (prog2$
      (and print (cw "(Test case ~x0: " test-case-number))
      (mv-let (test-case rand)
-             (make-test-case var-type-alist nil rand)
+             (make-test-case test-case-type-alist nil rand)
              (prog2$ (and print (cw ")~%"))
                      (if (test-case-satisfies-assumptionsp test-case assumptions)
                          (make-test-cases-aux (+ -1 test-cases-left)
                                               (+ 1 test-case-number)
-                                              var-type-alist
+                                              test-case-type-alist
                                               assumptions
                                               print
                                               (cons test-case acc)
@@ -224,22 +337,20 @@
                        (prog2$ (cw "!! WARNING test case ~x0 does not satisfy assumptions. Dropping it. !!~%" test-case-number)
                                (make-test-cases-aux (+ -1 test-cases-left) ;perhaps don't decrement the counter?
                                                     (+ 1 test-case-number)
-                                                    var-type-alist
+                                                    test-case-type-alist
                                                     assumptions
                                                     print
                                                     acc ;don't cons it on
                                                     rand))))))))
 
-(skip-proofs (verify-guards make-test-cases-aux))
-
 ;returns (mv test-cases rand), where each test case is an alist from vars to values
-(defun make-test-cases (test-case-count var-type-alist assumptions rand)
-  (declare (xargs :stobjs rand
-                  :verify-guards nil))
+(defun make-test-cases (test-case-count test-case-type-alist assumptions rand)
+  (declare (xargs :guard (and (natp test-case-count)
+                              (test-case-type-alistp test-case-type-alist)
+                              (pseudo-term-listp assumptions))
+                  :stobjs rand))
   (prog2$ (cw "(Making ~x0 test cases:~%" test-case-count)
           (mv-let (test-cases rand)
-                  (make-test-cases-aux test-case-count 0 var-type-alist assumptions nil nil rand)
+                  (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand)
                   (prog2$ (cw ")~%")
                           (mv test-cases rand)))))
-
-(skip-proofs (verify-guards make-test-cases))
