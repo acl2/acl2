@@ -91,6 +91,8 @@
   (acl2-numberp (mv-nth 0 (gen-random-integer limit rand)))
   :hints (("Goal" :in-theory (enable gen-random-integer))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;returns an integer in the range [low, high-1].
 (defun gen-random-integer-in-range (low high rand)
   (declare (xargs :guard (and (integerp low)
@@ -146,6 +148,7 @@
                   (test-case-typep type)
                   (test-case-type-alistp (rest alist))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;fixme where do we document the format of var-type-alist (see axe-types.lisp, but that is incomplete?)?  a naked integer is a bv, a quoted integer is that constant
 ;returns (mv value rand)
@@ -276,12 +279,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv alist rand)
+;; Returns (mv test-case rand).
 (defund make-test-case (test-case-type-alist acc rand)
   (declare (xargs :guard (and (test-case-type-alistp test-case-type-alist)
                               (test-casep acc))
                   :stobjs rand
-                  :guard-hints (("Goal" :in-theory (enable TEST-CASE-TYPE-ALISTP)))))
+                  :guard-hints (("Goal" :in-theory (enable test-case-type-alistp)))))
   (if (endp test-case-type-alist)
       (mv acc rand)
     (let* ((entry (first test-case-type-alist))
@@ -297,6 +300,8 @@
            (test-casep (mv-nth 0 (make-test-case test-case-type-alist acc rand))))
   :hints (("Goal" :in-theory (enable test-casep make-test-case TEST-CASE-TYPE-ALISTP))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;ffixme might we need to pass in interpreted-functions
 (defun test-case-satisfies-assumptionsp (test-case assumptions)
   (declare (xargs :guard (and (test-casep test-case)
@@ -308,6 +313,8 @@
                                            0))
            (test-case-satisfies-assumptionsp test-case (rest assumptions))
            ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv test-cases rand), where each test case is an alist from vars to values
 ;should we give them numbers?
