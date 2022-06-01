@@ -1,4 +1,4 @@
-; ACL2 customzation file for tools/ dir
+; ACL2 customization file for tools/ dir
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2021 Kestrel Institute
