@@ -28,7 +28,7 @@
 ;fffixme doesn't work if the range is too big?
 (defun gen-random-integer-in-range (low high rand)
   (declare (xargs :stobjs (rand)
-                  :guard-hints (("Goal" :in-theory (enable GENRANDOM)))
+                  :guard-hints (("Goal" :in-theory (enable genrandom)))
                   :guard (and (integerp low) (> low 0) (integerp high) (< low high))))
   (mv-let (value rand)
           (genrandom (- high low) rand)
@@ -77,7 +77,7 @@
                                                       axe-typep)))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (unquote type) rand))
-         ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?)
+         ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?) ; todo: just use :eval for this?
           (mv (lookup-eq-safe type var-value-alist)
               rand))
          ((bv-typep type) ;a bit-vector of the indicated width - should we allow this width to be random?
@@ -92,25 +92,23 @@
           (let ((low (second type))
                 (high (third type)))
             (gen-random-integer-in-range low (+ 1 high) rand)))
-         ;;ffixme deprecate:
          ;;           ((eq :len (car type)) ;the length of something (probably a previously generated var - this is also a dependent type - more general facility for this?):
          ;;            (mv-let (value rand)
          ;;                    (gen-random-value (second type) rand var-value-alist) ;just lookup the value?
          ;;                    (mv (len value) rand)))
-         ((eq :choice (car type)) ;fixme add support for probabilities other than 50/50
-          (mv-let (val rand)
-            (genrandom 2 rand)
-            (if (eql 0 val)
-                (gen-random-value (second type) rand var-value-alist)
-              (gen-random-value (third type) rand var-value-alist))))
+         ;; ((eq :choice (car type)) ;fixme add support for probabilities other than 50/50
+         ;;  (mv-let (val rand)
+         ;;    (genrandom 2 rand)
+         ;;    (if (eql 0 val)
+         ;;        (gen-random-value (second type) rand var-value-alist)
+         ;;      (gen-random-value (third type) rand var-value-alist))))
          ((eq :eval (car type))
           (mv (eval-axe-evaluator var-value-alist
                                   (second type)
                                   nil ;fixme?
                                   0)
               rand))
-
-;a random element of the given set:
+         ;;a random element of the given set:
          ((eq :element (car type)) ;should the elements be allowed to be random?
           (let ((set (cdr type)))  ;or use cadr?
             (mv-let (index rand)
@@ -128,7 +126,7 @@
               (gen-random-value len-type rand var-value-alist)
               (prog2$ (cw "List length: ~x0.~%" len)
                       (gen-random-values len element-type rand var-value-alist)))))
-         (t (mv (hard-error 'gen-random-value "Unknown type: ~x0" (acons #\0 type nil))
+         (t (mv (er hard? 'gen-random-value "Unknown type: ~x0" type)
                 rand))))
 
  ;;returns (mv values rand)

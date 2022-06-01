@@ -1,7 +1,7 @@
 ; Calling STP to prove things about DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -761,14 +761,14 @@
 ;fixme are shadowed pairs okay in this?
 ;does this chase chains of equalities? now it should.  test that!
  ;nodes that provide only type info get removed
+;; TODO: Show that this cannot include the empty-type or the most-general-type?  Maybe this needs to be able to return an error?
 (defund build-known-nodenum-type-alist (disjuncts ;to be assumed false (else the whole disjunction is true)
                                         dag-array
                                         dag-len)
   (declare (xargs :guard (and (possibly-negated-nodenumsp disjuncts)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
-                              (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
-                  :guard-hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum RATIONAL-LISTP-WHEN-ALL-NATP)))))
+                              (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len))
+                  :guard-hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum rational-listp-when-all-natp)))))
   (let* ((nodenums-to-assume (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len)) ;todo: what about ones that are not negated?
          (nodenum-count (len nodenums-to-assume)))
     (build-known-nodenum-type-alist-aux (* (+ 1 nodenum-count) ;not sure what we should use here
@@ -783,20 +783,17 @@
   (alistp (build-known-nodenum-type-alist disjuncts dag-array dag-len))
   :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist))))
 
-;;gen?
 (defthm nodenum-type-alistp-of-build-known-nodenum-type-alist
   (implies (and  (possibly-negated-nodenumsp disjuncts)
                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                 (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
-                 (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
+                 (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len))
            (nodenum-type-alistp (build-known-nodenum-type-alist disjuncts dag-array dag-len)))
   :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist))))
 
 (defthm all-<-of-strip-cars-of-build-known-nodenum-type-alist
   (implies (and  (possibly-negated-nodenumsp disjuncts)
                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                 (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
-                 (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
+                 (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len))
            (all-< (strip-cars (build-known-nodenum-type-alist disjuncts dag-array dag-len)) dag-len))
   :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist))))
 

@@ -45,7 +45,7 @@
 ;rename make-boolean-type..
 (defmacro boolean-type () ''(boolean))
 
-(defun boolean-typep (type)
+(defund boolean-typep (type)
   (declare (xargs :guard t))
   (equal type (boolean-type)))
 
@@ -56,16 +56,16 @@
 
 ;; todo: make these macros?
 
+;may change
+(defund bv-typep (type)
+  (declare (xargs :guard t))
+  (natp type))
+
 ;a BV type is (now) an positive integer representing the width (maybe 0 is allowed too?)
 ;may change
 (defund-inline make-bv-type (width)
   (declare (xargs :guard t))
   width)
-
-;may change
-(defund bv-typep (type)
-  (declare (xargs :guard t))
-  (natp type))
 
 (defthm bv-typep-of-make-bv-type
   (equal (bv-typep (make-bv-type width))
@@ -164,13 +164,11 @@
   :hints (("Goal" :in-theory (enable axe-typep))))
 
 ;;
-;; The "BV array" type (changing this to be a certain kind of :list type - namely, one where the elements are BVs and the length is a constant)
+;; The "BV array" type (now this is just particular kind of :list type - namely, one where the elements are BVs and the length is a constant)
 ;;
 
 (defund bv-array-typep (type)
   (declare (xargs :guard t))
-;;   (and (eql 3 (len type)) ;this might be overkill to check in some cases?
-;;        (eq 'array (first type)))
   (and (list-typep type)
        (bv-typep (list-type-element-type type))
        (myquotep (list-type-len-type type))
@@ -186,7 +184,6 @@
 ;note that an array type is compatible with any wider array type.. (but not one with a different length)
 (defund make-bv-array-type (element-width len) ;ffixme these args aren't really types.. should they be?
   (declare (xargs :guard t))
-  ;;`(array ,element-width ,len)
   (make-list-type (make-bv-type element-width) (enquote len)))
 
 (defthm list-typep-of-make-bv-array-type
@@ -245,17 +242,9 @@
                                      list-type-element-type
                                      list-typep))))
 
-
-
-
-
-
-
 ;bozo add support for everything in *operators-whose-size-we-know*
 ;bozo add and verify guard? -- the guard will need to say that the indices encountered are numbers if they are constants...
 ;put (ffn-symb term) in a let...
-
-
 ;this one includes bvnth, which we can't usefully tighten, in rules like BVXOR-TIGHTEN-ARG2.
 ;that's the difference
 ;; (defun unsigned-term-size2 (term)
@@ -314,6 +303,7 @@
 ;;                     nil))))))))))
 
 ;fffixme flesh this out! handle ranges? constants? sets?
+;; Callers that care about type mismatches should consider calling most-general-typep on the result.
 (defund union-types (type1 type2)
   (declare (xargs :guard (and (axe-typep type1)
                               (axe-typep type2))))
@@ -335,10 +325,10 @@
              (make-bv-array-type (max (bv-array-type-element-width type1)
                                       (bv-array-type-element-width type2))
                                  (bv-array-type-len type1))
-           (prog2$ (hard-error 'union-types "Array length mismatch." nil)
+           (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1" type1 type2)
                    (most-general-type))))
-        ;todo: throw a type mismatch error?
-        (t (most-general-type))))
+        (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1" type1 type2)
+                   (most-general-type)))))
 
 (defthm axe-typep-of-union-types
   (implies (and (axe-typep x)
@@ -394,9 +384,9 @@
              (make-bv-array-type (min (bv-array-type-element-width type1)
                                       (bv-array-type-element-width type2))
                                  (bv-array-type-len type1))
-           (prog2$ (cw "WARNING: Array length mismatch.") ;fixme improve message
+           (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1" type1 type2)
                    (empty-type))))
-        (t (prog2$ (cw "WARNING: Type mismatch.") ;fixme improve message
+        (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1" type1 type2)
                    (empty-type)))))
 
 (defthm axe-typep-of-intersect-types-safe
