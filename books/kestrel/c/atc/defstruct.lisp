@@ -404,57 +404,6 @@
    :array nil)
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-type-to-fixer ((type typep) (wrld plist-worldp))
-  :returns (fixer symbolp)
-  :short "ACL2 fixer corresponding to a C type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the fixers for
-     the predicates returned by @(tsee atc-type-to-recognizer)."))
-  (type-case
-   type
-   :void nil
-   :char nil
-   :schar 'schar-fix
-   :uchar 'uchar-fix
-   :sshort 'sshort-fix
-   :ushort 'ushort-fix
-   :sint 'sint-fix
-   :uint 'uint-fix
-   :slong 'slong-fix
-   :ulong 'ulong-fix
-   :sllong 'sllong-fix
-   :ullong 'ullong-fix
-   :struct nil
-   :pointer (type-case
-             type.to
-             :void nil
-             :char nil
-             :schar 'schar-array-fix
-             :uchar 'uchar-array-fix
-             :sshort 'sshort-array-fix
-             :ushort 'ushort-array-fix
-             :sint 'sint-array-fix
-             :uint 'uint-array-fix
-             :slong 'slong-array-fix
-             :ulong 'ulong-array-fix
-             :sllong 'sllong-array-fix
-             :ullong 'ullong-array-fix
-             :struct (b* ((info (defstruct-table-lookup
-                                  (ident->name type.to.tag)
-                                  wrld))
-                          ((unless info)
-                           (raise "Internal error: no fixer for ~x0."
-                                  type)))
-                       (defstruct-info->fixer info))
-             :pointer nil
-             :array nil)
-   :array nil)
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defstruct-process-members ((members true-listp) (ctx ctxp) state)
