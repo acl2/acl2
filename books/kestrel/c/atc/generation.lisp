@@ -797,8 +797,8 @@
      We return @('nil') for other types."))
   (type-case
    type
-   :void nil
-   :char nil
+   :void (raise "Internal error: type ~x0." type)
+   :char (raise "Internal error: type ~x0." type)
    :schar 'scharp
    :uchar 'ucharp
    :sshort 'sshortp
@@ -809,7 +809,7 @@
    :ulong 'ulongp
    :sllong 'sllongp
    :ullong 'ullongp
-   :struct nil
+   :struct (raise "Internal error: type ~x0." type)
    :pointer (type-case
              type.to
              :void nil
@@ -831,9 +831,9 @@
                            (raise "Internal error: no recognizer for ~x0."
                                   type)))
                        (defstruct-info->recognizer info))
-             :pointer nil
-             :array nil)
-   :array nil)
+             :pointer (raise "Internal error: type ~x0." type)
+             :array (raise "Internal error: type ~x0." type))
+   :array (raise "Internal error: type ~x0." type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
