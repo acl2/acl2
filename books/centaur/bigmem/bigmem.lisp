@@ -243,6 +243,12 @@
          (write-mem addr val-2 mem))
   :hints (("Goal" :in-theory (e/d (write-mem$a) ()))))
 
+(defthm write-mem-commute-safely
+  (implies (not (equal addr-2 addr-1))
+           (equal (write-mem addr-2 val-2 (write-mem addr-1 val-1 mem))
+                  (write-mem addr-1 val-1 (write-mem addr-2 val-2 mem))))
+  :hints (("Goal" :in-theory (e/d (write-mem$a) ()))))
+
 (defthm write-the-read
   (equal (write-mem addr (read-mem addr mem) mem)
          mem)
@@ -255,13 +261,6 @@
 (defthm read-mem-from-nil
   (equal (read-mem i nil) 0)
   :hints (("Goal" :in-theory (e/d (read-mem read-mem$a) ()))))
-
-(defthm read-mem-over-write-mem
-  (equal
-   (read-mem addr-1 (write-mem addr-2 val mem))
-   (if (equal addr-1 addr-2)
-       (acl2::loghead 8 (ifix val))
-     (read-mem addr-1 mem))))
 
 (defthmd loghead-identity-alt
   (implies (unsigned-byte-p n val)

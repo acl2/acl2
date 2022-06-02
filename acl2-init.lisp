@@ -1803,8 +1803,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; days earlier.  Even if the increase to 32,000 was not necessary, it seems a
 ; good idea to accommodate even the previous version.)
 
-  #+x86-64 32000
-  #-x86-64 2000)
+  #+(or x86-64 64-bit) 32000
+  #-(or x86-64 64-bit) 2000)
 
 #+sbcl
 (defvar *sbcl-home-dir*
@@ -1974,16 +1974,18 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
          (insert-string toplevel-args)
          (user-args-string inert-args "--end-toplevel-options"))))
     (chmod-executable sysout-name)
-
-; In SBCL 0.9.3 the read-only space is too small for dumping ACL2 on x86, so we
-; have to specify :PURIFY NIL. This will unfortunately result in some core file
-; bloat, and slightly slower startup.
-
     (sb-ext:gc)
     (sb-ext:save-lisp-and-die sysout-core
-                              :purify
-                              #+(or x86 x86-64 ppc) nil
-                              #-(or x86 x86-64 ppc) t)))
+
+; Quoting the SBCL manual on the :purify parameter: "This parameter has no
+; effect on platforms using the generational garbage collector."  The manual
+; also says "Garbage collection is done with the existing Conservative
+; Generational GC."  Our guess is that the presence of that garbage collector
+; is indicated by feature :GENCGC; see sbcl source file src/runtime/gencgc.c.
+; So most likely this use of :purify has no effect.  But maybe there are
+; platforms where it is helpful, so we go ahead with it.
+
+                              :purify t)))
 
 #+sbcl
 (defun save-acl2-in-sbcl (sysout-name &optional mode core-name)
