@@ -52,6 +52,22 @@
          (boolor x y))
   :hints (("Goal" :in-theory (enable boolor))))
 
+(defthm boolor-of-constant-arg1
+  (implies (syntaxp (quotep x))
+           (equal (boolor x y)
+                  (if x ; always resolvable
+                      t
+                    (bool-fix y))))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm boolor-of-constant-arg2
+  (implies (syntaxp (quotep y))
+           (equal (boolor x y)
+                  (if y ; always resolvable
+                      t
+                    (bool-fix x))))
+  :hints (("Goal" :in-theory (enable boolor))))
+
 ;gen to non-nil?
 (defthm boolor-of-t-arg1
   (equal (boolor t x)

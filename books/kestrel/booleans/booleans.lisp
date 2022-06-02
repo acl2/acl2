@@ -13,35 +13,21 @@
 
 ;; STATUS: In-progress
 
-(include-book "../utilities/myif")
+(include-book "../utilities/myif") ; reduce?
 (include-book "bool-fix")
 (include-book "boolor")
 (include-book "boolxor")
 (include-book "booland")
 (include-book "boolif")
+(include-book "iff")
+(include-book "not")
 
 ;make rules for combining constants?  or not, since we always know what happens to a constant - maybe just for xor?
 
-;;
-;; not
-;;
+;; todo: pull mynot into a separate bool, or remove it.
+;; todo: pull xor into a separate bool, or remove it.
 
-;should not be enabled or disabled?
-
-(defthm not-of-not
-  (equal (not (not x))
-         (bool-fix x)))
-
-
-;;These 3 rules should prevent boolif from ever having a constant in any argument position:
-
-(defthm boolif-when-quotep-arg1
-  (implies (syntaxp (quotep test))
-           (equal (boolif test x y)
-                  (if test
-                      (bool-fix x)
-                    (bool-fix y))))
-  :hints (("Goal" :in-theory (enable boolif))))
+;;These rules and boolif-when-quotep-arg1 should prevent boolif from ever having a constant in any argument position:
 
 (defthm boolif-when-quotep-arg2
   (implies (syntaxp (quotep x))
@@ -58,23 +44,6 @@
                       (boolor (not test) x)
                     (booland test x))))
   :hints (("Goal" :in-theory (enable booland boolif))))
-
-;for outside-in rewriting:
-(defthm boolif-when-not-nil
-  (implies test
-           (equal (boolif test x y)
-                  (bool-fix x)))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable boolif)))
-  )
-
-;for outside-in rewriting (do not remove the hyp):
-(defthm boolif-when-nil
-  (implies (equal nil test)
-           (equal (boolif test x y)
-                  (bool-fix y)))
-  :rule-classes nil)
-
 
 (defthm boolif-x-x-y
   (equal (boolif x x y)
@@ -98,6 +67,8 @@
   (implies (booleanp x)
            (equal (xor nil x)
                   x)))
+
+;; todo: pull mynot into a separate book, or remove it.
 
 ;We have this because we can disable it.
 (defund mynot (x)
@@ -312,27 +283,7 @@
          (boolif x z y))
   :hints (("Goal" :in-theory (enable boolor boolif booland))))
 
-;we may often open up iff, but here are some theorems about it anyway:
 
-(defthm iff-of-t-arg1
-  (equal (iff t x)
-         (bool-fix x)))
-
-(defthm iff-of-t-arg2
-  (equal (iff x t)
-         (bool-fix x)))
-
-(defthm iff-of-nil-arg1
-  (equal (iff nil x)
-         (not x)))
-
-(defthm iff-of-nil-arg2
-  (equal (iff x nil)
-         (not x)))
-
-(defthm iff-same
-  (equal (iff x x)
-         t))
 
 ;seems better than just using the definition of implies:
 (defthmd implies-opener

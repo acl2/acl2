@@ -51,32 +51,49 @@
            (equal (booland x y)
                   (booland y x))))
 
-;what about of something other than t or nil?
-(defthm booland-of-t
+(defthm booland-of-constant-arg1
+  (implies (syntaxp (quotep x))
+           (equal (booland x y)
+                  (if x ; always resolvable
+                      (bool-fix y)
+                    nil)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-of-constant-arg2
+  (implies (syntaxp (quotep y))
+           (equal (booland x y)
+                  (if y ; always resolvable
+                      (bool-fix x)
+                    nil)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthmd booland-of-t
   (equal (booland t x)
          (bool-fix x))
   :hints (("Goal" :in-theory (enable booland))))
 
-(defthm booland-of-non-nil
+;; Just use booland-of-constant-arg1?
+(defthmd booland-of-constant-when-non-nil-arg1
   (implies (and (syntaxp (quotep k))
                 k)
            (equal (booland k x)
                   (bool-fix x)))
   :hints (("Goal" :in-theory (enable booland))))
 
-(defthm booland-of-non-nil-arg2
+;; Just use booland-of-constant-arg2?
+(defthmd booland-of-constant-when-non-nil-arg2
   (implies (and (syntaxp (quotep k))
                 k)
            (equal (booland x k)
                   (bool-fix x)))
   :hints (("Goal" :in-theory (enable booland))))
 
-(defthm booland-of-nil-arg1
+(defthmd booland-of-nil-arg1
   (equal (booland nil x)
          nil)
   :hints (("Goal" :in-theory (enable booland))))
 
-(defthm booland-of-nil-arg2
+(defthmd booland-of-nil-arg2
   (equal (booland x nil)
          nil)
   :hints (("Goal" :in-theory (enable booland))))

@@ -24,6 +24,14 @@
 (defthm booleanp-of-boolif
   (booleanp (boolif x y z)))
 
+(defthm boolif-when-quotep-arg1
+  (implies (syntaxp (quotep test))
+           (equal (boolif test x y)
+                  (if test
+                      (bool-fix x)
+                    (bool-fix y))))
+  :hints (("Goal" :in-theory (enable boolif))))
+
 (defthm boolif-of-nil-and-t
   (equal (boolif x nil t)
          (not x))
@@ -84,3 +92,19 @@
 (defcong iff equal (boolif test x y) 1 :hints (("Goal" :in-theory (enable boolif))))
 (defcong iff equal (boolif test x y) 2 :hints (("Goal" :in-theory (enable boolif))))
 (defcong iff equal (boolif test x y) 3 :hints (("Goal" :in-theory (enable boolif))))
+
+;for outside-in rewriting:
+(defthm boolif-when-not-nil
+  (implies test
+           (equal (boolif test x y)
+                  (bool-fix x)))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable boolif)))
+  )
+
+;for outside-in rewriting (do not remove the hyp):
+(defthm boolif-when-nil
+  (implies (equal nil test)
+           (equal (boolif test x y)
+                  (bool-fix y)))
+  :rule-classes nil)

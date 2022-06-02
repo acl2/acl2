@@ -62,3 +62,19 @@
 ;; These help justify some things that Axe does:
 (defcong iff equal (boolxor x y) 1 :hints (("Goal" :in-theory (enable boolxor))))
 (defcong iff equal (boolxor x y) 2 :hints (("Goal" :in-theory (enable boolxor))))
+
+(defthm boolxor-of-constant-arg1
+  (implies (syntaxp (quotep x))
+           (equal (boolxor x y)
+                  (if x ; always resolvable
+                      (not y)
+                    (bool-fix y))))
+  :hints (("Goal" :in-theory (enable boolxor))))
+
+(defthm boolxor-of-constant-arg2
+  (implies (syntaxp (quotep y))
+           (equal (boolxor x y)
+                  (if y ; always resolvable
+                      (not x)
+                    (bool-fix x))))
+  :hints (("Goal" :in-theory (enable boolxor))))

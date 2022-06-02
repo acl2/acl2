@@ -69,28 +69,22 @@
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
   (declare (xargs :guard t))
-  `(booland-of-bool-fix-arg1
-    booland-of-bool-fix-arg2 ;add more like these?
+  `(;; Rules about bool-fix:
+    booland-of-bool-fix-arg1
+    booland-of-bool-fix-arg2
     boolor-of-bool-fix-arg1
     boolor-of-bool-fix-arg2
+    boolxor-of-bool-fix-arg1
+    boolxor-of-bool-fix-arg2
+    bool-fix-of-bool-fix
+    if-of-bool-fix-arg1 ; add a rule for myif too?
+    boolif-of-bool-fix-arg1
+    boolif-of-bool-fix-arg2
+    boolif-of-bool-fix-arg3
 
-    boolor-of-not-same-three-terms-alt
-    boolor-of-not-same-three-terms
-    boolor-of-not-same-alt
-    boolor-of-not-same
-    boolor-of-t-arg1
-    boolor-of-t-arg2
-    boolor-of-nil-arg1
-    boolor-of-nil-arg2
-    boolor-same
-    boolor-same-2
-    boolor-of-not-of-boolor-of-not-same
-
-    ;; booland-of-t ;use booland-of-non-nil instead
-    booland-of-non-nil ;use these more? ffixme these should fire before commutativity..
-    booland-of-non-nil-arg2
-    booland-of-nil-arg1
-    booland-of-nil-arg2
+    ;; Rules about booland:
+    booland-of-constant-arg1
+    booland-of-constant-arg2
     booland-same
     booland-same-2
     ;; booland-commute-constant ; trying without since we know how to handle any particular constant
@@ -99,22 +93,37 @@
     booland-of-not-same
     booland-of-not-same-alt ;drop?
 
+    ;; Rules about boolor:
+    boolor-of-constant-arg1
+    boolor-of-constant-arg2
+    boolor-same
+    boolor-same-2
+    boolor-of-not-same-three-terms-alt
+    boolor-of-not-same-three-terms
+    boolor-of-not-same-alt
+    boolor-of-not-same
+    boolor-of-not-of-boolor-of-not-same
+
+    ;; Rules about boolxor:
+    boolxor-of-constant-arg1
+    boolxor-of-constant-arg2
+    boolxor-same-1
+    boolxor-same-2
+
+    ;; Rules about boolif:
+    boolif-when-quotep-arg1
+    boolif-when-quotep-arg2 ; introduces boolor, or booland of not
+    boolif-when-quotep-arg3 ; introduces boolor of not, or booland
+    boolif-of-not-same-arg2-alt
+    boolif-of-not-same-arg3-alt
     boolif-x-x-y
     boolif-x-y-x
     boolif-same-branches
-    boolif-when-quotep-arg1
-    boolif-when-quotep-arg2
-    boolif-when-quotep-arg3
 
-    boolif-of-not-same-arg2-alt
-    boolif-of-not-same-arg3-alt
-
-    boolif-of-bool-fix-arg2
-    boolif-of-bool-fix-arg3
-
+    ;; Rules about iff:
     ;or should we open iff?
-    iff-of-t-arg1
-    iff-of-t-arg2
+    iff-of-t-arg1 ; gen?
+    iff-of-t-arg2 ; gen?
     iff-of-nil-arg1
     iff-of-nil-arg2))
 
@@ -133,7 +142,7 @@
             bool-fix-when-booleanp
             equal-same
             not-<-same
-            turn-equal-around-axe
+            turn-equal-around-axe ; may be dangerous?
             not-of-bool-fix
 
             ifix-does-nothing
@@ -2592,6 +2601,10 @@
 ;;
 ;; priorities
 ;;
+
+;; Want these to fire before commutativity:
+(table axe-rule-priorities-table 'booland-of-constant-arg1 -1)
+(table axe-rule-priorities-table 'booland-of-constant-arg2 -1)
 
 ;try this before bv-array-read-of-bv-array-write-both-better-work-hard, since this one has only a single work-hard
 ;would like a way to NOT try the both version if this one fails
