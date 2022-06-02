@@ -216,6 +216,7 @@
        (val    (mbe :logic (loghead 8 val)     :exec (the (unsigned-byte 8) val)))
        (page   (if (mbe :logic (< offset (pg-length page))
                         :exec (equal (the (unsigned-byte 1) (pg_vld page)) 1))
+                 
                    page
                  (b* ((page (update-pg_vld 1 page))
                       (page (resize-pg *num-page-entries* page)))
@@ -620,19 +621,27 @@
           (mem$c (write-mem$c n val mem$c)))
        (init-mem$c-region (the (unsigned-byte 50) (1- n)) val mem$c)))))
 
+(profile 'pages_vld)
+(profile 'pg_vld)
+(profile 'pages-length)
+(profile 'pg-length)
+(profile 'good-pagep)
+(profile 'good-level1p)
+(profile 'good-mem$cp)
+
 ;; (profile 'write-mem)
 ;; (profile 'write-to-l1)
 ;; (profile 'write-to-page)
 
 ;; (clear-memoize-statistics)
 
-(time$ (init-mem-region (1- (expt 2 20)) 0 mem))
+(time$ (init-mem$c-region (1- (expt 2 20)) 0 mem$c))
 ; (ACL2::EV-REC ACL2::*RETURN-LAST-ARG3* ...) took
 ; 0.86 seconds realtime, 0.86 seconds runtime
 ; (235,929,792 bytes allocated).
 <mem>
 
-(time$ (write-mem 0 #xFF mem))
+(time$ (write-mem$c 0 #xFF mem$c))
 ; (ACL2::EV-REC ACL2::*RETURN-LAST-ARG3* ...) took
 ; 1.05 seconds realtime, 1.06 seconds runtime
 ; (235,929,760 bytes allocated).
@@ -665,7 +674,7 @@
  From GOOD-LEVEL1P                           4.19E+6 calls took 1.40E-1; 100.0%)
 
 
-(time$ (init-mem-region (1- (expt 2 27)) 0 mem))
+(time$ (init-mem$c-region (1- (expt 2 27)) 0 mem$c))
 ; (ACL2::EV-REC ACL2::*RETURN-LAST-ARG3* ...) took
 ; 4.07 seconds realtime, 4.07 seconds runtime
 ; (128 bytes allocated).
