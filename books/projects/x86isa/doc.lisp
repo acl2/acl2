@@ -62,7 +62,7 @@
 ; (depends-on "images/x86isa.png")
 
 (defxdoc X86ISA
-  :parents (acl2::software-verification acl2::projects)
+  :parents (acl2::software-verification acl2::hardware-verification acl2::projects)
   :short "x86 ISA model and machine-code analysis framework developed
   at UT Austin"
   :long "<p><img src='res/images/x86isa.png' /></p>")
