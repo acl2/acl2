@@ -105,6 +105,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod defstruct-member-info
+  :short "Fixtype of information about
+          members of shallowly embedded C structures."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are part of @(tsee defstruct-info).")
+   (xdoc::p
+    "For each member, we store:")
+   (xdoc::ul
+    (xdoc::li
+     "The member type, which consists of the name and type of the member.
+      See @(tsee member-type) in the deep embedding.")
+    (xdoc::li
+     "The readers of the member.
+      For an integer member, it is a singleton list of the one reader.
+      For an array member (when supported), it is a list of ten readers,
+      one for each supported integer type for the index.")
+    (xdoc::li
+     "The writers of the member.
+      For an integer member, it is a singleton list of the one writer.
+      For an array member (when supported), it is a list of ten writers,
+      one for each supported integer type for the index.")
+    (xdoc::li
+     "The checkers of the member.
+      This is the empty list for an integer member,
+      while it consists of ten checkers for an array member (when supported),
+      one for each supported integer type for the index.")
+    (xdoc::li
+     "The names of the return type theorems
+      for all the readers, in the same order as the list of readers.")
+    (xdoc::li
+     "The names of the return type theorems
+      for all the writers, in the same order as the list of writers.")))
+  ((memtype member-type)
+   (readers symbol-listp)
+   (writers symbol-listp)
+   (checkers symbol-listp)
+   (reader-return-thms symbol-listp)
+   (writer-return-thms symbol-listp))
+  :pred defstruct-member-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist defstruct-member-info-list
+  :short "Fixtype of lists of information about
+          members of shallowly embedded C structures."
+  :elt-type defstruct-member-info
+  :true-listp t
+  :elementp-of-nil nil
+  :pred defstruct-member-info-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection defstruct-member-info-list->memtype-list (x)
+  :guard (defstruct-member-info-listp x)
+  :returns (memtypes member-type-listp)
+  :short "Lift @(tsee defstruct-member-info->memtype) to lists."
+  (defstruct-member-info->memtype x)
+  ///
+  (fty::deffixequiv defstruct-member-info-list->memtype-list
+    :args ((x defstruct-member-info-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod defstruct-info
   :short "Fixtype of information about shallowly embedded C structures."
   :long
@@ -120,29 +185,14 @@
       will spare us from having to double-check the invariants
       if we were to construct the identifier from the string.")
     (xdoc::li
-     "Information for the members (names and types);
-      see @(tsee member-type) in the deep embedding.")
+     "Information for the members; see @(tsee defstruct-member-info).")
     (xdoc::li
      "The recognizer of the structures.")
     (xdoc::li
      "The fixer of the structures.")
     (xdoc::li
-     "The readers of (the members of) the structures,
-      in the same order as the members.")
-    (xdoc::li
-     "The writers of (the members of) the structures,
-      in the same order as the members.")
-    (xdoc::li
      "The name of the theorem that rewrites away the fixer
       when the recognizer holds.")
-    (xdoc::li
-     "A list of the names of the return type theorems
-      for all the member readers,
-      in the same order as the members.")
-    (xdoc::li
-     "A list of the names of the return type theorems
-      for all the member writers,
-      in the same order as the members.")
     (xdoc::li
      "The name of a theorem asserting that
       if something is a structure of this type
@@ -168,14 +218,10 @@
     "The call of @(tsee defstruct).
      This supports redundancy checking."))
   ((tag ident)
-   (members member-type-list)
+   (members defstruct-member-info-list)
    (recognizer symbolp)
    (fixer symbolp)
-   (readers symbol-listp)
-   (writers symbol-listp)
    (fixer-recognizer-thm symbolp)
-   (reader-return-thms symbol-listp)
-   (writer-return-thms symbol-listp)
    (not-error-thm symbolp)
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
@@ -192,6 +238,66 @@
   :short "Fixtype of
           optional information about shallowly embedded C structures."
   :pred defstruct-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-info->readers ((info defstruct-infop))
+  :returns (readers symbol-listp)
+  :short "Names of all the readers of a @(tsee defstruct)."
+  (defstruct-info->readers-aux (defstruct-info->members info))
+  :prepwork
+  ((define defstruct-info->readers-aux ((members defstruct-member-info-listp))
+     :returns (readers symbol-listp)
+     :parents nil
+     (cond ((endp members) nil)
+           (t (append (defstruct-member-info->readers (car members))
+                      (defstruct-info->readers-aux (cdr members))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-info->writers ((info defstruct-infop))
+  :returns (writers symbol-listp)
+  :short "Names of all the writers of a @(tsee defstruct)."
+  (defstruct-info->writers-aux (defstruct-info->members info))
+  :prepwork
+  ((define defstruct-info->writers-aux ((members defstruct-member-info-listp))
+     :returns (writers symbol-listp)
+     :parents nil
+     (cond ((endp members) nil)
+           (t (append (defstruct-member-info->writers (car members))
+                      (defstruct-info->writers-aux (cdr members))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-info->reader-return-thms ((info defstruct-infop))
+  :returns (thms symbol-listp)
+  :short "Names of all the reader return theorems of a @(tsee defstruct)."
+  (defstruct-info->reader-return-thms-aux (defstruct-info->members info))
+  :prepwork
+  ((define defstruct-info->reader-return-thms-aux
+     ((members defstruct-member-info-listp))
+     :returns (thms symbol-listp)
+     :parents nil
+     (cond
+      ((endp members) nil)
+      (t (append (defstruct-member-info->reader-return-thms (car members))
+                 (defstruct-info->reader-return-thms-aux (cdr members))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-info->writer-return-thms ((info defstruct-infop))
+  :returns (thms symbol-listp)
+  :short "Names of all the writer return theorems of a @(tsee defstruct)."
+  (defstruct-info->writer-return-thms-aux (defstruct-info->members info))
+  :prepwork
+  ((define defstruct-info->writer-return-thms-aux
+     ((members defstruct-member-info-listp))
+     :returns (thms symbol-listp)
+     :parents nil
+     (cond
+      ((endp members) nil)
+      (t (append (defstruct-member-info->writer-return-thms (car members))
+                 (defstruct-info->writer-return-thms-aux (cdr members))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -709,31 +815,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-gen-reader ((struct-tag symbolp)
-                              (struct-tag-p symbolp)
-                              (struct-tag-fix symbolp)
-                              (name identp)
-                              (type typep)
-                              (memtypes member-type-listp)
-                              (wrld plist-worldp))
+(define defstruct-gen-member-readers ((struct-tag symbolp)
+                                      (struct-tag-p symbolp)
+                                      (struct-tag-fix symbolp)
+                                      (member member-typep)
+                                      (memtypes member-type-listp)
+                                      (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
-               (reader symbolp)
-               (reader-return-thm symbolp))
-  :short "Generate the reader for a member of
+               (readers symbol-listp)
+               (reader-return-thms symbol-listp))
+  :short "Generate the readers for a member of
           the structures defined by the @(tsee defstruct)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a wrapper of @(tsee value-struct-read),
+    "This is one reader for an integer member,
+     but there will be more than one for an array member (when supported).")
+   (xdoc::p
+    "The reader is a wrapper of @(tsee value-struct-read),
      but it has more specialized input and output types;
      in particular, it never returns an error.
      To prove the output type,
      we need an intermediate lemma about @(tsee value-struct-read).")
    (xdoc::p
-    "Also return the name of the reader
-     and the name of the return type theorem of the reader.
-     The latter is generated by @(tsee define)."))
-  (b* ((typep (atc-type-to-recognizer type wrld))
+    "Also return the names of the readers
+     and the names of the return type theorems of the readers,
+     in the same order as the readers.
+     The return type theorems are generated by @(tsee define)."))
+  (b* ((name (member-type->name member))
+       (type (member-type->type member))
+       (typep (atc-type-to-recognizer type wrld))
        (struct-tag-read-name (packn-pos (list struct-tag
                                               '-read-
                                               (ident->name name))
@@ -758,70 +869,43 @@
                                 (,struct-tag-fix struct))
              :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
              :hooks (:fix)))))
-    (mv event struct-tag-read-name return-thm)))
+    (mv event
+        (list struct-tag-read-name)
+        (list return-thm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-gen-readers ((struct-tag symbolp)
-                               (struct-tag-p symbolp)
-                               (struct-tag-fix symbolp)
-                               (members member-type-listp)
-                               (all-members member-type-listp)
-                               (wrld plist-worldp))
-  :returns (mv (events pseudo-event-form-listp)
-               (readers symbol-listp)
-               (reader-return-thms symbol-listp))
-  :short "Generate the readers for the members of
-          the structures defined by the @(tsee defstruct)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Also return the list of readers
-     and the list of return type theorems of the readers."))
-  (b* (((when (endp members)) (mv nil nil nil))
-       ((member-type member) (car members))
-       ((mv event reader return-thm)
-        (defstruct-gen-reader
-          struct-tag struct-tag-p struct-tag-fix
-          member.name member.type all-members
-          wrld))
-       ((mv events readers return-thms)
-        (defstruct-gen-readers
-          struct-tag struct-tag-p struct-tag-fix
-          (cdr members) all-members
-          wrld)))
-    (mv (cons event events)
-        (cons reader readers)
-        (cons return-thm return-thms))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defstruct-gen-writer ((struct-tag symbolp)
-                              (struct-tag-p symbolp)
-                              (struct-tag-fix symbolp)
-                              (name identp)
-                              (type typep)
-                              (members member-type-listp)
-                              (wrld plist-worldp))
+(define defstruct-gen-member-writers ((struct-tag symbolp)
+                                      (struct-tag-p symbolp)
+                                      (struct-tag-fix symbolp)
+                                      (member member-typep)
+                                      (members member-type-listp)
+                                      (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
-               (writer symbolp)
-               (writer-return-thm symbolp))
-  :short "Generate the writer for a member of
+               (writers symbol-listp)
+               (writer-return-thms symbol-listp))
+  :short "Generate the writers for a member of
           the structures defined by the @(tsee defstruct)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a wrapper of @(tsee value-struct-write),
+    "This is one writer for an integer member,
+     but there will be more than one for an array member (when supported).")
+   (xdoc::p
+    "The writer is a wrapper of @(tsee value-struct-write),
      but it has more specialized input and output types;
      in particular, it never returns an error.
      To prove the output type,
      we need some intermediate lemmas
      about @(tsee value-struct-write) and @('value-struct-write-aux').")
    (xdoc::p
-    "Also return the name of the writer
-     and the name of the return type theorem of the writer.
-     The latter is generated by @(tsee define)."))
-  (b* ((typep (atc-type-to-recognizer type wrld))
+    "Also return the names of the writers
+     and the name of the return type theorems of the writers,
+     in the same order as the writers.
+     The return type theorems are generated by @(tsee define)."))
+  (b* ((name (member-type->name member))
+       (type (member-type->type member))
+       (typep (atc-type-to-recognizer type wrld))
        (type-fix (atc-type-to-fixer type wrld))
        (struct-tag-write-name (packn-pos (list struct-tag
                                                '-write-
@@ -851,41 +935,61 @@
                                  (,struct-tag-fix struct))
              :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
              :hooks (:fix)))))
-    (mv event struct-tag-write-name return-thm)))
+    (mv event
+        (list struct-tag-write-name)
+        (list return-thm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-gen-writers ((struct-tag symbolp)
-                               (struct-tag-p symbolp)
-                               (struct-tag-fix symbolp)
-                               (members member-type-listp)
-                               (all-members member-type-listp)
-                               (wrld plist-worldp))
-  :returns (mv (events pseudo-event-form-listp)
-               (writers symbol-listp)
-               (writer-return-thms symbol-listp))
-  :short "Generate the writers for the members of
+(define defstruct-gen-member-readers/writers ((struct-tag symbolp)
+                                              (struct-tag-p symbolp)
+                                              (struct-tag-fix symbolp)
+                                              (member member-typep)
+                                              (members member-type-listp)
+                                              (wrld plist-worldp))
+  :returns (mv (event pseudo-event-formp)
+               (info defstruct-member-infop))
+  :short "Generate the readers and writers for a member of
           the structures defined by the @(tsee defstruct)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Also return the list of writers
-     and the list of return type theorems of the writers."))
-  (b* (((when (endp members)) (mv nil nil nil))
-       ((member-type member) (car members))
-       ((mv event writer return-thm)
-        (defstruct-gen-writer
-          struct-tag struct-tag-p struct-tag-fix
-          member.name member.type all-members
-          wrld))
-       ((mv events writers return-thms)
-        (defstruct-gen-writers
-          struct-tag struct-tag-p struct-tag-fix
-          (cdr members) all-members
-          wrld)))
+  (b* (((mv reader-event readers reader-return-thms)
+        (defstruct-gen-member-readers
+          struct-tag struct-tag-p struct-tag-fix member members wrld))
+       ((mv writer-event writers writer-return-thms)
+        (defstruct-gen-member-writers
+          struct-tag struct-tag-p struct-tag-fix member members wrld))
+       (event `(progn
+                 ,reader-event
+                 ,writer-event))
+       (info (make-defstruct-member-info
+              :memtype member
+              :readers readers
+              :writers writers
+              :checkers nil
+              :reader-return-thms reader-return-thms
+              :writer-return-thms writer-return-thms)))
+    (mv event info)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-gen-all-readers/writers ((struct-tag symbolp)
+                                           (struct-tag-p symbolp)
+                                           (struct-tag-fix symbolp)
+                                           (members member-type-listp)
+                                           (all-members member-type-listp)
+                                           (wrld plist-worldp))
+  :returns (mv (events pseudo-event-form-listp)
+               (infos defstruct-member-info-listp))
+  :short "Generate all the member readers and writers of
+          the structures defined by the @(tsee defstruct)."
+  (b* (((when (endp members)) (mv nil nil))
+       ((mv event info) (defstruct-gen-member-readers/writers
+                          struct-tag struct-tag-p struct-tag-fix
+                          (car members) all-members wrld))
+       ((mv events infos) (defstruct-gen-all-readers/writers
+                            struct-tag struct-tag-p struct-tag-fix
+                            (cdr members) all-members wrld)))
     (mv (cons event events)
-        (cons writer writers)
-        (cons return-thm return-thms))))
+        (cons info infos))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -922,22 +1026,15 @@
        (fixtype-event (defstruct-gen-fixtype
                         struct-tag struct-tag-p
                         struct-tag-fix struct-tag-equiv))
-       ((mv reader-events reader-names reader-return-thms)
-        (defstruct-gen-readers
-          struct-tag struct-tag-p struct-tag-fix members members wrld))
-       ((mv writer-events writer-names writer-return-thms)
-        (defstruct-gen-writers
+       ((mv reader/writer-events member-infos)
+        (defstruct-gen-all-readers/writers
           struct-tag struct-tag-p struct-tag-fix members members wrld))
        (info (make-defstruct-info
               :tag tag-ident
-              :members members
+              :members member-infos
               :recognizer struct-tag-p
               :fixer struct-tag-fix
-              :readers reader-names
-              :writers writer-names
               :fixer-recognizer-thm fixer-recognizer-thm
-              :reader-return-thms reader-return-thms
-              :writer-return-thms writer-return-thms
               :not-error-thm not-errorp-when-struct-tag-p
               :valuep-thm valuep-when-struct-tag-p
               :value-kind-thm value-kind-when-struct-tag-p
@@ -950,8 +1047,7 @@
        ,recognizer-event
        ,fixer-event
        ,fixtype-event
-       ,@reader-events
-       ,@writer-events
+       ,@reader/writer-events
        ,table-event))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))

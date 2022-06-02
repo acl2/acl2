@@ -606,9 +606,20 @@
   :short "Project the readers out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (readers (defstruct-info->readers (atc-tag-info->defstruct info)))
+       (readers (atc-string-taginfo-alist-to-readers-aux
+                 (defstruct-info->members (atc-tag-info->defstruct info))))
        (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
-    (append readers more-readers)))
+    (append readers more-readers))
+  :prepwork
+  ((define atc-string-taginfo-alist-to-readers-aux
+     ((members defstruct-member-info-listp))
+     :returns (readers symbol-listp)
+     :parents nil
+     (b* (((when (endp members)) nil)
+          (readers (defstruct-member-info->readers (car members)))
+          (more-readers (atc-string-taginfo-alist-to-readers-aux
+                         (cdr members))))
+       (append readers more-readers)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -620,11 +631,21 @@
           out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thms
-        (defstruct-info->reader-return-thms (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-reader-return-thms-aux
+              (defstruct-info->members (atc-tag-info->defstruct info))))
        (more-thms
         (atc-string-taginfo-alist-to-reader-return-thms (cdr prec-tags))))
-    (append thms more-thms)))
+    (append thms more-thms))
+  :prepwork
+  ((define atc-string-taginfo-alist-to-reader-return-thms-aux
+     ((members defstruct-member-info-listp))
+     :returns (reader-return-thms symbol-listp)
+     :parents nil
+     (b* (((when (endp members)) nil)
+          (thms (defstruct-member-info->reader-return-thms (car members)))
+          (more-thms
+           (atc-string-taginfo-alist-to-reader-return-thms-aux (cdr members))))
+       (append thms more-thms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -636,11 +657,21 @@
           out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thms
-        (defstruct-info->writer-return-thms (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-writer-return-thms-aux
+              (defstruct-info->members (atc-tag-info->defstruct info))))
        (more-thms
         (atc-string-taginfo-alist-to-writer-return-thms (cdr prec-tags))))
-    (append thms more-thms)))
+    (append thms more-thms))
+  :prepwork
+  ((define atc-string-taginfo-alist-to-writer-return-thms-aux
+     ((members defstruct-member-info-listp))
+     :returns (writer-return-thms symbol-listp)
+     :parents nil
+     (b* (((when (endp members)) nil)
+          (thms (defstruct-member-info->writer-return-thms (car members)))
+          (more-thms
+           (atc-string-taginfo-alist-to-writer-return-thms-aux (cdr members))))
+       (append thms more-thms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1343,7 +1374,8 @@
        (info (atc-tag-info->defstruct info))
        ((unless (member-eq term.fn (defstruct-info->readers info))) (no))
        (tag (defstruct-info->tag info))
-       (members (defstruct-info->members info))
+       (members (defstruct-member-info-list->memtype-list
+                  (defstruct-info->members info)))
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
@@ -1411,7 +1443,8 @@
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
        ((unless (member-eq val.fn (defstruct-info->writers info))) (no))
-       (members (defstruct-info->members info))
+       (members (defstruct-member-info-list->memtype-list
+                  (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
@@ -6637,7 +6670,8 @@
         (er-soft+ ctx t irr
                   "There is no DEFSTRUCT associated to the tag ~x0."
                   tag))
-       (meminfos (defstruct-info->members info))
+       (meminfos (defstruct-member-info-list->memtype-list
+                   (defstruct-info->members info)))
        (tag-ident (defstruct-info->tag info))
        (recognizer (defstruct-info->recognizer info))
        (fixer-recognizer-thm (defstruct-info->fixer-recognizer-thm info))
