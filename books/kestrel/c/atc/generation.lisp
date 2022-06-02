@@ -777,6 +777,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-type-to-recognizer ((type typep) (wrld plist-worldp))
+  :returns (recognizer symbolp)
+  :short "ACL2 recognizer corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a supported integer type,
+     the predicate is the recognizer of values of that type.
+     For a pointer to integer type,
+     the predicate is the recognizer of arrays with that element type.
+     For a pointer to structure type,
+     the predicate is the recognizer of structures of that type.
+     This is based on our current ACL2 representation of C types,
+     which may be extended in the future;
+     note that, in the current representation,
+     the predicate corresponding to each type
+     is not a recognizer of pointer values.
+     We return @('nil') for other types."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'scharp
+   :uchar 'ucharp
+   :sshort 'sshortp
+   :ushort 'ushortp
+   :sint 'sintp
+   :uint 'uintp
+   :slong 'slongp
+   :ulong 'ulongp
+   :sllong 'sllongp
+   :ullong 'ullongp
+   :struct nil
+   :pointer (type-case
+             type.to
+             :void nil
+             :char nil
+             :schar 'schar-arrayp
+             :uchar 'uchar-arrayp
+             :sshort 'sshort-arrayp
+             :ushort 'ushort-arrayp
+             :sint 'sint-arrayp
+             :uint 'uint-arrayp
+             :slong 'slong-arrayp
+             :ulong 'ulong-arrayp
+             :sllong 'sllong-arrayp
+             :ullong 'ullong-arrayp
+             :struct (b* ((info (defstruct-table-lookup
+                                  (ident->name type.to.tag)
+                                  wrld))
+                          ((unless info)
+                           (raise "Internal error: no recognizer for ~x0."
+                                  type)))
+                       (defstruct-info->recognizer info))
+             :pointer nil
+             :array nil)
+   :array nil)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
                (part1 symbolp)
