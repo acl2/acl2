@@ -312,11 +312,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is like @(tsee write-object),
-     but it does not return an error.
-     We use the base address of the object designator,
-     which is the same (modulo the fixtype wrapping) as the address
-     when the designator is a top-level one,
-     as currently required by @(tsee write-object).
+     but it does not return an error,
+     and it only really handles top-level object designators,
+     by taking the base address of the object designators,
+     which is what we need for now.
      We update the heap with the new object regardless of
      whether an old object at that address exists or not,
      and whether, if it exists, its type matches the new object.
