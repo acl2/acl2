@@ -17430,7 +17430,8 @@
                          normalize-xors
                          options
                          rand state result-array-stobj)
-   (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
+   (declare (xargs :guard (test-case-type-alistp var-type-alist) ; todo: allows more than we can handle when calling stp
+                   :mode :program :stobjs (rand state result-array-stobj)))
    (if (quotep dag-or-quotep) ;get rid of this and improve pre simp to take a constant?
        (let ((val (unquote dag-or-quotep)))
          (if (eq t val)
@@ -19557,6 +19558,7 @@
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (natp test-case-count)
+                              (test-case-type-alistp var-type-alist)
                               (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
                               (not (assoc-eq t var-type-alist)) ;consider relaxing this?
@@ -20867,7 +20869,7 @@
   (declare (xargs :guard (and (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
-                              (symbol-alistp types) ;todo constrain the cdrs
+                              (test-case-type-alistp types)
                               (symbolp name)
                               ;; print
                               (booleanp debug)
