@@ -1,7 +1,7 @@
 ; A book about boolor (boolean-valued disjunction)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -50,6 +50,22 @@
 (defthm boolor-same-2
   (equal (boolor x (boolor x y))
          (boolor x y))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm boolor-of-constant-arg1
+  (implies (syntaxp (quotep x))
+           (equal (boolor x y)
+                  (if x ; always resolvable
+                      t
+                    (bool-fix y))))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm boolor-of-constant-arg2
+  (implies (syntaxp (quotep y))
+           (equal (boolor x y)
+                  (if y ; always resolvable
+                      t
+                    (bool-fix x))))
   :hints (("Goal" :in-theory (enable boolor))))
 
 ;gen to non-nil?

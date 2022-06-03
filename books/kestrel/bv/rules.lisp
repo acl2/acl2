@@ -1621,11 +1621,11 @@
 ;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable))))
 
-(defthm bvxor-1-equal-0
-  (equal (equal (bvxor 1 x y) 0)
-         (xor (mynot (equal 0 (getbit 0 x)))
-              (equal 0 (getbit 0 y))))
-  :hints (("Goal" :in-theory (e/d (xor mynot bitxor bvxor) (BVXOR-1-BECOMES-BITXOR)))))
+;; (defthm bvxor-1-equal-0
+;;   (equal (equal (bvxor 1 x y) 0)
+;;          (xor (mynot (equal 0 (getbit 0 x)))
+;;               (equal 0 (getbit 0 y))))
+;;   :hints (("Goal" :in-theory (e/d (xor mynot bitxor bvxor) (BVXOR-1-BECOMES-BITXOR)))))
 
 
 ;gen the 1
@@ -1697,11 +1697,11 @@
                                      bvchop-1-becomes-getbit
                                      bvchop-lognot-bvchop)))))
 
-(defthm bvnot-equal-0-rewrite
-  (equal (equal 0 (bvnot 1 x))
-         (mynot (equal 0 (getbit 0 x))))
-  :hints (("Goal" :in-theory (e/d (bitnot) (BITNOT-BECOMES-BITXOR-WITH-1 ;bozo
-                                        )))))
+;; (defthm bvnot-equal-0-rewrite
+;;   (equal (equal 0 (bvnot 1 x))
+;;          (mynot (equal 0 (getbit 0 x))))
+;;   :hints (("Goal" :in-theory (e/d (bitnot) (BITNOT-BECOMES-BITXOR-WITH-1 ;bozo
+;;                                         )))))
 
 (defthm bvxor-of-bvnot-1
   (equal (bvxor 1 (bvnot 1 x) y)
