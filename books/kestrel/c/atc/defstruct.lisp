@@ -740,9 +740,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-fixing-term ((type typep))
+(define defstruct-gen-fixing-term ((type typep))
   :returns term
-  :short "Fixing term for a member of a given type."
+  :short "Generate the fixing term for a member of a given type."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -847,7 +847,7 @@
      :parents nil
      (b* (((when (endp memtypes)) nil)
           ((member-type member) (car memtypes))
-          (val (defstruct-fixing-term member.type))
+          (val (defstruct-gen-fixing-term member.type))
           (term `(make-member-value :name ',member.name :value ,val))
           (terms (defstruct-gen-fixer-aux (cdr memtypes))))
        (cons term terms)))))
