@@ -18,6 +18,8 @@
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
 (local (in-theory (disable randp symbol-alistp)))
 
@@ -271,6 +273,11 @@
               (test-casesp cases)))
   :hints (("Goal" :in-theory (enable test-casesp))))
 
+(defthm test-casesp-of-reverse-list
+  (implies (test-casesp acc)
+           (test-casesp (reverse-list acc)))
+  :hints (("Goal" :in-theory (enable reverse-list test-casep))))
+
 (defthm test-casesp-forward-to-true-listp
   (implies (test-casesp cases)
            (true-listp cases))
@@ -350,6 +357,12 @@
                                                     acc ;don't cons it on
                                                     rand))))))))
 
+(defthm test-casesp-of-mv-nth-0-of-make-test-cases-aux
+  (implies (and (test-case-type-alistp test-case-type-alist)
+                (test-casesp acc))
+           (test-casesp (mv-nth 0 (make-test-cases-aux test-cases-left test-case-number test-case-type-alist assumptions print acc rand))))
+  :hints (("Goal" :in-theory (enable make-test-cases-aux))))
+
 ;returns (mv test-cases rand), where each test case is an alist from vars to values
 (defun make-test-cases (test-case-count test-case-type-alist assumptions rand)
   (declare (xargs :guard (and (natp test-case-count)
@@ -361,3 +374,9 @@
                   (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand)
                   (prog2$ (cw ")~%")
                           (mv test-cases rand)))))
+
+(defthm test-casesp-of-mv-nth-0-of-make-test-cases
+  (implies (and (test-case-type-alistp test-case-type-alist)
+                (test-casesp acc))
+           (test-casesp (mv-nth 0 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
+  :hints (("Goal" :in-theory (enable make-test-cases))))
