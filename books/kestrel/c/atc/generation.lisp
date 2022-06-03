@@ -725,30 +725,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-tag-thms
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (thms symbol-listp)
-  :short "Project the value tag theorems out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (thm (defstruct-info->tag-thm (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-tag-thms (cdr prec-tags))))
-    (cons thm thms)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-string-taginfo-alist-to-members-thms
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (thms symbol-listp)
-  :short "Project the value member theorems out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (thm (defstruct-info->members-thm (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-members-thms (cdr prec-tags))))
-    (cons thm thms)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-string-taginfo-alist-to-exec-memberp-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -774,6 +750,67 @@
        (more-thms
         (atc-string-taginfo-alist-to-exec-asg-memberp-thms (cdr prec-tags))))
     (append thms more-thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-recognizer ((type typep) (wrld plist-worldp))
+  :returns (recognizer symbolp)
+  :short "ACL2 recognizer corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a supported integer type,
+     the predicate is the recognizer of values of that type.
+     For a pointer to integer type,
+     the predicate is the recognizer of arrays with that element type.
+     For a pointer to structure type,
+     the predicate is the recognizer of structures of that type.
+     This is based on our current ACL2 representation of C types,
+     which may be extended in the future;
+     note that, in the current representation,
+     the predicate corresponding to each type
+     is not a recognizer of pointer values.
+     We return @('nil') for other types."))
+  (type-case
+   type
+   :void (raise "Internal error: type ~x0." type)
+   :char (raise "Internal error: type ~x0." type)
+   :schar 'scharp
+   :uchar 'ucharp
+   :sshort 'sshortp
+   :ushort 'ushortp
+   :sint 'sintp
+   :uint 'uintp
+   :slong 'slongp
+   :ulong 'ulongp
+   :sllong 'sllongp
+   :ullong 'ullongp
+   :struct (raise "Internal error: type ~x0." type)
+   :pointer (type-case
+             type.to
+             :void nil
+             :char nil
+             :schar 'schar-arrayp
+             :uchar 'uchar-arrayp
+             :sshort 'sshort-arrayp
+             :ushort 'ushort-arrayp
+             :sint 'sint-arrayp
+             :uint 'uint-arrayp
+             :slong 'slong-arrayp
+             :ulong 'ulong-arrayp
+             :sllong 'sllong-arrayp
+             :ullong 'ullong-arrayp
+             :struct (b* ((info (defstruct-table-lookup
+                                  (ident->name type.to.tag)
+                                  wrld))
+                          ((unless info)
+                           (raise "Internal error: no recognizer for ~x0."
+                                  type)))
+                       (defstruct-info->recognizer info))
+             :pointer (raise "Internal error: type ~x0." type)
+             :array (raise "Internal error: type ~x0." type))
+   :array (raise "Internal error: type ~x0." type))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
