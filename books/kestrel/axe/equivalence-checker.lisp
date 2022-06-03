@@ -80,6 +80,7 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
@@ -1056,7 +1057,7 @@
 ;args are nodenums and/or quoteps
 ;;returns (mv worklist worklist-extendedp) where nodenum-worklist has been extended by any args to compute (non quoteps not marked done)
 ;; and worklist-extendedp indicates whether there were any such args
-(defun add-args-not-done (args done-nodes-array worklist worklist-extendedp)
+(defund add-args-not-done (args done-nodes-array worklist worklist-extendedp)
   (declare (xargs :guard (and (array1p 'done-nodes-array done-nodes-array)
                               (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array)))))
   (if (endp args)
@@ -1069,10 +1070,48 @@
         (add-args-not-done (rest args) done-nodes-array (cons arg worklist) t ;we've extended the worklist
                            )))))
 
+(defthm add-args-not-done-of-nil-arg1
+  (equal (add-args-not-done nil done-nodes-array worklist worklist-extendedp)
+         (mv worklist worklist-extendedp))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm nat-listp-of-mv-nth-0-of-add-args-not-done
+  (implies (and ;(array1p 'done-nodes-array done-nodes-array)
+            (all-dargp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
+            (NAT-LISTP WORKLIST))
+           (nat-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm all-<-of-mv-nth-0-of-add-args-not-done
+  (implies (and ;(array1p 'done-nodes-array done-nodes-array)
+            (bounded-darg-listp args bound)
+            (all-< WORKLIST bound))
+           (all-< (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
+                   bound))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm true-listp-of-mv-nth-0-of-add-args-not-done
+  (implies (true-listp worklist)
+           (true-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+;; once it's true, it stays true
+(defthm mv-nth-1-of-add-args-not-done-of-t
+  (mv-nth 1 (add-args-not-done args done-nodes-array worklist t))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm mv-nth-0-of-add-args-not-done-when-not-mv-nth-1-of-add-args-not-done
+  (implies (not (mv-nth 1 (add-args-not-done args done-nodes-array worklist worklist-extendedp)))
+           (equal (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
+                  worklist))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+
 ;args are nodenums with values in the array, or quoteps
 ;looks up the nodenums and unquotes the constants
 ;does similar functionality exist elsewhere (array names might differ)?
-(defun get-vals-of-args (args test-case-array-name test-case-array)
+(defund get-vals-of-args (args test-case-array-name test-case-array)
   (declare (xargs :guard (and (array1p test-case-array-name test-case-array)
                               (bounded-darg-listp args (alen1 test-case-array-name test-case-array)))))
   (if (endp args)
@@ -1084,14 +1123,28 @@
               (aref1 test-case-array-name test-case-array arg))
             (get-vals-of-args (rest args) test-case-array-name test-case-array)))))
 
-(defun num-true-nodes (n array-name array)
+(defund num-true-nodes (n array-name array)
   (declare (xargs :measure (nfix (+ 1 n))))
   (if (not (natp n))
       0
       (if (aref1 array-name array n)
           (+ 1
              (num-true-nodes (+ -1 n) array-name array))
-          (num-true-nodes (+ -1 n) array-name array))))
+        (num-true-nodes (+ -1 n) array-name array))))
+
+(defthm <=-of-num-true-nodes-linear
+  (implies (and (integerp n)
+                (<= -1 n))
+           (<= (num-true-nodes n array-name array)
+               (+ 1 n)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable num-true-nodes))))
+
+(defthm not-<-of-maxelem-and-nth
+  (implies (and (< n (len x))
+                (natp n))
+           (not (< (maxelem x) (nth n x))))
+  :hints (("Goal" :in-theory (enable maxelem (:i nth)))))
 
 ;; (defthm num-true-nodes-of-aset1
 ;;   (implies (and (array1p array-name array)
@@ -1111,141 +1164,345 @@
 ;fixme if there are no ifs in the dag, it would probably be faster to just evaluate every node in order?
 ;ffffixme add short-circuit evaluation for booland and boolor?
 (skip-proofs
- (defun evaluate-test-case-aux (nodenum-worklist
-                                dag-array-name dag-array
-                                var-value-alist ;the test case (gives values for variables)
+(defund evaluate-test-case-aux (nodenum-worklist
+                                dag-array-name dag-array dag-len
+                                test-case ;the test case (gives values for variables)
                                 test-case-array done-nodes-array
                                 interpreted-function-alist test-case-array-name)
-   (declare (xargs ;; :measure (make-ord 1 (+ 1 (- (nfix (alen1 'done-nodes-array done-nodes-array))
-                   ;;                              (num-true-nodes (+ -1 (alen1 'done-nodes-array done-nodes-array))
-                   ;;                                              'done-nodes-array done-nodes-array)))
-             ;;                    (len nodenum-worklist))
-             :guard (and (nat-listp nodenum-worklist)
-                         (array1p dag-array-name dag-array)
-                         (symbol-alistp var-value-alist)
-                         (array1p test-case-array-name test-case-array)
-                         (array1p 'done-nodes-array done-nodes-array)
-                         (all-< nodenum-worklist (alen1 'done-nodes-array done-nodes-array))
-                         (all-< nodenum-worklist (alen1 dag-array-name dag-array))
-                         (interpreted-function-alistp interpreted-function-alist))
-             :verify-guards nil))
-   (if (endp nodenum-worklist)
-       (mv test-case-array done-nodes-array)
-     (let ((nodenum (first nodenum-worklist)))
-       (if (aref1 'done-nodes-array done-nodes-array nodenum)
-           ;;it's possible that the node became done while this copy of its nodenum was sitting on the worklist (it was pushed again and processed, while this copy of it was still sitting there)
-           (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
-         ;;the node is not yet done:
-         (let ((expr (aref1 dag-array-name dag-array nodenum)))
-           (if (variablep expr)
-               (b* ((entry (assoc-eq expr var-value-alist))
-                    (- (if (not entry)
-                           (cw "WARNING: No entry for ~x0 in alist.~%" expr) ;previously this was an error
-                         nil))
-                    (value (cdr entry)))
-                 (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                         (aset1 ;-safe
-                                          test-case-array-name test-case-array nodenum value)
-                                         (aset1 ;-safe
-                                          'done-nodes-array done-nodes-array nodenum t)
-                                         interpreted-function-alist test-case-array-name))
-             (let ((fn (ffn-symb expr)))
-               (if (eq 'quote fn)
-                   (let ((value (unquote expr)))
-                     (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                             (aset1 ;-safe
-                                              test-case-array-name test-case-array nodenum value)
-                                             (aset1 ;-safe
-                                              'done-nodes-array done-nodes-array nodenum t)
-                                             interpreted-function-alist test-case-array-name))
-                 ;;function call or if (clean this up?)
-                 (let ((args (fargs expr)))
-                   (if (or (eq 'myif fn)
-                           (eq 'bvif fn)
-                           (eq 'boolif fn)
-                           (eq 'if fn))
-                       ;;if it's an ITE, only evaluate the branch we need
-                       (let* ((test (if (eq 'bvif fn)
-                                        (second args)
-                                      (first args)))
-                              (test-quotep (quotep-arg test))
-                              (test-done (or test-quotep
-                                             (aref1 'done-nodes-array done-nodes-array test))))
-                         (if (not test-done)
-                             ;;will reanalyze the ITE node once the test is evaluated:
-                             (evaluate-test-case-aux (cons test nodenum-worklist) dag-array-name dag-array var-value-alist
-                                                     test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
-                           ;;we know the result of the test, so handle the relevant branch
-                           (let* ((test-val (if test-quotep
-                                                (unquote test)
-                                              (aref1 test-case-array-name test-case-array test)))
-                                  (relevant-branch (if (eq 'bvif fn)
-                                                       (if test-val (third args) (fourth args))
-                                                     (if test-val (second args) (third args))))
-                                  (quotep-relevant-branch (quotep-arg relevant-branch))
-                                  (relevant-branch-done (or quotep-relevant-branch
-                                                            (aref1 'done-nodes-array done-nodes-array relevant-branch))))
-                             (if (not relevant-branch-done)
-                                 ;;will reanalyze the ITE node once the relevant branch is evaluated:
-                                 (evaluate-test-case-aux (cons relevant-branch nodenum-worklist) dag-array-name
-                                                         dag-array var-value-alist test-case-array done-nodes-array
-                                                         interpreted-function-alist test-case-array-name)
-                               ;; if the relevant branch has been computed, the value of the ITE is just that branch,
-                               ;; except that for bvif/boolif we have to bvchop/bool-fix it
-                               (let* ((bvif-and-size-not-done (and (eq fn 'bvif)
-                                                                   (let ((size (first args)))
-                                                                     (not (or (quotep-arg size)
-                                                                              (aref1 'done-nodes-array done-nodes-array size)))))))
-                                 (if bvif-and-size-not-done
-                                     ;;will reanalyze the ITE node once the size arg. is evaluated:
-                                     (evaluate-test-case-aux (cons (first args) nodenum-worklist) dag-array-name
-                                                             dag-array var-value-alist test-case-array done-nodes-array
-                                                             interpreted-function-alist test-case-array-name)
-                                   (let* ((relevant-branch-value (if quotep-relevant-branch
-                                                                     (unquote relevant-branch)
-                                                                   (aref1 test-case-array-name test-case-array relevant-branch)))
-                                          (value (if (eq fn 'bvif)
-                                                     (bvchop (let ((size (first args)))
-                                                               (if (quotep-arg size)
-                                                                   (unquote size)
-                                                                 (aref1 test-case-array-name test-case-array size)))
-                                                             relevant-branch-value)
-                                                   (if (eq fn 'boolif)
-                                                       (bool-fix relevant-branch-value)
-                                                     relevant-branch-value))))
-                                     (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                                             (aset1 ;-safe
-                                                              test-case-array-name test-case-array nodenum value)
-                                                             (aset1 ;-safe
-                                                              'done-nodes-array done-nodes-array nodenum t)
-                                                             interpreted-function-alist test-case-array-name))))))))
-                     ;;regular function call:
-                     (mv-let (nodenum-worklist worklist-extendedp)
-                       (add-args-not-done args done-nodes-array nodenum-worklist nil)
-                       (if worklist-extendedp
-                           ;;will reanalyze this node once the args are done:
-                           (evaluate-test-case-aux nodenum-worklist ;has been extended
-                                                   dag-array-name dag-array var-value-alist test-case-array
-                                                   done-nodes-array interpreted-function-alist test-case-array-name)
-                         ;;the args are done, so call the function:
-                         (let* ((arg-values (get-vals-of-args args test-case-array-name test-case-array))
-                                (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0)))
-                           (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                                   (aset1 ;-safe
-                                                    test-case-array-name test-case-array nodenum value)
-                                                   (aset1 ;-safe
-                                                    'done-nodes-array done-nodes-array nodenum t)
-                                                   interpreted-function-alist
-                                                   test-case-array-name)))))))))))))))
+  (declare (xargs ;; :measure (make-ord 1 (+ 1 (- (nfix (alen1 'done-nodes-array done-nodes-array))
+            ;;                              (num-true-nodes (+ -1 (alen1 'done-nodes-array done-nodes-array))
+            ;;                                              'done-nodes-array done-nodes-array)))
+            ;;                    (len nodenum-worklist))
+            :guard (and (nat-listp nodenum-worklist)
+                        (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                        (all-< nodenum-worklist dag-len)
+                        (array1p test-case-array-name test-case-array)
+                        (equal (alen1 test-case-array-name test-case-array) dag-len)
+                        (array1p 'done-nodes-array done-nodes-array)
+                        (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
+                        (symbol-alistp test-case)
+                        (interpreted-function-alistp interpreted-function-alist))
+            :verify-guards nil))
+  (if (endp nodenum-worklist)
+      (mv test-case-array done-nodes-array)
+    (let ((nodenum (first nodenum-worklist)))
+      (if (aref1 'done-nodes-array done-nodes-array nodenum)
+          ;;it's possible that the node became done while this copy of its nodenum was sitting on the worklist (it was pushed again and processed, while this copy of it was still sitting there)
+          (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+        ;;the node is not yet done:
+        (let ((expr (aref1 dag-array-name dag-array nodenum)))
+          (if (variablep expr)
+              (b* ((entry (assoc-eq expr test-case))
+                   (- (if (not entry)
+                          (cw "WARNING: No entry for ~x0 in alist.~%" expr) ;previously this was an error
+                        nil))
+                   (value (cdr entry)))
+                (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                        (aset1 test-case-array-name test-case-array nodenum value)
+                                        (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                        interpreted-function-alist test-case-array-name))
+            (let ((fn (ffn-symb expr)))
+              (if (eq 'quote fn)
+                  (let ((value (unquote expr)))
+                    (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                            (aset1 test-case-array-name test-case-array nodenum value)
+                                            (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                            interpreted-function-alist test-case-array-name))
+                ;;function call or if (clean this up?)
+                (let ((dargs (dargs expr)))
+                  (if (or (eq 'if fn)
+                          (eq 'myif fn))
+                      (if (not (mbe :exec (consp (cdr (cdr dargs)))
+                                    :logic (<= 3 (len dargs)))) ; for guard proof
+                          (prog2$ (er hard? 'evaluate-test-case-aux "Arity mismatch: ~x0" expr)
+                                  (mv test-case-array done-nodes-array))
+                        ;; It's an IF/MYIF, so only evaluate the branch we need:
+                        (let* ((test (first dargs))
+                               (test-quotep (quotep-arg test))
+                               (test-done (or test-quotep
+                                              (aref1 'done-nodes-array done-nodes-array test))))
+                          (if (not test-done)
+                              ;;will reanalyze the IF/MYIF node once the test is evaluated:
+                              (evaluate-test-case-aux (cons test nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                      test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+                            ;;we know the result of the test, so handle the relevant branch
+                            (let* ((test-val (if test-quotep
+                                                 (unquote test)
+                                               (aref1 test-case-array-name test-case-array test)))
+                                   (relevant-branch (if test-val (second dargs) (third dargs)))
+                                   (quotep-relevant-branch (quotep-arg relevant-branch))
+                                   (relevant-branch-done (or quotep-relevant-branch
+                                                             (aref1 'done-nodes-array done-nodes-array relevant-branch))))
+                              (if (not relevant-branch-done)
+                                  ;;will reanalyze the IF/MYIF again after once the relevant branch is evaluated:
+                                  (evaluate-test-case-aux (cons relevant-branch nodenum-worklist) dag-array-name
+                                                          dag-array dag-len test-case test-case-array done-nodes-array
+                                                          interpreted-function-alist test-case-array-name)
+                                ;; if the relevant branch has been computed, the value of the IF/MYIF is just that branch
+                                (let ((relevant-branch-value (if quotep-relevant-branch
+                                                                 (unquote relevant-branch)
+                                                               (aref1 test-case-array-name test-case-array relevant-branch))))
+                                  (evaluate-test-case-aux (rest nodenum-worklist)
+                                                          dag-array-name dag-array dag-len
+                                                          test-case
+                                                          (aset1 test-case-array-name test-case-array nodenum relevant-branch-value)
+                                                          (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                          interpreted-function-alist test-case-array-name)))))))
+                    (if (eq 'boolif fn)
+                        (if (not (mbe :exec (consp (cdr (cdr dargs)))
+                                      :logic (<= 3 (len dargs))))
+                            (prog2$ (er hard? 'evaluate-test-case-aux "Arity mismatch: ~x0" expr)
+                                    (mv test-case-array done-nodes-array))
+                          ;; It's a BOOLIF so only evaluate the branch we need:
+                          (let* ((test (first dargs))
+                                 (test-quotep (quotep-arg test))
+                                 (test-done (or test-quotep
+                                                (aref1 'done-nodes-array done-nodes-array test))))
+                            (if (not test-done)
+                                ;;will reanalyze the BOOLIF node once the test is evaluated:
+                                (evaluate-test-case-aux (cons test nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                        test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+                              ;;we know the result of the test, so handle the relevant branch
+                              (let* ((test-val (if test-quotep
+                                                   (unquote test)
+                                                 (aref1 test-case-array-name test-case-array test)))
+                                     (relevant-branch (if test-val (second dargs) (third dargs)))
+                                     (quotep-relevant-branch (quotep-arg relevant-branch))
+                                     (relevant-branch-done (or quotep-relevant-branch
+                                                               (aref1 'done-nodes-array done-nodes-array relevant-branch))))
+                                (if (not relevant-branch-done)
+                                    ;;will reanalyze the BOOLIF node once the relevant branch is evaluated:
+                                    (evaluate-test-case-aux (cons relevant-branch nodenum-worklist) dag-array-name
+                                                            dag-array dag-len test-case test-case-array done-nodes-array
+                                                            interpreted-function-alist test-case-array-name)
+                                  ;; if the relevant branch has been computed, the value of the BOOLIF is just that branch,
+                                  ;; except that we have to bvchop/bool-fix it
+                                  (let* ((relevant-branch-value (if quotep-relevant-branch
+                                                                    (unquote relevant-branch)
+                                                                  (aref1 test-case-array-name test-case-array relevant-branch)))
+                                         (value (bool-fix relevant-branch-value)))
+                                    (evaluate-test-case-aux (rest nodenum-worklist)
+                                                            dag-array-name dag-array dag-len test-case
+                                                            (aset1 test-case-array-name test-case-array nodenum value)
+                                                            (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                            interpreted-function-alist test-case-array-name)))))))
+                      (if (eq 'bvif fn)
+                          (if (not (mbe :exec (consp (cdr (cdr (cdr dargs))))
+                                        :logic (<= 4 (len dargs))))
+                              (prog2$ (er hard? 'evaluate-test-case-aux "Arity mismatch: ~x0" expr)
+                                      (mv test-case-array done-nodes-array))
+                            ;; It's a BVIF, so only evaluate the branch we need:
+                            (let* ((test (second dargs))
+                                   (test-quotep (quotep-arg test))
+                                   (test-done (or test-quotep
+                                                  (aref1 'done-nodes-array done-nodes-array test))))
+                              (if (not test-done)
+                                  ;;will reanalyze the BVIF node once the test is evaluated:
+                                  (evaluate-test-case-aux (cons test nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                          test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+                                ;;we know the result of the test, so handle the relevant branch
+                                (let* ((test-val (if test-quotep
+                                                     (unquote test)
+                                                   (aref1 test-case-array-name test-case-array test)))
+                                       (relevant-branch (if test-val (third dargs) (fourth dargs)))
+                                       (quotep-relevant-branch (quotep-arg relevant-branch))
+                                       (relevant-branch-done (or quotep-relevant-branch
+                                                                 (aref1 'done-nodes-array done-nodes-array relevant-branch))))
+                                  (if (not relevant-branch-done)
+                                      ;;will reanalyze the BVIF node once the relevant branch is evaluated:
+                                      (evaluate-test-case-aux (cons relevant-branch nodenum-worklist) dag-array-name
+                                                              dag-array dag-len test-case test-case-array done-nodes-array
+                                                              interpreted-function-alist test-case-array-name)
+                                    ;; if the relevant branch has been computed, the value of the BVIF is just that branch,
+                                    ;; except that we have to bvchop it
+                                    (let* ((size-not-done (let ((size (first dargs)))
+                                                            (not (or (quotep-arg size)
+                                                                     (aref1 'done-nodes-array done-nodes-array size))))))
+                                      (if size-not-done
+                                          ;;will reanalyze the BVIF node once the size arg. is evaluated: ; TODO: Handle the size and the test together
+                                          (evaluate-test-case-aux (cons (first dargs) nodenum-worklist) dag-array-name
+                                                                  dag-array dag-len test-case test-case-array done-nodes-array
+                                                                  interpreted-function-alist test-case-array-name)
+                                        (let* ((relevant-branch-value (if quotep-relevant-branch
+                                                                          (unquote relevant-branch)
+                                                                        (aref1 test-case-array-name test-case-array relevant-branch)))
+                                               (value (bvchop (nfix ; justified by bvchop-of-nfix
+                                                               (let ((size (first dargs)))
+                                                                 (if (quotep-arg size)
+                                                                     (unquote size)
+                                                                   (aref1 test-case-array-name test-case-array size))))
+                                                              (ifix ; justified by bvchop-of-ifix
+                                                               relevant-branch-value))))
+                                          (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                                  (aset1 test-case-array-name test-case-array nodenum value)
+                                                                  (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                                  interpreted-function-alist test-case-array-name)))))))))
+                        ;;regular function call:
+                        (mv-let (nodenum-worklist worklist-extendedp)
+                          (add-args-not-done dargs done-nodes-array nodenum-worklist nil)
+                          (if worklist-extendedp
+                              ;;will reanalyze this node once the args are done:
+                              (evaluate-test-case-aux nodenum-worklist ;has been extended
+                                                      dag-array-name dag-array dag-len test-case test-case-array
+                                                      done-nodes-array interpreted-function-alist test-case-array-name)
+                            ;;the args are done, so call the function:
+                            (let* ((arg-values (get-vals-of-args dargs test-case-array-name test-case-array))
+                                   (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0)))
+                              (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                      (aset1 test-case-array-name test-case-array nodenum value)
+                                                      (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                      interpreted-function-alist
+                                                      test-case-array-name))))))))))))))))
+)
 
-(skip-proofs
- (verify-guards evaluate-test-case-aux :otf-flg t)
- )
+(verify-guards evaluate-test-case-aux
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+            :in-theory (e/d (cadr-becomes-nth-of-1
+                             consp-of-cdr)
+                            (natp)))))
+
+(defthm array1p-of-mv-nth-0-of-evaluate-test-case-aux
+  (implies (and (nat-listp nodenum-worklist)
+                (all-< nodenum-worklist dag-len)
+                (array1p test-case-array-name test-case-array)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (equal (alen1 test-case-array-name test-case-array) dag-len)
+                ;;(array1p 'done-nodes-array done-nodes-array)
+                ;;(symbol-alistp test-case)
+                ;;(interpreted-function-alistp interpreted-function-alist)
+                )
+           (array1p test-case-array-name
+                    (mv-nth 0 (evaluate-test-case-aux nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name))))
+  :hints (("Goal"
+           :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX NODENUM-WORKLIST
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME))
+                    (:free (dag-len) (EVALUATE-TEST-CASE-AUX nil
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME)))
+           :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                            cadr-becomes-nth-of-1
+                            consp-of-cdr)
+                           (natp USE-ALL-RATIONALP-FOR-CAR
+                                 BVCHOP-OF-IF)))))
+
+(defthm alen1-of-mv-nth-0-of-evaluate-test-case-aux
+  (implies (and (nat-listp nodenum-worklist)
+                (all-< nodenum-worklist dag-len)
+                (array1p test-case-array-name test-case-array)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (equal (alen1 test-case-array-name test-case-array) dag-len)
+                ;;(array1p 'done-nodes-array done-nodes-array)
+                ;;(symbol-alistp test-case)
+                ;;(interpreted-function-alistp interpreted-function-alist)
+                )
+           (equal (alen1 test-case-array-name (mv-nth 0 (evaluate-test-case-aux nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
+                  (alen1 test-case-array-name test-case-array)))
+  :hints (("Goal"
+           :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX NODENUM-WORKLIST
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME))
+                    (:free (dag-len) (EVALUATE-TEST-CASE-AUX nil
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME)))
+           :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                            cadr-becomes-nth-of-1
+                            consp-of-cdr)
+                           (natp USE-ALL-RATIONALP-FOR-CAR
+                                 BVCHOP-OF-IF)))))
+
+(defthm array1p-of-mv-nth-1-of-evaluate-test-case-aux
+  (implies (and (nat-listp nodenum-worklist)
+                (all-< nodenum-worklist dag-len)
+                ;(array1p test-case-array-name test-case-array)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
+                (array1p 'done-nodes-array done-nodes-array)
+                ;;(symbol-alistp test-case)
+                ;;(interpreted-function-alistp interpreted-function-alist)
+                )
+           (array1p 'done-nodes-array
+                    (mv-nth 1 (evaluate-test-case-aux nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name))))
+  :hints (("Goal"
+           :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX NODENUM-WORKLIST
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME))
+                    (:free (dag-len) (EVALUATE-TEST-CASE-AUX nil
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME)))
+           :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                            cadr-becomes-nth-of-1
+                            consp-of-cdr)
+                           (natp USE-ALL-RATIONALP-FOR-CAR
+                                 BVCHOP-OF-IF)))))
+
+(defthm alen1-of-mv-nth-1-of-evaluate-test-case-aux
+  (implies (and (nat-listp nodenum-worklist)
+                (all-< nodenum-worklist dag-len)
+                ;(array1p test-case-array-name test-case-array)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
+                (array1p 'done-nodes-array done-nodes-array)
+                ;;(symbol-alistp test-case)
+                ;;(interpreted-function-alistp interpreted-function-alist)
+                )
+           (equal (alen1 'done-nodes-array (mv-nth 1 (evaluate-test-case-aux nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
+                  (alen1 'done-nodes-array done-nodes-array)))
+  :hints (("Goal"
+           :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX NODENUM-WORKLIST
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME))
+                    (:free (dag-len) (EVALUATE-TEST-CASE-AUX nil
+                                                             DAG-ARRAY-NAME DAG-ARRAY
+                                                             dag-len
+                                                             TEST-CASE
+                                                             TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                             INTERPRETED-FUNCTION-ALIST
+                                                             TEST-CASE-ARRAY-NAME)))
+           :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                            cadr-becomes-nth-of-1
+                            consp-of-cdr)
+                           (natp USE-ALL-RATIONALP-FOR-CAR
+                                 BVCHOP-OF-IF)))))
+
 
 ;returns test-case-array, which has the name test-case-array-name
 ;ffixme use a separate array?
 (defun tag-not-done-nodes-as-unused (current-nodenum done-nodes-array test-case-array test-case-array-name)
-  (declare (xargs :measure (nfix (+ 1 current-nodenum))))
+  (declare (xargs :guard (and (integerp current-nodenum)
+                              (array1p test-case-array-name test-case-array)
+                              (array1p 'done-nodes-array done-nodes-array)
+                              (< CURRENT-NODENUM (ALEN1 'DONE-NODES-ARRAY DONE-NODES-ARRAY))
+                              (< CURRENT-NODENUM (ALEN1 test-case-array-name test-case-array)))
+                  :measure (nfix (+ 1 current-nodenum))))
   (if (not (natp current-nodenum))
       test-case-array
     (let* ((donep (aref1 'done-nodes-array done-nodes-array current-nodenum)))
@@ -1255,33 +1512,38 @@
                                       (aset1-safe test-case-array-name test-case-array current-nodenum :unused)
                                       test-case-array-name)))))
 
-(skip-proofs (verify-guards tag-not-done-nodes-as-unused))
 
 ;returns TEST-CASE-ARRAY, which has the name TEST-CASE-ARRAY-NAME and which has values for each node that supports any node in NODES-TO-EVAL for this test case (different test cases may evaluate the ifs differently)
 ; TEST-CASE-ARRAY will associate irrelevant nodes with the value :unused - FFIXME what if a node actually evaluates to :unused?  could return done-nodes-array (but if we are keeping several done-node-arrays we might want to give them different names paralleling the test case array names)
 ;; todo: count and print the number of nodes that are not :unused
-(defun evaluate-test-case (nodes-to-eval
-                           max-nodenum ;why pass this in?
-                           dag-array-name dag-array var-value-alist interpreted-function-alist
+(defun evaluate-test-case (nodes-to-eval ; we'll find values for all of these nodes
+                           dag-array-name dag-array
+                           test-case
+                           interpreted-function-alist
                            test-case-array-name)
-  (mv-let (test-case-array done-nodes-array)
-          (evaluate-test-case-aux nodes-to-eval ;initial worklist
-                                  dag-array-name dag-array var-value-alist
-                                  ;;would it be faster to reuse this array and just clear it out here?
-                                  (make-empty-array test-case-array-name (+ 1 max-nodenum))
-                                  ;;would it be faster to reuse this array and just clear it out here?
-                                  (make-empty-array 'done-nodes-array (+ 1 max-nodenum))
-                                  interpreted-function-alist test-case-array-name)
-          ;;can we avoid this step? just return the done-nodes-array?
-          (tag-not-done-nodes-as-unused max-nodenum done-nodes-array test-case-array test-case-array-name)))
-
-(skip-proofs (verify-guards evaluate-test-case))
+  (declare (xargs :guard (and (nat-listp nodes-to-eval)
+                              (consp nodes-to-eval) ; must be at least one node, so we can find the max
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
+                              (test-casep test-case)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (symbolp test-case-array-name))))
+  (let* ((max-nodenum (maxelem nodes-to-eval))
+         (dag-len (+ 1 max-nodenum)) ; the effective length of the dag, for the purposes of this test case
+         ;;would it be faster to reuse this array and just clear it out here?
+         (test-case-array (make-empty-array test-case-array-name dag-len))
+         ;;would it be faster to reuse this array and just clear it out here?
+         (done-nodes-array (make-empty-array 'done-nodes-array dag-len)))
+    (mv-let (test-case-array done-nodes-array)
+      (evaluate-test-case-aux nodes-to-eval ;initial worklist
+                              dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+      ;;can we avoid this step? just return the done-nodes-array?
+      (tag-not-done-nodes-as-unused max-nodenum done-nodes-array test-case-array test-case-array-name))))
 
 ;;TEST-CASE-ARRAY-NAME and TEST-CASE-ARRAY may be nil - fffixme what happens in that case?
 ;;returns the trace of the execution of the recursive function at nodenum, or nil if nodenum isn't used on this test case (but only if TEST-CASE-ARRAY is non-nil)
 ;fixme - handle the case when too many cases are skipped!? done elsewhere?
 (defun get-trace-for-node (nodenum dag-array-name dag-array interpreted-function-alist
-                                   var-value-alist ;the test case
+                                   test-case ;the test case
                                    test-case-array-name
                                    test-case-array)
   (declare (xargs :verify-guards nil))
@@ -1306,20 +1568,22 @@
                                ;;if we passed in a test-case-array, just look-up the arg vals
                                (get-vals-of-args args test-case-array-name test-case-array)
                              ;;no test-case-array was passed in, so we have to compute the whole test case:
-                             (let* ((args-to-eval (keep-atoms args))
-                                    ;;fffixme this may crash if the node is :unused in the whole test case:
-                                    ;;should we evaluate things top-down like we do the whole miter to try to detect such cases?
-                                    ;;fixme this sets unused nodes to :unused - don't bother?
-                                    (test-case-array (evaluate-test-case
-                                                      args-to-eval ;initial worklist
-                                                      (+ -1 nodenum) ;fffixme overkill?
-                                                      dag-array-name
-                                                      dag-array
-                                                      (prog2$ nil ;(cw "evaluating partial test case for ~x0.~%" var-value-alist)
-                                                              var-value-alist)
-                                                      interpreted-function-alist
-                                                      'test-case-array)))
-                               (get-vals-of-args args 'test-case-array test-case-array)))))
+                             (let* ((args-to-eval (keep-atoms args)))
+                               (if (not args-to-eval)
+                                   ;; args were all constants:
+                                   args
+                                 (let (;;fffixme this may crash if the node is :unused in the whole test case:
+                                       ;;should we evaluate things top-down like we do the whole miter to try to detect such cases?
+                                       ;;fixme this sets unused nodes to :unused - don't bother?
+                                       (test-case-array (evaluate-test-case
+                                                         args-to-eval ;initial worklist
+                                                         dag-array-name
+                                                         dag-array
+                                                         (prog2$ nil ;(cw "evaluating partial test case for ~x0.~%" test-case)
+                                                                 test-case)
+                                                         interpreted-function-alist
+                                                         'test-case-array)))
+                                   (get-vals-of-args args 'test-case-array test-case-array)))))))
             ;;evaluate and trace the recursive function call:
             (mv-let (value trace)
                     (apply-axe-evaluator-with-tracing
@@ -8059,16 +8323,17 @@
 ;;
 
 (defun print-vals-of-nodes (nodenums array-name array)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (array1p array-name array)
+                              (all-< nodenums (alen1 array-name array)))))
   (if (endp nodenums)
       nil
     (prog2$ (cw "Node ~x0 is ~x1.~%" (car nodenums) (aref1 array-name array (car nodenums)))
             (print-vals-of-nodes (rest nodenums) array-name array))))
 
-(skip-proofs (verify-guards print-vals-of-nodes))
-
 ;; returns TEST-CASE-ARRAY, which has a value for each node that supports the top node for this test (and :unused for other nodes) and which has name TEST-CASE-ARRAY-NAME
 ;; also checks that the top node evaluates to true
-(defun evaluate-and-check-test-case (var-value-alist ;the test case
+(defun evaluate-and-check-test-case (test-case
                                      dag-array-name dag-array dag-len
                                      interpreted-function-alist
                                      test-case-array-name
@@ -8077,8 +8342,8 @@
   (let* ((top-nodenum (+ -1 dag-len))
          (test-case-array
           (evaluate-test-case (list top-nodenum)
-                              top-nodenum dag-array-name
-                              dag-array var-value-alist
+                              dag-array-name dag-array
+                              test-case
                               interpreted-function-alist
                               test-case-array-name))
          (top-node-value (aref1 test-case-array-name test-case-array top-nodenum)))
@@ -8087,7 +8352,7 @@
                 test-case-array)
       ;;fixme return an error flag and catch it later?
       (progn$ (cw "!!!! We found a test case that does not evaluate to true:~%")
-              (cw "Test case: ~x0~%" var-value-alist)
+              (cw "Test case: ~x0~%" test-case)
               (print-array2 test-case-array-name test-case-array dag-len) ;this can be big!
               (er hard? 'evaluate-and-check-test-case "Untrue test case (see above)")))))
 
