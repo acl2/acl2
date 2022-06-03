@@ -870,15 +870,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-type-to-recognizer ((type typep))
+(define defstruct-type-to-reader/writer-value-recognizer ((type typep))
   :returns (recognizer symbolp)
-  :short "Map a C type to a corresponding recognizer,
-          for use in structure readers and writers."
+  :short "Recognizer of the value read from or written to a member,
+          via the corresponding reader or writer."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This mapping is only used for the purpose of
-     generating structure readers and writers.
+    "This is used when generating structure readers and writers.
      The type is the one of the member,
      and the recognizer is the one of
      the values returned by the reader
@@ -935,7 +934,8 @@
   (xdoc::topstring
    (xdoc::p
     "These are the fixers corresponding to
-     the recognizers returned by @(tsee defstruct-type-to-recognizer).
+     the recognizers returned by
+     @(tsee defstruct-type-to-reader/writer-value-recognizer).
      See that function's documentation for an explanation of this mapping."))
   (type-case
    type
@@ -1004,7 +1004,7 @@
        (type (member-type->type member))
        ((unless (type-integerp type))
         (mv '(progn) nil nil)) ; TODO
-       (typep (defstruct-type-to-recognizer type))
+       (typep (defstruct-type-to-reader/writer-value-recognizer type))
        (struct-tag-read-name (packn-pos (list struct-tag
                                               '-read-
                                               (ident->name name))
@@ -1066,7 +1066,7 @@
        (type (member-type->type member))
        ((unless (type-integerp type))
         (mv '(progn) nil nil)) ; TODO
-       (typep (defstruct-type-to-recognizer type))
+       (typep (defstruct-type-to-reader/writer-value-recognizer type))
        (type-fix (defstruct-type-to-fixer type))
        (struct-tag-write-name (packn-pos (list struct-tag
                                                '-write-
