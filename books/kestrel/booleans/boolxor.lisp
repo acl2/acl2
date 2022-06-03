@@ -1,7 +1,7 @@
 ; A book about boolxor (boolean-valued xor)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "bool-fix")
 
 ;TODO: compare to the built-in function xor!
+
 (defund boolxor (x y)
   (if x
       (if y nil t)

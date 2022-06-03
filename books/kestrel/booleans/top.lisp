@@ -18,4 +18,5 @@
 (include-book "iff")
 (include-book "not")
 (include-book "booleans")
+(include-book "booleans2")
 ; (include-book "compat") ; intentionally not included here
