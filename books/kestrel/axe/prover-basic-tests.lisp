@@ -209,7 +209,7 @@
 ;;                   (equal 3 (len x)))
 ;;              (equal (foo x) (foo (cons (car x) (cons (cadr x) (cons (caddr x) nil))))))
 ;;     :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal BOOLAND-OF-T BOOL-FIX$INLINE BOOLAND-OF-NIL-ARG1
-;;                     BOOLAND-OF-NON-NIL-ARG2) ;todo: few to none of these rules should need to be given explicitly
+;;                     BOOLAND-OF-constant-when-NON-NIL-ARG2) ;todo: few to none of these rules should need to be given explicitly
 ;;     :rule-classes nil
 ;;     ))
 

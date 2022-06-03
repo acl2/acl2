@@ -1,7 +1,7 @@
 ; Theorems about boolean operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,35 +13,16 @@
 
 ;; STATUS: In-progress
 
-(include-book "../utilities/myif")
+(include-book "../utilities/myif") ; reduce?
 (include-book "bool-fix")
 (include-book "boolor")
 (include-book "boolxor")
 (include-book "booland")
 (include-book "boolif")
+(include-book "iff")
+(include-book "not")
 
-;make rules for combining constants?  or not, since we always know what happens to a constant - maybe just for xor?
-
-;;
-;; not
-;;
-
-;should not be enabled or disabled?
-
-(defthm not-of-not
-  (equal (not (not x))
-         (bool-fix x)))
-
-
-;;These 3 rules should prevent boolif from ever having a constant in any argument position:
-
-(defthm boolif-when-quotep-arg1
-  (implies (syntaxp (quotep test))
-           (equal (boolif test x y)
-                  (if test
-                      (bool-fix x)
-                    (bool-fix y))))
-  :hints (("Goal" :in-theory (enable boolif))))
+;;These rules and boolif-when-quotep-arg1 should prevent boolif from ever having a constant in any argument position:
 
 (defthm boolif-when-quotep-arg2
   (implies (syntaxp (quotep x))
@@ -59,23 +40,6 @@
                     (booland test x))))
   :hints (("Goal" :in-theory (enable booland boolif))))
 
-;for outside-in rewriting:
-(defthm boolif-when-not-nil
-  (implies test
-           (equal (boolif test x y)
-                  (bool-fix x)))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable boolif)))
-  )
-
-;for outside-in rewriting (do not remove the hyp):
-(defthm boolif-when-nil
-  (implies (equal nil test)
-           (equal (boolif test x y)
-                  (bool-fix y)))
-  :rule-classes nil)
-
-
 (defthm boolif-x-x-y
   (equal (boolif x x y)
          (boolor x y))
@@ -85,95 +49,6 @@
   (equal (boolif x y x)
          (booland x y))
   :hints (("Goal" :in-theory (enable booland boolif))))
-
-(defthm xor-associative
-  (implies (and (booleanp a)
-                (booleanp b)
-                (booleanp c))
-           (equal (xor (xor a b) c)
-                  (xor a (xor b c))))
-  :hints (("Goal" :in-theory (enable xor))))
-
-(defthm xor-nil
-  (implies (booleanp x)
-           (equal (xor nil x)
-                  x)))
-
-;We have this because we can disable it.
-(defund mynot (x)
-  (not x))
-
-(defthm xor-t
-  (implies (booleanp x)
-           (equal (xor t x)
-                  (mynot x)))
-  :hints (("Goal" :in-theory (enable xor mynot))))
-
-(defthm mynot-mynot
-  (implies (booleanp x)
-           (equal (mynot (mynot x))
-                  x))
-  :hints (("Goal" :in-theory (enable mynot))))
-
-(defthm xor-of-mynot-1
-  (equal (xor (mynot a) b)
-         (mynot (xor a b)))
-  :hints (("Goal" :in-theory (enable xor mynot))))
-
-(defthm xor-of-mynot-2
-  (equal (xor b (mynot a))
-         (mynot (xor b a)))
-  :hints (("Goal" :in-theory (enable xor mynot))))
-
-;yuck?!
-(defthm xor-when-equal
-  (implies (equal x y)
-           (equal (xor x y)
-                  nil))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-;or should we rewrite the order of equal?
-(defthm xor-equal-hack
-  (equal (xor (equal x y) (equal y x))
-         nil)
-  :hints (("Goal" :in-theory (enable xor))))
-
-(defthm xor-combine-constants
-  (implies (syntaxp (and (quotep a) (quotep b)))
-           (equal (xor a (xor b c))
-                  (xor (xor a b) c)))
-  :hints (("Goal" :in-theory (enable xor))))
-
-(defthm xor-same
-  (implies (booleanp b)
-           (equal (xor a (xor a b))
-                  b))
-  :hints (("Goal" :in-theory (enable xor))))
-
-(defthm xor-same-simple
-  (equal (xor a a)
-         nil)
-  :hints (("Goal" :in-theory (enable xor))))
-
-(defthm xor-mynot
-  (equal (xor x (mynot x))
-         t)
-  :hints (("Goal" :in-theory (enable xor mynot))))
-
-(defthm xor-mynot-2
-  (equal (xor (mynot x) x)
-         t)
-  :hints (("Goal" :in-theory (enable xor mynot))))
-
-(defthm xor-mynot-alt
-  (equal (xor x (xor (mynot x) y))
-         (mynot y))
-  :hints (("Goal" :in-theory (enable xor mynot))))
-
-(defthm xor-mynot-alt2
-  (equal (xor (mynot x) (xor x y))
-         (mynot y))
-  :hints (("Goal" :in-theory (enable xor mynot))))
 
 (defthm boolif-boolif-lift-same
   (equal (boolif test1 (boolif test2 x y) y)
@@ -312,27 +187,7 @@
          (boolif x z y))
   :hints (("Goal" :in-theory (enable boolor boolif booland))))
 
-;we may often open up iff, but here are some theorems about it anyway:
 
-(defthm iff-of-t-arg1
-  (equal (iff t x)
-         (bool-fix x)))
-
-(defthm iff-of-t-arg2
-  (equal (iff x t)
-         (bool-fix x)))
-
-(defthm iff-of-nil-arg1
-  (equal (iff nil x)
-         (not x)))
-
-(defthm iff-of-nil-arg2
-  (equal (iff x nil)
-         (not x)))
-
-(defthm iff-same
-  (equal (iff x x)
-         t))
 
 ;seems better than just using the definition of implies:
 (defthmd implies-opener
