@@ -247,7 +247,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognize a test case.
+;; Recognize a test case, an alist from variables to their values.
 (defund test-casep (test-case)
   (declare (xargs :guard t))
   (symbol-alistp test-case))
@@ -258,6 +258,7 @@
               (test-casep test-case)))
   :hints (("Goal" :in-theory (enable test-casep))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a true list of test cases.
 (defund test-casesp (test-cases)
