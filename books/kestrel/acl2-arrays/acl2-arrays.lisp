@@ -1012,6 +1012,10 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
+(defthm alistp-of-array-to-alist
+  (alistp (array-to-alist array-name array len))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
 (defthm car-of-array-to-alist
   (implies (posp len)
            (equal (car (array-to-alist array-name array len))
