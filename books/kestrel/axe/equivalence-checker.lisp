@@ -1190,6 +1190,78 @@
     (prog2$ (cw "Node ~x0 is ~x1.~%" (car nodenums) (aref1 array-name array (car nodenums)))
             (print-vals-of-nodes (rest nodenums) array-name array))))
 
+
+;move, optimize
+(defund evens-tail (lst acc)
+  (declare (xargs :guard (true-listp acc)
+                  ))
+  (if (atom lst)
+      (reverse acc)
+    (if (atom (cdr lst))
+        (reverse (cons (car lst) acc))
+      (evens-tail (cddr lst)
+                  (cons (car lst) acc)))))
+
+;fixme - where does this stuff go?!  Use defmergesort instead!
+
+(defthm len-of-evens-tail-bound
+  (implies (< 1 (len l))
+           (< (len (evens-tail l acc))
+              (+ (len acc) (len l))))
+  :hints (("Goal" :expand (evens-tail (cddr l)
+                                      (cons (car l) acc))
+           :in-theory (enable evens-tail))))
+
+(defthm evens-tail-of-singleton
+  (implies (equal (len l) 1)
+           (equal (evens-tail l nil)
+                  (list (car l))))
+  :hints (("Goal" :in-theory (enable evens-tail reverse))))
+
+(defun odds-tail (l)
+  (declare (xargs :guard t))
+  (if (consp l)
+      (evens-tail (cdr l) nil)
+    nil))
+
+(in-theory (disable evens-tail))
+
+(defun merge-lexorder-of-cdrs! (l1 l2 acc)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2)
+                              (true-listp acc))
+                  :verify-guards nil
+                  :measure (+ (len l1) (len l2))))
+  (cond ((endp l1)
+         (revappend acc l2))
+        ((endp l2) (revappend acc l1))
+        ((lexorder (cdr (car l1)) (cdr (car l2))) ;note the cdrs
+         (merge-lexorder-of-cdrs! (cdr l1)
+                                  l2 (cons (car l1) acc)))
+        (t (merge-lexorder-of-cdrs! l1 (cdr l2)
+                                    (cons (car l2) acc)))))
+
+(skip-proofs (verify-guards merge-lexorder-of-cdrs!))
+
+(defun merge-sort-lexorder-of-cdrs (l)
+  (declare (xargs :guard (true-listp l)
+                  :verify-guards nil
+                  :measure (len l)
+                  :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
+                                        (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
+                           :expand (
+; (EVENS-TAIL (CONS L1 L2) NIL)
+                                    )
+                           :in-theory (disable len-of-evens-tail-bound)))
+                  ))
+  (cond ((endp (cdr l)) l)
+        (t (merge-lexorder-of-cdrs! (merge-sort-lexorder-of-cdrs (evens-tail l nil))
+                            (merge-sort-lexorder-of-cdrs (odds-tail l))
+                            nil
+                            ))))
+
+(skip-proofs (verify-guards merge-sort-lexorder-of-cdrs))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defthm num-true-nodes-of-aset1
@@ -1666,6 +1738,627 @@
               (cw "Test case: ~x0~%" test-case)
               (print-array2 test-case-array-name test-case-array dag-len) ;this can be big!
               (er hard? 'evaluate-and-check-test-case "Untrue test case (see above)")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defun find-val-other-than (val nodenums test-case-array test-case-array-name)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< nodenums (alen1 test-case-array-name test-case-array)))))
+  (if (endp nodenums)
+      nil ;failed to find such a val
+    (let* ((nodenum (first nodenums))
+           (val2 (aref1 test-case-array-name test-case-array nodenum)))
+      (if (equal val val2)
+          ;;keep looking:
+          (find-val-other-than val (cdr nodenums) test-case-array test-case-array-name)
+        ;;we found a difference:
+        t))))
+
+
+
+;returns an alist pairing values with nodenum lists
+;the alist may include shadowed pairs
+;fixme think about :unused nodes
+(defund test-case-alist-for-set (set test-case-array-name test-case-array acc)
+  (declare (xargs :guard (and (nat-listp set)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< set (alen1 test-case-array-name test-case-array))
+                              (alistp acc))))
+  (if (endp set)
+      acc
+    (let* ((nodenum (first set))
+           (value (aref1 test-case-array-name test-case-array nodenum))
+           (nodes-for-value (lookup-equal value acc)))
+      (test-case-alist-for-set (cdr set) test-case-array-name test-case-array
+                               (acons-fast value (cons nodenum nodes-for-value) acc)))))
+
+(local
+ (defthm alistp-of-test-case-alist-for-set
+   (implies (alistp acc)
+            (alistp (test-case-alist-for-set set test-case-array-name test-case-array acc)))
+   :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
+
+(defthm nat-listp-of-lookup-equal
+  (implies (nat-list-listp (strip-cdrs alist))
+           (nat-listp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs
+                                     nat-list-listp))))
+
+(local
+ (defthm nat-list-listp-of-strip-cdrs-of-test-case-alist-for-set
+   (implies (and (nat-listp set)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (alistp acc)
+                 (NAT-LIST-LISTP (STRIP-CDRS ACC)))
+            (nat-list-listp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
+   :hints (("Goal" :in-theory (enable test-case-alist-for-set nat-list-listp)))))
+
+
+;; (defun drop-singletons (lst acc)
+;;   (if (endp lst)
+;;       acc
+;;     (let* ((item (car lst)))
+;;       (if (and (consp item)
+;;                (not (consp (cdr item))))
+;;           ;drop the singleton
+;;           (drop-singletons (cdr lst) acc)
+;;         (drop-singletons (cdr lst) (cons item acc))))))
+
+
+
+;returns (mv non-singleton-sets singleton-count)
+(defund drop-and-count-singletons (lst acc count-acc)
+  (declare (xargs :guard (and (integerp count-acc)
+                              (true-listp lst))))
+  (if (endp lst)
+      (mv acc count-acc)
+    (let* ((item (car lst)))
+      (if (and (consp item)
+               (not (consp (cdr item))))
+          ;;drop the singleton:
+          (drop-and-count-singletons (cdr lst) acc (+ 1 count-acc))
+        (drop-and-count-singletons (cdr lst) (cons item acc) count-acc)))))
+
+(local
+ (defthm true-listp-of-mv-nth-0-of-drop-and-count-singletons
+   (implies (true-listp acc)
+            (true-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-drop-and-count-singletons
+   (implies (and (nat-list-listp acc)
+                 (nat-list-listp lst))
+            (nat-list-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons
+                                      nat-list-listp)))))
+
+(local
+ (defthm natp-mv-nth-1-of-drop-and-count-singletons
+   (implies (natp count-acc)
+            (natp (mv-nth 1 (drop-and-count-singletons lst acc count-acc))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
+
+;ignores later pairs that bind already-bound keys
+(defund strip-cdrs-unique (lst keys-seen acc)
+  (declare (xargs :guard (and (alistp lst)
+                              (true-listp keys-seen))))
+  (if (endp lst)
+      acc ;we don't bother to reverse this
+    (let* ((entry (car lst))
+           (key (car entry)))
+      (if (member-equal key keys-seen)
+          (strip-cdrs-unique (cdr lst) keys-seen acc)
+        (strip-cdrs-unique (cdr lst) (cons key keys-seen) (cons (cdr entry) acc))))))
+
+(local
+ (defthm true-listp-of-strip-cdrs-unique
+   (implies (true-listp acc)
+            (true-listp (strip-cdrs-unique lst keys-seen acc)))
+   :hints (("Goal" :in-theory (enable strip-cdrs-unique)))))
+
+(local
+ (defthm nat-list-listp-of-strip-cdrs-unique
+   (implies (and (nat-list-listp acc)
+                 (nat-list-listp (strip-cdrs lst)))
+            (nat-list-listp (strip-cdrs-unique lst keys-seen acc)))
+   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
+
+;;we first make an alist whose keys are data values (often 0 or 1?) and whose vals are sets of nodenums
+;returns (mv new-sets new-singleton-count)
+(defund split-set (set test-case-array test-case-array-name)
+  (declare (xargs :guard (and (nat-listp set)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< set (alen1 test-case-array-name test-case-array)))))
+  (let* ((alist (test-case-alist-for-set set test-case-array-name test-case-array nil)) ;this could be slow?  better to pair nodenums with vals and merge-sort the pairs by value?
+         (new-node-sets (strip-cdrs-unique alist nil nil)) ;don't cons this up?
+         )
+    ;;fixme combine this with the work above:
+    (drop-and-count-singletons new-node-sets nil 0)))
+
+(local
+ (defthm true-listp-of-mv-nth-0-of-split-set
+   (true-listp (mv-nth 0 (split-set set test-case-array test-case-array-name)))
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-split-set
+   (implies (and (nat-listp set)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< set (alen1 test-case-array-name test-case-array)))
+            (nat-list-listp (mv-nth 0 (split-set set test-case-array test-case-array-name))))
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-split-set
+   (natp (mv-nth 1 (split-set set test-case-array test-case-array-name)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+;takes a set and adds zero or more sets to acc (also returns a new singleton count)
+;returns (mv acc new-singleton-count change-flg)
+;set should have at least two elements
+;should not return singletons or empty sets
+;most of the time, this won't be able to distinguish any nodes and so will return (list set) - we try to make that case fast (don't recons the whole set)...
+;inline this?
+(defund try-to-split-set (set test-case-array-name test-case-array print acc)
+  (declare (xargs :guard (and (nat-listp set)
+                              (consp set)
+                              (array1p test-case-array-name test-case-array)
+                              ;; print
+                              (all-< set (alen1 test-case-array-name test-case-array))
+                              (true-listp acc))))
+  (let* ((first-nodenum (first set))
+         (first-val (aref1 test-case-array-name test-case-array first-nodenum))
+         (need-to-splitp (find-val-other-than first-val (rest set) test-case-array test-case-array-name)))
+    (if (not need-to-splitp)
+        ;;in this case we don't recons the whole set
+        (mv (cons set acc) 0 nil) ;fixme try to save even this cons?
+      (prog2$ (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set)))
+              (mv-let (new-sets new-singleton-count)
+                      (split-set set test-case-array test-case-array-name) ;fixme pass acc into this?
+                      (mv (append new-sets acc)
+                          new-singleton-count t))))))
+
+(local
+ (defthm true-listp-of-mv-nth-0-of-try-to-split-set
+   (implies (true-listp acc)
+            (true-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-try-to-split-set
+   (implies (and (nat-listp set)
+                 (consp set)
+                 (array1p test-case-array-name test-case-array)
+                 ;; print
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (true-listp acc)
+                 (nat-list-listp acc))
+            (nat-list-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-try-to-split-set
+   (natp (mv-nth 1 (try-to-split-set set test-case-array-name test-case-array print acc)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm booleanp-of-mv-nth-2-of-try-to-split-set
+   (booleanp (mv-nth 2 (try-to-split-set set test-case-array-name test-case-array print acc)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+
+
+;try to split the sets using test-case-array
+;returns (mv new-sets new-singleton-count changep)
+;sets are moved from SETS to ACC.  as they are moved they are split if indicated by this test case.
+;sets are lists of nodenums.  each set has length at least 2 (singleton sets are dropped).
+(defund new-probably-equal-node-sets (sets test-case-array acc singleton-count-acc print test-case-array-name changep)
+  (declare (xargs :guard (and (nat-list-listp sets)
+                              (all-consp sets)
+                              (array1p test-case-array-name test-case-array)
+                              (true-listp acc)
+                              (natp singleton-count-acc)
+                              ;; print
+                              (all-all-< sets (alen1 test-case-array-name test-case-array))
+                              (booleanp changep))))
+  (if (endp sets)
+      (mv acc singleton-count-acc changep)
+    (let* ((set (first sets)))
+      (mv-let (acc ;has the new sets appended onto it
+               new-singleton-count change-flg-for-this-set)
+              (try-to-split-set set test-case-array-name test-case-array print acc)
+              (new-probably-equal-node-sets (rest sets)
+                                            test-case-array
+                                            acc
+                                            (+ singleton-count-acc new-singleton-count)
+                                            print
+                                            test-case-array-name
+                                            (or changep change-flg-for-this-set))))))
+
+(defthm natp-of-mv-nth-1-of-new-probably-equal-node-sets
+  (implies (natp singleton-count-acc)
+           (natp (mv-nth 1 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable new-probably-equal-node-sets))))
+
+(defthm booleanp-of-mv-nth-1-of-new-probably-equal-node-sets
+  (implies (booleanp changep)
+           (booleanp (mv-nth 2 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable new-probably-equal-node-sets))))
+
+(defthm nat-list-listp-of-mv-nth-0-of-new-probably-equal-node-sets
+  (implies (and (nat-list-listp sets)
+                (nat-list-listp acc)
+                (all-consp sets)
+                (array1p test-case-array-name test-case-array)
+                (natp singleton-count-acc)
+                ;; print
+                (all-all-< sets (alen1 test-case-array-name test-case-array))
+                (booleanp changep))
+           (nat-list-listp (mv-nth 0 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+  :hints (("Goal" :in-theory (enable new-probably-equal-node-sets))))
+
+;; Looks for an initial segment of ENTRIES all of whose vals are SIG.
+;; Returns (mv entries-with-sig remaining-entries).
+(defund find-entries-with-value (entries value acc)
+  (declare (xargs :guard (and (alistp entries)
+                              (nat-listp (strip-cars entries))
+                              (nat-listp acc))))
+  (if (endp entries)
+      (mv acc entries)
+    (let* ((entry (car entries))
+           (nodenum (car entry))
+           (value2 (cdr entry)))
+      (if (equal value value2)
+          (find-entries-with-value (cdr entries) value (cons nodenum acc))
+        ;; stop looking, since the entries are sorted by value and we found a difference:
+        (mv acc entries)))))
+
+(local
+ (defthm nat-listp-of-mv-nth-0-of-find-entries-with-value
+   (implies (and (nat-listp (strip-cars entries))
+                 (nat-listp acc))
+            (nat-listp (mv-nth 0 (find-entries-with-value entries value acc))))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm <=-of-len-of-mv-nth-1-of-find-entries-with-value
+   (<= (len (mv-nth 1 (find-entries-with-value entries value acc)))
+       (len entries))
+   :rule-classes :linear
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+   (implies (nat-listp (strip-cars entries))
+            (nat-listp (strip-cars (mv-nth 1 (find-entries-with-value entries value acc)))))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm alistp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+   (implies (alistp entries)
+            (alistp (mv-nth 1 (find-entries-with-value entries value acc))))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+;; Returns (mv sets singleton-count).
+(defun group-same-entries (entries acc singleton-count)
+  (declare (xargs :guard (and (alistp entries) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                              (nat-listp (strip-cars entries))
+                              (nat-list-listp acc)
+                              (natp singleton-count))
+                  :guard-debug t
+                  :measure (len entries)))
+  (if (atom entries)
+      (mv acc singleton-count)
+    (let* ((entry (car entries))
+           (nodenum (car entry))
+           (value (cdr entry)))
+      (mv-let (equiv-set entries)
+        (find-entries-with-value (cdr entries) value nil)
+        (if equiv-set ; there's at least one other node with the same value
+            (group-same-entries entries (cons (cons nodenum equiv-set) acc) singleton-count)
+          (group-same-entries entries acc (+ 1 singleton-count)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;Handles nodes that are used on this test case but have not been used on a previous test case.
+;Such nodes are moved from the never-used-nodes list to the probably-constant-node-alist, where they are paired with their value on this test case.
+;Returns (mv never-used-nodes probably-constant-node-alist changep) where changep remains true if it was initially true.
+;fixme might be faster to process more than 1 test case at a time
+(defund handle-newly-used-nodes (never-used-nodes ;these are moved to acc or get entries in the alist
+                                 probably-constant-node-alist ;;pairs nodenums with probable constants
+                                 test-case-array-name test-case-array
+                                 acc
+                                 changep)
+  (declare (xargs :guard (and (nat-listp never-used-nodes)
+                              (alistp probably-constant-node-alist)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< never-used-nodes (alen1 test-case-array-name test-case-array))
+                              ;; acc
+                              (booleanp changep))))
+  (if (endp never-used-nodes)
+      (mv acc probably-constant-node-alist changep)
+    (let* ((nodenum (first never-used-nodes))
+           (value (aref1 test-case-array-name test-case-array nodenum)))
+      (if (eq :unused value)
+          ;; the node is still unused:
+          (handle-newly-used-nodes (rest never-used-nodes)
+                                   probably-constant-node-alist
+                                   test-case-array-name test-case-array
+                                   (cons nodenum acc)
+                                   changep)
+        ;;the node is used for the first time on this test case:
+        (handle-newly-used-nodes (rest never-used-nodes)
+                                 (acons-fast nodenum value probably-constant-node-alist)
+                                 test-case-array-name test-case-array
+                                 acc
+                                 t)))))
+
+(defthm nat-listp-of-strip-cars-of-mv-nth-1-of-handle-newly-used-nodes
+  (implies (and (nat-listp never-used-nodes)
+                (nat-listp (strip-cars probably-constant-node-alist)))
+           (nat-listp (strip-cars (mv-nth 1 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep)))))
+  :hints (("Goal" :in-theory (enable handle-newly-used-nodes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;this function drops any pairs which are invalidated by the current test case
+;this rebuilds the whole alist - hope that is okay...
+;returns (mv probably-constant-node-alist changep)
+;fixme might be faster to process more than 1 test case at a time
+;every node in probably-constant-node-alist has been used on at least one test case
+(defund new-probably-constant-alist (probably-constant-node-alist ;;pairs nodenums with probable constants
+                                    test-case-array-name test-case-array
+                                    acc ;pairs are moved from probably-constant-node-alist to this
+                                    changep)
+  (declare (xargs :guard (and (alistp probably-constant-node-alist)
+                              (nat-listp (strip-cars probably-constant-node-alist))
+                              (array1p test-case-array-name test-case-array)
+                              (all-< (strip-cars probably-constant-node-alist)
+                                     (alen1 test-case-array-name test-case-array))
+                              ;; acc
+                              (booleanp changep))))
+  (if (endp probably-constant-node-alist)
+      (mv acc changep)
+    (let* ((pair (first probably-constant-node-alist))
+           (nodenum (car pair))
+           (probable-value (cdr pair))
+           (value-for-this-test-case (aref1 test-case-array-name test-case-array nodenum)))
+      (if (or (eq :unused value-for-this-test-case)
+              (equal probable-value value-for-this-test-case))
+          ;; this test case doesn't invalidate the pair:
+          (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
+                                       (cons pair acc) changep)
+        ;; the node is used and the value is different from the value in the alist, so drop the pair:
+        (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
+                                     acc t)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; run test cases and use them to split probably-equal-node-sets and eliminate probable constants
+;; returns (mv probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist), where test-case-array-alist is valid iff keep-test-casesp is non-nil
+;ffixme think about what to do with nodes that are unreachable (don't influence the top node, because of ifs) on a single test case, or on all test cases.  maybe i now handle that?
+;now the tests come in randomized?
+(defun update-probable-facts-with-test-cases (test-cases
+                                              singleton-count
+                                              dag-array-name dag-array dag-len
+                                              probably-equal-node-sets
+                                              never-used-nodes
+                                              probably-constant-node-alist
+                                              interpreted-function-alist print
+                                              test-case-array-name-base
+                                              keep-test-casesp
+                                              test-case-array-alist
+                                              test-case-number
+                                              traced-nodes
+                                              num-of-last-interesting-test-case)
+  (declare (xargs :guard (and (test-casesp test-cases)
+                              (natp singleton-count)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< 0 dag-len)
+                              (nat-list-listp probably-equal-node-sets)
+                              (all-consp probably-equal-node-sets)
+                              (nat-listp never-used-nodes)
+                              (alistp probably-constant-node-alist)
+                              (nat-listp (strip-cars probably-constant-node-alist))
+                              (interpreted-function-alistp interpreted-function-alist)
+                              ;; print
+                              (symbolp test-case-array-name-base)
+                              (booleanp keep-test-casesp)
+                              (alistp test-case-array-alist)
+                              (natp test-case-number)
+                              (nat-listp traced-nodes)
+                              (all-< traced-nodes dag-len)
+                              (natp num-of-last-interesting-test-case))
+                  :guard-debug t
+                  :guard-hints (("Goal" :in-theory (disable natp)))
+                  :verify-guards nil
+                  ))
+  (if (or (endp test-cases)
+          ;;stop if we've done at least 100 test cases and nothing has happened in the last 90% of them:
+          ;;fixme could allow the user to change the 10 and the 100 here:
+          (if (and t ;abandon-testing-when-boringp ;(or t abandon-testing-when-boringp)
+                   num-of-last-interesting-test-case
+                   (<= 100 test-case-number)
+                   (<= (* 10 num-of-last-interesting-test-case) test-case-number))
+              (prog2$ (cw "(Abandoning testing because nothing interesting is happening.)")
+                      t)
+            nil))
+      (mv probably-equal-node-sets never-used-nodes probably-constant-node-alist
+          (reverse test-case-array-alist) ;new; keeps this in sync with the test cases (or do non-interesting ones get dropped?)
+          )
+    (b* ((- ;;TODO: Only print when things change?:
+          (cw "(Test ~x0 (~x1 total sets, ~x2 singletons, ~x3 constants)"
+              test-case-number
+              (+ singleton-count (len probably-equal-node-sets)) ;slow? could keep a count?
+              singleton-count
+              (len probably-constant-node-alist) ;expensive?
+              ))
+         (test-case (first test-cases))
+         (test-case-array-name (if keep-test-casesp
+                                   (pack$ test-case-array-name-base '- (nat-to-string test-case-number))
+                                 ;;if we are not keeping test cases (e.g., because they'd take too much memory), reuse the same array:
+                                 test-case-array-name-base))
+         ;; Evaluate the test case and ensure the top node is true:
+         (test-case-array
+          (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist
+                                        test-case-array-name
+                                        traced-nodes))
+         (changep nil)
+         ;; Update the probably-equal-node-sets:
+         ((mv new-sets new-singleton-count changep)
+          (new-probably-equal-node-sets probably-equal-node-sets test-case-array nil 0 print test-case-array-name changep))
+         ;; Handle nodes that are used for the first time on this test case (they become probably constants):
+         ((mv never-used-nodes probably-constant-node-alist changep)
+          (handle-newly-used-nodes never-used-nodes
+                                   probably-constant-node-alist
+                                   test-case-array-name
+                                   test-case-array
+                                   nil
+                                   changep))
+         ;; Update the probable constants (TODO: Do this before handle-newly-used-nodes):
+         ((mv probably-constant-node-alist changep)
+          (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array nil changep))
+         (- (if (and (or (eq print :verbose)
+                         (eq print :verbose!))
+                     changep) ;ffffixme use this value to decide whether to keep the test case? maybe keep the first few boring ones so we have enough..
+                (cw "~%interesting test case ~x0.)~%" test-case)
+              (cw ")~%"))))
+      (update-probable-facts-with-test-cases (rest test-cases)
+                                             (+ singleton-count new-singleton-count)
+                                             dag-array-name dag-array dag-len
+                                             new-sets
+                                             never-used-nodes
+                                             probably-constant-node-alist
+                                             interpreted-function-alist print test-case-array-name-base keep-test-casesp
+                                             (if keep-test-casesp
+                                                 (acons-fast test-case-array-name
+                                                             test-case-array
+                                                             test-case-array-alist)
+                                               nil)
+                                             (+ 1 test-case-number)
+                                             traced-nodes
+                                             (if changep
+                                                 test-case-number
+                                               num-of-last-interesting-test-case)))))
+
+(skip-proofs (verify-guards update-probable-facts-with-test-cases))
+
+;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
+;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
+;returns (mv initial-probably-equal-node-sets initial-singleton-count)
+(defun initial-probably-equal-node-sets (dag-len test-case-array test-case-array-name)
+  (let* ((signature-alist (array-to-alist test-case-array-name test-case-array dag-len)) ; avoid this?
+         (sorted-signature-alist (merge-sort-lexorder-of-cdrs signature-alist)))
+    (mv-let (sets singleton-count)
+      (group-same-entries sorted-signature-alist nil 0) ;bozo should we disallow any nodes?
+      (mv sets singleton-count))))
+
+(skip-proofs (verify-guards initial-probably-equal-node-sets))
+
+;; Returns (mv never-used-nodes probably-constant-node-alist ;pairs nodenums used on the first test case with their values
+;;         )
+(defun harvest-probable-constants-from-first-test-case (nodenum miter-len test-case-array-name test-case-array
+                                                                never-used-nodes
+                                                                probably-constant-node-alist)
+  (declare (xargs :measure (nfix (+ 1 (- miter-len nodenum)))))
+  (if (or (<= miter-len nodenum)
+          (not (integerp miter-len))
+          (not (integerp nodenum))
+          )
+      (mv never-used-nodes probably-constant-node-alist)
+    (let* ((value (aref1 test-case-array-name test-case-array nodenum)))
+      (if (eq :unused value)
+          (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
+                                                           (cons nodenum never-used-nodes)
+                                                           probably-constant-node-alist)
+        (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
+                                                         never-used-nodes
+                                                         (acons-fast nodenum value probably-constant-node-alist))))))
+
+(skip-proofs (verify-guards harvest-probable-constants-from-first-test-case))
+
+;repeatedly generate a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes
+;returns (mv probably-equal-node-sets ;includes sets believed to be a constant
+;            never-used-nodes
+;            probably-constant-node-alist ;pairs nodes with the constants they seem to be equal to
+;            test-case-array-alist ; valid iff keep-test-casesp is non-nil, pairs array names with arrays that give values to all the nodes
+;        )
+;fixme should this return the used test cases?
+(defun probable-facts (miter-array-name miter-array miter-len miter-depth
+                                        test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
+                                        interpreted-function-alist print keep-test-casesp
+                                        traced-nodes)
+  (let ((test-cases test-cases ;(firstn 1024 test-cases) ;Thu Feb 17 20:25:10 2011
+                    ))
+    (progn$ (cw "(Evaluating test cases (keep-test-casesp is ~x0):~%" keep-test-casesp)
+            ;; use the first test case to make initial-probably-equal-node-sets (I think this is faster than starting with one huge set and then splitting it):
+            (cw "(Test 0 (initial)")
+            (let* ((test-case-array-name-base (pack$ 'test-case-array-depth- miter-depth '-)) ;using the depth is new
+                   (first-test-case-array-name (pack$ test-case-array-name-base 0))
+                   (test-case-array
+                    (evaluate-and-check-test-case (first test-cases)
+                                                  miter-array-name
+                                                  miter-array
+                                                  miter-len
+                                                  interpreted-function-alist
+                                                  first-test-case-array-name
+                                                  traced-nodes)))
+              (mv-let
+               (initial-probably-equal-node-sets initial-singleton-count)
+               (initial-probably-equal-node-sets miter-len test-case-array first-test-case-array-name)
+               (mv-let
+                (never-used-nodes
+                 probably-constant-node-alist ;pairs nodenums used on the first test case with their values
+                 )
+                (harvest-probable-constants-from-first-test-case 0
+                                                                 miter-len
+                                                                 first-test-case-array-name test-case-array
+                                                                 nil
+                                                                 nil)
+                (let* ( ;((array-to-alist first-test-case-array-name test-case-array miter-len)) ;slow?
+                       ;;save the first test case in the test-case-array-alist:
+                       (test-case-array-alist (if keep-test-casesp
+                                                  (acons-fast first-test-case-array-name test-case-array nil)
+                                                nil)))
+                  (prog2$ (cw ")~%")
+                          ;;use additional test cases to split the sets and update the probable constant facts:
+                          (mv-let (probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist)
+                                  (update-probable-facts-with-test-cases (rest test-cases)
+                                                                         initial-singleton-count
+                                                                         miter-array-name
+                                                                         miter-array
+                                                                         miter-len
+                                                                         initial-probably-equal-node-sets
+                                                                         never-used-nodes
+                                                                         probably-constant-node-alist
+                                                                         interpreted-function-alist
+                                                                         print
+                                                                         test-case-array-name-base
+                                                                         keep-test-casesp ;just check whether test-case-array-alist is nil?
+                                                                         test-case-array-alist
+                                                                         1 ;test case number
+                                                                         traced-nodes
+                                                                         nil ;;number of last interesting test case
+                                                                         )
+                                  (prog2$ (cw ")~%")
+                                          (mv probably-equal-node-sets
+                                              never-used-nodes
+                                              probably-constant-node-alist
+                                              test-case-array-alist)))))))))))
+
+(skip-proofs (verify-guards probable-facts))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4862,39 +5555,7 @@
 
 (skip-proofs (verify-guards merge-sig-<))
 
-(defund evens-tail (lst acc)
-  (declare (xargs :guard (true-listp acc)
-                  ))
-  (if (atom lst)
-      (reverse acc)
-    (if (atom (cdr lst))
-        (reverse (cons (car lst) acc))
-      (evens-tail (cddr lst)
-                  (cons (car lst) acc)))))
 
-;fixme - where does this stuff go?!  Use defmergesort instead!
-
-(defthm len-of-evens-tail-bound
-  (implies (< 1 (len l))
-           (< (len (evens-tail l acc))
-              (+ (len acc) (len l))))
-  :hints (("Goal" :expand (evens-tail (cddr l)
-                                      (cons (car l) acc))
-           :in-theory (enable evens-tail))))
-
-(defthm evens-tail-of-singleton
-  (implies (equal (len l) 1)
-           (equal (evens-tail l nil)
-                  (list (car l))))
-  :hints (("Goal" :in-theory (enable evens-tail reverse))))
-
-(defun odds-tail (l)
-  (declare (xargs :guard t))
-  (if (consp l)
-      (evens-tail (cdr l) nil)
-    nil))
-
-(in-theory (disable evens-tail))
 
 ;fffixme use my new fast merge-sort (make sure it is faster)
 (defun merge-sort-sig-< (l)
@@ -4916,41 +5577,9 @@
 
 (skip-proofs (verify-guards merge-sort-sig-<))
 
-(defun merge-lexorder-of-cdrs! (l1 l2 acc)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (true-listp acc))
-                  :verify-guards nil
-                  :measure (+ (len l1) (len l2))))
-  (cond ((endp l1)
-         (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((lexorder (cdr (car l1)) (cdr (car l2))) ;note the cdrs
-         (merge-lexorder-of-cdrs! (cdr l1)
-                                  l2 (cons (car l1) acc)))
-        (t (merge-lexorder-of-cdrs! l1 (cdr l2)
-                                    (cons (car l2) acc)))))
 
-(skip-proofs (verify-guards merge-lexorder-of-cdrs!))
 
-(defun merge-sort-lexorder-of-cdrs (l)
-  (declare (xargs :guard (true-listp l)
-                  :verify-guards nil
-                  :measure (len l)
-                  :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
-                                        (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
-                           :expand (
-; (EVENS-TAIL (CONS L1 L2) NIL)
-                                    )
-                           :in-theory (disable len-of-evens-tail-bound)))
-                  ))
-  (cond ((endp (cdr l)) l)
-        (t (merge-lexorder-of-cdrs! (merge-sort-lexorder-of-cdrs (evens-tail l nil))
-                            (merge-sort-lexorder-of-cdrs (odds-tail l))
-                            nil
-                            ))))
 
-(skip-proofs (verify-guards merge-sort-lexorder-of-cdrs))
 
 ;;
 ;; deciding which nodes to translate to STP (and which nodes to not translate, i.e., to cut)
@@ -7261,275 +7890,14 @@
         (prog2$ (cw "Dropping connection ~x0 to prevent loops.~%" term)
                 (remove-connections-that-might-loop (rest terms) terms-to-check))))))
 
-;make this a macro?
-(defun droplast (lst)
-  (butlast lst 1))
+;; ;make this a macro?
+;; (defun droplast (lst)
+;;   (butlast lst 1))
 
-(defmap-simple droplast)
-
-(defun find-val-other-than (val nodenums test-case-array test-case-array-name)
-  (declare (xargs :guard (and (nat-listp nodenums)
-                              (array1p test-case-array-name test-case-array)
-                              (all-< nodenums (alen1 test-case-array-name test-case-array)))))
-  (if (endp nodenums)
-      nil ;failed to find such a val
-    (let* ((nodenum (first nodenums))
-           (val2 (aref1 test-case-array-name test-case-array nodenum)))
-      (if (equal val val2)
-          ;;keep looking:
-          (find-val-other-than val (cdr nodenums) test-case-array test-case-array-name)
-        ;;we found a difference:
-        t))))
-
-;returns an alist pairing values with nodenum lists
-;the alist may include shadowed pairs
-;fixme think about :unused nodes
-(defund test-case-alist-for-set (set test-case-array-name test-case-array acc)
-  (declare (xargs :guard (and (nat-listp set)
-                              (array1p test-case-array-name test-case-array)
-                              (all-< set (alen1 test-case-array-name test-case-array))
-                              (alistp acc))))
-  (if (endp set)
-      acc
-    (let* ((nodenum (first set))
-           (value (aref1 test-case-array-name test-case-array nodenum))
-           (nodes-for-value (lookup-equal value acc)))
-      (test-case-alist-for-set (cdr set) test-case-array-name test-case-array
-                               (acons-fast value (cons nodenum nodes-for-value) acc)))))
-
-(local
- (defthm alistp-of-test-case-alist-for-set
-   (implies (alistp acc)
-            (alistp (test-case-alist-for-set set test-case-array-name test-case-array acc)))
-   :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
-
-(defthm nat-listp-of-lookup-equal
-  (implies (nat-list-listp (strip-cdrs alist))
-           (nat-listp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs
-                                     nat-list-listp))))
-
-(local
- (defthm nat-list-listp-of-strip-cdrs-of-test-case-alist-for-set
-   (implies (and (nat-listp set)
-                 (array1p test-case-array-name test-case-array)
-                 (all-< set (alen1 test-case-array-name test-case-array))
-                 (alistp acc)
-                 (NAT-LIST-LISTP (STRIP-CDRS ACC)))
-            (nat-list-listp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
-   :hints (("Goal" :in-theory (enable test-case-alist-for-set nat-list-listp)))))
-
-;; (defun drop-singletons (lst acc)
-;;   (if (endp lst)
-;;       acc
-;;     (let* ((item (car lst)))
-;;       (if (and (consp item)
-;;                (not (consp (cdr item))))
-;;           ;drop the singleton
-;;           (drop-singletons (cdr lst) acc)
-;;         (drop-singletons (cdr lst) (cons item acc))))))
+;; (defmap-simple droplast)
 
 
 
-;returns (mv non-singleton-sets singleton-count)
-(defund drop-and-count-singletons (lst acc count-acc)
-  (declare (xargs :guard (and (integerp count-acc)
-                              (true-listp lst))))
-  (if (endp lst)
-      (mv acc count-acc)
-    (let* ((item (car lst)))
-      (if (and (consp item)
-               (not (consp (cdr item))))
-          ;;drop the singleton:
-          (drop-and-count-singletons (cdr lst) acc (+ 1 count-acc))
-        (drop-and-count-singletons (cdr lst) (cons item acc) count-acc)))))
-
-(local
- (defthm true-listp-of-mv-nth-0-of-drop-and-count-singletons
-   (implies (true-listp acc)
-            (true-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
-
-(local
- (defthm nat-list-listp-of-mv-nth-0-of-drop-and-count-singletons
-   (implies (and (nat-list-listp acc)
-                 (nat-list-listp lst))
-            (nat-list-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons
-                                      nat-list-listp)))))
-
-(local
- (defthm natp-mv-nth-1-of-drop-and-count-singletons
-   (implies (natp count-acc)
-            (natp (mv-nth 1 (drop-and-count-singletons lst acc count-acc))))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
-
-;ignores later pairs that bind already-bound keys
-(defund strip-cdrs-unique (lst keys-seen acc)
-  (declare (xargs :guard (and (alistp lst)
-                              (true-listp keys-seen))))
-  (if (endp lst)
-      acc ;we don't bother to reverse this
-    (let* ((entry (car lst))
-           (key (car entry)))
-      (if (member-equal key keys-seen)
-          (strip-cdrs-unique (cdr lst) keys-seen acc)
-        (strip-cdrs-unique (cdr lst) (cons key keys-seen) (cons (cdr entry) acc))))))
-
-(local
- (defthm true-listp-of-strip-cdrs-unique
-   (implies (true-listp acc)
-            (true-listp (strip-cdrs-unique lst keys-seen acc)))
-   :hints (("Goal" :in-theory (enable strip-cdrs-unique)))))
-
-(local
- (defthm nat-list-listp-of-strip-cdrs-unique
-   (implies (and (nat-list-listp acc)
-                 (nat-list-listp (strip-cdrs lst)))
-            (nat-list-listp (strip-cdrs-unique lst keys-seen acc)))
-   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
-
-;;we first make an alist whose keys are data values (often 0 or 1?) and whose vals are sets of nodenums
-;returns (mv new-sets new-singleton-count)
-(defund split-set (set test-case-array test-case-array-name)
-  (declare (xargs :guard (and (nat-listp set)
-                              (array1p test-case-array-name test-case-array)
-                              (all-< set (alen1 test-case-array-name test-case-array)))))
-  (let* ((alist (test-case-alist-for-set set test-case-array-name test-case-array nil)) ;this could be slow?  better to pair nodenums with vals and merge-sort the pairs by value?
-         (new-node-sets (strip-cdrs-unique alist nil nil)) ;don't cons this up?
-         )
-    ;;fixme combine this with the work above:
-    (drop-and-count-singletons new-node-sets nil 0)))
-
-(local
- (defthm true-listp-of-mv-nth-0-of-split-set
-   (true-listp (mv-nth 0 (split-set set test-case-array test-case-array-name)))
-   :hints (("Goal" :in-theory (enable split-set)))))
-
-(local
- (defthm nat-list-listp-of-mv-nth-0-of-split-set
-   (implies (and (nat-listp set)
-                 (array1p test-case-array-name test-case-array)
-                 (all-< set (alen1 test-case-array-name test-case-array)))
-            (nat-list-listp (mv-nth 0 (split-set set test-case-array test-case-array-name))))
-   :hints (("Goal" :in-theory (enable split-set)))))
-
-(local
- (defthm natp-of-mv-nth-1-of-split-set
-   (natp (mv-nth 1 (split-set set test-case-array test-case-array-name)))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable split-set)))))
-
-;takes a set and adds zero or more sets to acc (also returns a new singleton count)
-;returns (mv acc new-singleton-count change-flg)
-;set should have at least two elements
-;should not return singletons or empty sets
-;most of the time, this won't be able to distinguish any nodes and so will return (list set) - we try to make that case fast (don't recons the whole set)...
-;inline this?
-(defund try-to-split-set (set test-case-array-name test-case-array print acc)
-  (declare (xargs :guard (and (nat-listp set)
-                              (consp set)
-                              (array1p test-case-array-name test-case-array)
-                              ;; print
-                              (all-< set (alen1 test-case-array-name test-case-array))
-                              (true-listp acc))))
-  (let* ((first-nodenum (first set))
-         (first-val (aref1 test-case-array-name test-case-array first-nodenum))
-         (need-to-splitp (find-val-other-than first-val (rest set) test-case-array test-case-array-name)))
-    (if (not need-to-splitp)
-        ;;in this case we don't recons the whole set
-        (mv (cons set acc) 0 nil) ;fixme try to save even this cons?
-      (prog2$ (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set)))
-              (mv-let (new-sets new-singleton-count)
-                      (split-set set test-case-array test-case-array-name) ;fixme pass acc into this?
-                      (mv (append new-sets acc)
-                          new-singleton-count t))))))
-
-(local
- (defthm true-listp-of-mv-nth-0-of-try-to-split-set
-   (implies (true-listp acc)
-            (true-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable try-to-split-set)))))
-
-(local
- (defthm nat-list-listp-of-mv-nth-0-of-try-to-split-set
-   (implies (and (nat-listp set)
-                 (consp set)
-                 (array1p test-case-array-name test-case-array)
-                 ;; print
-                 (all-< set (alen1 test-case-array-name test-case-array))
-                 (true-listp acc)
-                 (nat-list-listp acc))
-            (nat-list-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable try-to-split-set)))))
-
-(local
- (defthm natp-of-mv-nth-1-of-try-to-split-set
-   (natp (mv-nth 1 (try-to-split-set set test-case-array-name test-case-array print acc)))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable try-to-split-set)))))
-
-(local
- (defthm booleanp-of-mv-nth-2-of-try-to-split-set
-   (booleanp (mv-nth 2 (try-to-split-set set test-case-array-name test-case-array print acc)))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable try-to-split-set)))))
-
-
-
-;try to split the sets using test-case-array
-;returns (mv new-sets new-singleton-count changep)
-;sets are moved from SETS to ACC.  as they are moved they are split if indicated by this test case.
-;sets are lists of nodenums.  each set has length at least 2 (singleton sets are dropped).
-(defund new-probably-equal-node-sets (sets test-case-array acc singleton-count-acc print test-case-array-name changep)
-  (declare (xargs :guard (and (nat-list-listp sets)
-                              (all-consp sets)
-                              (array1p test-case-array-name test-case-array)
-                              (true-listp acc)
-                              (natp singleton-count-acc)
-                              ;; print
-                              (all-all-< sets (alen1 test-case-array-name test-case-array))
-                              (booleanp changep))))
-  (if (endp sets)
-      (mv acc singleton-count-acc changep)
-    (let* ((set (first sets)))
-      (mv-let (acc ;has the new sets appended onto it
-               new-singleton-count change-flg-for-this-set)
-              (try-to-split-set set test-case-array-name test-case-array print acc)
-              (new-probably-equal-node-sets (rest sets)
-                                            test-case-array
-                                            acc
-                                            (+ singleton-count-acc new-singleton-count)
-                                            print
-                                            test-case-array-name
-                                            (or changep change-flg-for-this-set))))))
-
-(defthm natp-of-mv-nth-1-of-new-probably-equal-node-sets
-  (implies (natp singleton-count-acc)
-           (natp (mv-nth 1 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable new-probably-equal-node-sets))))
-
-(defthm booleanp-of-mv-nth-1-of-new-probably-equal-node-sets
-  (implies (booleanp changep)
-           (booleanp (mv-nth 2 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable new-probably-equal-node-sets))))
-
-(defthm nat-list-listp-of-mv-nth-0-of-new-probably-equal-node-sets
-  (implies (and (nat-list-listp sets)
-                (nat-list-listp acc)
-                (all-consp sets)
-                (array1p test-case-array-name test-case-array)
-                (natp singleton-count-acc)
-                ;; print
-                (all-all-< sets (alen1 test-case-array-name test-case-array))
-                (booleanp changep))
-           (nat-list-listp (mv-nth 0 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
-  :hints (("Goal" :in-theory (enable new-probably-equal-node-sets))))
 
 
 ;; ;tail-recursive (we don't bother to reverse the acc)
@@ -7552,35 +7920,7 @@
 ;;       (make-full-dag-val-alist (+ 1 n) dag-len test-case-array (acons-fast val (cons n val-nodenums) acc)
 ;;                                test-case-array-name))))
 
-;returns (mv entries-with-sig remaining-entries)
-(defun find-entries-with-sig (entries sig acc)
-  (if (endp entries)
-      (mv acc entries)
-    (let* ((entry (car entries))
-           (nodenum (car entry))
-           (sig2 (cdr entry)))
-      (if (equal sig sig2)
-          (find-entries-with-sig (cdr entries) sig (cons nodenum acc))
-        ;;stop looking, since the sigs are sorted and we found a difference
-        (mv acc entries)))))
 
-(skip-proofs (verify-guards find-entries-with-sig))
-
-;returns (mv sets singleton-count)
-(skip-proofs
- (defun group-same-entries (entries acc singleton-count)
-   (if (atom entries)
-       (mv acc singleton-count)
-     (let* ((entry (car entries))
-            (nodenum (car entry))
-            (sig (cdr entry)))
-       (mv-let (equiv-set entries)
-               (find-entries-with-sig (cdr entries) sig nil)
-               (if equiv-set ;not a singleton
-                   (group-same-entries entries (cons (cons nodenum equiv-set) acc) singleton-count)
-                 (group-same-entries entries acc (+ 1 singleton-count))))))))
-
-(skip-proofs (verify-guards group-same-entries))
 
 ;; ;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
 ;; (defun initial-probably-equal-node-sets (dag-len test-case-array test-case-array-name)
@@ -8593,295 +8933,7 @@
 (defun make-var-type-alist-from-hyps (hyps)
   (make-var-type-alist-from-hyps-aux hyps hyps nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Handles nodes that are used on this test case but have not been used on a previous test case.
-;Such nodes are moved from the never-used-nodes list to the probably-constant-node-alist, where they are paired with their value on this test case.
-;Returns (mv never-used-nodes probably-constant-node-alist changep) where changep remains true if it was initially true.
-;fixme might be faster to process more than 1 test case at a time
-(defund handle-newly-used-nodes (never-used-nodes ;these are moved to acc or get entries in the alist
-                                 probably-constant-node-alist ;;pairs nodenums with probable constants
-                                 test-case-array-name test-case-array
-                                 acc
-                                 changep)
-  (declare (xargs :guard (and (nat-listp never-used-nodes)
-                              (alistp probably-constant-node-alist)
-                              (array1p test-case-array-name test-case-array)
-                              (all-< never-used-nodes (alen1 test-case-array-name test-case-array))
-                              ;; acc
-                              (booleanp changep))))
-  (if (endp never-used-nodes)
-      (mv acc probably-constant-node-alist changep)
-    (let* ((nodenum (first never-used-nodes))
-           (value (aref1 test-case-array-name test-case-array nodenum)))
-      (if (eq :unused value)
-          ;; the node is still unused:
-          (handle-newly-used-nodes (rest never-used-nodes)
-                                   probably-constant-node-alist
-                                   test-case-array-name test-case-array
-                                   (cons nodenum acc)
-                                   changep)
-        ;;the node is used for the first time on this test case:
-        (handle-newly-used-nodes (rest never-used-nodes)
-                                 (acons-fast nodenum value probably-constant-node-alist)
-                                 test-case-array-name test-case-array
-                                 acc
-                                 t)))))
-
-(defthm nat-listp-of-strip-cars-of-mv-nth-1-of-handle-newly-used-nodes
-  (implies (and (nat-listp never-used-nodes)
-                (nat-listp (strip-cars probably-constant-node-alist)))
-           (nat-listp (strip-cars (mv-nth 1 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep)))))
-  :hints (("Goal" :in-theory (enable handle-newly-used-nodes))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;this function drops any pairs which are invalidated by the current test case
-;this rebuilds the whole alist - hope that is okay...
-;returns (mv probably-constant-node-alist changep)
-;fixme might be faster to process more than 1 test case at a time
-;every node in probably-constant-node-alist has been used on at least one test case
-(defund new-probably-constant-alist (probably-constant-node-alist ;;pairs nodenums with probable constants
-                                    test-case-array-name test-case-array
-                                    acc ;pairs are moved from probably-constant-node-alist to this
-                                    changep)
-  (declare (xargs :guard (and (alistp probably-constant-node-alist)
-                              (nat-listp (strip-cars probably-constant-node-alist))
-                              (array1p test-case-array-name test-case-array)
-                              (all-< (strip-cars probably-constant-node-alist)
-                                     (alen1 test-case-array-name test-case-array))
-                              ;; acc
-                              (booleanp changep))))
-  (if (endp probably-constant-node-alist)
-      (mv acc changep)
-    (let* ((pair (first probably-constant-node-alist))
-           (nodenum (car pair))
-           (probable-value (cdr pair))
-           (value-for-this-test-case (aref1 test-case-array-name test-case-array nodenum)))
-      (if (or (eq :unused value-for-this-test-case)
-              (equal probable-value value-for-this-test-case))
-          ;; this test case doesn't invalidate the pair:
-          (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
-                                       (cons pair acc) changep)
-        ;; the node is used and the value is different from the value in the alist, so drop the pair:
-        (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
-                                     acc t)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; run test cases and use them to split probably-equal-node-sets and eliminate probable constants
-;; returns (mv probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist), where test-case-array-alist is valid iff keep-test-casesp is non-nil
-;ffixme think about what to do with nodes that are unreachable (don't influence the top node, because of ifs) on a single test case, or on all test cases.  maybe i now handle that?
-;now the tests come in randomized?
-(defun update-probable-facts-with-test-cases (test-cases
-                                              singleton-count
-                                              dag-array-name dag-array dag-len
-                                              probably-equal-node-sets
-                                              never-used-nodes
-                                              probably-constant-node-alist
-                                              interpreted-function-alist print
-                                              test-case-array-name-base
-                                              keep-test-casesp
-                                              test-case-array-alist
-                                              test-case-number
-                                              traced-nodes
-                                              num-of-last-interesting-test-case)
-  (declare (xargs :guard (and (test-casesp test-cases)
-                              (natp singleton-count)
-                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (< 0 dag-len)
-                              (nat-list-listp probably-equal-node-sets)
-                              (all-consp probably-equal-node-sets)
-                              (nat-listp never-used-nodes)
-                              (alistp probably-constant-node-alist)
-                              (nat-listp (strip-cars probably-constant-node-alist))
-                              (interpreted-function-alistp interpreted-function-alist)
-                              ;; print
-                              (symbolp test-case-array-name-base)
-                              (booleanp keep-test-casesp)
-                              (alistp test-case-array-alist)
-                              (natp test-case-number)
-                              (nat-listp traced-nodes)
-                              (all-< traced-nodes dag-len)
-                              (natp num-of-last-interesting-test-case))
-                  :guard-debug t
-                  :guard-hints (("Goal" :in-theory (disable natp)))
-                  :verify-guards nil
-                  ))
-  (if (or (endp test-cases)
-          ;;stop if we've done at least 100 test cases and nothing has happened in the last 90% of them:
-          ;;fixme could allow the user to change the 10 and the 100 here:
-          (if (and t ;abandon-testing-when-boringp ;(or t abandon-testing-when-boringp)
-                   num-of-last-interesting-test-case
-                   (<= 100 test-case-number)
-                   (<= (* 10 num-of-last-interesting-test-case) test-case-number))
-              (prog2$ (cw "(Abandoning testing because nothing interesting is happening.)")
-                      t)
-            nil))
-      (mv probably-equal-node-sets never-used-nodes probably-constant-node-alist
-          (reverse test-case-array-alist) ;new; keeps this in sync with the test cases (or do non-interesting ones get dropped?)
-          )
-    (b* ((- ;;TODO: Only print when things change?:
-          (cw "(Test ~x0 (~x1 total sets, ~x2 singletons, ~x3 constants)"
-              test-case-number
-              (+ singleton-count (len probably-equal-node-sets)) ;slow? could keep a count?
-              singleton-count
-              (len probably-constant-node-alist) ;expensive?
-              ))
-         (test-case (first test-cases))
-         (test-case-array-name (if keep-test-casesp
-                                   (pack$ test-case-array-name-base '- (nat-to-string test-case-number))
-                                 ;;if we are not keeping test cases (e.g., because they'd take too much memory), reuse the same array:
-                                 test-case-array-name-base))
-         ;; Evaluate the test case and ensure the top node is true:
-         (test-case-array
-          (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist
-                                        test-case-array-name
-                                        traced-nodes))
-         (changep nil)
-         ;; Update the probably-equal-node-sets:
-         ((mv new-sets new-singleton-count changep)
-          (new-probably-equal-node-sets probably-equal-node-sets test-case-array nil 0 print test-case-array-name changep))
-         ;; Handle nodes that are used for the first time on this test case (they become probably constants):
-         ((mv never-used-nodes probably-constant-node-alist changep)
-          (handle-newly-used-nodes never-used-nodes
-                                   probably-constant-node-alist
-                                   test-case-array-name
-                                   test-case-array
-                                   nil
-                                   changep))
-         ;; Update the probable constants (TODO: Do this before handle-newly-used-nodes):
-         ((mv probably-constant-node-alist changep)
-          (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array nil changep))
-         (- (if (and (or (eq print :verbose)
-                         (eq print :verbose!))
-                     changep) ;ffffixme use this value to decide whether to keep the test case? maybe keep the first few boring ones so we have enough..
-                (cw "~%interesting test case ~x0.)~%" test-case)
-              (cw ")~%"))))
-      (update-probable-facts-with-test-cases (rest test-cases)
-                                             (+ singleton-count new-singleton-count)
-                                             dag-array-name dag-array dag-len
-                                             new-sets
-                                             never-used-nodes
-                                             probably-constant-node-alist
-                                             interpreted-function-alist print test-case-array-name-base keep-test-casesp
-                                             (if keep-test-casesp
-                                                 (acons-fast test-case-array-name
-                                                             test-case-array
-                                                             test-case-array-alist)
-                                               nil)
-                                             (+ 1 test-case-number)
-                                             traced-nodes
-                                             (if changep
-                                                 test-case-number
-                                               num-of-last-interesting-test-case)))))
-
-(skip-proofs (verify-guards update-probable-facts-with-test-cases))
-
-;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
-;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
-;returns (mv initial-probably-equal-node-sets initial-singleton-count)
-(defun initial-probably-equal-node-sets (dag-len test-case-array test-case-array-name)
-  (let* ((signature-alist (array-to-alist test-case-array-name test-case-array dag-len)) ; avoid this?
-         (sorted-signature-alist (merge-sort-lexorder-of-cdrs signature-alist)))
-    (mv-let (sets singleton-count)
-      (group-same-entries sorted-signature-alist nil 0) ;bozo should we disallow any nodes?
-      (mv sets singleton-count))))
-
-(skip-proofs (verify-guards initial-probably-equal-node-sets))
-
-;; Returns (mv never-used-nodes probably-constant-node-alist ;pairs nodenums used on the first test case with their values
-;;         )
-(defun harvest-probable-constants-from-first-test-case (nodenum miter-len test-case-array-name test-case-array
-                                                                never-used-nodes
-                                                                probably-constant-node-alist)
-  (declare (xargs :measure (nfix (+ 1 (- miter-len nodenum)))))
-  (if (or (<= miter-len nodenum)
-          (not (integerp miter-len))
-          (not (integerp nodenum))
-          )
-      (mv never-used-nodes probably-constant-node-alist)
-    (let* ((value (aref1 test-case-array-name test-case-array nodenum)))
-      (if (eq :unused value)
-          (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
-                                                           (cons nodenum never-used-nodes)
-                                                           probably-constant-node-alist)
-        (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
-                                                         never-used-nodes
-                                                         (acons-fast nodenum value probably-constant-node-alist))))))
-
-(skip-proofs (verify-guards harvest-probable-constants-from-first-test-case))
-
-;repeatedly generate a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes
-;returns (mv probably-equal-node-sets ;includes sets believed to be a constant
-;            never-used-nodes
-;            probably-constant-node-alist ;pairs nodes with the constants they seem to be equal to
-;            test-case-array-alist ; valid iff keep-test-casesp is non-nil, pairs array names with arrays that give values to all the nodes
-;        )
-;fixme should this return the used test cases?
-(defun probable-facts (miter-array-name miter-array miter-len miter-depth
-                                        test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
-                                        interpreted-function-alist print keep-test-casesp
-                                        traced-nodes)
-  (let ((test-cases test-cases ;(firstn 1024 test-cases) ;Thu Feb 17 20:25:10 2011
-                    ))
-    (progn$ (cw "(Evaluating test cases (keep-test-casesp is ~x0):~%" keep-test-casesp)
-            ;; use the first test case to make initial-probably-equal-node-sets (I think this is faster than starting with one huge set and then splitting it):
-            (cw "(Test 0 (initial)")
-            (let* ((test-case-array-name-base (pack$ 'test-case-array-depth- miter-depth '-)) ;using the depth is new
-                   (first-test-case-array-name (pack$ test-case-array-name-base 0))
-                   (test-case-array
-                    (evaluate-and-check-test-case (first test-cases)
-                                                  miter-array-name
-                                                  miter-array
-                                                  miter-len
-                                                  interpreted-function-alist
-                                                  first-test-case-array-name
-                                                  traced-nodes)))
-              (mv-let
-               (initial-probably-equal-node-sets initial-singleton-count)
-               (initial-probably-equal-node-sets miter-len test-case-array first-test-case-array-name)
-               (mv-let
-                (never-used-nodes
-                 probably-constant-node-alist ;pairs nodenums used on the first test case with their values
-                 )
-                (harvest-probable-constants-from-first-test-case 0
-                                                                 miter-len
-                                                                 first-test-case-array-name test-case-array
-                                                                 nil
-                                                                 nil)
-                (let* ( ;((array-to-alist first-test-case-array-name test-case-array miter-len)) ;slow?
-                       ;;save the first test case in the test-case-array-alist:
-                       (test-case-array-alist (if keep-test-casesp
-                                                  (acons-fast first-test-case-array-name test-case-array nil)
-                                                nil)))
-                  (prog2$ (cw ")~%")
-                          ;;use additional test cases to split the sets and update the probable constant facts:
-                          (mv-let (probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist)
-                                  (update-probable-facts-with-test-cases (rest test-cases)
-                                                                         initial-singleton-count
-                                                                         miter-array-name
-                                                                         miter-array
-                                                                         miter-len
-                                                                         initial-probably-equal-node-sets
-                                                                         never-used-nodes
-                                                                         probably-constant-node-alist
-                                                                         interpreted-function-alist
-                                                                         print
-                                                                         test-case-array-name-base
-                                                                         keep-test-casesp ;just check whether test-case-array-alist is nil?
-                                                                         test-case-array-alist
-                                                                         1 ;test case number
-                                                                         traced-nodes
-                                                                         nil ;;number of last interesting test case
-                                                                         )
-                                  (prog2$ (cw ")~%")
-                                          (mv probably-equal-node-sets
-                                              never-used-nodes
-                                              probably-constant-node-alist
-                                              test-case-array-alist)))))))))))
-
-(skip-proofs (verify-guards probable-facts))
 
 (defun remove-set-of-unused-nodes (probably-equal-node-sets never-used-nodes acc)
   (if (endp probably-equal-node-sets)
