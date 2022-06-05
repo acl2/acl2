@@ -91,6 +91,24 @@
 
 (local (in-theory (disable acl2-count)))
 
+(defthm all-consp-of-array-to-alist-aux
+  (implies (all-consp acc)
+           (all-consp (array-to-alist-aux n len array-name array acc)))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm all-consp-of-array-to-alist
+  (all-consp (array-to-alist array-name array len))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm nat-listp-of-strip-cars-of-of-array-to-alist-aux
+  (implies (nat-listp (strip-cars acc))
+           (nat-listp (strip-cars (array-to-alist-aux n len array-name array acc))))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm nat-listp-of-strip-cars-of-of-array-to-alist
+  (nat-listp (strip-cars (array-to-alist array-name array len)))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
 (defund nat-list-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -1191,76 +1209,115 @@
             (print-vals-of-nodes (rest nodenums) array-name array))))
 
 
-;move, optimize
-(defund evens-tail (lst acc)
-  (declare (xargs :guard (true-listp acc)
-                  ))
-  (if (atom lst)
-      (reverse acc)
-    (if (atom (cdr lst))
-        (reverse (cons (car lst) acc))
-      (evens-tail (cddr lst)
-                  (cons (car lst) acc)))))
+;; ;move, optimize
+;; (defund evens-tail (lst acc)
+;;   (declare (xargs :guard (true-listp acc)
+;;                   ))
+;;   (if (atom lst)
+;;       (reverse acc)
+;;     (if (atom (cdr lst))
+;;         (reverse (cons (car lst) acc))
+;;       (evens-tail (cddr lst)
+;;                   (cons (car lst) acc)))))
 
-;fixme - where does this stuff go?!  Use defmergesort instead!
+;; ;fixme - where does this stuff go?!  Use defmergesort instead!
 
-(defthm len-of-evens-tail-bound
-  (implies (< 1 (len l))
-           (< (len (evens-tail l acc))
-              (+ (len acc) (len l))))
-  :hints (("Goal" :expand (evens-tail (cddr l)
-                                      (cons (car l) acc))
-           :in-theory (enable evens-tail))))
+;; (defthm len-of-evens-tail-bound
+;;   (implies (< 1 (len l))
+;;            (< (len (evens-tail l acc))
+;;               (+ (len acc) (len l))))
+;;   :hints (("Goal" :expand (evens-tail (cddr l)
+;;                                       (cons (car l) acc))
+;;            :in-theory (enable evens-tail))))
 
-(defthm evens-tail-of-singleton
-  (implies (equal (len l) 1)
-           (equal (evens-tail l nil)
-                  (list (car l))))
-  :hints (("Goal" :in-theory (enable evens-tail reverse))))
+;; (defthm evens-tail-of-singleton
+;;   (implies (equal (len l) 1)
+;;            (equal (evens-tail l nil)
+;;                   (list (car l))))
+;;   :hints (("Goal" :in-theory (enable evens-tail reverse))))
 
-(defun odds-tail (l)
-  (declare (xargs :guard t))
-  (if (consp l)
-      (evens-tail (cdr l) nil)
-    nil))
+;; ;; (defun odds-tail (l)
+;; ;;   (declare (xargs :guard t))
+;; ;;   (if (consp l)
+;; ;;       (evens-tail (cdr l) nil)
+;; ;;     nil))
 
-(in-theory (disable evens-tail))
+;; (in-theory (disable evens-tail))
 
-(defun merge-lexorder-of-cdrs! (l1 l2 acc)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (true-listp acc))
-                  :verify-guards nil
-                  :measure (+ (len l1) (len l2))))
-  (cond ((endp l1)
-         (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((lexorder (cdr (car l1)) (cdr (car l2))) ;note the cdrs
-         (merge-lexorder-of-cdrs! (cdr l1)
-                                  l2 (cons (car l1) acc)))
-        (t (merge-lexorder-of-cdrs! l1 (cdr l2)
-                                    (cons (car l2) acc)))))
+;; comparison function for the sort
+(defun-inline lexorder-of-cdrs (x y)
+  (declare (xargs :guard (and (consp x)
+                              (consp y))))
+  (lexorder (cdr x) (cdr y)))
 
-(skip-proofs (verify-guards merge-lexorder-of-cdrs!))
+;; todo: put the merge-sort arg first
+;; todo: pass in a list-pred (a kind of alist)?
+(defmergesort merge-lexorder-of-cdrs! ; why the ! ?
+  merge-sort-lexorder-of-cdrs
+  lexorder-of-cdrs
+  consp)
 
-(defun merge-sort-lexorder-of-cdrs (l)
-  (declare (xargs :guard (true-listp l)
-                  :verify-guards nil
-                  :measure (len l)
-                  :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
-                                        (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
-                           :expand (
-; (EVENS-TAIL (CONS L1 L2) NIL)
-                                    )
-                           :in-theory (disable len-of-evens-tail-bound)))
-                  ))
-  (cond ((endp (cdr l)) l)
-        (t (merge-lexorder-of-cdrs! (merge-sort-lexorder-of-cdrs (evens-tail l nil))
-                            (merge-sort-lexorder-of-cdrs (odds-tail l))
-                            nil
-                            ))))
+(local
+ (defthmd alistp-when-all-consp
+   (implies (all-consp x)
+            (equal (alistp x)
+                   (true-listp x)))
+   :hints (("Goal" :in-theory (enable alistp)))))
 
-(skip-proofs (verify-guards merge-sort-lexorder-of-cdrs))
+(local
+ (defthmd alistp-becomes-all-consp
+   (equal (alistp x)
+          (and (all-consp x)
+               (true-listp x)))
+   :hints (("Goal" :in-theory (enable alistp)))))
+
+;; (defthm alistp-of-merge-lexorder-of-cdrs!
+;;   (implies (and (alistp l1)
+;;                 (alistp l2)
+;;                 (alistp acc))
+;;            (alistp (merge-lexorder-of-cdrs! l1 l2 acc)))
+;;   :hints (("Goal" :in-theory (enable merge-lexorder-of-cdrs!))))
+
+(defthm alistp-of-merge-sort-lexorder-of-cdrs
+  (implies (alistp l)
+           (alistp (merge-sort-lexorder-of-cdrs l)))
+  :hints (("Goal" :in-theory (enable merge-sort-lexorder-of-cdrs alistp-becomes-all-consp))))
+
+(defthm nat-listp-ofstrip-cars-of-mv-nth-0-of-split-list-fast-aux
+  (implies (and (nat-listp (strip-cars lst))
+                (nat-listp (strip-cars acc))
+                (<= (len tail) (len lst)))
+           (nat-listp (strip-cars (mv-nth 0 (split-list-fast-aux lst tail acc)))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm nat-listp-ofstrip-cars-of-mv-nth-1-of-split-list-fast-aux
+  (implies (and (nat-listp (strip-cars lst))
+                (nat-listp (strip-cars acc))
+                (<= (len tail) (len lst)))
+           (nat-listp (strip-cars (mv-nth 1 (split-list-fast-aux lst tail acc)))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm nat-listp-ofstrip-cars-of-mv-nth-0-of-split-list-fast
+  (implies (nat-listp (strip-cars lst))
+           (nat-listp (strip-cars (mv-nth 0 (split-list-fast lst)))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm nat-listp-ofstrip-cars-of-mv-nth-1-of-split-list-fast
+  (implies (nat-listp (strip-cars lst))
+           (nat-listp (strip-cars (mv-nth 1 (split-list-fast lst)))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm nat-listp-ofstrip-cars-of-merge-lexorder-of-cdrs!
+  (implies (and (nat-listp (strip-cars l1))
+                (nat-listp (strip-cars l2))
+                (nat-listp (strip-cars acc)))
+           (nat-listp (strip-cars (merge-lexorder-of-cdrs! l1 l2 acc))))
+  :hints (("Goal" :in-theory (enable merge-lexorder-of-cdrs!))))
+
+(defthm nat-listp-ofstrip-cars-of-merge-sort-lexorder-of-cdrs
+  (implies (nat-listp (strip-cars lst))
+           (nat-listp (strip-cars (merge-sort-lexorder-of-cdrs lst))))
+  :hints (("Goal" :in-theory (enable merge-sort-lexorder-of-cdrs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1710,11 +1767,11 @@
 ;; returns TEST-CASE-ARRAY, which has a value for each node that supports the top node for this test (and :unused for other nodes) and which has name TEST-CASE-ARRAY-NAME
 ;; also checks that the top node evaluates to true
 (defund evaluate-and-check-test-case (test-case
-                                     dag-array-name dag-array dag-len
-                                     interpreted-function-alist
-                                     test-case-array-name
-                                     traced-nodes ; call these debug nodes?  is this notion of tracing differenct from the tracing we do for rec fns?
-                                     )
+                                      dag-array-name dag-array dag-len
+                                      interpreted-function-alist
+                                      test-case-array-name
+                                      traced-nodes ; call these debug nodes?  is this notion of tracing differenct from the tracing we do for rec fns?
+                                      )
   (declare (xargs :guard (and (test-casep test-case)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< 0 dag-len)
@@ -1738,6 +1795,19 @@
               (cw "Test case: ~x0~%" test-case)
               (print-array2 test-case-array-name test-case-array dag-len) ;this can be big!
               (er hard? 'evaluate-and-check-test-case "Untrue test case (see above)")))))
+
+;; not true...
+;; (local
+;;  (thm
+;;   (implies (and (test-casep test-case)
+;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                 (< 0 dag-len)
+;;                 (interpreted-function-alistp interpreted-function-alist)
+;;                 (symbolp test-case-array-name)
+;;                 (nat-listp traced-nodes)
+;;                 (all-< traced-nodes dag-len))
+;;            (array1p test-case-array-name (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name traced-nodes)))
+;;   :hints (("Goal" :in-theory (enable evaluate-and-check-test-case)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2009,66 +2079,66 @@
            (nat-list-listp (mv-nth 0 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
   :hints (("Goal" :in-theory (enable new-probably-equal-node-sets))))
 
-;; Looks for an initial segment of ENTRIES all of whose vals are SIG.
-;; Returns (mv entries-with-sig remaining-entries).
-(defund find-entries-with-value (entries value acc)
-  (declare (xargs :guard (and (alistp entries)
-                              (nat-listp (strip-cars entries))
+;; Looks for an initial segment of NODE-TO-VALUE-ALIST all of whose vals are SIG.
+;; Returns (mv entries-with-value remaining-node-to-value-alist).
+(defund find-entries-with-value (node-to-value-alist value acc)
+  (declare (xargs :guard (and (alistp node-to-value-alist)
+                              (nat-listp (strip-cars node-to-value-alist))
                               (nat-listp acc))))
-  (if (endp entries)
-      (mv acc entries)
-    (let* ((entry (car entries))
+  (if (endp node-to-value-alist)
+      (mv acc node-to-value-alist)
+    (let* ((entry (car node-to-value-alist))
            (nodenum (car entry))
            (value2 (cdr entry)))
       (if (equal value value2)
-          (find-entries-with-value (cdr entries) value (cons nodenum acc))
+          (find-entries-with-value (cdr node-to-value-alist) value (cons nodenum acc))
         ;; stop looking, since the entries are sorted by value and we found a difference:
-        (mv acc entries)))))
+        (mv acc node-to-value-alist)))))
 
 (local
  (defthm nat-listp-of-mv-nth-0-of-find-entries-with-value
-   (implies (and (nat-listp (strip-cars entries))
+   (implies (and (nat-listp (strip-cars node-to-value-alist))
                  (nat-listp acc))
-            (nat-listp (mv-nth 0 (find-entries-with-value entries value acc))))
+            (nat-listp (mv-nth 0 (find-entries-with-value node-to-value-alist value acc))))
    :hints (("Goal" :in-theory (enable find-entries-with-value)))))
 
 (local
  (defthm <=-of-len-of-mv-nth-1-of-find-entries-with-value
-   (<= (len (mv-nth 1 (find-entries-with-value entries value acc)))
-       (len entries))
+   (<= (len (mv-nth 1 (find-entries-with-value node-to-value-alist value acc)))
+       (len node-to-value-alist))
    :rule-classes :linear
    :hints (("Goal" :in-theory (enable find-entries-with-value)))))
 
 (local
  (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
-   (implies (nat-listp (strip-cars entries))
-            (nat-listp (strip-cars (mv-nth 1 (find-entries-with-value entries value acc)))))
+   (implies (nat-listp (strip-cars node-to-value-alist))
+            (nat-listp (strip-cars (mv-nth 1 (find-entries-with-value node-to-value-alist value acc)))))
    :hints (("Goal" :in-theory (enable find-entries-with-value)))))
 
 (local
  (defthm alistp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
-   (implies (alistp entries)
-            (alistp (mv-nth 1 (find-entries-with-value entries value acc))))
+   (implies (alistp node-to-value-alist)
+            (alistp (mv-nth 1 (find-entries-with-value node-to-value-alist value acc))))
    :hints (("Goal" :in-theory (enable find-entries-with-value)))))
 
 ;; Returns (mv sets singleton-count).
-(defun group-same-entries (entries acc singleton-count)
-  (declare (xargs :guard (and (alistp entries) ; should be sorted, or at least grouped, by the values of its key/value pairs
-                              (nat-listp (strip-cars entries))
+(defun group-same-entries (node-to-value-alist acc singleton-count)
+  (declare (xargs :guard (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                              (nat-listp (strip-cars node-to-value-alist))
                               (nat-list-listp acc)
                               (natp singleton-count))
                   :guard-debug t
-                  :measure (len entries)))
-  (if (atom entries)
+                  :measure (len node-to-value-alist)))
+  (if (atom node-to-value-alist)
       (mv acc singleton-count)
-    (let* ((entry (car entries))
+    (let* ((entry (car node-to-value-alist))
            (nodenum (car entry))
            (value (cdr entry)))
-      (mv-let (equiv-set entries)
-        (find-entries-with-value (cdr entries) value nil)
+      (mv-let (equiv-set node-to-value-alist)
+        (find-entries-with-value (cdr node-to-value-alist) value nil)
         (if equiv-set ; there's at least one other node with the same value
-            (group-same-entries entries (cons (cons nodenum equiv-set) acc) singleton-count)
-          (group-same-entries entries acc (+ 1 singleton-count)))))))
+            (group-same-entries node-to-value-alist (cons (cons nodenum equiv-set) acc) singleton-count)
+          (group-same-entries node-to-value-alist acc (+ 1 singleton-count)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2258,21 +2328,29 @@
 ;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
 ;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
 ;returns (mv initial-probably-equal-node-sets initial-singleton-count)
-(defun initial-probably-equal-node-sets (dag-len test-case-array test-case-array-name)
-  (let* ((signature-alist (array-to-alist test-case-array-name test-case-array dag-len)) ; avoid this?
-         (sorted-signature-alist (merge-sort-lexorder-of-cdrs signature-alist)))
-    (mv-let (sets singleton-count)
-      (group-same-entries sorted-signature-alist nil 0) ;bozo should we disallow any nodes?
-      (mv sets singleton-count))))
-
-(skip-proofs (verify-guards initial-probably-equal-node-sets))
+(defun initial-probably-equal-node-sets (dag-len test-case-array-name test-case-array)
+  (declare (xargs :guard (and (array1p test-case-array-name test-case-array)
+                              (natp dag-len)
+                              (<= dag-len (alen1 test-case-array-name test-case-array)))))
+  (let* ((node-to-value-alist (array-to-alist test-case-array-name test-case-array dag-len)) ; avoid this?
+         (sorted-node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist)) ; sorted by the values
+         )
+    (group-same-entries sorted-node-to-value-alist nil 0)))
 
 ;; Returns (mv never-used-nodes probably-constant-node-alist ;pairs nodenums used on the first test case with their values
 ;;         )
-(defun harvest-probable-constants-from-first-test-case (nodenum miter-len test-case-array-name test-case-array
-                                                                never-used-nodes
-                                                                probably-constant-node-alist)
-  (declare (xargs :measure (nfix (+ 1 (- miter-len nodenum)))))
+(defun harvest-probable-constants-from-first-test-case (nodenum
+                                                        miter-len
+                                                        test-case-array-name test-case-array
+                                                        never-used-nodes
+                                                        probably-constant-node-alist)
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp miter-len)
+                              (array1p test-case-array-name test-case-array)
+                              (<= miter-len (alen1 test-case-array-name test-case-array))
+                              (nat-listp never-used-nodes)
+                              (alistp probably-constant-node-alist))
+                  :measure (nfix (+ 1 (- miter-len nodenum)))))
   (if (or (<= miter-len nodenum)
           (not (integerp miter-len))
           (not (integerp nodenum))
@@ -2287,8 +2365,6 @@
                                                          never-used-nodes
                                                          (acons-fast nodenum value probably-constant-node-alist))))))
 
-(skip-proofs (verify-guards harvest-probable-constants-from-first-test-case))
-
 ;repeatedly generate a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes
 ;returns (mv probably-equal-node-sets ;includes sets believed to be a constant
 ;            never-used-nodes
@@ -2296,10 +2372,21 @@
 ;            test-case-array-alist ; valid iff keep-test-casesp is non-nil, pairs array names with arrays that give values to all the nodes
 ;        )
 ;fixme should this return the used test cases?
-(defun probable-facts (miter-array-name miter-array miter-len miter-depth
+(defun probable-facts (miter-array-name miter-array miter-len
+                                        miter-depth
                                         test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
                                         interpreted-function-alist print keep-test-casesp
                                         traced-nodes)
+  (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (natp miter-depth)
+                              (test-casesp test-cases)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              ;; print
+                              (booleanp keep-test-casesp)
+                              (nat-listp traced-nodes)
+                              (ALL-< TRACED-NODES MITER-LEN))
+                  :verify-guards nil ; not true?
+                  :guard-debug t))
   (let ((test-cases test-cases ;(firstn 1024 test-cases) ;Thu Feb 17 20:25:10 2011
                     ))
     (progn$ (cw "(Evaluating test cases (keep-test-casesp is ~x0):~%" keep-test-casesp)
@@ -2317,7 +2404,7 @@
                                                   traced-nodes)))
               (mv-let
                (initial-probably-equal-node-sets initial-singleton-count)
-               (initial-probably-equal-node-sets miter-len test-case-array first-test-case-array-name)
+               (initial-probably-equal-node-sets miter-len first-test-case-array-name test-case-array)
                (mv-let
                 (never-used-nodes
                  probably-constant-node-alist ;pairs nodenums used on the first test case with their values
@@ -5538,44 +5625,44 @@
   (prog2$ nil ;(cw "Comparing sigs ~x0 and ~x1~%" (car entry1) (car entry2)) ;BBOZO remove
           (sig-<-aux (cdr entry1) (cdr entry2))))
 
-(defun merge-sig-< (l1 l2 acc)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (true-listp acc))
-                  :verify-guards nil
-                  :measure (+ (len l1) (len l2))))
-  (cond ((endp l1)
-         (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((sig-< (car l1) (car l2))
-         (merge-sig-< (cdr l1)
-                      l2 (cons (car l1) acc)))
-        (t (merge-sig-< l1 (cdr l2)
-                        (cons (car l2) acc)))))
+;; (defun merge-sig-< (l1 l2 acc)
+;;   (declare (xargs :guard (and (true-listp l1)
+;;                               (true-listp l2)
+;;                               (true-listp acc))
+;;                   :verify-guards nil
+;;                   :measure (+ (len l1) (len l2))))
+;;   (cond ((endp l1)
+;;          (revappend acc l2))
+;;         ((endp l2) (revappend acc l1))
+;;         ((sig-< (car l1) (car l2))
+;;          (merge-sig-< (cdr l1)
+;;                       l2 (cons (car l1) acc)))
+;;         (t (merge-sig-< l1 (cdr l2)
+;;                         (cons (car l2) acc)))))
 
-(skip-proofs (verify-guards merge-sig-<))
+;; (skip-proofs (verify-guards merge-sig-<))
 
 
 
-;fffixme use my new fast merge-sort (make sure it is faster)
-(defun merge-sort-sig-< (l)
-  (declare (xargs :guard (true-listp l)
-                  :verify-guards nil
-                  :measure (len l)
-                  :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
-                                        (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
-                           :expand (
-                                   ; (EVENS-TAIL (CONS L1 L2) NIL)
-                                    )
-                           :in-theory (disable len-of-evens-tail-bound)))
-                  ))
-  (cond ((endp (cdr l)) l)
-        (t (merge-sig-< (merge-sort-sig-< (evens-tail l nil))
-                        (merge-sort-sig-< (odds-tail l))
-                        nil
-                        ))))
+;; ;fffixme use my new fast merge-sort (make sure it is faster)
+;; (defun merge-sort-sig-< (l)
+;;   (declare (xargs :guard (true-listp l)
+;;                   :verify-guards nil
+;;                   :measure (len l)
+;;                   :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
+;;                                         (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
+;;                            :expand (
+;;                                    ; (EVENS-TAIL (CONS L1 L2) NIL)
+;;                                     )
+;;                            :in-theory (disable len-of-evens-tail-bound)))
+;;                   ))
+;;   (cond ((endp (cdr l)) l)
+;;         (t (merge-sig-< (merge-sort-sig-< (evens-tail l nil))
+;;                         (merge-sort-sig-< (odds-tail l))
+;;                         nil
+;;                         ))))
 
-(skip-proofs (verify-guards merge-sort-sig-<))
+;; (skip-proofs (verify-guards merge-sort-sig-<))
 
 
 
