@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "check-packages")
 (include-book "auto-return-type")
 (include-book "helper-old")
 (include-book "helper")
