@@ -107,7 +107,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun test-case-typep (type)
+(defund test-case-typep (type)
   (declare (xargs :guard t
                   :hints (("Goal" :in-theory (enable list-type-len-type
                                                      list-type-element-type
@@ -169,7 +169,7 @@
                                              axe-typep)
                                             (natp))))
                    :guard-hints (("Goal"
-                                  :in-theory (e/d (list-typep BV-TYPEP)
+                                  :in-theory (e/d (list-typep BV-TYPEP test-case-typep)
                                                   (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (unquote type) rand))
@@ -279,6 +279,11 @@
            (test-casesp (reverse-list acc)))
   :hints (("Goal" :in-theory (enable reverse-list test-casep))))
 
+(defthm test-casesp-of-car
+  (implies (test-casesp l)
+           (test-casep (car l)))
+  :hints (("Goal" :in-theory (enable test-casesp))))
+
 (defthm test-casesp-forward-to-true-listp
   (implies (test-casesp cases)
            (true-listp cases))
@@ -310,8 +315,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;ffixme might we need to pass in interpreted-functions
-(defun test-case-satisfies-assumptionsp (test-case assumptions)
+;; todo: might we need to pass in interpreted-functions?
+(defund test-case-satisfies-assumptionsp (test-case assumptions)
   (declare (xargs :guard (and (test-casep test-case)
                               (pseudo-term-listp assumptions))))
   (if (endp assumptions)
@@ -326,7 +331,7 @@
 
 ;returns (mv test-cases rand), where each test case is an alist from vars to values
 ;should we give them numbers?
-(defun make-test-cases-aux (test-cases-left test-case-number test-case-type-alist assumptions print acc rand)
+(defund make-test-cases-aux (test-cases-left test-case-number test-case-type-alist assumptions print acc rand)
   (declare (xargs :guard (and (natp test-cases-left)
                               (natp test-case-number)
                               (test-case-type-alistp test-case-type-alist)
@@ -365,7 +370,7 @@
   :hints (("Goal" :in-theory (enable make-test-cases-aux))))
 
 ;returns (mv test-cases rand), where each test case is an alist from vars to values
-(defun make-test-cases (test-case-count test-case-type-alist assumptions rand)
+(defund make-test-cases (test-case-count test-case-type-alist assumptions rand)
   (declare (xargs :guard (and (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
                               (pseudo-term-listp assumptions))
