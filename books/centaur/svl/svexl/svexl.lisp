@@ -750,7 +750,7 @@
          :node)
         (t :call)))
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t
   svexl-node-kind-is-svexl-node-kind-wog
   (equal (svexl-node-kind x)
          (svexl-node-kind-wog x))
@@ -967,7 +967,7 @@
         (hons-acons node-id eval-res node-env)))
   ///
 
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     svexl-eval-aux-is-svexl-eval-aux-wog
     (implies (and (svexl-node-array-p x)
                   (sv::svex-env-p env))
@@ -1000,7 +1000,7 @@
     res)
   ///
 
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     svexl-eval-is-svexl-eval-wog
     (implies (and (svexl-p x)
                   (sv::svex-env-p env))
@@ -1037,7 +1037,7 @@
        (- (fast-alist-free node-env)))
     res)
   ///
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     svexllist-eval-is-svexllist-eval-wog
     (implies (and (svexllist-p x)
                   (sv::svex-env-p env))
@@ -1064,7 +1064,7 @@
        (- (fast-alist-free node-env)))
     res)
   ///
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     svexl-alist-eval-is-svexl-alist-eval-wog
     (implies (and (svexl-alist-p x)
                   (sv::svex-env-p env))

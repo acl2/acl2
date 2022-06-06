@@ -239,8 +239,7 @@
              :in-theory (e/d (svexlist-list-eval-wog) ())))))
 
 
-(rp::def-rp-rule$
- t nil
+(rp::def-rp-rule :disabled-for-acl2 t
  svex-alist-eval-opener-nil
  (implies t
           (equal (sv::svex-alist-eval nil env)
@@ -249,8 +248,7 @@
           :Expand (sv::svex-alist-eval nil env)
           :in-theory (e/d () ()))))
 
-(rp::def-rp-rule$
- t nil
+(rp::def-rp-rule :disabled-for-acl2 t
  svex-alist-eval-opener-cons
  (implies (force (sv::svar-p key))
           (equal (sv::svex-alist-eval (cons (cons key svex) rest) env)
