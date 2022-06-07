@@ -95,7 +95,40 @@
           ((when (errorp new-cdr-members)) new-cdr-members))
        (cons (member-value-fix (car members))
              new-cdr-members))
-     :hooks (:fix)))
+     :hooks (:fix)
+
+     ///
+
+     (defruled member-value-listp-of-value-struct-write-aux
+       (b* ((old (value-struct-read-aux name memvals))
+            (memvals1 (value-struct-write-aux name new memvals)))
+         (implies (and (valuep old)
+                       (equal (type-of-value new)
+                              (type-of-value old)))
+                  (member-value-listp memvals1)))
+       :enable value-struct-read-aux)
+
+     (defruled member-value-list->name-list-of-struct-write-aux
+       (b* ((old (value-struct-read-aux name memvals))
+            (memvals1 (value-struct-write-aux name new memvals)))
+         (implies (and (valuep old)
+                       (equal (type-of-value new)
+                              (type-of-value old)))
+                  (equal (member-value-list->name-list memvals1)
+                         (member-value-list->name-list memvals))))
+       :enable value-struct-read-aux)
+
+     (defruled value-struct-read-aux-of-value-struct-write-aux
+       (b* ((old (value-struct-read-aux name memvals))
+            (memvals1 (value-struct-write-aux name new memvals)))
+         (implies (and (valuep old)
+                       (equal (type-of-value new)
+                              (type-of-value old)))
+                  (equal (value-struct-read-aux name1 memvals1)
+                         (if (ident-equiv name1 name)
+                             (value-fix new)
+                           (value-struct-read-aux name1 memvals)))))
+       :enable value-struct-read-aux)))
 
   ///
 
