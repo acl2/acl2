@@ -88,8 +88,23 @@
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "merge-sort-less-than-rules"))
 
-(local (in-theory (disable acl2-count)))
+(local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
+                       (acl2-count symbol-alistp))))
+
+;;move
+(defthm nat-listp-of-add-to-end
+  (implies (and (nat-listp lst)
+                (natp val))
+           (nat-listp (add-to-end val lst)))
+  :hints (("Goal" :in-theory (enable add-to-end))))
+
+;move
+(defthm nat-listp-of-remove1-equal
+  (implies (nat-listp nats)
+           (nat-listp (remove1-equal a nats)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
 
 (defthm all-consp-of-array-to-alist-aux
   (implies (all-consp acc)
@@ -1414,6 +1429,85 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; (defthm nat-listp-of-mv-nth-0-of-split-list-fast-aux
+;;   (implies (and (nat-listp lst)
+;;                 (nat-listp acc)
+;;                 (<= (len tail) (len lst)))
+;;            (nat-listp (mv-nth 0 (split-list-fast-aux lst tail acc))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm nat-listp-of-mv-nth-1-of-split-list-fast-aux
+;;   (implies (and (nat-listp lst)
+;;                 (nat-listp acc)
+;;                 (<= (len tail) (len lst)))
+;;            (nat-listp (mv-nth 1 (split-list-fast-aux lst tail acc))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm nat-listp-of-mv-nth-0-of-split-list-fast
+;;   (implies (nat-listp lst)
+;;            (nat-listp (mv-nth 0 (split-list-fast lst))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm nat-listp-of-mv-nth-1-of-split-list-fast
+;;   (implies (nat-listp lst)
+;;            (nat-listp (mv-nth 1 (split-list-fast lst))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm nat-listp-of-merge-<
+;;   (implies (and (nat-listp l1)
+;;                 (nat-listp l2)
+;;                 (nat-listp acc))
+;;            (nat-listp (merge-< l1 l2 acc)))
+;;   :hints (("Goal" :in-theory (enable merge-<))))
+
+;; (defthm nat-listp-of-merge-sort-<
+;;   (implies (nat-listp lst)
+;;            (nat-listp (merge-sort-< lst)))
+;;   :hints (("Goal" :in-theory (enable merge-sort-<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm all-<-of-mv-nth-0-of-split-list-fast-aux
+;;   (implies (and (all-< lst bound)
+;;                 (all-< acc bound)
+;;                 (<= (len tail) (len lst)))
+;;            (all-< (mv-nth 0 (split-list-fast-aux lst tail acc))
+;;                   bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm all-<-of-mv-nth-1-of-split-list-fast-aux
+;;   (implies (and (all-< lst bound)
+;;                 (all-< acc bound)
+;;                 (<= (len tail) (len lst)))
+;;            (all-< (mv-nth 1 (split-list-fast-aux lst tail acc))
+;;                    bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm all-<-of-mv-nth-0-of-split-list-fast
+;;   (implies (all-< lst bound)
+;;            (all-< (mv-nth 0 (split-list-fast lst)) bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm all-<-of-mv-nth-1-of-split-list-fast
+;;   (implies (all-< lst bound)
+;;            (all-< (mv-nth 1 (split-list-fast lst)) bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm all-<-of-merge-<
+;;   (implies (and (all-< l1 bound)
+;;                 (all-< l2 bound)
+;;                 (all-< acc bound))
+;;            (all-< (merge-< l1 l2 acc)
+;;                    bound))
+;;   :hints (("Goal" :in-theory (enable merge-<))))
+
+;; (defthm all-<-of-merge-sort-<
+;;   (implies (all-< lst bound)
+;;            (all-< (merge-sort-< lst) bound))
+;;   :hints (("Goal" :in-theory (enable merge-sort-<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (defthm num-true-nodes-of-aset1
 ;;   (implies (and (array1p array-name array)
 ;;                 (natp n)
@@ -1764,6 +1858,7 @@
             (equal (alen1 'done-nodes-array (mv-nth 1 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
                    (alen1 'done-nodes-array done-nodes-array)))
    :hints (("Goal"
+            :induct t
             :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
                                                               DAG-ARRAY-NAME DAG-ARRAY
                                                               dag-len
@@ -9195,7 +9290,8 @@
 ;returns (mv provedp
 ;            nodenums-translated ;;in decreasing order
 ;            state)
-(defun attempt-aggressively-cut-equivalence-proof (smaller-nodenum
+
+(defund attempt-aggressively-cut-equivalence-proof (smaller-nodenum
                                                    larger-nodenum
                                                    dag-array-name
                                                    dag-array ;this is the miter-array
@@ -9203,7 +9299,18 @@
                                                    var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
                                                    print max-conflicts miter-name
                                                    state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :guard (and (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< smaller-nodenum dag-len)
+                              (< larger-nodenum dag-len)
+                              (symbol-alistp var-type-alist)
+                              ;; print
+                              (natp max-conflicts) ; allow nil?
+                              (symbolp miter-name))
+            :verify-guards nil
+            :stobjs state))
   (b* (
        (- (and print (cw " (Cutting at shared nodes...")))
        (num-nodes-to-consider (+ 1 larger-nodenum))
@@ -9262,7 +9369,9 @@
 ;would like to reuse this for pure constants
 ;returns (mv success-flg state)
 (defun attempt-cut-equivalence-proofs (min-depth max-depth depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
-  (declare (xargs :mode :program :stobjs state)
+  (declare (xargs :mode :program
+                  :verify-guards nil
+                  :stobjs state)
            (irrelevant miter-name) ;todo
            )
   (if (or (not (natp min-depth))
@@ -9318,7 +9427,9 @@
                                                            miter-array-name miter-array miter-len
                                                            var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
                                                            print max-conflicts miter-name state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :mode :program
+                  :verify-guards nil
+                  :stobjs state))
   (b* ( ;;(- (and print (cw "(Subdag that supports the nodes:~%")))
        ;;(- (and print (print-dag-only-supporters-of-nodes miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
        ;;(- (and print (cw ")~%")))
@@ -9572,59 +9683,171 @@
 (defconst *smaller-nodes-that-might-be-equal* :smaller-nodes-that-might-be-equal)
 (defconst *larger-nodes-that-might-be-equal* :larger-nodes-that-might-be-equal)
 
-;;tag-array2 associates each nodenums with a little alist from tags to their values
-(defun get-node-tag (nodenum tag tag-array2)
-  (declare (type symbol tag)
+(defconst *sweep-array-tags* (list *probable-constant* *smaller-nodes-that-might-be-equal* *larger-nodes-that-might-be-equal*))
+
+(defun sweep-info-tag-and-valuep (tag val)
+  (declare (xargs :guard t))
+  (if (eq *probable-constant* tag)
+      (or (null val)
+          (myquotep val))
+    (and (or (eq *smaller-nodes-that-might-be-equal* tag)
+             (eq *larger-nodes-that-might-be-equal* tag))
+         (nat-listp val))))
+
+(defund sweep-infop (info)
+  (declare (xargs :guard t))
+  (if (atom info)
+      (null info)
+    (let* ((entry (first info)))
+      (and (consp entry)
+           (let ((tag (car entry))
+                 (val (cdr entry)))
+             (and (sweep-info-tag-and-valuep tag val)
+                  (sweep-infop (rest info))))))))
+
+;(def-typed-acl2-array2 sweep-info-arrayp sweep-infop) ; todo: this should work
+(def-typed-acl2-array2 sweep-info-arrayp (sweep-infop val)) ; todo: reduce output, todo: avoid backtracking to do induction
+
+(local
+ (defthm alistp-when-sweep-infop
+   (implies (sweep-infop info)
+            (alistp info))
+   :hints (("Goal" :in-theory (enable sweep-infop)))))
+
+(local
+ (defthm nat-listp-of-lookup-equal-when-sweep-infop
+   (implies (sweep-infop sweep-info)
+            (nat-listp (lookup-equal :smaller-nodes-that-might-be-equal sweep-info)))
+   :hints (("Goal" :in-theory (enable sweep-infop lookup-equal)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;sweep-info-array associates each nodenums with a little alist from tags to their values
+(defund get-node-tag (nodenum tag sweep-info-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (symbolp tag)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (< nodenum (alen1 'sweep-info-array sweep-info-array)))
+                  :split-types t)
            (type (integer 0 *) nodenum)
-           (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (< nodenum (alen1 'tag-array2 tag-array2))
-                              (array-of-alistsp nodenum 'tag-array2 tag-array2))))
-  (let ((node-tags (aref1 'tag-array2 tag-array2 nodenum)))
+           (type symbol tag))
+  (let ((node-tags (aref1 'sweep-info-array sweep-info-array nodenum)))
     (lookup-eq tag node-tags)))
 
-(defund set-tag (nodenum tag val tag-array2)
-  (declare (type symbol tag)
-           (type (integer 0 *) nodenum)
-           (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (< nodenum (alen1 'tag-array2 tag-array2))
-                              (array-of-alistsp nodenum 'tag-array2 tag-array2))))
-  (let* ((node-tags (aref1 'tag-array2 tag-array2 nodenum))
-         (new-node-tags (acons-fast tag val node-tags)))
-    (aset1-safe 'tag-array2 tag-array2 nodenum new-node-tags)))
+(local
+ (defthm true-listp-of-get-node-tag-of-smaller-nodes-that-might-be-equal
+   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (natp index)
+                 (< index (alen1 'sweep-info-array sweep-info-array)))
+            (true-listp (get-node-tag index :smaller-nodes-that-might-be-equal sweep-info-array)))
+   :rule-classes (:rewrite :type-prescription)
+   :hints (("Goal" :use (:instance type-of-aref1-when-sweep-info-arrayp
+                                   (array-name 'sweep-info-array)
+                                   (array sweep-info-array)
+                                   )
+            :in-theory (e/d (get-node-tag sweep-infop)
+                            (type-of-aref1-when-sweep-info-arrayp))))))
 
-;returns tag-array2
+(local
+ (defthm nat-listp-of-get-node-tag-of-smaller-nodes-that-might-be-equal
+   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (natp index)
+                 (< index (alen1 'sweep-info-array sweep-info-array)))
+            (nat-listp (get-node-tag index :smaller-nodes-that-might-be-equal sweep-info-array)))
+   :hints (("Goal" :use (:instance type-of-aref1-when-sweep-info-arrayp
+                                   (array-name 'sweep-info-array)
+                                   (array sweep-info-array)
+                                   )
+            :in-theory (e/d (get-node-tag sweep-infop)
+                            (type-of-aref1-when-sweep-info-arrayp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund set-tag (nodenum tag val sweep-info-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (symbolp tag)
+                              (sweep-info-tag-and-valuep tag val)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (< nodenum (alen1 'sweep-info-array sweep-info-array)))
+                  :split-types t)
+           (type (integer 0 *) nodenum)
+           (type symbol tag))
+  (let* ((node-tags (aref1 'sweep-info-array sweep-info-array nodenum))
+         (new-node-tags (acons-fast tag val node-tags)))
+    (aset1-safe 'sweep-info-array sweep-info-array nodenum new-node-tags)))
+
+(local
+ (defthm sweep-info-arrayp-of-set-tag
+   (implies (and (natp nodenum)
+                 (sweep-info-tag-and-valuep tag val)
+                 (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (< nodenum (alen1 'sweep-info-array sweep-info-array))
+                 )
+            (sweep-info-arrayp 'sweep-info-array (set-tag nodenum tag val sweep-info-array)))
+   :hints (("Goal" :in-theory (enable set-tag sweep-infop)))))
+
+(local
+ (defthm alen1-of-set-tag
+   (implies (and (natp nodenum)
+                 (sweep-info-tag-and-valuep tag val)
+                 (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (< nodenum (alen1 'sweep-info-array sweep-info-array))
+                 )
+            (equal (alen1 'sweep-info-array (set-tag nodenum tag val sweep-info-array))
+                   (alen1 'sweep-info-array sweep-info-array)))
+   :hints (("Goal" :in-theory (enable set-tag sweep-infop)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;returns sweep-info-array
 ;moves nodes one at a time from node-set to smaller-nodes-from-this-set
-(defun tag-probably-equal-node-set (node-set ;should be sorted
-                                    smaller-nodes-from-this-set ;should be kept sorted (ffixme maybe that's too expensive, in which case choose the minimum one when this is used? but then removing the node may be slow?  maybe that is more rare?)
-                                    tag-array2)
-  (declare (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (true-listp smaller-nodes-from-this-set)
-                              (true-listp node-set)
-                              (all-natp node-set)
-                              (array-of-alistsp (+ -1 (alen1 'tag-array2 tag-array2)) 'tag-array2 tag-array2)
-                              (all-< node-set (alen1 'tag-array2 tag-array2)))
-                  :guard-hints (("Goal" :in-theory (enable set-tag)))
-                  :otf-flg t))
+(defund tag-probably-equal-node-set (node-set ;should be sorted
+                                     smaller-nodes-from-this-set ;should be kept sorted (ffixme maybe that's too expensive, in which case choose the minimum one when this is used? but then removing the node may be slow?  maybe that is more rare?)
+                                     sweep-info-array)
+  (declare (xargs :guard (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (nat-listp smaller-nodes-from-this-set)
+                              (nat-listp node-set)
+                              (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
+                  :guard-hints (("Goal" :in-theory (enable)))))
   (if (endp node-set)
-      tag-array2
+      sweep-info-array
     (let* ((node (car node-set))
            ;;fixme could handle the tagging stuff better with separate arrays? but that would mean more consing?
-           (tag-array2 (set-tag node *larger-nodes-that-might-be-equal* (cdr node-set) tag-array2)) ;don't bother to record for the smallest node in each set?
-           (tag-array2 (set-tag node *smaller-nodes-that-might-be-equal* smaller-nodes-from-this-set tag-array2)))
+           (sweep-info-array (set-tag node *larger-nodes-that-might-be-equal* (cdr node-set) sweep-info-array)) ;don't bother to record for the smallest node in each set?
+           (sweep-info-array (set-tag node *smaller-nodes-that-might-be-equal* smaller-nodes-from-this-set sweep-info-array)))
       (tag-probably-equal-node-set (cdr node-set)
                                    (add-to-end node smaller-nodes-from-this-set) ;preserves sorting
-                                   tag-array2))))
+                                   sweep-info-array))))
 
-;returns tag-array2
+(defthm sweep-info-arrayp-of-tag-probably-equal-node-set
+  (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                (nat-listp smaller-nodes-from-this-set)
+                (true-listp node-set)
+                (all-natp node-set)
+                (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
+           (sweep-info-arrayp 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array)))
+  :hints (("Goal" :in-theory (enable tag-probably-equal-node-set))))
+
+(defthm alen1-arrayp-of-tag-probably-equal-node-set
+  (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                (nat-listp smaller-nodes-from-this-set)
+                (true-listp node-set)
+                (all-natp node-set)
+                (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
+           (equal (alen1 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array))
+                  (alen1 'sweep-info-array sweep-info-array)))
+  :hints (("Goal" :in-theory (enable tag-probably-equal-node-set))))
+
+;returns sweep-info-array
 ;Tag the elements of probably-equal node sets but exclude sets that are probably constant (TODO: try not excluding them)
-(defun tag-probably-equal-node-sets (node-sets tag-array2 probably-constant-node-alist)
-  (declare (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (true-listp node-sets)
-                              (all-all-natp node-sets))
-                  :verify-guards nil
-                  ))
+(defun tag-probably-equal-node-sets (node-sets sweep-info-array probably-constant-node-alist)
+  (declare (xargs :guard (and (nat-list-listp node-sets)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (all-all-< node-sets (alen1 'sweep-info-array sweep-info-array))
+                              (alistp probably-constant-node-alist))
+                  :guard-hints (("Goal" :in-theory (enable TRUE-LISTP-WHEN-NAT-LISTP-REWRITE)))))
   (if (endp node-sets)
-      tag-array2
+      sweep-info-array
     (let* ((node-set (first node-sets))
            (node (car node-set))
            (probably-constantp (assoc node probably-constant-node-alist))
@@ -9635,105 +9858,116 @@
                          )))
       (tag-probably-equal-node-sets (rest node-sets)
                                     (if tag-setp
-                                        (tag-probably-equal-node-set (merge-sort-< node-set) nil tag-array2)
-                                      tag-array2)
+                                        (tag-probably-equal-node-set (merge-sort-< node-set) nil sweep-info-array)
+                                      sweep-info-array)
                                     probably-constant-node-alist))))
 
-(skip-proofs (verify-guards tag-probably-equal-node-sets))
 
-;returns tag-array2
+;returns sweep-info-array
 ;is the alist passed in guaranteed to not have any extra pairs?
-(defun tag-probably-constant-nodes2 (probably-constant-node-alist tag-array2)
-  (declare (xargs ;:guard (ALIST-with-integer-keysp signature-alist)
-            :verify-guards nil))
+(defund tag-probably-constant-nodes2 (probably-constant-node-alist sweep-info-array)
+  (declare (xargs :guard (and (alistp probably-constant-node-alist)
+                              (nat-listp (strip-cars probably-constant-node-alist))
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (all-< (strip-cars probably-constant-node-alist) (alen1 'sweep-info-array sweep-info-array)))))
   (if (endp probably-constant-node-alist)
-      tag-array2
+      sweep-info-array
     (let* ((entry (car probably-constant-node-alist))
            (nodenum (car entry))
            (value (cdr entry))
            ;;fixme, can we handle this for every type of constant (like lists and other non-bv stuff)?
-           (tag-array2 (set-tag nodenum *probable-constant* (enquote value) tag-array2)))
-      (tag-probably-constant-nodes2 (cdr probably-constant-node-alist) tag-array2))))
-
-(skip-proofs (verify-guards tag-probably-constant-nodes2))
+           (sweep-info-array (set-tag nodenum *probable-constant* (enquote value) sweep-info-array)))
+      (tag-probably-constant-nodes2 (cdr probably-constant-node-alist) sweep-info-array))))
 
 ;make tail-recursive
-;use this more??!
-(defun remove-one-eql (item lst)
-  (if (endp lst)
-      nil
-    (if (eql (car lst) item)
-        (cdr lst) ;stop looking
-      (cons (car lst) (remove-one-eql item (cdr lst))))))
+;; ;todo: use REMOVE1-EQL?
+;; (defun remove-one-eql (item lst)
+;;   (declare (xargs :guard (and (EQLABLEP ITEM)
+;;                               (true-listp lst))))
+;;   (if (endp lst)
+;;       nil
+;;     (if (eql (car lst) item)
+;;         (cdr lst) ;stop looking
+;;       (cons (car lst) (remove-one-eql item (cdr lst))))))
 
-(defun remove-node-from-smaller-nodes-that-might-be-equal (nodenum nodenum-to-remove tag-array2)
-  (let* ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* tag-array2))
-         (smaller-nodes-that-might-be-equal (remove-one-eql nodenum-to-remove smaller-nodes-that-might-be-equal))
-         (tag-array2 (set-tag nodenum *smaller-nodes-that-might-be-equal* smaller-nodes-that-might-be-equal tag-array2)))
-    tag-array2))
+(defun remove-node-from-smaller-nodes-that-might-be-equal (nodenum nodenum-to-remove sweep-info-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp nodenum-to-remove)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (< nodenum (alen1 'sweep-info-array sweep-info-array)))))
+  (let* ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* sweep-info-array))
+         (smaller-nodes-that-might-be-equal (remove1 nodenum-to-remove smaller-nodes-that-might-be-equal))
+         (sweep-info-array (set-tag nodenum *smaller-nodes-that-might-be-equal* smaller-nodes-that-might-be-equal sweep-info-array)))
+    sweep-info-array))
 
-(defun remove-node-from-smaller-nodes-that-might-be-equal-list (nodenums nodenum-to-remove tag-array2)
+(defun remove-node-from-smaller-nodes-that-might-be-equal-list (nodenums nodenum-to-remove sweep-info-array)
   (if (endp nodenums)
-      tag-array2
+      sweep-info-array
     (remove-node-from-smaller-nodes-that-might-be-equal-list
      (cdr nodenums)
      nodenum-to-remove
-     (remove-node-from-smaller-nodes-that-might-be-equal (car nodenums) nodenum-to-remove tag-array2))))
+     (remove-node-from-smaller-nodes-that-might-be-equal (car nodenums) nodenum-to-remove sweep-info-array))))
 
-(defun update-tags-for-proved-constant-node (nodenum tag-array2)
-  (let* ((tag-array2 (set-tag nodenum *probable-constant* nil tag-array2)) ;don't try to prove the node is constant (we just proved it)
+(defun update-tags-for-proved-constant-node (nodenum sweep-info-array)
+  (let* ((sweep-info-array (set-tag nodenum *probable-constant* nil sweep-info-array)) ;don't try to prove the node is constant (we just proved it)
          ;;don't try to prove some other node is equal to this one:
-         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* tag-array2))
-         (tag-array2 (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum tag-array2)))
-    tag-array2))
+         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-info-array))
+         (sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-info-array)))
+    sweep-info-array))
 
 ;we failed to prove the node is constant, but we might be able to prove it equal to some other node we think is the same constant..
-(defun update-tags-for-failed-constant-node (nodenum tag-array2)
-  (let* ((tag-array2 (set-tag nodenum *probable-constant* nil tag-array2))) ;don't try to prove that it is the constant
+(defun update-tags-for-failed-constant-node (nodenum sweep-info-array)
+  (let* ((sweep-info-array (set-tag nodenum *probable-constant* nil sweep-info-array))) ;don't try to prove that it is the constant
     ;;we leave the node among the smaller-nodes-that-might-be-equal for larger nodes in its set
-    tag-array2))
+    sweep-info-array))
 
 ;we proved that nodenum equals some smaller node (and we changed refs to it to point to that smaller node)
 ;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
-(defun update-tags-for-proved-equal-node (nodenum tag-array2)
-  (let* ((tag-array2 (set-tag nodenum *smaller-nodes-that-might-be-equal* nil tag-array2)) ;don't try to prove it equal to anything else
+(defun update-tags-for-proved-equal-node (nodenum sweep-info-array)
+  (let* ((sweep-info-array (set-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-info-array)) ;don't try to prove it equal to anything else
          ;;don't try to prove some other node is equal to this one (we've essentially removed this one from the dag):
-         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* tag-array2))
-         (tag-array2 (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum tag-array2)))
-    tag-array2))
+         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-info-array))
+         (sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-info-array)))
+    sweep-info-array))
 
 ;we failed to prove that nodenum is equal to smaller-nodenum-we-tried-to-prove-it-equal-to
 ;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
-(defun update-tags-for-failed-equal-node (nodenum smaller-nodenum-we-tried-to-prove-it-equal-to tag-array2)
+(defun update-tags-for-failed-equal-node (nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-info-array)
   ;;nodenum may still be provably equal to other nodes on the list (if any)
-  (let* ((tag-array2 (remove-node-from-smaller-nodes-that-might-be-equal nodenum smaller-nodenum-we-tried-to-prove-it-equal-to tag-array2)))
-    tag-array2))
+  (let* ((sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-info-array)))
+    sweep-info-array))
 
 ;;go from the bottom up, looking for the next node to handle (is there guaranteed to always be one? i think so.)
 ;we handle the smallest numbered node that is either 1) an (unhandled) probable constant or 2) the larger of two (unhandled) probably-equal nodes in the same set
 ;returns (mv nodenum probably-constantp other-val) where other-val is the quoted constant or the smaller nodenum that nodenum is probably equal to
 ;indicates failure (should never happen) by returning nil for nodenum (and other return vals are irrelevant in that case)
-(defun find-a-node-to-replace (nodenum tag-array2 len)
-  (declare (xargs :measure
-                  (+ 1 (nfix (- len nodenum)))
+(defund find-a-node-to-replace (nodenum sweep-info-array len)
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp len)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (<= nodenum len)
+                              (<= len (alen1 'sweep-info-array sweep-info-array)) ; usually equal??
+                              )
+       ;           :verify-guards nil ; todo
+                  :measure (+ 1 (nfix (- len nodenum)))
                   :hints (("Goal" :in-theory (enable natp)))))
-  (if (or (not (natp nodenum))
-          (not (natp len))
+  (if (or (not (mbt (natp nodenum)))
+          (not (mbt (natp len)))
           (>= nodenum len))
       (mv nil ;failure
           nil nil)
-    (let ((probable-constant (get-node-tag nodenum *probable-constant* tag-array2)))
+    (let ((probable-constant (get-node-tag nodenum *probable-constant* sweep-info-array)))
       ;;if it's probably-constant, we handle it now:
       (if probable-constant
           (mv nodenum t probable-constant)
 ;if it's probably equal to a node smaller than it (not handling the pair until we reach the larger node allows constant nodes or other probably equal pairs that intrude between members of a some probably-equal pair P to be handled before P, which is, i think, the best policy)
-        (let ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* tag-array2)))
+        (let ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* sweep-info-array)))
           (if smaller-nodes-that-might-be-equal
               (mv nodenum nil (car smaller-nodes-that-might-be-equal)) ;fixme if the proof for this smaller-node-that-might-be-equal fails but there are others, we'll redo the search and find this same node again (slow?!)
             ;;no smaller nodes in the same probably equal set, so keep looking:
-            (find-a-node-to-replace (+ 1 nodenum) tag-array2 len)))))))
+            (find-a-node-to-replace (+ 1 nodenum) sweep-info-array len)))))))
 
-(skip-proofs (verify-guards find-a-node-to-replace))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun enquote-cdrs (alist)
   (declare (xargs :guard (alistp alist)))
@@ -10019,6 +10253,8 @@
 ;the quotep checks on arguments could be consp checks?
 ;fixme compare to can-always-translate-expr-to-stp?
 (defun pure-fn-call-exprp (expr)
+  (declare (xargs :guard (dag-function-call-exprp expr)
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
   (let ((fn (ffn-symb expr)))
     ;;(member-eq fn *bv-and-array-fns-we-can-translate*)
     ;;maybe we should check that operands are of the right type?
@@ -10027,27 +10263,30 @@
           ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
           ((boolor booland boolif not bitnot bitxor bitor bitand) t)
           ((bv-array-write bv-array-read bvsx slice)
-           (and (quotep (farg1 expr))
-                (quotep (farg2 expr))))
+           (and (consp (rest (dargs expr)))
+                (quotep (darg1 expr))
+                (quotep (darg2 expr))))
           ((bvnot bvand bvor bvxor bvmult bvminus bvuminus bvplus bvdiv bvmod sbvdiv sbvrem bvchop ;$inline
                   getbit sbvlt bvlt bvle bvif leftrotate32)
-           (quotep (farg1 expr))) ;fixme make sure the value is okay?
-          (bvcat (and (quotep (farg1 expr))
-                      (quotep (farg3 expr))))
+           (and (consp (dargs expr))
+                (quotep (darg1 expr)))) ;fixme make sure the value is okay?
+          (bvcat (and (consp (rest (rest (dargs expr))))
+                      (quotep (darg1 expr))
+                      (quotep (darg3 expr))))
           (otherwise nil))))
 
-(skip-proofs (verify-guards pure-fn-call-exprp))
-
 (defund expr-is-purep (expr)
+  (declare (xargs :guard (dag-exprp expr)))
   ;; (declare (xargs :guard t))
   (or (variablep expr) ;check more?
       (fquotep expr)   ;check more?
       (pure-fn-call-exprp expr)))
 
-(skip-proofs (verify-guards expr-is-purep))
-
 (defun miter-is-purep-aux (index len miter-array-name miter-array)
-  (declare (xargs :measure (nfix (- len index))))
+  (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array len)
+                              (natp index)
+                              (<= index len))
+                  :measure (nfix (- len index))))
   (if (or (>= index len)
           (not (natp index))
           (not (natp len)))
@@ -10057,12 +10296,11 @@
       (prog2$ (cw "(Node ~x0 is not pure.)~%" index)
               nil))))
 
-(skip-proofs (verify-guards miter-is-purep-aux))
-
-;ffixme ;use property lists?
+; todo: ;use property lists?
 ;ffixme check indices, sizes, and shift amounts, etc.!
 (defun miter-is-purep (miter-array-name miter-array miter-len)
-;  (let ((supporting-fns (fns-that-support-node (+ -1 miter-len) miter-array-name miter-array))) ;inefficient to cons this up?
+  (declare (xargs :guard (pseudo-dag-arrayp miter-array-name miter-array miter-len)))
+          ;  (let ((supporting-fns (fns-that-support-node (+ -1 miter-len) miter-array-name miter-array))) ;inefficient to cons this up?
 ;    (subsetp-eq supporting-fns *bv-and-array-fns-we-can-translate*)
   (let ((result (miter-is-purep-aux 0 miter-len miter-array-name miter-array)))
     (prog2$ (if result
@@ -10070,10 +10308,10 @@
               (cw "(Miter is not pure.)~%"))
             result)))
 
-(skip-proofs (verify-guards miter-is-purep))
-
 (skip-proofs
  (defun nodes-are-purep (worklist dag-array-name dag-array done-array)
+   ;; (declare (xargs :guard (and (nat-listp worklist)
+   ;;                             (all-< worklist ..))))
    (if (endp worklist)
        t
      (let ((nodenum (first worklist)))
@@ -16536,7 +16774,7 @@
                                                 test-cases
                                                 test-case-array-alist step-num
                                                 analyzed-function-table unroll
-;tag-array2
+;sweep-info-array
                                                 some-goal-timed-outp nodenums-not-to-unroll
                                                 options
                                                 rand state result-array-stobj)
@@ -16549,7 +16787,7 @@
 ;ffixme i wonder if the rewrites here are so expensive that we should just rewrite the dag after every merge?
         ;;fffixme delay generating the context until after the first rewrite below (which will handle ifs with constant tests - seems common)
         (- (cw " (Context for node ~x0: " original-nodenum2))
-        (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len ;tag-array2
+        (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len ;sweep-info-array
                                           )) ;fixme compute before the sweep?  how would tranforming the dag affect things?
         (- (cw "~x0)~%" context))
         (context-nodenums (get-nodenums-mentioned-in-context context))
@@ -17351,7 +17589,7 @@
                                                        test-cases test-case-array-alist
                                                        step-num ;use this even in the pure case?
                                                        analyzed-function-table unroll miter-is-purep
-                                                       ;;tag-array2
+                                                       ;;sweep-info-array
                                                        some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                                        options
                                                        rand state result-array-stobj)
@@ -17397,7 +17635,7 @@
                                                  print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                  extra-stuff monitored-symbols
                                                  assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
-;tag-array2
+;sweep-info-array
                                                  some-goal-timed-outp nodenums-not-to-unroll options rand state result-array-stobj))))) ;fixme pass in miter-name?
 
  ;;       (if cut-proofs
@@ -17462,7 +17700,7 @@
                                                             print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                             extra-stuff monitored-symbols
                                                             assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-                                                            ;;tag-array2
+                                                            ;;sweep-info-array
                                                             some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
@@ -17480,7 +17718,7 @@
                                         print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                         extra-stuff monitored-symbols
                                         assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-;tag-array2
+;sweep-info-array
                                         some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
         ((when erp) (mv erp nil nil nil nil rand state result-array-stobj))
         ((when (eq result :error)) (mv (erp-t) nil nil nil nil rand state result-array-stobj)) ; todo: drop once impossible
@@ -17529,7 +17767,7 @@
                                        rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist
                                        assumptions ;terms we can assume non-nil (we can't actually assume them to be 't right?)
                                        monitored-symbols step-num analyzed-function-table miter-depth unroll miter-is-purep
-                                       ;;tag-array2
+                                       ;;sweep-info-array
                                        use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (cw "  Trying to prove node ~x0 is the constant ~x1.~%" nodenum constant-value)) ;add parens?
@@ -17556,7 +17794,7 @@
               (- (cw "(Making the equality and rewriting:~%"))
 ;ffixme if rewriting or proving ends in a goal that is clearly not valid then stop right there?
               (- (cw " (Context for node ~x0: " nodenum))
-              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len ;tag-array2
+              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len ;sweep-info-array
                                                 )) ;fixme check if any of the context nodes are quoteps?
               (- (cw "~x0)~%" context))
               (context-nodenums (get-nodenums-mentioned-in-context context))
@@ -17793,7 +18031,7 @@
                                                    test-case-array-alist ;parent-array-name parent-array
                                                    assumptions monitored-symbols step-num
                                                    analyzed-function-table unroll miter-is-purep
-                                                   ;;tag-array2
+                                                   ;;sweep-info-array
                                                    use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (eq :unused constant-value)
@@ -17815,7 +18053,7 @@
                    (try-to-prove-node-is-constant constant-value nodenum expr miter-array-name miter-array miter-len var-type-alist
                                                   print interpreted-function-alist extra-stuff
                                                   rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist assumptions monitored-symbols step-num
-                                                  analyzed-function-table miter-depth unroll miter-is-purep ;tag-array2
+                                                  analyzed-function-table miter-depth unroll miter-is-purep ;sweep-info-array
                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
                    (if erp
                        (mv erp nil miter-array analyzed-function-table rand state result-array-stobj)
@@ -17849,7 +18087,7 @@
  ;; if the top node is reached and something was merged, but the top node wasn't proved true, result is :did-something, meaning simplify (to use the merged stuff and sweep again)
  ;; Result can also be a cons whose car is :new-rules or :apply-rule.
  (defun perform-miter-sweep-aux (changep miter-array-name miter-array miter-len miter-depth
-                                         tag-array2 ;helps us choose the next node to attack
+                                         sweep-info-array ;helps us choose the next node to attack
 ;parent-array-name parent-array
                                          var-type-alist top-node print traced-nodes interpreted-function-alist
                                          rewriter-rule-alist prover-rule-alist
@@ -17878,7 +18116,7 @@
           ;;Find a node to replace:
           ((mv nodenum-to-replace probably-constantp other-val ;the quoted constant or smaller nodenum it's probably-equal to
                )
-           (find-a-node-to-replace next-nodenum-to-consider tag-array2 miter-len)))
+           (find-a-node-to-replace next-nodenum-to-consider sweep-info-array miter-len)))
        (if (not (integerp nodenum-to-replace))
            (if changep ;print the dag?
                (prog2$ (cw "!! couldn't find any node to replace but something changed on this sweep.)")
@@ -17906,7 +18144,7 @@
 ;parent-array-name parent-array
                                                                   assumptions monitored-symbols
                                                                   step-num analyzed-function-table unroll miter-is-purep
-                                                                  ;;tag-array2
+                                                                  ;;sweep-info-array
                                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)))
                     ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
                     (- (cw ")~%")))
@@ -17914,16 +18152,16 @@
                  (if (or (eq :proved result)
                          (eq :failed result)
                          (eq :timed-out result))
-                     (let* ((tag-array2 (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
-                                            (update-tags-for-proved-constant-node nodenum-to-replace tag-array2)
-                                          (update-tags-for-failed-constant-node nodenum-to-replace tag-array2)))
+                     (let* ((sweep-info-array (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
+                                            (update-tags-for-proved-constant-node nodenum-to-replace sweep-info-array)
+                                          (update-tags-for-failed-constant-node nodenum-to-replace sweep-info-array)))
                             ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
                             )
                        ;;continue sweeping:
                        (perform-miter-sweep-aux (or changep (eq :proved result))
                                                 miter-array-name
                                                 miter-array miter-len miter-depth
-                                                tag-array2
+                                                sweep-info-array
 ;parent-array-name parent-array
                                                 var-type-alist top-node print
                                                 traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
@@ -17955,7 +18193,7 @@
                     print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                     extra-stuff monitored-symbols assumptions
                     test-cases test-case-array-alist step-num analyzed-function-table unroll
-                    miter-is-purep ;tag-array2
+                    miter-is-purep ;sweep-info-array
                     some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
                   ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
                   (- (cw ")~%"))
@@ -17970,13 +18208,13 @@
                    ;;                                     (and (not new-runes)
                    ;;                                      (not new-fn-names))
                    ;; no rules or fns were generated, so continue the sweep:
-                   (let* ((tag-array2 (if (eq :proved result)
-                                          (update-tags-for-proved-equal-node nodenum-to-replace tag-array2)
-                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val tag-array2))))
+                   (let* ((sweep-info-array (if (eq :proved result)
+                                          (update-tags-for-proved-equal-node nodenum-to-replace sweep-info-array)
+                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val sweep-info-array))))
                      (perform-miter-sweep-aux (or changep (eq :proved result))
                                               miter-array-name
                                               miter-array miter-len miter-depth ;depth-array
-                                              tag-array2 ;parent-array-name parent-array
+                                              sweep-info-array ;parent-array-name parent-array
                                               var-type-alist
                                               top-node print traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
                                               assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) total-steps nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
@@ -18032,22 +18270,22 @@
                          ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
                          ))
         (probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
-        (tag-array2-name 'tag-array2) ;ffixme use a different name, according to the miter depth?
+        (sweep-info-array-name 'sweep-info-array) ;ffixme use a different name, according to the miter depth?
         ;; Set up the tags that are used to choose which node or node pair to handle next:
-        (tag-array2 (make-empty-array tag-array2-name miter-len))
+        (sweep-info-array (make-empty-array sweep-info-array-name miter-len))
         ;;mark all nodes that are probably constants:
         ;;the tags are the constant values themselves (quoted)
         ;;ffixme don't bother doing tagging for nodes that are :unused (might be a large set?!)
-        (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
-                            (tag-probably-constant-nodes2 probably-constant-node-alist tag-array2)))
+        (sweep-info-array (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
+                            (tag-probably-constant-nodes2 probably-constant-node-alist sweep-info-array)))
         ;; mark nodes that are probably equal to other nodes (including constants, in case we can't prove x=const and y=const but can prove x=y):
-        (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
-                            (tag-probably-equal-node-sets probably-equal-node-sets tag-array2 probably-constant-node-alist)))
+        (sweep-info-array (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
+                            (tag-probably-equal-node-sets probably-equal-node-sets sweep-info-array probably-constant-node-alist)))
         (num-probably-equal-node-sets (count-merges-in-probably-equal-node-sets probably-equal-node-sets 0)) ;; TODO: Can we really count this ahead of time?
         (num-probable-constants (len probably-constant-node-alist))
         (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" num-probably-equal-node-sets) ;fixme this total should exclude the probably constant nodes..
                    (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
-                                      (print-non-constant-probably-equal-sets probably-equal-node-sets tag-array2) ;sort these?
+                                      (print-non-constant-probably-equal-sets probably-equal-node-sets sweep-info-array) ;sort these?
                                       ))
                    (cw ")~%")
                    (cw "~%(Probably-constant nodes (~x0 total)" num-probable-constants)
@@ -18062,7 +18300,7 @@
          (perform-miter-sweep-aux nil ;initial changep
                                   miter-array-name
                                   miter-array miter-len miter-depth ;depth-array
-                                  tag-array2
+                                  sweep-info-array
                                   ;;parent-array-name parent-array
                                   var-type-alist (+ -1 miter-len) ;nodenum of top node
                                   print traced-nodes interpreted-function-alist
@@ -18082,7 +18320,7 @@
                                   rand state result-array-stobj))
         ((when erp)
          (mv erp nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj)))
-     ;;tag-array2 may encode information about failed merges.  We could return it and fix it up after simplifying the dag instead of recalculating it.  A better plan might be to return test cases when possible that disambiguate nodes that failed to merge (not always possible if some nodes were cut out).
+     ;;sweep-info-array may encode information about failed merges.  We could return it and fix it up after simplifying the dag instead of recalculating it.  A better plan might be to return test cases when possible that disambiguate nodes that failed to merge (not always possible if some nodes were cut out).
      (if (eq :proved-miter result)
          (prog2$ (cw "Sweep ~x0 proved the miter (~x1)!)~%" sweep-num miter-name)
                  (mv (erp-nil) :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
@@ -19132,12 +19370,12 @@
 ;; (skip -proofs (verify-guards contains-only-elements-in-set-eql))
 
 ;; ;walk through all the nodes
-;; (defun tag-probably-constant-nodes (signature-alist tag-array2)
+;; (defun tag-probably-constant-nodes (signature-alist sweep-info-array)
 ;;   (declare (xargs :guard (ALIST-with-integer-keysp signature-alist)
 ;;                   :verify-guards nil
 ;;                   ))
 ;;   (if (not (consp signature-alist))
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((entry (car signature-alist))
 ;;            (sig (cdr entry)))
 ;;       (if (and (all-the-same-constant sig)
@@ -19151,10 +19389,10 @@
 ;;                                                   *probable-constant-that-needs-to-be-replaced*
 ;;                                                   ;always quoting distinguishes between a node that is the constant nil and a node that's just not constant
 ;;                                                   (list 'quote (car sig))
-;;                                                   tag-array2)))
+;;                                                   sweep-info-array)))
 ;;         (tag-probably-constant-nodes (cdr signature-alist)
 ;;                                      ;;not explicitly setting *probable-constant-that-needs-to-be-replaced* to t amounts to setting it to nil
-;;                                      tag-array2)))))
+;;                                      sweep-info-array)))))
 
 ;; (skip -proofs (verify-guards tag-probably-constant-nodes))
 
@@ -19827,16 +20065,16 @@
 ;;       (all-equal-item item (cdr sig)))))
 
 ;; ;have to pass in whole-set, since set itself gets smaller as we walk down it
-;; (defun tag-nodes-as-probably-equal (set tag-array2 whole-set)
+;; (defun tag-nodes-as-probably-equal (set sweep-info-array whole-set)
 ;;   (declare (xargs :guard t
 ;;                   :verify-guards nil))
 ;;   (if (not (consp set))
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((nodenum (car set)))
 ;;       (set-tag nodenum
 ;;                *probably-equal-node-that-needs-to-be-replaced*
 ;;                whole-set
-;;                (tag-nodes-as-probably-equal (cdr set) tag-array2 whole-set)))))
+;;                (tag-nodes-as-probably-equal (cdr set) sweep-info-array whole-set)))))
 
 ;; (skip -proofs (verify-guards tag-nodes-as-probably-equal))
 
@@ -19892,7 +20130,7 @@
 ;; (skip -proofs (verify-guards add-node-sizes-to-size-array))
 
 ;; ;should we make sure one node in the set is ready?  will there always be such a node?
-;; (defun get-nodenum-for-minimum-replacement-set (n len current-best-size current-best-nodenum tag-array2 size-array)
+;; (defun get-nodenum-for-minimum-replacement-set (n len current-best-size current-best-nodenum sweep-info-array size-array)
 ;;   (declare (xargs :measure (+ 1 (nfix (- len n)))
 ;;                   ))
 ;;   (if (or (not (natp n))
@@ -19900,16 +20138,16 @@
 ;;           (>= n len))
 ;;       current-best-nodenum
 ;;     (let ((size (aref1 'size-array size-array n)))
-;;       (if (and (get-node-tag n *probable-constant-that-needs-to-be-replaced* tag-array2)
+;;       (if (and (get-node-tag n *probable-constant-that-needs-to-be-replaced* sweep-info-array)
 ;;                (< size
 ;;                   current-best-size))
 ;;           (get-nodenum-for-minimum-replacement-set (+ 1 n)
 ;;                                                    len
 ;;                                                    size
 ;;                                                    n
-;;                                                    tag-array2
+;;                                                    sweep-info-array
 ;;                                                    size-array)
-;;         (let* ((equal-set (get-node-tag n *probably-equal-node-that-needs-to-be-replaced* tag-array2))
+;;         (let* ((equal-set (get-node-tag n *probably-equal-node-that-needs-to-be-replaced* sweep-info-array))
 ;;                (sum-of-sizes (sum-of-node-sizes equal-set size-array)) ;use sum-of-node-sizes2?
 ;;                )
 ;;           (if (and equal-set
@@ -19919,13 +20157,13 @@
 ;;                                                        len
 ;;                                                        sum-of-sizes
 ;;                                                        n
-;;                                                        tag-array2
+;;                                                        sweep-info-array
 ;;                                                        size-array)
 ;;             (get-nodenum-for-minimum-replacement-set (+ 1 n)
 ;;                                                      len
 ;;                                                      current-best-size
 ;;                                                      current-best-nodenum
-;;                                                      tag-array2
+;;                                                      sweep-info-array
 ;;                                                      size-array)))))))
 
 ;; (skip -proofs (verify-guards get-nodenum-for-minimum-replacement-set))
@@ -19934,82 +20172,82 @@
 ;the only case may be that a node in a to-be-replaced probably-equal set depends on another node in the same set - or there are 2 sets, each depending on the other
 ;not quite sure what to do here, so i'm trying this:
 ;FIXME think this through! look for a node set with at least one ready node and where the other node would be ready except it depends on the first node (node sets are just pairs now, right?)
-;; (defun find-nodenum-to-replace-when-no-safe-sets (len tag-array2 dag-array-name dag-array)
+;; (defun find-nodenum-to-replace-when-no-safe-sets (len sweep-info-array dag-array-name dag-array)
 ;;   (let* ((size-array (make-empty-array 'size-array len))
 ;;          (size-array (add-node-sizes-to-size-array 0 len dag-array-name dag-array size-array))
 ;;          ;;bozo on the big number below
-;;          (nodenum (get-nodenum-for-minimum-replacement-set 0 len 100000000000000000000000000 'error-didnt-find-any-nodenums-to-replace tag-array2 size-array)))
+;;          (nodenum (get-nodenum-for-minimum-replacement-set 0 len 100000000000000000000000000 'error-didnt-find-any-nodenums-to-replace sweep-info-array size-array)))
 ;;     (if nodenum  ;FIXME nodenum may always be an integer...
 ;;         nodenum
 ;;       (hard-error 'find-nodenum-to-replace-when-no-safe-sets "Didn't find any node to replace" nil))))
 
 ;; (skip -proofs (verify-guards find-nodenum-to-replace-when-no-safe-sets))
 
-;; (defun all-ready (nodenums tag-array2)
+;; (defun all-ready (nodenums sweep-info-array)
 ;;   (if (atom nodenums)
 ;;       t
-;;     (if (get-node-tag (car nodenums) *ready* tag-array2)
-;;         (all-ready (cdr nodenums) tag-array2)
+;;     (if (get-node-tag (car nodenums) *ready* sweep-info-array)
+;;         (all-ready (cdr nodenums) sweep-info-array)
 ;;       nil)))
 
 ;; (skip -proofs (verify-guards all-ready))
 
 
-;; (defun all-nodes-are-ready (items tag-array2)
+;; (defun all-nodes-are-ready (items sweep-info-array)
 ;;   (if (atom items)
 ;;       t
 ;;     (let ((item (car items)))
 ;;       (if (not (integerp item)) ;this skips quoteps and array names
-;;           (all-nodes-are-ready (cdr items) tag-array2)
-;;         (if (get-node-tag item *ready* tag-array2)
-;;             (all-nodes-are-ready (cdr items) tag-array2)
+;;           (all-nodes-are-ready (cdr items) sweep-info-array)
+;;         (if (get-node-tag item *ready* sweep-info-array)
+;;             (all-nodes-are-ready (cdr items) sweep-info-array)
 ;;           nil)))))
 
-;; (defun no-nodes-are-to-be-replaced (items tag-array2)
+;; (defun no-nodes-are-to-be-replaced (items sweep-info-array)
 ;;   (if (atom items)
 ;;       t
 ;;     (let ((item (car items)))
 ;;       (if (not (integerp item)) ;this skips quoteps and array names
-;;           (no-nodes-are-to-be-replaced (cdr items) tag-array2)
-;;         (if (or (get-node-tag item *probable-constant-that-needs-to-be-replaced* tag-array2)
-;;                 (get-node-tag item *probably-equal-node-that-needs-to-be-replaced* tag-array2))
+;;           (no-nodes-are-to-be-replaced (cdr items) sweep-info-array)
+;;         (if (or (get-node-tag item *probable-constant-that-needs-to-be-replaced* sweep-info-array)
+;;                 (get-node-tag item *probably-equal-node-that-needs-to-be-replaced* sweep-info-array))
 ;;             nil
-;;           (no-nodes-are-to-be-replaced (cdr items) tag-array2))))))
+;;           (no-nodes-are-to-be-replaced (cdr items) sweep-info-array))))))
 
-;a node is "ready" (reflected in the tag-array2) if it does not depend on any unhandled probably-equal or probably-constant nodes.
+;a node is "ready" (reflected in the sweep-info-array) if it does not depend on any unhandled probably-equal or probably-constant nodes.
 ;ffixme what if it depends on a node that it is probably equal to? we'll have to check for that separately
 
 ;; ; initially, no nodes are ready because there are no ready tags set
 ;; ; constants and variables are ready
 ;; ; a function call node is ready if all of its children are ready and not to-be-replaced
-;; (defun compute-initial-readiness-info (n len dag-array-name dag-array tag-array2)
+;; (defun compute-initial-readiness-info (n len dag-array-name dag-array sweep-info-array)
 ;;   (declare (xargs :measure (+ 1 (nfix (- len n)))))
 ;;   (if (or (not (natp n))
 ;;           (not (natp len))
 ;;           (>= n len))
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((expr (aref1 dag-array-name dag-array n))
 ;;            (node-is-ready (or (variablep expr)
 ;;                               (fquotep expr)
 ;;                               ;;function call:
-;;                               (and (all-nodes-are-ready (fargs expr) tag-array2)
-;;                                    (no-nodes-are-to-be-replaced (fargs expr) tag-array2)))))
+;;                               (and (all-nodes-are-ready (fargs expr) sweep-info-array)
+;;                                    (no-nodes-are-to-be-replaced (fargs expr) sweep-info-array)))))
 ;;       (compute-initial-readiness-info (+ 1 n)
 ;;                                       len dag-array-name
 ;;                                       dag-array
-;;                                       (if node-is-ready (set-tag n *ready* t tag-array2) tag-array2)))))
+;;                                       (if node-is-ready (set-tag n *ready* t sweep-info-array) sweep-info-array)))))
 
 ;; ;this dag-array already has array-names put in? - where else do such dags get used?
 ;; (skip -proofs
 ;; ;we make nodenums and any of their ancestors ready (if possible)
 ;; ;we do this since, when we handle a node, its ancestors might become ready
-;; (defun propagate-readiness-info (nodenums dag-array-name dag-array parent-array tag-array2)
+;; (defun propagate-readiness-info (nodenums dag-array-name dag-array parent-array sweep-info-array)
 ;;   (if (atom nodenums)
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((nodenum (car nodenums))
-;;            (ready-tag (get-node-tag nodenum *ready* tag-array2)))
+;;            (ready-tag (get-node-tag nodenum *ready* sweep-info-array)))
 ;;       (if ready-tag ;if already ready, skip it
-;;           (propagate-readiness-info (cdr nodenums) dag-array-name dag-array parent-array tag-array2)
+;;           (propagate-readiness-info (cdr nodenums) dag-array-name dag-array parent-array sweep-info-array)
 ;;         ;;otherwise, try to make the node ready
 ;;         (let ((expr (aref1 dag-array-name dag-array nodenum)))
 ;;           (if (or (variablep expr)
@@ -20017,40 +20255,40 @@
 ;;               ;;this shouldn't happen
 ;;               (hard-error 'propagate-readiness-info "I'm surprised to see this called on a non-function-call-node, but node ~x0 is ~x1." (acons #\0 nodenum (acons #\1 expr nil)))
 ;;             ;;if the node should be made ready (same logic as above):
-;;             (if (and (all-nodes-are-ready (fargs expr) tag-array2)
-;;                      (no-nodes-are-to-be-replaced (fargs expr) tag-array2))
+;;             (if (and (all-nodes-are-ready (fargs expr) sweep-info-array)
+;;                      (no-nodes-are-to-be-replaced (fargs expr) sweep-info-array))
 ;;                 ;;make the node ready and add its parents for processing...
 ;;                 (propagate-readiness-info (union$ (aref1 'parent-array parent-array nodenum)
 ;;                                                      (cdr nodenums))
 ;;                                           dag-array-name dag-array
 ;;                                           parent-array
-;;                                           (set-tag nodenum *ready* t tag-array2))
+;;                                           (set-tag nodenum *ready* t sweep-info-array))
 ;;               ;;otherwise, skip the node (and don't add its parents for consideration)
 ;;               (propagate-readiness-info (cdr nodenums)
 ;;                                          dag-array-name dag-array
 ;;                                         parent-array
-;;                                         tag-array2)))))))))
+;;                                         sweep-info-array)))))))))
 
 ;; ;set the constant or variable node to ready and try to make its ancestors ready
-;; (defun set-ready-and-propagate (nodenum dag-array-name dag-array parent-array tag-array2)
+;; (defun set-ready-and-propagate (nodenum dag-array-name dag-array parent-array sweep-info-array)
 ;;   (propagate-readiness-info
 ;;    (aref1 'parent-array parent-array nodenum)
 ;;    dag-array-name dag-array
 ;;    parent-array
-;;    (set-tag nodenum *ready* t tag-array2)))
+;;    (set-tag nodenum *ready* t sweep-info-array)))
 
-;; ;returns tag-array2
-;; (defun make-ancestors-ready-if-appropriate (nodenum dag-array-name dag-array parent-array tag-array2)
+;; ;returns sweep-info-array
+;; (defun make-ancestors-ready-if-appropriate (nodenum dag-array-name dag-array parent-array sweep-info-array)
 ;;   (propagate-readiness-info (aref1 'parent-array parent-array nodenum)
 ;;                              dag-array-name dag-array
 ;;                             parent-array
-;;                             tag-array2))
+;;                             sweep-info-array))
 
-;; (defun set-ready-lst (nodenums tag-array2)
+;; (defun set-ready-lst (nodenums sweep-info-array)
 ;;   (if (atom nodenums)
-;;       tag-array2
+;;       sweep-info-array
 ;;     (set-ready-lst (cdr nodenums)
-;;                    (set-tag (car nodenums) *ready* t tag-array2))))
+;;                    (set-tag (car nodenums) *ready* t sweep-info-array))))
 
 ;; ;can we save consing this up?
 ;; (defun get-all-parents (nodenums parent-array)
@@ -20059,11 +20297,11 @@
 ;;     (union$ (aref1 'parent-array parent-array (car nodenums))
 ;;                (get-all-parents (cdr nodenums) parent-array))))
 
-;; (defun set-ready-lst-and-propagate (nodenums dag-array-name dag-array parent-array tag-array2)
+;; (defun set-ready-lst-and-propagate (nodenums dag-array-name dag-array parent-array sweep-info-array)
 ;;   (propagate-readiness-info (get-all-parents nodenums parent-array)
 ;;                             dag-array-name dag-array
 ;;                             parent-array
-;;                             (set-ready-lst nodenums tag-array2)))
+;;                             (set-ready-lst nodenums sweep-info-array)))
 
 
 ;make term into a dag-lst which could be considered an extension of dag-array
