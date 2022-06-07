@@ -1,7 +1,7 @@
 ; Creating STP queries from DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -151,8 +151,6 @@
   (implies (string-treep acc)
            (string-treep (n-close-parens n acc))))
 
-
-
 (in-theory (disable (:e nat-to-string)))
 
 ;; (defthm <-of-maxelem-of-cdr
@@ -260,7 +258,7 @@
                              dag-array
                              nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
                              )
-  (declare (xargs :guard (and (alistp nodenum-type-alist)
+  (declare (xargs :guard (and (nodenum-type-alistp nodenum-type-alist)
                               (natp arg)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
                               (< arg (alen1 dag-array-name dag-array)))))
@@ -288,7 +286,7 @@
   (declare (xargs :guard (and (or (myquotep arg)
                                   (and (natp arg)
                                        (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))))
-                              (alistp nodenum-type-alist))))
+                              (nodenum-type-alistp nodenum-type-alist))))
   (if (consp arg) ;tests for quotep
       (get-type-of-constant (unquote arg))
     (get-type-of-nodenum arg dag-array-name dag-array nodenum-type-alist)))
@@ -476,7 +474,7 @@
            (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (dargp-less-than arg dag-len)
                               (bv-arg-okp arg)
-                              (alistp nodenum-type-alist)))
+                              (nodenum-type-alistp nodenum-type-alist)))
            (ignore dag-len))
   (if (consp arg) ;tests for quotep
       (translate-bv-constant (unquote arg) desired-size)
@@ -654,7 +652,7 @@
                               (or (myquotep rhs)
                                   (and (natp rhs)
                                        (< rhs dag-len)))
-                              (alistp nodenum-type-alist)
+                              (nodenum-type-alistp nodenum-type-alist)
                               (symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
                   :guard-hints (("Goal" :in-theory (e/d (GET-TYPE-OF-ARG ; causes lots of cases?
@@ -812,7 +810,7 @@
                                        (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
                                        (< arg (alen1 dag-array-name dag-array))))
                               (array1p dag-array-name dag-array)
-                              (alistp nodenum-type-alist)
+                              (nodenum-type-alistp nodenum-type-alist)
                               (constant-array-infop constant-array-info))))
   ;;todo: maybe split into cases here at the start based on whether it's a constant?
   (b* ((arg-type (get-type-of-arg arg dag-array-name dag-array nodenum-type-alist))
@@ -905,7 +903,7 @@
 ;; (defun translate-dag-expr-bvplus (args dag-array-name dag-array constant-array-info cut-nodenum-type-alist)
 ;;   (declare (xargs :guard (and (array1p dag-array-name dag-array) ;;TODO: Instead, use pseudo-dag-arrayp.
 ;;                               (bounded-darg-listp args (alen1 dag-array-name dag-array))
-;;                               (alistp cut-nodenum-type-alist)
+;;                               (nodenum-type-alistp cut-nodenum-type-alist)
 ;;                               (symbolp dag-array-name)
 ;;                               (equal 3 (len args))
 ;;                               (quoted-posp (first args))
@@ -961,7 +959,7 @@
                               (bounded-dag-exprp dag-len expr)
                               (consp expr)
                               ;;(all-< .. (alen1 dag-array-name dag-array))
-                              (alistp cut-nodenum-type-alist)
+                              (nodenum-type-alistp cut-nodenum-type-alist)
 ;(symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
                   :guard-hints (("Goal" :in-theory (e/d (get-type-of-arg
@@ -1793,7 +1791,7 @@
   (declare (xargs :guard (and (nat-listp nodenums-to-translate)
                               (natp opened-paren-count)
                               (constant-array-infop constant-array-info)
-                              (alistp cut-nodenum-type-alist)
+                              (nodenum-type-alistp cut-nodenum-type-alist)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< nodenums-to-translate dag-len)
                               (string-treep acc))
@@ -1882,12 +1880,11 @@
 ;;  :hints (("Goal" :in-theory (enable translate-nodes-to-stp)))
 
 ;fffixme think about arrays whose lengths are not powers of 2...
-;returns string-tree
+;; Returns a string-tree.
 (defund make-stp-type-declarations (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
-                                 :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
-                                                 (boolean-typep))))))
+                                 :in-theory (enable axe-typep)))))
   (if (endp nodenum-type-alist)
       nil
     (let* ((entry (first nodenum-type-alist))
@@ -1920,19 +1917,25 @@
                      " : BOOLEAN;"
                      (newline-string)
                      (make-stp-type-declarations (rest nodenum-type-alist)))
-            (if (call-of :range type)
-                (er hard 'make-stp-type-declarations "range type detected.")
-                ;; (let* ( ;(low (second type))
-                ;;        (high (third type))
-                ;;        (width (integer-length high)))
-                ;;   (list* varname
-                ;;          " : BITVECTOR("
-                ;;          (nat-to-string-debug width)
-                ;;          ");"
-                ;;          (newline-string)
-                ;;          (make-stp-type-declarations (rest nodenum-type-alist))))
-              ;todo: prove this doesn't happen:
-              (er hard? 'make-stp-type-declarations "Unknown form for type: ~x0." type))))))))
+            ;; TODO: Tighten the guard to exclude some of these cases:
+            (if (empty-typep type)
+                (er hard? 'make-stp-type-declarations "empty type detected.")
+              (if (list-typep type)
+                  (er hard? 'make-stp-type-declarations "List type that is not a bv-array-type detected.")
+                (if (most-general-typep type)
+                    (er hard? 'make-stp-type-declarations "universal type detected.")
+                  (if (call-of :range type) ; impossible, given the guard
+                      (er hard 'make-stp-type-declarations "range type detected.")
+                    ;; (let* ( ;(low (second type))
+                    ;;        (high (third type))
+                    ;;        (width (integer-length high)))
+                    ;;   (list* varname
+                    ;;          " : BITVECTOR("
+                    ;;          (nat-to-string-debug width)
+                    ;;          ");"
+                    ;;          (newline-string)
+                    ;;          (make-stp-type-declarations (rest nodenum-type-alist))))
+                    (er hard 'make-stp-type-declarations "Unknown form for type: ~x0." type)))))))))))
 
 (defthm string-treep-of-make-stp-type-declarations
   (string-treep (make-stp-type-declarations nodenum-type-alist))

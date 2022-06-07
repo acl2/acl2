@@ -36,8 +36,20 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable nodenum-type-alistp eqlable-alistp))))
 
+(defthm nodenum-type-alistp-of-cdr
+  (implies (nodenum-type-alistp alist)
+           (nodenum-type-alistp (cdr alist)))
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+
 (defthm nodenum-type-alistp-of-acons
   (equal (nodenum-type-alistp (acons key val alist))
+         (and (natp key)
+              (axe-typep val)
+              (nodenum-type-alistp alist)))
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+
+(defthm nodenum-type-alistp-of-cons-of-cons
+  (equal (nodenum-type-alistp (cons (cons key val) alist))
          (and (natp key)
               (axe-typep val)
               (nodenum-type-alistp alist)))
