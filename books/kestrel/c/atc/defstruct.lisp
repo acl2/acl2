@@ -1106,10 +1106,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-type-to-fixer ((type typep))
+(define defstruct-type-to-writer-value-fixer ((type typep))
   :returns (fixer symbolp)
   :short "Map a C type to a corresponding fixer,
-          for use in structure readers and writers."
+          for use in structure writers."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1192,7 +1192,7 @@
              :reader-return-thms nil
              :writer-return-thms nil)))
        (typep (defstruct-type-to-reader/writer-value-recognizer type))
-       (type-fix (defstruct-type-to-fixer type))
+       (type-fix (defstruct-type-to-writer-value-fixer type))
        (struct-tag-read-name (packn-pos (list struct-tag
                                               '-read-
                                               (ident->name name))
