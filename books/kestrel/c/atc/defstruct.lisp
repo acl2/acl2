@@ -100,6 +100,9 @@
      the @(tsee defstruct) macro introduces:")
    (xdoc::ul
     (xdoc::li
+     "A function @('struct-<tag>-<member>-length')
+      that returns the length of the array.")
+    (xdoc::li
      "A checker @('struct-<tag>-<member>-index-okp)
       that checks whether an ACL2 integer index
       is within the range of the array.")
@@ -178,20 +181,24 @@
      "The member type, which consists of the name and type of the member.
       See @(tsee member-type) in the deep embedding.")
     (xdoc::li
-     "The readers of the member.
+     "The named of the readers of the member.
       For an integer member, it is a singleton list of the one reader.
       For an array member, it is a list of ten readers,
       one for each supported integer type for the index.")
     (xdoc::li
-     "The writers of the member.
+     "The names of the writers of the member.
       For an integer member, it is a singleton list of the one writer.
       For an array member, it is a list of ten writers,
       one for each supported integer type for the index.")
     (xdoc::li
-     "The checkers of the member.
+     "The names of the checkers of the member.
       This is the empty list for an integer member,
       while it consists of ten checkers for an array member,
       one for each supported integer type for the index.")
+    (xdoc::li
+     "The name of the function that returns the length of the member.
+      This is @('nil') for an integer member,
+      while it is non-@('nil') for an array member.")
     (xdoc::li
      "The names of the return type theorems
       for all the readers, in the same order as the list of readers.")
@@ -202,6 +209,7 @@
    (readers symbol-listp)
    (writers symbol-listp)
    (checkers symbol-listp)
+   (length symbolp)
    (reader-return-thms symbol-listp)
    (writer-return-thms symbol-listp))
   :pred defstruct-member-infop)
@@ -1274,6 +1282,7 @@
               :readers readers
               :writers writers
               :checkers nil
+              :length nil
               :reader-return-thms reader-return-thms
               :writer-return-thms writer-return-thms)))
     (mv event info)))
