@@ -570,6 +570,7 @@
   :rule-classes ((:linear))
   :hints (("Goal" :in-theory (enable natp))))
 
+;; Do not remove: helps justify the correctness of some operations done by Axe.
 (defthm bvchop-of-nfix
   (equal (bvchop (nfix n) x)
          (bvchop n x)))

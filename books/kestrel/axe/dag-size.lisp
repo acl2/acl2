@@ -34,8 +34,6 @@
 
 (local (in-theory (disable natp)))
 
-
-
 ;;;
 ;;; make-size-array-for-dag-array-with-name-aux
 ;;;
