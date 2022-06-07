@@ -37,8 +37,7 @@
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 (local
- (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir
-               :system))
+ (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
 (local
  (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
 
