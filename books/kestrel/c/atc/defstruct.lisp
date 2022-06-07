@@ -83,8 +83,14 @@
    (xdoc::p
     "Let @('<tag>') be the tag of the structure type.")
    (xdoc::p
-    "The @(tsee defstruct) macro introduces
-     a recognizer @('struct-<tag>-p') for the structures.")
+    "The @(tsee defstruct) macro introduces:")
+   (xdoc::ul
+    (xdoc::li
+     "A recognizer @('struct-<tag>-p') for the structures.")
+    (xdoc::li
+     "A fixer @('struct-<tag>-fix') for the structures.")
+    (xdoc::li
+     "A fixtype @('struct-<tag>') for the structures."))
    (xdoc::p
     "For each member named @('<member>') of integer type,
      the @(tsee defstruct) macro introduces:")
