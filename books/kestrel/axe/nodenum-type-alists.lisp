@@ -48,6 +48,13 @@
               (nodenum-type-alistp alist)))
   :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
 
+(defthm nodenum-type-alistp-of-cons-of-cons
+  (equal (nodenum-type-alistp (cons (cons key val) alist))
+         (and (natp key)
+              (axe-typep val)
+              (nodenum-type-alistp alist)))
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+
 (defthm axe-typep-of-cdr-of-assoc-equal-iff
   (implies (nodenum-type-alistp nodenum-type-alist)
            (iff (axe-typep (cdr (assoc-equal nodenum nodenum-type-alist)))
