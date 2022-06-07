@@ -13,6 +13,7 @@
 
 (include-book "abstract-syntax")
 (include-book "values")
+(include-book "arrays")
 
 (include-book "../language/portable-ascii-identifiers")
 
@@ -673,6 +674,173 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defstruct-gen-recognizer-conjuncts ((memtype member-typep))
+  :returns (terms true-listp "A list of untranslated terms.")
+  :short "Generate conjuncts for a member in the recognizer of the structures."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee defstruct-gen-recognizer).
+     For each member, there is one or more conjunct that constrains its value.
+     An integer member has just one conjunct saying that
+     the value satisfies the predicate that recognizes those integer values.
+     An array member has two conjuncts,
+     one saying that the value is an array of the appropriate type,
+     and one saying that the length of the array
+     is the one indicated in the type.")
+   (xdoc::p
+    "The value of the member is retrieved via @('value-struct-read-aux')
+     (see @(tsee value-struct-read)),
+     which is a lookup function on member values
+     (and perhaps it should be renamed to something better
+     than an @('aux')(iliary) function)."))
+  (b* ((name (member-type->name memtype))
+       (type (member-type->type memtype)))
+    (type-case
+     type
+     :void (raise "Internal error: type ~x0." type)
+     :char (raise "Internal error: type ~x0." type)
+     :schar `((scharp (value-struct-read-aux ',name
+                                             (value-struct->members x))))
+     :uchar `((ucharp (value-struct-read-aux ',name
+                                             (value-struct->members x))))
+     :sshort `((sshortp (value-struct-read-aux ',name
+                                               (value-struct->members x))))
+     :ushort `((ushortp (value-struct-read-aux ',name
+                                               (value-struct->members x))))
+     :sint `((sintp (value-struct-read-aux ',name
+                                           (value-struct->members x))))
+     :uint `((uintp (value-struct-read-aux ',name
+                                           (value-struct->members x))))
+     :slong `((slongp (value-struct-read-aux ',name
+                                             (value-struct->members x))))
+     :ulong `((ulongp (value-struct-read-aux ',name
+                                             (value-struct->members x))))
+     :sllong `((sllongp (value-struct-read-aux ',name
+                                               (value-struct->members x))))
+     :ullong `((ullongp (value-struct-read-aux ',name
+                                               (value-struct->members x))))
+     :struct (raise "Internal error: type ~x0." type)
+     :pointer (raise "Internal error: type ~x0." type)
+     :array (if (not type.size)
+                (raise "Internal error: type ~x0." type)
+              (type-case
+               type.of
+               :void (raise "Internal error: type ~x0." type)
+               :char (raise "Internal error: type ~x0." type)
+               :schar `((schar-arrayp
+                         (value-struct-read-aux
+                          ',name
+                          (value-struct->members x)))
+                        (equal (schar-array-length
+                                (value-struct-read-aux
+                                 ',name
+                                 (value-struct->members x)))
+                               ,type.size))
+               :uchar `((uchar-arrayp
+                         (value-struct-read-aux
+                          ',name
+                          (value-struct->members x)))
+                        (equal (uchar-array-length
+                                (value-struct-read-aux
+                                 ',name
+                                 (value-struct->members x)))
+                               ,type.size))
+               :sshort `((sshort-arrayp
+                          (value-struct-read-aux
+                           ',name
+                           (value-struct->members x)))
+                         (equal (sshort-array-length
+                                 (value-struct-read-aux
+                                  ',name
+                                  (value-struct->members x)))
+                                ,type.size))
+               :ushort `((ushort-arrayp
+                          (value-struct-read-aux
+                           ',name
+                           (value-struct->members x)))
+                         (equal (ushort-array-length
+                                 (value-struct-read-aux
+                                  ',name
+                                  (value-struct->members x)))
+                                ,type.size))
+               :sint `((sint-arrayp
+                        (value-struct-read-aux
+                         ',name
+                         (value-struct->members x)))
+                       (equal (sint-array-length
+                               (value-struct-read-aux
+                                ',name
+                                (value-struct->members x)))
+                              ,type.size))
+               :uint `((uint-arrayp
+                        (value-struct-read-aux
+                         ',name
+                         (value-struct->members x)))
+                       (equal (uint-array-length
+                               (value-struct-read-aux
+                                ',name
+                                (value-struct->members x)))
+                              ,type.size))
+               :slong `((slong-arrayp
+                         (value-struct-read-aux
+                          ',name
+                          (value-struct->members x)))
+                        (equal (slong-array-length
+                                (value-struct-read-aux
+                                 ',name
+                                 (value-struct->members x)))
+                               ,type.size))
+               :ulong `((ulong-arrayp
+                         (value-struct-read-aux
+                          ',name
+                          (value-struct->members x)))
+                        (equal (ulong-array-length
+                                (value-struct-read-aux
+                                 ',name
+                                 (value-struct->members x)))
+                               ,type.size))
+               :sllong `((sllong-arrayp
+                          (value-struct-read-aux
+                           ',name
+                           (value-struct->members x)))
+                         (equal (sllong-array-length
+                                 (value-struct-read-aux
+                                  ',name
+                                  (value-struct->members x)))
+                                ,type.size))
+               :ullong `((ullong-arrayp
+                          (value-struct-read-aux
+                           ',name
+                           (value-struct->members x)))
+                         (equal (ullong-array-length
+                                 (value-struct-read-aux
+                                  ',name
+                                  (value-struct->members x)))
+                                ,type.size))
+               :struct (raise "Internal error: type ~x0." type)
+               :pointer (raise "Internal error: type ~x0." type)
+               :array (raise "Internal error: type ~x0." type)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-gen-recognizer-all-conjuncts ((memtypes member-type-listp))
+  :returns (terms true-listp "A list of untranslated terms.")
+  :short "Generate conjuncts for all members
+          in the recognizer of the structures."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This calls @(tsee defstruct-gen-recognizer-conjuncts) on all the members.
+     See that function for details on the conjuncts."))
+  (cond ((endp memtypes) nil)
+        (t (append (defstruct-gen-recognizer-conjuncts (car memtypes))
+                   (defstruct-gen-recognizer-all-conjuncts (cdr memtypes)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defstruct-gen-recognizer ((struct-tag-p symbolp)
                                   (tag symbolp)
                                   (memtypes member-type-listp))
@@ -710,8 +878,9 @@
                 (value-case x :struct)
                 (equal (value-struct->tag x)
                        (ident ,(symbol-name tag)))
-                (equal (member-types-of-member-values (value-struct->members x))
-                       ',memtypes))
+                (equal (member-value-list->name-list (value-struct->members x))
+                       ',(member-type-list->name-list memtypes))
+                ,@(defstruct-gen-recognizer-all-conjuncts memtypes))
            :hooks (:fix)
            ///
            (defruled ,not-errorp-when-struct-tag-p
@@ -741,7 +910,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defstruct-gen-fixing-term ((type typep))
-  :returns term
+  :returns (term "An untranslated term.")
   :short "Generate the fixing term for a member of a given type."
   :long
   (xdoc::topstring
@@ -822,7 +991,7 @@
      we pick a structure with the right tag,
      the right member names,
      zero integer values of appropriate types for the integer members,
-     and arrays of zerof of appropriate types and appropriate lengths
+     and arrays of zeros of appropriate types and appropriate lengths
      for the integer array mmbers.")
    (xdoc::p
     "We also return the name of the theorem that
@@ -831,12 +1000,9 @@
         `(std::deffixer ,struct-tag-fix
            :pred ,struct-tag-p
            :param x
-           :body-fix (if (,struct-tag-p x)
-                         x
-                       (make-value-struct :tag (ident ,(symbol-name tag))
-                                          :members
-                                          (list ,@(defstruct-gen-fixer-aux
-                                                    memtypes))))))
+           :body-fix (make-value-struct
+                      :tag (ident ,(symbol-name tag))
+                      :members (list ,@(defstruct-gen-fixer-aux memtypes)))))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
@@ -977,8 +1143,7 @@
 (define defstruct-gen-member-readers ((struct-tag symbolp)
                                       (struct-tag-p symbolp)
                                       (struct-tag-fix symbolp)
-                                      (member member-typep)
-                                      (memtypes member-type-listp))
+                                      (member member-typep))
   :returns (mv (event pseudo-event-formp)
                (readers symbol-listp)
                (reader-return-thms symbol-listp))
@@ -993,8 +1158,7 @@
     "The reader is a wrapper of @(tsee value-struct-read),
      but it has more specialized input and output types;
      in particular, it never returns an error.
-     To prove the output type,
-     we need an intermediate lemma about @(tsee value-struct-read).")
+     To prove the output type, we just need to open some definitions.")
    (xdoc::p
     "Also return the names of the readers
      and the names of the return type theorems of the readers,
@@ -1012,23 +1176,14 @@
        (return-thm (packn-pos (list typep '-of- struct-tag-read-name)
                               struct-tag-read-name))
        (event
-        `(encapsulate ()
-           (defrulel lemma
-             (implies (,struct-tag-p struct)
-                      (,typep (value-struct-read ',name struct)))
-             :enable (,struct-tag-p
-                      value-struct-read
-                      ,(packn-pos (list typep '-to-type-of-value) typep))
-             :use (:instance defstruct-reader-lemma
-                   (memtypes ',memtypes)
-                   (name ',name)
-                   (memvals (value-struct->members struct))))
-           (define ,struct-tag-read-name ((struct ,struct-tag-p))
-             :returns (val ,typep)
-             (value-struct-read (ident ,(ident->name name))
-                                (,struct-tag-fix struct))
-             :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
-             :hooks (:fix)))))
+        `(define ,struct-tag-read-name ((struct ,struct-tag-p))
+           :returns (val ,typep
+                         :hints (("Goal" :in-theory (enable value-struct-read
+                                                            ,struct-tag-p
+                                                            ,struct-tag-fix))))
+           (value-struct-read (ident ,(ident->name name))
+                              (,struct-tag-fix struct))
+           :hooks (:fix))))
     (mv event
         (list struct-tag-read-name)
         (list return-thm))))
@@ -1038,8 +1193,7 @@
 (define defstruct-gen-member-writers ((struct-tag symbolp)
                                       (struct-tag-p symbolp)
                                       (struct-tag-fix symbolp)
-                                      (member member-typep)
-                                      (members member-type-listp))
+                                      (member member-typep))
   :returns (mv (event pseudo-event-formp)
                (writers symbol-listp)
                (writer-return-thms symbol-listp))
@@ -1054,9 +1208,7 @@
     "The writer is a wrapper of @(tsee value-struct-write),
      but it has more specialized input and output types;
      in particular, it never returns an error.
-     To prove the output type,
-     we need some intermediate lemmas
-     about @(tsee value-struct-write) and @('value-struct-write-aux').")
+     To prove the output type, we use an intermediate lemma.")
    (xdoc::p
     "Also return the names of the writers
      and the name of the return type theorems of the writers,
@@ -1082,19 +1234,17 @@
                       (,struct-tag-p (value-struct-write ',name val struct)))
              :enable (,struct-tag-p
                       value-struct-write
+                      member-value-listp-of-value-struct-write-aux
+                      member-value-list->name-list-of-struct-write-aux
+                      value-struct-read-aux-of-value-struct-write-aux
+                      not-errorp-when-member-value-listp
                       ,(packn-pos (list 'type-of-value-when- typep)
-                                  'type-of-value))
-             :use (:instance defstruct-writer-lemma
-                   (memtypes ',members)
-                   (name ',name)
-                   (memvals (value-struct->members struct))
-                   (val val)))
+                                  'type-of-value)))
            (define ,struct-tag-write-name ((val ,typep) (struct ,struct-tag-p))
              :returns (new-struct ,struct-tag-p)
              (value-struct-write (ident ,(ident->name name))
                                  (,type-fix val)
                                  (,struct-tag-fix struct))
-             :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
              :hooks (:fix)))))
     (mv event
         (list struct-tag-write-name)
@@ -1105,18 +1255,17 @@
 (define defstruct-gen-member-readers/writers ((struct-tag symbolp)
                                               (struct-tag-p symbolp)
                                               (struct-tag-fix symbolp)
-                                              (member member-typep)
-                                              (members member-type-listp))
+                                              (member member-typep))
   :returns (mv (event pseudo-event-formp)
                (info defstruct-member-infop))
   :short "Generate the readers and writers for a member of
           the structures defined by the @(tsee defstruct)."
   (b* (((mv reader-event readers reader-return-thms)
         (defstruct-gen-member-readers
-          struct-tag struct-tag-p struct-tag-fix member members))
+          struct-tag struct-tag-p struct-tag-fix member))
        ((mv writer-event writers writer-return-thms)
         (defstruct-gen-member-writers
-          struct-tag struct-tag-p struct-tag-fix member members))
+          struct-tag struct-tag-p struct-tag-fix member))
        (event `(progn
                  ,reader-event
                  ,writer-event))
@@ -1134,8 +1283,7 @@
 (define defstruct-gen-all-readers/writers ((struct-tag symbolp)
                                            (struct-tag-p symbolp)
                                            (struct-tag-fix symbolp)
-                                           (members member-type-listp)
-                                           (all-members member-type-listp))
+                                           (members member-type-listp))
   :returns (mv (events pseudo-event-form-listp)
                (infos defstruct-member-info-listp))
   :short "Generate all the member readers and writers of
@@ -1143,10 +1291,10 @@
   (b* (((when (endp members)) (mv nil nil))
        ((mv event info) (defstruct-gen-member-readers/writers
                           struct-tag struct-tag-p struct-tag-fix
-                          (car members) all-members))
+                          (car members)))
        ((mv events infos) (defstruct-gen-all-readers/writers
                             struct-tag struct-tag-p struct-tag-fix
-                            (cdr members) all-members)))
+                            (cdr members))))
     (mv (cons event events)
         (cons info infos))))
 
@@ -1184,7 +1332,7 @@
                         struct-tag-fix struct-tag-equiv))
        ((mv reader/writer-events member-infos)
         (defstruct-gen-all-readers/writers
-          struct-tag struct-tag-p struct-tag-fix members members))
+          struct-tag struct-tag-p struct-tag-fix members))
        (info (make-defstruct-info
               :tag tag-ident
               :members member-infos
