@@ -52,7 +52,7 @@
          :quote)
         (t :call)))
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t
   svex-kind-wog-is-svex-kind
   (equal (svex-kind-wog x)
          (svex-kind x))
@@ -70,7 +70,7 @@
     (if look (cdr look) (sv::4vec-x)))
   :returns (res 4vec-p :hyp (sv::svex-env-p env))
   ///
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     svex-env-lookup-is-svex-env-fastlookup-wog
     (implies (and (svex-env-p env)
                   (sv::svar-p var))
@@ -144,7 +144,7 @@
   (let* ((fn (fnsym-fix fn)))
     (svex-apply-cases-wog fn args)))
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t
   svex-apply-is-svex-apply-wog
   (equal (sv::svex-apply fn args)
          (svex-apply-wog fn args))
@@ -313,7 +313,7 @@
                             sv::svex-quote->val
                             svex-call->args) ()))))
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t
   svex-eval-is-svex-eval-wog
   (implies (and (svex-p x)
                 (svex-env-p env))
@@ -322,7 +322,7 @@
   :hints (("Goal"
            :in-theory (e/d (svex-eval-wog-is-svex-eval) ()))))
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t
   svexlist-eval-is-svexlist-eval-wog
   (implies (and (svexlist-p x)
                 (svex-env-p env))

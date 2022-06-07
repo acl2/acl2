@@ -135,11 +135,11 @@
     integerp-ifix
     (integerp (ifix x)))
 
-  (rp::def-rp-rule$ t nil
-                    ifix-opener
-                    (implies (integerp x)
-                             (equal (ifix x)
-                                    x)))
+  (rp::def-rp-rule :disabled-for-acl2 t
+    ifix-opener
+    (implies (integerp x)
+             (equal (ifix x)
+                    x)))
 
   ;; optional but may make it faster::
   (defthm ifix-opener-side-cond
@@ -396,7 +396,7 @@
 
 (add-svex-simplify-rule 4vec-concat-of-width=0)
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   4vec-concat-of-width=1-term2=0
   (equal (4vec-concat 1 val1 0)
          (4vec-part-select 0 1 val1))
@@ -3691,7 +3691,7 @@
                               4vec-part-select-remove-start--and-insert-4vec-rsh)
                              (4VEC-PART-SELECT-OF-4VEC-RSH)))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     4vec-bitxor-of-4vec-rsh
     (implies (natp size)
              (equal (sv::4vec-bitxor (4vec-rsh size val1)
@@ -4309,7 +4309,7 @@
 (add-svex-simplify-rule 4vec-?-of-test=0
                         :outside-in :both)
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bitp-of-4vec-?*
   (implies (and (force (bitp a))
                 (force (bitp b))
@@ -5010,7 +5010,7 @@
                             SV::3VEC-BITOR) ()))))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     loghead-to-4vec-part-select
     (implies (and (natp size)
                   (integerp x))
@@ -5041,7 +5041,7 @@
                 loghead-to-4vec-part-select-side-cond2))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     logtail-to-4vec-rsh
     (implies (and (natp size)
                   (integerp x))
@@ -5065,7 +5065,7 @@
   (add-svex-simplify-rule logtail-to-4vec-rsh))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule  :disabled-for-acl2 t
     ash-to-4vec-rsh
     (implies (and (integerp size)
                   (< size 0)
@@ -5091,7 +5091,7 @@
   (add-svex-simplify-rule ash-to-4vec-rsh))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule  :disabled-for-acl2 t
     ash-to-4vec-lsh
     (implies (and (integerp x)
                   (natp size))
@@ -5118,7 +5118,7 @@
   (add-svex-simplify-rule ash-to-4vec-lsh))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule  :disabled-for-acl2 t
     logior-to-4vec-bitor
     (implies (and (integerp x)
                   (integerp y))
@@ -5144,12 +5144,13 @@
   (add-svex-simplify-rule integerp-4vec-bitor))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     logand-to-4vec-bitand
     (implies (and (integerp x)
                   (integerp y))
              (and (equal (logand x y)
                          (4vec-bitand x y))))
+    
     :hints (("Goal"
              :in-theory (e/d (SV::4VEC->UPPER
                               SV::4VEC->LOWER
@@ -5162,11 +5163,12 @@
   (ADD-svex-simplify-rule logand-to-4vec-bitand))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t 
     lognot-to-4vec-bitnot
     (implies (and (integerp x))
              (and (equal (lognot x)
                          (sv::4vec-bitnot x))))
+    
     :hints (("Goal"
              :in-theory (e/d (SV::4VEC->UPPER
                               SV::4VEC->LOWER
@@ -5189,7 +5191,7 @@
   (add-svex-simplify-rule integerp-4vec-bitnot))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     logxor-to-4vec-bitxor
     (implies (and (integerp x)
                   (integerp y))
@@ -5215,7 +5217,7 @@
   (add-svex-simplify-rule integerp-of-4vec-bitxor))
 
 (progn
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     binary-+-to-4vec-plus
     (implies (and (integerp x)
                   (integerp y))
@@ -5246,7 +5248,7 @@
              (integerp (- x))))
   (add-svex-simplify-rule integer-p-of-unary--)
 
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t 
     logapp-to-4vec-concat
     (implies (and (integerp x)
                   (natp size)
@@ -5272,7 +5274,7 @@
   (add-svex-simplify-rule logapp-to-4vec-concat)
   (add-svex-simplify-rule logapp-to-4vec-concat-side-cond))
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t 
   integerp-of--
   (implies (integerp x)
            (integerp (- x))))
@@ -5526,7 +5528,7 @@
                    (logapp size y
                            (ash y (- size)))))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   4vec-sign-ext-to-4vec-concat
   (implies (and ;;(sv::4vec-p x)
             (posp size))
@@ -5535,8 +5537,8 @@
                                    x
                                    (4vec  (- (4vec-part-select (1- size) 1
                                                                (sv::4vec->upper x)))
-                                          (- (4vec-part-select (1- size) 1 (sv::4vec->lower x)))))))
-
+                                          (- (4vec-part-select (1- size) 1
+                                                               (sv::4vec->lower x)))))))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance 4vec-sign-ext-to-4vec-concat-lemma6
@@ -5592,7 +5594,7 @@
 (add-svex-simplify-rule 4vec-sign-ext-to-4vec-concat-when-integerp
                         :disabled t)
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t 
   4vec-sign-ext-to-4vec-concat-when-integerp-for-svex-simplify
   (implies (and (integerp x)
                 (posp size))
@@ -5621,7 +5623,7 @@
 
 (add-svex-simplify-rule 4vec-sign-ext-when-size=0)
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t 
   logext-to-4vec-signext
   (implies (and (posp size)
                 (integerp y))
