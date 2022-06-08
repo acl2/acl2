@@ -1050,21 +1050,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-gen-member-ops ((struct-tag symbolp)
-                                  (struct-tag-p symbolp)
-                                  (struct-tag-fix symbolp)
-                                  (member member-typep))
+(define defstruct-gen-integer-member-ops ((struct-tag symbolp)
+                                          (struct-tag-p symbolp)
+                                          (struct-tag-fix symbolp)
+                                          (name identp)
+                                          (type typep))
+  :guard (type-integerp type)
   :returns (mv (event pseudo-event-formp)
-               (info defstruct-member-infop))
-  :short "Generate the operations for a member of
+               (reader symbolp)
+               (writer symbolp)
+               (reader-return-thm symbolp)
+               (writer-return-thm symbolp))
+  :short "Generate the operations for an integer member of
           the structures defined by the @(tsee defstruct)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This are one reader and one writer for an integer member,
-     but there will be more than one for an array member (when supported).")
-   (xdoc::p
-    "The reader is a wrapper of @(tsee value-struct-read),
+    "This are one reader and one writer.
+     The reader is a wrapper of @(tsee value-struct-read),
      and the writer is a wrapper of @(tsee value-struct-write),
      but they have more specialized input and output types;
      in particular, they never return errors.
@@ -1075,19 +1078,7 @@
    (xdoc::p
     "Also return the information about the member
      for the @(tsee defstruct) table."))
-  (b* ((name (member-type->name member))
-       (type (member-type->type member))
-       ((unless (type-integerp type))
-        (mv '(progn)
-            (make-defstruct-member-info
-             :memtype member
-             :readers nil
-             :writers nil
-             :checkers nil
-             :length nil
-             :reader-return-thms nil
-             :writer-return-thms nil)))
-       (fixtype (integer-type-to-fixtype type))
+  (b* ((fixtype (integer-type-to-fixtype type))
        (typep (pack fixtype 'p))
        (type-fix (pack fixtype '-fix))
        (struct-tag-read-name (packn-pos (list struct-tag
@@ -1134,11 +1125,51 @@
              (value-struct-write (ident ,(ident->name name))
                                  (,type-fix val)
                                  (,struct-tag-fix struct))
-             :hooks (:fix))))
+             :hooks (:fix)))))
+    (mv event
+        struct-tag-read-name
+        struct-tag-write-name
+        reader-return-thm
+        writer-return-thm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-gen-member-ops ((struct-tag symbolp)
+                                  (struct-tag-p symbolp)
+                                  (struct-tag-fix symbolp)
+                                  (member member-typep))
+  :returns (mv (event pseudo-event-formp)
+               (info defstruct-member-infop))
+  :short "Generate the operations for a member of
+          the structures defined by the @(tsee defstruct)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only generate them for integer members,
+     but we will extend this to integer array members."))
+  (b* ((name (member-type->name member))
+       (type (member-type->type member))
+       ((unless (type-integerp type))
+        (mv '(progn)
+            (make-defstruct-member-info
+             :memtype member
+             :readers nil
+             :writers nil
+             :checkers nil
+             :length nil
+             :reader-return-thms nil
+             :writer-return-thms nil)))
+       ((mv event
+            reader
+            writer
+            reader-return-thm
+            writer-return-thm)
+        (defstruct-gen-integer-member-ops
+          struct-tag struct-tag-p struct-tag-fix name type))
        (info (make-defstruct-member-info
               :memtype member
-              :readers (list struct-tag-read-name)
-              :writers (list struct-tag-write-name)
+              :readers (list reader)
+              :writers (list writer)
               :checkers nil
               :length nil
               :reader-return-thms (list reader-return-thm)
