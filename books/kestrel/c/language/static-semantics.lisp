@@ -1066,9 +1066,32 @@
      A cast expression is never an lvalue.")
    (xdoc::p
     "The test of a conditional expression must be scalar.
-     For now we require the two branches to have arithmetic types;
-     the result has the type resulting from the usual arithmetic conversions.
-     See [C:6.5.15/3].
+     For now we require the two branches to have arithmetic types.
+     According to [C:6.5.15/3],
+     in this case the type of the conditional expression
+     is the one resulting from the usual arithmetic conversions [C:6.5.15/5].
+     This means that, at run time, in our dynamic semantics of C,
+     we need to convert the branch that is executed to that type;
+     but at run time we do not have information about
+     the type of the other branch (the one that is not executed).
+     Thus, in order to handle the execution properly,
+     the static semantics should add information to the abstract syntax
+     about the resulting type of the conditional expression,
+     so that the dynamic semantics can perform the conversion
+     while evaluating just one branch.
+     (Presumably, C compilers would generate code that performs the conversion,
+     if needed, for both branches of the conditional expression.)
+     To avoid this complication,
+     for now we make our static semantics more restrictive:
+     we require the two branches to have the same promoted type.
+     This means that that promoted type is also
+     the type resulting from the usual arithmetic conversions,
+     as can be easily seen in @(tsee uaconvert-types).
+     We may relax the treatment eventually,
+     but note that we would have to restructure the static semantics
+     to return possibly modified abstract syntax.
+     This is not surprising, as it is a used approach for compiler-like tools,
+     namely annotating abstract syntax trees with additional information.
      We apply both lvalue conversion and array-to-pointer conversion.
      A conditional expression is never an lvalue.")
    (xdoc::p
@@ -1203,8 +1226,11 @@
                  (error (list :cond-mistype-else e.test e.then e.else
                               :required :arithmetic
                               :supplied else-type)))
-                (type (uaconvert-types then-type else-type))
-                ((when (errorp type)) type))
+                (then-type (promote-type then-type))
+                (else-type (promote-type else-type))
+                ((unless (equal then-type else-type))
+                 (error (list :diff-promoted-types then-type else-type)))
+                (type then-type))
              (make-expr-type :type type :lvalue nil))))
   :measure (expr-count e)
   :verify-guards :after-returns
