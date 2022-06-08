@@ -11,7 +11,9 @@
 
 (in-package "ACL2")
 
-(include-book "bv-arrays")
+(include-book "bv-arrays") ; drop?
+(include-book "bv-array-write")
+(include-book "array-of-zeros")
 (local (include-book "kestrel/bv/getbit" :dir :system)) ;drop?
 (local (include-book "kestrel/bv/logext" :dir :system)) ;drop?
 (local (include-book "kestrel/lists-light/len" :dir :system))
