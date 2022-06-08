@@ -1050,110 +1050,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-type-to-reader/writer-value-recognizer ((type typep))
-  :returns (recognizer symbolp)
-  :short "Recognizer of the value read from or written to a member,
-          via the corresponding reader or writer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used when generating structure readers and writers.
-     The type is the one of the member,
-     and the recognizer is the one of
-     the values returned by the reader
-     or taken by the writer.
-     For an integer member,
-     the recognizer is the one for the values of the type.
-     For an array member,
-     the recognizer is not the one for the array,
-     but the one for elements of the array:
-     this is because the reader returns an element of the member
-     and the writer writes an element of the member."))
-  (type-case
-   type
-   :void (raise "Internal error: type ~x0." type)
-   :char (raise "Internal error: type ~x0." type)
-   :schar 'scharp
-   :uchar 'ucharp
-   :sshort 'sshortp
-   :ushort 'ushortp
-   :sint 'sintp
-   :uint 'uintp
-   :slong 'slongp
-   :ulong 'ulongp
-   :sllong 'sllongp
-   :ullong 'ullongp
-   :struct (raise "Internal error: type ~x0." type)
-   :pointer (raise "Internal error: type ~x0." type)
-   :array (type-case
-           type.of
-           :void (raise "Internal error: type ~x0." type)
-           :char (raise "Internal error: type ~x0." type)
-           :schar 'scharp
-           :uchar 'ucharp
-           :sshort 'sshortp
-           :ushort 'ushortp
-           :sint 'sintp
-           :uint 'uintp
-           :slong 'slongp
-           :ulong 'ulongp
-           :sllong 'sllongp
-           :ullong 'ullongp
-           :struct (raise "Internal error: type ~x0." type)
-           :pointer (raise "Internal error: type ~x0." type)
-           :array (raise "Internal error: type ~x0." type)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defstruct-type-to-writer-value-fixer ((type typep))
-  :returns (fixer symbolp)
-  :short "Map a C type to a corresponding fixer,
-          for use in structure writers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the fixers corresponding to
-     the recognizers returned by
-     @(tsee defstruct-type-to-reader/writer-value-recognizer).
-     See that function's documentation for an explanation of this mapping."))
-  (type-case
-   type
-   :void (raise "Internal error: type ~x0." type)
-   :char (raise "Internal error: type ~x0." type)
-   :schar 'schar-fix
-   :uchar 'uchar-fix
-   :sshort 'sshort-fix
-   :ushort 'ushort-fix
-   :sint 'sint-fix
-   :uint 'uint-fix
-   :slong 'slong-fix
-   :ulong 'ulong-fix
-   :sllong 'sllong-fix
-   :ullong 'ullong-fix
-   :struct (raise "Internal error: type ~x0." type)
-   :pointer (raise "Internal error: type ~x0." type)
-   :array (type-case
-           type.of
-           :void (raise "Internal error: type ~x0." type)
-           :char (raise "Internal error: type ~x0." type)
-           :schar 'schar-fix
-           :uchar 'uchar-fix
-           :sshort 'sshort-fix
-           :ushort 'ushort-fix
-           :sint 'sint-fix
-           :uint 'uint-fix
-           :slong 'slong-fix
-           :ulong 'ulong-fix
-           :sllong 'sllong-fix
-           :ullong 'ullong-fix
-           :struct (raise "Internal error: type ~x0." type)
-           :pointer (raise "Internal error: type ~x0." type)
-           :array (raise "Internal error: type ~x0." type)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defstruct-gen-member-ops ((struct-tag symbolp)
                                   (struct-tag-p symbolp)
                                   (struct-tag-fix symbolp)
@@ -1191,8 +1087,9 @@
              :length nil
              :reader-return-thms nil
              :writer-return-thms nil)))
-       (typep (defstruct-type-to-reader/writer-value-recognizer type))
-       (type-fix (defstruct-type-to-writer-value-fixer type))
+       (fixtype (integer-type-to-fixtype type))
+       (typep (pack fixtype 'p))
+       (type-fix (pack fixtype '-fix))
        (struct-tag-read-name (packn-pos (list struct-tag
                                               '-read-
                                               (ident->name name))
