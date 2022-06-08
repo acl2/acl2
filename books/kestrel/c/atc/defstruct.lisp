@@ -1134,6 +1134,281 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defstruct-gen-array-member-ops ((struct-tag symbolp)
+                                        (struct-tag-p symbolp)
+                                        (struct-tag-fix symbolp)
+                                        (name identp)
+                                        (type typep)
+                                        (size posp))
+  :guard (type-integerp type)
+  :returns (mv (event pseudo-event-formp)
+               (length-fun symbolp)
+               (checkers symbol-listp)
+               (readers symbol-listp)
+               (writers symbol-listp)
+               (reader-return-thms symbol-listp)
+               (writer-return-thms symbol-listp))
+  :short "Generate the operations for an array member of
+          the structures defined by @(tsee defstruct)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only for integer arrays.
+     The @('type') parameter of this ACL2 function is
+     the type of the elements of the array.")
+   (xdoc::p
+    "The readers and writers read and write elements of the array,
+     not the whole array, unlike for integer members.
+     However, these operations are internally defined as a combination of
+     reading/writing the whole arrays and reading/writing their elements.
+     Therefore, we generate local lemmas about
+     the reading and writing of the whole arrays
+     yielding results of the expected types
+     that in particular are not errors.
+     In fact, the generated readers and writers never return errors.")
+   (xdoc::p
+    "Similarly to the operations on integer arrays in @(see atc-arrays),
+     we generate 11 readers and 11 writers,
+     which only differ in the type of the index,
+     namely ACL2 integers or (10 types of) C integers;
+     the latter are defined in terms of the former.")
+   (xdoc::p
+    "Besides readers and writers, we also generate 11 checkers,
+     which check that the index is within the array bounds.
+     These are used in the guards of the readers and writers,
+     again analogously to the operations on integer arrays in @(see atc-arrays).
+     One is for ACL2 integers, and the other 10 are for C integers,
+     with again the latter defined in terms of the form.")
+   (xdoc::p
+    "To complete the collection of operations,
+     we also generate a function to return the length of the array,
+     analogous to the ones on integer arrays in @(see atc-arrays).")
+   (xdoc::p
+    "The reason for generating the index checkers and the length function,
+     as opposed to using the existing ones on integer arrays,
+     is that, like for readers as explained above,
+     we do not provide operations to read the whole array,
+     but rather its elements.
+     Thus, it makes sense that the checking and length functions
+     are also provided here.
+     Note that the definition of the checkers
+     is in terms of the length function;
+     the idea is that the length function is part of the API,
+     and that guard verification for functions involving these structures
+     is performed by opening the checkers but not the length function."))
+  (b* ((fixtype (integer-type-to-fixtype type))
+       (arr-typep (pack fixtype '-arrayp))
+       (arr-length (pack fixtype '-array-length))
+       (arr-length-alt-def (pack arr-length '-alt-def))
+       (arr-index-okp (pack fixtype '-array-index-okp))
+       (arr-read (pack fixtype '-array-read))
+       (arr-write (pack fixtype '-array-write))
+       (elem-typep (pack fixtype 'p))
+       (type-of-value-when-arr-typep (pack 'type-of-value-when- arr-typep))
+       (length-fun (packn-pos (list struct-tag
+                                    '-
+                                    (ident->name name)
+                                    '-length)
+                              struct-tag))
+       (index-okp (packn-pos (list struct-tag
+                                   '-
+                                   (ident->name name)
+                                   '-index-okp)
+                             struct-tag))
+       (reader (packn-pos (list struct-tag
+                                '-read-
+                                (ident->name name))
+                          struct-tag))
+       (writer (packn-pos (list struct-tag
+                                '-write-
+                                (ident->name name))
+                          struct-tag))
+       (reader-return-thm (packn-pos (list elem-typep
+                                           '-of-
+                                           reader)
+                                     reader))
+       (writer-return-thm (packn-pos (list struct-tag-p
+                                           '-of-
+                                           writer)
+                                     writer))
+       (events
+        `((defruledl read-array-lemma
+            (implies (,struct-tag-p struct)
+                     (,arr-typep (value-struct-read ',name struct)))
+            :enable (value-struct-read ,struct-tag-p ,struct-tag-fix))
+          (defruledl write-array-lemma
+            (implies (and (,struct-tag-p struct)
+                          (,arr-typep array)
+                          (equal (,arr-length array) ,size))
+                     (,struct-tag-p (value-struct-write ',name array struct)))
+            :enable (,struct-tag-p
+                     value-struct-write
+                     member-value-listp-of-value-struct-write-aux
+                     member-value-list->name-list-of-struct-write-aux
+                     value-struct-read-aux-of-value-struct-write-aux
+                     ,arr-length-alt-def
+                     not-errorp-when-member-value-listp
+                     ,type-of-value-when-arr-typep))
+          (define ,length-fun ((struct ,struct-tag-p))
+            :returns (length natp :rule-classes (:rewrite :type-prescription))
+            (b* ((array (value-struct-read (ident ,(ident->name name))
+                                           (,struct-tag-fix struct))))
+              (,arr-length array))
+            :guard-hints (("Goal" :in-theory (enable ,struct-tag-p
+                                                     read-array-lemma)))
+            :hooks (:fix))
+          (define ,index-okp ((index integerp) (struct ,struct-tag-p))
+            :returns (yes/no booleanp)
+            (integer-range-p 0 (,length-fun struct) (ifix index))
+            :hooks (:fix))
+          (define ,reader ((index integerp) (struct ,struct-tag-p))
+            :guard (,index-okp index struct)
+            :returns (val ,elem-typep)
+            (b* ((array (value-struct-read (ident ,(ident->name name))
+                                           (,struct-tag-fix struct))))
+              (,arr-read array index))
+            :guard-hints (("Goal" :in-theory (enable ,index-okp
+                                                     ,arr-index-okp
+                                                     ,length-fun
+                                                     read-array-lemma)))
+            :hooks (:fix))
+          (define ,writer ((index integerp)
+                           (val ,elem-typep)
+                           (struct ,struct-tag-p))
+            :guard (,index-okp index struct)
+            :returns new-struct
+            (b* ((array (value-struct-read (ident ,(ident->name name))
+                                           (,struct-tag-fix struct)))
+                 (new-array (,arr-write array index val)))
+              (value-struct-write (ident ,(ident->name name))
+                                  new-array
+                                  (,struct-tag-fix struct)))
+            :guard-hints (("Goal" :in-theory (enable read-array-lemma
+                                                     write-array-lemma
+                                                     ,index-okp
+                                                     ,length-fun
+                                                     ,arr-index-okp)))
+            :hooks (:fix)
+            ///
+            (defruledl return-lemma
+              (implies (,struct-tag-p struct)
+                       (,struct-tag-p (,writer index val struct)))
+              :enable (,writer
+                       read-array-lemma
+                       write-array-lemma)
+              :prep-lemmas
+              ((defrule lemma
+                 (implies (,struct-tag-p struct)
+                          (equal (,arr-length (value-struct-read ',name struct))
+                                 ,size))
+                 :enable (,struct-tag-p value-struct-read)
+                 :rule-classes :forward-chaining)))
+            (more-returns
+             (new-struct ,struct-tag-p
+                         :hints
+                         (("Goal"
+                           :use (:instance return-lemma
+                                 (struct (,struct-tag-fix struct))))))))))
+       ((mv more-events
+            more-readers
+            more-writers
+            more-checkers
+            more-reader-return-thms
+            more-writer-return-thms)
+        (defstruct-gen-array-member-ops-aux *integer-nonbool-nonchar-types*
+          struct-tag struct-tag-p name elem-typep index-okp reader writer))
+       (event `(encapsulate () ,@events ,@more-events)))
+    (mv event
+        length-fun
+        (cons index-okp more-checkers)
+        (cons reader more-readers)
+        (cons writer more-writers)
+        (cons reader-return-thm more-reader-return-thms)
+        (cons writer-return-thm more-writer-return-thms)))
+
+  :prepwork
+  ((define defstruct-gen-array-member-ops-aux ((index-types type-listp)
+                                               (struct-tag symbolp)
+                                               (struct-tag-p symbolp)
+                                               (name identp)
+                                               (elem-typep symbolp)
+                                               (index-okp symbolp)
+                                               (reader symbolp)
+                                               (writer symbolp))
+     :guard (type-integer-listp index-types)
+     :returns (mv (more-events pseudo-event-form-listp)
+                  (more-readers symbol-listp)
+                  (more-writers symbol-listp)
+                  (more-checkers symbol-listp)
+                  (more-reader-return-thms symbol-listp)
+                  (more-writer-return-thms symbol-listp))
+     :parents nil
+     (b* (((when (endp index-types)) (mv nil nil nil nil nil nil))
+          (index-type (car index-types))
+          (index-fixtype (integer-type-to-fixtype index-type))
+          (index-typep (pack index-fixtype 'p))
+          (index-getter (pack index-fixtype '->get))
+          (index-okp-for-index (packn-pos (list struct-tag
+                                                '-
+                                                (ident->name name)
+                                                index-fixtype
+                                                '-index-okp)
+                                          struct-tag))
+          (reader-for-index (packn-pos (list reader
+                                             '-
+                                             index-fixtype)
+                                       struct-tag))
+          (writer-for-index (packn-pos (list writer
+                                             '-
+                                             index-fixtype)
+                                       struct-tag))
+          (reader-return-thm (packn-pos (list elem-typep
+                                              '-of-
+                                              reader-for-index)
+                                        reader-for-index))
+          (writer-return-thm (packn-pos (list struct-tag-p
+                                              '-of-
+                                              writer-for-index)
+                                        writer-for-index))
+          (events
+           `((define ,index-okp-for-index ((index ,index-typep)
+                                           (struct ,struct-tag-p))
+               :returns (yes/no booleanp)
+               (,index-okp (,index-getter index) struct)
+               :hooks (:fix))
+             (define ,reader-for-index ((index ,index-typep)
+                                        (struct ,struct-tag-p))
+               :guard (,index-okp-for-index index struct)
+               :returns (val ,elem-typep)
+               (,reader (,index-getter index) struct)
+               :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
+               :hooks (:fix))
+             (define ,writer-for-index ((index ,index-typep)
+                                        (val ,elem-typep)
+                                        (struct ,struct-tag-p))
+               :guard (,index-okp-for-index index struct)
+               :returns (new-struct ,struct-tag-p)
+               (,writer (,index-getter index) val struct)
+               :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
+               :hooks (:fix))))
+          ((mv more-events
+               more-readers
+               more-writers
+               more-checkers
+               more-reader-return-thms
+               more-writer-return-thms)
+           (defstruct-gen-array-member-ops-aux (cdr index-types)
+             struct-tag struct-tag-p name elem-typep index-okp reader writer)))
+       (mv (append events more-events)
+           (cons reader-for-index more-readers)
+           (cons writer-for-index more-writers)
+           (cons index-okp-for-index more-checkers)
+           (cons reader-return-thm more-reader-return-thms)
+           (cons writer-return-thm more-writer-return-thms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 (define defstruct-gen-member-ops ((struct-tag symbolp)
                                   (struct-tag-p symbolp)
                                   (struct-tag-fix symbolp)
@@ -1149,31 +1424,51 @@
      but we will extend this to integer array members."))
   (b* ((name (member-type->name member))
        (type (member-type->type member))
-       ((unless (type-integerp type))
-        (mv '(progn)
-            (make-defstruct-member-info
-             :memtype member
-             :readers nil
-             :writers nil
-             :checkers nil
-             :length nil
-             :reader-return-thms nil
-             :writer-return-thms nil)))
+       ((when (type-integerp type))
+        (b* (((mv event
+                  reader
+                  writer
+                  reader-return-thm
+                  writer-return-thm)
+              (defstruct-gen-integer-member-ops
+                struct-tag struct-tag-p struct-tag-fix name type))
+             (info (make-defstruct-member-info
+                    :memtype member
+                    :readers (list reader)
+                    :writers (list writer)
+                    :checkers nil
+                    :length nil
+                    :reader-return-thms (list reader-return-thm)
+                    :writer-return-thms (list writer-return-thm))))
+          (mv event info)))
+       ((unless (type-case type :array))
+        (raise "Internal error: member type ~x0." type)
+        (mv '(_) (make-defstruct-member-info :memtype member)))
+       (elem-type (type-array->of type))
+       ((unless (type-integerp elem-type))
+        (raise "Internal error: member type ~x0." type)
+        (mv '(_) (make-defstruct-member-info :memtype member)))
+       (size (type-array->size type))
+       ((unless (posp size))
+        (raise "Internal error: member type ~x0." type)
+        (mv '(_) (make-defstruct-member-info :memtype member)))
        ((mv event
-            reader
-            writer
-            reader-return-thm
-            writer-return-thm)
-        (defstruct-gen-integer-member-ops
-          struct-tag struct-tag-p struct-tag-fix name type))
+            length-fun
+            checkers
+            readers
+            writers
+            reader-return-thms
+            writer-return-thms)
+        (defstruct-gen-array-member-ops
+          struct-tag struct-tag-p struct-tag-fix name elem-type size))
        (info (make-defstruct-member-info
               :memtype member
-              :readers (list reader)
-              :writers (list writer)
-              :checkers nil
-              :length nil
-              :reader-return-thms (list reader-return-thm)
-              :writer-return-thms (list writer-return-thm))))
+              :readers readers
+              :writers writers
+              :checkers checkers
+              :length length-fun
+              :reader-return-thms reader-return-thms
+              :writer-return-thms writer-return-thms)))
     (mv event info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1207,11 +1502,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the recognizer, fixer, fixtype, readers, and writers,
-     and the table event.")
-   (xdoc::p
-    "We store the return type theorems of the readers and writers
-     into the table."))
+    "These are the recognizer, fixer, fixtype, member operations,
+     and the table event."))
   (b* ((struct-tag (packn-pos (list 'struct- tag) tag))
        (struct-tag-p (packn-pos (list struct-tag '-p) tag))
        (struct-tag-fix (packn-pos (list struct-tag '-fix) tag))
