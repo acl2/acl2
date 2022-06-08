@@ -105,6 +105,7 @@
                          make-lambda
                          make-mv-let-call
                          maybe-natp
+                         maybe-string
                          maybe-stringp
                          msg-listp
                          mvify
