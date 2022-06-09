@@ -1408,7 +1408,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (define defstruct-gen-member-ops ((struct-tag symbolp)
                                   (struct-tag-p symbolp)
                                   (struct-tag-fix symbolp)
