@@ -14,8 +14,10 @@
 (include-book "kestrel/arithmetic-light/power-of-2p" :dir :system)
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
+;(include-book "array-of-zeros")
 (include-book "bv-array-write")
 (include-book "bv-array-if")
+(include-book "append-arrays")
 (include-book "width-of-widest-int")
 (include-book "bvxor-list")
 (include-book "kestrel/bv/bvif" :dir :system)
@@ -369,49 +371,6 @@
            (equal (bv-array-read width len index (binary-append x (cons a b)))
                   (bvchop width a)))
   :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
-
-(defund append-arrays (width len1 array1 len2 array2)
-  (declare (xargs :guard (and (natp len1)
-                              (natp len2)
-                              (natp width)
-                              (true-listp array1)
-                              (true-listp array2))))
-  (bvchop-list width (append (take len1 array1)
-                              (take len2 array2))))
-
-(defthm len-of-append-arrays
-  (equal (len (append-arrays width len1 array1 len2 array2))
-         (+ (nfix len1) (nfix len2)))
-  :hints (("Goal" :in-theory (enable append-arrays))))
-
-(defthm all-unsigned-byte-p-of-append-arrays
-  (implies (natp size) ;move to cons?
-           (all-unsigned-byte-p size (append-arrays size a b c d)))
-  :hints (("Goal" :in-theory (enable append-arrays))))
-
-(defthm bv-arrayp-of-append-arrays
-  (implies (and (natp element-size)
-                (natp len1)
-                (natp len2)
-                )
-           (equal (bv-arrayp element-size len (append-arrays element-size len1 array1 len2 array2))
-                  (equal len (+ len1 len2))))
-  :hints (("Goal" :in-theory (enable bv-arrayp))))
-
-;gross because it mixes theories?
-;fixme could make an append operator with length params for two arrays..
-(defthm bv-array-read-of-append-arrays
-  (implies (and (equal len (+ len1 len2))
-                (< index len)
-                (natp len1)
-                (natp len2)
-                (natp index))
-           (equal (bv-array-read width len index (append-arrays width len1 x len2 y))
-                  (if (< index len1)
-                      (bv-array-read width len1 index x)
-                    (bv-array-read width len2 (- index len1) y))))
-  :hints (("Goal" :in-theory (enable bv-array-read-opener append-arrays))))
-
 
 ;rename and gen
 (defthm equal-of-bvchop-and-bv-array-read
@@ -886,38 +845,7 @@
 ;                            LIST::UPDATE-NTH-EQUAL-REWRITE
                             )))))
 
-;todo: use in the JVM model
-(defund array-of-zeros (width len)
-  (declare (ignore width)
-           (xargs :guard (natp len)))
-  (repeat len 0))
 
-(defthm len-of-array-of-zeros
-  (equal (len (array-of-zeros width len))
-         (nfix len))
-  :hints (("Goal" :in-theory (enable array-of-zeros))))
-
-(defthm BV-ARRAYP-of-array-of-zeros
-  (implies (and (natp element-size)
-                (natp len))
-           (BV-ARRAYP ELEMENT-SIZE len (ARRAY-OF-ZEROS ELEMENT-SIZE len)))
-  :hints (("Goal" :in-theory (enable BV-ARRAYP ARRAY-OF-ZEROS))))
-
-(defthm array-of-zeros-iff
-  (iff (array-of-zeros width len)
-       (not (zp len)))
-  :hints (("Goal" :in-theory (enable array-of-zeros))))
-
-(defthm all-unsigned-byte-p-of-array-of-zeros
-  (implies (natp width)
-           (all-unsigned-byte-p width (array-of-zeros width len)))
-  :hints (("Goal" :in-theory (enable array-of-zeros))))
-
-(defthm nthcdr-of-array-of-zeros
-  (implies (natp n)
-           (equal (nthcdr n (array-of-zeros width len))
-                  (array-of-zeros width (- len n))))
-  :hints (("Goal" :in-theory (enable array-of-zeros))))
 
 ;; Reading from an array of length 1 always gives the 0th element (and is in
 ;; fact independent from the index).
