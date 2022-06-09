@@ -888,6 +888,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-symbol-5part ((sym symbolp))
+  :returns (mv (yes/no booleanp)
+               (part1 symbolp)
+               (part2 symbolp)
+               (part3 symbolp)
+               (part4 symbolp)
+               (part5 symbolp))
+  :short "Check if a symbol consists of five parts separated by dash."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the symbol has the form @('<part1>-<part2>-<part3>-<part4>-<part5>'),
+     with @('<part1>') and @('<part2>')
+     and @('<part3>') and @('<part4>') and @('<part5>')
+     non-empty and without dashes,
+     we return an indication of success and the five parts.
+     Otherwise, we return an indication of failure and @('nil') as the parts.
+     The five returned symbols, when the function is successful,
+     are interned in the same package as the input symbol."))
+  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
+       ((unless (= (len parts) 5)) (mv nil nil nil nil nil nil))
+       (part1 (intern-in-package-of-symbol (first parts) sym))
+       (part2 (intern-in-package-of-symbol (second parts) sym))
+       (part3 (intern-in-package-of-symbol (third parts) sym))
+       (part4 (intern-in-package-of-symbol (fourth parts) sym))
+       (part5 (intern-in-package-of-symbol (fifth parts) sym)))
+    (mv t part1 part2 part3 part4 part5)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-iconst ((term pseudo-termp) (ctx ctxp) state)
   :returns (mv erp
                (val (tuple (yes/no booleanp)
@@ -1364,33 +1394,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-struct-read ((term pseudo-termp)
-                               (prec-tags atc-string-taginfo-alistp))
+(define atc-check-struct-read-scalar ((term pseudo-termp)
+                                      (prec-tags atc-string-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (arg pseudo-termp)
                (tag identp)
                (member identp)
                (in-type typep)
                (out-type typep))
-  :short "Check if a term may represent a structure read."
+  :short "Check if a term may represent a structure read
+          of a scalar member."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
-     that represent C structure read operations,
+     that represent C structure read operations for scalar members,
      we return the argument term, the tag name, and the name of the member.
      The C structure type of the reader must be in the preceding tags;
      we consult the alist to retrieve the relevant information.")
-   (xdoc::p
-    "The function may be in any package,
-     which is the same package as the tag
-     because of the way @(tsee defstruct) works.
-     Note that @(tsee atc-check-symbol-4part) returns symbols
-     in the same package as the original symbol,
-     so everything should be in the same package.
-     (This may not actually be the case when specific symbols are imported.
-     These cases should be rare in practice,
-     but eventually we should robustify the code to handle them.)")
    (xdoc::p
     "We also return the input and output types of the structure read.")
    (xdoc::p
@@ -1425,7 +1446,7 @@
     (mv t arg tag member in-type out-type))
   ///
 
-  (defret pseudo-term-count-of-atc-check-struct-read
+  (defret pseudo-term-count-of-atc-check-struct-read-scalar
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
@@ -1433,38 +1454,111 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-struct-write ((var symbolp)
-                                (val pseudo-termp)
-                                (prec-tags atc-string-taginfo-alistp))
+(define atc-check-struct-read-array ((term pseudo-termp)
+                                     (prec-tags atc-string-taginfo-alistp))
+  :returns (mv (yes/no booleanp)
+               (index pseudo-termp)
+               (struct pseudo-termp)
+               (tag identp)
+               (member identp)
+               (index-type typep)
+               (elem-type typep))
+  :short "Check if a term may represent a structure read
+          of an element of an array member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of one of the ACL2 functions
+     that represent C structure read operations for array members,
+     we return the argument terms (index and structure),
+     the tag name, and the name of the member.
+     The C structure type of the reader must be in the preceding tags;
+     we consult the alist to retrieve the relevant information.")
+   (xdoc::p
+    "We also return the types of the index and the array element.")
+   (xdoc::p
+    "If the term does not have the right form,
+     we return an indication of failure."))
+  (b* (((acl2::fun (no))
+        (mv nil nil nil (irr-ident) (irr-ident) (irr-type) (irr-type)))
+       ((unless (pseudo-term-case term :fncall)) (no))
+       ((pseudo-term-fncall term) term)
+       ((mv okp struct tag read member type) (atc-check-symbol-5part term.fn))
+       ((unless (and okp
+                     (equal (symbol-name struct) "STRUCT")
+                     (equal (symbol-name read) "READ")))
+        (no))
+       (tag (symbol-name tag))
+       (info (cdr (assoc-equal tag prec-tags)))
+       ((unless info) (no))
+       (info (atc-tag-info->defstruct info))
+       ((unless (member-eq term.fn (defstruct-info->readers info))) (no))
+       (tag (defstruct-info->tag info))
+       (members (defstruct-member-info-list->memtype-list
+                  (defstruct-info->members info)))
+       (member (symbol-name member))
+       ((unless (ident-stringp member)) (no))
+       (member (ident member))
+       (memtype (member-type-lookup member members))
+       ((unless memtype) (no))
+       ((unless (type-case memtype :array)) (no))
+       (elem-type (type-array->of memtype))
+       (type (pack type))
+       (index-type (fixtype-to-integer-type type))
+       ((unless index-type) (no))
+       ((unless (list-lenp 2 term.args)) (no))
+       (index (first term.args))
+       (struct (second term.args)))
+    (mv t index struct tag member index-type elem-type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-struct-read-array-index
+    (implies yes/no
+             (< (pseudo-term-count index)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-struct-read-array-struct
+    (implies yes/no
+             (< (pseudo-term-count struct)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-struct-write-scalar ((var symbolp)
+                                       (val pseudo-termp)
+                                       (prec-tags atc-string-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (mem pseudo-termp)
                (tag identp)
                (member identp)
                (mem-type typep))
-  :short "Check if a @(tsee let) binding may represent a structure write."
+  :short "Check if a @(tsee let) binding may represent a structure write
+          of a scalar member."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A structure write, i.e. an assignment to a structure member via a pointer,
+    "A structure write of a scalar member,
+     i.e. an assignment to a scalar structure member
+     via a pointer to the structure,
      is represented by a @(tsee let) binding of the form")
    (xdoc::codeblock
-    "(let ((<struct> (struct-<tag>-write-<member> <struct> <mem>))) ...)")
+    "(let ((<struct> (struct-<tag>-write-<member> <mem> <struct>))) ...)")
    (xdoc::p
     "where @('<struct>') is a variable of pointer type to a structure type,
      which must occur identically as
      both the @(tsee let) variable
-     and as the first argument of @('struct-<tag>-write-<member>'),
+     and as the last argument of @('struct-<tag>-write-<member>'),
      @('<mem>') is an expression that yields the member value to write,
-     and @('...') represents the code that follows the array assignment.
+     and @('...') represents the code that follows the assignment.
      This function takes as arguments
      the variable and value of a @(tsee let) binder,
      and checks if they have the form described above.
      If they do, the member argument is returned for further processing.
      We also return the tag, the member name, and the member type.")
    (xdoc::p
-    "See @(tsee atc-check-struct-read) for a note about packages of symbols.")
-   (xdoc::p
-    "Similarly to @(tsee atc-check-struct-read),
+    "Similarly to @(tsee atc-check-struct-read-scalar),
      we consult the @('prec-tags') alist,
      which must contain the C structure type associated to the writer."))
   (b* (((acl2::fun (no)) (mv nil nil (irr-ident) (irr-ident) (irr-type)))
@@ -1486,9 +1580,8 @@
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
-       (meminfo (member-type-lookup member members))
-       ((unless meminfo) (no))
-       (mem-type meminfo)
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
        ((unless (list-lenp 2 val.args)) (no))
        (mem (first val.args))
        (struct (second val.args)))
@@ -1497,7 +1590,98 @@
       (no)))
   ///
 
-  (defret pseudo-term-count-of-atc-check-struct-write
+  (defret pseudo-term-count-of-atc-check-struct-write-scalar
+    (implies yes/no
+             (< (pseudo-term-count mem)
+                (pseudo-term-count val)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-struct-write-array ((var symbolp)
+                                      (val pseudo-termp)
+                                      (prec-tags atc-string-taginfo-alistp))
+  :returns (mv (yes/no booleanp)
+               (index pseudo-termp)
+               (mem pseudo-termp)
+               (tag identp)
+               (member identp)
+               (index-type typep)
+               (mem-type typep))
+  :short "Check if a @(tsee let) binding may represent a structure write
+          of an element of an array member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A structure write of an element of an array member,
+     i.e. an assignment to an element of an array structure member
+     via a pointer to the structure,
+     is represented by a @(tsee let) binding of the form")
+   (xdoc::codeblock
+    "(let ((<struct>
+            (struct-<tag>-write-<member>-<type> <index> <mem> <struct>))) ...)")
+   (xdoc::p
+    "where @('<struct>') is a variable of pointer type to a structure type,
+     which must occur identically as
+     both the @(tsee let) variable
+     and as the last argument of @('struct-<tag>-write-<member>'),
+     @('<index>') is an expression that yields an integer used as array index,
+     @('<mem>') is an expression that yields the member element value to write,
+     and @('...') represents the code that follows the assignment.
+     This function takes as arguments
+     the variable and value of a @(tsee let) binder,
+     and checks if they have the form described above.
+     If they do, the index and member argument
+     are returned for further processing.
+     We also return
+     the tag, the member name, the index type, and the member type.")
+   (xdoc::p
+    "Similarly to @(tsee atc-check-struct-read-array),
+     we consult the @('prec-tags') alist,
+     which must contain the C structure type associated to the writer."))
+  (b* (((acl2::fun (no))
+        (mv nil nil nil (irr-ident) (irr-ident) (irr-type) (irr-type)))
+       ((unless (pseudo-term-case val :fncall)) (no))
+       ((pseudo-term-fncall val) val)
+       ((mv okp struct tag write member type) (atc-check-symbol-5part val.fn))
+       ((unless (and okp
+                     (equal (symbol-name struct) "STRUCT")
+                     (equal (symbol-name write) "WRITE")))
+        (no))
+       (tag (symbol-name tag))
+       (info (cdr (assoc-equal tag prec-tags)))
+       ((unless info) (no))
+       (info (atc-tag-info->defstruct info))
+       ((unless (member-eq val.fn (defstruct-info->writers info))) (no))
+       (members (defstruct-member-info-list->memtype-list
+                  (defstruct-info->members info)))
+       (tag (defstruct-info->tag info))
+       (member (symbol-name member))
+       ((unless (ident-stringp member)) (no))
+       (member (ident member))
+       (memtype (member-type-lookup member members))
+       ((unless memtype) (no))
+       ((unless (type-case memtype :array)) (no))
+       (mem-type (type-array->of memtype))
+       (type (pack type))
+       (index-type (fixtype-to-integer-type type))
+       ((unless index-type) (no))
+       ((unless (list-lenp 3 val.args)) (no))
+       (index (first val.args))
+       (mem (second val.args))
+       (struct (third val.args)))
+    (if (equal struct var)
+        (mv t index mem tag member index-type mem-type)
+      (no)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-struct-write-array-index
+    (implies yes/no
+             (< (pseudo-term-count index)
+                (pseudo-term-count val)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-struct-write-array-elem
     (implies yes/no
              (< (pseudo-term-count mem)
                 (pseudo-term-count val)))
@@ -1886,10 +2070,17 @@
        on the recursively generated expressions.
        The type is the array's element type.")
      (xdoc::p
-      "If the term fits the pattern of a structure read,
+      "If the term fits the pattern of a structure scalar read,
        we translate it to a structure pointer member expression
        on the recursively generated expression.
        The type is the member's type.")
+     (xdoc::p
+      "If the term fits the pattern of a structure array element read,
+       we translate it to an array subscripting expression
+       on the recursively generated index expression
+       and on a structure pointer member expression
+       on the recursively generated structure expression.
+       The type is the member element's type.")
      (xdoc::p
       "If the term is a call of @(tsee c::sint-from-boolean),
        we call the mutually recursive ACL2 function
@@ -2032,7 +2223,7 @@
                                                  :sub sub-expr)
                                out-type))))
          ((mv okp arg tag member in-type out-type)
-          (atc-check-struct-read term prec-tags))
+          (atc-check-struct-read-scalar term prec-tags))
          ((when okp)
           (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
                                                              inscope
@@ -2051,6 +2242,42 @@
             (acl2::value (list (make-expr-memberp :target arg-expr
                                                   :name member)
                                out-type))))
+         ((mv okp index struct tag member index-type elem-type)
+          (atc-check-struct-read-array term prec-tags))
+         ((when okp)
+          (b* (((er (list index-expr index-type1))
+                (atc-gen-expr-pure index inscope prec-tags fn ctx state))
+               ((unless (equal index-type1 index-type))
+                (er-soft+ ctx t (irr)
+                          "The reading of ~x0 structure with member ~x1 ~
+                           is applied to a term ~x2 returning ~x3, ~
+                           but a ~x4 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          (type-struct tag)
+                          member
+                          index
+                          index-type1
+                          index-type))
+               ((er (list struct-expr struct-type))
+                (atc-gen-expr-pure struct inscope prec-tags fn ctx state))
+               ((unless (equal struct-type (type-pointer (type-struct tag))))
+                (er-soft+ ctx t (irr)
+                          "The reading of ~x0 structure with member ~x1 ~
+                           is applied to a term ~x2 returning ~x3, ~
+                           but a ~x0 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          (type-struct tag)
+                          member
+                          struct
+                          struct-type)))
+            (acl2::value (list (make-expr-arrsub
+                                :arr (make-expr-memberp
+                                      :target struct-expr
+                                      :name member)
+                                :sub index-expr)
+                               elem-type))))
          ((mv okp arg) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((mv erp expr state)
@@ -3083,7 +3310,7 @@
                                    body-type
                                    limit))))
              ((mv okp member-value tag member-name member-type)
-              (atc-check-struct-write var val prec-tags))
+              (atc-check-struct-write-scalar var val prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (er-soft+ ctx t irr
@@ -3111,7 +3338,7 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var type1 (type-struct tag)))
+                              var type1 (type-pointer (type-struct tag))))
                    ((unless (equal type2 member-type))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -3127,6 +3354,87 @@
                          :arg1 (make-expr-memberp :target struct-expr
                                                   :name member-name)
                          :arg2 member-expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body
+                                  var-term-alist-body
+                                  inscope
+                                  loop-flag
+                                  affect
+                                  fn
+                                  prec-fns
+                                  prec-tags
+                                  proofs
+                                  ctx
+                                  state))
+                   (limit (pseudo-term-fncall 'binary-+
+                                              (list (pseudo-term-quote 4)
+                                                    body-limit))))
+                (acl2::value (list (cons item body-items)
+                                   body-type
+                                   limit))))
+             ((mv okp index elem tag member index-type elem-type)
+              (atc-check-struct-write-array var val prec-tags))
+             ((when okp)
+              (b* (((unless (eq wrapper? nil))
+                    (er-soft+ ctx t irr
+                              "The structure write term ~x0 ~
+                               to which ~x1 is bound ~
+                               has the ~x2 wrapper, which is disallowed."
+                              val var wrapper?))
+                   ((unless (member-eq var affect))
+                    (er-soft+ ctx t irr
+                              "The structure ~x0 is being written to, ~
+                               but it is not among the variables ~x1 ~
+                               currently affected."
+                              var affect))
+                   ((mv erp (list struct-expr struct-type) state)
+                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
+                   ((when erp) (mv erp irr state))
+                   ((unless (equal struct-type
+                                   (type-pointer (type-struct tag))))
+                    (er-soft+ ctx t irr
+                              "The structure ~x0 of type ~x1 ~
+                               does not have the expected type ~x2. ~
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var struct-type (type-pointer (type-struct tag))))
+                   ((mv erp (list index-expr index-type1) state)
+                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
+                   ((when erp) (mv erp irr state))
+                   ((unless (equal index-type1 index-type))
+                    (er-soft+ ctx t irr
+                              "The structure ~x0 of type ~x1 ~
+                               is being written to with ~
+                               an index ~x2 of type ~x3, ~
+                               instead of type ~x4 as expected.
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var struct-type index index-type1 index-type))
+                   ((mv erp (list elem-expr elem-type1) state)
+                    (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
+                   ((when erp) (mv erp irr state))
+                   ((unless (equal elem-type1 elem-type))
+                    (er-soft+ ctx t irr
+                              "The structure ~x0 of type ~x1 ~
+                               is being written to with ~
+                               a member array element ~x2 of type ~x3, ~
+                               instead of type ~x4 as expected.
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var struct-type elem elem-type1 elem-type))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (make-expr-arrsub
+                                :arr (make-expr-memberp
+                                      :target struct-expr
+                                      :name member)
+                                :sub index-expr)
+                         :arg2 elem-expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
