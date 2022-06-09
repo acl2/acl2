@@ -619,7 +619,7 @@
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
                                (interpreted-function-alistp interpreted-function-alist))
-                   :verify-guards nil
+                   :verify-guards nil ; done below
                    ))
    (if (atom tree)
        (if (symbolp tree)
@@ -1214,6 +1214,7 @@
 ;; Returns (mv erp dag-or-quotep).
 ;; Convert term to a DAG (or quoted constant).  Uses arrays to do the work.
 ;doesn't handle inlined constants in the embedded dags?
+;; See also make-term-into-dag-basic.
 (defund dagify-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (make-term-into-dag term nil))
@@ -1248,30 +1249,39 @@
         :error
       dag)))
 
-;; Returns (mv erp nodenum-or-quotep dag-lst).  Uses arrays to do the work.
+;move
+(defthmd not-<-of-len-and-+-of-1-of-car-of-car-when-dagp
+  (implies (pseudo-dagp dag)
+           (not (< (len dag) (binary-+ '1 (car (car dag))))))
+  :hints (("Goal" :in-theory (enable len-when-pseudo-dagp))))
+
+;; Returns (mv erp nodenum-or-quotep dag).  Uses arrays to do the work.
 ;leaves pre-existing nodenums in dag unchanged
-;; Nodenums in TREE refer to DAG-LIST.  Vars in tree may be replaced by
-;; var-replacement-alist; otherwise, they are the same as the vars in DAG-LST.
+;; Nodenums in TREE refer to DAG-OR-QUOTEP.  Vars in tree may be replaced by
+;; var-replacement-alist; otherwise, they are the same as the vars in DAG-OR-QUOTEP.
 ;; todo: make a specialized version of this for terms?
-(defund merge-tree-into-dag (tree dag-lst ;can now be a quotep
+(defund merge-tree-into-dag (tree dag-or-quotep ;can now be a quotep
                                   ;;interpreted-function-alist
                                   var-replacement-alist
                                   )
-  (declare (xargs :guard (and (axe-treep tree)
-                              (or (myquotep dag-lst)
-                                  (and (pseudo-dagp dag-lst)
-                                       (<= (len dag-lst) 2147483646)))
+  (declare (xargs :guard (and ;(axe-treep tree)
+                              (or (myquotep dag-or-quotep)
+                                  (and (pseudo-dagp dag-or-quotep)
+                                       (<= (len dag-or-quotep) 2147483646)))
+                              (if (quotep dag-or-quotep)
+                                  (bounded-axe-treep tree 0) ; no nodenums to refer to
+                                (bounded-axe-treep tree (+ 1 (top-nodenum dag-or-quotep))))
                               (symbol-alistp var-replacement-alist)
-                              (if (quotep dag-lst)
-                                  t
-                                (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag-lst)))))
-                  :verify-guards nil ;issue with calling make-into-array on an empty array
-                  ))
-  (let* ((dag-lst (if (quotep dag-lst) nil dag-lst))
-         (dag-len (+ 1 (top-nodenum dag-lst)))
+                              (if (quotep dag-or-quotep)
+                                  (all-myquotep (strip-cdrs var-replacement-alist)) ; no nodenums to refer to
+                                (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag-or-quotep)))))
+                  :guard-hints (("Goal" :in-theory (enable wf-dagp
+                                                           not-<-of-len-and-+-of-1-of-car-of-car-when-dagp)))))
+  (let* ((dag (if (quotep dag-or-quotep) nil dag-or-quotep))
+         (dag-len (+ 1 (top-nodenum dag))) ; may be 0
          (dag-array-name 'dag-array-for-merge-tree-into-dag)
          (dag-parent-array-name 'dag-parent-array-for-merge-tree-into-dag)
-         (dag-array (make-into-array dag-array-name dag-lst)))
+         (dag-array (make-into-array dag-array-name dag)))
     (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
       (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)
       (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
