@@ -21,19 +21,10 @@
 ;; TODO: To evaluate a function defined using MBE, we might prefer to evaluate the :exec part.
 
 ;try to include less (but we need the functions to eval them)
-(include-book "make-evaluator")
-(include-book "unguarded-primitives")
-(include-book "unguarded-built-ins")
-(include-book "unguarded-defuns")
 (include-book "kestrel/utilities/world" :dir :system) ;for fn-definedp
-(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
-(include-book "kestrel/lists-light/add-to-end" :dir :system)
-(include-book "kestrel/lists-light/group" :dir :system) ;drop?
-(include-book "kestrel/lists-light/group2" :dir :system) ;drop?
-(include-book "kestrel/lists-light/ungroup" :dir :system) ;drop?
-(include-book "kestrel/lists-light/first-non-member" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
+(include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
+(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
@@ -44,18 +35,27 @@
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system)
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
+(include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
+(include-book "kestrel/lists-light/add-to-end" :dir :system)
+(include-book "kestrel/lists-light/group" :dir :system) ;drop?
+(include-book "kestrel/lists-light/group2" :dir :system) ;drop?
+(include-book "kestrel/lists-light/ungroup" :dir :system) ;drop?
+(include-book "kestrel/lists-light/first-non-member" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
 (include-book "kestrel/lists-light/update-subrange" :dir :system)
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
-(include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;for array-elem-2d
-(include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
+(include-book "kestrel/maps/maps" :dir :system) ;for key-list
+(include-book "make-evaluator")
+(include-book "unguarded-primitives")
+(include-book "unguarded-built-ins")
+(include-book "unguarded-defuns")
 (include-book "safe-unquote")
 (include-book "interpreted-function-alists") ; for make-interpreted-function-alist
 (include-book "print-constant") ; drop from the evaluator?
-(include-book "kestrel/maps/maps" :dir :system) ;for key-list
-(include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))

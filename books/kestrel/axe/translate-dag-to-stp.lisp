@@ -48,27 +48,25 @@
 ;; TODO: Consider doing all trimming, and perhaps even padding, using rewriting
 ;; in a separate pass before calling the STP translation code.
 
-;(include-book "dag-arrays")
 (include-book "depth-array")
 (include-book "known-predicates")
 (include-book "stp-counterexamples")
+(include-book "call-axe-script")
+(include-book "axe-syntax-functions-bv") ;for get-type-of-bv-expr-axe, todo reduce
+(include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
+(include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
+(include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-if
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
+(include-book "kestrel/utilities/strings" :dir :system) ; for newline-string
+(include-book "kestrel/utilities/temp-dirs" :dir :system)
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 ;(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
-(include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
-(include-book "kestrel/bv/getbit-def" :dir :system)
-(include-book "call-axe-script")
-(include-book "safe-unquote") ; drop?
-(include-book "axe-syntax-functions-bv") ;for get-type-of-bv-expr-axe, todo reduce
-(include-book "kestrel/utilities/strings" :dir :system) ; for newline-string
-(include-book "kestrel/utilities/temp-dirs" :dir :system)
-(include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system)) ;for character-listp-of-take
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -994,7 +992,7 @@
                   (quoted-natp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
              (b* ((width-arg (darg1 expr)) ;had better be quoted
-                  (claimed-width (safe-unquote width-arg))
+                  (claimed-width (unquote width-arg))
                   (bv-arg (darg2 expr))
                   (bv-arg-type (get-type-of-arg bv-arg dag-array-name dag-array cut-nodenum-type-alist))
                   ((when (not (bv-typep bv-arg-type)))
@@ -1070,8 +1068,8 @@
                   (quoted-posp (darg2 expr))
                   (< 1 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                   (bv-arg-okp (darg3 expr)))
-             (b* ((element-width (safe-unquote (darg1 expr)))
-                  (len (safe-unquote (darg2 expr))) ;ffixme can the array length ever be 1? ;maybe we should get the len from the data argument... - fixme may need a case for when the index is > the len param - return 0? well, the index gets chpped down..
+             (b* ((element-width (unquote (darg1 expr)))
+                  (len (unquote (darg2 expr))) ;ffixme can the array length ever be 1? ;maybe we should get the len from the data argument... - fixme may need a case for when the index is > the len param - return 0? well, the index gets chpped down..
                   (index (darg3 expr))
                   (array-arg (darg4 expr))
                   (num-index-bits (ceiling-of-lg len))
@@ -1125,8 +1123,8 @@
                   (< 1 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                   (bv-arg-okp (darg3 expr))
                   (bv-arg-okp (darg4 expr)))
-             (b* ((element-width (safe-unquote (darg1 expr)))
-                  (len (safe-unquote (darg2 expr)))
+             (b* ((element-width (unquote (darg1 expr)))
+                  (len (unquote (darg2 expr)))
                   (index (darg3 expr))
                   (val (darg4 expr))
                   (array-arg (darg5 expr))
@@ -1169,7 +1167,7 @@
          (if (and (= 2 (len (dargs expr)))
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
-             (let ((width (safe-unquote (darg1 expr))))
+             (let ((width (unquote (darg1 expr))))
                (mv (erp-nil)
                    (list* "(~"
                           (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1184,7 +1182,7 @@
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr))
                   )
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "("
@@ -1203,7 +1201,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "("
@@ -1222,7 +1220,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(BVXOR("
@@ -1241,7 +1239,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(BVMULT("
@@ -1262,7 +1260,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(BVSUB("
@@ -1283,7 +1281,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(BVPLUS("
@@ -1303,7 +1301,7 @@
          (if (and (= 2 (len (dargs expr)))
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
-             (let* ((width (safe-unquote (darg1 expr))))
+             (let* ((width (unquote (darg1 expr))))
                (mv (erp-nil)
                    (list* "(BVUMINUS("
                           (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1318,7 +1316,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(IF (" ;if the third arg is 0, then the bvdiv is 0
@@ -1348,7 +1346,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(IF (" ;if the third arg is 0, then the bvmod is bvchop of its second argument
@@ -1378,7 +1376,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(IF (" ;if the third arg is 0, then the sbvdiv is 0
@@ -1408,7 +1406,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(IF (" ;if the third arg is 0, then the sbvrem is bvchop of its second argument
@@ -1436,7 +1434,7 @@
          (if (and (= 2 (len (dargs expr)))
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
-             (let ((width (safe-unquote (darg1 expr))))
+             (let ((width (unquote (darg1 expr))))
                (mv (erp-nil)
                    (list* "("
                           (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1454,10 +1452,10 @@
              (mv (erp-nil)
                  (list*
                   "BVSX("
-                  (translate-bv-arg (darg3 expr) (safe-unquote (darg2 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                  (translate-bv-arg (darg3 expr) (unquote (darg2 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                   ;;fffixme chop here!?
                   ", "
-                  (nat-to-string-debug (safe-unquote (darg1 expr)))
+                  (nat-to-string-debug (unquote (darg1 expr)))
                   ")")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
@@ -1466,14 +1464,14 @@
                   (quoted-natp (darg1 expr))
                   (quoted-natp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let ((high (safe-unquote (darg1 expr))))
+             (let ((high (unquote (darg1 expr))))
                (mv (erp-nil)
                    (list* "("
                           (translate-bv-arg (darg3 expr) (+ 1 high) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                           "["
                           (nat-to-string-debug high)
                           ":"
-                          (nat-to-string-debug (safe-unquote (darg2 expr)))
+                          (nat-to-string-debug (unquote (darg2 expr)))
                           "])")
                    constant-array-info))
            (mv (erp-t) nil constant-array-info)))
@@ -1482,7 +1480,7 @@
                   (quoted-natp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
              (mv (erp-nil)
-                 (let* ((bitnum (safe-unquote (darg1 expr)))
+                 (let* ((bitnum (unquote (darg1 expr)))
                         (bitnum-string (nat-to-string-debug bitnum)))
                    (list* "("
                           (translate-bv-arg (darg2 expr) (+ 1 bitnum) dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1543,7 +1541,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(SBVLT("
@@ -1564,7 +1562,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(SBVLE("
@@ -1583,7 +1581,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(BVLT("
@@ -1604,7 +1602,7 @@
                   (quoted-posp (darg1 expr))
                   (bv-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv (erp-nil)
                    (list* "(BVLE("
@@ -1626,13 +1624,13 @@
                   (bv-arg-okp (darg4 expr)))
              (mv (erp-nil)
                  (list* "("
-                        (translate-bv-arg (darg2 expr) (safe-unquote (darg1 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                        (translate-bv-arg (darg2 expr) (unquote (darg1 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                         "["
-                        (nat-to-string-debug (+ -1 (safe-unquote (darg1 expr))))
+                        (nat-to-string-debug (+ -1 (unquote (darg1 expr))))
                         ":0]@"
-                        (translate-bv-arg (darg4 expr) (safe-unquote (darg3 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                        (translate-bv-arg (darg4 expr) (unquote (darg3 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                         "["
-                        (nat-to-string-debug (+ -1 (safe-unquote (darg3 expr))))
+                        (nat-to-string-debug (+ -1 (unquote (darg3 expr))))
                         ":0])")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
@@ -1641,7 +1639,7 @@
          (if (and (= 2 (len (dargs expr)))
                   (quoted-natp (darg1 expr)) ;todo: think about 0
                   (bv-arg-okp (darg2 expr)))
-             (let* ((shift-amt (safe-unquote (darg1 expr))) ;fixme what if it's not a natp?
+             (let* ((shift-amt (unquote (darg1 expr))) ;fixme what if it's not a natp?
                     (shift-amt (mod shift-amt 32)))
                (if (= 0 shift-amt) ;in this case, it's just like bvchop (handling 0 separately avoids an error in the main case, a slice of [31:32])
                    (mv (erp-nil)
@@ -1698,7 +1696,7 @@
                   (boolean-arg-okp (darg2 expr))
                   (bv-arg-okp (darg3 expr))
                   (bv-arg-okp (darg4 expr)))
-             (let* ((width (safe-unquote (darg1 expr)))
+             (let* ((width (unquote (darg1 expr)))
                     (top-bit-string (nat-to-string-debug (+ -1 width))))
                (mv
                 (erp-nil)
@@ -1723,8 +1721,8 @@
                   (quoted-posp (darg1 expr))
                   (quoted-natp (darg2 expr)) ;exclude 0? exclude 1?
                   (boolean-arg-okp (darg3 expr)))
-             (b* ((element-width (safe-unquote (darg1 expr)))
-                  (length (safe-unquote (darg2 expr)))
+             (b* ((element-width (unquote (darg1 expr)))
+                  (length (unquote (darg2 expr)))
                   (test (darg3 expr))
                   (then-branch (darg4 expr))
                   (else-branch (darg5 expr))
