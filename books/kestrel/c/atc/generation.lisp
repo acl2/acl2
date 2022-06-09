@@ -3344,7 +3344,7 @@
                               "The structure ~x0 of type ~x1 ~
                                is being written to with ~
                                a member ~x2 of type ~x3, ~
-                               instead of type ~x4 as expected.
+                               instead of type ~x4 as expected. ~
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
@@ -3402,14 +3402,14 @@
                                given that the code is guard-verified."
                               var struct-type (type-pointer (type-struct tag))))
                    ((mv erp (list index-expr index-type1) state)
-                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
+                    (atc-gen-expr-pure index inscope prec-tags fn ctx state))
                    ((when erp) (mv erp irr state))
                    ((unless (equal index-type1 index-type))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
                                is being written to with ~
                                an index ~x2 of type ~x3, ~
-                               instead of type ~x4 as expected.
+                               instead of type ~x4 as expected. ~
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
