@@ -76,29 +76,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection string-list
-  :short "Fixtype of lists of ACL2 strings,
-          i.e. values recognized by @(tsee string-listp)."
-  :long
-  (xdoc::topstring-p
-   "This is not specific to Java,
-    and it should be moved to a more general library eventually.")
-
-  (std::deffixer string-list-fix
-    :pred string-listp
-    :body-fix nil
-    :parents (string-list)
-    :short "Fixer for @(tsee string-list).")
-
-  (fty::deffixtype string-list
-    :pred string-listp
-    :fix string-list-fix
-    :equiv string-list-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection nat-to-dec-chars-theorems
   :short "Some theorems about @(tsee str::nat-to-dec-chars)
           and the functions it calls."
