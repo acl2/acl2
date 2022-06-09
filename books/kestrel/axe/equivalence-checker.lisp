@@ -21154,16 +21154,16 @@
                ((mv test-cases rand)
                 ;; Make the random test cases (each assigns values to the input vars):
                 ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
-                ;;fixme what about test cases that don't satisfy the assumptions??
+                ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
                 (make-test-cases test-case-count var-type-alist assumptions rand))
                (analyzed-function-table (empty-analyzed-function-table))
-               ;;fixme move any stuff above here into miter-and-merge?
+               ;; todo: should we move any stuff above here into miter-and-merge?
                ((mv erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
                 ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
                 (miter-and-merge dag
                                  miter-name
                                  0
-                                 var-type-alist
+                                 var-type-alist ; todo: filter out stuff only uses for test cae gen?
                                  interpreted-function-alist print traced-nodes
                                  rewriter-rule-alist
                                  prover-rule-alist
