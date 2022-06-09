@@ -12,12 +12,15 @@
 
 (in-package "ACL2")
 
+;; See also nice-output-indicators.lisp
+
 (include-book "kestrel/jvm/types" :dir :system)
 (include-book "kestrel/jvm/heap0" :dir :system)
 (include-book "kestrel/jvm/arrays0" :dir :system)
 (include-book "kestrel/jvm/class-tables" :dir :system)
 
-(defun class-table-alistp (class-table-alist)
+;; Recognizes an alist from class-names to class-infos.
+(defund class-table-alistp (class-table-alist)
   (declare (xargs :guard t))
   (if (atom class-table-alist)
       (null class-table-alist)
@@ -31,22 +34,31 @@
 
 (defthmd alistp-when-class-table-alistp
   (implies (class-table-alistp class-table-alist)
-           (alistp class-table-alist)))
+           (alistp class-table-alist))
+  :hints (("Goal" :in-theory (enable class-table-alistp))))
 
+(defthm class-infop0-of-lookup-equal-when-class-table-alistp
+  (implies (class-table-alistp class-table-alist)
+           (iff (jvm::class-infop0 (lookup-equal class-name class-table-alist))
+                (lookup-equal class-name class-table-alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal class-table-alistp))))
+
+;; Checks that PAIR, a class-name + field-id pair is valid wrt the class-table-alist.
 (defund field-pair-okayp (pair class-table-alist)
   (declare (xargs :guard (and (class-name-field-id-pairp pair)
-                              (class-table-alistp class-table-alist))))
+                              (class-table-alistp class-table-alist))
+                  :guard-hints (("Goal" :in-theory (enable alistp-when-class-table-alistp)))
+                  ))
   (or (equal pair (array-contents-pair))
       (let* ((class-name (car pair))
              (field-id (cdr pair))
              (class-info (lookup-equal class-name class-table-alist)))
-        (if (not (jvm::class-infop class-info class-name))
-            (er hard? 'field-pair-okayp "Ill-formed or missing class-info for ~x0" class-name)
-          (let ((class-fields (jvm::class-decl-non-static-fields class-info)))
-            (if (not (alistp class-fields)) ;for guards
-                (er hard? 'field-pair-okayp "Ill-formed class-table alist")
-              (let ((class-field-ids (strip-cars class-fields)))
-                (member-equal field-id class-field-ids))))))))
+        (if (not class-info)
+            ;; Could make this just a warning:
+            (er hard? 'field-pair-okayp "Missing class-info for ~x0" class-name)
+          (let* ((class-fields (jvm::class-decl-non-static-fields class-info))
+                 (class-field-ids (strip-cars class-fields)))
+            (member-equal field-id class-field-ids))))))
 
 ;;;
 ;;; output-indicators
@@ -59,6 +71,7 @@
 ;TODO: Allow static fields?
 ;TODO: Should bottom out in a scalar or array, not an object...
 (mutual-recursion
+ ;; todo: rename to output-indicatorp?
  (defun output-indicatorp-aux (x)
    (declare (xargs :guard t
                    :measure (acl2-count x)
@@ -73,13 +86,13 @@
             (eql 1 (len (fargs x)))
             (eq :array-local (ffn-symb x)) ;(:array-local <local-num>) ;;TODO: rename to array-param
             (natp (farg1 x)))
-       ;; TODO: Remove this one?  or improve all this to allow chains of field and contents calls
-       (and (true-listp x) ;;(:field <pair> <indicator-for-object>)
+       ;; TODO: improve all this to allow chains of field and contents calls
+       (and (true-listp x) ; (:field <class-name-field-id-pair> <indicator-for-object>)
             (eql 2 (len (fargs x)))
             (eq :field (ffn-symb x))
             (class-name-field-id-pairp (farg1 x))
             (output-indicatorp-aux (farg2 x)))
-       (and (true-listp x) ;;(:param-field <pair> <local-num>)
+       (and (true-listp x) ; (:param-field <pair> <local-num>)
             (eql 2 (len (fargs x)))
             (eq :param-field (ffn-symb x))
             (class-name-field-id-pairp (farg1 x))
@@ -95,6 +108,7 @@
      (and (output-indicatorp-aux (first x))
           (output-indicatorp-aux-lst (rest x))))))
 
+;; todo: rename to maybe-output-indicatorp?
 (defun output-indicatorp (x)
   (declare (xargs :guard t))
   (or (eq :auto x)
@@ -122,39 +136,40 @@
         (er hard? 'resolve-auto-output-indicator "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))
 
 (mutual-recursion
- ;; TODO: The lambdas here may be problematic??
- (defund wrap-term-with-output-extractor (output-indicator  ;:auto is handled in a wrapper
+ ;; TODO: The lambdas here may be not be necessary, since we always create a DAG to contain the result of this.
+ ;; TODO: Reorder args?
+ (defund wrap-term-with-output-extractor (output-indicator ; :auto is handled in a wrapper
                                           initial-locals-term
-                                          dag-term
+                                          state-term
                                           class-table-alist)
    (declare (xargs :guard (and (output-indicatorp-aux output-indicator)
                                (class-table-alistp class-table-alist))))
    (if (eq :all output-indicator)
-       dag-term
+       state-term
      (if (eq :return-value output-indicator)
-         `(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) ,dag-term)))
+         `(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) ,state-term)))
        (if (eq :return-value-long output-indicator)
            ;; Recall that a long takes 2 stack slots and is stored entirely in the lower slot
-           `(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) ,dag-term)))
+           `(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) ,state-term)))
          (if (eq :array-return-value output-indicator) ;TODO: add support for this wherever output-indicators are used
              `((lambda (XXX) ; since XXX appears twice
                  (get-field (jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) xxx)))
                             ',(array-contents-pair)
                             (jvm::heap xxx)))
-               ,dag-term)
+               ,state-term)
            (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
                (let ((local-num (cadr output-indicator)))
                  `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;note: these are the locals in the original state
                              ',(array-contents-pair)
-                             (jvm::heap ,dag-term)))
+                             (jvm::heap ,state-term)))
              (if (eq (car output-indicator) :field)
                  (b* ((pair (farg1 output-indicator))
                       ((when (not (field-pair-okayp pair class-table-alist)))
                        (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair))
                       (obj-indicator (farg2 output-indicator))
                       (obj (wrap-term-with-output-extractor obj-indicator ;return-type
-                                                            initial-locals-term dag-term class-table-alist)))
-                   `(get-field ,obj ',pair (jvm::heap ,dag-term)))
+                                                            initial-locals-term state-term class-table-alist)))
+                   `(get-field ,obj ',pair (jvm::heap ,state-term)))
                (if (eq (car output-indicator) :param-field) ;todo, redo so that :param is an output-indicator but can't appear naked.  also contents..
                    (let ((pair (farg1 output-indicator))
                          (local-num (farg2 output-indicator)))
@@ -162,32 +177,30 @@
                          (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair)
                        `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
                                    ',pair
-                                   (jvm::heap ,dag-term))))
+                                   (jvm::heap ,state-term))))
                  (if (eq (car output-indicator) :tuple)
-                     ;; TODO: Introduce a let?
+                     ;; TODO: Introduce a lambda?
                      (wrap-term-with-output-extractors (fargs output-indicator) ;return-type
-                                                       initial-locals-term dag-term class-table-alist)
+                                                       initial-locals-term state-term class-table-alist)
                    (er hard 'wrap-term-with-output-extractor "Unsupported case: ~x0" output-indicator))))))))))
 
- (defund wrap-term-with-output-extractors (output-indicators initial-locals-term dag-term class-table-alist)
+ (defund wrap-term-with-output-extractors (output-indicators initial-locals-term state-term class-table-alist)
    (declare (xargs :guard (and (output-indicatorp-aux-lst output-indicators)
                                (class-table-alistp class-table-alist))))
    (if (endp output-indicators)
        *nil*
      ;; not a lambda (hope that is okay):
      `(cons ,(wrap-term-with-output-extractor (first output-indicators) ;return-type
-                                              initial-locals-term dag-term class-table-alist)
+                                              initial-locals-term state-term class-table-alist)
             ,(wrap-term-with-output-extractors (rest output-indicators) ;return-type
-                                               initial-locals-term dag-term class-table-alist)))))
+                                               initial-locals-term state-term class-table-alist)))))
 
-
-;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
-;todo: compare to wrap-term-with-output-extractor in unroll-java-code
-(defun output-extraction-term (output-indicator
+;; Returns a term to wrap around a dag to extract the output.  In the result,
+;; the special symbol 'replace-me should be replaced with the DAG.
+(defund output-extraction-term (output-indicator
                                initial-locals-term
-                               return-type ;used for :auto
-                               class-table-alist
-                               )
+                               return-type ; used when output-indicator is :auto
+                               class-table-alist)
   (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (pseudo-termp initial-locals-term)
                               (or (eq :void return-type)
