@@ -992,9 +992,9 @@
            (car acc)))
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
-;; The indices in the result will be decreasing.
-;; TODO: Put the length argument last?
-;; TODO: Can we avoid this, since the array is backed by an alist (albeit with a header node)?  Maybe call compress1 to remove dups?
+;; Creates an alist mapping indices (from LEN-1 down to 0) to their values in the ARRAY.
+;; The indices in the result will be decreasing (critical for Axe since the result will often be an Axe DAG).
+;; TODO: Can we avoid this, since the array is backed by an alist (albeit with a header node)?  Maybe call compress1 to remove dups, but watch the order?
 (defund array-to-alist (array-name array len)
   (declare (xargs :guard (and (array1p array-name array)
                               (natp len)
@@ -1535,3 +1535,8 @@
              (+ 1 (max-key alist 0))
            1))
   :hints (("Goal" :in-theory (enable make-into-array))))
+
+(defthm make-into-array-of-nil
+  (equal (make-into-array array-name nil)
+         (make-empty-array array-name 1))
+  :hints (("Goal" :in-theory (enable make-into-array MAKE-INTO-ARRAY-WITH-LEN MAKE-EMPTY-ARRAY MAKE-EMPTY-ARRAY-WITH-DEFAULT))))
