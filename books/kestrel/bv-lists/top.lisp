@@ -74,6 +74,8 @@
 (include-book "bv-array-write")
 (include-book "bv-array-clear")
 (include-book "bv-array-if")
+(include-book "append-arrays")
+(include-book "array-of-zeros")
 (include-book "bv-arrays")
 (include-book "bv-array-conversions")
 (include-book "bv-array-conversions2")

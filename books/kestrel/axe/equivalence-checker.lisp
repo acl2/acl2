@@ -12023,11 +12023,11 @@
             (replace-in-dags new-other-formals-update-dags remove-placeholders-alist state result-array-stobj))
            ((when erp) (mv erp nil nil state result-array-stobj))
            (new-other-formals-update-dag-alist (pairlis$-fast other-formals new-other-formals-update-dags))
-           ((mv erp dag-for-duplicate-numcdrs-formal) (dagify-term2 `(binary-+ '1 ,duplicate-numcdrs-formal)))
+           ((mv erp dag-for-duplicate-numcdrs-formal) (dagify-term `(binary-+ '1 ,duplicate-numcdrs-formal)))
            ((when erp) (mv erp nil nil state result-array-stobj))
-           ((mv erp dag-for-numcdrs-formal) (dagify-term2 `(binary-+ '1 ,numcdrs-formal))) ;this is what was already there, except in dag form
+           ((mv erp dag-for-numcdrs-formal) (dagify-term `(binary-+ '1 ,numcdrs-formal))) ;this is what was already there, except in dag form
            ((when erp) (mv erp nil nil state result-array-stobj))
-           ((mv erp dag-for-list-formal) (dagify-term2 lst-formal))
+           ((mv erp dag-for-list-formal) (dagify-term lst-formal))
            ((when erp) (mv erp nil nil state result-array-stobj))
            (full-formals-update-dag-alist
             (acons duplicate-numcdrs-formal dag-for-duplicate-numcdrs-formal
@@ -20790,7 +20790,7 @@
             (formals (lookup-eq 'formals props))
             (arity (len formals))
 ;             (function-call (cons function-name formals))
-            ((mv erp body-dag) (dagify-term2 body)) ;ffixme use a better dagify?
+            ((mv erp body-dag) (dagify-term body)) ;ffixme use a better dagify?
             ((when erp) (mv erp nil nil state result-array-stobj))
 
             (formal-slot-alist (pairlis$ formals (ints-in-range 0 (+ -1 arity))))
@@ -22268,7 +22268,7 @@
 ;todo: deprecate?  unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
 (defmacro prove-equality (term1 term2 &rest rest)
   `(make-event
-    (b* (((mv erp dag) (dagify-term2 '(equal ,term1 ,term2)))
+    (b* (((mv erp dag) (dagify-term '(equal ,term1 ,term2)))
          ((when erp) (mv erp nil state rand result-array-stobj)))
       (prove-miter-aux dag
                        ,(lookup-keyword-safe :test-case-count rest)

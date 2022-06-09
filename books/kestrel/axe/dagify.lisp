@@ -1,7 +1,7 @@
 ; DAG builders that depend on the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1226,24 +1226,10 @@
     (mv :bad-term
         (er hard? 'dagify-term-unguarded "Non-pseudo-term encountered: ~x0." term))))
 
-;; Returns (mv erp dag).
-;todo: same as dagify-term!
-(defund dagify-term2 (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (make-term-into-dag term nil))
-
-;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
-(defund dagify-term2-unguarded (term)
-  (declare (xargs :guard t))
-  (if (pseudo-termp term)
-      (dagify-term2 term)
-    (mv :bad-term
-        (er hard? 'dagify-term2-unguarded "Non-pseudo-term encountered: ~x0." term))))
-
 ;; Suppresses any error and returns the dag.
 (defund dagify-term! (term)
   (declare (xargs :guard (pseudo-termp term)))
-  (b* (((mv erp dag) (dagify-term2 term)))
+  (b* (((mv erp dag) (dagify-term term)))
     (if erp
         :error
       dag)))
@@ -2174,7 +2160,7 @@
     (if (weak-dagp item)
         (mv (erp-nil) item) ;already a DAG
       ;; translate the given form to obtain a pseudo-term and then make that into a DAG:
-      (dagify-term2-unguarded
+      (dagify-term-unguarded
        (translate-term item 'dag-or-term-to-dag wrld)))))
 
 

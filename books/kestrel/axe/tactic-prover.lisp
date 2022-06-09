@@ -249,7 +249,7 @@
                         call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
                         state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
-       ((mv erp new-dag) (dagify-term2 term))
+       ((mv erp new-dag) (dagify-term term))
        ((when erp) (mv *error* nil state))
        (- (and print (cw "Done pruning branches)~%"))))
     (make-tactic-result new-dag dag assumptions state)))
@@ -276,7 +276,7 @@
                         call-stp-when-pruning
                         state))
        ((when erp) (mv *error* nil state))
-       ((mv erp new-dag) (dagify-term2 term))
+       ((mv erp new-dag) (dagify-term term))
        ((when erp) (mv *error* nil state))
        (- (and print (cw "Done pruning branches)~%"))))
     (make-tactic-result new-dag dag assumptions state)))
@@ -688,7 +688,7 @@
            ;; TODO: Consider extracting hyps from bit-valued terms:
            ((mv assumptions term)
             (term-hyps-and-conc term))
-           ((mv erp dag) (dagify-term2 term))
+           ((mv erp dag) (dagify-term term))
            ((when erp) (mv erp nil nil)))
         (mv (erp-nil) dag assumptions)))))
 
