@@ -1,7 +1,7 @@
 ; The code query tool
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -45,7 +45,7 @@
        (tactics '(:rewrite :stp))
        ((mv erp rule-alist) (make-rule-alist rules (w state)))
        ((when erp) (mv *error* state))
-       ((mv erp dag) (dagify-term2 term))
+       ((mv erp dag) (dagify-term term))
        ((when erp) (mv *error* state))
        (monitor nil) ;todo
        (call-stp-when-pruning t)

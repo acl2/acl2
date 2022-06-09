@@ -533,7 +533,7 @@
 ;;        ((mv erp term state)
 ;;         (prune-term-with-rule-alist term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
 ;;        ((when erp) (mv erp nil state))
-;;        ((mv erp dag) (dagify-term2 term)) ; todo: try make-term-into-dag-simple here
+;;        ((mv erp dag) (dagify-term term)) ; todo: try make-term-into-dag-simple here
 ;;        ((when erp) (mv erp nil state)))
 ;;     (mv (erp-nil) dag state)))
 

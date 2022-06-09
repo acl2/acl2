@@ -1,7 +1,7 @@
 ; A compositional version of the JVM loop lifter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -278,7 +278,7 @@
        ((when (not (subsetp-eq assumption-vars (list state-var))))
         (mv t (er hard 'lift-java-code2 "ERROR: Bad vars in assumptions: ~x0!" (set-difference-eq assumption-vars (list state-var))) state))
        (- (cw "Will lift with these assumptions: ~x0." nicer-assumptions))
-       ((mv erp state-var-dag) (dagify-term2 state-var))
+       ((mv erp state-var-dag) (dagify-term state-var))
        ((when erp) (mv erp nil state))
        ((mv erp
             final-state-dag generated-events generated-rules
