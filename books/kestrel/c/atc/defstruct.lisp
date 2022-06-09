@@ -1351,6 +1351,7 @@
           (index-okp-for-index (packn-pos (list struct-tag
                                                 '-
                                                 (ident->name name)
+                                                '-
                                                 index-fixtype
                                                 '-index-okp)
                                           struct-tag))
