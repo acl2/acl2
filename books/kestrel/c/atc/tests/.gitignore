@@ -45,3 +45,6 @@ ops-diff-types
 
 structs.c
 structs
+
+structs-with-arrays.c
+structs-with-arrays

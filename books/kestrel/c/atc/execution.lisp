@@ -71,7 +71,7 @@
        (error (error (list :iconst-out-of-range (iconst-fix ic)))))
     (if ic.unsignedp
         (iconst-length-case
-         ic.type
+         ic.length
          :none (cond ((uint-integerp ic.value) (uint ic.value))
                      ((ulong-integerp ic.value) (ulong ic.value))
                      ((ullong-integerp ic.value) (ullong ic.value))
@@ -82,7 +82,7 @@
          :llong (cond ((ullong-integerp ic.value) (ullong ic.value))
                       (t error)))
       (iconst-length-case
-       ic.type
+       ic.length
        :none (if (iconst-base-case ic.base :dec)
                  (cond ((sint-integerp ic.value) (sint ic.value))
                        ((slong-integerp ic.value) (slong ic.value))

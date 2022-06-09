@@ -47,3 +47,4 @@ gcc -Wno-implicit-function-declaration -o not not.c not-test.c
 gcc -Wno-implicit-function-declaration -o operators operators.c operators-test.c
 gcc -Wno-implicit-function-declaration -o ops-diff-types ops-diff-types.c ops-diff-types-test.c
 gcc -Wno-implicit-function-declaration -o structs structs.c structs-test.c
+gcc -Wno-implicit-function-declaration -o structs-with-arrays structs-with-arrays.c structs-with-arrays-test.c

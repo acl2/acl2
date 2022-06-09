@@ -1351,6 +1351,7 @@
           (index-okp-for-index (packn-pos (list struct-tag
                                                 '-
                                                 (ident->name name)
+                                                '-
                                                 index-fixtype
                                                 '-index-okp)
                                           struct-tag))
@@ -1407,7 +1408,6 @@
            (cons writer-return-thm more-writer-return-thms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (define defstruct-gen-member-ops ((struct-tag symbolp)
                                   (struct-tag-p symbolp)
