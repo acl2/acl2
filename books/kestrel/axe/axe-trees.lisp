@@ -334,7 +334,6 @@
   (implies (consp (car tree))
            (equal (axe-treep tree)
                   (and (axe-tree-listp (fargs tree))
-                       (true-listp (fargs tree))
                        (true-listp (car tree))
                        (equal (len (car tree)) 3)
                        (eq (car (car tree)) 'lambda)
@@ -445,7 +444,6 @@
              (and (= 1 (len args))
                   (true-listp args))
            (and (bounded-axe-tree-listp args bound)
-                (true-listp args)
                 (or (symbolp fn)
                     (and (true-listp fn)
                          (equal (len fn) 3)
@@ -464,7 +462,7 @@
 
 (defthm bounded-axe-tree-listp-when-all-dargp
   (implies (and (all-dargp items)
-                (true-listp items))
+                )
            (equal (bounded-axe-tree-listp items bound)
                   (bounded-darg-listp items bound)))
   :hints (("Goal" :expand ((bounded-axe-treep (car items) bound)
