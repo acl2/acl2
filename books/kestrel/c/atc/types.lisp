@@ -86,27 +86,27 @@
   (cond ((<= pos (sint-max)) (make-iconst :value pos
                                           :base (iconst-base-dec)
                                           :unsignedp nil
-                                          :type (iconst-length-none)))
+                                          :length (iconst-length-none)))
         ((<= pos (uint-max)) (make-iconst :value pos
                                           :base (iconst-base-dec)
                                           :unsignedp t
-                                          :type (iconst-length-none)))
+                                          :length (iconst-length-none)))
         ((<= pos (slong-max)) (make-iconst :value pos
                                            :base (iconst-base-dec)
                                            :unsignedp nil
-                                           :type (iconst-length-long)))
+                                           :length (iconst-length-long)))
         ((<= pos (ulong-max)) (make-iconst :value pos
                                            :base (iconst-base-dec)
                                            :unsignedp t
-                                           :type (iconst-length-long)))
+                                           :length (iconst-length-long)))
         ((<= pos (sllong-max)) (make-iconst :value pos
                                             :base (iconst-base-dec)
                                             :unsignedp nil
-                                            :type (iconst-length-llong)))
+                                            :length (iconst-length-llong)))
         ((<= pos (ullong-max)) (make-iconst :value pos
                                             :base (iconst-base-dec)
                                             :unsignedp t
-                                            :type (iconst-length-llong)))
+                                            :length (iconst-length-llong)))
         (t (prog2$
             (raise "Internal error: ~x0 too large." pos)
             (ec-call (iconst-fix :irrelevant))))))

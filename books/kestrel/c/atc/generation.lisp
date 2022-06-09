@@ -985,32 +985,32 @@
           (sint (mv (make-iconst :value val
                                  :base base
                                  :unsignedp nil
-                                 :type (iconst-length-none))
+                                 :length (iconst-length-none))
                     (type-sint)))
           (uint (mv (make-iconst :value val
                                  :base base
                                  :unsignedp t
-                                 :type (iconst-length-none))
+                                 :length (iconst-length-none))
                     (type-uint)))
           (slong (mv (make-iconst :value val
                                   :base base
                                   :unsignedp nil
-                                  :type (iconst-length-long))
+                                  :length (iconst-length-long))
                      (type-slong)))
           (ulong (mv (make-iconst :value val
                                   :base base
                                   :unsignedp t
-                                  :type (iconst-length-long))
+                                  :length (iconst-length-long))
                      (type-ulong)))
           (sllong (mv (make-iconst :value val
                                    :base base
                                    :unsignedp nil
-                                   :type (iconst-length-llong))
+                                   :length (iconst-length-llong))
                       (type-sllong)))
           (ullong (mv (make-iconst :value val
                                    :base base
                                    :unsignedp t
-                                   :type (iconst-length-llong))
+                                   :length (iconst-length-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
     (acl2::value (list t const type)))
