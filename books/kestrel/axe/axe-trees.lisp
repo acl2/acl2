@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -40,7 +40,6 @@
          ;; the application of a function symbol or lambda to args that are axe trees:
          ;; TODO: Can we require the lambda to be closed?
          (and (axe-tree-listp (fargs tree))
-              (true-listp (fargs tree))
               (or (symbolp fn)
                   (and (true-listp fn)
                        (equal (len fn) 3)
