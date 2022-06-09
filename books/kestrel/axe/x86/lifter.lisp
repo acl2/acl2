@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1748,7 +1748,7 @@
                                    (alistp measure-alist)))))
    (if (not (consp state-term)) ;is this case possible?
        (mv-let (erp state-dag)
-         (dagify-term2 state-term)
+         (dagify-term state-term)
          (if erp
              (mv erp nil nil nil nil state)
            (mv (erp-nil) changep state-dag generated-events next-loop-num state)))
@@ -1813,7 +1813,7 @@
                   (- (cw "(Checking the PC.)~%"))
                   (- (cw "(State term is ~x0)~%" state-term))
                   ((mv erp state-dag)
-                   (dagify-term2 state-term))
+                   (dagify-term state-term))
                   ((when erp) (mv erp nil state))
                   ((mv erp pc-dag state)
                    (extract-pc-dag state-dag
@@ -1839,12 +1839,12 @@
              (mv erp nil nil nil nil state)
            (if exitedp
                (mv-let (erp state-dag)
-                 (dagify-term2 state-term)
+                 (dagify-term state-term)
                  (if erp
                      (mv erp nil nil nil nil state)
                    ;; We have exited the code segment, so there is no loop to lift:
                    (mv (erp-nil) changep state-dag generated-events next-loop-num state)))
-             (b* (((mv erp state-dag0) (dagify-term2 state-term))
+             (b* (((mv erp state-dag0) (dagify-term state-term))
                   ((when erp) (mv erp nil nil nil nil state))
                   ((mv erp state-dag generated-events next-loop-num state)
                    ;; TODO: Do we need to check the stack height (maybe only if we are going to support recursion)?
@@ -2032,7 +2032,7 @@
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
         (state-var (pack-in-package-of-symbol 'x86 'x86_ loop-depth))
-        ((mv erp state-dag) (dagify-term2 state-var))
+        ((mv erp state-dag) (dagify-term state-var))
         ((when erp) (mv erp nil nil nil state))
 
         ;; Extract the RSP:

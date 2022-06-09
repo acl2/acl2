@@ -1,7 +1,7 @@
 ; A JVM lifter for use when not unrolling
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2536,7 +2536,7 @@
   (if (endp terms)
       (mv (erp-nil) nil state)
     (b* ((term (first terms))
-         ((mv erp dag) (dagify-term2 term))
+         ((mv erp dag) (dagify-term term))
          ((when erp) (mv erp nil state))
          ((mv erp result state)
           (quick-simp-dag dag
@@ -3164,7 +3164,7 @@
                   (make-loop-parameters-for-locals (+ -1 local-num) pc local-variable-table state-var excluded-locals one-rep-dag next-param-number updated-state-term
                                                    paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state))
         (b* ((initial-local-term `(jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))
-             ((mv erp initial-local-dag) (dagify-term2 initial-local-term))
+             ((mv erp initial-local-dag) (dagify-term initial-local-term))
              ((when erp) (mv erp nil nil nil nil nil state))
              ((mv erp updated-local-dag state)
               (get-local-dag local-num one-rep-dag state))
@@ -3258,7 +3258,7 @@
          (- (cw "Param ~x0 is ~X12.~%" next-param-num getfield-term nil))
          (updated-state-term `(set-field-in-state ,ad-term ,class-name-field-id-pair (nth ',next-param-num :loop-function-result) ,updated-state-term)) ;we wrap a set-field around the old updated-state-term
          (paramnum-update-alist (acons next-param-num value-dag paramnum-update-alist)) ;check that the values coming in are right
-         ((mv erp getfield-dag) (dagify-term2 getfield-term))
+         ((mv erp getfield-dag) (dagify-term getfield-term))
          ((when erp) (mv erp nil nil nil nil nil))
          (paramnum-extractor-alist (acons next-param-num getfield-dag paramnum-extractor-alist))
          (paramnum-name-alist (acons next-param-num getfield-term paramnum-name-alist)))
@@ -3314,7 +3314,7 @@
          (updated-state-term `(jvm::setstaticfield ,class-name ,field-id
                                                    (nth ',next-param-number :loop-function-result) ,updated-state-term))
          (paramnum-update-alist (acons next-param-number value-dag paramnum-update-alist))
-         ((mv erp get-static-field-dag) (dagify-term2 get-static-field-term))
+         ((mv erp get-static-field-dag) (dagify-term get-static-field-term))
          (paramnum-extractor-alist (acons next-param-number get-static-field-dag paramnum-extractor-alist))
          ((when erp) (mv erp nil nil nil nil nil))
          (paramnum-name-alist (acons next-param-number get-static-field-term paramnum-name-alist)))
@@ -3443,7 +3443,7 @@
       (mv (erp-nil) nil)
     (b* ((entry (car alist))
          (paramnum (car entry))
-         ((mv erp dag) (dagify-term2 `(nth ',paramnum params)))
+         ((mv erp dag) (dagify-term `(nth ',paramnum params)))
          ((when erp) (mv erp nil))
          ((mv erp rest-dags) (make-new-val-dags-read-only (cdr alist)))
          ((when erp) (mv erp nil)))
@@ -4295,7 +4295,7 @@
                   :mode :program ;todo
                   :stobjs (state)))
   (b* (((mv erp state-dag) ;; (dagify-term 's0) ;this was bad when no classes were to be initialized because the hyp about (jvm::initialized-classes s0) never fired..
-        (dagify-term2 `(JVM::MAKE-STATE (JVM::THREAD-TABLE s0) ;fixme do we need a dummy frame below the current one?
+        (dagify-term `(JVM::MAKE-STATE (JVM::THREAD-TABLE s0) ;fixme do we need a dummy frame below the current one?
                                         (JVM::HEAP s0)
                                         (JVM::CLASS-TABLE s0)
                                         (JVM::HEAPREF-TABLE s0)
@@ -4665,7 +4665,7 @@
   (declare (xargs :stobjs (state)
                   :mode :program))
   (b* ((before-term term)
-       ((mv erp before-dag) (dagify-term2 before-term))
+       ((mv erp before-dag) (dagify-term before-term))
        ((when erp) (mv erp nil state))
        ((mv erp after-dag) (compose-term-and-dag term state-var one-rep-dag))
        ((when erp) (mv erp nil state))
@@ -4852,7 +4852,7 @@
                    :stobjs (state)
                    :guard (<= 1 loop-depth)))
    (b* ( ;; Decompile the loop body completely, including any nested loops and subroutine calls, assuming the candidate invars:
-        ((mv erp state-var-dag) (dagify-term2 state-var))
+        ((mv erp state-var-dag) (dagify-term state-var))
         ((when erp) (mv erp nil nil nil nil nil nil nil nil nil state))
         ((mv erp body-dag ;what vars might be in this?  can assumptions introduce vars other than state-var?
              generated-events-acc new-generated-rules-acc new-next-loop-number new-interpreted-function-alist-alist new-interpreted-function-alist
@@ -6264,7 +6264,7 @@
        ((mv erp make-state-dag)
         ;;this state is like s0 but reflects the initialization:
         ;;fixme can't we make this more directly from initialized-state-dag?
-        (dagify-term2 `(jvm::make-state (jvm::thread-table s0)
+        (dagify-term `(jvm::make-state (jvm::thread-table s0)
                                         ,heap ;todo: improve
                                         (jvm::class-table s0)
                                         (jvm::heapref-table s0)
