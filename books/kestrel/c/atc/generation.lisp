@@ -1400,7 +1400,7 @@
                (arg pseudo-termp)
                (tag identp)
                (member identp)
-               (out-type typep))
+               (mem-type typep))
   :short "Check if a term may represent a structure read
           of a scalar member."
   :long
@@ -1412,7 +1412,7 @@
      The C structure type of the reader must be in the preceding tags;
      we consult the alist to retrieve the relevant information.")
    (xdoc::p
-    "We also return the output type of the structure read.")
+    "We also return the type of the member.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
@@ -1436,12 +1436,11 @@
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
-       (meminfo (member-type-lookup member members))
-       ((unless meminfo) (no))
-       (out-type meminfo)
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (car term.args)))
-    (mv t arg tag member out-type))
+    (mv t arg tag member mem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-scalar
@@ -2220,7 +2219,7 @@
             (acl2::value (list (make-expr-arrsub :arr arr-expr
                                                  :sub sub-expr)
                                out-type))))
-         ((mv okp arg tag member out-type)
+         ((mv okp arg tag member mem-type)
           (atc-check-struct-read-scalar term prec-tags))
          ((when okp)
           (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
@@ -2239,7 +2238,7 @@
                           (type-struct tag) member arg type)))
             (acl2::value (list (make-expr-memberp :target arg-expr
                                                   :name member)
-                               out-type))))
+                               mem-type))))
          ((mv okp index struct tag member index-type elem-type)
           (atc-check-struct-read-array term prec-tags))
          ((when okp)
