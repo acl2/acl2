@@ -19,7 +19,9 @@
 (include-book "kestrel/jvm/arrays0" :dir :system)
 (include-book "kestrel/jvm/class-tables" :dir :system)
 
+;; TODO: Move to jvm dir.
 ;; Recognizes an alist from class-names to class-infos.
+;; TODO: Rename class-alistp, and move to JVM package
 (defund class-table-alistp (class-table-alist)
   (declare (xargs :guard t))
   (if (atom class-table-alist)

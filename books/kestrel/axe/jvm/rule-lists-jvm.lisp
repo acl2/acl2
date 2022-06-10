@@ -866,9 +866,9 @@
             jvm::lookup-method-for-invokespecial-aux-base-3
             jvm::lookup-method-for-invokespecial-aux-base-4
             jvm::superclassp
-;jvm::classp
-            jvm::bound-to-a-classp
-            jvm::bound-to-an-interfacep
+            ;;jvm::classp
+            jvm::is-a-classp
+            jvm::is-an-interfacep
             jvm::make-one-dim-array-type
             ;; jvm::array-classp
 ;jvm::non-array-classp

@@ -116,15 +116,11 @@
                   :stobjs (state)))
   (b* ( ;; First apply the Axe Rewriter to the test:
        (- (cw "(Simplifying test.~%"))
-       ;; ((mv erp simplified-dag-or-quotep state)
-       ;;  (simp-term test ;; TODO: Does this use contexts?
-       ;;             :rule-alist rule-alist
-       ;;             :interpreted-function-alist interpreted-function-alist
-       ;;             :monitor monitored-rules
-       ;;             :assumptions assumptions ;no equality assumptions here to prevent loops (todo: think about this)
-       ;;             :check-inputs nil))
+       ;; TODO: Consider first doing something faster than a DAG-producing
+       ;; rewrite, such as evaluating ground terms, using assumptions, and
+       ;; applying rules that don't expand the term size too much.
        ((mv erp simplified-dag-or-quotep)
-        (simplify-term-basic test ;; TODO: Does this use contexts?
+        (simplify-term-basic test
                              assumptions ;no equality assumptions here to prevent loops (todo: think about this)
                              rule-alist
                              interpreted-function-alist
@@ -455,7 +451,7 @@
                                   (natp call-stp)))
                   :stobjs state))
   (b* ((- (cw "(Pruning branches in term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
-       (- (cw "(Term: ~x0)~%" term))
+       ;; (- (cw "(Term: ~x0)~%" term))
        ((mv erp new-term state)
         (prune-term-aux term
                         (fixup-assumptions assumptions)
@@ -553,7 +549,8 @@
   (if (not (dag-fns-include-any dag '(if myif boolif bvif)))
       ;; No IFs, so no point in pruning:
       (mv (erp-nil) dag state)
-    (b* ((term (dag-to-term dag)) ; can explode!
+    (b* (;; TODO: Consider first doing a simplification as a DAG, using only approximate contexts.
+         (term (dag-to-term dag)) ; can explode!
          ((mv erp term state)
           (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
          ((when erp) (mv erp nil state))

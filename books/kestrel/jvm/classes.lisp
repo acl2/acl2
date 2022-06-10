@@ -347,7 +347,7 @@
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-interfaces))))
 
 (defthm class-namep-of-class-decl-superclass
-  (implies (and (class-infop class-info class-name)
+  (implies (and (class-infop class-info class-name) ; free var
                 (not (equal class-name "java.lang.Object"))
                 ;; (not (class-decl-interfacep class-info))
                 )
