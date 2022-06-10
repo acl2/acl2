@@ -159,7 +159,7 @@
         (prove-implication-with-stp simplified-test-term
                                     assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
                                     nil         ;counterexamplep
-                                    *default-stp-max-conflicts*
+                                    (if (natp call-stp) call-stp *default-stp-max-conflicts*)
                                     nil                ;print
                                     "PRUNE-PROVE-TRUE" ;todo: do better?
                                     state))
