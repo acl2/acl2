@@ -1774,6 +1774,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 (local
@@ -1808,6 +1809,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 (local
@@ -1842,6 +1844,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 (local
@@ -1877,6 +1880,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -13690,6 +13694,7 @@
                         (cw "Done improving invars.)~%")
                         (mv nil improved-invars last-defthm-name state result-array-stobj)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv lst rand)
 (defun merge-rand (l1 l2 acc rand)
@@ -13697,7 +13702,7 @@
                   :guard (and
                               (true-listp acc))
                   :stobjs rand))
-  (cond ((atom l1) (mv (revappend acc l2) rand)) ;fixme null would be faster than atom
+  (cond ((atom l1) (mv (revappend acc l2) rand)) ; todo: would null be faster than atom?
         ((atom l2) (mv (revappend acc l1) rand))
         (t (mv-let (val rand)
                    (genrandom 2 rand)
@@ -13707,27 +13712,22 @@
 
 ;returns (mv lst rand)
 ;probably not truly random, but seems good enough..
-(skip-proofs
- (defun shuffle-list (l rand)
-   (declare (xargs :measure (len l)
-                   :guard (true-listp l)
-                   :verify-guards nil
-                   :stobjs rand))
-   (if (atom (cdr l))
-       (mv l rand)
-     (mv-let (first-half second-half)
-             (split-list-fast l)
-             (mv-let (first-half rand)
-                     (shuffle-list first-half rand)
-                     (mv-let (second-half rand)
-                             (shuffle-list second-half rand)
-                             (merge-rand first-half
-                                         second-half
-                                         nil
-                                         rand)))))))
-
-(skip-proofs (verify-guards shuffle-list))
-
+(defun shuffle-list (l rand)
+  (declare (xargs :guard (true-listp l)
+                  :stobjs rand
+                  :measure (len l)))
+  (if (atom (cdr l))
+      (mv l rand)
+    (mv-let (first-half second-half)
+      (split-list-fast l)
+      (mv-let (first-half rand)
+        (shuffle-list first-half rand)
+        (mv-let (second-half rand)
+          (shuffle-list second-half rand)
+          (merge-rand first-half
+                      second-half
+                      nil
+                      rand))))))
 
 ;takes an nth nest around a formal
 (defun get-formal-and-path (item path-acc)
