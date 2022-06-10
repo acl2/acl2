@@ -166,7 +166,7 @@
   ((value nat)
    (base iconst-base)
    (unsignedp bool)
-   (type iconst-length))
+   (length iconst-length))
   :tag :iconst
   :pred iconstp)
 

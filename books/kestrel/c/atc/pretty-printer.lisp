@@ -205,7 +205,7 @@
                            :oct (pprint-oct-const c.value)
                            :hex (pprint-hex-const c.value))
          (if c.unsignedp "U" "")
-         (pprint-iconst-length c.type)))
+         (pprint-iconst-length c.length)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

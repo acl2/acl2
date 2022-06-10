@@ -22,12 +22,11 @@
 ;; information and others not have it?).
 
 (include-book "unroll-java-code-common")
-(include-book "output-indicators")
 (include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
-;(include-book "../dag-size-fast")
+(include-book "../make-term-into-dag-basic")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in rewriter-basic
 (include-book "../dag-info")
@@ -332,7 +331,7 @@
        (rule-alists (remove-from-rule-alists remove-rules rule-alists))
 
        ;; Convert the term into a dag for passing to repeatedly-run:
-       ((mv erp dag-to-simulate) (dagify-term term-to-run-with-output-extractor))
+       ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-run-with-output-extractor nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        (step-limit 1000000)
        (step-increment (if chunkedp 100 1000000))

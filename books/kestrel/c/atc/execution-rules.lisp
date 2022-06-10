@@ -652,7 +652,7 @@
       (:e const-int->get)
       exec-iconst
       (:e iconst->base)
-      (:e iconst->type)
+      (:e iconst->length)
       (:e iconst->unsignedp)
       (:e iconst->value)
       (:e iconst-length-kind)

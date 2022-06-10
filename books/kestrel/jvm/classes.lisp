@@ -119,6 +119,11 @@
   :rule-classes ((:forward-chaining))
   :hints (("Goal" :in-theory (enable field-info-alistp))))
 
+(defthmd alistp-when-field-info-alistp
+  (implies (field-info-alistp item)
+           (alistp item))
+  :hints (("Goal" :in-theory (enable field-info-alistp))))
+
 (defthm field-info-alistp-of-cdr
   (implies (field-info-alistp item)
            (field-info-alistp (cdr item)))
@@ -298,6 +303,11 @@
   (implies (class-infop0 class-info)
            (field-info-alistp (class-decl-non-static-fields class-info)))
   :hints (("Goal" :in-theory (enable class-decl-non-static-fields class-infop class-infop0))))
+
+(defthm alistp-of-class-decl-non-static-fields-2
+  (implies (class-infop0 class-info)
+           (alistp (class-decl-non-static-fields class-info)))
+  :hints (("Goal" :in-theory (enable alistp-when-field-info-alistp))))
 
 (defthm field-info-alistp-of-class-decl-static-fields
   (implies (class-infop class-info class-name) ;yuck: class-name is a free variable
