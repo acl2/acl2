@@ -1155,7 +1155,9 @@
                                     HEAPREF-TABLE ;why
                                     intern-table
                                     heap
-                                    obtain-an-object BOUND-TO-A-NON-INTERFACEP) (true-listp))))))
+                                    obtain-an-object
+                                    IS-AN-INTERFACEP BOUND-TO-A-NON-INTERFACEP ; todo
+                                    ) (true-listp))))))
 
 ;fixme hack for jvm-statep-of-do-inst while we decide whether to open mv-nth
 ;; (defthm jvm-statep-of-obtain-an-object-nth-version
@@ -1277,7 +1279,9 @@
                               (method-descriptorp method-descriptor)
                               (class-tablep class-table)
                               (bound-in-class-tablep class-name class-table)
-                              (not (bound-to-an-interfacep class-name class-table)))))
+                              (not (is-an-interfacep class-name class-table)))
+                  :guard-hints (("Goal" :in-theory (enable IS-AN-INTERFACEP BOUND-TO-A-NON-INTERFACEP))) ;todo
+                  ))
   (resolve-method-step-2-aux (cons method-name method-descriptor)
                              ;; we search the given class and then its superclasses
                              (cons class-name (acl2::get-superclasses class-name class-table))
@@ -1304,18 +1308,19 @@
                               (method-descriptorp method-descriptor)
                               (class-namep c) ;todo: could this be an array class?
                               (class-tablep class-table))
-                  :guard-hints (("Goal" :in-theory (enable bound-in-class-tablep-when-not-resolve-non-array-class)))))
+                  :guard-hints (("Goal" :in-theory (enable bound-in-class-tablep-when-not-resolve-non-array-class
+                                                           IS-AN-INTERFACEP ;todo
+                                                           )))))
   (let ((erp (resolve-non-array-class c class-table)))
     (if erp
         (mv erp nil)
-      (let ((c-info (get-class-info c class-table)))
-        (if (class-decl-interfacep c-info)
-            (mv *IncompatibleClassChangeError* nil)
-          (mv-let (foundp class-name)
-            (resolve-method-step-2 c method-name method-descriptor class-table)
-            (if foundp
-                (mv nil class-name)
-              (mv (list :unsupported-case 'resolve-class-method) nil))))))))
+      (if (is-an-interfacep c class-table)
+          (mv *IncompatibleClassChangeError* nil)
+        (mv-let (foundp class-name)
+          (resolve-method-step-2 c method-name method-descriptor class-table)
+          (if foundp
+              (mv nil class-name)
+            (mv (list :unsupported-case 'resolve-class-method) nil)))))))
 
 ;; Returns (mv erp class-name-of-resolved-method) where ERP is either nil (no
 ;; error), a string (the name of an exception to throw), or a cons (an
@@ -1376,7 +1381,10 @@
                 )
            (bound-in-class-tablep (mv-nth 1 (resolve-method method-name method-descriptor c interfacep class-table)) class-table))
   :hints (("Goal" :in-theory (enable resolve-method resolve-interface-method resolve-class-method class-tablep
-                                     bound-in-class-tablep-when-not-resolve-non-array-class))))
+                                     bound-in-class-tablep-when-not-resolve-non-array-class
+                                     BOUND-TO-A-NON-INTERFACEP ;todo
+                                     is-an-interfacep-intro
+                                     ))))
 
 ;; If method resolution succeeds, we know the class passed in is bound.
 (defthm bound-in-class-tablep-when-mv-nth-0-of-resolve-method
@@ -2241,14 +2249,14 @@
          (default-access (not (or public-flag protected-flag private-flag))))
     (or public-flag
         (and protected-flag
-             (bound-to-a-classp c class-table)
+             (is-a-classp c class-table)
              (sub-class-or-same-classp d c class-table)
              (implies (not static-flag)
                       (or (sub-class-or-same-classp t-class d class-table)
                           (superclassp t-class d class-table))))
         (and (or protected-flag
                  default-access)
-             (and (bound-to-a-classp c class-table)
+             (and (is-a-classp c class-table)
                   (in-same-packagep c d)))
         (and private-flag
              ;;todo: perform the nestmate test
@@ -2295,7 +2303,7 @@
              (if match
                  match
                ;;resolve in the super class (if any)
-               (if (or (bound-to-an-interfacep c class-table) ;(class-decl-interfacep class-info) ;an interface doesn't have a superclass
+               (if (or (is-an-interfacep c class-table) ;(class-decl-interfacep class-info) ;an interface doesn't have a superclass
                        (equal "java.lang.Object" c)) ;TODO: Could check for a superclass of :none
                    nil                               ; field lookup fails
                  (let* ((superclass (get-superclass c class-table))) ;fixme optimize to reuse the class-info
@@ -2727,7 +2735,7 @@
         ;; (if (not (class-namep class-name-of-resolved-field)) ;can this happen? is this needed for guard proofs?
         ;;     (error-state (list 'Invalid-field-name 'execute-GETFIELD field-id class-name) s)
         (if (and (not (field-is-staticp field-id class-name-of-resolved-field class-table))
-                 (not (bound-to-an-interfacep class-name-of-resolved-field class-table)))
+                 (not (is-an-interfacep class-name-of-resolved-field class-table)))
             (obtain-and-throw-exception *IncompatibleClassChangeError* (list "Error: field should be static" field-id) th s)
           (let ((initialized-classes (initialized-classes s)))
             (if (memberp class-name-of-resolved-field initialized-classes)
@@ -3247,9 +3255,9 @@
   ;;                             (implies (class-or-interface-namep type-t)
   ;;                                      (bound-in-class-tablep type-t class-table)))))
   (if (class-or-interface-namep type-s)
-      (if (bound-to-a-classp type-s class-table)
+      (if (is-a-classp type-s class-table)
           ;; S is an ordinary (non-array) class:
-          (if (or (bound-to-a-classp type-t class-table)
+          (if (or (is-a-classp type-t class-table)
                   (array-typep type-t))
               ;; T is a class type:
               (or (equal type-s type-t)
@@ -3257,7 +3265,7 @@
             ;; T is an interface type:
             (class-implements-interfacep type-s type-t class-table))
         ;; S is an interface type:
-        (if (or (bound-to-a-classp type-t class-table)
+        (if (or (is-a-classp type-t class-table)
                 (array-typep type-t))
             ;; T is a class type:
             (equal type-t "java.lang.Object")
@@ -3267,7 +3275,7 @@
     ;; S is an array type:
     (let ((s-component-type (get-array-component-type type-s)))
       (if (class-or-interface-namep type-t)
-          (if (bound-to-a-classp type-t class-table)
+          (if (is-a-classp type-t class-table)
               ;; T is a (non-array) class type:
               (equal type-t "java.lang.Object")
             ;; T is an interface type:
@@ -3809,7 +3817,7 @@
                               (method-namep method-name)
                               (method-descriptorp descriptor)
                               (bound-in-class-tablep class-name class-table)
-                              (not (bound-to-an-interfacep class-name class-table)))))
+                              (not (is-an-interfacep class-name class-table)))))
   (let ((method-or-nil (lookup-method-in-classes (cons method-name descriptor)
                                                  ;;we search the given class and then its superclasses (fixme what about interfaces?)
                                                  (cons class-name (acl2::get-superclasses class-name class-table))
@@ -3835,7 +3843,9 @@
                   :guard (and (class-tablep class-table)
                               (class-namep class-name)
                               (bound-in-class-tablep class-name class-table)
-                              (not (bound-to-an-interfacep class-name class-table))))
+                              (not (is-an-interfacep class-name class-table)))
+;                  :guard-hints (("Goal" :in-theory (enable IS-AN-INTERFACEP))) ; todo
+                  )
            (type (integer 0 *) count))
   (if (zp count) ;to ensure termination
       ;;(error-looking-up-method-for-invokespecial class-name method-name method-descriptor class-table)
@@ -4488,7 +4498,8 @@
 (defund intern-string (string s)
      (declare (xargs :guard (and (stringp string)
                                  (jvm-statep s))
-                     :guard-hints (("Goal" :in-theory (e/d () (CLASS-DECL-ACCESS-FLAGS))))
+                     :guard-hints (("Goal" :in-theory (e/d (IS-AN-INTERFACEP ;todo
+                                                            ) (CLASS-DECL-ACCESS-FLAGS))))
                      ))
   (let* ((intern-table (intern-table s))
          ;(looked-up-string (g string intern-table)) ;will be a heap reference (a natural) or nil if the string isn't in the table
@@ -4524,7 +4535,7 @@
 (defthm heapp-of-mv-nth-1-of-intern-string
   (implies (and (jvm-statep s)
                 (bound-in-class-tablep '"java.lang.String" (class-table s))
-                (not (class-decl-interfacep (get-class-info '"java.lang.String" (CLASS-TABLE S))))
+                (not (is-an-interfacep "java.lang.String" (class-table s)))
                 (stringp string))
            (heapp (mv-nth 1 (intern-string string s))))
   :hints (("Goal" :in-theory (enable intern-string))))
@@ -4618,7 +4629,7 @@
     (if (stringp value) ;should always be able to decide this test, since the value comes from the class file
         (if (not (bound-in-class-tablep '"java.lang.String" (CLASS-TABLE S)))
             (error-state "Trying to intern a string in LDC or LDC_W, but the String class is not present in the class table." s)
-          (if (CLASS-DECL-interfacep (get-class-info "java.lang.String" (CLASS-TABLE S)))
+          (if (is-an-interfacep "java.lang.String" (CLASS-TABLE S))
               (error-state "Trying to intern a string, but String is an interface (should be a class)." s)
             (mv-let (ref new-heap new-intern-table)
               (intern-string value s)
@@ -4858,7 +4869,7 @@
           (error-state (list "Trying to call NEW, but the type given is an array class." type) s)
         (if (not (class-namep type))
             (error-state (list "Trying to build a new object, but the class given is not a valid class name." type) s)
-          (if (not (bound-to-a-classp type class-table))
+          (if (not (is-a-classp type class-table))
               (error-state (list "Trying to build a new object but the type is not a class." type) s)
             ;; (if (not (non-array-classp type class-table))
             ;;     (error-state (list "Trying to build a new object, but the class given is not a non-array class." type) s)
@@ -4969,7 +4980,7 @@
                 (obtain-and-throw-exception erp (list "ERROR IN PUTSTATIC: Failed to resolve field." :debug-info field-id class-name current-class-name) th s)
               (error-state erp s))
           (if (and (not (field-is-staticp field-id class-name-of-resolved-field class-table))
-                   (not (bound-to-an-interfacep class-name-of-resolved-field class-table)))
+                   (not (is-an-interfacep class-name-of-resolved-field class-table)))
               (obtain-and-throw-exception *IncompatibleClassChangeError* (list "Error: field should be static" field-id) th s)
             (let ((initialized-classes (initialized-classes s)))
               (if (memberp class-name-of-resolved-field initialized-classes)
