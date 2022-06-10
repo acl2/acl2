@@ -1496,10 +1496,10 @@
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
-       (memtype (member-type-lookup member members))
-       ((unless memtype) (no))
-       ((unless (type-case memtype :array)) (no))
-       (elem-type (type-array->of memtype))
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
+       ((unless (type-case mem-type :array)) (no))
+       (elem-type (type-array->of mem-type))
        (type (pack type))
        (index-type (fixtype-to-integer-type type))
        ((unless index-type) (no))
@@ -1600,11 +1600,11 @@
                                       (prec-tags atc-string-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (index pseudo-termp)
-               (mem pseudo-termp)
+               (elem pseudo-termp)
                (tag identp)
                (member identp)
                (index-type typep)
-               (mem-type typep))
+               (elem-type typep))
   :short "Check if a @(tsee let) binding may represent a structure write
           of an element of an array member."
   :long
@@ -1616,14 +1616,15 @@
      is represented by a @(tsee let) binding of the form")
    (xdoc::codeblock
     "(let ((<struct>
-            (struct-<tag>-write-<member>-<type> <index> <mem> <struct>))) ...)")
+            (struct-<tag>-write-<member>-<type> <index> <elem> <struct>)))
+       ...)")
    (xdoc::p
     "where @('<struct>') is a variable of pointer type to a structure type,
      which must occur identically as
      both the @(tsee let) variable
      and as the last argument of @('struct-<tag>-write-<member>'),
      @('<index>') is an expression that yields an integer used as array index,
-     @('<mem>') is an expression that yields the member element value to write,
+     @('<elem>') is an expression that yields the member element value to write,
      and @('...') represents the code that follows the assignment.
      This function takes as arguments
      the variable and value of a @(tsee let) binder,
@@ -1656,10 +1657,10 @@
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
-       (memtype (member-type-lookup member members))
-       ((unless memtype) (no))
-       ((unless (type-case memtype :array)) (no))
-       (mem-type (type-array->of memtype))
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
+       ((unless (type-case mem-type :array)) (no))
+       (elem-type (type-array->of mem-type))
        (type (pack type))
        (index-type (fixtype-to-integer-type type))
        ((unless index-type) (no))
@@ -1668,7 +1669,7 @@
        (mem (second val.args))
        (struct (third val.args)))
     (if (equal struct var)
-        (mv t index mem tag member index-type mem-type)
+        (mv t index mem tag member index-type elem-type)
       (no)))
   ///
 
@@ -1680,7 +1681,7 @@
 
   (defret pseudo-term-count-of-atc-check-struct-write-array-elem
     (implies yes/no
-             (< (pseudo-term-count mem)
+             (< (pseudo-term-count elem)
                 (pseudo-term-count val)))
     :rule-classes :linear))
 
