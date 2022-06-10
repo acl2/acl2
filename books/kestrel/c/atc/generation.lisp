@@ -1400,8 +1400,7 @@
                (arg pseudo-termp)
                (tag identp)
                (member identp)
-               (in-type typep)
-               (out-type typep))
+               (mem-type typep))
   :short "Check if a term may represent a structure read
           of a scalar member."
   :long
@@ -1413,12 +1412,12 @@
      The C structure type of the reader must be in the preceding tags;
      we consult the alist to retrieve the relevant information.")
    (xdoc::p
-    "We also return the input and output types of the structure read.")
+    "We also return the type of the member.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
   (b* (((acl2::fun (no))
-        (mv nil nil (irr-ident) (irr-ident) (irr-type) (irr-type)))
+        (mv nil nil (irr-ident) (irr-ident) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp struct tag read member) (atc-check-symbol-4part term.fn))
@@ -1437,13 +1436,11 @@
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
-       (meminfo (member-type-lookup member members))
-       ((unless meminfo) (no))
-       (out-type meminfo)
-       (in-type (type-struct tag))
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (car term.args)))
-    (mv t arg tag member in-type out-type))
+    (mv t arg tag member mem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-scalar
@@ -1499,10 +1496,10 @@
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
-       (memtype (member-type-lookup member members))
-       ((unless memtype) (no))
-       ((unless (type-case memtype :array)) (no))
-       (elem-type (type-array->of memtype))
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
+       ((unless (type-case mem-type :array)) (no))
+       (elem-type (type-array->of mem-type))
        (type (pack type))
        (index-type (fixtype-to-integer-type type))
        ((unless index-type) (no))
@@ -1603,11 +1600,11 @@
                                       (prec-tags atc-string-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (index pseudo-termp)
-               (mem pseudo-termp)
+               (elem pseudo-termp)
                (tag identp)
                (member identp)
                (index-type typep)
-               (mem-type typep))
+               (elem-type typep))
   :short "Check if a @(tsee let) binding may represent a structure write
           of an element of an array member."
   :long
@@ -1619,14 +1616,15 @@
      is represented by a @(tsee let) binding of the form")
    (xdoc::codeblock
     "(let ((<struct>
-            (struct-<tag>-write-<member>-<type> <index> <mem> <struct>))) ...)")
+            (struct-<tag>-write-<member>-<type> <index> <elem> <struct>)))
+       ...)")
    (xdoc::p
     "where @('<struct>') is a variable of pointer type to a structure type,
      which must occur identically as
      both the @(tsee let) variable
      and as the last argument of @('struct-<tag>-write-<member>'),
      @('<index>') is an expression that yields an integer used as array index,
-     @('<mem>') is an expression that yields the member element value to write,
+     @('<elem>') is an expression that yields the member element value to write,
      and @('...') represents the code that follows the assignment.
      This function takes as arguments
      the variable and value of a @(tsee let) binder,
@@ -1659,10 +1657,10 @@
        (member (symbol-name member))
        ((unless (ident-stringp member)) (no))
        (member (ident member))
-       (memtype (member-type-lookup member members))
-       ((unless memtype) (no))
-       ((unless (type-case memtype :array)) (no))
-       (mem-type (type-array->of memtype))
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
+       ((unless (type-case mem-type :array)) (no))
+       (elem-type (type-array->of mem-type))
        (type (pack type))
        (index-type (fixtype-to-integer-type type))
        ((unless index-type) (no))
@@ -1671,7 +1669,7 @@
        (mem (second val.args))
        (struct (third val.args)))
     (if (equal struct var)
-        (mv t index mem tag member index-type mem-type)
+        (mv t index mem tag member index-type elem-type)
       (no)))
   ///
 
@@ -1683,7 +1681,7 @@
 
   (defret pseudo-term-count-of-atc-check-struct-write-array-elem
     (implies yes/no
-             (< (pseudo-term-count mem)
+             (< (pseudo-term-count elem)
                 (pseudo-term-count val)))
     :rule-classes :linear))
 
@@ -2222,7 +2220,7 @@
             (acl2::value (list (make-expr-arrsub :arr arr-expr
                                                  :sub sub-expr)
                                out-type))))
-         ((mv okp arg tag member in-type out-type)
+         ((mv okp arg tag member mem-type)
           (atc-check-struct-read-scalar term prec-tags))
          ((when okp)
           (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
@@ -2231,17 +2229,17 @@
                                                              fn
                                                              ctx
                                                              state))
-               ((unless (equal in-type (type-struct tag)))
+               ((unless (equal type (type-pointer (type-struct tag))))
                 (er-soft+ ctx t (irr)
                           "The reading of a ~x0 structure with member ~x1 ~
                            is applied to a term ~x2 returning ~x3, ~
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          in-type member arg type)))
+                          (type-struct tag) member arg type)))
             (acl2::value (list (make-expr-memberp :target arg-expr
                                                   :name member)
-                               out-type))))
+                               mem-type))))
          ((mv okp index struct tag member index-type elem-type)
           (atc-check-struct-read-array term prec-tags))
          ((when okp)
