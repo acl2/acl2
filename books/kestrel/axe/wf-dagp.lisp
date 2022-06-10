@@ -42,7 +42,7 @@
          (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
               (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
               (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len)) ;(bounded-dag-constant-alistp dag-variable-alist dag-len)
-              (bounded-dag-constant-alistp dag-constant-alist dag-len)
+              (bounded-dag-constant-alistp dag-constant-alist dag-len) ; NOTE THIS -- can it be removed?
               (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len)) ;(bounded-dag-variable-alistp dag-variable-alist dag-len)
               (equal (alen1 dag-array-name dag-array)
                      (alen1 dag-parent-array-name dag-parent-array))))

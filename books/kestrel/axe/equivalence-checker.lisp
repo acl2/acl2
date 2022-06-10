@@ -17606,7 +17606,8 @@
        (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
             (pure-assumptionsp assumptions) ;fffixme don't recompute this each time
             (or miter-is-purep
-                (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
+                (if nil ;(g :treat-as-purep options)
+                    (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
                 (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
                 ;;                 ;;fixme what if we could cut and then get a pure miter?  maybe we should always cut out the non-pure stuff and try it! but then try the non-pure approach too...
                 ;; ;fixme pre-compute which nodes are pure (update that info when merging nodes?)
@@ -17782,7 +17783,8 @@
          (cw "  Trivial equality.~%")
          (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj)))
      ;; Not a trivial equality:
-     (if (and (not (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
+     (if (and (not (if nil ;(g :treat-as-purep options)
+                       (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
               (or (not miter-is-purep)
                   (not (pure-assumptionsp assumptions)) ;fixme precompute and thread through?
                   ))
@@ -17894,7 +17896,8 @@
                       (nodes-with-rec-fns (remove-duplicates ;-eql
                                            nodes-with-rec-fns))
                       (- (cw "Supporting rec. fn. nodes: ~x0.~%" nodes-with-rec-fns)))
-                   (if (and (not (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
+                   (if (and (not (if nil ;(g :treat-as-purep options)
+                                     (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
                             nodes-with-rec-fns)
                        ;;ffixme what if we have already handled all the nodes?  this can loop??
                        (mv-let (erp result analyzed-function-table rand state result-array-stobj) ;;where result is (list new-runes new-fns)
@@ -20983,7 +20986,7 @@
                          normalize-xors ;fixme use the more, deeper in?
                          miter-name     ;the name of this proof
                          prove-constants
-                         treat-as-purep
+                         ;; treat-as-purep
                          debug
                          state rand result-array-stobj)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
@@ -21040,8 +21043,10 @@
        (max-conflicts (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts))
        ;; could move a lot of stuff into these options:
        (options (s :prove-constants prove-constants
-                   (s :treat-as-purep treat-as-purep
-                      (s :debugp debug nil))))
+                   ;; (s :treat-as-purep treat-as-purep
+                   (s :debugp debug nil)
+                   ;;)
+                   ))
        ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
        ((mv erp dag-or-quotep state)
         (if simplifyp
@@ -21216,7 +21221,7 @@
                        normalize-xors ;fixme use the more, deeper in?
                        miter-name     ;the name of this proof
                        prove-constants
-                       treat-as-purep
+                       ;; treat-as-purep
                        debug
                        whole-form
                        state rand result-array-stobj)
@@ -21274,7 +21279,7 @@
                           normalize-xors ;fixme use the more, deeper in?
                           miter-name
                           prove-constants
-                          treat-as-purep
+                          ;; treat-as-purep
                           debug
                           state rand result-array-stobj)))
     ;; Depending on how it went, maybe introduce a theorem:
@@ -21327,7 +21332,7 @@
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
                                   (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (normalize-xors 't)
-                                  (treat-as-purep 'nil)
+                                  ;; (treat-as-purep 'nil)
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                                   )
@@ -21335,7 +21340,7 @@
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                    ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name
                    ,prove-constants
-                   ,treat-as-purep
+                   ;; ,treat-as-purep
                     ,debug
                    ',whole-form
                    state rand result-array-stobj))
@@ -22383,7 +22388,7 @@
                           normalize-xors
                           miter-name
                           t   ;prove-constants
-                          nil ; treat-as-purep
+                          ;; nil ; treat-as-purep
                           debug
                           state rand result-array-stobj))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")

@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -40,7 +40,6 @@
          ;; the application of a function symbol or lambda to args that are axe trees:
          ;; TODO: Can we require the lambda to be closed?
          (and (axe-tree-listp (fargs tree))
-              (true-listp (fargs tree))
               (or (symbolp fn)
                   (and (true-listp fn)
                        (equal (len fn) 3)
@@ -335,7 +334,6 @@
   (implies (consp (car tree))
            (equal (axe-treep tree)
                   (and (axe-tree-listp (fargs tree))
-                       (true-listp (fargs tree))
                        (true-listp (car tree))
                        (equal (len (car tree)) 3)
                        (eq (car (car tree)) 'lambda)
@@ -446,7 +444,6 @@
              (and (= 1 (len args))
                   (true-listp args))
            (and (bounded-axe-tree-listp args bound)
-                (true-listp args)
                 (or (symbolp fn)
                     (and (true-listp fn)
                          (equal (len fn) 3)
@@ -465,7 +462,7 @@
 
 (defthm bounded-axe-tree-listp-when-all-dargp
   (implies (and (all-dargp items)
-                (true-listp items))
+                )
            (equal (bounded-axe-tree-listp items bound)
                   (bounded-darg-listp items bound)))
   :hints (("Goal" :expand ((bounded-axe-treep (car items) bound)
