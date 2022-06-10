@@ -223,7 +223,7 @@
                               (jvm::class-namep class-name)
                               (jvm::bound-in-class-tablep class-name class-table)
                               (jvm::heapp heap)
-                              (not (jvm::bound-to-an-interfacep class-name class-table)))
+                              (not (jvm::is-an-interfacep class-name class-table)))
                   :guard-hints (("Goal" :in-theory (enable acl2::init-ref-in-heap acl2::all-addressp ;key-list
                                                            )))))
   ;; set the class:
@@ -373,7 +373,7 @@
                 (jvm::class-namep class-name) ;implied by the above?
                 (acl2::addressp ad)
                 (jvm::class-tablep class-table)
-                (not (jvm::bound-to-an-interfacep class-name class-table)))
+                (not (jvm::is-an-interfacep class-name class-table)))
            (jvm::heapp (acl2::init-ref-in-heap ad class-name class-table heap)))
   :hints (("Goal" :in-theory (enable acl2::init-ref-in-heap acl2::all-addressp ;key-list
                                      ))))
