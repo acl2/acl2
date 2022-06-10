@@ -52,6 +52,7 @@
     booleanp
     boolor
     booland
+    bool-fix$inline
     true-listp
     (denominator denominator-unguarded) ; primitive
     (numerator numerator-unguarded) ; primitive

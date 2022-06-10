@@ -676,14 +676,6 @@
            (jvm-statep (invoke-static-initializer-for-next-class class-name th s)))
   :hints (("Goal" :in-theory (enable invoke-static-initializer-for-next-class))))
 
-
-;; ;in case bound-in-class-tablep is opened up
-;; (defthm class-namep-when-in-of-rkeys
-;;   (implies (and (SET::IN class-name (ACL2::RKEYS CLASS-TABLE))
-;;                 (class-tablep class-table))
-;;            (class-namep class-name))
-;;   :hints (("Goal" :in-theory (enable class-tablep))))
-
 (defthm jvm-statep-of-execute-java.lang.object.getclass
   (implies (and (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
@@ -778,6 +770,9 @@
                             resolve-field ; so we can see what exceptions/errors it throws
                             execute-java.lang.float.floattorawintbits
                             execute-java.lang.float.intbitstofloat
+                            ;is-A-CLASSP ;todo
+                            ;bound-to-a-non-interfacep ;todo
+                            ;is-an-interfacep ;todo
                             )
                            (acons
                             mv-nth
