@@ -44,7 +44,7 @@
    (xargs
     :guard (and (c::sintp |i|)
                 (struct-|scalar_and_array|-p |a|)
-                (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i| |a|))))
+                (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
   (struct-|scalar_and_array|-read-|aggreg|-sint |i| |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -55,7 +55,7 @@
     :guard (and (c::sintp |i|)
                 (c::ucharp |v|)
                 (struct-|scalar_and_array|-p |a|)
-                (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i| |a|))))
+                (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
   (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-sint |i| |v| |a|)))
     |a|))
 
