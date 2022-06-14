@@ -494,7 +494,34 @@
                            (<= (boundrw-ev x a) (boundrw-ev new-x a)))
                   (implies (not direction)
                            (<= (boundrw-ev new-x a) (boundrw-ev x a)))))))
-  
+
+(define boundrw-apply ((fn symbolp)
+                       (args pseudo-term-listp))
+  :returns (call pseudo-termp :hyp (and (symbolp fn)
+                                        (not (eq fn 'quote))
+                                        (pseudo-term-listp args))
+                 :hints (("goal" :expand ((:free (x y) (pseudo-termp (cons x y)))))))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:expand ((pseudo-term-listp args)
+                                (pseudo-term-listp (cdr args))
+                                (pseudo-termp (car args))
+                                (pseudo-termp (cadr args))))))
+  (if (quote-listp args)
+      (case fn
+        (unary--  (kwote (- (fix (unquote (car args))))))
+        (unary-/  (kwote (let ((arg (fix (unquote (car args))))) (if (eql arg 0) 0 (/ arg)))))
+        (binary-+ (kwote (+ (fix (unquote (car args)))
+                            (fix (unquote (cadr args))))))
+        (binary-* (kwote (* (fix (unquote (car args)))
+                            (fix (unquote (cadr args))))))
+        (otherwise (cons fn args)))
+    (cons fn args))
+  ///
+  (defthm bound-rw-apply-correct
+    (equal (boundrw-ev (boundrw-apply fn args) a)
+           (boundrw-ev (cons fn args) a))))
+
+
 
 (define boundrw-rewrite ((x pseudo-termp)
                          (direction booleanp)
@@ -513,12 +540,12 @@
           ((quotep x) x)
           (t
            (case-match x
-             (('binary-+ a b) (list 'binary-+
-                                    (boundrw-rewrite a direction bound-alist negative-bound-alist)
-                                    (boundrw-rewrite b direction bound-alist negative-bound-alist)))
+             (('binary-+ a b) (boundrw-apply 'binary-+ (list
+                                                        (boundrw-rewrite a direction bound-alist negative-bound-alist)
+                                                        (boundrw-rewrite b direction bound-alist negative-bound-alist))))
 
-             (('unary-- a) (list 'unary--
-                                 (boundrw-rewrite a (not direction) negative-bound-alist bound-alist)))
+             (('unary-- a) (boundrw-apply 'unary-- (list
+                                                    (boundrw-rewrite a (not direction) negative-bound-alist bound-alist))))
              (('unary-/ a)
               (b* ((a-sign (ts-check-sign-strict a mfc state))
                    ((unless a-sign) x)
@@ -529,11 +556,11 @@
                     ;; and b is less or equal, just by correctness of this
                     ;; function.
                     (if (ts-check-rational b mfc state)
-                        `(unary-/ ,b)
+                        (boundrw-apply 'unary-/ (list b))
                       x))
                    (b-sign (ts-check-sign-strict b mfc state)))
                 (if (eq a-sign b-sign)
-                    `(unary-/ ,b)
+                    (boundrw-apply 'unary-/ (list b))
                   x)))
 
              (('binary-* a b)
@@ -566,7 +593,7 @@
                                   b))
                             b))
                    ((when (or b-type (not a-type)))
-                    `(binary-* ,new-a ,new-b))
+                    (boundrw-apply 'binary-* (list new-a new-b)))
                    (b-type (ts-check-sign new-b mfc state))
                    (new-a (if b-type
                               (b* (((mv a-dir a-bound-alist a-negative-bound-alist)
@@ -579,7 +606,7 @@
                                     res
                                   a))
                             a)))
-                `(binary-* ,new-a ,new-b)))
+                (boundrw-apply 'binary-* (list new-a new-b))))
 
              (& x)))))
   ///
@@ -827,6 +854,7 @@
 
        ((when (and (equal new-a a) (equal new-b b)))
         ;; failed to do any replacement, stick with current term
+        (cw "failed to do any replacement~%")
         x)
        (new-a (sublis-var nil new-a))
        (new-b (sublis-var nil new-b))
@@ -840,6 +868,10 @@
                           (if hyp-p
                               (< a b)
                             (<= b a))))))
+        (cw "Unhelpful result -- ~x0~%"
+            (if hyp-p
+                `(< ,(unquote new-a) ,(unquote new-b))
+              `(<= ,(unquote new-b) ,(unquote new-a))))
         ;; Reduced it to NIL -- skip instead.
         x))
         
