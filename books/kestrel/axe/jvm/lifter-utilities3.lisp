@@ -98,7 +98,7 @@
                                  (run-until-return-from-stack-height-rules-smart)
                                  (rule-list-1001))
                   :monitor monitored-rules
-                  :interpreted-function-alist (make-interpreted-function-alist '(get-SUPERCLASSES) (w state))
+                  :interpreted-function-alist (make-interpreted-function-alist '(jvm::get-superclasses) (w state))
                   :assumptions hyps
                   ;; :print t
                   ;; :print-interval 100000
@@ -231,7 +231,7 @@
                             state-var-dag
                             (append `((equal (jvm::initialized-classes ,state-var) 'nil))
                                     (standard-hyps-basic0 state-var)
-                                    (translate-terms (class-table-hyps2 state-var (global-class-alist state)) 'fake (w state))
+                                    (translate-terms (class-table-hyps2 state-var (jvm::global-class-alist state)) 'fake (w state))
                                     assumptions
                                     )
                             (append '(set-static-field-of-set-static-field-diff-class-axe

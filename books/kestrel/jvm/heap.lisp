@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "ACL2") ; todo switch to JVM package?
 
 ;how much of this stuff is common with android?
 
@@ -232,7 +232,7 @@
 	     (set-fields ad
                          ;; initialize all the (non-static) fields in the class and its superclasses:
                          (gen-init-bindings (cons class-name
-                                                  (get-superclasses class-name class-table) ;(jvm::class-decl-superclasses (jvm::get-class-info class-name class-table))
+                                                  (jvm::get-superclasses class-name class-table) ;(jvm::class-decl-superclasses (jvm::get-class-info class-name class-table))
                                                   )
                                             class-table)
                          heap)))

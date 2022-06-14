@@ -207,7 +207,7 @@
             (er hard? 'unroll-java-code-fn "Method descriptor is missing in ~x0." method-designator-string)
             nil nil nil nil
             state))
-       (class-alist (global-class-alist state))
+       (class-alist (jvm::global-class-alist state))
        (all-class-names (strip-cars class-alist))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
@@ -437,7 +437,7 @@
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
