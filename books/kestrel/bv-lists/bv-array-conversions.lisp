@@ -20,6 +20,8 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
+;; See also bv-array-conversions2.lisp.
+
 (defund list-to-bv-array-aux (element-size elements-left total-length lst)
   (declare (xargs :guard (and (natp element-size)
                               (natp elements-left)
