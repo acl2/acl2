@@ -142,3 +142,16 @@
                                           )
                            (;len-of-cdr-better
                             )))))
+
+(defthm take-of-bytes-to-bits
+  (implies (and (natp m)
+                (<= (floor m 8) (len lst))
+                (equal 0 (mod m 8))
+;                (consp lst)
+                )
+           (equal (take m (bytes-to-bits lst))
+                  (bytes-to-bits (take (floor m 8) lst))))
+  :hints (("Goal" :use (:instance take-of-times-8-and-bytes-to-bits (n (floor m 8)))
+           :in-theory (e/d (natp bytes-to-bits)
+                           (take-of-times-8-and-bytes-to-bits
+                            mod-of-expt-of-2-constant-version)))))

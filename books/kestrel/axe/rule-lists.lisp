@@ -139,6 +139,7 @@
             ifix-does-nothing
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
 
+            ;; TODO: eventually phase out myif in favor of if
             myif-becomes-boolif-axe
             myif-of-not
             myif-of-nil
@@ -160,6 +161,7 @@
             acl2-numberp-of-fix
             = ;Sun Dec  5 14:57:44 2010
             double-rewrite
+            eql ; can arise from CASE
             )
           (mv-nth-rules)
           (booleanp-rules)))
@@ -201,7 +203,9 @@
     integerp-of-bvshl natp-of-bvshl
     integerp-of-bvshr natp-of-bvshr
     integerp-of-bvashr natp-of-bvashr
-    ;other shift? ;other math ones?
+    integerp-of-repeatbit natp-of-repeatbit
+
+    ;;other shift? ;other math ones?
     integerp-of-logext ;move to logext rules?
 
     integerp-of--
@@ -296,7 +300,7 @@
     bitxor-of-constant-chop-arg1
     bitxor-of-constant-chop-arg2))
 
-;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp
+;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
@@ -327,6 +331,7 @@
      ;; Handling rotates (32 bit):
      rightrotate32-becomes-leftrotate32-gen ;turn rightrotate32 into leftrotate32
      getbit-of-leftrotate32-simple
+     ;; getbit-of-leftrotate32-high
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
      leftrotate32-of-bvchop-arg2
@@ -343,7 +348,6 @@
      ;;leftrotate-becomes-leftrotate64
      equal-of-leftrotate32-and-leftrotate32
      equal-of-constant-and-leftrotate32
-     getbit-of-leftrotate32-high
      slice-of-leftrotate32-high
 
      not-sbvlt-when-sbvlt-rev-cheap-2
@@ -372,22 +376,22 @@
      bvplus-of-0-arg2
 
      bvand-of-0-arg2
-     bvand-of-0-arg3 ; could drop if commute constants forward
+     bvand-of-0-arg3 ; could drop if commuting constants forward
      bvor-of-0-arg2
-     bvor-of-0-arg3 ; could drop if commute constants forward
+     bvor-of-0-arg3 ; could drop if commuting constants forward
      bvxor-of-0-arg2
-     bvxor-of-0-arg3 ; could drop if commute constants forward
+     bvxor-of-0-arg3 ; could drop if commuting constants forward
 
      bitand-of-0-arg1
-     bitand-of-0-arg2 ; could drop if commute constants forward
+     bitand-of-0-arg2 ; could drop if commuting constants forward
      bitand-of-1-arg1
-     bitand-of-1-arg2 ; could drop if commute constants forward
+     bitand-of-1-arg2 ; could drop if commuting constants forward
      bitor-of-0-arg1
-     bitor-of-0-arg2 ; could drop if commute constants forward
+     bitor-of-0-arg2 ; could drop if commuting constants forward
      bitor-of-1-arg2
-     bitor-of-1-arg1 ; could drop if commute constants forward
+     bitor-of-1-arg1 ; could drop if commuting constants forward
      bitxor-of-0-arg1
-     bitxor-of-0-arg2 ;drop if we always commute
+     bitxor-of-0-arg2 ; could drop if commuting constants forward
      ;; bitxor-of-1-becomes-bitnot-arg2 ; best to keep the bitxor since we have special handling for bitxor nests
      ;; bitxor-of-1-becomes-bitnot-arg1 ; best to keep the bitxor since we have special handling for bitxor nests
 
@@ -434,6 +438,11 @@
      sbvdiv-of-sbvdiv-arg2-combine-constants
      bvcat-combine-constants
 
+     bvshr-of-0-arg1
+     bvshr-of-0-arg2
+     bvshr-of-0-arg3
+
+     bvashr-of-0-arg2 ; todo: rules for arg1 and arg3?
 
      bvshl-of-0-arg2
      bvshl-of-0-arg3
@@ -454,7 +463,7 @@
      bvcat-of-ifix-arg4
 
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
-     getbit-too-high-cheap-free
+
      bvplus-of-bvplus-of-bvuminus
      natp-when-unsigned-byte-p ;uses the dag assumptions, has a free var so should be cheap? (put last of the natp rules?) moved from yet-more-rules
 
@@ -514,8 +523,8 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvsx2          ;new
-     bvchop-of-bvshr            ;new
-     bvchop-of-bvashr
+     bvchop-of-bvshr            ;new, introduces slice ; todo: remove?? with bvshr we can split into cases easily.
+     bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
      ;; TODO: add all other rules like this!:
@@ -533,21 +542,29 @@
      bitor-of-bvchop-arg2
      bitxor-of-bvchop-arg1
      bitxor-of-bvchop-arg2
-     bvplus-of-bvchop-arg1 ;gen?
      bvplus-of-bvchop-arg2 ;gen?
+     bvplus-of-bvchop-arg3 ;gen?
      bvminus-of-bvchop-arg2
      bvminus-of-bvchop-arg3
      bvnot-of-bvchop
      bvuminus-of-bvchop-arg2
      bvcat-of-bvchop-high
      bvcat-of-bvchop-low
+     bvshl-of-bvchop ;gen?
+     bvshr-of-bvchop ;gen?
+     bvashr-of-bvchop ;gen?
      ;; TODO: More like this:
      bvcat-of-getbit-arg2
      bvcat-of-getbit-arg4
-     bitxor-of-getbit-arg1
-     bitxor-of-getbit-arg2
+     bitnot-of-getbit-0
+     bitand-of-getbit-arg1
+     bitand-of-getbit-arg2
      bitor-of-getbit-arg1
      bitor-of-getbit-arg2
+     bitxor-of-getbit-arg1
+     bitxor-of-getbit-arg2
+     bvif-of-getbit-arg3
+     bvif-of-getbit-arg4
 
      bvlt-self
      bvlt-of-bvmod-false
@@ -607,7 +624,7 @@
 ;this may be bad... trying without..
 ;                bvchop-of-bvxor-gen ;perhaps we could be a bit more efficient when n=size?
 ;    bvchop-of-bvxor-does-nothing ;this one seems safe..
-     bvchop-of-bvxor
+     bvchop-of-bvxor ; drop?
 
      ;; these replace the numeric bound rules
      <-lemma-for-known-operators-alt
@@ -641,7 +658,7 @@
      ;; rules about bvsx:
      equal-of-0-and-bvsx ;Wed Oct 14 13:28:17 2015
      equal-of-bvsx-and-bvsx
-     bvsx-too-high-dag
+     bvsx-too-high-axe
      bvsx-when-sizes-match
      getbit-of-bvsx
      ;; bvsx base cases?
@@ -661,7 +678,7 @@
      equal-of-bvif-safe
 
      bvcat-associative ;trying...
-     
+
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
      bvcat-of-bvchop-high-tighten ;gen the bvchop to any bv term
@@ -672,11 +689,14 @@
 ;bvmult-of-bvcat-trim-arg2 handled by trim rules
 ;bvmult-of-bvcat-trim-arg1 handled by trim rules
      bvand-1-becomes-bitand
+     bvxor-1-becomes-bitxor
+     bvor-1-becomes-bitor
+
      bvand-with-mask-better-eric
      ;; trying without
 ;            bvor-appending-idiom-low
 ;           bvor-appending-idiom-low-alt
-     bvxor-1-becomes-bitxor
+
 ;dropping since we go to bitxor
 ;            bvxor-1-of-getbit-arg1 ;bozo analogues for other ops?
 ;           bvxor-1-of-getbit-arg2 ;bozo analogues for other ops?
@@ -692,12 +712,15 @@
 ;           bitxor-of-bvor-arg2 ;done by trim rules
 ;            bitxor-of-bvchop-arg1 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
 ;           bitxor-of-bvchop-arg2 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
+
      getbit-test-is-self ;make a myif version?
-     getbit-too-high-is-0-bind-free
-     ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free
+
+     getbit-too-high-is-0-bind-free-axe
+     getbit-too-high-cheap-free
+     ;; high-getbit-of-getbit-is-0 ; handled by getbit-too-high-is-0-bind-free-axe
      getbit-of-if
 ;            getbit-of-bvif ;could be expensive? newww
-;            GETBIT-OF-SLICE-TOO-HIGH ;handled by getbit-too-high-is-0-bind-free
+;            GETBIT-OF-SLICE-TOO-HIGH ;handled by getbit-too-high-is-0-bind-free-axe
 ;fixme do we want these?
 ; trying without these... todo: do we want these or not?:
      ;; getbit-of-bvor-eric
@@ -707,15 +730,16 @@
      ;; getbit-0-of-bvxor-eric
      ;; getbit-of-bvxor-eric-2
      getbit-identity-axe
+     ;; getbit-0-of-getbit ; not needed if we have getbit-identity-axe
      getbit-of-bitxor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitand-all-cases ;covered by the too-high and identity rules if n is a constant
-;            getbit-0-of-getbit
-     getbit-of-bvchop-too-high ;done by getbit-identity-axe uh, no!
+     ;; getbit-of-bvchop-too-high ; covered by getbit-too-high-is-0-bind-free-axe
      getbit-of-bvchop
+
      slice-out-of-order ;trying the real version
-     slice-too-high-is-0-bind-free
-;            slice-of-getbit-too-high see slice-too-high-is-0-bind-free
+     slice-too-high-is-0-bind-free-axe
+     ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
      slice-becomes-bvchop
      slice-of-slice-gen-better
@@ -755,12 +779,10 @@
 
 ;    bvxor-all-ones ;do we want this? ;trying without...
 
-    bvif-of-getbit-arg1
-    bvif-of-getbit-arg2
     bvminus-becomes-bvplus-of-bvuminus ;trying...
 
     bvminus-bound-2
-    slice-of-logtail
+    ;; slice-of-logtail
 
     bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
 
@@ -772,9 +794,9 @@
     bvand-with-small-arg1
     bvand-with-small-arg2
 
-    myif-becomes-bvif ;bozo kill special case rules for this
-    myif-becomes-bvif-2
-    myif-becomes-bvif-3
+    myif-becomes-bvif-1-axe ; kill special case rules for this?
+    myif-becomes-bvif-2-axe
+    myif-becomes-bvif-3-axe
 
 ;    bvminus-of-bvplus-tighten ;now done by trim rules
 
@@ -791,9 +813,6 @@
     getbit-0-of-bvmult
     getbit-0-of-bvminus   ;better rhs?
     getbit-0-of-bvplus ;think about whether to push the getbits..
-
-    bvcat-of-getbit-arg2
-    bvcat-of-getbit-arg4
 
     myif-x-x-t-not-nil
 
@@ -844,9 +863,7 @@
 
     ;; bitor (what else?  trim args?):
 
-    bvor-1-becomes-bitor
-
-    getbit-of-bvif-too-high
+    ;; getbit-of-bvif-too-high ; trying without
 ;    unsigned-byte-p-of-bvif-gen
     signed-byte-p-of-bvif
 ;    inst-length-of-myif
@@ -861,22 +878,17 @@
     ;;     BVAND-TRIM-CONSTANT-3
     ;;     BVAND-TRIM-CONSTANT-2
 
-    bitand-of-getbit-arg1
-    bitand-of-getbit-arg2
-
     len-of-getbit-list
     all-unsigned-byte-p-of-getbit-list
 
-    logtail-of-bvchop-becomes-slice ;drop?
+    ;; logtail-of-bvchop-becomes-slice ;drop?
 
-    equal-bvcat-0-left
-    equal-bvcat-0-right
+    equal-bvcat-0-left ; gen and move
+    equal-bvcat-0-right ; gen and move
 
     slice-of-myif-consant-branches
     bvcat-bound-hack-2
 ;                          bvor-1-bound-2
-    natp-of-repeatbit
-    integerp-of-repeatbit
 
     bvcat-0-<-hack
     repeatbit-equal-0-rewrite-1
@@ -934,6 +946,7 @@
     consp-of-take
     take-of-cons
     true-listp-of-take
+    take-of-take
     take-does-nothing ; introduces true-list-fix
     ;; rules about cdr:
     true-listp-of-cdr
@@ -991,7 +1004,8 @@
     nth-of-append ;may be bad if we can't resolve the if test?
     len-of-firstn ;sun feb  6 11:16:17 2011
     equal-cons-nil-1
-    equal-cons-nil-2))
+    equal-cons-nil-2
+    consp-of-myif-strong))
 
 ;; TODO: Move some of these into list-rules.
 (defun list-rules2 ()
@@ -1101,7 +1115,7 @@
   (declare (xargs :guard t))
   '(all-unsigned-byte-p-of-update-nth
     bvchop-8-bvnth-8 ;gen
-    bvchop-of-logtail-becomes-slice
+    ;; bvchop-of-logtail-becomes-slice
     getbit-of-bvnth-when-getbit-is-always-0
     getbit-of-bvnth-when-getbit-is-always-1
     bvnth-of-bvchop
@@ -1146,15 +1160,14 @@
     unsigned-byte-p-of-sbvdiv
     unsigned-byte-p-of-bvsx
     unsigned-byte-p-of-repeatbit
-    unsigned-byte-p-of-leftrotate ;gen
+    unsigned-byte-p-of-leftrotate
     unsigned-byte-p-of-leftrotate32
-    unsigned-byte-p-of-rightrotate ;gen
-    unsigned-byte-p-of-rightrotate32 ;gen
+    unsigned-byte-p-of-rightrotate
+    unsigned-byte-p-of-rightrotate32
     unsigned-byte-p-of-bv-array-read-gen ;todo name
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above
-;todo: what about shift operators?
 (defun unsigned-byte-p-forced-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-forced-of-bvchop
@@ -1179,11 +1192,14 @@
     unsigned-byte-p-forced-of-sbvrem
     unsigned-byte-p-forced-of-sbvdiv
     unsigned-byte-p-forced-of-bvsx
+    unsigned-byte-p-forced-of-leftrotate
+    unsigned-byte-p-forced-of-rightrotate
     unsigned-byte-p-forced-of-leftrotate32
     unsigned-byte-p-forced-of-rightrotate32
-    ;todo: repeatbit
-    ;;todo leftrotate
-    ;;todo rightrotate?
+    unsigned-byte-p-forced-of-repeatbit
+    ;;todo bvshl
+    ;;todo bvshr
+    ;;todo bvashr
     unsigned-byte-p-forced-of-bv-array-read
     ))
 
@@ -1338,7 +1354,7 @@
      bv-array-read-non-negative
      bv-array-read-when-data-isnt-an-all-unsigned-byte-p
      bv-array-write-when-data-isnt-an-all-unsigned-byte-p
-     getbit-of-bv-array-read-too-high
+     getbit-of-bv-array-read-too-high ; drop?
      ;;getbit-of-bv-array-read-gen ; just blast the array read?
      equal-of-bvchop-of-nth-and-bv-array-read
      equal-of-bvchop-of-nth-and-bv-array-read-alt
@@ -1436,7 +1452,6 @@
 ;    bvor-logtail-arg2
 ;    bvxor-logtail-arg1
 ;    bvxor-logtail-arg2
-;    getbit-of-logtail
     ;; logtail-of-bvcat-when-extends-into-upper
     ;; logtail-of-bvcat-low
     ;; logtail-of-bvxor
@@ -1473,12 +1488,7 @@
 ;ffixme we shouldn't use these without the trim-helpers  - add them to this?
 (defun trim-rules ()
   (declare (xargs :guard t))
-  '(trim-of-repeatbit ;improve? -all and -non-all versions? ;move to trim-helper-rules?
-    bitnot-trim-dag-all
-    bvand-trim-arg1-dag-all
-    bvand-trim-arg2-dag-all
-;   bvand-trim-arg1-dag
-;    bvand-trim-arg2-dag
+  '(;; -all and -non-all versions?
     slice-trim-dag-all ;new
     getbit-trim-dag-all  ;new
     bvmult-trim-arg1-dag-all  ;seemed to need this for rc6 decrypt
@@ -1491,59 +1501,70 @@
     bvplus-trim-arg2-dag-all
     bvuminus-trim-dag-all
     bvnot-trim-dag-all
-    bvxor-trim-arg1-dag
-    bvxor-trim-arg2-dag
+    bvand-trim-arg1-dag-all
+    bvand-trim-arg2-dag-all
+    ;; bvand-trim-arg1-dag
+    ;; bvand-trim-arg2-dag
     bvor-trim-arg1-dag
     bvor-trim-arg2-dag
-    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
-    bvcat-trim-arg1-dag-all
-    ;; bvcat-trim-arg1-dag
-    ;; bvcat-trim-arg2-dag
-    bvif-trim-arg1-dag
-    bvif-trim-arg2-dag
+    ;; bvor-trim-arg1-dag-all ; use instead?
+    ;; bvor-trim-arg2-dag-all ; use instead?
+    bvxor-trim-arg1-dag
+    bvxor-trim-arg2-dag
+    ;; bvxor-trim-arg1-dag-all ; use instead?
+    ;; bvxor-trim-arg2-dag-all ; use instead?
+    bitnot-trim-dag-all
     bitxor-trim-arg1-dag-all
     bitxor-trim-arg2-dag-all
     bitor-trim-arg1-dag-all
     bitor-trim-arg2-dag-all
     bitand-trim-arg1-dag-all
     bitand-trim-arg2-dag-all
+    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
+    bvcat-trim-arg1-dag-all
+    ;; bvcat-trim-arg1-dag
+    ;; bvcat-trim-arg2-dag
+    bvif-trim-arg1-dag
+    bvif-trim-arg2-dag
+    ;; bvif-trim-arg1-dag-all ; use instead?
+    ;; bvif-trim-arg2-dag-all ; use instead?
     ))
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
   '(bvchop-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
-    bvchop-of-bvmult
     bvchop-of-bvminus
     bvchop-of-bvuminus
-
-    bvchop-of-bvif ;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
+    bvchop-of-bvmult
+    bvchop-of-bvif
+    bvchop-of-bvnot
     bvchop-of-bvand
     bvchop-of-bvor
     bvchop-of-bvxor                 ;dup in core rules
 ;;    bvchop-of-bv-array-read ;;we are no longer trimming array reads
-    bvchop-of-bvnot
     bvchop-of-bvsx
     bvchop-of-slice-both
     bvchop-of-bvchop
     bvchop-of-bvcat-cases
 
     ;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
+    trim-of-repeatbit ;improve?
     trim-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
     trim-of-bvmult
     trim-of-bvminus
     trim-of-bvuminus
     trim-of-bvif
+    trim-of-bvnot
     trim-of-bvand
     trim-of-bvor
     trim-of-bvxor
     trim-of-bv-array-read
-    trim-of-bvnot
     trim-of-bvsx
     trim-of-slice
     trim-of-bvchop
     trim-of-bvcat
-    trim-does-nothing-dag
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
+    trim-does-nothing-dag ; should not be needed?
     ))
 
 (defun all-trim-rules ()
@@ -1573,7 +1594,6 @@
   '(true-listp-of-myif
 
     bytes-to-bits-of-bv-array-write ;move
-    take-of-take ;move to list-rules
     integerp-of-myif
 
     bvchop-of-myif-consant-branches
@@ -1602,7 +1622,7 @@
     array-reduction-when-all-same-improved2))
 
 ; despite the name, this also includes bv-array-rules and list rules!
-;todo: get rid of logext rules, etc. from this
+;; TODO: Remove non-bv stuff from this:
 (defun amazing-rules-bv ()
   (declare (xargs :guard t))
   (append ;; todo: a lot of cruft in here:
@@ -1611,28 +1631,26 @@
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
 
-
             leftrotate32-trim-amt-all ;move to trim rules?
 
-            ;;bvplus rules:
+            ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
             bvplus-commutative-axe
             bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
             bvplus-associative
 
-            bvuminus-1
+            bvuminus-1 ; introduces getbit
             bvuminus-of-bvplus
 
             bvand-commutative-axe
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
-            logtail-becomes-slice-dag       ;drop?
+            ;; logtail-becomes-slice-dag       ;drop?
 
             bvmult-of-2-gen
 ;trying these:
             bitand-commutative-axe
 
-            bitnot-of-getbit-0 ;bozo more like this
             bvnot-1-becomes-bitnot-better
             getbit-of-bvnot          ;bozo add a getbit trim -all rule instead
             getbit-of-bvplus         ;use trim?
@@ -1659,17 +1677,16 @@
             bvif-same-tests
 
             bvcat-tighten-upper-size-dag
-            ;;                                    bvif-with-small-arg1
-            ;;                                    bvif-with-small-arg2
+            ;; bvif-with-small-arg1
+            ;; bvif-with-small-arg2
             bvor-with-small-arg1
             bvor-with-small-arg2
 
             ;; ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED ;trying without
             array-reduction-when-all-same-improved2 ;move
 
-            getbit-of-bvxor
+            getbit-of-bvxor ; perhaps move to bv-rules-core
 
-            consp-of-myif-strong
             myif-equal-nil-rewrite
             myif-becomes-boolif-t-arg1
             myif-becomes-boolif-t-arg2
@@ -1696,7 +1713,7 @@
           (core-rules-non-bv) ;fixme remove these?
           (bvif-rules)
           (unsigned-byte-p-rules)
-;probably more stuff need to be added to this??  list stuff from more-rules / more-rules-yuck / jvm-rules-jvm?
+          ;; probably more stuff needs to be added to this??  list stuff from more-rules / more-rules-yuck / jvm-rules-jvm?
           ;; (logext-rules)
           (trim-rules)
           (trim-helper-rules)      ;many dups here with the above...
@@ -1740,7 +1757,8 @@
 
 ;;normalize boolif nests that are really ands?
 
-;FIXME add lots more rules to this
+
+;; TODO: add many more rules to this?
 (defun arithmetic-rules ()
   (declare (xargs :guard t))
   '(fold-consts-in-+
@@ -2352,7 +2370,8 @@
 ;    nth-of-myif ;Tue Mar 16 00:57:56 2010 (could restrict to myifs of conses) ;bad? ;Sun May  9 21:51:07 2010
     ))
 
-;ffixme add more to this list!
+;; Only used in the equivalence checker
+;; todo: add more to this list!
 ;turn equal around... equal t and predicate...
 ;fixme consider adding *DEFINITION-MINIMAL-THEORY* to this, since acl2 will use those even when they are turned off?
 ;or avoid calling acl2 and all and just call prove-theorem?
@@ -2459,6 +2478,7 @@
      ;;EQUAL-OF-T-WHEN-BOOLEANP ;newer
      )))
 
+;; Only used in the equivalence checker
 ;we do seem to sometimes need these when verifying that the simplified exit tests are the same as the original exit tests
 (defun exit-test-simplification-proof-rules ()
   (declare (xargs :guard t))
@@ -2469,12 +2489,12 @@
           (boolean-rules)
           (exit-test-simplification-rules)))
 
-;fffixme add to this (and/or of constants, etc.)
-(defun rules-that-throw-stuff-away ()
-  (declare (xargs :guard t))
-  '(equal-same
-    nth-of-cons-constant-version
-    mv-nth-of-cons-alt))
+;; ;todo: add to this (and/or of constants, etc.)
+;; (defun rules-that-throw-stuff-away ()
+;;   (declare (xargs :guard t))
+;;   '(equal-same
+;;     nth-of-cons-constant-version
+;;     mv-nth-of-cons-alt))
 
 (defun reassemble-bv-rules ()
   (declare (xargs :guard t))
@@ -2492,11 +2512,10 @@
     bvcat-of-slice-and-x-adjacent-2
     bvcat-of-getbit-and-x-adjacent-2))
 
-;reprecate?
+;deprecate?
 (defun anti-blast-rules ()
   (declare (xargs :guard t))
   (reassemble-bv-rules))
-
 
 (defun strengthening-rules ()
   (declare (xargs :guard t))
@@ -2694,8 +2713,6 @@
 
 ;; (defconst *super-rules*
 ;;   '(
-;; ;;;    BITXOR-OF-GETBIT-ARG1
-;; ;;;    BITXOR-OF-GETBIT-ARG2
 ;; ;   slice-of-bvplus-low
 ;; ;;;    bvplus-trim-arg1-dag
 ;;  ;;;   bvplus-trim-arg2-dag

@@ -1,7 +1,7 @@
 ; BV Library: rightrotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "slice-def")
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "bvcat"))
+(local (include-book "unsigned-byte-p"))
 
 ;; Rotate VAL to the right by AMT positions within a field of width WIDTH.  We
 ;; reduce the rotation amount modulo the width.
@@ -29,10 +30,17 @@
              (- width amt)
              (slice (+ -1 width) amt val)))))
 
-(defthm unsigned-byte-p-of-rightrotate
+(defthm unsigned-byte-p-of-rightrotate-same
   (implies (natp size)
            (unsigned-byte-p size (rightrotate size x y)))
   :hints (("Goal" :in-theory (enable rightrotate natp))))
+
+(defthm unsigned-byte-p-of-rightrotate
+  (implies (and (<= size2 size1)
+                (integerp size1)
+                (natp size2))
+           (unsigned-byte-p size1 (rightrotate size2 x y)))
+  :hints (("Goal" :in-theory (enable rightrotate))))
 
 (defthm rightrotate-of-0-arg2
   (equal (rightrotate width 0 val)

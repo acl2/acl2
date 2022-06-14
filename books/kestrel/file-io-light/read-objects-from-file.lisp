@@ -22,39 +22,38 @@
                            state-p)))
 
 ;; Returns (mv objects state).
-(defund read-objects-from-channel-aux (channel count acc state)
+(defund read-objects-from-channel-aux (channel acc state)
   (declare (xargs :guard (and (symbolp channel)
                               (open-input-channel-p channel :object state)
-                              (unsigned-byte-p 60 count)
                               (true-listp acc))
-                  :split-types t
                   :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable open-input-channel-p))))
-           (type (unsigned-byte 60) count))
-  (if (or (= 0 count)
-          (not (mbt (natp count))))
-      (mv (reverse acc) state)
+                  :measure (len (cddr (assoc-equal channel (open-input-channels state))) ;;(channel-contents channel state)
+                                )
+                  :guard-hints (("Goal" :in-theory (enable open-input-channel-p)))))
+  (if (not (mbt (and (open-input-channel-p channel :object state) ; for termination
+                     (state-p state))))
+      (mv nil state)
     (mv-let (eof maybe-object state)
       (read-object channel state)
       (if eof
           (mv (reverse acc) state)
-        (read-objects-from-channel-aux channel (+ -1 count) (cons maybe-object acc) state)))))
+        (read-objects-from-channel-aux channel (cons maybe-object acc) state)))))
 
 (defthm state-p-of-mv-nth-1-of-read-objects-from-channel-aux
   (implies (state-p state)
-           (state-p (mv-nth 1 (read-objects-from-channel-aux channel count acc state))))
+           (state-p (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
 
 (defthm state-p1-of-mv-nth-1-of-read-objects-from-channel-aux
   (implies (state-p1 state)
-           (state-p1 (mv-nth 1 (read-objects-from-channel-aux channel count acc state))))
+           (state-p1 (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-objects-from-channel-aux
   (implies (and ;; (symbolp channel)
                 (state-p1 state)
                 (open-input-channel-p1 channel :object state))
-           (open-input-channel-any-p1 channel (mv-nth 1 (read-objects-from-channel-aux channel count acc state))))
+           (open-input-channel-any-p1 channel (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux
                                      open-input-channel-any-p1))))
 
@@ -64,7 +63,7 @@
   (declare (xargs :guard (and (symbolp channel)
                               (open-input-channel-p channel :object state))
                   :stobjs state))
-  (read-objects-from-channel-aux channel 1000000000 nil state))
+  (read-objects-from-channel-aux channel nil state))
 
 (defthm state-p-of-mv-nth-1-of-read-objects-from-channel
   (implies (state-p state)
@@ -96,19 +95,12 @@
     (if (not channel)
         ;; Error:
         (mv `(:could-not-open-channel ,filename) nil state)
-      (if ;; This check is needed for the guard of close-input-channel (can
-          ;; this ever happen?):
-          (member-eq channel
-                     '(acl2-input-channel::standard-object-input-0
-                       acl2-input-channel::standard-character-input-0))
-          ;; Error:
-          (mv `(:bad-channel ,filename) nil state)
-        (mv-let (objects state)
-          (read-objects-from-channel channel state)
-          (let ((state (close-input-channel channel state)))
-            (mv nil ; no error
-                objects
-                state)))))))
+      (mv-let (objects state)
+        (read-objects-from-channel channel state)
+        (let ((state (close-input-channel channel state)))
+          (mv nil ; no error
+              objects
+              state))))))
 
 (defthm state-p-of-mv-nth-2-of-read-objects-from-file
   (implies (and (stringp filename)

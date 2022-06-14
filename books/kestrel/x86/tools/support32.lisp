@@ -42,7 +42,7 @@
                            acl2::<-of-logior-and-0
                            acl2::unsigned-byte-p-of-ash
                            acl2::signed-byte-p-when-unsigned-byte-p
-                           acl2::unsigned-byte-p-of-logior
+                           acl2::unsigned-byte-p-of-logior-strong
                            bitops::signed-byte-p-of-ash-split
                            ;; acl2::signed-byte-p-logops
                            )))

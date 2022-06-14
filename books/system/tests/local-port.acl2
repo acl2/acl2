@@ -1,0 +1,3 @@
+(defun f1 (x) x)
+(local (defun f2 (x) x))
+(defun f3 (x) x)

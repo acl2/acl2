@@ -363,3 +363,21 @@
                                    BVLT-OF-BVCHOP-ARG2
                                    EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
                                    )))))
+
+;gen?
+(defthm bvlt-of-bvsx-arg2
+  (implies (and (unsigned-byte-p (+ -1 old-size) y)
+                (<= old-size size)
+                (integerp size))
+           (equal (bvlt size (bvsx size old-size x) y)
+                  (bvlt old-size x y)))
+  :hints (("Goal" :in-theory (enable bvsx bvlt))))
+
+;gen?
+(defthm bvlt-of-bvsx-arg3
+  (implies (and (unsigned-byte-p (+ -1 old-size) x)
+                (<= old-size size)
+                (integerp size))
+           (equal (bvlt size x (bvsx size old-size y))
+                  (bvlt old-size x y)))
+  :hints (("Goal" :in-theory (enable bvsx bvlt))))

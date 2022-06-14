@@ -235,3 +235,13 @@
                (bvshl 32 x (bvchop 5 sa1))
                (bvshl 32 x (bvchop 5 sa2))))
   :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-of-getbit-arg3
+  (equal (bvif 1 test (getbit 0 x) y)
+         (bvif 1 test x y))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-of-getbit-arg4
+  (equal (bvif 1 test x (getbit 0 y))
+         (bvif 1 test x y))
+  :hints (("Goal" :in-theory (enable bvif))))

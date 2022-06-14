@@ -494,11 +494,6 @@
             (equal (oddp (+ i j))
                    (oddp j)))
    :hints (("Goal" :in-theory (enable oddp))))
-
-
-
-
-
 ;bozo gen
 (defthm logext-31-drop
  (implies (and (<= (- (expt 2 30)) x)
@@ -508,22 +503,6 @@
                  x))
  :rule-classes ((:rewrite :backchain-limit-lst (1 1 nil)))
  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P))))
-
-
-(defthm getbit-of-logext
-  (implies (and (< n size)
-                (integerp size)
-                (< 0 size)
-                (natp n))
-           (equal (getbit n (logext size x))
-                  (getbit n x)))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (getbit slice BVCHOP-OF-LOGTAIL)
-                           (SLICE-BECOMES-GETBIT ;LOGTAIL-BVCHOP
-                                               BVCHOP-1-BECOMES-GETBIT
-                                               BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-;BVCHOP-OF-LOGTAIL
-                                               )))))
 
 (defthm getbit-of-bvif
   (implies (and (< n size)
@@ -782,19 +761,7 @@
 
 ;fixme consider "pick a bit" proofs?
 
-;fixme copy all bitxor thms for bitand and bitor
-
-;am i sure i want this?
-(defthm bvif-of-getbit-arg1
-  (equal (bvif 1 test (getbit 0 x) y)
-         (bvif 1 test x y))
-  :hints (("Goal" :in-theory (enable bvif))))
-
-;am i sure i want this?
-(defthm bvif-of-getbit-arg2
-  (equal (bvif 1 test x (getbit 0 y))
-         (bvif 1 test x y))
-  :hints (("Goal" :in-theory (enable bvif))))
+; todo: copy all bitxor thms for bitand and bitor
 
 ;bbozo gen and add
 (defthmd 0-1-split
@@ -2653,27 +2620,6 @@
                   (repeatbit 25 (getbit 7 x))))
   :hints (("Goal" :in-theory (e/d (slice LOGEXT) ( BVCHOP-OF-LOGTAIL BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-;bozo move hyps to conclusion?
-(defthm unsigned-byte-p-of-BVOR2
-  (implies (and (unsigned-byte-p n a)
-                (unsigned-byte-p n b)
-                (natp n)
-                (natp size)
-                )
-           (unsigned-byte-p n (BVOR size a b)))
-  :hints (("Goal" :in-theory (enable BVOR))))
-
-;kind of a weird rule..
-(defthm unsigned-byte-p-of-BVOR3
-  (implies (and (natp n)
-                (< n size)
-                (natp size)
-                )
-           (equal (unsigned-byte-p n (BVOR size a b))
-                  (and (unsigned-byte-p n (bvchop size a))
-                       (unsigned-byte-p n (bvchop size b)))))
-  :hints (("Goal" :in-theory (enable BVOR))))
-
 (defthm high-slice-of-logext-31-7-8
   (implies (integerp x)
            (equal (slice 31 7 (logext 8 x))
@@ -2733,45 +2679,7 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvminus-gen-better (size size) (size1 size) (i x) (j y))
            :in-theory (disable unsigned-byte-p-of-bvminus-gen-better))))
 
-(defthm bvminus-becomes-bvplus-of-bvuminus
-;;   (implies (and ;(natp size)
-;; ;                (integerp x)
-;; ;               (integerp y)
-;;                 )
-           (equal (bvminus size x y)
-                  (bvplus size x (bvuminus size y))
-                  ;)
-                  )
-  :hints (("Goal" :cases ((natp size))
-           :in-theory (e/d (natp bvminus bvplus bvuminus) (bvchop-of-minus  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))))
-
 (in-theory (disable bvuminus)) ;move up
-(theory-invariant (incompatible (:rewrite bvminus-becomes-bvplus-of-bvuminus) (:definition bvuminus)))
-
-(defthm bvuminus-of-bvplus
-  (equal (bvuminus size (bvplus size x y))
-         (bvplus size (bvuminus size x) (bvuminus size y)))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvplus bvminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   BVCHOP-OF-MINUS ;bozo
-                                   )))))
-
-(defthm bvminus-1-0
-  (implies (unsigned-byte-p 1 x) ;drop
-           (equal (bvminus 1 0 x)
-                  (getbit 0 x)))
-  :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
-           :in-theory (e/d (bvminus getbit bvchop-when-i-is-not-an-integer)
-                           (bvchop-1-becomes-getbit slice-becomes-getbit)))))
-
-
-(defthm bvuminus-1
-  (equal (bvuminus 1 x)
-         (getbit 0 x))
-  :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
-           :in-theory (e/d (bvminus bvuminus getbit)
-                           (bvchop-1-becomes-getbit
-                            slice-becomes-getbit BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 (defthm getbit-too-high-cheap-free
   (implies (and (unsigned-byte-p free x) ;free variable
@@ -3562,6 +3470,16 @@
   (unsigned-byte-p-forced 1 (bitand x y))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
+(defthm unsigned-byte-p-forced-of-leftrotate
+  (implies (natp width)
+           (unsigned-byte-p-forced width (leftrotate width amt val)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-rightrotate
+  (implies (natp width)
+           (unsigned-byte-p-forced width (rightrotate width amt val)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
 (defthm unsigned-byte-p-forced-of-leftrotate32
   (unsigned-byte-p-forced 32 (leftrotate32 amt val))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
@@ -3575,6 +3493,11 @@
                 (<= oldsize size)
                 (natp size))
            (unsigned-byte-p-forced size (bvsx size oldsize x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-repeatbit
+  (implies (natp n)
+           (unsigned-byte-p-forced n (repeatbit n bit)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;fixme add the rest of the unsigned-byte-p-forced rules!
@@ -4440,6 +4363,7 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
+;; this is x AND NOT(x) = 0 when we represent the NOT as an XOR with ones
 (defthm bvand-of-bvxor-of-ones-same
   (implies (and (syntaxp (and (quotep k)            ;new
                               (quotep size)))
@@ -4449,6 +4373,7 @@
   :hints (("Goal" :in-theory (enable ;BVXOR-ALL-ONES-GEN
                               bvxor-all-ones-helper-alt))))
 
+;; this is NOT(x) AND x = 0 when we represent the NOT as an XOR with ones
 (defthm bvand-of-bvxor-of-ones-same-alt
   (implies (and (syntaxp (and (quotep k) ;new
                               (quotep size)))
@@ -5436,7 +5361,7 @@
                   (bvxor newsize x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvxor))))
 
-(defthm bvor-tighten
+(defthmd bvor-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize oldsize)
                 (unsigned-byte-p-forced newsize x)
@@ -5446,6 +5371,9 @@
            (equal (bvor oldsize x y)
                   (bvor newsize x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvor))))
+
+(theory-invariant (incompatible (:rewrite bvor-tighten)
+                                (:rewrite bvor-extend-to-32bits)))
 
 ;move
 (DEFTHMd BVXOR-TIGHTEN-free
@@ -7451,19 +7379,6 @@
   (equal (bvand size x (repeatbit size 1))
          (bvchop size x))
   :hints (("Goal" :in-theory (enable repeatbit))))
-
-;todo: compare to the other variants of this rule
-(defthm bvchop-of-bvsx3
-  (implies (and (<= n old-size)
-                (< 0 old-size)
-                (<= old-size new-size)
-                (natp n)
-                (natp new-size)
-                (natp old-size))
-           (equal (bvchop n (bvsx new-size old-size val))
-                  (bvchop n val)))
-  :hints (("Goal" :cases ((equal n old-size))
-           :in-theory (enable bvsx))))
 
 (defthmd equal-of-logext
   (implies (and ;(integerp x)

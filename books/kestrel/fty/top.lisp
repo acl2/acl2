@@ -59,6 +59,7 @@
 (include-book "nibble")
 (include-book "nibble-list")
 (include-book "pos-list")
+(include-book "pos-option")
 (include-book "pseudo-event-form")
 (include-book "set")
 (include-book "string-list-result")
@@ -67,6 +68,7 @@
 (include-book "hex-digit-char")
 (include-book "oct-digit-char")
 (include-book "bin-digit-char")
+(include-book "string-stringlist-alist")
 (include-book "symbol-pseudoterm-alist")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

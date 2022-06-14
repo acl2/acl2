@@ -182,7 +182,6 @@
 (encapsulate ()
   (local (include-book "nthcdr"))
   (local (include-book "take"))
-  (local (include-book "true-list-fix"))
   (local (include-book "append"))
   (local (include-book "len"))
   (local (include-book "nth"))
@@ -218,7 +217,7 @@
                       (nthcdr (len x) z)))
     :hints (("goal" :do-not '(generalize eliminate-destructors)
              :induct (prefixp x z)
-             :in-theory (enable prefixp append)))))
+             :in-theory (enable prefixp append nthcdr)))))
 
   (local
    (defthmd prefixp-of-append-arg1-back

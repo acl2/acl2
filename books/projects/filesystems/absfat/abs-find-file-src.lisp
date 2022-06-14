@@ -49,7 +49,6 @@
     len-of-remove-assoc-2 nth-of-take
     no-duplicatesp-of-abs-addrs-of-remove-assoc-lemma-3
     hifat-no-dups-p-of-m1-file-contents-of-cdar
-    abs-find-file-correctness-1-lemma-18
     (:rewrite abs-complete-when-stringp)
     (:rewrite hifat-place-file-correctness-3)
     (:rewrite

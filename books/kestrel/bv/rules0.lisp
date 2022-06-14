@@ -72,11 +72,11 @@
            :cases ((and (equal 1 (getbit 0 x)) (equal 1 (getbit 0 y)))
                    (and (not (equal 1 (getbit 0 x))) (equal 1 (getbit 0 y)))
                    (and (equal 1 (getbit 0 x)) (not (equal 1 (getbit 0 y)))))
-           :use ((:instance bvplus-of-bvchop-arg1 (size 1))
-                 (:instance bvplus-of-bvchop-arg1 (size 1) (x y) (y 1))
-                 (:instance bvplus-of-bvchop-arg1 (size 1) (x y) (y 0)))
+           :use ((:instance bvplus-of-bvchop-arg2 (size 1))
+                 (:instance bvplus-of-bvchop-arg2 (size 1) (x y) (y 1))
+                 (:instance bvplus-of-bvchop-arg2 (size 1) (x y) (y 0)))
            :in-theory (e/d (bitand bvand getbit-when-val-is-not-an-integer)
-                           (bvplus-of-bvchop-arg1)))))
+                           (bvplus-of-bvchop-arg2)))))
 
 ;yuck! can loop!
 (defthmd getbit-0-of-times

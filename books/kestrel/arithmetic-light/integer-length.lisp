@@ -151,8 +151,7 @@
 (defthm unsigned-byte-p-of-integer-length
   (implies (natp x)
            (unsigned-byte-p (integer-length x) x))
-  :hints (("Goal" :in-theory (e/d (integer-length)
-                                  ( )))))
+  :hints (("Goal" :in-theory (enable integer-length))))
 
 ;expensive, newly disabled
 (defthmd unsigned-byte-p-of-integer-length-gen
@@ -169,8 +168,7 @@
                 (integerp len))
            (equal (unsigned-byte-p (integer-length (+ -1 len)) index)
                   (<= 0 index)))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p integer-length)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p integer-length))))
 
 (defthm <-of-integer-length-and-1
   (equal (< (integer-length i) 1)

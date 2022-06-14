@@ -90,6 +90,8 @@
     (cons (pack$ item (car lst))
           (my-pack-list item (cdr lst)))))
 
+(def-constant-opener make-pc-designator)
+
 ;dup
 ;doesn't go inside lambda bodies - is that okay?
 ;not exhaustive!
@@ -543,6 +545,7 @@
        )))
 
 ;these seem mostly safe
+;move?
 (defun sbvlt-rules ()
   '(sbvlt-transitive-1             ;Mon Jul  6 20:15:32 2015
     sbvlt-of-bvplus-of-1-and-0-alt ;Mon Jul  6 20:31:11 2015
@@ -555,12 +558,11 @@
     ))
 
 ;these seem safe
+;move?
 (defun type-rules2 ()
   '(integerp-when-unsigned-byte-p-free ;mon jul  6 21:02:14 2015
     <-of-negative-when-usbp ;mon jul  6 21:11:49 2015
     ))
-
-(def-constant-opener make-pc-designator)
 
 ;; These are for when we are not unrolling nested loops:
 ;; TODO: Can we just exclude the header from the segment, step once to start, and use the normal rules?
@@ -621,14 +623,14 @@
     run-until-exit-segment-base-case-2
     run-until-exit-segment-of-myif))
 
+(ensure-rules-known (run-until-exit-segment-rules))
+
 (defun lifter-rules ()
   (append
    (first-loop-top-rules)
-   (leftrotate-intro-rules) ;; try to recognize rotation idioms when lifting (todo: or include in first-loop-top-rules?)
    (sbvlt-rules)
    (type-rules2)
    '(acl2-numberp-of-logext
-
     ;get-pc-designator-from-state
     ;; MEMBER-BECOMES-MEMBER-EQUAL
     <-of-+-cancel-1-2 ;add

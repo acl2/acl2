@@ -40,3 +40,10 @@
   :hints (("Goal" :cases ((not (natp x))
                           (equal 0 x))
            :in-theory (enable ceiling-of-lg))))
+
+(defthm unsigned-byte-p-of-ceiling-of-lg-when-<
+  (implies (and (< i j)
+                (natp i)
+                (integerp j))
+           (unsigned-byte-p (ceiling-of-lg j) i))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg))))

@@ -193,6 +193,7 @@
          (if test (getbit n a) (getbit n b))))
 
 ;for axe
+;rename
 (defthmd getbit-test-is-self
   (equal (if (equal 1 (getbit x n)) 1 0)
          (getbit x n)))
@@ -623,12 +624,12 @@
 ;fixme we probably need a lot more rules like this to add sizes (we need sizes
 ;in the if nest, since there can be logexts to be gotten rid of at the leaves
 ;of the if nest)
-(defthm bvor-of-myif-arg2
+(defthm bvor-of-myif-arg3
   (equal (bvor n x (myif test a b))
          (bvor n x (bvif n test a b)))
   :hints (("Goal" :in-theory (enable myif bvif bvor))))
 
-(defthm bvor-of-myif-arg1
+(defthm bvor-of-myif-arg2
   (equal (bvor n (myif test a b) x)
          (bvor n (bvif n test a b) x))
   :hints (("Goal" :in-theory (enable myif bvif bvor))))
@@ -1007,7 +1008,7 @@
            (EQUAL (MYIF TEST z (bvxor SIZE x y))
                   (BVIF SIZE TEST z (bvxor SIZE x y))))
   :HINTS
-  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG2)))))
+  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG3 BVIF-OF-MYIF-ARG4)))))
 
 (DEFTHM MYIF-OF-bvxor-BECOMES-BVIF-ARG1
   (IMPLIES (AND (UNSIGNED-BYTE-P SIZE z)
@@ -1015,7 +1016,7 @@
            (EQUAL (MYIF TEST (bvxor SIZE x y) z)
                   (BVIF SIZE TEST (bvxor SIZE x y) z)))
   :HINTS
-  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG2)))))
+  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG3 BVIF-OF-MYIF-ARG4)))))
 
 (in-theory (disable bvminus)) ;bozo?
 
@@ -1536,10 +1537,10 @@
                 (integerp size))
            (equal (bvplus 1 (bvplus size x y) z)
                   (bvplus 1 (bvplus 1 x y) z)))
-  :hints (("Goal" :use ((:instance bvplus-of-bvchop-arg1 (size 1)
+  :hints (("Goal" :use ((:instance bvplus-of-bvchop-arg2 (size 1)
                                    (x (bvplus size x y))
                                    (y z)))
-           :in-theory (disable bvplus-of-bvchop-arg1
+           :in-theory (disable bvplus-of-bvchop-arg2
                                EQUAL-OF-BITXOR-AND-BITXOR-SAME-6
                                EQUAL-OF-BITXOR-AND-BITXOR-SAME-ALT
                                bvchop-1-becomes-getbit))))
@@ -2005,18 +2006,6 @@
 ;slice trim rule?
 
 (in-theory (disable BITNOT-BECOMES-BITXOR-WITH-1))
-
-;is this true?  if not, redefine bvnot
-;; (DEFTHM GETBIT-OF-BVNOT-better
-;;   (IMPLIES (AND (< N M)
-;;                 (NATP N)
-;;                 (NATP M)
-;; ;                (INTEGERP X)
-;;                 )
-;;            (EQUAL (GETBIT N (BVNOT M X))
-;;                   (BVNOT 1 (GETBIT N X))))
-;;   :HINTS (("Goal" :IN-THEORY (E/D (BVNOT LOGNOT getbit)
-;;                                   (SLICE-BECOMES-GETBIT)))))
 
 ;bozo could go back and use something like this in the jvm model?
 (defthmd <-of-logext-when-signed-byte-p
@@ -2618,7 +2607,7 @@
 ;                                                  BVLT-OF-PLUS-ARG2
 ;                                                 SLICE-OF-+ ; fixme looped with meta rule?
 ;                                                PLUS-BECOMES-BVPLUS
-                                                   BVPLUS-OF-BVCHOP-ARG2 ;fixme
+                                                   BVPLUS-OF-BVCHOP-ARG3 ;fixme
                                                    )))))
 
 ;gen

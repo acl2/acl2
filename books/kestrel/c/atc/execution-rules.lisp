@@ -184,6 +184,140 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-type-of-value-rules
+  :short "Rules about @(tsee type-of-value)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These rules rewrite @(tsee type-of-value) to specific types
+     under hypotheses on different types of values
+     that occur during symbolic execution."))
+
+  (defruled type-of-value-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-uchar)
+                                (value-array->length x))))
+    :enable (type-of-value
+             uchar-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-schar-arrayp
+    (implies (schar-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-schar)
+                                (value-array->length x))))
+    :enable (type-of-value
+             schar-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-ushort)
+                                (value-array->length x))))
+    :enable (type-of-value
+             ushort-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-sshort-arrayp
+    (implies (sshort-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-sshort)
+                                (value-array->length x))))
+    :enable (type-of-value
+             sshort-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-uint)
+                                (value-array->length x))))
+    :enable (type-of-value
+             uint-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-sint-arrayp
+    (implies (sint-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-sint)
+                                (value-array->length x))))
+    :enable (type-of-value
+             sint-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-ulong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             ulong-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-slong-arrayp
+    (implies (slong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-slong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             slong-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-ullong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             ullong-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-sllong-arrayp
+    (implies (sllong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-sllong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             sllong-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defval *atc-type-of-value-rules*
+    '(type-of-value-when-ucharp
+      type-of-value-when-scharp
+      type-of-value-when-ushortp
+      type-of-value-when-sshortp
+      type-of-value-when-uintp
+      type-of-value-when-sintp
+      type-of-value-when-ulongp
+      type-of-value-when-slongp
+      type-of-value-when-ullongp
+      type-of-value-when-sllongp
+      type-of-value-when-pointerp
+      type-of-value-when-uchar-arrayp
+      type-of-value-when-schar-arrayp
+      type-of-value-when-ushort-arrayp
+      type-of-value-when-sshort-arrayp
+      type-of-value-when-uint-arrayp
+      type-of-value-when-sint-arrayp
+      type-of-value-when-ulong-arrayp
+      type-of-value-when-slong-arrayp
+      type-of-value-when-ullong-arrayp
+      type-of-value-when-sllong-arrayp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-type-of-value-option-rules
   :short "Rules about @(tsee type-of-value-option)."
   :long
@@ -474,8 +608,8 @@
                                                                itypes)))))
 
   (defval *atc-array-length-write-rules*
-    (atc-array-length-write-rules-loop-atypes *atc-integer-types*
-                                              *atc-integer-types*)))
+    (atc-array-length-write-rules-loop-atypes *integer-nonbool-nonchar-types*
+                                              *integer-nonbool-nonchar-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -936,8 +1070,9 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-uaconvert-values-rules-gen-loop-ltypes *atc-integer-types*
-                                                      *atc-integer-types*)))
+          (atc-uaconvert-values-rules-gen-loop-ltypes
+           *integer-nonbool-nonchar-types*
+           *integer-nonbool-nonchar-types*)))
       `(progn
          (defsection atc-uaconvert-values-rules
            :short "Rules about @(tsee uaconvert-values)
@@ -980,10 +1115,12 @@
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                          ,(atc-syntaxp-hyp-for-expr-pure 'y)
                          (pointerp x)
-                         (not (pointer-nullp x))
+                         (not (value-pointer-nullp x))
                          (equal array
-                                (read-array (pointer->address x) compst))
-                         (equal (pointer->reftype x)
+                                (read-object (value-pointer->designator x)
+                                             compst))
+                         (value-case array :array)
+                         (equal (value-pointer->reftype x)
                                 (value-array->elemtype array))
                          (,apred array)
                          (,ipred y)
@@ -1029,8 +1166,9 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-arrsub-rules-gen-loop-atypes *atc-integer-types*
-                                                 *atc-integer-types*)))
+          (atc-exec-arrsub-rules-gen-loop-atypes
+           *integer-nonbool-nonchar-types*
+           *integer-nonbool-nonchar-types*)))
       `(progn
          (defsection atc-exec-arrsub-rules
            :short "Rules for executing array subscript expressions."
@@ -1120,7 +1258,8 @@
                     (unop-bitnot)
                     (unop-lognot)))
          ((mv names events)
-          (atc-exec-unary-rules-gen-loop-ops ops *atc-integer-types*)))
+          (atc-exec-unary-rules-gen-loop-ops ops
+                                             *integer-nonbool-nonchar-types*)))
       `(progn
          (defsection atc-exec-unary-rules
            :short "Rules for executing unary operations"
@@ -1214,8 +1353,9 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-cast-rules-gen-loop-dtypes *atc-integer-types*
-                                               *atc-integer-types*)))
+          (atc-exec-cast-rules-gen-loop-dtypes
+           *integer-nonbool-nonchar-types*
+           *integer-nonbool-nonchar-types*)))
       `(progn
          (defsection atc-exec-cast-rules
            :short "Rules for executing casts."
@@ -1411,8 +1551,8 @@
                     (binop-bitior)))
          ((mv names events)
           (atc-exec-binary-rules-gen ops
-                                     *atc-integer-types*
-                                     *atc-integer-types*)))
+                                     *integer-nonbool-nonchar-types*
+                                     *integer-nonbool-nonchar-types*)))
       `(progn
          (defsection atc-exec-binary-strict-pure-rules
            :short "Rules for executing strict pure binary operations."
@@ -1910,19 +2050,20 @@
                  (,epred val)
                  (equal ptr (read-var (expr-ident->get arr) compst1))
                  (pointerp ptr)
-                 (not (pointer-nullp ptr))
+                 (not (value-pointer-nullp ptr))
                  (equal array
-                        (read-array (pointer->address ptr) compst1))
-                 (equal (pointer->reftype ptr)
+                        (read-object (value-pointer->designator ptr) compst1))
+                 (value-case array :array)
+                 (equal (value-pointer->reftype ptr)
                         (value-array->elemtype array))
                  (,apred array)
                  (equal index (exec-expr-pure sub compst1))
                  (,ipred index)
                  (,atype-array-itype-index-okp array index))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-array (pointer->address ptr)
-                                (,atype-array-write-itype array index val)
-                                compst1))))
+                   (write-object (value-pointer->designator ptr)
+                                 (,atype-array-write-itype array index val)
+                                 compst1))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-expr-asg
@@ -1963,8 +2104,9 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes *atc-integer-types*
-                                                          *atc-integer-types*)))
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes
+           *integer-nonbool-nonchar-types*
+           *integer-nonbool-nonchar-types*)))
       `(progn
          (defsection atc-exec-expr-asg-arrsub-rules
            :short "Rules for executing assignment expressions to

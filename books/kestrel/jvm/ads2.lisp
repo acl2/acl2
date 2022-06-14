@@ -131,10 +131,8 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (new-ad-aux ads current-try)
            :do-not-induct t
-           :expand ((NEW-AD-AUX (SET::INSERT AD ADS)
-                        CURRENT-TRY))
-           :in-theory (e/d (new-ad-aux set-delete-insert-strong) ())
-           )))
+           :expand ((new-ad-aux (set::insert ad ads) current-try))
+           :in-theory (enable new-ad-aux set-delete-insert-strong))))
 
 (defthm new-ad-aux-of-sfix
   (equal (new-ad-aux (set::sfix ads) current-try)
@@ -282,8 +280,7 @@
   :hints (("Goal"
            :expand ((N-NEW-ADS2-AUX 1 0 ADS)
                     (NEW-AD-AUX ADS 0))
-           :in-theory (e/d (n-new-ads2 nth-new-ad2 N-NEW-ADS2-AUX new-ad) ()))))
-
+           :in-theory (enable n-new-ads2 nth-new-ad2 N-NEW-ADS2-AUX new-ad))))
 
 ;rename
 (defthm in-of-nth-new-ad2-and-n-new-ads2
@@ -309,7 +306,6 @@
                           (n-new-ads2-aux n try ads)))
   :hints (("Goal" ;:induct (ind m n)
            :do-not '(generalize eliminate-destructors)
-           :expand ()
            :in-theory (enable n-new-ads2-aux))))
 
 (defthm subbagp-of-n-new-ads2-and-n-new-ads2
@@ -374,10 +370,7 @@
            :expand (;(NEW-AD-AUX ADS CURRENT-TRY)
                     ;(NEW-AD-AUX (SET::INSERT AD ADS) CURRENT-TRY)
                     (N-NEW-ADS2-AUX N CURRENT-TRY (SET::INSERT AD ADS)))
-           :in-theory (e/d (new-ad-aux-is-current-try) ())
-           )))
-
-
+           :in-theory (enable new-ad-aux-is-current-try))))
 
 ;the last case is when ad is in (n-new-ads2-aux n current-try ads)
 ;prove a theorem about splitting n-new-ads2-aux  ?  then split right at the point of insertion?  or union??
@@ -640,8 +633,7 @@
                     (N-NEW-ADS2-AUX N (+ 1 (NEW-AD-AUX ADS CURRENT-TRY))
                             ADS))
            :induct (n-new-ads2-aux n current-try (set::insert (new-ad ads) ads))
-           :in-theory (e/d (new-ad advance-current-try3-special-safe)
-                           ()))))
+           :in-theory (enable new-ad advance-current-try3-special-safe))))
 
 ;this might be easier to reason about in some cases (e.g., when stuff has been inserted or unioned into the ads)
 ;; ;n should be 1 or greater (should we shift things to allow 0??)
@@ -650,7 +642,6 @@
 ;;           (equal 1 n))
 ;;       (new-ad ads)
 ;;     (nth-new-ad (+ -1 n) (set::insert (new-ad ads) ads))))
-
 
 (defthmd nth-new-ad2-collect
   (equal (new-ad (set::insert (new-ad ads) ads))
@@ -661,10 +652,9 @@
                            (N-NEW-ADS2-AUX 1 (+ 1 (NEW-AD-AUX ADS 0))
                                           ADS)
                            (N-NEW-ADS2-AUX 1 (+ 1 (NEW-AD ADS))
-                                          ADS)
-                           )
+                                          ADS))
            :use new-ad-of-insert-of-new-ad
-           :in-theory (enable nth-new-ad2  new-ad-recollapse))))
+           :in-theory (enable nth-new-ad2 new-ad-recollapse))))
 
 (DEFUN N-NEW-ADS2-AUX-ind (N CURRENT-TRY ADS n2)
   (IF (ZP N)
@@ -762,7 +752,7 @@
   (IMPLIES (zp M)
            (EQUAL (NTH-NEW-AD2 M ADS)
                   (new-ad ads)))
-  :hints (("Goal" :in-theory (e/d (NTH-NEW-AD2) ()))))
+  :hints (("Goal" :in-theory (enable NTH-NEW-AD2))))
 
 (defthmd recharacterize-nth-new-ad
   (equal (nth-new-ad m ads)
@@ -1140,7 +1130,7 @@
 ;;                 (< 0 n))
 ;;            (equal (car (n-new-ads2 n ads))
 ;;                   (new-ad ads)))
-;;   :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) ()))))
+;;   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
 
 ;; (defthmd cons-new-ad-and-2nd-ad
 ;;    (equal (cons (new-ad ads) (cons (nth-new-ad2 '2 ads) lst))

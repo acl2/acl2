@@ -24,6 +24,7 @@
 (include-book "kestrel/bv-lists/bvnth" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (local (include-book "kestrel/bv-lists/bytes-to-bits2" :dir :system))
+(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
@@ -307,20 +308,6 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
-;BOZO we want to use update-nth2 for arrays, but not for locals (which shouldn't blow up, since we should always be able to resolve nths into the locals...)
-
-;BOZO build update-nth2 into the machine model?
-;newly disabled..
-(defthmd update-nth-becomes-update-nth2
-  (implies (and (true-listp lst)
-                (< key (len lst))
-                (natp key))
-           (equal (update-nth key val lst)
-                  (update-nth2 (len lst)
-                               key
-                               val lst)))
-  :hints (("Goal" :in-theory (enable update-nth2))))
-
 (DEFTHMd NTH2-BECOMES-BVNTH-8
   (IMPLIES (AND (all-unsigned-byte-p 8 vals)
                 ;;(ALL-NATP VALS)
@@ -461,34 +448,6 @@
 (defthm natp-means-non-neg
   (implies (natp n)
            (not (< n 0))))
-
-(defthmd update-nth2-of-update-nth2-diff
-  (implies (and (syntaxp (quotep i1))
-                (syntaxp (quotep i2))
-                (< i1 len)
-                (< i2 i1)
-                (natp i1)
-                (natp i2)
-                (natp len)
-                (true-listp l)
-                (equal len (len l))
-                )
-           (equal (update-nth2 len i1 v1 (update-nth2 len i2 v2 l))
-                  (update-nth2 len i2 v2 (update-nth2 len i1 v1 l))))
-  :hints (("Goal"
-           :in-theory (enable update-nth2 ;LIST::UPDATE-NTH-UPDATE-NTH-DIFF
-                              ))))
-
-(defthm update-nth2-of-update-nth2-same
-  (implies (and (< i len)
-                (natp i)
-                (natp len)
-                )
-           (equal (update-nth2 len i v1 (update-nth2 len i v2 l))
-                  (update-nth2 len i v1 l)))
-  :hints (("Goal"
-           :in-theory (enable update-nth2 ;LIST::UPDATE-NTH-UPDATE-NTH-DIFF
-                              ))))
 
 ;; ;fixme the same as append-of-cons?
 ;; (DEFTHM LIST::xAPPEND-OF-CONS-BETTER2
@@ -1034,7 +993,7 @@
 
 (local (in-theory (enable myif)))
 
-(defthm bytes-to-bits-of-bv-array-write
+(defthmd bytes-to-bits-of-bv-array-write
   (implies (and (equal len (len lst))
                 (< n len)
                 (true-listp lst)
@@ -2421,14 +2380,6 @@
 ;;    (equal (jvm::error-state msg state)
 ;;           (error-state-no-params))))
 
-(defthm unsigned-byte-p-forced-of-bv-array-read
-  (implies (and (<= element-size n)
-                (natp n)
-                (natp element-size))
-           (equal (unsigned-byte-p-forced n (bv-array-read element-size len index data))
-                  t))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
 (defthm force-of-non-nil
   (implies x
            (equal (force x)
@@ -2665,14 +2616,6 @@
            (equal (bv-array-clear-range elem-size len lowindex highindex (bv-array-clear elem-size len index1 lst))
                   (bv-array-clear-range elem-size len lowindex index1 lst))))
 
-(defthm nth-of-bv-array-clear
-  (implies (and (< n len)
-                (natp len)
-                (natp n))
-           (equal (nth n (bv-array-clear elem-size len n lst))
-                  0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg) (update-nth-becomes-update-nth2-extend-gen)))))
-
 ;could drop hyps if we change what bv-array-clear-range does in the base case
 (defthm take-of-bv-array-clear-irrel
   (implies (and (<= index index2)
@@ -2797,18 +2740,6 @@
                                                           )))))
 
 
-(defthm nth-of-bv-array-clear-better
-  (implies (and (natp len)
-                (natp n))
-           (equal (nth n (bv-array-clear elem-size len n lst))
-                  (if (< n len)
-                      0
-                    nil)))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear bv-array-write ceiling-of-lg update-nth2)
-         (update-nth-becomes-update-nth2-extend-gen)))))
-
 (defthmd subrange-when-take-known-hack
   (implies (and (equal (take n x) free)
                 (integerp n)
@@ -2821,54 +2752,9 @@
                                      subrange ;todo
                                      ))))
 
-(defthm nth-of-bv-array-clear-diff
-  (implies (and (natp len)
-                (natp n)
-                (natp index)
-;                (natp elem-size)
-                (< n len)
-                (< index len) ;Mon Jul 19 20:50:11 2010
-                (not (equal n index))
-                )
-           (equal (nth n (bv-array-clear elem-size len index lst))
-                  (bvchop elem-size (nth n lst))))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear bv-array-write-opener update-nth2)
-         (update-nth-becomes-update-nth2-extend-gen)))))
 
-(defthm nth-of-bv-array-clear-both
-  (implies (and (natp len)
-                (natp n)
-                (natp index)
-                (< index len) ;Mon Jul 19 20:50:11 2010
-                (< n len)
-                )
-           (equal (nth n (bv-array-clear elem-size len index lst))
-                  (if (equal n index)
-                      0
-                  (bvchop elem-size (nth n lst)))))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear bv-array-write-opener update-nth2)
-         (update-nth-becomes-update-nth2-extend-gen)))))
 
-(defthm nth-of-bv-array-clear-range
-  (implies (and (natp len)
-                (natp n)
-                (natp lowindex)
-                (natp highindex)
-                (<= lowindex n)
-                (<= n highindex)
-                (<= lowindex highindex)
-                (< highindex len)
-                )
-           (equal (nth n (bv-array-clear-range elem-size len lowindex highindex lst))
-                  0))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear-range bv-array-write update-nth2)
-         (update-nth-becomes-update-nth2-extend-gen)))))
+
 
 (defthm car-of-BV-ARRAY-CLEAR-of-0
   (implies (posp len)
@@ -2915,33 +2801,10 @@
   :hints (("Goal" :induct t
            :in-theory (enable bv-array-clear-range))))
 
-(defthmd take-when-most-known
-  (implies (and (equal (take (+ -1 n) x) free)
-                (posp n))
-           (equal (take n x)
-                  (append free
-                          (list (nth (+ -1 n) x)))))
-  :hints (("Goal" :in-theory (enable equal-of-append
-;                                     subrange ;todo
-                                     ))))
-
 (defun sub1-sub1-induct (n1 n2)
   (if (zp n1)
       (list n1 n2)
     (sub1-sub1-induct (+ -1 n1) (+ -1 n2))))
-
-;move
-;todo: name clash
-(defthm take-of-repeat-2
-  (implies (and (<= n1 n2)
-                (natp n1)
-                (natp n2))
-           (equal (take n1 (repeat n2 x))
-                  (repeat n1 x)))
-  :hints (("Goal" :induct (sub1-sub1-induct n1 n2)
-           :in-theory (e/d (take repeat) (CAR-OF-TAKE-STRONG ;todo: looped
-                                          TAKE-OF-CONS
-                                          )))))
 
 (defthm take-of-bv-array-clear-range
   (implies (and ; (natp elem-size)
@@ -2956,53 +2819,7 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable take bv-array-clear-range take-when-most-known equal-of-append))))
 
-(defthm bv-array-clear-bottom-range
-  (implies (and (posp len)
-                (< i len)
-                (natp i))
-           (equal (bv-array-clear-range elem-size len 0 i lst)
-                  (append (repeat (+ 1 i) 0)
-                          (bvchop-list elem-size (subrange (+ 1 i) (+ -1 len) lst)))))
-  :hints (("Goal" :in-theory (e/d (subrange TAKE-OF-CDR CAR-BECOMES-NTH-OF-0 equal-of-append)
-                                  (cdr-of-take
-                                   ;cdr-of-take-becomes-subrange-better
-                                   ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                   ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                   ;;TAKE-OF-CDR-BECOMES-SUBRANGE
-                                   )))))
-
-;move
-(defthm bv-array-write-of-true-list-fix
-  (equal (bv-array-write elem-size len index val (true-list-fix lst))
-         (bv-array-write elem-size len index val lst))
-  :hints (("Goal" :in-theory (e/d (bv-array-write
-                                   update-nth2
-                                   ) (update-nth-becomes-update-nth2-extend-gen)))))
-
-(defthm bv-array-clear-of-true-list-fix
-  (equal (bv-array-clear elem-size len index (true-list-fix lst))
-         (bv-array-clear elem-size len index lst))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(defthm BV-ARRAY-CLEAR-RANGE-of-true-list-fix
-  (implies (and (<= lowindex highindex)
-                (natp lowindex)
-                (natp highindex))
-           (equal (BV-ARRAY-CLEAR-RANGE ELEM-SIZE len lowindex highindex (TRUE-LIST-FIX LST))
-                  (BV-ARRAY-CLEAR-RANGE ELEM-SIZE len lowindex highindex LST)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-CLEAR-RANGE))))
-
-(defthm bv-array-clear-whole-range
-  (implies (and (equal i (+ -1 len))
-                (posp len))
-           (equal (bv-array-clear-range elem-size len 0 i lst)
-                  (repeat len 0)))
-  :hints (("Goal" :in-theory (e/d (equal-of-append subrange)
-                                  (bv-array-clear-bottom-range))
-           :use (:instance bv-array-clear-bottom-range
-                           (lst (true-list-fix lst))
-                           (i (+ -1 len))))))
-
+;move or drop
 (defthm take-of-firstn-same
   (equal (take n (firstn n x))
          (take n x))
@@ -3014,6 +2831,38 @@
                   (repeat n nil)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable take))))
+
+
+
+(defthm bv-array-clear-bottom-range
+  (implies (and (posp len)
+                (< i len)
+                (natp i))
+           (equal (bv-array-clear-range elem-size len 0 i lst)
+                  (append (repeat (+ 1 i) 0)
+                          (bvchop-list elem-size (subrange (+ 1 i) (+ -1 len) lst)))))
+  :hints (("Goal" :cases ((equal 0 i))
+           :in-theory (e/d (subrange TAKE-OF-CDR CAR-BECOMES-NTH-OF-0 equal-of-append nthcdr-of-cdr-combine
+                                            BV-ARRAY-CLEAR-RANGE)
+                                  (cdr-of-take
+                                   ;cdr-of-take-becomes-subrange-better
+                                   ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
+                                   ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+                                   ;;TAKE-OF-CDR-BECOMES-SUBRANGE
+                                   )))))
+
+
+
+(defthm bv-array-clear-whole-range
+  (implies (and (equal i (+ -1 len))
+                (posp len))
+           (equal (bv-array-clear-range elem-size len 0 i lst)
+                  (repeat len 0)))
+  :hints (("Goal" :in-theory (e/d (equal-of-append subrange)
+                                  (bv-array-clear-bottom-range))
+           :use (:instance bv-array-clear-bottom-range
+                           (lst (true-list-fix lst))
+                           (i (+ -1 len))))))
 
 (defthm bv-array-write-of-firstn
   (equal (bv-array-write element-size len index val (firstn len data))

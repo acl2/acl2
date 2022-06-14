@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,17 +15,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-errors
-  :parents (atc-implementation)
-  :short "Error values used in the formalization of C for ATC."
+(defxdoc+ errors
+  :parents (language)
+  :short "Error values used in the formalization of C."
   :long
   (xdoc::topstring
    (xdoc::p
-    "When we formalize static and dynamic semantics of C,
+    "In our formal static and dynamic semantics of C,
      our ACL2 functions return error values in certain circumstances.
-     An example is when a run-time in our defensive dynamic semantics fails,
+     An example is when a run-time check
+     in our defensive dynamic semantics fails,
      e.g. due to a value having the wrong type for an operator.
-     Another example is when some static constraints fail,
+     Another example is when some static constraint fail,
      e.g. a variable is referenced in some code without being in scope.")
    (xdoc::p
     "These ACL2 functions return different kinds of values
@@ -34,7 +35,7 @@
      both those values and error values.")
    (xdoc::p
     "We introduce a fixtype for error values,
-     which will be used in all those ACL2 functions.")
+     which is used in all those ACL2 functions.")
    (xdoc::p
     "We also introduce a macro to generate a fixtype that consists of
      a specified fixtype for the non-error values

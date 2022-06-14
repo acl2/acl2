@@ -11,8 +11,10 @@
 
 (in-package "C")
 
-(include-book "structures")
-(include-book "portable-ascii-identifiers")
+(include-book "abstract-syntax")
+(include-book "values")
+
+(include-book "../language/portable-ascii-identifiers")
 
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
@@ -38,13 +40,13 @@
    (xdoc::p
     "The @(tsee defstruct) macro takes as inputs
      the name (i.e. tag [C:6.7.2.3]) of the structure type
-     and a list of members,
-     each of which consists of a name and a designation of an integer type
+     and a list of members;
+     each member consists of a name and a designation of an integer type
      (for now we only support members of integer types).
      The names of the structure type and of the members
      must be symbols whose @(tsee symbol-name) is a portable ASCII identifier;
-     the members have all different @(tsee symbol-name)s
-     (it is not enough for the symbols to be distinct).
+     the members must have all different @(tsee symbol-name)s
+     (it is not enough for the symbols to be different).
      The designation of the integer types is one of the symbols")
    (xdoc::ul
     (xdoc::li "@('schar')")
@@ -150,14 +152,18 @@
       the recognizer implies @(tsee valuep).")
     (xdoc::li
      "The name of the theorem asserting that
-      the recognizer implies that the @(tsee value-kind) is @(':struct').")
+      the recognizer implies that @(tsee value-kind) is @(':struct').")
+    (xdoc::li
+     "The name of the theorem asserting that
+      the recognizer implies that @(tsee type-of-value)
+      returns the struct type.")
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies a specific value of @(tsee value-struct->tag).")
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies a specific value of
-      @(tsee member-values-to-types) of @(tsee value-struct->members)."))
+      @(tsee member-types-of-member-values) of @(tsee value-struct->members)."))
    (xdoc::p
     "The call of @(tsee defstruct).
      This supports redundancy checking."))
@@ -173,6 +179,7 @@
    (not-error-thm symbolp)
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
+   (type-of-value-thm symbolp)
    (tag-thm symbolp)
    (members-thm symbolp)
    (call pseudo-event-form))
@@ -245,7 +252,7 @@
      This is based on our current ACL2 representation of C types,
      which may be extended in the future;
      note that, in the current representation,
-     the predicate corresponding to the type
+     the predicate corresponding to each type
      is not a recognizer of pointer values.
      We return @('nil') for other types."))
   (type-case
@@ -343,7 +350,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defstruct-process-members ((members true-listp) (ctx ctxp) state)
-  :returns (mv erp (meminfos member-type-listp) state)
+  :returns (mv erp (memtypes member-type-listp) state)
   :short "Process the member inputs of a @(tsee defstruct) call."
   :long
   (xdoc::topstring
@@ -374,7 +381,7 @@
                    but the first component of ~x0 is not a symbol."
                   member))
        (name (symbol-name name))
-       ((unless (atc-ident-stringp name))
+       ((unless (ident-stringp name))
         (er-soft+ ctx t nil
                   "Each input after the first one ~
                    must be a doublet (NAME TYPE) of symbols ~
@@ -409,13 +416,13 @@
                     ullong)
                   member))
        (meminfo (make-member-type :name (ident name) :type type))
-       ((er meminfos) (defstruct-process-members (cdr members) ctx state))
+       ((er memtypes) (defstruct-process-members (cdr members) ctx state))
        ((when (member-equal (ident name)
-                            (member-type-list->name-list meminfos)))
+                            (member-type-list->name-list memtypes)))
         (er-soft+ ctx t nil
                   "There are distinct members with the same name ~x0."
                   name)))
-    (acl2::value (cons meminfo meminfos)))
+    (acl2::value (cons meminfo memtypes)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -427,7 +434,7 @@
   :returns (mv erp
                (val (tuple (tag symbolp)
                            (tag-ident identp)
-                           (members member-type-listp)
+                           (memtypes member-type-listp)
                            (redundant booleanp)
                            val))
                state)
@@ -451,7 +458,7 @@
                    but ~x0 is not."
                   tag))
        (tag-name (symbol-name tag))
-       ((unless (atc-ident-stringp tag-name))
+       ((unless (ident-stringp tag-name))
         (er-soft+ ctx t irrelevant
                   "The name ~x0 of the symbol ~x1 passed as first input, ~
                    which defines the name of the structure, ~
@@ -472,9 +479,9 @@
        ((unless (consp members))
         (er-soft+ ctx t irrelevant
                   "There must be at least one member."))
-       ((mv erp members state) (defstruct-process-members members ctx state))
+       ((mv erp memtypes state) (defstruct-process-members members ctx state))
        ((when erp) (mv erp irrelevant state)))
-    (acl2::value (list tag tag-ident members nil)))
+    (acl2::value (list tag tag-ident memtypes nil)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -491,62 +498,65 @@
      These theorems are proved from some general theorems given here."))
 
   (defruled defstruct-reader-lemma
-    (implies (equal meminfos (member-values-to-types members))
-             (b* ((type (member-type-lookup name meminfos))
-                  (val (struct-read-member-aux name members)))
+    (implies (equal memtypes (member-types-of-member-values memvals))
+             (b* ((type (member-type-lookup name memtypes))
+                  (val (value-struct-read-aux name memvals)))
                (implies (typep type)
                         (and (valuep val)
                              (equal (type-of-value val)
                                     type)))))
     :prep-lemmas
     ((defrule lemma
-       (b* ((type (member-type-lookup name (member-values-to-types members)))
-            (val (struct-read-member-aux name members)))
+       (b* ((type (member-type-lookup name
+                                      (member-types-of-member-values memvals)))
+            (val (value-struct-read-aux name memvals)))
          (implies (typep type)
                   (and (valuep val)
                        (equal (type-of-value val)
                               type))))
-       :enable (struct-read-member-aux
+       :enable (value-struct-read-aux
                 member-type-lookup
-                member-values-to-types
-                member-value-to-type))))
+                member-types-of-member-values
+                member-type-of-member-value))))
 
   (defruled defstruct-writer-lemma
-    (implies (equal meminfos (member-values-to-types members))
-             (b* ((type (member-type-lookup name meminfos))
-                  (new-members (struct-write-member-aux name val members)))
+    (implies (equal memtypes (member-types-of-member-values memvals))
+             (b* ((type (member-type-lookup name memtypes))
+                  (new-memvals (value-struct-write-aux name val memvals)))
                (implies (and (typep type)
                              (valuep val)
                              (equal (type-of-value val)
                                     type))
-                        (and (member-value-listp new-members)
-                             (equal (member-values-to-types new-members)
-                                    meminfos)))))
+                        (and (member-value-listp new-memvals)
+                             (equal (member-types-of-member-values new-memvals)
+                                    memtypes)))))
     :prep-lemmas
     ((defrule lemma
-       (b* ((type (member-type-lookup name (member-values-to-types members)))
-            (new-members (struct-write-member-aux name val members)))
+       (b* ((type (member-type-lookup name
+                                      (member-types-of-member-values memvals)))
+            (new-memvals (value-struct-write-aux name val memvals)))
          (implies (and (typep type)
                        (valuep val)
                        (equal (type-of-value val)
                               type))
-                  (and (member-value-listp new-members)
-                       (equal (member-values-to-types new-members)
-                              (member-values-to-types members)))))
-       :enable (struct-write-member-aux
+                  (and (member-value-listp new-memvals)
+                       (equal (member-types-of-member-values new-memvals)
+                              (member-types-of-member-values memvals)))))
+       :enable (value-struct-write-aux
                 member-type-lookup
-                member-values-to-types
-                member-value-to-type)))))
+                member-types-of-member-values
+                member-type-of-member-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defstruct-gen-recognizer ((struct-tag-p symbolp)
                                   (tag symbolp)
-                                  (members member-type-listp))
+                                  (memtypes member-type-listp))
   :returns (mv (event pseudo-event-formp)
                (not-error-thm symbolp)
                (valuep-thm symbolp)
                (value-kind-thm symbolp)
+               (type-of-value-thm symbolp)
                (tag-thm symbolp)
                (members-thm symbolp))
   :short "Generate the recognizer of
@@ -568,6 +578,9 @@
        (value-kind-when-struct-tag-p
         (packn-pos (list 'value-kind-when- struct-tag-p)
                    struct-tag-p))
+       (type-of-value-when-struct-tag-p
+        (packn-pos (list 'type-of-value-when- struct-tag-p)
+                   struct-tag-p))
        (value-struct->tag-when-struct-tag-p
         (packn-pos (list 'value-struct->tag-when- struct-tag-p)
                    struct-tag-p))
@@ -581,8 +594,8 @@
                 (value-case x :struct)
                 (equal (value-struct->tag x)
                        (ident ,(symbol-name tag)))
-                (equal (member-values-to-types (value-struct->members x))
-                       ',members))
+                (equal (member-types-of-member-values (value-struct->members x))
+                       ',memtypes))
            :hooks (:fix)
            ///
            (defruled ,not-errorp-when-struct-tag-p
@@ -597,6 +610,12 @@
              (implies (,struct-tag-p x)
                       (equal (value-kind x) :struct))
              :in-theory '(,struct-tag-p))
+           (defruled ,type-of-value-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (equal (type-of-value x)
+                             (type-struct (ident ,(symbol-name tag)))))
+             :in-theory '(,struct-tag-p
+                          type-of-value))
            (defruled ,value-struct->tag-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (equal (value-struct->tag x)
@@ -604,13 +623,15 @@
              :in-theory '(,struct-tag-p))
            (defruled ,value-struct->members-when-struct-tag-p
              (implies (,struct-tag-p x)
-                      (equal (member-values-to-types (value-struct->members x))
-                             ',members))
+                      (equal (member-types-of-member-values
+                              (value-struct->members x))
+                             ',memtypes))
              :in-theory '(,struct-tag-p)))))
     (mv event
         not-errorp-when-struct-tag-p
         valuep-when-struct-tag-p
         value-kind-when-struct-tag-p
+        type-of-value-when-struct-tag-p
         value-struct->tag-when-struct-tag-p
         value-struct->members-when-struct-tag-p)))
 
@@ -619,7 +640,7 @@
 (define defstruct-gen-fixer ((struct-tag-fix symbolp)
                              (struct-tag-p symbolp)
                              (tag symbolp)
-                             (members member-type-listp))
+                             (memtypes member-type-listp))
   :returns (mv (event pseudo-event-formp)
                (fixer-recognizer-thm symbolp))
   :short "Generate the fixer of
@@ -643,17 +664,17 @@
                        (make-value-struct :tag (ident ,(symbol-name tag))
                                           :members
                                           (list ,@(defstruct-gen-fixer-aux
-                                                    members))))))
+                                                    memtypes))))))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
 
   :prepwork
-  ((define defstruct-gen-fixer-aux ((members member-type-listp))
+  ((define defstruct-gen-fixer-aux ((memtypes member-type-listp))
      :returns (terms true-listp)
      :parents nil
-     (b* (((when (endp members)) nil)
-          ((member-type member) (car members))
+     (b* (((when (endp memtypes)) nil)
+          ((member-type member) (car memtypes))
           (val (case (type-kind member.type)
                  (:uchar '(uchar 0))
                  (:schar '(schar 0))
@@ -667,7 +688,7 @@
                  (:sllong '(sllong 0))
                  (t (raise "Internal error: member type ~x0." member.type))))
           (term `(make-member-value :name ',member.name :value ,val))
-          (terms (defstruct-gen-fixer-aux (cdr members))))
+          (terms (defstruct-gen-fixer-aux (cdr memtypes))))
        (cons term terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -693,7 +714,7 @@
                               (struct-tag-fix symbolp)
                               (name identp)
                               (type typep)
-                              (members member-type-listp)
+                              (memtypes member-type-listp)
                               (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
                (reader symbolp)
@@ -703,12 +724,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a wrapper of @(tsee struct-read-member),
+    "This is a wrapper of @(tsee value-struct-read),
      but it has more specialized input and output types;
      in particular, it never returns an error.
      To prove the output type,
-     we need some intermediate lemmas
-     about @(tsee struct-read-member) and @('struct-read-member-aux').")
+     we need an intermediate lemma about @(tsee value-struct-read).")
    (xdoc::p
     "Also return the name of the reader
      and the name of the return type theorem of the reader.
@@ -724,18 +744,18 @@
         `(encapsulate ()
            (defrulel lemma
              (implies (,struct-tag-p struct)
-                      (,typep (struct-read-member ',name struct)))
+                      (,typep (value-struct-read ',name struct)))
              :enable (,struct-tag-p
-                      struct-read-member
+                      value-struct-read
                       ,(packn-pos (list typep '-to-type-of-value) typep))
              :use (:instance defstruct-reader-lemma
-                   (meminfos ',members)
+                   (memtypes ',memtypes)
                    (name ',name)
-                   (members (value-struct->members struct))))
+                   (memvals (value-struct->members struct))))
            (define ,struct-tag-read-name ((struct ,struct-tag-p))
              :returns (val ,typep)
-             (struct-read-member (ident ,(ident->name name))
-                                 (,struct-tag-fix struct))
+             (value-struct-read (ident ,(ident->name name))
+                                (,struct-tag-fix struct))
              :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
              :hooks (:fix)))))
     (mv event struct-tag-read-name return-thm)))
@@ -791,12 +811,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a wrapper of @(tsee struct-write-member),
+    "This is a wrapper of @(tsee value-struct-write),
      but it has more specialized input and output types;
      in particular, it never returns an error.
      To prove the output type,
      we need some intermediate lemmas
-     about @(tsee struct-write-member) and @('struct-write-member-aux').")
+     about @(tsee value-struct-write) and @('value-struct-write-aux').")
    (xdoc::p
     "Also return the name of the writer
      and the name of the return type theorem of the writer.
@@ -814,21 +834,21 @@
            (defrulel lemma
              (implies (and (,struct-tag-p struct)
                            (,typep val))
-                      (,struct-tag-p (struct-write-member ',name val struct)))
+                      (,struct-tag-p (value-struct-write ',name val struct)))
              :enable (,struct-tag-p
-                      struct-write-member
-                      ,(packn-pos (list 'type-of-value-when- typep '-forward)
+                      value-struct-write
+                      ,(packn-pos (list 'type-of-value-when- typep)
                                   'type-of-value))
              :use (:instance defstruct-writer-lemma
-                   (meminfos ',members)
+                   (memtypes ',members)
                    (name ',name)
-                   (members (value-struct->members struct))
+                   (memvals (value-struct->members struct))
                    (val val)))
            (define ,struct-tag-write-name ((val ,typep) (struct ,struct-tag-p))
              :returns (new-struct ,struct-tag-p)
-             (struct-write-member (ident ,(ident->name name))
-                                  (,type-fix val)
-                                  (,struct-tag-fix struct))
+             (value-struct-write (ident ,(ident->name name))
+                                 (,type-fix val)
+                                 (,struct-tag-fix struct))
              :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
              :hooks (:fix)))))
     (mv event struct-tag-write-name return-thm)))
@@ -892,6 +912,7 @@
             not-errorp-when-struct-tag-p
             valuep-when-struct-tag-p
             value-kind-when-struct-tag-p
+            type-of-value-when-struct-tag-p
             value-struct->tag-when-struct-tag-p
             value-struct->members-when-struct-tag-p)
         (defstruct-gen-recognizer struct-tag-p tag members))
@@ -920,6 +941,7 @@
               :not-error-thm not-errorp-when-struct-tag-p
               :valuep-thm valuep-when-struct-tag-p
               :value-kind-thm value-kind-when-struct-tag-p
+              :type-of-value-thm type-of-value-when-struct-tag-p
               :tag-thm value-struct->tag-when-struct-tag-p
               :members-thm value-struct->members-when-struct-tag-p
               :call call))

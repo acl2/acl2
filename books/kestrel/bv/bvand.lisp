@@ -259,18 +259,18 @@
 (defthm bvand-with-mask-better-eric
   (implies (and (syntaxp (quotep mask)) ;new
                 (logmaskp mask)
-                (<= (integer-length mask) size2)
-                (natp size2))
-           (equal (bvand size2 mask i)
+                (<= (integer-length mask) size)
+                (natp size))
+           (equal (bvand size mask i)
                   (bvchop (integer-length mask) i))))
 
 ;don't need if we are commuting constants
 (defthm bvand-with-mask-better-eric-alt
   (implies (and (syntaxp (quotep mask)) ;new
                 (logmaskp mask)
-                (<= (integer-length mask) size2)
-                (natp size2))
-           (equal (bvand size2 i mask)
+                (<= (integer-length mask) size)
+                (natp size))
+           (equal (bvand size i mask)
                   (bvchop (integer-length mask) i)))
   :hints (("Goal" :use (:instance bvand-with-mask-better-eric)
            :in-theory (disable bvand-with-mask-better-eric
@@ -280,8 +280,6 @@
   (implies (not (integerp size))
            (equal (bvand size x y) 0))
   :hints (("Goal" :in-theory (enable bvand))))
-
-
 
 (defthm unsigned-byte-p-of-bvand-2
   (implies (or (unsigned-byte-p size i)

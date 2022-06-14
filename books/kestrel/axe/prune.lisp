@@ -330,7 +330,7 @@
                               (mv erp nil state)
                             (mv (erp-nil)
                                 ;; todo: skip the bool-fix if known-boolean:
-                                `(bool-fix ,then-branch) state))))
+                                `(bool-fix$inline ,then-branch) state))))
               (if (eq :false result)
                   ;; Throw away the then-branch:
                   (prog2$ (cw "Resolved the test to false.)~%")
@@ -341,7 +341,7 @@
                                 (mv erp nil state)
                               (mv (erp-nil)
                                   ;; todo: skip the bool-fix if known-boolean:
-                                  `(bool-fix ,else-branch) state))))
+                                  `(bool-fix$inline ,else-branch) state))))
                 ;; todo: if it simplifies to something other than t/nil, use that here?
                 (b* ((- (cw "Did not resolve test.)~%"))
                      ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:

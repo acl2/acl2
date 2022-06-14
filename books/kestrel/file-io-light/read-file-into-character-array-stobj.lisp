@@ -107,19 +107,11 @@
         (if (not channel)
             ;; Error:
             (mv `(:could-not-open-channel ,filename) character-array-stobj state)
-          (if ;; This check is needed for the guard of close-input-channel (can
-              ;; this ever happen?):
-              (member-eq channel
-                         '(acl2-input-channel::standard-character-input-0
-                           acl2-input-channel::standard-object-input-0))
-              ;; Error:
-              (prog2$ (er hard? 'read-file-into-character-array-stobj "Bad channel!")
-                      (mv `(:bad-channel ,filename) character-array-stobj state))
-            (let ( ;; make the array the right size:
-                  (character-array-stobj (resize-characters file-length character-array-stobj)))
-              (mv-let (character-array-stobj state)
-                (read-file-into-character-array-stobj-aux channel 0 character-array-stobj state)
-                (let ((state (close-input-channel channel state)))
-                  (mv nil ; no error
-                      character-array-stobj
-                      state))))))))))
+          (let ( ;; make the array the right size:
+                (character-array-stobj (resize-characters file-length character-array-stobj)))
+            (mv-let (character-array-stobj state)
+              (read-file-into-character-array-stobj-aux channel 0 character-array-stobj state)
+              (let ((state (close-input-channel channel state)))
+                (mv nil ; no error
+                    character-array-stobj
+                    state)))))))))

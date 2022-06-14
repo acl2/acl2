@@ -308,6 +308,12 @@
               (indices-for-1s (+ -1 high) low c))
       (indices-for-1s (+ -1 high) low c))))
 
+(defthm indices-for-1s-out-of-order
+  (implies (< high low)
+           (equal (indices-for-1s high low c)
+                  nil))
+  :hints (("Goal" :in-theory (enable indices-for-1s))))
+
 (defthm subsetp-equal-of-indices-for-1s-and-indices-for-1s
   (implies (and (<= low low+)
                 (integerp high)
@@ -1700,6 +1706,7 @@
                             natp)
                            (bitp
                             indices-for-0s-of-+-of-1 ;looped
+                            ;acl2::equal-of-+-when-negative-constant ; why?
                             )))))
 
 (defthm make-range-check-pi-constraints-correct-1-backward
@@ -2114,7 +2121,11 @@
            (iff (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
                 (acl2::bit-listp (acl2::lookup-eq-lst (take (+ 1 i) avars) valuation))))
   ;todo: improve hints!
-  :hints (("[1]subgoal 94" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+  :hints (("[1]subgoal 102" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 99" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 98" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 97" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 94" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
           ("[1]subgoal 91" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
           ("[1]subgoal 90" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
           ("[1]subgoal 89" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
@@ -2186,7 +2197,8 @@
                 (acl2::bit-listp (acl2::lookup-eq-lst avars valuation)) ;proved elsewhere??
                 )
            (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p))
-  :hints (("[1]subgoal 21" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+  :hints (;("[1]subgoal 21" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          (and stable-under-simplificationp '(:use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING))))
           ("subgoal *1/2" :cases ((bitp (LOOKUP-EQUAL (NTH I AVARS) VALUATION)))
            :use ((:instance constraints-are-just-bitp-once-pi-is-0
                             (i (+ -1 i)))

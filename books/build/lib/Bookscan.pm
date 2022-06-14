@@ -77,7 +77,7 @@ sub set_max_time_event () { return 'set-max-time'; }
 sub pbs_event () { return 'pbs'; }
 
 sub print_scanevent {
-    my ($fname,$args) = @_;    
+    my ($fname,$args) = @_;
     print "$fname: ";
     foreach my $arg (@$args) {
 	$arg && print " $arg";
@@ -202,7 +202,7 @@ sub scan_depends_on {
     my $regexp = "\\([\\s]*depends-on[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	debug_print_event($base, "depends_on", \@res);
+	debug_print_event($base, ["depends_on", \@res]);
 	# Disallow depends-on of a certificate, for now.
 	if ($res[0] =~ m/\.cert$/) {
 	    STDERR->print("**************************** WARNING **************************************\n");
@@ -276,7 +276,7 @@ sub scan_cert_param {
     my $regexp = "cert[-_]param[\\s]*:?[\\s]*\\(?([^)]*)\\)?";
     my @match = $the_line =~ m/$regexp/;
     if (@match) {
-	debug_print_event($base, "cert_param", \@match);
+	debug_print_event($base, ["cert_param", \@match]);
 	my $pairs = parse_params($match[0]);
 	return [cert_param_event, $pairs];
     }

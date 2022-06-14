@@ -21,6 +21,7 @@
 (include-book "bip39")
 (include-book "bip43")
 (include-book "bip44")
+(include-book "bech32")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

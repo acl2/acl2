@@ -50,7 +50,8 @@
 
 ;(include-book "dag-arrays")
 (include-book "depth-array")
-(include-book "stp-counterexamples") ;brings in a bunch of the defs of bv functions...
+(include-book "known-predicates")
+(include-book "stp-counterexamples")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-if
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
@@ -1599,7 +1600,7 @@
                    constant-array-info))
            (mv (erp-t) nil constant-array-info)))
         (bvle ;; (bvle size x y)
-         ;; TODO: Consider omitting this and instead introducing sbvlt through rewriting
+         ;; TODO: Consider omitting this and instead introducing bvlt through rewriting
          ;;fixme either drop this or add support for the other operators: bvge, etc. (same for the signed comparisons)
          (if (and (= 3 (len (dargs expr)))
                   (quoted-posp (darg1 expr))

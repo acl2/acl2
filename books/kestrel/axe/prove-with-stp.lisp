@@ -51,7 +51,7 @@
 ;move
 (defthmd myquotep-when-axe-disjunctionp
   (implies (axe-disjunctionp d)
-           (equal (MYQUOTEP d)
+           (equal (myquotep d)
                   (or (equal (true-disjunction) d)
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
@@ -59,7 +59,7 @@
 ;move
 (defthmd quotep-when-axe-disjunctionp
   (implies (axe-disjunctionp d)
-           (equal (QUOTEP d)
+           (equal (quotep d)
                   (or (equal (true-disjunction) d)
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
@@ -223,8 +223,7 @@
                 (or key
                     (alistp alist)))
            (assoc-equal key alist))
-  :hints (("Goal" :in-theory (e/d (member-equal assoc-equal)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable member-equal assoc-equal))))
 
 ;instead of throwing an error when given a nodenum that has no type yet, this one may return (most-general-type)
 ;fixme combine with the non-safe version
@@ -389,7 +388,7 @@
                 (natp nodenum)
                 (axe-typep new-type))
            (nodenum-type-alistp (mv-nth 0 (improve-type nodenum new-type nodenum-type-alist))))
-  :hints (("Goal" :in-theory (e/d (improve-type) ()))))
+  :hints (("Goal" :in-theory (enable improve-type))))
 
 (defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-type
   (implies (and (nodenum-type-alistp nodenum-type-alist)
@@ -400,7 +399,7 @@
                        DAG-LEN))
            (all-< (strip-cars (mv-nth 0 (improve-type nodenum new-type nodenum-type-alist)))
                   dag-len))
-  :hints (("Goal" :in-theory (e/d (improve-type) ()))))
+  :hints (("Goal" :in-theory (enable improve-type))))
 
 ;; (thm
 ;;  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
@@ -1013,8 +1012,7 @@
                               (axe-typep type-acc)
                               (natp nodenum))
                   ;; todo: use rules instead of these hints
-                  :guard-hints (("Goal" :expand ()
-                                 :in-theory (enable BOUNDED-DAG-EXPRP)))))
+                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp)))))
   (if (endp parent-nodenums)
       type-acc
     (b* ((parent-nodenum (first parent-nodenums))
@@ -2238,7 +2236,7 @@
                                              base-filename print max-conflicts
                                              counterexamplep state))))))))
 
-;fixme move this to the translate-dag-to-stp book?
+;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: the cutting could look at shared nodes (don't cut above the shared node frontier)?

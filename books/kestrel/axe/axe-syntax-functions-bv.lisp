@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,6 @@
 ;; This book contains bit-vector-related functions that support Axe
 ;; rules that call axe-syntaxp and axe-bind-free.
 
-(include-book "known-predicates")
 (include-book "axe-types") ;reduce?  we just need the bv-type stuff
 (include-book "dag-arrays")
 (include-book "kestrel/bv/bv-syntax" :dir :system)
@@ -40,32 +39,17 @@
       (unquote x)
     nil))
 
-;TODO: Would like to make this sensitive to the :known-booleans table, but that would require passing in wrld here, which axe-syntaxp doesn't yet support
-;TODO: move (not really boolean-related)?
-(defund known-booleanp (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (if (quotep nodenum-or-quotep)
-      (let ((val (unquote nodenum-or-quotep)))
-        (if (eq t val)
-            t
-          (eq nil val)))
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (and (consp expr)
-           (member-eq (ffn-symb expr) *known-predicates-basic*)))))
-
-;fixme are there other functions like this to deprecate?
-;returns a bv-typep or nil (if we could not determine a type)
+;; Returns a bv-typep or nil (if we could not determine a type).
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
-;fixme make sure all callers of this handle nil okay (would it ever be better to throw an error?)?
 ;what if the number of arguments is wrong?
+;; NOTE: Soundness depends on this since it is used in the STP translation.
 (defund get-type-of-bv-expr-axe (fn dargs)
   (declare (xargs :guard (and (true-listp dargs)
                               (all-dargp dargs))))
   (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
    ((member-eq fn '(getbit bitxor bitand bitor bitnot bool-to-bit))
     (make-bv-type 1))
+   ;; Functions whose type is indicated by the first argument:
    ((member-eq fn '(bvchop ;$inline
                     bvxor bvand bvor bvnot
                     bvplus bvminus bvuminus bvmult
@@ -74,38 +58,32 @@
                     repeatbit
                     bvdiv bvmod
                     sbvdiv sbvrem
-                    leftrotate rightrotate
+                    leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
                     bvif
                     bvnth ;drop?
                     ))
-    (if (consp dargs)
-        (let ((width (first dargs)))
-          (if (quoted-natp width) ;could use consp instead of quotep in this?
-              (make-bv-type (unquote width))
-            nil))
-      nil ;fixme error?
-      ))
+    (and (consp dargs)
+         (let ((width (first dargs)))
+           (and (quoted-natp width)
+                (make-bv-type (unquote width))))))
+   ;; 32-bit operations:
    ;;see unsigned-byte-p-32-of-leftrotate32 and unsigned-byte-p-32-of-rightrotate32:
    ((member-eq fn '(leftrotate32 rightrotate32)) ;eventually drop?
     (make-bv-type 32))
-   ;;ffixme think about what these do with non power of 2 sizes:
-   ;;see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
    ((eq fn 'slice)
     (let ((high (unquote-if-possible (first dargs)))
           (low (unquote-if-possible (second dargs))))
-      (if (and (natp high)
-               (natp low)
-               (<= low high))
-          (make-bv-type (+ 1 high (- low)))
-        nil ;fixme error?
-        )))
+      (and (natp high)
+           (natp low)
+           (<= low high)
+           (make-bv-type (+ 1 high (- low))))))
    ((eq fn 'bvcat)
     (let ((high-size (unquote-if-possible (first dargs)))
           (low-size (unquote-if-possible (third dargs))))
-      (if (and (natp high-size) (natp low-size))
-          (make-bv-type (+ high-size low-size))
-        nil ;fixme error?
-        )))
+      (and (natp high-size)
+           (natp low-size)
+           (make-bv-type (+ high-size low-size)))))
+   ;; Unknown function, can't find a BV size:
    (t nil)))
 
 (defthm get-type-of-bv-expr-axe-type
@@ -124,14 +102,15 @@
            (axe-typep (get-type-of-bv-expr-axe fn dargs)))
   :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;returns an alist that binds VARNAME to the size of the nodenum-or-quotep, if it is a bit vector with a statically known size, or nil to indicate failure.
 ;bozo redo to support different sets of operators <- ??
 ;todo: can we save adding a quote to the returned size?
 (defund bind-bv-size-axe (nodenum-or-quotep quoted-varname dag-array)
-  (declare (xargs :guard (and ;; (symbolp varname)
-                          (or (myquotep nodenum-or-quotep)
-                              (and (natp nodenum-or-quotep)
-                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep)))))))
+  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
+                             (and (natp nodenum-or-quotep)
+                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
   (if (not (and (myquotep quoted-varname) ;todo: just call consp?
                 (symbolp (unquote quoted-varname))))
       (er hard? 'bind-bv-size-axe "Unexpected varname argument: ~x0." quoted-varname)
@@ -153,10 +132,12 @@
                     ;; failure (may be a constant array or a negative or something else):
                     nil))
               (let ((type (get-type-of-bv-expr-axe fn (dargs expr))))
-                (if type ;(bv-typep type)
-                    (acons (unquote quoted-varname) (list 'quote (bv-type-width type)) nil) ;could save this quote since in many operators the size is already quoted
+                (if type
+                    (acons (unquote quoted-varname) (list 'quote (bv-type-width type)) nil) ;could often save this quote since in many operators the size is already quoted
                   ;;failure:
                   nil)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund term-should-be-trimmed-axe-helper (width term operators dag-array)
   (declare (xargs :guard (and (natp width)
@@ -184,7 +165,7 @@
                ;;                         (quotep (darg4 expr)))
                )
            (let ((type (get-type-of-bv-expr-axe (ffn-symb expr) (dargs expr))))
-             (and (bv-typep type)
+             (and type
                   (< width (bv-type-width type))))))))
 
 ;OPERATORS should be 'all or 'non-arithmetic
@@ -241,6 +222,8 @@
               nil)
     (let ((width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
       (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;term and nest are nodenums or quoteps?
 (defund bv-array-write-nest-ending-inp (term nest dag-array)
@@ -353,6 +336,7 @@
 ;;     nil))
 
 ;in case we can't decide which form to prefer
+;move
 (defthmd car-when-nth-0-constant
   (implies (and (equal (nth 0 x) k)
                 (syntaxp (quotep k)))
@@ -490,57 +474,6 @@
 ;;              (< (unquote width) (get-type-of-expr expr)))))))
 
 ;; (skip -proofs (verify-guards term-is-wider-than))
-;; (defthmd pseudo-termp-hack
-;;   (implies (and (pseudo-termp term)
-;;                 (equal 'quote (car term)))
-;;            (consp (cdr term)))
-;;   :hints (("Goal" :in-theory (enable pseudo-termp))))
-
-;(in-theory (disable LIST::NTH-OF-CDR)) ;new
-
-;; (DEFTHM SYN::PSEUDO-TERMP-OF-nth-1
-;;   (IMPLIES (AND (PSEUDO-TERMP SYN::TERM)
-;;                 (NOT (EQUAL (CAR SYN::TERM) 'QUOTE))
-;; ;                (CONSP SYN::TERM)
-;;                 )
-;;            (PSEUDO-TERMP (nth 1 SYN::TERM)))
-;;   :HINTS (("Goal" :EXPAND ((NTH 1 SYN::TERM)
-;;                            (PSEUDO-TERMP SYN::TERM))
-;;            :IN-THEORY (E/d (nth
-;;                             ) (NTH-OF-CDR)))))
-
-;; ;bozo more like this?
-;; (DEFTHM SYN::PSEUDO-TERMP-OF-nth-2
-;;   (IMPLIES (AND (PSEUDO-TERMP SYN::TERM)
-;;                 (NOT (EQUAL (CAR SYN::TERM) 'QUOTE))
-;;                 ;(CONSP SYN::TERM)
-;;                 ;(CONSP (CDR SYN::TERM))
-;;                 )
-;;            (PSEUDO-TERMP (nth 2 SYN::TERM)))
-;;   :HINTS (("Goal" :EXPAND ((NTH 2 SYN::TERM)
-;;                            (NTH 1 (CDR SYN::TERM))
-;;                            (PSEUDO-TERMP SYN::TERM))
-;;            :IN-THEORY (E/d (nth) (NTH-OF-CDR 3-CDRS)))))
-
-;; (DEFTHM SYN::PSEUDO-TERMP-OF-nth-3
-;;   (IMPLIES (AND (PSEUDO-TERMP SYN::TERM)
-;;                 (NOT (EQUAL (CAR SYN::TERM) 'QUOTE))
-;;                 ;(CONSP SYN::TERM)
-;;                 ;(CONSP (CDR SYN::TERM))
-;;                 )
-;;            (PSEUDO-TERMP (nth 3 SYN::TERM)))
-;;   :otf-flg t
-;;   :HINTS (("Goal" :EXPAND ((PSEUDO-TERM-LISTP (CDR SYN::TERM))
-;;                            (PSEUDO-TERM-LISTP (CDDR SYN::TERM))
-;;                            (PSEUDO-TERM-LISTP (CDDDR SYN::TERM))
-;;                            (NTH 3 SYN::TERM)
-;;                            (NTH 0 (CDDDR SYN::TERM))
-;;                            (NTH 1 (CDDR SYN::TERM))
-;;                            (NTH 2 (CDR SYN::TERM))
-;;                            (PSEUDO-TERMP SYN::TERM))
-;;            :Do-Not '(Generalize Eliminate-Destructors)
-;;            :IN-THEORY (E/d (PSEUDO-TERMP ;nth
-;;                                          ) (NTH-OF-CDR 3-CDRS)))))
 
 ;; ;drop?
 ;; (defun bitxor-terms-should-be-reordered (term1 term2 dag-array)

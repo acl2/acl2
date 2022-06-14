@@ -830,8 +830,8 @@ if ($success) {
 	      : ($ELAPSED > 60) ? $red
 	      : ($ELAPSED > 40) ? $boldyellow
               : ($ELAPSED > 20) ? $yellow
-	      : ($ELAPSED > 10) ? $green
-	      : $boldgreen;
+	      : ($ELAPSED > 10) ? $boldgreen
+	      : $green;
 
     if ($ENV{"CERT_PL_NO_COLOR"}) {
 	$color = "";

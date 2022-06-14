@@ -89,6 +89,7 @@
 
             x86isa::sar-spec$inline
             x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
+            x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
             )
           *instruction-decoding-and-spec-rules*))
 
@@ -890,8 +891,8 @@
 ;            x86isa::rb-set-flag-in-app-view
             acl2::getbit-of-slice-both
 
-            acl2::bvplus-of-bvchop-arg1
-            acl2::bvplus-of-bvchop-arg2
+            acl2::bvplus-of-bvchop-arg2 ; drop, once we include core-rules-bv
+            acl2::bvplus-of-bvchop-arg3 ; drop, once we include core-rules-bv
 ;            x86isa::set-flag-and-wb-in-app-view ;shilpi leaves this enabled
 
             acl2::getbit-identity ;might be slow

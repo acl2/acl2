@@ -11,10 +11,12 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax-operations")
 (include-book "function-environments")
 (include-book "computation-states")
 (include-book "integer-operations")
+
+(include-book "../language/abstract-syntax-operations")
+(include-book "../language/structure-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,7 +297,7 @@
           ((slongp arg) (lognot-slong arg))
           ((ullongp arg) (lognot-ullong arg))
           ((sllongp arg) (lognot-sllong arg))
-          ((pointerp arg) (sint-from-boolean (pointer-nullp arg)))
+          ((pointerp arg) (sint-from-boolean (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal"
                  :in-theory (enable value-scalarp
@@ -315,6 +317,8 @@
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg))
     (unop-case op
+               :address (error :todo)
+               :indir (error :todo)
                :plus (exec-plus arg)
                :minus (exec-minus arg)
                :bitnot (exec-bitnot arg)
@@ -462,7 +466,7 @@
           ((slongp arg) (boolean-from-slong arg))
           ((ullongp arg) (boolean-from-ullong arg))
           ((sllongp arg) (boolean-from-sllong arg))
-          ((pointerp arg) (not (pointer-nullp arg)))
+          ((pointerp arg) (not (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable value-scalarp
                                            value-arithmeticp
@@ -990,11 +994,11 @@
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-bitand
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg1)))
        ((unless (value-integerp arg2))
         (error (list :mistype-bitand
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
@@ -1020,11 +1024,11 @@
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-bitxor
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg1)))
        ((unless (value-integerp arg2))
         (error (list :mistype-bitxor
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
@@ -1050,11 +1054,11 @@
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-bitior
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg1)))
        ((unless (value-integerp arg2))
         (error (list :mistype-bitior
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
@@ -1339,12 +1343,14 @@
        ((unless (pointerp arr)) (error (list :mistype-arrsub
                                              :required :pointer
                                              :supplied (type-of-value arr))))
-       ((when (pointer-nullp arr)) (error (list :null-pointer)))
-       (addr (pointer->address arr))
-       (reftype (pointer->reftype arr))
-       (array (read-array addr compst))
+       ((when (value-pointer-nullp arr)) (error (list :null-pointer)))
+       (objdes (value-pointer->designator arr))
+       (reftype (value-pointer->reftype arr))
+       (array (read-object objdes compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
+       ((unless (value-case array :array))
+        (error (list :not-array arr (compustate-fix compst))))
        ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
@@ -1402,6 +1408,7 @@
              err))
           (t (error (list :array-element-type-not-supported
                           :element-type reftype)))))
+  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1422,18 +1429,21 @@
        ((unless (pointerp str)) (error (list :mistype-memberp
                                              :required :pointer
                                              :supplied (type-of-value str))))
-       ((when (pointer-nullp str)) (error (list :null-pointer)))
-       (addr (pointer->address str))
-       (reftype (pointer->reftype str))
-       (struct (read-struct addr compst))
+       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       (objdes (value-pointer->designator str))
+       (reftype (value-pointer->reftype str))
+       (struct (read-object objdes compst))
        ((when (errorp struct))
         (error (list :struct-not-found str (compustate-fix compst))))
+       ((unless (value-case struct :struct))
+        (error (list :not-struct str (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct))))))
-    (struct-read-member mem struct))
+    (value-struct-read mem struct))
+  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1559,7 +1569,9 @@
     "We go through formal parameters and actual arguments,
      pairing them up into the scope.
      We return an error if they do not match in number or types,
-     or if there are repeated parameters."))
+     or if there are repeated parameters.
+     We perform array-to-pointer conversion on both types
+     before comparing them."))
   (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
@@ -1573,8 +1585,8 @@
        (formal (car formals))
        (actual (car actuals))
        ((mv name tyname) (param-declon-to-ident+tyname formal))
-       (formal-type (tyname-to-type tyname))
-       (actual-type (type-of-value actual))
+       (formal-type (apconvert-type (tyname-to-type tyname)))
+       (actual-type (apconvert-type (type-of-value actual)))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
                      :name name
@@ -1711,11 +1723,13 @@
                (error (list :mistype-array
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
-              (addr (pointer->address ptr))
-              (reftype (pointer->reftype ptr))
-              (array (read-array addr compst))
+              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              (objdes (value-pointer->designator ptr))
+              (reftype (value-pointer->reftype ptr))
+              (array (read-object objdes compst))
               ((when (errorp array)) array)
+              ((unless (value-case array :array))
+               (error (list :not-array arr (compustate-fix compst))))
               ((unless (equal reftype (value-array->elemtype array)))
                (error (list :mistype-array-read
                             :pointer reftype
@@ -1737,63 +1751,63 @@
            (cond ((uchar-arrayp array)
                   (b* (((unless (ucharp val)) err-elem)
                        ((unless (uchar-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (uchar-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (uchar-array-write array index val)
+                                  compst)))
                  ((schar-arrayp array)
                   (b* (((unless (scharp val)) err-elem)
                        ((unless (schar-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (schar-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (schar-array-write array index val)
+                                  compst)))
                  ((ushort-arrayp array)
                   (b* (((unless (ushortp val)) err-elem)
                        ((unless (ushort-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (ushort-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (ushort-array-write array index val)
+                                  compst)))
                  ((sshort-arrayp array)
                   (b* (((unless (sshortp val)) err-elem)
                        ((unless (sshort-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (sshort-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (sshort-array-write array index val)
+                                  compst)))
                  ((uint-arrayp array)
                   (b* (((unless (uintp val)) err-elem)
                        ((unless (uint-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (uint-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (uint-array-write array index val)
+                                  compst)))
                  ((sint-arrayp array)
                   (b* (((unless (sintp val)) err-elem)
                        ((unless (sint-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (sint-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (sint-array-write array index val)
+                                  compst)))
                  ((ulong-arrayp array)
                   (b* (((unless (ulongp val)) err-elem)
                        ((unless (ulong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (ulong-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (ulong-array-write array index val)
+                                  compst)))
                  ((slong-arrayp array)
                   (b* (((unless (slongp val)) err-elem)
                        ((unless (slong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (slong-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (slong-array-write array index val)
+                                  compst)))
                  ((ullong-arrayp array)
                   (b* (((unless (ullongp val)) err-elem)
                        ((unless (ullong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (ullong-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (ullong-array-write array index val)
+                                  compst)))
                  ((sllong-arrayp array)
                   (b* (((unless (sllongp val)) err-elem)
                        ((unless (sllong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (sllong-array-write array index val)
-                                 compst)))
+                    (write-object objdes
+                                  (sllong-array-write array index val)
+                                  compst)))
                  (t (error (list :array-element-type-not-supported
                                  :element-type reftype))))))
         (:memberp
@@ -1808,19 +1822,21 @@
                (error (list :mistype-struct
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
-              (addr (pointer->address ptr))
-              (reftype (pointer->reftype ptr))
-              (struct (read-struct addr compst))
+              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              (objdes (value-pointer->designator ptr))
+              (reftype (value-pointer->reftype ptr))
+              (struct (read-object objdes compst))
               ((when (errorp struct)) struct)
+              ((unless (value-case struct :struct))
+               (error (list :not-struct str (compustate-fix compst))))
               ((unless (equal reftype
-                              (type-struct (value-struct->tag struct))))
+                              (type-of-value struct)))
                (error (list :mistype-struct-read
                             :pointer reftype
-                            :array (type-struct (value-struct->tag struct)))))
-              (new-struct (struct-write-member mem val struct))
+                            :array (type-of-value struct))))
+              (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
-           (write-struct addr new-struct compst)))
+           (write-object objdes new-struct compst)))
         (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))
     :measure (nfix limit))
 
@@ -2209,7 +2225,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt)
+  (verify-guards exec-stmt
+    :hints (("Goal" :in-theory (enable pointerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
