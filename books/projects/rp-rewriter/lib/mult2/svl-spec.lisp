@@ -473,7 +473,7 @@
                                        svl::4vec-concat$-of-term2=0
                                        ifix))))))
 
-  (def-rp-rule$ t nil
+  (def-rp-rule :disabled-for-acl2 t
     mult-final-spec-is-svl-mult-final-spec
     (implies (and (integerp mult)
                   (integerp mcand))

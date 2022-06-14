@@ -507,7 +507,7 @@
      :hints (("Goal"
               :in-theory (e/d (bitp bit-of) ())))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     bit-of-binary-fns
     (implies (not (zp start))
              (and (equal (bit-of (or$ x y) start )
@@ -529,7 +529,7 @@
                               SVL::4VEC-CONCAT$-Of-TERM2=0
                               svl::4vec-zero-ext-is-4vec-concat)))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     bit-of-binary-fns-start=0
     (implies t
              (and (equal (bit-of (or$ x y) 0 )
@@ -559,7 +559,7 @@
   :hints (("Goal"
            :in-theory (e/d (bitp and$ or$) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bit-of-4vec-bitnot-main
   (implies (bitp x)
            (equal (BIT-OF (SV::4VEC-BITNOT x) 0)
@@ -568,7 +568,7 @@
            :in-theory (e/d (bitp) (bitp-of-bit-of
                                    (:TYPE-PRESCRIPTION BIT-OF))))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bit-of-4vec-bitnot
   (equal (BIT-OF (SV::4VEC-BITNOT (bit-of x start)) 0)
          (svl::4vec-bitnot$ 1 (bit-of x start)))

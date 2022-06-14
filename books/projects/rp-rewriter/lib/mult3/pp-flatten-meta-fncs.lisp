@@ -112,7 +112,12 @@
 (define create-and-list-instance (lst)
   :returns (and-list-instance rp-termp
                               :hyp (rp-term-listp lst))
-  `(and-list ',(and-list-hash lst) (list . ,lst)))
+  (if (and (consp lst)
+           (atom (cdr lst))
+           (or (bit-of-p (car lst))
+               (has-bitp-rp (car lst))))
+      (car lst)
+    `(and-list ',(and-list-hash lst) (list . ,lst))))
 
 (defmacro pp-cons (a b)
   `(cons ,a ,b))
@@ -898,11 +903,13 @@
         (t
          (b* ((cur (cdar lst))
               (cur (cond ((atom cur)  ''1)
-                         ((atom (cdr cur)) (if (equal (car cur) ''1)
-                                               ''1
-                                             (create-and-list-instance (list (car cur)))
-                                             ;;`(and-list (list ))
-                                             ))
+                         ((atom (cdr cur))
+                          (cond ((equal (car cur) ''1)
+                                 ''1)
+                                #|((or (bit-of-p (car cur))
+                                     (has-bitp-rp (car cur)))
+                                 (car cur))|#
+                                (t (create-and-list-instance (list (car cur))))))
                          ((atom (cddr cur)) (create-and-list-instance cur))
                          (t (create-and-list-instance cur))))
               )
