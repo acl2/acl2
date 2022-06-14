@@ -85,12 +85,10 @@
   use-qr-lemmas
   :disabled t))
 
-
 ;; This  book includes  different books  with meta  rules in  them, RP-Rewriter
 ;; needs this event in such cases so  that it creates a new function that calls
 ;; all the meta rules and attaches them to its internal functions.
 (attach-meta-fncs svl-mult-rules)
-
 
 ;; An RP-Rewriter suitable saturate function. Users may need to add a rewrite
 ;; rule to convert their saturate function in terms of this function.
@@ -255,7 +253,6 @@
                     (sv::4vec-?* x y z)))
     :hints (("goal"
              :in-theory (e/d (bitp) ())))))
-
 
 
 ;; -------------------------------------------------------------------------
@@ -458,7 +455,6 @@
            :in-theory (e/d (bitp) ()))))
 
 
-
 ;; ---------------------------------------------------------------------------
 ;; SVL functions (bits, 4vec-rsh, etc.) and bit-of lemmas
 
@@ -559,12 +555,10 @@
           ("Subgoal 2"
            :in-theory (e/d () ()))))
 
-
 (def-rp-rule 4vec-rsh-of-bit-of-out-of-range
   (implies (posp amount)
            (equal (sv::4vec-rsh amount (bit-of x pos))
                   0)))
-
 
 
 ;; ---------------------------------------------------------------------------
@@ -777,13 +771,13 @@
   ;; Below side-conditions are probably unnecessary but I am keeping them
   ;; because they don't hurt and may be useful some day
   (defthm 4vec-bitand-is-binary-and-side-cond
-      (and (bitp (binary-and (svl::bits x 0 1)
-                             (svl::bits y 0 1)))
-           (bitp (binary-and x y))
-           (bitp (binary-and (bits-to-bit-of (svl::bits x start 1)) y))
-           (bitp (binary-and y (bits-to-bit-of (svl::bits x start 1))))
-           (bitp (binary-and (bits-to-bit-of (svl::bits x start1 1))
-                             (bits-to-bit-of (svl::bits y start2 1))))))
+    (and (bitp (binary-and (svl::bits x 0 1)
+                           (svl::bits y 0 1)))
+         (bitp (binary-and x y))
+         (bitp (binary-and (bits-to-bit-of (svl::bits x start 1)) y))
+         (bitp (binary-and y (bits-to-bit-of (svl::bits x start 1))))
+         (bitp (binary-and (bits-to-bit-of (svl::bits x start1 1))
+                           (bits-to-bit-of (svl::bits y start2 1))))))
 
   (rp-attach-sc 4vec-bitand-to-binary-and-when-atleast-one-is-bitp
                 4vec-bitand-is-binary-and-side-cond)
@@ -883,7 +877,6 @@
 
 
 
-
 ;; --------------------------------------------------------------------------------
 ;; SVL/4vec functions and their trivial interactions with this book's functions
 
@@ -978,7 +971,6 @@
                             binary-?)
                            ((:TYPE-PRESCRIPTION BIT-FIX))))))
 
-
 (def-rp-rule 4vec-fix-of-bit-of
   (equal (svl::4vec-fix (bit-of x pos))
          (bit-of x pos))
@@ -990,7 +982,6 @@
 (def-rp-rule 3vec-fix-of-bit-of
   (equal (sv::3vec-fix (bit-of x index))
          (bit-of x index)))
-
 
 (encapsulate
   nil
@@ -1092,8 +1083,8 @@
 
   ;; these lemmas are left disabled because "bit-of" should only appear when
   ;; the first argument is an atom. so we should not need these lemmas. but i
-  ;; leave these lemmas here just in case. 
-  
+  ;; leave these lemmas here just in case.
+
   (def-rp-rule :disabled t
     bit-of-binary-fns
     (implies (not (zp start))
@@ -1160,7 +1151,6 @@
              :in-theory (e/d (bitp) (bitp-of-bit-of
                                      (:type-prescription bit-of)))))))
 
-
 (def-rp-rule bits-of-4vec-==-binary-fncs
   (and (equal (svl::bits (sv::4vec-== (binary-or x y) 1) '0 '1)
               (binary-or x y))
@@ -1169,7 +1159,6 @@
   :hints (("goal"
            :in-theory (e/d (bitp and$ or$)
                            (equal-sides-to-s)))))
-
 
 (progn
   (def-rp-rule bits-0-1-of-s
@@ -1311,7 +1300,6 @@
                               (a (* a b))))
              :in-theory (e/d () ())))))
 
-
 (def-rp-rule bits-of---=of-bitp
   (implies (and (natp start)
                 (bitp x))
@@ -1398,45 +1386,45 @@
 
   (def-rp-rule :disabled-for-acl2 t
     unsigned-byte-p-redefined-with-loghead
-                (implies (natp size)
-                         (equal (unsigned-byte-p size x)
-                                (and (integerp x)
-                                     (equal x (loghead size x)))
-                                #|(and (hide (unsigned-byte-p size x))
-                                (integerp x) ; ; ; ;
-                                (equal (ash x (- size)) 0))|#))
-                :hints (("Goal"
-                         :expand ((hide (unsigned-byte-p size x)))
-                         :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
-                                          (:REWRITE ACL2::FLOOR-ZERO . 1)
-                                          (:REWRITE MINUS-OF-MINUS)
-                                          (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
-                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
-                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
-                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
-                                          (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                                         ()))))
+    (implies (natp size)
+             (equal (unsigned-byte-p size x)
+                    (and (integerp x)
+                         (equal x (loghead size x)))
+                    #|(and (hide (unsigned-byte-p size x))
+                    (integerp x) ; ; ; ;
+                    (equal (ash x (- size)) 0))|#))
+    :hints (("Goal"
+             :expand ((hide (unsigned-byte-p size x)))
+             :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
+                              (:REWRITE ACL2::FLOOR-ZERO . 1)
+                              (:REWRITE MINUS-OF-MINUS)
+                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                             ()))))
 
   (defthmd unsigned-byte-p-redefined-with-loghead-for-atom
-           (implies (and (natp size)
-                         (syntaxp (atom x)))
-                    (equal (unsigned-byte-p size x)
-                           (and (integerp x)
-                                (equal x (loghead size x)))
-                           #|(and (hide (unsigned-byte-p size x))
-                           (integerp x) ; ; ;
-                           (equal (ash x (- size)) 0))|#))
-           :hints (("Goal"
-                    :expand ((hide (unsigned-byte-p size x)))
-                    :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
-                                     (:REWRITE ACL2::FLOOR-ZERO . 1)
-                                     (:REWRITE MINUS-OF-MINUS)
-                                     (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
-                                     (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
-                                     (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
-                                     (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
-                                     (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                                    ()))))
+    (implies (and (natp size)
+                  (syntaxp (atom x)))
+             (equal (unsigned-byte-p size x)
+                    (and (integerp x)
+                         (equal x (loghead size x)))
+                    #|(and (hide (unsigned-byte-p size x))
+                    (integerp x) ; ; ;
+                    (equal (ash x (- size)) 0))|#))
+    :hints (("Goal"
+             :expand ((hide (unsigned-byte-p size x)))
+             :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
+                              (:REWRITE ACL2::FLOOR-ZERO . 1)
+                              (:REWRITE MINUS-OF-MINUS)
+                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                             ()))))
 
   (def-rp-rule ash-implies-unsigned-byte-p
     (implies (and (integerp x)
@@ -1550,12 +1538,23 @@
    :hints
    (("goal" :in-theory (e/d (2vec-adder-is-4vec-adder) nil)))))
 
+(def-rp-rule :disabled-for-acl2 t
+  4vec-plus-is-+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (sv::4vec-plus x y)
+                  (+ x y)))
+  :hints (("goal"
+           :in-theory (e/d (sv::4vec-plus
+                            sv::4vec->upper
+                            sv::4vec->lower) ()))))
+
 (def-rp-rule 4vec-plus-chain-1
   (implies
    (and (> size 2) ;; if it is a full-adder pattern, then it should be caught
         ;; with the rules below so size=2 is not allowed here.
         (integerp size)
-        
+
         (bitp carry-in)
         (unsigned-byte-p (1- size) x)
         (unsigned-byte-p (1- size) y))
@@ -1626,6 +1625,8 @@
 
 (progn
   ;; Find Full and Half adder patterns from SVEX when defined with the + sign
+
+
   (defund tertiaryp (x)
     (or (= x 0)
         (= x 1)
@@ -1671,7 +1672,7 @@
                                                   (acl2::logcdr x))))))
     :hints (("Goal"
              :in-theory (e/d (tertiaryp bitp) ()))))
-  
+
   (def-rp-rule 4vec-plus-pattern-to-FA-2
     (implies (and (tertiaryp x)
                   (bitp y))
@@ -1705,7 +1706,6 @@
                 4vec-plus-pattern-to-FA-side-cond)
   (rp-attach-sc 4vec-plus-pattern-to-FA-2
                 4vec-plus-pattern-to-FA-side-cond)
-
 
   ;; These should have priority because if x is a constant, then
   ;; 4vec-plus-pattern-to-FA-1 or 4vec-plus-pattern-to-FA-2 will apply but we
@@ -1756,7 +1756,6 @@
 	     :in-theory (e/d (bitp) ()))))
 
   (add-rp-rule FA-patterned-4vec-plus :outside-in :both))|#
-
 
 
 (progn

@@ -512,8 +512,8 @@
 
   (mutual-recursion
 
-   (defun rp-exc-all (term var-bindings state)
-     (declare (xargs  :stobjs state
+   (defun rp-exc-all (term var-bindings rp-state state)
+     (declare (xargs  :stobjs (state rp-state)
                       :guard (and
                               (alistp var-bindings)
                               #|(rp-termp term)||#
@@ -526,26 +526,34 @@
      (cond
       ((atom term)
        term)
-      ((acl2::fquotep term) term)
+      ((acl2::fquotep term)
+       (cond ((equal term '':rewriting-main-term)
+              (list 'quote (backchaining-just-started rp-state)))
+             ((equal term '':rewriting-hyp)
+              (list 'quote
+                    (and (not (backchaining-just-started rp-state))
+                         (backchaining-rule rp-state)
+                         )))
+             (t term)))
       ((case-match term (('if & & &) t) (& nil))
        ;; if we don't ckeck the if statement and run everything:
        ;; 1. the performance could be bad.
        ;; 2. guards may fail for one of the branches
-       (b* ((cond-rw (rp-exc-all (cadr term) var-bindings  state))
+       (b* ((cond-rw (rp-exc-all (cadr term) var-bindings rp-state state))
             ((when (equal cond-rw ''nil))
-             (rp-exc-all (cadddr term) var-bindings  state))
+             (rp-exc-all (cadddr term) var-bindings rp-state  state))
             ((when (nonnil-p cond-rw))
-             (rp-exc-all (caddr term) var-bindings  state)))
+             (rp-exc-all (caddr term) var-bindings rp-state state)))
          (progn$ (cw "Error in executing an if statement: ~%~p0~%" term)
                  term)))
       (t
        (rp-ev-fncall (car term)
-                     (rp-exc-all-subterms (cdr term) var-bindings state)
+                     (rp-exc-all-subterms (cdr term) var-bindings rp-state state)
                      var-bindings
                      state))))
 
-   (defun rp-exc-all-subterms (subterms var-bindings  state)
-     (declare (xargs  :stobjs state
+   (defun rp-exc-all-subterms (subterms var-bindings rp-state  state)
+     (declare (xargs  :stobjs (state rp-state)
                       :guard (and
                               (alistp var-bindings)
                               #|(rp-term-listp subterms)||#
@@ -556,10 +564,10 @@
       ((atom subterms)
        subterms)
       (t
-       (cons-with-hint (rp-exc-all (car subterms) var-bindings  state)
-                       (rp-exc-all-subterms (cdr subterms) var-bindings  state)
+       (cons-with-hint (rp-exc-all (car subterms) var-bindings rp-state state)
+                       (rp-exc-all-subterms (cdr subterms) var-bindings rp-state state)
                        subterms)))))
-  (local
+  #|(local
    (encapsulate
      nil
 
@@ -569,12 +577,12 @@
      (defthm-rp-exc-all
        (defthm pseudo-termp-rp-exc-all
          (implies (rp-termp term)
-                  (rp-termp (rp-exc-all term var-bindings  state)))
+                  (rp-termp (rp-exc-all term var-bindings rp-state state)))
          :flag rp-exc-all)
        (defthm pseudo-termp-rp-exc-all-subterms
          (implies (rp-term-listp subterms)
-                  (rp-term-listp (rp-exc-all-subterms subterms var-bindings  state)))
-         :flag rp-exc-all-subterms))))
+                  (rp-term-listp (rp-exc-all-subterms subterms var-bindings rp-state state)))
+         :flag rp-exc-all-subterms))))|#
 
   (verify-guards rp-exc-all)
 
@@ -593,8 +601,8 @@
 
   (mutual-recursion
 
-   (defun rp-rw-relieve-synp (term bindings  state)
-     (declare (xargs  :stobjs state
+   (defun rp-rw-relieve-synp (term bindings rp-state  state)
+     (declare (xargs  :stobjs (state rp-state)
                       :guard (and #|(rp-termp term)||#
                               (alistp bindings)
                               )
@@ -607,25 +615,25 @@
       ((and (case-match term (('synp & & ('quote &)) t) (& nil))
             #|(check-synp-syntax-aux term)||#)
        (b* ((hyp (unquote (cadddr term)))
-            (exc (rp-exc-all hyp bindings state))
+            (exc (rp-exc-all hyp bindings rp-state state))
             (res (nonnil-p exc)))
          res))
-      (t (rp-rw-relieve-synp-subterms (cdr term) bindings  state))))
+      (t (rp-rw-relieve-synp-subterms (cdr term) bindings rp-state  state))))
 
-   (defun rp-rw-relieve-synp-subterms (subterms bindings  state)
-     (declare (xargs  :stobjs state
+   (defun rp-rw-relieve-synp-subterms (subterms bindings rp-state state)
+     (declare (xargs  :stobjs (state rp-state)
                       :guard (and #|(rp-term-listp subterms)||#
                               (alistp bindings)
                               )
                       :mode :logic))
      (if (atom subterms)
          t
-       (and (rp-rw-relieve-synp (car subterms) bindings  state)
-            (rp-rw-relieve-synp-subterms (cdr subterms) bindings
+       (and (rp-rw-relieve-synp (car subterms) bindings rp-state  state)
+            (rp-rw-relieve-synp-subterms (cdr subterms) bindings rp-state
                                          state)))))
 
-  (defund rp-rw-relieve-synp-wrap (term  bindings  state)
-    (declare (xargs  :stobjs (state)
+  (defund rp-rw-relieve-synp-wrap (term  bindings rp-state state)
+    (declare (xargs  :stobjs (state rp-state)
                      :guard (and #|(rp-termp term)||#
                              (alistp bindings)
                              )
@@ -633,7 +641,7 @@
     (or
      (not (include-fnc term 'synp))
      (rp-rw-relieve-synp term
-                         bindings
+                         bindings rp-state
                          state)))
 
   (defund remove-rp-from-bindings-for-synp (rule var-bindings)
@@ -1067,6 +1075,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
   (b* ((backchain-limit (rw-backchain-limit rp-state))
        (backchain-limit (mbe :exec backchain-limit :logic (nfix backchain-limit)))
        (existing-backchaining-rule (backchaining-rule rp-state))
+       (rp-state (update-backchaining-just-started nil rp-state))
        (limit (1- limit))
        ((when (or (> backchain-limit limit)
                   existing-backchaining-rule))
@@ -1074,7 +1083,8 @@ relieving the hypothesis for ~x1! You can disable this error by running:
          (mv limit nil nil rp-state)))
        (old-limit-error-setting (rw-limit-throws-error rp-state))
        (rp-state (update-rw-limit-throws-error (rw-backchain-limit-throws-error rp-state) rp-state))
-       (rp-state (update-backchaining-rule rule rp-state)))
+       (rp-state (update-backchaining-rule rule rp-state))
+       (rp-state (update-backchaining-just-started t rp-state)))
     (mv backchain-limit t old-limit-error-setting rp-state))
   ///
 
@@ -1088,7 +1098,8 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                             rp-state)
   :stobjs (rp-state)
   :returns (res-rp-state)
-  (b* (((unless backchain-ends) rp-state)
+  (b* ((rp-state (update-backchaining-just-started nil rp-state))
+       ((unless backchain-ends) rp-state)
        (rp-state (update-backchaining-rule nil rp-state))
        (rp-state (update-rw-limit-throws-error old-limit-error-setting
                                                rp-state)))
@@ -1470,7 +1481,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
          (mv t rp-state))
         (term (car term-lst))
         (synp-relieved (or (not (and (consp term) (equal (car term) 'synp)))
-                           (rp-rw-relieve-synp-wrap term var-bindings state)))
+                           (rp-rw-relieve-synp-wrap term var-bindings rp-state state)))
         ((unless synp-relieved)
          (b* ((rp-state (rp-stat-add-to-rules-used rule :failed-synp nil rp-state))
               (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index

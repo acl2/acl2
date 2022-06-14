@@ -208,7 +208,7 @@
   :inline t
   (b* ((reuse-stats-entry (hons-get svex reuse-stats)))
     (and reuse-stats-entry
-         (rp::cons-count-compare svex 20)
+         ;;(rp::cons-count-compare svex 20)
          (> (cdr reuse-stats-entry) 1))))
 
 (acl2::defines
