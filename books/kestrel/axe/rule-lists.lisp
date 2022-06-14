@@ -932,7 +932,6 @@
     unsigned-byte-p-of-bvor2
     unsigned-byte-p-of-bvor3))
 
-
 (defun update-nth2-rules ()
   (declare (xargs :guard t))
   '(true-listp-of-update-nth2
@@ -975,6 +974,9 @@
     cdr-of-cdr-becomes-nthcdr ;these nthcdr rules are new
     nthcdr-of-cdr-combine
     cdr-of-nthcdr
+    consp-of-nthcdr
+    len-of-nthcdr
+    nth-of-nthcdr
     nthcdr-of-1
     nthcdr-of-0
     nthcdr-when-not-posp ;drop?
@@ -1041,14 +1043,13 @@
             cons-nth-onto-subrange-alt
             equal-subrange-nthcdr-rewrite
             true-listp-of-firstn
-            consp-of-nthcdr
+
 ;firstn-of-cdr-becomes-subrange ; drop?
             append-of-take-and-cons-when-nth ;could be expensive
             append-subrange-subrange-adjacent-alt
             equal-of-append-arg1
             cons-of-nth-and-nth-plus-1
-            len-of-nthcdr
-            nth-of-nthcdr
+
             subrange-of-0
             append-of-take-and-subrange-alt
             equal-of-cons
