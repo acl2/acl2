@@ -20,7 +20,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
-;; See also bv-array-conversions2.lisp.
+;; See also bv-array-conversions2.lisp and bv-array-conversions-gen.lisp.
 
 (defund list-to-bv-array-aux (element-size elements-left total-length lst)
   (declare (xargs :guard (and (natp element-size)
@@ -85,6 +85,8 @@
   (implies (natp width)
            (all-unsigned-byte-p width (list-to-bv-array width x)))
   :hints (("Goal" :in-theory (enable list-to-bv-array))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Convert an array of bit-vectors to a list:
 (defund bv-array-to-list-aux (size len i arr)
@@ -252,6 +254,8 @@
                   (bvchop-list width LST)))
   :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-TO-LIST
                                      BV-ARRAY-TO-LIST-AUX-BECOMES-NTHCDR-2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund list-to-byte-array (lst)
   (declare (xargs :guard (true-listp lst)))

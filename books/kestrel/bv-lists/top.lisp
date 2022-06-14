@@ -79,6 +79,7 @@
 (include-book "bv-arrays")
 (include-book "bv-array-conversions")
 (include-book "bv-array-conversions2")
+(include-book "bv-array-conversions-gen")
 
 (include-book "bvnth")
 
