@@ -3588,7 +3588,7 @@
 (defun addressp-claims-for-fields-of-object (class-name class-table-map address-term heap-core)
   (if (not (jvm::class-namep class-name)) ;excludes stuff like (:array :int)
       nil
-    (let* ((superclass-names (get-superclasses class-name class-table-map))
+    (let* ((superclass-names (jvm::get-superclasses class-name class-table-map))
            (all-class-names (cons class-name superclass-names))
            )
       (addressp-claims-for-fields-of-classes all-class-names class-table-map address-term heap-core))))
@@ -6193,7 +6193,7 @@
                                   (eq :all classes-to-assume-initialized)))))
   ;;FFIXME is it cheating to run all class initializers first?
   (b* ((- (cw "(Decompiling program ~x0~%" tag))
-       (class-alist (global-class-alist state))
+       (class-alist (jvm::global-class-alist state))
        (class-table-map (alist-to-map class-alist))
        (all-class-names (strip-cars class-alist)) ; What if not all classes in the class table will actually be used?
        ((when (and (not (eq :all classes-to-assume-initialized))
@@ -6390,12 +6390,13 @@
        ((when (not (postludesp postludes)))
         (mv t (er hard 'lift-java-code "ERROR: Ill-formed postludes!") state))
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (class-alist (jvm::global-class-alist state)) ;todo: redone in decompile-program
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
        ;; Gather info about the main method to be lifted:
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
-       (class-alist (global-class-alist state)) ;todo: redone in decompile-program
+
 ;TODO: Combine with similar code in unroll-java-code
        (class-info (lookup-equal method-class class-alist))
        ((when (not class-info))
@@ -6726,11 +6727,11 @@
                 (mv t nil state)))
        (assumptions (translate-terms assumptions 'lift-java-code-segment-fn (w state))) ;throws an error on bad input
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (class-alist (jvm::global-class-alist state))
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
-       (class-alist (global-class-alist state))
        (class-info (lookup-equal method-class class-alist))
        ((when (not class-info))
         (prog2$ (cw "ERROR: Error getting the class info for ~x0" method-class)

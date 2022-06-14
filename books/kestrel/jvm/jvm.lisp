@@ -458,7 +458,7 @@
   (declare (xargs :guard (and (class-namep class-name)
                               (class-tablep class-table))))
   (let* (;(class-info (get-class-info class-name class-table))
-         (psupers (acl2::get-superclasses class-name class-table);(class-decl-superclasses class-info)
+         (psupers (get-superclasses class-name class-table);(class-decl-superclasses class-info)
           )
          (supers (cons class-name psupers)))
     (or (memberp "java.lang.Thread" supers)
@@ -897,7 +897,7 @@
 
 (defthm framep-of-top-frame-of-binding-of-thread-table
   (IMPLIES (AND (call-stack-non-emptyp th s)
-                (acl2::all-framep (BINDING TH (THREAD-TABLE S))) ;drop
+                (acl2::all-framep (BINDING TH (THREAD-TABLE S))) ;drop but strengthen CALL-STACKP
                 (BOUND-IN-ALISTP TH (THREAD-TABLE S))
                 (JVM-STATEP S)
                 (THREAD-DESIGNATORP TH))
@@ -1284,7 +1284,7 @@
                   ))
   (resolve-method-step-2-aux (cons method-name method-descriptor)
                              ;; we search the given class and then its superclasses
-                             (cons class-name (acl2::get-superclasses class-name class-table))
+                             (cons class-name (get-superclasses class-name class-table))
                              class-table))
 
 (defthm resolve-method-step-2-type
@@ -2715,7 +2715,7 @@
 ;; We leave this disabled and prove an opener for the case when the class-name is a constant.
 (defund invoke-static-initializer-for-next-class (class-name th s)
   (invoke-static-initializer-for-next-class-helper class-name
-                                                   (acl2::get-superclasses class-name (class-table s))
+                                                   (get-superclasses class-name (class-table s))
                                                    th
                                                    s))
 
@@ -3261,7 +3261,7 @@
                   (array-typep type-t))
               ;; T is a class type:
               (or (equal type-s type-t)
-                  (acl2::bool-fix (member-equal type-t (acl2::get-superclasses type-s class-table))))
+                  (acl2::bool-fix (member-equal type-t (get-superclasses type-s class-table))))
             ;; T is an interface type:
             (class-implements-interfacep type-s type-t class-table))
         ;; S is an interface type:
@@ -3271,7 +3271,7 @@
             (equal type-t "java.lang.Object")
           ;; T is an interface type:
           (or (equal type-t type-s)
-              (acl2::bool-fix (member-equal type-t (acl2::get-superinterfaces (list type-s) class-table))))))
+              (acl2::bool-fix (member-equal type-t (get-superinterfaces (list type-s) class-table))))))
     ;; S is an array type:
     (let ((s-component-type (get-array-component-type type-s)))
       (if (class-or-interface-namep type-t)
@@ -3351,7 +3351,7 @@
                      type-s
                      type-t
                      ;;(array-classp type-s)
-                     ;;(acl2::get-superclasses type-s class-table)
+                     ;;(get-superclasses type-s class-table)
                      )
                s))))))))
 
@@ -3820,7 +3820,7 @@
                               (not (is-an-interfacep class-name class-table)))))
   (let ((method-or-nil (lookup-method-in-classes (cons method-name descriptor)
                                                  ;;we search the given class and then its superclasses (fixme what about interfaces?)
-                                                 (cons class-name (acl2::get-superclasses class-name class-table))
+                                                 (cons class-name (get-superclasses class-name class-table))
                                                  class-table)))
     (if method-or-nil
         method-or-nil
@@ -3929,7 +3929,7 @@
           ;;fixme - do we do the right thing here?
           (lookup-method-for-invokespecial-aux c
                                                method-name descriptor class-table
-                                               (+ 1 (len (acl2::get-superclasses c class-table))) ;sufficient to ensure we handle all the super classes.
+                                               (+ 1 (len (get-superclasses c class-table))) ;sufficient to ensure we handle all the super classes.
                                                ))))))
 
 
@@ -4563,7 +4563,7 @@
                                    acl2::set-fields)
                                   (string-has-been-internedp
                                    string-to-char-list
-                                   acl2::get-superclasses)))))
+                                   get-superclasses)))))
 
 ;;     (if looked-up-string ;if the string is already in the table
 ;;         (mv looked-up-string heap)

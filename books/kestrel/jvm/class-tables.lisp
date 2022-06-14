@@ -760,7 +760,7 @@
 ;todo: change package
 ;returns the (proper) superclasses of class-name from most to least specific (ending with java.lang.Object)
 ;fixme really this should be called get-superclass-names
-(defun acl2::get-superclasses (class-name class-table)
+(defun get-superclasses (class-name class-table)
   (declare (xargs :guard (and (class-tablep class-table)
                               (class-namep class-name))))
   (get-superclasses-aux class-name class-table 1000000 ;fixme use (len (dom class-table)) instead, but that can cause problems for rewriting?
@@ -771,12 +771,12 @@
                 (bound-in-class-tablep class-name class-table)
 ;                (not (class-decl-interfacep (get-class-info class-name class-table))) ;fixme?
                 )
-           (all-bound-in-class-tablep (acl2::get-superclasses class-name class-table) class-table)))
+           (all-bound-in-class-tablep (get-superclasses class-name class-table) class-table)))
 
 ;fixme uncomment
 ;; (defthm string-listp-of-get-superclasses
 ;;   (implies (class-tablep class-table)
-;;            (string-listp (acl2::get-superclasses class-name class-table))))
+;;            (string-listp (get-superclasses class-name class-table))))
 
 ;; (defthm all-keys-bound-to-class-infosp-when-subset-of-dom
 ;;   (implies  (and (class-tablep class-table)
@@ -806,7 +806,7 @@
 
 ;a workset algorithm
 ;note: this does not look up superclasses!
-(defun acl2::get-superinterfaces-aux (class-or-interface-names class-table count acc)
+(defun get-superinterfaces-aux (class-or-interface-names class-table count acc)
   (declare (xargs :measure (nfix (+ 1 count))
                   :guard (and (class-tablep class-table)
                               (all-class-namesp class-or-interface-names)
@@ -822,7 +822,7 @@
       (let* ((class-or-interface0-name (first class-or-interface-names))
              (class-info (get-class-info class-or-interface0-name class-table))
              (direct-superinterfaces (class-decl-interfaces class-info)))
-        (acl2::get-superinterfaces-aux (append direct-superinterfaces
+        (get-superinterfaces-aux (append direct-superinterfaces
                                                 (rest class-or-interface-names))
                                         class-table
                                         (+ -1 count)
@@ -830,17 +830,17 @@
 
 (defthm get-superinterfaces-aux-base
   (implies (endp class-or-interface-names)
-           (equal (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc)
+           (equal (get-superinterfaces-aux class-or-interface-names class-table count acc)
                   acc)))
 
 (defthm get-superinterfaces-aux-opener
   (implies (and (not (zp count))
                 (not (endp class-or-interface-names)))
-           (equal (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc)
+           (equal (get-superinterfaces-aux class-or-interface-names class-table count acc)
                   (let* ((class-or-interface0-name (first class-or-interface-names))
                          (class-info (get-class-info class-or-interface0-name class-table))
                          (direct-superinterfaces (class-decl-interfaces class-info)))
-                    (acl2::get-superinterfaces-aux (append direct-superinterfaces
+                    (get-superinterfaces-aux (append direct-superinterfaces
                                                             (rest class-or-interface-names))
                                                     class-table
                                                     (+ -1 count)
@@ -849,15 +849,15 @@
 ;write a tool to automate stuff like this?
 (defthm true-listp-of-get-superinterfaces-aux
   (implies (true-listp acc)
-           (true-listp (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc))))
+           (true-listp (get-superinterfaces-aux class-or-interface-names class-table count acc))))
 
-(defun acl2::get-superinterfaces (class-or-interface-names class-table)
+(defun get-superinterfaces (class-or-interface-names class-table)
   (declare (xargs :guard (and (all-class-namesp class-or-interface-names)
                               (true-listp class-or-interface-names)
                               (class-tablep class-table)
                               (all-bound-in-class-tablep class-or-interface-names class-table))
                   :guard-hints (("Goal" :in-theory (enable class-tablep)))))
-  (acl2::get-superinterfaces-aux class-or-interface-names class-table 100000 nil))
+  (get-superinterfaces-aux class-or-interface-names class-table 100000 nil))
 
 ;BOZO is this up to date?
 ; Note that the definition below of the Thread class includes a 'run' method,
@@ -874,7 +874,7 @@
   (declare (xargs :guard (and (class-tablep class-table)
                               (class-namep class-name)
                               (class-namep class-name2))))
-  (member-equal class-name (acl2::get-superclasses class-name2 class-table)))
+  (member-equal class-name (get-superclasses class-name2 class-table)))
 
 ;; Test whether CLASS-NAME is a proper subclass of CLASS-NAME2.
 ;todo: remove hyphen from name
@@ -1002,8 +1002,8 @@
                               (class-namep interface-name)
                               (class-tablep class-table)
                               (bound-in-class-tablep class-name class-table))))
-  (let* ((superclass-names (acl2::get-superclasses class-name class-table))
-         (implemented-interfaces (acl2::get-superinterfaces superclass-names class-table)))
+  (let* ((superclass-names (get-superclasses class-name class-table))
+         (implemented-interfaces (get-superinterfaces superclass-names class-table)))
     (if (member-equal interface-name implemented-interfaces)
         t
       nil)))
@@ -1024,6 +1024,6 @@
 ;; (table global-class-table <class-name> <class-info-constant-name>)
 
 ;; Returns the global-class-table as an alist.
-(defund acl2::global-class-alist (state)
+(defund global-class-alist (state)
   (declare (xargs :stobjs (state)))
   (table-alist 'acl2::global-class-table (w state)))

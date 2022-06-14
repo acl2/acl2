@@ -23,4 +23,6 @@
                          (bv-array-write 8 3 1 y
                                          (bv-array-write 8 3 2 z
                                                          '(0 0 0)))))
-  :hints (("Goal" :in-theory (enable list-to-bv-array2 list-to-bv-array-aux2-of-cons))))
+  :hints (("Goal" :in-theory (enable list-to-bv-array2
+                                     list-to-bv-array-aux2
+                                     list-to-bv-array-aux2-of-cons))))
