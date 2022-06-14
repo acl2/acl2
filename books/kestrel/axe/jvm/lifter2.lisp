@@ -121,12 +121,13 @@
        ((when (not (postludesp postludes)))
         (mv t (er hard 'lift-java-code2 "ERROR: Ill-formed postludes!") state))
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (class-alist (jvm::global-class-alist state))
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
        ;; Gather info about the main method to be lifted:
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
-       (class-alist (global-class-alist state))
+
        (class-table-map (alist-to-map class-alist))
        (all-class-names (strip-cars class-alist))
 ;TODO: Combine with similar code in unroll-java-code

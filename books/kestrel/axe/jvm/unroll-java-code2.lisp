@@ -411,13 +411,14 @@
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (class-alist (jvm::global-class-alist state))
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
        (- (cw "(Unrolling ~x0:~%" method-designator-string))
        (state-var 's0)
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
-       (class-alist (global-class-alist state))
+
        (all-class-names (strip-cars class-alist))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
