@@ -26,6 +26,13 @@
               (true-listp x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
 
+;; Compatible with STD.  Using (null x) in the conclusion might be better.
+(defthm unsigned-byte-listp-when-not-consp
+  (implies (not (consp x))
+           (equal (unsigned-byte-listp n x)
+                  (not x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
 (defthmd unsigned-byte-listp-forward-to-all-unsigned-byte-p
   (implies (unsigned-byte-listp n x)
            (all-unsigned-byte-p n x))
