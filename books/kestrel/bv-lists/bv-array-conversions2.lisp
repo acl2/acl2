@@ -22,7 +22,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-;; See also bv-array-conversions2.lisp.
+;; See also bv-array-conversions2.lisp and bv-array-conversions-gen.lisp.
 
 (local
  (defthm plus-of-minus-when-constant
