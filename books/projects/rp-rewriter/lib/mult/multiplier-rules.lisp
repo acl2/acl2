@@ -82,7 +82,7 @@
                  (ACL2-NUMBERP A))
             (INTEGERP A))))||#
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   hide-x-is-x-all
   ;; (syntaxp
   ;;  (and (not (equal (car x) 'bo))
@@ -113,11 +113,11 @@
            (equal (len (nthcdr a x))
                   (nfix (- (len x) a )))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   true-list-take
   (true-listp (take a x)))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   true-list-nthcdr
   (implies (true-listp x)
            (true-listp (nthcdr a x))))
@@ -200,7 +200,7 @@
     :hints (("Goal"
              :expand ([]-cdr x 1))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     cons-of-car-and-cdr-to-[]
     (implies (consp a)
              (equal (cons ([] A 0) ([]-CDR A 1))
@@ -208,7 +208,7 @@
     :hints (("Goal"
              :in-theory (e/d ([] []-cdr) ()))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     cons-of-car-and-cdr-to-[]-2
     (implies (consp a)
              (equal (cons ([] A 0) (append ([]-CDR A 1) b))
@@ -216,7 +216,7 @@
     :hints (("Goal"
              :in-theory (e/d ([] []-cdr) ()))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     cons-of-[]-and-cdr
     (implies (> (len a) 0)
              (equal (cons ([] a 0) ([]-cdr a 1))
@@ -390,58 +390,58 @@
 (encapsulate
   nil
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-1
     (implies (syntaxp (s-order x y))
              (equal (b+ y x)
                     (b+ x y)))
     :rule-classes ((:rewrite :loop-stopper nil)))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-1a
     (equal (b+ (f2 y) (p+ a b))
            (b+ (p+ a b) (f2 y))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-1b
     (equal (b+ (d2 y) (p+ a b))
            (b+ (p+ a b) (d2 y))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-1c
     (equal (b+ (f2 y) (m2 a))
            (b+ (m2 a) (f2 y))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-1d
     (equal (b+ (d2 y) (m2 a))
            (b+ (m2 a) (d2 y))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-1e
     (equal (b+ (p+ x y) (m2 a))
            (b+ (m2 a) (p+ x y))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-f
     (implies (syntaxp (not (equal x ''t)))
              (equal (b+ t x)
                     (b+ x t))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-1g
     (implies (syntaxp (< xn yn))
              (equal (b+ ([] y yn) ([] x xn))
                     (b+ ([] x xn) ([] y yn)))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-2
     (implies (syntaxp (s-order x y))
              (equal (b+ y (b+ x z))
                     (merge-sum x y z)))
     :rule-classes ((:rewrite :loop-stopper nil)))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-comm-2-[]
     (implies (syntaxp (< xn yn))
              (equal (b+ ([] y yn) (b+ ([] x xn) z))
@@ -459,17 +459,17 @@
   (equal (b+ (b+ x y) z)
   (b+ x (b+ y z))))||#
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-reorder-thm
     (equal (b+ (b+ x y) z)
            (merge-b+ (b+ x y) z)))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-reorder-1a
     (equal (sum (sum a b) x y)
            (sum a b x y)));)
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     b+-reorder-1b
     (implies (syntaxp (s-order x a))
              (equal (sum (sum a b) x y)

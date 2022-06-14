@@ -50,14 +50,14 @@
 (define adder-and (x y)
   (and$ x y)
   ///
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     bitp-adder-and
     (bitp (adder-and a b))))
 
 (define adder-or (x y)
   (or$ x y)
   ///
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     bitp-adder-or
     (bitp (adder-or a b))))
 

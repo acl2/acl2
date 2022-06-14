@@ -38,6 +38,8 @@
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 (local
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
+(local
+ (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
 
 (define is-sbits (term)
   :progn t
@@ -426,13 +428,23 @@
      (cond ((and (natp start)
                  (natp size)
                  (bits-meta-fn-aux-can-change val start size))
-            (bits-meta-fn-aux val start size))
+            (b* (((mv res dont-rw)
+                  (bits-meta-fn-aux val start size))
+                 ((when (rp::rp-equal-cnt res val 2))
+                  ;; do this to retain the side-condition of the input if the
+                  ;; bits operation is ineffective.
+                  (mv val t)))
+              (mv res dont-rw)))
            (t (mv term nil))))
     (('sv::4vec-part-select ('quote start) ('quote size) val)
      (cond ((and (natp start)
                  (natp size)
                  (bits-meta-fn-aux-can-change val start size))
-            (bits-meta-fn-aux val start size))
+            (b* (((mv res dont-rw)
+                  (bits-meta-fn-aux val start size))
+                 ((when (rp::rp-equal-cnt res val 2))
+                  (mv val t)))
+              (mv res dont-rw)))
            (t (mv `(bits ,val ,(cadr term) ,(caddr term)) `(nil t t t)))))
     (& (mv term nil))))
 
@@ -888,7 +900,23 @@
             (equal (rp-evlt (mv-nth 0 (bits-of-meta-fn term)) a)
                    (rp-evlt term a)))
    :hints (("Goal"
-            :in-theory (e/d (bits-of-meta-fn) ())))))
+            :expand ((:free (x) (rp::rp-trans (cons 'bits x)))
+                     (:free (x) (rp::rp-trans (cons '4vec-part-select x))))
+            :use ((:instance bits-meta-fn-aux-correct
+                             (term (CADR TERM))
+                             (start (CADR (CADDR TERM)))
+                             (size (CADR (CADDDR TERM))))
+                  (:instance bits-meta-fn-aux-correct
+                             (term (CADDDR TERM))
+                             (start (CADR (CADR TERM)))
+                             (size (CADR (CADDR TERM)))))
+            :in-theory (e/d (bits-of-meta-fn)
+                            (rp::ex-from-rp
+                             rp::rp-termp
+                             RP::RP-EQUAL
+                             rp::rp-trans
+                             rp::valid-sc
+                             bits-meta-fn-aux-correct))))))
 
 (local
  (defthm convert-4vec-concat-to-4vec-concat$-reverse

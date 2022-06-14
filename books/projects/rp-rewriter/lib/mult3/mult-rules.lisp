@@ -182,7 +182,8 @@
            :in-theory (e/d (bitp) ()))))
 
 (progn
-  (def-rp-rule$ t t binary-xor-1-of-s
+  (def-rp-rule :disabled t
+    binary-xor-1-of-s
     (and (equal (binary-xor 1 (s hash-code pp c/d))
                 (sum 1 (-- (s hash-code pp c/d))))
          (equal (binary-xor (s hash-code pp c/d) 1)
@@ -191,20 +192,23 @@
              :in-theory (e/d (binary-xor m2)
                              ()))))
 
-  (def-rp-rule$ t t binary-not-of-s
+  (def-rp-rule :disabled t
+    binary-not-of-s
     (equal (binary-not (s hash-code pp c/d))
            (sum 1 (-- (s hash-code pp c/d))))
     :hints (("Goal"
              :in-theory (e/d (binary-xor m2) ()))))
 
-  (def-rp-rule$ t t binary-not-of-c
+  (def-rp-rule :disabled t
+    binary-not-of-c
     (implies (bitp (c hash-code s pp c/d))
              (equal (binary-not (c hash-code s pp c/d))
                     (sum 1 (-- (c hash-code s pp c/d)))))
     :hints (("Goal"
              :in-theory (e/d (binary-xor m2) ()))))
 
-  (def-rp-rule$ t t binary-not-of-s-c-res
+  (def-rp-rule :disabled t
+    binary-not-of-s-c-res
     (implies (bitp (s-c-res s pp c/d))
              (equal (binary-not (s-c-res s pp c/d))
                     (sum 1 (-- (s-c-res s pp c/d)))))
@@ -336,7 +340,7 @@
 
 
 
-(def-rp-rule$ nil nil
+(def-rp-rule 
   s-c-spec-with-zero
   (and (equal (s-c-spec (list 0 a b))
               (s-c-spec (list a b)))
@@ -388,7 +392,7 @@
                             sum)
                            ()))))
 
-(def-rp-rule$ nil nil
+(def-rp-rule 
   s-c-spec-with-one
   (implies (bitp a)
            (and (equal (s-c-spec (list 1 a))
@@ -437,3 +441,14 @@
   (def-rp-rule not-equal-bit-of-to-0
     (equal (if (equal (bit-of x start) 0) nil t)
            (equal (bit-of x start) 1))))
+
+
+(def-rp-rule bit-of-of---
+  (implies (and (bitp x)
+                (natp index))
+           (equal (bit-of (-- x) index)
+                  x))
+  :hints (("Goal"
+           :in-theory (e/d (bitp
+                            bit-of)
+                           ()))))

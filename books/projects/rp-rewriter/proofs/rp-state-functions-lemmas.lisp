@@ -194,68 +194,12 @@
                                                                              rp-context
                                                                              rp-state)))))
   :hints (("goal"
-           :expand ((valid-rp-state-syntaxp-aux
-                     (update-rw-stack-size
-                      (+ 1 (nth *rw-stack-size* rp-state))
-                      (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                   '(:type :trying)
-                                                   (list :rune (cdddr rule))
-                                                   (list :lhs (cdr (car rule)))
-                                                   (list :rhs (caddr rule))
-                                                   (list :hyp (cdr (cadr rule)))
-                                                   (list :context rp-context)
-                                                   (list :var-bindings var-bindings))
-                                             (nth *rw-stack* rp-state))
-                                       rp-state)))
-                    (valid-rp-statep
-                     (update-rw-stack-size
-                      (+ 1 (nth *rw-stack-size* rp-state))
-                      (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                   '(:type :trying)
-                                                   (list :rune (cdddr rule))
-                                                   (list :lhs (cdr (car rule)))
-                                                   (list :rhs (caddr rule))
-                                                   (list :hyp (cdr (cadr rule)))
-                                                   (list :context rp-context)
-                                                   (list :var-bindings var-bindings))
-                                             (nth *rw-stack* rp-state))
-                                       rp-state))))
-           :use ((:instance rp-state-push-to-try-to-rw-stack-is-rp-statep)
-                 (:instance valid-rp-statep-necc
-                            (key (valid-rp-statep-witness
-                                  (update-rw-stack-size
-                                   (+ 1 (nth *rw-stack-size* rp-state))
-                                   (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                                '(:type :trying)
-                                                                (list :rune (cdddr rule))
-                                                                (list :lhs (cdr (car rule)))
-                                                                (list :rhs (caddr rule))
-                                                                (list :hyp (cdr (cadr rule)))
-                                                                (list :context rp-context)
-                                                                (list :var-bindings var-bindings))
-                                                          (nth *rw-stack* rp-state))
-                                                    rp-state)))))
-                 (:instance valid-rp-state-syntaxp-aux-necc
-                            (key (valid-rp-state-syntaxp-aux-witness
-                                  (update-rw-stack-size
-                                   (+ 1 (nth *rw-stack-size* rp-state))
-                                   (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                                '(:type :trying)
-                                                                (list :rune (cdddr rule))
-                                                                (list :lhs (cdr (car rule)))
-                                                                (list :rhs (caddr rule))
-                                                                (list :hyp (cdr (cadr rule)))
-                                                                (list :context rp-context)
-                                                                (list :var-bindings var-bindings))
-                                                          (nth *rw-stack* rp-state))
-                                                    rp-state))))))
            :in-theory (e/d (rp-state-push-to-try-to-rw-stack
-                            valid-rp-state-syntaxp)
-                           (rp-statep
-                            valid-rp-statep
-                            update-rw-stack
+                            valid-rp-state-syntaxp
+                            update-rw-stack)
+                           (valid-rp-statep
                             valid-rp-state-syntaxp-aux
-                            update-rw-stack-size)))))
+                            )))))
 
 (defthm rp-statep-rp-state-push-to-result-to-rw-stack
   (implies (rp-statep rp-state)

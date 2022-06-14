@@ -259,14 +259,6 @@ four-lanes-hi and one-lane should be set to 1.~%")
 (encapsulate
     nil
 
-    ;; Some  recently introduced  and unknown  bug seems  to have  affected the
-    ;; proofs for these  one lane multipliers for the  svtv framework. However,
-    ;; the  unpack-booth-later heuristics  seems  to help  push  the proofs  go
-    ;; though.
-
-    (local
-     (enable-unpack-booth-later t))
-
   (defthmrp signed-one-lane-mult-is-correct
       (implies (and (integerp in1)
                     (integerp in2)
@@ -279,9 +271,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                                                       (sign-ext in2 64))
                                                    in3))))))))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; Proof 2-1b: Unsigned One lane (64x64-bit) multiplication
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Proof 2-1b: Unsigned One lane (64x64-bit) multiplication
 (encapsulate
     nil
 

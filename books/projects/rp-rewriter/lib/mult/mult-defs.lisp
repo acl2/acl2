@@ -397,7 +397,7 @@
   :enabled t
   (binary-and a b)
   ///
-  (def-rp-rule$ t t ba-type
+  (def-rp-rule :disabled t ba-type
     (bitp (ba a b))
     :rule-classes :type-prescription))
 
