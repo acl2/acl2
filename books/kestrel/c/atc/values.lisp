@@ -39,14 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pointerp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize pointers."
-  (and (valuep x)
-       (value-case x :pointer)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection integer-value-disjoint-rules
   :short "Rules about disjointness of integer values."
 
@@ -62,8 +54,7 @@
     ulongp
     slongp
     ullongp
-    sllongp
-    pointerp))
+    sllongp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,7 +73,7 @@
                  (slongp x)
                  (ullongp x)
                  (sllongp x)
-                 (pointerp x)
+                 (value-case x :pointer)
                  (value-case x :array)
                  (value-case x :struct)))
     :enable (valuep
@@ -96,7 +87,6 @@
              slongp
              ullongp
              sllongp
-             pointerp
              value-kind)
     :rule-classes :forward-chaining)
 
@@ -148,12 +138,7 @@
   (defrule valuep-when-sllongp
     (implies (sllongp x)
              (valuep x))
-    :enable (valuep sllongp))
-
-  (defrule valuep-when-pointerp
-    (implies (pointerp x)
-             (valuep x))
-    :enable (valuep pointerp)))
+    :enable (valuep sllongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,15 +410,7 @@
     :enable (type-of-value
              valuep
              value-kind
-             sllongp))
-
-  (defruled pointerp-to-type-of-value
-    (implies (valuep x)
-             (equal (pointerp x)
-                    (equal (type-of-value x)
-                           (type-pointer (value-pointer->reftype x)))))
-    :enable (type-of-value
-             pointerp)))
+             sllongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -521,9 +498,9 @@
              value-kind
              sllongp))
 
-  (defruled type-of-value-when-pointerp
-    (implies (pointerp x)
+  (defruled type-of-value-when-value-pointer
+    (implies (and (valuep x)
+                  (value-case x :pointer))
              (equal (type-of-value x)
                     (type-pointer (value-pointer->reftype x))))
-    :enable (type-of-value
-             pointerp)))
+    :enable type-of-value))

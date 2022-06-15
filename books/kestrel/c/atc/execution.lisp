@@ -297,7 +297,8 @@
           ((slongp arg) (lognot-slong arg))
           ((ullongp arg) (lognot-ullong arg))
           ((sllongp arg) (lognot-sllong arg))
-          ((pointerp arg) (sint-from-boolean (value-pointer-nullp arg)))
+          ((value-case arg :pointer) (sint-from-boolean
+                                      (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal"
                  :in-theory (enable value-scalarp
@@ -466,7 +467,7 @@
           ((slongp arg) (boolean-from-slong arg))
           ((ullongp arg) (boolean-from-ullong arg))
           ((sllongp arg) (boolean-from-sllong arg))
-          ((pointerp arg) (not (value-pointer-nullp arg)))
+          ((value-case arg :pointer) (not (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable value-scalarp
                                            value-arithmeticp
@@ -1317,7 +1318,7 @@
             :struct todo
             :pointer todo
             :array todo))
-          ((pointerp arg) todo)
+          ((value-case arg :pointer) todo)
           ((value-case arg :array) todo)
           ((value-case arg :struct) todo)
           (t (error (impossible)))))
@@ -1340,9 +1341,10 @@
      and the indexed element is returned as result."))
   (b* ((arr (value-result-fix arr))
        ((when (errorp arr)) arr)
-       ((unless (pointerp arr)) (error (list :mistype-arrsub
-                                             :required :pointer
-                                             :supplied (type-of-value arr))))
+       ((unless (value-case arr :pointer))
+        (error (list :mistype-arrsub
+                     :required :pointer
+                     :supplied (type-of-value arr))))
        ((when (value-pointer-nullp arr)) (error (list :null-pointer)))
        (objdes (value-pointer->designator arr))
        (reftype (value-pointer->reftype arr))
@@ -1367,7 +1369,6 @@
                                         :array array
                                         :index sub))))
     (value-array-read index array))
-  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1385,9 +1386,10 @@
      The value associated to the member is returned."))
   (b* ((str (value-result-fix str))
        ((when (errorp str)) str)
-       ((unless (pointerp str)) (error (list :mistype-memberp
-                                             :required :pointer
-                                             :supplied (type-of-value str))))
+       ((unless (value-case str :pointer))
+        (error (list :mistype-memberp
+                     :required :pointer
+                     :supplied (type-of-value str))))
        ((when (value-pointer-nullp str)) (error (list :null-pointer)))
        (objdes (value-pointer->designator str))
        (reftype (value-pointer->reftype str))
@@ -1402,7 +1404,6 @@
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct))))))
     (value-struct-read mem struct))
-  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1678,7 +1679,7 @@
               (var (expr-ident->get arr))
               (ptr (read-var var compst))
               ((when (errorp ptr)) ptr)
-              ((unless (pointerp ptr))
+              ((unless (value-case ptr :pointer))
                (error (list :mistype-array
                             :required :pointer
                             :supplied (type-of-value ptr))))
@@ -1715,7 +1716,7 @@
               (var (expr-ident->get str))
               (ptr (read-var var compst))
               ((when (errorp ptr)) ptr)
-              ((unless (pointerp ptr))
+              ((unless (value-case ptr :pointer))
                (error (list :mistype-struct
                             :required :pointer
                             :supplied (type-of-value ptr))))
@@ -2120,8 +2121,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt
-    :hints (("Goal" :in-theory (enable pointerp))))
+  (verify-guards exec-stmt)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
