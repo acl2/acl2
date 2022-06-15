@@ -4833,7 +4833,8 @@
        (subst? (and pointerp
                     (list (cons formal formal-ptr))))
        (hyps (and pointerp
-                  (list `(pointerp ,formal-ptr)
+                  (list `(valuep ,formal-ptr)
+                        `(value-case ,formal-ptr :pointer)
                         `(not (value-pointer-nullp ,formal-ptr))
                         `(equal (objdesign-kind
                                  (value-pointer->designator ,formal-ptr))
@@ -6704,7 +6705,8 @@
         (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
        (formula
         `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
-                       (pointerp ptr)
+                       (valuep ptr)
+                       (value-case ptr :pointer)
                        (not (value-pointer-nullp ptr))
                        (equal struct
                               (read-object (value-pointer->designator ptr)
@@ -6721,7 +6723,6 @@
                  :in-theory
                  '(exec-memberp
                    not-errorp-when-valuep-rewrite
-                   valuep-when-pointerp
                    value-resultp-when-valuep
                    value-result-fix-when-value-resultp
                    ,recognizer
@@ -6836,7 +6837,8 @@
                        (equal compst1 (mv-nth 1 val+compst1))
                        (,typep val)
                        (equal ptr (read-var (expr-ident->get target) compst1))
-                       (pointerp ptr)
+                       (valuep ptr)
+                       (value-case ptr :pointer)
                        (not (value-pointer-nullp ptr))
                        (equal struct
                               (read-object (value-pointer->designator ptr)
@@ -6853,7 +6855,6 @@
                  :in-theory
                  '(exec-expr-asg
                    not-errorp-when-valuep-rewrite
-                   valuep-when-pointerp
                    valuep-when-ucharp
                    valuep-when-scharp
                    valuep-when-ushortp

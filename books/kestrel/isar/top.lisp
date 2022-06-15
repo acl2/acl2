@@ -1,6 +1,6 @@
 ; Isar (Intelligible Semi-Automated Reasoning) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -40,7 +40,7 @@
      that may be valuable in some circumstances.
      For example, when programmatically generating proofs
      that are always expected to work based on some handwritten general proofs,
-     Isar proofs can be created that mimic the handwritten proofs closely.
+     Isar proofs can be generated that mimic the handwritten proofs closely.
      As another example, when the goal is not only to carry out a proof
      but also to explain how and why it works to human readers,
      Isar proofs may be especially appropriate.
@@ -87,11 +87,11 @@
      However, the proof builder commands
      are more similar to tactics that operate on the proof goals,
      where the intermediate proof states are not visible in the proof script,
-     with the result that a human reader cannot, in general,
+     with the consequence that a human reader cannot, in general,
      readily undestand the proof just by looking at the proof script,
      without running it.
      In contrast, Isar is designed to make those proof states visible,
      and to let a human reader understand the proof
      without actually running it.
      This is explained in more detail in the Isar documentation,
-     in particular where it is contrasted to Isabelle's tactics.")))
+     in particular where it is compared to Isabelle's tactics.")))

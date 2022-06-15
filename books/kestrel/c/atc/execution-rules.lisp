@@ -135,8 +135,7 @@
      such as @(tsee sintp)."))
 
   (defval *atc-valuep-rules*
-    '(valuep-when-pointerp
-      valuep-when-scharp
+    '(valuep-when-scharp
       valuep-when-ucharp
       valuep-when-sshortp
       valuep-when-ushortp
@@ -304,7 +303,7 @@
       type-of-value-when-slongp
       type-of-value-when-ullongp
       type-of-value-when-sllongp
-      type-of-value-when-pointerp
+      type-of-value-when-value-pointer
       type-of-value-when-uchar-arrayp
       type-of-value-when-schar-arrayp
       type-of-value-when-ushort-arrayp
@@ -1120,7 +1119,8 @@
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                          ,(atc-syntaxp-hyp-for-expr-pure 'y)
-                         (pointerp x)
+                         (valuep x)
+                         (value-case x :pointer)
                          (not (value-pointer-nullp x))
                          (equal array
                                 (read-object (value-pointer->designator x)
@@ -2066,7 +2066,8 @@
                  (equal compst1 (mv-nth 1 val+compst1))
                  (,epred val)
                  (equal ptr (read-var (expr-ident->get arr) compst1))
-                 (pointerp ptr)
+                 (valuep ptr)
+                 (value-case ptr :pointer)
                  (not (value-pointer-nullp ptr))
                  (equal array
                         (read-object (value-pointer->designator ptr) compst1))
