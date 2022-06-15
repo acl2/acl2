@@ -618,13 +618,19 @@
   (xdoc::topstring
    (xdoc::p
     "To symbolically execute an identifier (as an expression),
-     we simply expand the definition of @(tsee exec-ident)
-     which unconditionally yields @(tsee read-var).
+     we use a rule that is like the definition,
+     but provides a bit of separation/abstraction from the definition,
+     and it also avoids the binding of @('__function__').
      The @(tsee read-var) call may undergo further rewriting,
      as explained in @(see atc-read-var-rules)."))
 
+  (defruled exec-ident-open
+    (equal (exec-ident id compst)
+           (read-var id compst))
+    :enable exec-ident)
+
   (defval *atc-exec-ident-rules*
-    '(exec-ident)))
+    '(exec-ident-open)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
