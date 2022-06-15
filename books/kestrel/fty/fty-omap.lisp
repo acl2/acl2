@@ -35,6 +35,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h3 "Include-book Form")
+
+   (xdoc::codeblock
+    "(include-book \"kestrel/fty/defomap\" :dir :system)")
+
    (xdoc::h3 "Introduction")
 
    (xdoc::p
