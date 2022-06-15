@@ -135,4 +135,27 @@
   (defret value-kind-of-value-struct-write
     (implies (not (errorp new-struct))
              (equal (value-kind new-struct)
-                    :struct))))
+                    :struct)))
+
+  (defruled valuep-of-value-struct-write
+    (b* ((old (value-struct-read name struct))
+         (struct1 (value-struct-write name new struct)))
+      (implies (and (valuep old)
+                    (equal (type-of-value new)
+                           (type-of-value old)))
+               (valuep struct1)))
+    :enable (value-struct-read
+             member-value-listp-of-value-struct-write-aux))
+
+  (defruled value-struct-read-of-value-struct-write
+    (b* ((old (value-struct-read name struct))
+         (struct1 (value-struct-write name new struct)))
+      (implies (and (valuep old)
+                    (equal (type-of-value new)
+                           (type-of-value old)))
+               (equal (value-struct-read name1 struct1)
+                      (if (ident-equiv name1 name)
+                          (value-fix new)
+                        (value-struct-read name1 struct)))))
+    :enable (value-struct-read
+             value-struct-read-aux-of-value-struct-write-aux)))
