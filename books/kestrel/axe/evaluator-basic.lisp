@@ -111,6 +111,9 @@
     (bvcat bvcat-unguarded)
     (trim trim-unguarded)
     (bvsx bvsx-unguarded)
+    (bvshl bvshl-unguarded)
+    (bvshr bvshr-unguarded)
+    (bvashr bvashr-unguarded)
 
     (bvplus bvplus-unguarded)
     (bvuminus bvuminus-unguarded)
