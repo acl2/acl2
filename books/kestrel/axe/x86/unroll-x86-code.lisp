@@ -135,13 +135,12 @@
          (dag dag-or-quote)
          ;; Prune the DAG:
          ((mv erp dag state)
-          (if (acl2::dag-or-quotep-size-less-thanp dag-or-quote 10000)
-              (mv (erp-nil) dag state) ; don't prune if it will explode (todo: make this threshhold customizable, add some sort of DAG-based pruning)
-            (acl2::maybe-prune-dag-new prune dag assumptions rules
-                                       nil ; interpreted-fns
-                                       rules-to-monitor
-                                       t ;call-stp
-                                       state)))
+          (acl2::maybe-prune-dag-new prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
+                                     dag assumptions rules
+                                     nil ; interpreted-fns
+                                     rules-to-monitor
+                                     t ;call-stp
+                                     state))
          ((when erp) (mv erp nil state))
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
