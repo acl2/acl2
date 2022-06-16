@@ -4128,13 +4128,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-recognizer-to-type ((recognizer symbolp) (wrld plist-worldp))
+(define atc-recognizer-to-type ((recognizer symbolp)
+                                (prec-tags atc-string-taginfo-alistp))
   :returns (type type-optionp)
   :short "C type corresponding to a recognizer name, if any."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is as explained in the user documentation.
+    "This is used to determine the types of the formal parameters of functions
+     from the recognizers used in the guard,
+     as explained in the user documentation.
      Note that the structure recognizers represent pointer types."))
   (case recognizer
     (scharp (type-schar))
@@ -4163,8 +4166,11 @@
                           (equal (symbol-name p) "P")))
              nil)
             (tag (symbol-name tag))
-            (info (defstruct-table-lookup tag wrld))
+            (info (cdr (assoc-equal tag prec-tags)))
             ((unless info) nil)
+            ((unless (atc-tag-infop info))
+             (raise "Internal error: malformed DEFSTRUCT info ~x0." info))
+            (info (atc-tag-info->defstruct info))
             ((unless (eq recognizer (defstruct-info->recognizer info))) nil)
             ((unless (ident-stringp tag))
              (raise "Internal error: tag ~x0 not valid identifier." tag)))
@@ -4172,7 +4178,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-typed-formals ((fn symbolp) (ctx ctxp) state)
+(define atc-typed-formals ((fn symbolp)
+                           (prec-tags atc-string-taginfo-alistp)
+                           (ctx ctxp)
+                           state)
   :returns (mv erp
                (typed-formals atc-symbol-type-alistp)
                state)
@@ -4210,9 +4219,11 @@
                                                           guard
                                                           guard-conjuncts
                                                           nil
+                                                          prec-tags
                                                           ctx
                                                           state)))
-    (atc-typed-formals-final-alist fn formals guard prelim-alist ctx state))
+    (atc-typed-formals-final-alist
+     fn formals guard prelim-alist prec-tags ctx state))
 
   :prepwork
 
@@ -4221,6 +4232,7 @@
                                            (guard pseudo-termp)
                                            (guard-conjuncts pseudo-term-listp)
                                            (prelim-alist atc-symbol-type-alistp)
+                                           (prec-tags atc-string-taginfo-alistp)
                                            (ctx ctxp)
                                            state)
      :returns (mv erp
@@ -4238,16 +4250,18 @@
                                            guard
                                            (cdr guard-conjuncts)
                                            prelim-alist
+                                           prec-tags
                                            ctx
                                            state))
           (type-fn (ffn-symb conjunct))
-          (type (atc-recognizer-to-type type-fn (w state)))
+          (type (atc-recognizer-to-type type-fn prec-tags))
           ((when (not type))
            (atc-typed-formals-prelim-alist fn
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
                                            prelim-alist
+                                           prec-tags
                                            ctx
                                            state))
           (arg (fargn conjunct 1))
@@ -4257,6 +4271,7 @@
                                            guard
                                            (cdr guard-conjuncts)
                                            prelim-alist
+                                           prec-tags
                                            ctx
                                            state))
           ((when (consp (assoc-eq arg prelim-alist)))
@@ -4274,6 +4289,7 @@
                                        guard
                                        (cdr guard-conjuncts)
                                        prelim-alist
+                                       prec-tags
                                        ctx
                                        state)))
 
@@ -4281,6 +4297,7 @@
                                           (formals symbol-listp)
                                           (guard pseudo-termp)
                                           (prelim-alist atc-symbol-type-alistp)
+                                          (prec-tags atc-string-taginfo-alistp)
                                           (ctx ctxp)
                                           state)
      :returns (mv erp
@@ -4302,6 +4319,7 @@
                                                              (cdr formals)
                                                              guard
                                                              prelim-alist
+                                                             prec-tags
                                                              ctx
                                                              state)))
        (acl2::value (acons formal type typed-formals)))
@@ -5462,7 +5480,7 @@
                    but the function ~x2 has the same symbol name."
                   name fn conflicting-fn))
        (wrld (w state))
-       ((er typed-formals) (atc-typed-formals fn ctx state))
+       ((er typed-formals) (atc-typed-formals fn prec-tags ctx state))
        ((er params) (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
        ((er affect) (atc-find-affected fn
@@ -6518,7 +6536,7 @@
         (if proofs
             (atc-gen-loop-measure-fn fn names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
-       ((er typed-formals) (atc-typed-formals fn ctx state))
+       ((er typed-formals) (atc-typed-formals fn prec-tags ctx state))
        (body (ubody+ fn wrld))
        ((er (list loop-stmt
                   test-term
