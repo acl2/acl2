@@ -660,4 +660,6 @@
              ((when erp) (mv erp nil state))
              (- (cw "Done pruning branches in DAG)~%")))
           (mv nil result-dag state))
-      (mv nil dag state))))
+      (prog2$ (and (natp prune-branches)
+                   (cw "Note: Not pruning DAG because its size is over the limit of ~x0.~%" prune-branches))
+              (mv nil dag state)))))
