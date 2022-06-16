@@ -84,8 +84,8 @@
 (defund bvshr-cases-term-fn-aux (i width)
   (declare (xargs :guard (integerp width)
                   :measure (nfix (+ 1 i))))
-  (if (not (natp i))
-      nil
+  (if (not (posp i))
+      `((otherwise (bvshr ,width x 0))) ; covers 0 and all other cases: ensures that a number is always returned
     (cons `(,i (bvshr ,width x ,i))
           (bvshr-cases-term-fn-aux (+ -1 i) width))))
 
