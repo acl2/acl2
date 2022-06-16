@@ -432,6 +432,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Default Build Target, `basic', Avoids Quicklisp Dependency")
+
+   (xdoc::p
+    "The default `make' target for certifying the @(see community-books), which
+     is still `basic', now certifies slightly fewer books so that it does not
+     depend on Quicklisp.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Hons Always Enabled")
 
    (xdoc::p
