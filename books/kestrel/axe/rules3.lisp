@@ -17806,3 +17806,301 @@
            (equal (sbvlt 32 0 (sbvdiv 32 x y))
                   (not (sbvlt 32 x y))))
   :hints (("Goal" :cases ((sbvle 32 0 x)))))
+
+;todo: move this stuff to bv library but needs equal-of-slice:
+
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+
+;move
+(defthm *-of-expt-and-expr-of-+-of---same
+  (implies (and (integerp i)
+                (integerp j)
+                (acl2-numberp r)
+                (not (equal 0 r)) ;gen?
+                )
+           (equal (* (expt r i) (expt r (+ j (- i))))
+                  (expt r j))))
+
+(local
+ (DEFTHM GETBIT-OF-MINUS-EXPT-when->=
+  (IMPLIES (AND (>= SIZE SIZE2)
+                (NATP SIZE)
+                (NATP SIZE2))
+           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
+                  1))
+  :HINTS (("Goal" :IN-THEORY (E/D () (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT))))))
+
+(DEFTHM GETBIT-OF-MINUS-EXPT-gen
+  (IMPLIES (AND (NATP SIZE)
+                (NATP SIZE2))
+           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
+                  (if (>= SIZE SIZE2)
+                      1
+                    0))))
+
+;gen!
+(defthmd getbit-when-<=-of-high-helper
+  (implies (and (<= (- (expt 2 size) (expt 2 n)) x) ; size is a free var
+                (unsigned-byte-p size x)
+                (< n size)
+                (natp n))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use ((:instance getbit-when-slice-is-known-to-be-all-ones
+                                   (n n)
+                                   (high (+ -1 size))
+                                   (low n)
+                                   (free (expt 2 (+ size (- n)))))
+                        (:instance equal-of-slice
+                                   (k (+ -1 (EXPT 2 (+ (- n)
+                                                       size))))
+                                   (high (+ -1 size))
+                                   (low n))
+                        )
+           :in-theory (e/d () (getbit-when-slice-is-known-to-be-all-ones
+                               exponents-add)))))
+
+
+(defthm getbit-when-<=-of-bvchop-and-constant-high
+  (implies (and (<= k (bvchop size x)) ; k is a free var
+                (<= (- (expt 2 size) (expt 2 n)) k)
+                (< n size)
+                (natp size)
+                (natp n))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
+                                  (x (bvchop size x))))))
+
+(defthm getbit-when-<-of-bvchop-and-constant-high
+  (implies (and (< k (bvchop size x)) ; k is a free var
+                (<= (+ -1 (- (expt 2 size) (expt 2 n))) k)
+                (< n size)
+                (natp size)
+                (natp n))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
+                                  (x (bvchop size x))))))
+
+(defthm getbit-when-<=-of-constant-high
+  (implies (and (syntaxp (quotep n)) ; to ensure this is cheap
+                (<= k x) ; k is a free var
+                (syntaxp (quotep k))
+                (< n (ceiling-of-lg k))
+                (<= (- (expt 2 (ceiling-of-lg k)) (expt 2 n)) k) ; k is a bit less than a power of 2
+                (unsigned-byte-p (ceiling-of-lg k) x)
+                (natp n))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
+                                  (size (ceiling-of-lg k))))))
+
+(defthm getbit-when-<-of-constant-high
+  (implies (and (syntaxp (quotep n)) ; to ensure this is cheap
+                (< k x) ; k is a free var
+                (syntaxp (quotep k))
+                (< n (ceiling-of-lg k))
+                (<= (+ -1 (- (expt 2 (ceiling-of-lg k)) (expt 2 n))) k) ; k is a bit less than a power of 2
+                (unsigned-byte-p (ceiling-of-lg k) x)
+                (natp n))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
+                                  (size (ceiling-of-lg k))))))
+
+;move
+(defthm <-of-bvchop-and-bvchop-when-not-<-of-bvchop-and-bvchop-smaller-cheap
+  (implies (and (not (< (bvchop n-1 x) (bvchop n-1 y))) ; n-1 is a free var but we check it below
+                (equal n-1 (+ -1 n))
+                (posp n))
+           (equal (< (bvchop n x) (bvchop n y))
+                  (and (equal 0 (getbit n-1 x))
+                       (equal 1 (getbit n-1 y)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+  :hints (("Goal" :cases ((and (equal 0 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 1 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 0 (getbit n-1 y))
+                               (equal 1 (getbit n-1 x))))
+           :in-theory (enable bvchop-when-top-bit-1))))
+
+(defthm <-of-bvchop-and-bvchop-when-<-of-bvchop-and-bvchop-smaller-cheap
+  (implies (and (< (bvchop n-1 x) (bvchop n-1 y)) ; n-1 is a free var but we check it below
+                (equal n-1 (+ -1 n))
+                (posp n))
+           (equal (< (bvchop n x) (bvchop n y))
+                  (not (and (equal 1 (getbit n-1 x))
+                            (equal 0 (getbit n-1 y))))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+  :hints (("Goal" :cases ((and (equal 0 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 1 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 0 (getbit n-1 y))
+                               (equal 1 (getbit n-1 x))))
+           :in-theory (enable bvchop-when-top-bit-1))))
+
+(defthm <-of-bvchop-and-bvchop-when-top-bit-equal-1
+  (implies (and (equal 1 (getbit (+ -1 n) x))
+                (posp n))
+           (equal (< (bvchop n x) (bvchop n y))
+                  (and (equal 1 (getbit (+ -1 n) y))
+                       (< (bvchop (+ -1 n) x) (bvchop (+ -1 n) y)))))
+                  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :cases ((and (equal 0 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 1 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 0 (getbit n-1 y))
+                               (equal 1 (getbit n-1 x))))
+           :in-theory (enable bvchop-when-top-bit-1))))
+
+(defthmd equal-of-getbit-and-1
+  (implies (natp n)
+           (equal (equal (getbit n x) 1)
+                  (and (<= (bvchop (+ 1 n) x)
+                           (+ -1 (expt 2 (+ 1 n))))
+                       (<= (expt 2 n)
+                           (bvchop (+ 1 n) x)))))
+  :hints (("Goal" :in-theory (e/d (getbit equal-of-slice)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit
+                                   <-of-bvchop-hack ; looped
+                                   )))))
+
+(defthmd <-of-bvs-split
+  (implies (and (unsigned-byte-p size x)
+                (unsigned-byte-p size y)
+                (< lowsize size) ; a free var
+                (natp lowsize))
+           (equal (< x y)
+                  (or (< (slice (+ -1 size) lowsize x) (slice (+ -1 size) lowsize y))
+                      (and (equal (slice (+ -1 size) lowsize x) (slice (+ -1 size) lowsize y))
+                           (< (bvchop lowsize x) (bvchop lowsize y))))))
+  :hints (("Goal" :use (:instance <-of-bvcat
+                                  (x y)
+                                  (highsize (- size lowsize))
+                                  (highval (slice (+ -1 size) lowsize x))
+                                  (lowsize lowsize)
+                                  (lowval (bvchop lowsize x)))
+           :in-theory (disable <-of-bvcat))))
+
+
+;; might want to use polarities
+(defthmd <-of-constant-when-equal-of-getbit
+  (IMPLIES (AND (unsigned-byte-p size x)
+                (unsigned-byte-p size k)
+                (< n size)
+                (natp n)
+                (EQUAL 1 (GETBIT n x))
+                ;; (equal 0 (getbit 7 k)) ; constant has a 0
+                ;; ;; and is not ...01...1 :
+                ;; (not (equal (+ -1 (expt 2 7))
+                ;;             (bvchop 7 k)))
+                (< (bvchop (+ 1 n) k) (+ -1 (expt 2 n))))
+           (equal (< x k)
+                  ;; saturate the low bits of the constant:
+                  (not (< (bvcat (- size n) (slice (+ -1 size) (+ 1 n) k)
+                                 (+ 1 n)
+                                 (+ -1 (expt 2 n)) ; since these bits weren't ones before, this shouldn't loop
+                                 )
+                          x))))
+  :hints (("Goal" :use (:instance <-of-bvs-split
+                                  (y k)
+                                  (size size)
+                                  (lowsize (+ 1 n))))))
+
+(defthm <-of-constant-and-bvchop-when-equal-of-getbit
+  (IMPLIES (AND (syntaxp (and (quotep k)
+                              (quotep size)))
+                (EQUAL 1 (GETBIT n x)) ; n is a free var
+                (syntaxp (quotep n))
+                (unsigned-byte-p size k) ; gets computed
+                ;; constant has a 0 for bit n and does not have all 1s to the right of that:
+                (< (bvchop (+ 1 n) k) (+ -1 (expt 2 n))) ;; gets computed
+                (< n size) ; gets computed
+                (natp n) ; gets computed
+                )
+           (equal (< (bvchop size x) k)
+                  ;; saturate the low bits of the constant:
+                  (not (< (bvcat (- size n) (slice (+ -1 size) (+ 1 n) k)
+                                 (+ 1 n)
+                                 (+ -1 (expt 2 n)) ; since these bits weren't ones before, this shouldn't loop
+                                 )
+                          (bvchop size x)))))
+  :hints (("Goal" :use (:instance <-of-constant-when-equal-of-getbit
+                                  (x (bvchop size x))))))
+
+;; (defthm sbvlt-of-bvsx-and-constant-gen
+;;   (implies (and (syntaxp (and (quotep k)
+;;                               (quotep size)))
+;;                 (unsigned-byte-p size k)
+;;                 (< lowsize size)
+;;                 (equal 8 lowsize)
+;;                (equal size 31)
+;;                 (integerp size)
+;;                 (posp lowsize)
+;;                 )
+;;            (equal (sbvlt size (bvsx size lowsize x) k)
+;;                   (if (sbvle size k (- (expt 2 (+ -1 lowsize)))) ; gets computed
+;;                       nil
+;;                     (if (sbvle size (expt 2 (+ -1 lowsize)) k) ; gets computed
+;;                         t
+;;                       (sbvlt lowsize x k)))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d ( bvsx-alt-def-2
+
+;;                              ;;equal-of-getbit-and-1
+;; ; SBVLT-REWRITE
+;;                              )
+;;                            (SBVLT-REWRITE
+;;                             GETBIT-OF-ONE-LESS ; looped
+;;                             exponents-add
+;;                             GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             GETBIT-WHEN-<=-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             )))))
+
+;; ;delete the more specific version
+;; (defthm sbvlt-of-bvsx-and-constant-arg2
+;;   (implies (and (syntaxp (and (quotep k)
+;;                               (quotep size)))
+;;                 (unsigned-byte-p size k)
+;;                 (< lowsize size)
+;;                 (equal 8 lowsize)
+;;                 (equal size 31)
+;;                 (integerp size)
+;;                 (posp lowsize)
+;;                 )
+;;            (equal (sbvlt size (bvsx size lowsize x) k)
+;;                   (if (sbvle size k (- (expt 2 (+ -1 lowsize)))) ; gets computed
+;;                       nil
+;;                     (if (sbvle size (expt 2 (+ -1 lowsize)) k) ; gets computed
+;;                         t
+;;                       (sbvlt lowsize x k)))))
+;;   :otf-flg t
+;;   :hints (("Goal" :use (:instance GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                                   (size size)
+;;                                   (n (+ -1 lowsize))
+;;                                   )
+;;            :in-theory (e/d (bvlt bvsx-alt-def-2
+;;                                  sbvlt-rewrite signed-byte-p
+;;                                  booland boolor ;todo
+;;                                  equal-of-slice
+;;                                  ;;equal-of-getbit-and-1
+;; ; SBVLT-REWRITE
+;;                                  )
+;;                            (GETBIT-OF-ONE-LESS ; looped
+;;                             exponents-add
+;;                             GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             GETBIT-WHEN-<=-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             )))))
+
+;; (defthm sbvlt-of-constant-and-bvsx
+;;   (implies (and (syntaxp (quotep k))
+;;                 (unsigned-byte-p 7 k)) ;gen?
+;;            (equal (sbvlt 32 k (bvsx 32 8 x))
+;;                   (sbvlt 8 k x)))
+;;   :hints (("Goal" :in-theory (enable bvlt bvsx sbvlt-rewrite))))
