@@ -43,6 +43,12 @@
                            default-cdr
                            CONSP-FROM-LEN-CHEAP)))
 
+;; Do not remove: justifies treatment of bool-fix below
+(thm (equal (boolif test x x) (bool-fix x)))
+
+;; Do not remove: justifies treatment of bvif below
+(thm (equal (bvif size test x x) (bvchop size x)))
+
 ;; Fixup assumption when it will obviously loop when used as a directed equality.
 ;; could check for (equal <constant> <x>) here too, but Axe may be smart enough to reorient that
 ;; Returns a possibly-empty list
@@ -246,8 +252,11 @@
                                       (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
                                       (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
-                     ((when erp) (mv erp nil state)))
-                  (mv (erp-nil) `(,fn ,test ,then-part ,else-part) state))))))
+                     ((when erp) (mv erp nil state))
+                     (new-term (if (equal then-part else-part)
+                                   then-part ; special case when both branches are the same
+                                 `(,fn ,test ,then-part ,else-part))))
+                  (mv (erp-nil) new-term state))))))
          (boolif ;; (boolif test then-branch else-branch)
           (b* ((test (farg1 term))
                (then-branch (farg2 term))
@@ -290,20 +299,23 @@
                      (test-conjuncts (get-conjuncts-of-term2 test))
                      ((mv erp then-part state)
                       (prune-term-aux then-branch
-                                  (union-equal (fixup-assumptions test-conjuncts) assumptions)
-                                  (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                  rule-alist interpreted-function-alist monitored-rules call-stp state))
+                                      (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                      (union-equal (get-equalities test-conjuncts) equality-assumptions)
+                                      rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                      (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
                      ((mv erp else-part state)
                       (prune-term-aux else-branch
-                                  (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
-                                  (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                  rule-alist interpreted-function-alist monitored-rules call-stp state))
-                     ((when erp) (mv erp nil state)))
-                  (mv (erp-nil) `(boolif ,test ,then-part ,else-part) state))))))
+                                      (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                      (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
+                                      rule-alist interpreted-function-alist monitored-rules call-stp state))
+                     ((when erp) (mv erp nil state))
+                     (new-term (if (equal then-part else-part)
+                                   `(bool-fix$inline ,then-part) ; special case when both branches are the same
+                                 `(boolif ,test ,then-part ,else-part))))
+                  (mv (erp-nil) new-term state))))))
          (bvif ;; (bvif size test then-branch else-branch)
           (b* ((size (farg1 term)) ;todo: prune this (it will usually be a constant, so that will be quick)
                (test (farg2 term))
@@ -357,8 +369,11 @@
                                   (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
                                   (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                   rule-alist interpreted-function-alist monitored-rules call-stp state))
-                     ((when erp) (mv erp nil state)))
-                  (mv (erp-nil) `(bvif ,size ,test ,then-part ,else-part) state))))))
+                     ((when erp) (mv erp nil state))
+                     (new-term (if (equal then-part else-part)
+                                   `(bvchop ,size ,then-part) ; special case when both branches are the same
+                                 `(bvif ,size ,test ,then-part ,else-part))))
+                  (mv (erp-nil) new-term state))))))
          (t ;; Anything other than if/myif/bvif/boolif:
           ;; TODO: Handle bv-array-if?
           ;; TODO: Handle boolor?
