@@ -6079,6 +6079,8 @@
        (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (struct-reader-return-thms
         (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
+       (exec-memberp-thms
+        (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
@@ -6087,7 +6089,8 @@
                                ,@not-error-thms
                                ,@valuep-thms
                                ,@value-kind-thms
-                               ,@struct-reader-return-thms))
+                               ,@struct-reader-return-thms
+                               ,@exec-memberp-thms))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@instantiation))
                  :expand :lambdas)))
@@ -6388,6 +6391,7 @@
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (result-thms (cons fn-result-thm result-thms))
@@ -6441,6 +6445,7 @@
                                    *integer-value-disjoint-rules*
                                    *array-value-disjoint-rules*
                                    '(,@not-error-thms
+                                     ,@valuep-thms
                                      not
                                      ,exec-stmt-while-for-fn
                                      ,@struct-reader-return-thms
