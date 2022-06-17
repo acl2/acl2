@@ -1,7 +1,7 @@
 ; More material on the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,14 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (in-theory (disable key-list)) ;fixme move up
+
+(defthm len-of-strip-cars
+  (equal (len (strip-cars x))
+         (len x)))
+
+(defthm len-of-strip-cads
+  (equal (len (strip-cdrs x))
+         (len x)))
 
 (defthm alistp-of-append
   ;; [Jared] changed for compatibility with std/alists/alistp.lisp
@@ -405,12 +413,6 @@
   :rule-classes nil
   :hints (("Goal" :in-theory (enable set-field))))
 
-(defthm set-fields-when-pairs-is-not-a-consp
-  (implies (not (consp pairs))
-           (equal (set-fields ad pairs heap)
-                  heap))
-  :hints (("Goal" :in-theory (enable set-fields))))
-
 (defthm rkeys-of-set-fields-subset
   (set::subset (rkeys (set-fields ad pairs heap))
                (set::insert ad (rkeys heap)))
@@ -445,15 +447,6 @@
            :cases (val)
            :in-theory (e/d (clr) (s==r s-nil-becomes-clr)))))
 
-
-
-(defthm clear-binding-does-nothing
-  (implies (and (not (memberp a (strip-cars b)))
-;                (true-listp b)
-                )
-           (equal (CLEAR-BINDING a b)
-                  (true-list-fix b))))
-
 (defthm set-fields-of-true-list-fix
   (equal (set-fields ad (true-list-fix bindings) heap)
          (set-fields ad bindings heap))
@@ -464,46 +457,48 @@
   (iff (s a v r)
        (or v (clr a r))))
 
+(local
+ (progn
 ;do we still need this?
-(defun s-many (keys vals map)
-  (if (endp keys)
-      map
-    (s-many (cdr keys)
-            (cdr vals)
-            (s (car keys) (car vals) map))))
+   (defun s-many (keys vals map)
+     (if (endp keys)
+         map
+       (s-many (cdr keys)
+               (cdr vals)
+               (s (car keys) (car vals) map))))
 
-(defthm s-many-of-s-diff
-  (equal (s-many keys vals (s key val map))
-         (if (memberp key keys)
-             (s-many keys vals map)
-           (s key val (s-many keys vals map))))
-  :hints (("subGoal *1/2" :cases ((equal key (car keys))))))
+   (defthm s-many-of-s-diff
+     (equal (s-many keys vals (s key val map))
+            (if (memberp key keys)
+                (s-many keys vals map)
+              (s key val (s-many keys vals map))))
+     :hints (("subGoal *1/2" :cases ((equal key (car keys))))))
 
-(defthm clr-of-s-many-diff
-  (implies (not (memberp key keys))
-           (equal (clr key (s-many keys vals map))
-                  (s-many keys vals (clr key map))))
-  :hints (("subGoal *1/2" :cases ((equal key (car keys))))))
+   (defthm s-many-iff
+     (implies (and (no-duplicatesp-equal keys)
+                   (equal (len keys) (len vals))
+                   (not (all-equal$ nil vals)))
+              (iff (s-many keys vals map)
+                   (consp keys))))
 
-(defthmd set-fields-rewrite
-  (implies (no-duplicatesp-equal (strip-cars bindings))
-           (equal (SET-FIELDS AD BINDINGS HEAP)
-                  (s ad (s-many (strip-cars bindings)
-                                (strip-cdrs bindings)
-                                (g ad heap))
-                     heap)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (s-many set-fields set-field) ( ;S==R
-                                                          )))))
+   (defthm clr-of-s-many-diff
+     (implies (not (memberp key keys))
+              (equal (clr key (s-many keys vals map))
+                     (s-many keys vals (clr key map))))
+     :hints (("subGoal *1/2" :cases ((equal key (car keys))))))
 
+   ;; used once below
+   (defthmd set-fields-rewrite
+     (implies (no-duplicatesp-equal (strip-cars bindings))
+              (equal (SET-FIELDS AD BINDINGS HEAP)
+                     (s ad (s-many (strip-cars bindings)
+                                   (strip-cdrs bindings)
+                                   (g ad heap))
+                        heap)))
+     :hints (("Goal" :do-not '(generalize eliminate-destructors)
+              :in-theory (e/d (s-many set-fields set-field) ( ;S==R
+                                                             )))))))
 
-(defthm len-of-strip-cars
-  (equal (len (strip-cars x))
-         (len x)))
-
-(defthm len-of-strip-cads
-  (equal (len (strip-cdrs x))
-         (len x)))
 
 ;if a is nil, it could be made into a clr
 (defthm equal-of-nil-of-s-and-s
@@ -512,12 +507,7 @@
            (equal (equal nil (s a v (s a2 v2 r)))
                   nil)))
 
-(defthm s-many-iff
-  (implies (and (no-duplicatesp-equal keys)
-                (equal (len keys) (len vals))
-                (not (all-equal$ nil vals)))
-           (iff (s-many keys vals map)
-                (consp keys))))
+
 
 ;todo: the unique test might be expensive and seems like overkill
 ;it should suffice to find one pair with a non-nil value that is not shadowed by an earlier pair..

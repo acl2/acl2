@@ -1,7 +1,7 @@
 ; A model of the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,40 +25,95 @@
 (include-book "fields")
 (include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "utilities")
-(include-book "utilities2")
+(include-book "utilities2") ; for rules like 2LIST-OF-DELETE
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (in-theory (disable g-iff-gen)))
 
+;move
+(defthm strip-caddrs-when-not-consp
+  (implies (not (consp x))
+           (equal (strip-caddrs x)
+                  nil))
+  :hints (("goal" :in-theory (enable strip-caddrs ))))
+
+;STRIP-CADDRS-OF-CDR loops with defn STRIP-CADDRS
+;move
+;BOZO casues problems?
+;disable?
+;dup
+(defthm strip-caddrs-of-cdr
+  (equal (strip-caddrs (cdr x))
+         (cdr (strip-caddrs x)))
+  :hints (("goal" :in-theory (enable strip-caddrs))))
+
+(defthm strip-cars-of-non-consp
+  (implies (not (consp bindings))
+           (equal (strip-cars bindings)
+                  nil))
+  :hints (("goal" :in-theory (enable strip-cars))))
+
+(defthm strip-cars-of-cons-cons
+  (equal (strip-cars (cons (cons pair value) bindings))
+         (cons pair (strip-cars bindings)))
+  :hints (("goal" :in-theory (enable strip-cars))))
+
+;; Matches the version in books/std/alists/strip-cars.lisp
+(defthm strip-cars-of-cons
+  (equal (strip-cars (cons a x))
+         (cons (car a)
+               (strip-cars x))))
+
+;; Matches the version in books/std/alists/strip-cars.lisp
+(defthm strip-cdrs-of-cons
+  (equal (strip-cdrs (cons a x))
+         (cons (cdr a)
+               (strip-cdrs x))))
+
+;; Defines all-addressp:
 (acl2::defforall-simple addressp)
 
 (verify-guards acl2::all-addressp)
 
 ;; Most keys in the heap object are pairs of class names and field-ids.
-(defun class-name-field-id-pairp (x)
+(defund jvm::class-name-field-id-pairp (x)
   (declare (xargs :guard t))
   (and (consp x)
        (jvm::class-namep (car x))
        (jvm::field-idp (cdr x))))
+
+(defthm class-name-field-id-pairp-forward-to-consp
+  (implies (jvm::class-name-field-id-pairp pair)
+           (consp pair))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable jvm::class-name-field-id-pairp))))
+
+(defthm class-name-field-id-pairp-of-cons
+  (equal (jvm::class-name-field-id-pairp (cons class-name field-id))
+         (and (jvm::class-namep class-name)
+              (jvm::field-idp field-id)))
+  :hints (("Goal" :in-theory (enable jvm::class-name-field-id-pairp))))
 
 ;Exception to the above comment (used to store the class of the heap object):
 ;fixme are there any other fake fields like this?
 (defmacro class-pair ()
   ''(:special-data . :class))
 
-(defun heap-object-keyp (x)
+(defund jvm::heap-object-keyp (x)
   (declare (xargs :guard t))
-  (or (class-name-field-id-pairp x)
+  (or (jvm::class-name-field-id-pairp x)
       (equal x (class-pair))))
 
 (defthm heap-object-keyp-of-cons
-  (iff (heap-object-keyp (cons x y))
+  (iff (jvm::heap-object-keyp (cons x y))
        (or (and (jvm::class-namep x) (jvm::field-idp y))
            (and (eq :special-data x) (eq :class y))))
-  :hints (("Goal" :in-theory (enable heap-object-keyp))))
+  :hints (("Goal" :in-theory (enable jvm::heap-object-keyp))))
 
-(defforall-simple heap-object-keyp)
+(defforall-simple jvm::heap-object-keyp)
 (verify-guards all-heap-object-keyp)
 
+;; A heap object occupied a single address in the heap and is a map from heap-object-keys to values.
 (defun jvm::heap-objectp (x)
   (declare (xargs :guard t))
   (and (mapp x)
@@ -74,6 +129,7 @@
 
 (verify-guards all-bound-to-heap-objectsp)
 
+;; A heap is a map from addresses to heap-objects.
 (defund jvm::heapp (heap)
   (declare (xargs :guard t))
   (and (mapp heap)
@@ -87,7 +143,7 @@
            (addressp item))
   :hints (("Goal" :in-theory (enable jvm::heapp))))
 
-(defun jvm::empty-heap () (declare (xargs :guard t)) (empty-map))
+(defund jvm::empty-heap () (declare (xargs :guard t)) (empty-map))
 
 (defthm heapp-of-empty-heap
   (jvm::heapp (jvm::empty-heap)))
@@ -124,6 +180,7 @@
 ;;; null-refp
 ;;;
 
+;; Checks whether REF is null.
 ;disable?
 (defun null-refp (ref)
   (declare (xargs :guard t))
@@ -144,6 +201,7 @@
 ;;; address-or-nullp
 ;;;
 
+;; Checks whether X is either an address or NULL.
 (defun address-or-nullp (x)
   (declare (xargs :guard t))
   (or (addressp x)
@@ -211,7 +269,7 @@
 ;; (actually perhaps legal).
 (defund get-field (ad pair heap)
   (declare (xargs :guard (and (addressp ad)
-                              (or (class-name-field-id-pairp pair)
+                              (or (jvm::class-name-field-id-pairp pair)
                                   (equal pair (class-pair)))
                               (jvm::heapp heap))
                   :guard-hints (("Goal" :in-theory (e/d (not-ifrp-of-g-when-heapp) (g-iff-gen))))))
@@ -246,14 +304,16 @@
   :rule-classes ((:forward-chaining)))
 
 (defthm jvm::heap-objectp-of-s
-  (implies (and (heap-object-keyp key)
+  (implies (and (jvm::heap-object-keyp key)
                 (jvm::heap-objectp heap))
-           (jvm::heap-objectp (s key value heap))))
+           (jvm::heap-objectp (s key value heap)))
+  :hints (("Goal" :in-theory (enable jvm::heap-object-keyp
+                                     jvm::class-name-field-id-pairp))))
 
 (defthm heapp-of-set-field
   (implies (and (jvm::heapp heap)
                 (addressp ad)
-                (heap-object-keyp class-field-pair))
+                (jvm::heap-object-keyp class-field-pair))
            (jvm::heapp (set-field ad class-field-pair value heap)))
   :hints (("Goal" :in-theory (e/d (set-field jvm::heapp ;addressp
                                       ) (JVM::HEAP-OBJECTP)))))
@@ -263,11 +323,13 @@
          nil)
   :hints (("goal" :in-theory (enable set-field))))
 
+;; Returns the class of the heap object at address AD in heap.
 (defund get-class (ad heap)
   (declare (xargs :guard (and (addressp ad)
                               (jvm::heapp heap))))
   (get-field ad (class-pair) heap))
 
+;; Sets the class of the heap object at address AD in heap.
 ;to be left enabled?
 (defun set-class (ad new-class heap)
   (declare (xargs :guard t))
@@ -329,10 +391,9 @@
 
 ;We sort nested s(et) expressions by ref, then by class, then by field
 
-;may cause case-split
+;may cause case-splits
 ;the :loop-stopper only need apply when the "then-part" of the if is chosen
 ;this rule won't fire when the else-part would be chosen?
-
 (defthm set-field-of-set-field-both
   (equal (set-field ref1 pair1 value1
 			   (set-field ref2 pair2 value2 heap))
@@ -380,6 +441,292 @@
            (equal (set-field ref1 pair1 value1 (set-field ref2 pair2 value2 heap))
                   (set-field ref2 pair2 value2 (set-field ref1 pair1 value1 heap))))
   :rule-classes ((:rewrite :loop-stopper ((ref1 ref2) (pair1 pair2)))))
+
+(defthm set-field-of-get-field-same-eric
+  (implies (equal (get-field ref pair heap)
+		  (get-field ref pair heap2))
+	   (equal (set-field ref pair (get-field ref pair heap2) heap)
+		  heap)))
+
+(defthm set-field-of-get-field-same-eric-2
+  (implies (equal value (get-field ref pair heap))
+	   (equal (set-field ref pair value heap)
+		  heap)))
+
+;could be expensive?
+;gen the (dom heap) to a variable?
+(defthm new-ad-not-equal-something-in-dom-2
+  (implies (set::in xx (dom heap))
+           (equal (equal xx (new-ad (dom heap)))
+                  nil))
+  :hints (("goal" :in-theory (enable))))
+
+;label the crucial property of new-ad
+
+;will also have to fixup build-an-instance or whatever it's called now
+
+
+;each member of the list BINDINGS is of the form: ((class-name . field-id) . value)
+(defund set-fields (ad bindings heap)
+  (declare (xargs :guard (alistp bindings)))
+  (if (endp bindings)
+      heap
+    (let* ((first-binding (car bindings))
+           (class-field-pair (car first-binding))
+           (value (cdr first-binding)))
+      (set-field ad class-field-pair value
+                 (set-fields ad (cdr bindings) heap)
+                 ))))
+
+(defthm set-fields-when-pairs-is-not-a-consp
+  (implies (not (consp pairs))
+           (equal (set-fields ad pairs heap)
+                  heap))
+  :hints (("Goal" :in-theory (enable set-fields))))
+
+(defthm set-fields-of-nil
+  (equal (set-fields ad nil heap)
+         heap)
+  :hints (("goal" :in-theory (enable set-fields))))
+
+(defthm set-fields-of-non-cons
+  (implies (not (consp bindings))
+           (equal (set-fields ad bindings heap)
+                  heap))
+  :hints (("goal" :in-theory (enable set-fields))))
+
+;loops with defn set-fields?
+(defthmd set-fields-collect-1
+  (equal (set-field ad pair value (set-field ad pair2 value2 heap))
+         (set-fields ad (list (cons pair value)
+                              (cons pair2 value2))
+                     heap))
+  :hints (("Goal" :in-theory (enable set-fields))))
+
+;loops with defn set-fields!
+(defthmd set-fields-collect-2
+  (equal (set-field ad pair value (set-fields ad bindings heap))
+         (set-fields ad (cons (cons pair value) bindings) heap))
+  :hints (("Goal" :in-theory (enable set-fields))))
+
+(encapsulate
+ ()
+
+ (local (defthm get-field-of-set-fields-1
+          (implies (not (equal ad ad2))
+                   (equal (get-field ad pair (set-fields ad2 bindings heap))
+                          (get-field ad pair heap)))
+          :hints (("goal" :in-theory (set-difference-theories
+                                      (enable set-fields)
+                                      '( set-fields-collect-2))))))
+
+ (local (defthm get-field-of-set-fields-2
+          (implies (memberp pair (strip-cars bindings))
+                   (equal (get-field ad pair (set-fields ad bindings heap))
+                          (lookup-equal pair bindings)))
+          :hints (("goal" :do-not '(generalize eliminate-destructors)
+;                   :expand(STRIP-CARS BINDINGS)
+                   :in-theory (e/d (lookup-equal assoc-equal
+                                    strip-cars
+                                    set-fields
+                                    )
+                                   (set-fields-collect-2))))))
+
+ (local (defthm GET-FIELD-of-SET-FIELDS-3
+          (implies (not (memberp pair (strip-cars bindings)))
+                   (equal (GET-FIELD ad pair (SET-FIELDS AD2 bindings HEAP))
+                          (GET-FIELD ad pair HEAP)))
+          :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                   :in-theory (e/d (lookup-equal
+                                    strip-cars
+                                    set-fields
+                                    )
+                                   (set-fields-collect-2))))))
+
+ (defthm get-field-of-set-fields
+   (equal (get-field ad pair (set-fields ad2 bindings heap))
+          (if (and (equal ad ad2)
+                   (memberp pair (strip-cars bindings)))
+              (lookup-equal pair bindings)
+            (get-field ad pair heap)))))
+
+;rename.
+(defthm get-either-case
+  (equal (get-field ref1 pair
+		    (set-field ref2 pair
+			       (get-field ref1 pair heap)
+			       heap))
+	 (get-field ref1 pair heap)
+	 )
+  :hints (("goal" :cases ((equal ref1 ref2)))))
+
+(defthm get-field-of-new-ad
+  (equal (get-field (new-ad (rkeys heap)) pair heap)
+         nil)
+  :hints (("Goal" :in-theory (e/d (get-field) (G-IFF-GEN)))))
+
+(defthm get-field-of-s-same
+  (equal (get-field ad pair (s ad obj heap))
+         (g pair obj))
+  :hints (("Goal" :in-theory (enable get-field))))
+
+(defthmd get-field-reassemble
+  (equal (g class-field-pair (g ad heap))
+         (get-field ad class-field-pair heap))
+  :hints (("Goal" :in-theory (enable get-field))))
+
+(theory-invariant (incompatible (:rewrite get-field-reassemble) (:definition get-field)))
+
+(defthmd set-fields-opener
+  (implies (not (endp bindings))
+           (equal (set-fields ad bindings heap)
+                  (let* ((first-binding (car bindings))
+                         (class-field-pair (car first-binding))
+                         (value (cdr first-binding)))
+                        (set-field ad class-field-pair value
+                                   (set-fields ad (cdr bindings) heap)))))
+  :hints (("Goal" :in-theory (enable set-fields))))
+
+(defthm set-fields-base-case
+  (implies (endp bindings)
+           (equal (set-fields ad bindings heap)
+                  heap))
+  :hints (("Goal" :in-theory (enable set-fields))))
+
+(theory-invariant (incompatible (:rewrite set-fields-opener) (:rewrite SET-FIELDS-COLLECT-1)))
+
+
+;or should we open null-refp?
+(defthm not-null-refp-of-new-ad
+  (not (null-refp (new-ad dom))))
+
+(defthm not-null-refp-of-nth-new-ad
+  (not (null-refp (nth-new-ad n dom))))
+
+;might loop in acl2? but in axe, equal-same will fire first (because of priorities)?
+;fixme add an acl2 version with a syntaxp hyp?
+;fixme can this interact with other rules that turn equal around (maybe based on term size?)
+(defthmd equal-of-null-ref-turn-around
+  (implies (syntaxp (not (quotep x))) ;fixme would also like to exclude x being a call to null-ref
+           (equal (equal x (null-ref))
+                  (equal (null-ref) x))))
+
+(defthm equal-of-null-ref-and-new-ad
+  (equal (equal (null-ref) (new-ad dom))
+         nil))
+
+(defthm equal-of-new-ad-and-null-ref
+  (equal (equal (new-ad dom) (null-ref))
+         nil))
+
+(defthm equal-of-null-ref-and-nth-new-ad
+  (equal (equal (null-ref) (nth-new-ad n dom))
+         nil))
+
+(defthm equal-of-nth-new-ad-and-null-ref
+  (equal (equal (nth-new-ad n dom) (null-ref))
+         nil))
+
+
+
+;fixme make a "same" version
+;is it bad that "g" is arising?
+(defthm g-of-set-field-irrel
+  (implies (not (equal ad ad2))
+           (equal (g ad (set-field ad2 class-field-pair value heap))
+                  (g ad heap)))
+  :hints (("Goal" :in-theory (enable set-field))))
+
+(defthm g-of-set-field-same
+  (equal (g ad (set-field ad class-field-pair value heap))
+         (s class-field-pair value (g ad heap)))
+  :hints (("Goal" :in-theory (enable set-field))))
+
+(defthm g-of-set-fields-irrel
+  (implies (not (equal ad ad2))
+           (equal (g ad (set-fields ad2 pairs heap))
+                  (g ad heap)))
+  :hints (("Goal" :in-theory (enable set-fields))))
+
+(defthm in-rkeys-when-get-field-non-nil-main
+  (implies (get-field ad pair heap)
+           (set::in ad (rkeys heap)))
+  :hints (("Goal" :use (:instance G-IFF-GEN (a ad) (r heap))
+           :in-theory (e/d (GET-FIELD
+                            ) (G-IFF-GEN GET-FIELD-REASSEMBLE)))))
+
+;special case for when get-field is known equal to something
+(defthm in-rkeys-when-get-field-non-nil
+  (implies (and (equal (get-field ad pair heap) val) ;free vars
+                val                                  ;is not nil
+                )
+           (set::in ad (rkeys heap))))
+
+;special case for when get-field is known equal to something
+;for axe (todo: we could build into axe that x is non-nil when it's equal to something non-nil)
+(defthm in-rkeys-when-get-field-non-nil-alt
+  (implies (and (equal val (get-field ad pair heap))
+                val)
+           (set::in ad (rkeys heap))))
+
+
+(defthm get-field-of-s-diff
+  (implies (not (equal ad ad2))
+           (equal (get-field ad pair (s ad2 v heap))
+                  (get-field ad pair heap)))
+  :hints (("Goal" :in-theory (e/d (get-field) (GET-FIELD-REASSEMBLE)))))
+
+(defthm all-addressp-of-n-new-ads
+  (acl2::all-addressp (acl2::n-new-ads n ads))
+  :hints (("Goal" :in-theory (e/d (acl2::all-addressp acl2::n-new-ads acl2::n-new-ads-aux) (N-NEW-ADS-BECOMES-N-NEW-ADS2)))))
+
+(defthm heapp-of-set-fields
+  (implies (and (jvm::heapp heap)
+                (acl2::all-heap-object-keyp (strip-cars bindings))
+                (addressp ad))
+           (jvm::heapp (ACL2::SET-FIELDS ad bindings HEAP)))
+  :hints (("Goal" :in-theory (enable ACL2::SET-FIELDS))))
+
+(defthm strip-cars-of-append
+  (equal (STRIP-CARS (APPEND x y))
+         (append (strip-cars x) (strip-cars y)))
+  :hints (("Goal" :in-theory (enable strip-cars append))))
+
+
+
+(defthm addressfix-when-address-or-nullp-and-not-null-refp
+  (implies (and (address-or-nullp x)
+                (not (null-refp x)))
+           (equal (addressfix x)
+                  x)))
+
+
+(defthm get-class-of-set-class-same
+  (equal (get-class ad (set-class ad class heap))
+         class)
+  :hints (("Goal" :in-theory (enable get-class set-class))))
+
+(defthm get-class-of-set-class-diff
+  (implies (not (equal ad ad2))
+           (equal (get-class ad (set-class ad2 class heap))
+                  (get-class ad heap)))
+  :hints (("Goal" :in-theory (enable get-class set-class))))
+
+(defthm get-class-of-set-class-both
+  (equal (get-class ad (set-class ad2 class heap))
+         (if (equal ad ad2)
+             class
+           (get-class ad heap)))
+  :hints (("Goal" :in-theory (enable get-class set-class))))
+
+(defthm get-class-of-set-field
+  (equal (acl2::get-class ad1 (acl2::set-field ad2 pair val heap))
+         (if (and (equal ad1 ad2)
+                  (equal pair (acl2::class-pair)))
+             val
+           (acl2::get-class ad1 heap)))
+  :hints (("Goal" :in-theory (enable acl2::get-class))))
+
 ;;
 ;; clear-field
 ;;
@@ -430,18 +777,6 @@
 ;; 		heap)
 ;; 	 (equal (get-class-of-ref ref heap) class-name))
 ;;     :hints (("goal" :in-theory (enable set-class-of-ref get-class-of-ref))))
-
-
-(defthm set-field-of-get-field-same-eric
-  (implies (equal (get-field ref pair heap)
-		  (get-field ref pair heap2))
-	   (equal (set-field ref pair (get-field ref pair heap2) heap)
-		  heap)))
-
-(defthm set-field-of-get-field-same-eric-2
-  (implies (equal value (get-field ref pair heap))
-	   (equal (set-field ref pair value heap)
-		  heap)))
 
 
 ;(in-theory (disable  MEMBERP-BECOMES-IN  MEMBERP-MEANS-IN))
@@ -514,55 +849,7 @@
 ;;            (equal (equal xx (new-ad (dom heap)))
 ;;                   nil)))
 
-;could be expensive?
-;gen the (dom heap) to a variable?
-(defthm new-ad-not-equal-something-in-dom-2
-  (implies (set::in xx (dom heap))
-           (equal (equal xx (new-ad (dom heap)))
-                  nil))
-  :hints (("goal" :in-theory (enable))))
 
-;label the crucial property of new-ad
-
-;will also have to fixup build-an-instance or whatever it's called now
-
-
-;each member of the list BINDINGS is of the form: ((class-name . field-id) . value)
-(defund set-fields (ad bindings heap)
-  (declare (xargs :guard (alistp bindings)))
-  (if (endp bindings)
-      heap
-    (let* ((first-binding (car bindings))
-           (class-field-pair (car first-binding))
-           (value (cdr first-binding)))
-      (set-field ad class-field-pair value
-                 (set-fields ad (cdr bindings) heap)
-                 ))))
-
-(defthm set-fields-of-nil
-  (equal (set-fields ad nil heap)
-         heap)
-  :hints (("goal" :in-theory (enable set-fields))))
-
-(defthm set-fields-of-non-cons
-  (implies (not (consp bindings))
-           (equal (set-fields ad bindings heap)
-                  heap))
-  :hints (("goal" :in-theory (enable set-fields))))
-
-;loops with defn set-fields?
-(defthmd set-fields-collect-1
-  (equal (set-field ad pair value (set-field ad pair2 value2 heap))
-         (set-fields ad (list (cons pair value)
-                              (cons pair2 value2))
-                     heap))
-  :hints (("Goal" :in-theory (enable set-fields))))
-
-;loops with defn set-fields!
-(defthmd set-fields-collect-2
-  (equal (set-field ad pair value (set-fields ad bindings heap))
-         (set-fields ad (cons (cons pair value) bindings) heap))
-  :hints (("Goal" :in-theory (enable set-fields))))
 
 ;fixme this is just lookup-equal!
 ;; (defund lookup-pair-in-bindings (pair bindings)
@@ -602,6 +889,14 @@
            (equal (clear-binding pair x)
                   nil))
   :hints (("goal" :in-theory (enable clear-binding))))
+
+(defthm clear-binding-does-nothing
+  (implies (and (not (memberp a (strip-cars b)))
+;                (true-listp b)
+                )
+           (equal (CLEAR-BINDING a b)
+                  (true-list-fix b)))
+  :hints (("Goal" :expand ((CLEAR-BINDING A B)))))
 
 (defthm clear-binding-of-cons
   (equal (clear-binding pair (cons binding bindings))
@@ -663,29 +958,6 @@
 ;; (defund pair-yield-of-bindings (bindings)
 ;;   (pair-yield-of-bindings-aux (remove-duplicate-bindings bindings)))
 
-(defthm strip-cars-of-non-consp
-  (implies (not (consp bindings))
-           (equal (strip-cars bindings)
-                  nil))
-  :hints (("goal" :in-theory (enable strip-cars))))
-
-(defthm strip-cars-of-cons-cons
-  (equal (strip-cars (cons (cons pair value) bindings))
-         (cons pair (strip-cars bindings)))
-  :hints (("goal" :in-theory (enable strip-cars))))
-
-;; Matches the version in books/std/alists/strip-cars.lisp
-(defthm strip-cars-of-cons
-  (equal (strip-cars (cons a x))
-         (cons (car a)
-               (strip-cars x))))
-
-;; Matches the version in books/std/alists/strip-cars.lisp
-(defthm strip-cdrs-of-cons
-  (equal (strip-cdrs (cons a x))
-         (cons (cdr a)
-               (strip-cdrs x))))
-
 (defthm set-to-nil-equal-clear-field
   (equal (set-field ad pair nil heap)
          (clear-field ad pair heap)
@@ -717,16 +989,16 @@
                        '(set-fields-collect-2))
            :do-not '(eliminate-destructors generalize))))
 
+;rename
 (defthm set-fields-of-clear-binding
   (implies (consp bindings)
            (equal (set-fields ad (cons (car bindings)
                                        (clear-binding (caar bindings) (cdr bindings)))
                               heap)
-                  (set-fields ad bindings heap))
-           )
+                  (set-fields ad bindings heap)))
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable set-fields)
-                              '( SET-FIELDS-COLLECT-2))
+                              '(SET-FIELDS-COLLECT-2))
            :do-not '(eliminate-destructors))))
 
 
@@ -747,46 +1019,7 @@
 
 
 
-(encapsulate
- ()
 
- (local (defthm get-field-of-set-fields-1
-          (implies (not (equal ad ad2))
-                   (equal (get-field ad pair (set-fields ad2 bindings heap))
-                          (get-field ad pair heap)))
-          :hints (("goal" :in-theory (set-difference-theories
-                                      (enable set-fields)
-                                      '( set-fields-collect-2))))))
-
- (local (defthm get-field-of-set-fields-2
-          (implies (memberp pair (strip-cars bindings))
-                   (equal (get-field ad pair (set-fields ad bindings heap))
-                          (lookup-equal pair bindings)))
-          :hints (("goal" :do-not '(generalize eliminate-destructors)
-;                   :expand(STRIP-CARS BINDINGS)
-                   :in-theory (e/d (lookup-equal assoc-equal
-                                    strip-cars
-                                    set-fields
-                                    )
-                                   (set-fields-collect-2))))))
-
- (local (defthm GET-FIELD-of-SET-FIELDS-3
-          (implies (not (memberp pair (strip-cars bindings)))
-                   (equal (GET-FIELD ad pair (SET-FIELDS AD2 bindings HEAP))
-                          (GET-FIELD ad pair HEAP)))
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d (lookup-equal
-                                    strip-cars
-                                    set-fields
-                                    )
-                                   (set-fields-collect-2))))))
-
- (defthm get-field-of-set-fields
-   (equal (get-field ad pair (set-fields ad2 bindings heap))
-          (if (and (equal ad ad2)
-                   (memberp pair (strip-cars bindings)))
-              (lookup-equal pair bindings)
-            (get-field ad pair heap)))))
 
 ;; ;Interesting!  set-field-many can set multiple adrs at a time!
 ;; ;BOZO is this the same as set-fields?
@@ -849,22 +1082,6 @@
 ;;       (and (>=-len (car lst) n)
 ;;            (my-all->=-len (cdr lst) n))))
 
-;move
-(defthm strip-caddrs-when-not-consp
-  (implies (not (consp x))
-           (equal (strip-caddrs x)
-                  nil))
-  :hints (("goal" :in-theory (enable strip-caddrs ))))
-
-;STRIP-CADDRS-OF-CDR loops with defn STRIP-CADDRS
-;move
-;BOZO casues problems?
-;disable?
-;dup
-(defthm strip-caddrs-of-cdr
-  (equal (strip-caddrs (cdr x))
-         (cdr (strip-caddrs x)))
-  :hints (("goal" :in-theory (enable strip-caddrs))))
 
 ;bozo put back?
 ;; (defthmd strip-caddrs-of-hack
@@ -985,20 +1202,6 @@
 ;; 		   ref class-name field-id value heap)))
 ;;   :hints (("Goal" :in-theory (enable set-field))))
 
-
-;rename.
-(defthm get-either-case
-  (equal (get-field ref1 pair
-		    (set-field ref2 pair
-			       (get-field ref1 pair heap)
-			       heap))
-	 (get-field ref1 pair heap)
-	 )
-  :hints (("goal" :cases ((equal ref1 ref2)))))
-
-
-;;  ...
-
 ;; (defthm get-field-non-nil-means-bound
 ;;   (implies (get-field adr pair heap)
 ;; 	   (bound-in-heap adr heap))
@@ -1109,41 +1312,6 @@
            (get-field ad1 pair1 heap)))
   :hints (("Goal" :in-theory (e/d (clear-field) (set-to-nil-equal-clear-field)))))
 
-(defthm get-field-of-new-ad
-  (equal (get-field (new-ad (rkeys heap)) pair heap)
-         nil)
-  :hints (("Goal" :in-theory (e/d (get-field) (G-IFF-GEN)))))
-
-(defthm get-field-of-s-same
-  (equal (get-field ad pair (s ad obj heap))
-         (g pair obj))
-  :hints (("Goal" :in-theory (enable get-field))))
-
-(defthmd get-field-reassemble
-  (equal (g class-field-pair (g ad heap))
-         (get-field ad class-field-pair heap))
-  :hints (("Goal" :in-theory (enable get-field))))
-
-(theory-invariant (incompatible (:rewrite get-field-reassemble) (:definition get-field)))
-
-(defthmd set-fields-opener
-  (implies (not (endp bindings))
-           (equal (set-fields ad bindings heap)
-                  (let* ((first-binding (car bindings))
-                         (class-field-pair (car first-binding))
-                         (value (cdr first-binding)))
-                        (set-field ad class-field-pair value
-                                   (set-fields ad (cdr bindings) heap)))))
-  :hints (("Goal" :in-theory (enable set-fields))))
-
-(defthm set-fields-base-case
-  (implies (endp bindings)
-           (equal (set-fields ad bindings heap)
-                  heap))
-  :hints (("Goal" :in-theory (enable set-fields))))
-
-(theory-invariant (incompatible (:rewrite set-fields-opener) (:rewrite SET-FIELDS-COLLECT-1)))
-
 (defthm clr-of-set-field
   (equal (clr ad (set-field ad pair value heap))
          (clr ad heap))
@@ -1160,134 +1328,11 @@
   :hints (("Goal" :expand (SET-FIELDS AD BINDINGS HEAP)
            :in-theory (enable set-fields))))
 
-;or should we open null-refp?
-(defthm not-null-refp-of-new-ad
-  (not (null-refp (new-ad dom))))
-
-(defthm not-null-refp-of-nth-new-ad
-  (not (null-refp (nth-new-ad n dom))))
-
-;might loop in acl2? but in axe, equal-same will fire first (because of priorities)?
-;fixme add an acl2 version with a syntaxp hyp?
-;fixme can this interact with other rules that turn equal around (maybe based on term size?)
-(defthmd equal-of-null-ref-turn-around
-  (implies (syntaxp (not (quotep x))) ;fixme would also like to exclude x being a call to null-ref
-           (equal (equal x (null-ref))
-                  (equal (null-ref) x))))
-
-(defthm equal-of-null-ref-and-new-ad
-  (equal (equal (null-ref) (new-ad dom))
-         nil))
-
-(defthm equal-of-new-ad-and-null-ref
-  (equal (equal (new-ad dom) (null-ref))
-         nil))
-
-(defthm equal-of-null-ref-and-nth-new-ad
-  (equal (equal (null-ref) (nth-new-ad n dom))
-         nil))
-
-(defthm equal-of-nth-new-ad-and-null-ref
-  (equal (equal (nth-new-ad n dom) (null-ref))
-         nil))
-
-
-
-;fixme make a "same" version
-;is it bad that "g" is arising?
-(defthm g-of-set-field-irrel
-  (implies (not (equal ad ad2))
-           (equal (g ad (set-field ad2 class-field-pair value heap))
-                  (g ad heap)))
-  :hints (("Goal" :in-theory (enable set-field))))
-
-(defthm g-of-set-field-same
-  (equal (g ad (set-field ad class-field-pair value heap))
-         (s class-field-pair value (g ad heap)))
-  :hints (("Goal" :in-theory (enable set-field))))
-
-(defthm g-of-set-fields-irrel
-  (implies (not (equal ad ad2))
-           (equal (g ad (set-fields ad2 pairs heap))
-                  (g ad heap)))
-  :hints (("Goal" :in-theory (enable set-fields))))
-
-(defthm in-rkeys-when-get-field-non-nil-main
-  (implies (get-field ad pair heap)
-           (set::in ad (rkeys heap)))
-  :hints (("Goal" :use (:instance G-IFF-GEN (a ad) (r heap))
-           :in-theory (e/d (GET-FIELD
-                            ) (G-IFF-GEN GET-FIELD-REASSEMBLE)))))
-
-;special case for when get-field is known equal to something
-(defthm in-rkeys-when-get-field-non-nil
-  (implies (and (equal (get-field ad pair heap) val) ;free vars
-                val                                  ;is not nil
-                )
-           (set::in ad (rkeys heap))))
-
-;special case for when get-field is known equal to something
-;for axe (todo: we could build into axe that x is non-nil when it's equal to something non-nil)
-(defthm in-rkeys-when-get-field-non-nil-alt
-  (implies (and (equal val (get-field ad pair heap))
-                val)
-           (set::in ad (rkeys heap))))
-
 (defthm clear-field-does-nothing
   (implies (not (get-field ad pair heap))
            (equal (clear-field ad pair heap)
                   heap))
   :hints (("Goal" :in-theory (e/d (clear-field) (set-to-nil-equal-clear-field)))))
-
-(defthm get-field-of-s-diff
-  (implies (not (equal ad ad2))
-           (equal (get-field ad pair (s ad2 v heap))
-                  (get-field ad pair heap)))
-  :hints (("Goal" :in-theory (e/d (get-field) (GET-FIELD-REASSEMBLE)))))
-
-(defthm all-addressp-of-n-new-ads
-  (acl2::all-addressp (acl2::n-new-ads n ads))
-  :hints (("Goal" :in-theory (e/d (acl2::all-addressp acl2::n-new-ads acl2::n-new-ads-aux) (N-NEW-ADS-BECOMES-N-NEW-ADS2)))))
-
-(defthm heapp-of-set-fields
-  (implies (and (jvm::heapp heap)
-                (acl2::all-heap-object-keyp (strip-cars bindings))
-                (addressp ad))
-           (jvm::heapp (ACL2::SET-FIELDS ad bindings HEAP)))
-  :hints (("Goal" :in-theory (enable ACL2::SET-FIELDS))))
-
-(defthm strip-cars-of-append
-  (equal (STRIP-CARS (APPEND x y))
-         (append (strip-cars x) (strip-cars y)))
-  :hints (("Goal" :in-theory (enable strip-cars append))))
-
-
-
-(defthm addressfix-when-address-or-nullp-and-not-null-refp
-  (implies (and (address-or-nullp x)
-                (not (null-refp x)))
-           (equal (addressfix x)
-                  x)))
-
-
-(defthm get-class-of-set-class-same
-  (equal (get-class ad (set-class ad class heap))
-         class)
-  :hints (("Goal" :in-theory (enable get-class set-class))))
-
-(defthm get-class-of-set-class-diff
-  (implies (not (equal ad ad2))
-           (equal (get-class ad (set-class ad2 class heap))
-                  (get-class ad heap)))
-  :hints (("Goal" :in-theory (enable get-class set-class))))
-
-(defthm get-class-of-set-class-both
-  (equal (get-class ad (set-class ad2 class heap))
-         (if (equal ad ad2)
-             class
-           (get-class ad heap)))
-  :hints (("Goal" :in-theory (enable get-class set-class))))
-
 
 ;why does this arise (as opposed to clear-field of set-field)?
 (defthm clr-of-set-field-diff
@@ -1295,11 +1340,3 @@
            (equal (CLR ad1 (SET-FIELD AD2 CLASS-FIELD-PAIR VALUE HEAP))
                   (SET-FIELD AD2 CLASS-FIELD-PAIR VALUE (clr ad1 HEAP))))
   :hints (("Goal" :in-theory (enable set-field))))
-
-(defthm get-class-of-set-field
-  (equal (acl2::get-class ad1 (acl2::set-field ad2 pair val heap))
-         (if (and (equal ad1 ad2)
-                  (equal pair (acl2::class-pair)))
-             val
-           (acl2::get-class ad1 heap)))
-  :hints (("Goal" :in-theory (enable acl2::get-class))))
