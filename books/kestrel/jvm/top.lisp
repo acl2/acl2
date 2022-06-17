@@ -31,6 +31,7 @@
 (include-book "utilities2")
 (include-book "class-tables")
 (include-book "heap0")
+(include-book "heap-clearing")
 (include-book "heap")
 (include-book "java-types")
 (include-book "int-subtypes")

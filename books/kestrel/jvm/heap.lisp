@@ -14,6 +14,7 @@
 ;how much of this stuff is common with android?
 
 (include-book "heap0")
+(include-book "heap-clearing")
 (include-book "classes") ;for jvm::class-decl-non-static-fields, get-superclasses, and maybe other stuff
 (include-book "class-tables") ;for all-bound-in-class-tablep
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
