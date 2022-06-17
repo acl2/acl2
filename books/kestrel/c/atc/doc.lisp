@@ -566,6 +566,8 @@
      (xdoc::li
       "A term @('(let ((var term)) body)'),
        when @('var') is assignable,
+       @('var') is among @('vars') if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('var')
        that is either a call of a target function
@@ -586,6 +588,9 @@
        the symbol name of @('var1') is distinct from
        the symbol names of all the other ACL2 variables in scope,
        each @('vari') with @('i') &gt; 1 is assignable,
+       each @('vari') with @('i') &gt; 1 is among @('vars')
+       if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is an expression term for @('fn')
        returning a non-@('void') non-pointer C type
        and affecting the variables @('(var2 ... varn)'), and
@@ -600,6 +605,9 @@
       "A term @('(mv-let (var1 var2 ... varn) (assignn term) body)'),
        when @('n') &gt; 1,
        each @('vari') is assignable,
+       each @('vari') with @('i') &gt; 1 is among @('vars')
+       if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is an expression term for @('fn')
        returning the same non-@('void') non-pointer C type
        as the C type of @('vari')
@@ -620,6 +628,8 @@
       "A term @('(mv-let (var1 ... varn) term body)'),
        when @('n') &gt; 1,
        each @('vari') is assignable,
+       each @('vari') is among @('vars') if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('(var1 ... varn)')
        that is either a call of a recursive target function
