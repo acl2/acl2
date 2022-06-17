@@ -1436,9 +1436,11 @@
      e
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
-     :arrsub (exec-arrsub (exec-expr-pure e.arr compst)
-                          (exec-expr-pure e.sub compst)
-                          compst)
+     :arrsub (case (expr-kind e.arr)
+               (:memberp (error (list :placeholder e)))
+               (t (exec-arrsub (exec-expr-pure e.arr compst)
+                               (exec-expr-pure e.sub compst)
+                               compst)))
      :call (error (list :non-pure-expr e))
      :member (error (list :not-supported-yet e))
      :memberp (exec-memberp (exec-expr-pure e.target compst)
@@ -1673,41 +1675,42 @@
            (write-var var val compst)))
         (:arrsub
          (b* ((arr (expr-arrsub->arr left))
-              (sub (expr-arrsub->sub left))
-              ((unless (expr-case arr :ident))
-               (error (list :expr-asg-arrsub-not-var left)))
-              (var (expr-ident->get arr))
-              (ptr (read-var var compst))
-              ((when (errorp ptr)) ptr)
-              ((unless (value-case ptr :pointer))
-               (error (list :mistype-array
-                            :required :pointer
-                            :supplied (type-of-value ptr))))
-              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
-              (objdes (value-pointer->designator ptr))
-              (reftype (value-pointer->reftype ptr))
-              (array (read-object objdes compst))
-              ((when (errorp array)) array)
-              ((unless (value-case array :array))
-               (error (list :not-array arr (compustate-fix compst))))
-              ((unless (equal reftype (value-array->elemtype array)))
-               (error (list :mistype-array-read
-                            :pointer reftype
-                            :array (value-array->elemtype array))))
-              (index (exec-expr-pure sub compst))
-              ((when (errorp index)) index)
-              ((unless (value-integerp index))
-               (error (list :mistype-array-index
-                            :required :integer
-                            :found index)))
-              (index (exec-integer index))
-              ((when (< index 0)) (error (list :negative-array-index
-                                               :pointer ptr
-                                               :array array
-                                               :index index)))
-              (new-array (value-array-write index val array))
-              ((when (errorp new-array)) new-array))
-           (write-object objdes new-array compst)))
+              (sub (expr-arrsub->sub left)))
+           (if (expr-case arr :ident)
+               (b* ((var (expr-ident->get arr))
+                    (ptr (read-var var compst))
+                    ((when (errorp ptr)) ptr)
+                    ((unless (value-case ptr :pointer))
+                     (error (list :mistype-array
+                                  :required :pointer
+                                  :supplied (type-of-value ptr))))
+                    ((when (value-pointer-nullp ptr))
+                     (error (list :null-pointer)))
+                    (objdes (value-pointer->designator ptr))
+                    (reftype (value-pointer->reftype ptr))
+                    (array (read-object objdes compst))
+                    ((when (errorp array)) array)
+                    ((unless (value-case array :array))
+                     (error (list :not-array arr (compustate-fix compst))))
+                    ((unless (equal reftype (value-array->elemtype array)))
+                     (error (list :mistype-array-read
+                                  :pointer reftype
+                                  :array (value-array->elemtype array))))
+                    (index (exec-expr-pure sub compst))
+                    ((when (errorp index)) index)
+                    ((unless (value-integerp index))
+                     (error (list :mistype-array-index
+                                  :required :integer
+                                  :found index)))
+                    (index (exec-integer index))
+                    ((when (< index 0)) (error (list :negative-array-index
+                                                     :pointer ptr
+                                                     :array array
+                                                     :index index)))
+                    (new-array (value-array-write index val array))
+                    ((when (errorp new-array)) new-array))
+                 (write-object objdes new-array compst))
+             (error (list :expr-asg-arrsub-not-var left)))))
         (:memberp
          (b* ((str (expr-memberp->target left))
               (mem (expr-memberp->name left))
