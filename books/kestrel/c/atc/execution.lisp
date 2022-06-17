@@ -1483,6 +1483,11 @@
     "We also reject pre/post-increment/decrement expressions,
      which are obviously non-pure.")
    (xdoc::p
+    "We use a specialized ACL2 function for the case of
+     an array subscript expression
+     whose array is a structure read expression by pointer.
+     See @(tsee exec-arrsub-of-memberp) for motivation.")
+   (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
      Thus, we may extend this ACL2 function
