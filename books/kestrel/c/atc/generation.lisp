@@ -2689,6 +2689,260 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-ensure-formals-not-lost ((bind-affect symbol-listp)
+                                     (fn-affect symbol-listp)
+                                     (fn-typed-formals atc-symbol-type-alistp)
+                                     (fn symbolp)
+                                     (ctx ctxp)
+                                     state)
+  :returns (mv erp
+               (nothing null)
+               state)
+  :short "Ensure that no affected formals are lost."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the body of a non-recursive function @('fn')
+     includes an @(tsee mv-let)s or a @(tsee let)
+     that affect a formal of @('fn') of pointer type,
+     that formal must be among the variables affected by ('fn').
+     If the body of a recursive function @('fn')
+     includes an @(tsee mv-let)s or a @(tsee let)
+     that affect a formal of @('fn') of any type,
+     that formal must be among the variables affected by ('fn').
+     In other words, no modification of formals must be ``lost''.
+     The case of formals of pointer types is clear,
+     because it means that objects in the heap are affected.
+     The case of formals of non-pointer types
+     applies to recursive functions
+     because they represent loops,
+     which may affect local variables in the function where they appear.")
+   (xdoc::p
+    "This ACL2 function ensures that no formals are lost in the sense above.
+     The parameter @('bind-affect') consists of
+     the variable affected by the @(tsee mv-let) or @(tsee let).
+     The parameter @('fn-affect') consists of
+     the variables purported to be affected by @('fn').
+     We go through the elements of @('bind-affect')
+     and check each one against the formals of @('fn'),
+     taking into account the types and whether @('fn') is recursive."))
+  (b* (((when (endp bind-affect)) (acl2::value nil))
+       (var (car bind-affect))
+       (type (cdr (assoc-eq var fn-typed-formals)))
+       ((when (and type
+                   (or (irecursivep+ fn (w state))
+                       (type-case type :pointer))
+                   (not (member-eq var fn-affect))))
+        (er-soft+ ctx t nil
+                  "When generating C code for the function ~x0, ~
+                   the formal parameter ~x1 is being affected ~
+                   in an MV-LET or LET term, ~
+                   but it is not being returned by ~x0."
+                  fn var)))
+    (atc-ensure-formals-not-lost
+     (cdr bind-affect) fn-affect fn-typed-formals fn ctx state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-recognizer-to-type ((recognizer symbolp)
+                                (prec-tags atc-string-taginfo-alistp))
+  :returns (type type-optionp)
+  :short "C type corresponding to a recognizer name, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to determine the types of the formal parameters of functions
+     from the recognizers used in the guard,
+     as explained in the user documentation.
+     Note that the structure recognizers represent pointer types."))
+  (case recognizer
+    (scharp (type-schar))
+    (ucharp (type-uchar))
+    (sshortp (type-sshort))
+    (ushortp (type-ushort))
+    (sintp (type-sint))
+    (uintp (type-uint))
+    (slongp (type-slong))
+    (ulongp (type-ulong))
+    (sllongp (type-sllong))
+    (ullongp (type-ullong))
+    (schar-arrayp (type-pointer (type-schar)))
+    (uchar-arrayp (type-pointer (type-uchar)))
+    (sshort-arrayp (type-pointer (type-sshort)))
+    (ushort-arrayp (type-pointer (type-ushort)))
+    (sint-arrayp (type-pointer (type-sint)))
+    (uint-arrayp (type-pointer (type-uint)))
+    (slong-arrayp (type-pointer (type-slong)))
+    (ulong-arrayp (type-pointer (type-ulong)))
+    (sllong-arrayp (type-pointer (type-sllong)))
+    (ullong-arrayp (type-pointer (type-ullong)))
+    (t (b* (((mv okp struct tag p) (atc-check-symbol-3part recognizer))
+            ((unless (and okp
+                          (equal (symbol-name struct) "STRUCT")
+                          (equal (symbol-name p) "P")))
+             nil)
+            (tag (symbol-name tag))
+            (info (cdr (assoc-equal tag prec-tags)))
+            ((unless info) nil)
+            ((unless (atc-tag-infop info))
+             (raise "Internal error: malformed DEFSTRUCT info ~x0." info))
+            (info (atc-tag-info->defstruct info))
+            ((unless (eq recognizer (defstruct-info->recognizer info))) nil)
+            ((unless (ident-stringp tag))
+             (raise "Internal error: tag ~x0 not valid identifier." tag)))
+         (type-pointer (type-struct (ident tag)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-typed-formals ((fn symbolp)
+                           (prec-tags atc-string-taginfo-alistp)
+                           (ctx ctxp)
+                           state)
+  :returns (mv erp
+               (typed-formals atc-symbol-type-alistp)
+               state)
+  :short "Calculate the C types of the formal parameters of a target function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look for a term of the form @('(<type> <formal>)')
+     among the conjuncts of the function's guard,
+     for each formal @('<formal>') of @('fn'),
+     where @('<type>') is a predicate corresponding to a C type.")
+   (xdoc::p
+    "We ensure that there is exactly one such term for each formal.
+     If this is successful,
+     we return an alist from the formals to the types.
+     The alist has unique keys, in the order of the formals.")
+   (xdoc::p
+    "We first extract the guard's conjuncts,
+     then we go through the conjuncts, looking for the pattern,
+     and we extend an alist from formals to types as we find patterns;
+     this preliminary alist may not have the keys in order,
+     because it goes according to the order of the guard's conjuncts.
+     As we construct this preliminary alist,
+     we check for multiple terms for the same formal,
+     rejecting them even if they are identical.
+     Then we construct the final alist by going through the formals in order,
+     and looking up their types in the preliminary alist;
+     here we detect when a formal has no corresponding conjunct in the guard."))
+  (b* ((wrld (w state))
+       (formals (formals+ fn wrld))
+       (guard (uguard+ fn wrld))
+       (guard-conjuncts (flatten-ands-in-lit guard))
+       ((er prelim-alist) (atc-typed-formals-prelim-alist fn
+                                                          formals
+                                                          guard
+                                                          guard-conjuncts
+                                                          nil
+                                                          prec-tags
+                                                          ctx
+                                                          state)))
+    (atc-typed-formals-final-alist
+     fn formals guard prelim-alist prec-tags ctx state))
+
+  :prepwork
+
+  ((define atc-typed-formals-prelim-alist ((fn symbolp)
+                                           (formals symbol-listp)
+                                           (guard pseudo-termp)
+                                           (guard-conjuncts pseudo-term-listp)
+                                           (prelim-alist atc-symbol-type-alistp)
+                                           (prec-tags atc-string-taginfo-alistp)
+                                           (ctx ctxp)
+                                           state)
+     :returns (mv erp
+                  (prelim-alist-final atc-symbol-type-alistp)
+                  state)
+     :parents nil
+     (b* (((when (endp guard-conjuncts))
+           (acl2::value (atc-symbol-type-alist-fix prelim-alist)))
+          (conjunct (car guard-conjuncts))
+          ((unless (and (nvariablep conjunct)
+                        (not (fquotep conjunct))
+                        (not (flambda-applicationp conjunct))))
+           (atc-typed-formals-prelim-alist fn
+                                           formals
+                                           guard
+                                           (cdr guard-conjuncts)
+                                           prelim-alist
+                                           prec-tags
+                                           ctx
+                                           state))
+          (type-fn (ffn-symb conjunct))
+          (type (atc-recognizer-to-type type-fn prec-tags))
+          ((when (not type))
+           (atc-typed-formals-prelim-alist fn
+                                           formals
+                                           guard
+                                           (cdr guard-conjuncts)
+                                           prelim-alist
+                                           prec-tags
+                                           ctx
+                                           state))
+          (arg (fargn conjunct 1))
+          ((unless (member-eq arg formals))
+           (atc-typed-formals-prelim-alist fn
+                                           formals
+                                           guard
+                                           (cdr guard-conjuncts)
+                                           prelim-alist
+                                           prec-tags
+                                           ctx
+                                           state))
+          ((when (consp (assoc-eq arg prelim-alist)))
+           (er-soft+ ctx t nil
+                     "The guard ~x0 of the target function ~x1 ~
+                      includes multiple type predicates ~
+                      for the formal parameter ~x2. ~
+                      This is disallowed: every formal paramter ~
+                      must have exactly one type predicate in the guard, ~
+                      even when the multiple predicates are the same."
+                     guard fn arg))
+          (prelim-alist (acons arg type prelim-alist)))
+       (atc-typed-formals-prelim-alist fn
+                                       formals
+                                       guard
+                                       (cdr guard-conjuncts)
+                                       prelim-alist
+                                       prec-tags
+                                       ctx
+                                       state)))
+
+   (define atc-typed-formals-final-alist ((fn symbolp)
+                                          (formals symbol-listp)
+                                          (guard pseudo-termp)
+                                          (prelim-alist atc-symbol-type-alistp)
+                                          (prec-tags atc-string-taginfo-alistp)
+                                          (ctx ctxp)
+                                          state)
+     :returns (mv erp
+                  (typed-formals atc-symbol-type-alistp)
+                  state)
+     :parents nil
+     (b* (((when (endp formals)) (acl2::value nil))
+          (formal (symbol-fix (car formals)))
+          (formal+type (assoc-eq formal
+                                 (atc-symbol-type-alist-fix prelim-alist)))
+          ((when (not (consp formal+type)))
+           (er-soft+ ctx t nil
+                     "The guard ~x0 of the target function ~x1 ~
+                      has no type predicate for the formal parameter ~x2. ~
+                      Every formal parameter must have a type predicate."
+                     guard fn formal))
+          (type (cdr formal+type))
+          ((er typed-formals) (atc-typed-formals-final-alist fn
+                                                             (cdr formals)
+                                                             guard
+                                                             prelim-alist
+                                                             prec-tags
+                                                             ctx
+                                                             state)))
+       (acl2::value (acons formal type typed-formals)))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp)
                       (var-term-alist symbol-pseudoterm-alistp)
                       (inscope atc-symbol-type-alist-listp)
@@ -2913,6 +3167,7 @@
      and @(tsee exec-expr-call-or-pure),
      for which we use the recursively calculated limit."))
   (b* ((irr (list nil (irr-type) nil))
+       (wrld (w state))
        ((mv okp test then else) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
@@ -3060,6 +3315,16 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars init-affect))
+                   ((mv erp typed-formals state)
+                    (atc-typed-formals fn prec-tags ctx state))
+                   ((when erp) (mv erp irr state))
+                   ((mv erp & state) (atc-ensure-formals-not-lost vars
+                                                                  affect
+                                                                  typed-formals
+                                                                  fn
+                                                                  ctx
+                                                                  state))
+                   ((when erp) (mv erp irr state))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init-type))
@@ -3126,6 +3391,16 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars rhs-affect))
+                   ((mv erp typed-formals state)
+                    (atc-typed-formals fn prec-tags ctx state))
+                   ((when erp) (mv erp irr state))
+                   ((mv erp & state) (atc-ensure-formals-not-lost vars
+                                                                  affect
+                                                                  typed-formals
+                                                                  fn
+                                                                  ctx
+                                                                  state))
+                   ((when erp) (mv erp irr state))
                    ((when (type-case rhs-type :array))
                     (raise "Internal error: array type ~x0." rhs-type)
                     (acl2::value irr))
@@ -3187,6 +3462,16 @@
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
                         fn val))
+             ((mv erp typed-formals state)
+              (atc-typed-formals fn prec-tags ctx state))
+             ((when erp) (mv erp irr state))
+             ((mv erp & state) (atc-ensure-formals-not-lost vars
+                                                            affect
+                                                            typed-formals
+                                                            fn
+                                                            ctx
+                                                            state))
+             ((when erp) (mv erp irr state))
              ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val
                             var-term-alist
@@ -3607,6 +3892,16 @@
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
+             ((mv erp typed-formals state)
+              (atc-typed-formals fn prec-tags ctx state))
+             ((when erp) (mv erp irr state))
+             ((mv erp & state) (atc-ensure-formals-not-lost (list var)
+                                                            affect
+                                                            typed-formals
+                                                            fn
+                                                            ctx
+                                                            state))
+             ((when erp) (mv erp irr state))
              ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val
                             var-term-alist
@@ -3710,7 +4005,7 @@
                          a recursive call on every path, ~
                          but in the function ~x0 it ends with ~x1 instead."
                         fn term))
-             (formals (formals+ loop-fn (w state)))
+             (formals (formals+ loop-fn wrld))
              ((unless (equal formals loop-args))
               (er-soft+ ctx t irr
                         "When generating C code for the function ~x0, ~
@@ -3748,7 +4043,7 @@
           (acl2::value (list (list (block-item-stmt loop-stmt))
                              (type-void)
                              limit))))
-       ((when (equal term `(,fn ,@(formals+ fn (w state)))))
+       ((when (equal term `(,fn ,@(formals+ fn wrld))))
         (if loop-flag
             (acl2::value (list nil (type-void) (pseudo-term-quote 1)))
           (er-soft+ ctx t irr
@@ -3757,7 +4052,7 @@
                      not at the end of the computation on some path."
                     fn)))
        ((mv okp called-fn args in-types out-type fn-affect limit)
-        (atc-check-cfun-call term var-term-alist prec-fns (w state)))
+        (atc-check-cfun-call term var-term-alist prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
         (b* (((when loop-flag)
@@ -3766,7 +4061,7 @@
                          a recursive call on every path, ~
                          but in the function ~x0 it ends with ~x1 instead."
                         fn term))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
+             ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
                                                 in-types
                                                 args))
               (er-soft+ ctx t irr
@@ -4125,205 +4420,6 @@
                                                    proofs
                                                    ctx
                                                    state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-recognizer-to-type ((recognizer symbolp)
-                                (prec-tags atc-string-taginfo-alistp))
-  :returns (type type-optionp)
-  :short "C type corresponding to a recognizer name, if any."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to determine the types of the formal parameters of functions
-     from the recognizers used in the guard,
-     as explained in the user documentation.
-     Note that the structure recognizers represent pointer types."))
-  (case recognizer
-    (scharp (type-schar))
-    (ucharp (type-uchar))
-    (sshortp (type-sshort))
-    (ushortp (type-ushort))
-    (sintp (type-sint))
-    (uintp (type-uint))
-    (slongp (type-slong))
-    (ulongp (type-ulong))
-    (sllongp (type-sllong))
-    (ullongp (type-ullong))
-    (schar-arrayp (type-pointer (type-schar)))
-    (uchar-arrayp (type-pointer (type-uchar)))
-    (sshort-arrayp (type-pointer (type-sshort)))
-    (ushort-arrayp (type-pointer (type-ushort)))
-    (sint-arrayp (type-pointer (type-sint)))
-    (uint-arrayp (type-pointer (type-uint)))
-    (slong-arrayp (type-pointer (type-slong)))
-    (ulong-arrayp (type-pointer (type-ulong)))
-    (sllong-arrayp (type-pointer (type-sllong)))
-    (ullong-arrayp (type-pointer (type-ullong)))
-    (t (b* (((mv okp struct tag p) (atc-check-symbol-3part recognizer))
-            ((unless (and okp
-                          (equal (symbol-name struct) "STRUCT")
-                          (equal (symbol-name p) "P")))
-             nil)
-            (tag (symbol-name tag))
-            (info (cdr (assoc-equal tag prec-tags)))
-            ((unless info) nil)
-            ((unless (atc-tag-infop info))
-             (raise "Internal error: malformed DEFSTRUCT info ~x0." info))
-            (info (atc-tag-info->defstruct info))
-            ((unless (eq recognizer (defstruct-info->recognizer info))) nil)
-            ((unless (ident-stringp tag))
-             (raise "Internal error: tag ~x0 not valid identifier." tag)))
-         (type-pointer (type-struct (ident tag)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-typed-formals ((fn symbolp)
-                           (prec-tags atc-string-taginfo-alistp)
-                           (ctx ctxp)
-                           state)
-  :returns (mv erp
-               (typed-formals atc-symbol-type-alistp)
-               state)
-  :short "Calculate the C types of the formal parameters of a target function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We look for a term of the form @('(<type> <formal>)')
-     among the conjuncts of the function's guard,
-     for each formal @('<formal>') of @('fn'),
-     where @('<type>') is a predicate corresponding to a C type.")
-   (xdoc::p
-    "We ensure that there is exactly one such term for each formal.
-     If this is successful,
-     we return an alist from the formals to the types.
-     The alist has unique keys, in the order of the formals.")
-   (xdoc::p
-    "We first extract the guard's conjuncts,
-     then we go through the conjuncts, looking for the pattern,
-     and we extend an alist from formals to types as we find patterns;
-     this preliminary alist may not have the keys in order,
-     because it goes according to the order of the guard's conjuncts.
-     As we construct this preliminary alist,
-     we check for multiple terms for the same formal,
-     rejecting them even if they are identical.
-     Then we construct the final alist by going through the formals in order,
-     and looking up their types in the preliminary alist;
-     here we detect when a formal has no corresponding conjunct in the guard."))
-  (b* ((wrld (w state))
-       (formals (formals+ fn wrld))
-       (guard (uguard+ fn wrld))
-       (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er prelim-alist) (atc-typed-formals-prelim-alist fn
-                                                          formals
-                                                          guard
-                                                          guard-conjuncts
-                                                          nil
-                                                          prec-tags
-                                                          ctx
-                                                          state)))
-    (atc-typed-formals-final-alist
-     fn formals guard prelim-alist prec-tags ctx state))
-
-  :prepwork
-
-  ((define atc-typed-formals-prelim-alist ((fn symbolp)
-                                           (formals symbol-listp)
-                                           (guard pseudo-termp)
-                                           (guard-conjuncts pseudo-term-listp)
-                                           (prelim-alist atc-symbol-type-alistp)
-                                           (prec-tags atc-string-taginfo-alistp)
-                                           (ctx ctxp)
-                                           state)
-     :returns (mv erp
-                  (prelim-alist-final atc-symbol-type-alistp)
-                  state)
-     :parents nil
-     (b* (((when (endp guard-conjuncts))
-           (acl2::value (atc-symbol-type-alist-fix prelim-alist)))
-          (conjunct (car guard-conjuncts))
-          ((unless (and (nvariablep conjunct)
-                        (not (fquotep conjunct))
-                        (not (flambda-applicationp conjunct))))
-           (atc-typed-formals-prelim-alist fn
-                                           formals
-                                           guard
-                                           (cdr guard-conjuncts)
-                                           prelim-alist
-                                           prec-tags
-                                           ctx
-                                           state))
-          (type-fn (ffn-symb conjunct))
-          (type (atc-recognizer-to-type type-fn prec-tags))
-          ((when (not type))
-           (atc-typed-formals-prelim-alist fn
-                                           formals
-                                           guard
-                                           (cdr guard-conjuncts)
-                                           prelim-alist
-                                           prec-tags
-                                           ctx
-                                           state))
-          (arg (fargn conjunct 1))
-          ((unless (member-eq arg formals))
-           (atc-typed-formals-prelim-alist fn
-                                           formals
-                                           guard
-                                           (cdr guard-conjuncts)
-                                           prelim-alist
-                                           prec-tags
-                                           ctx
-                                           state))
-          ((when (consp (assoc-eq arg prelim-alist)))
-           (er-soft+ ctx t nil
-                     "The guard ~x0 of the target function ~x1 ~
-                      includes multiple type predicates ~
-                      for the formal parameter ~x2. ~
-                      This is disallowed: every formal paramter ~
-                      must have exactly one type predicate in the guard, ~
-                      even when the multiple predicates are the same."
-                     guard fn arg))
-          (prelim-alist (acons arg type prelim-alist)))
-       (atc-typed-formals-prelim-alist fn
-                                       formals
-                                       guard
-                                       (cdr guard-conjuncts)
-                                       prelim-alist
-                                       prec-tags
-                                       ctx
-                                       state)))
-
-   (define atc-typed-formals-final-alist ((fn symbolp)
-                                          (formals symbol-listp)
-                                          (guard pseudo-termp)
-                                          (prelim-alist atc-symbol-type-alistp)
-                                          (prec-tags atc-string-taginfo-alistp)
-                                          (ctx ctxp)
-                                          state)
-     :returns (mv erp
-                  (typed-formals atc-symbol-type-alistp)
-                  state)
-     :parents nil
-     (b* (((when (endp formals)) (acl2::value nil))
-          (formal (symbol-fix (car formals)))
-          (formal+type (assoc-eq formal
-                                 (atc-symbol-type-alist-fix prelim-alist)))
-          ((when (not (consp formal+type)))
-           (er-soft+ ctx t nil
-                     "The guard ~x0 of the target function ~x1 ~
-                      has no type predicate for the formal parameter ~x2. ~
-                      Every formal parameter must have a type predicate."
-                     guard fn formal))
-          (type (cdr formal+type))
-          ((er typed-formals) (atc-typed-formals-final-alist fn
-                                                             (cdr formals)
-                                                             guard
-                                                             prelim-alist
-                                                             prec-tags
-                                                             ctx
-                                                             state)))
-       (acl2::value (acons formal type typed-formals)))
-     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
