@@ -14740,10 +14740,6 @@
   (equal (equal (+ x z) (+ w v u z))
          (equal (fix x) (+ w v u))))
 
-(defthm bvchop-non-negative-linear
-  (<= 0 (BVCHOP N X))
-  :rule-classes (:linear))
-
 (defthm bvplus-of-constant-and-bvcat-of-0
   (implies (and (syntaxp (quotep k))
                 (integerp k)

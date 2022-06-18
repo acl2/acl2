@@ -34,16 +34,14 @@
 ;(in-theory (disable BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P)) ;slow
 (in-theory (disable mod floor))
 
-;move
-(defthm integerp-of-bvchop
+;for Axe
+(defthmd integerp-of-bvchop
   (integerp (bvchop size x))
   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm natp-of-bvchop
-  (natp (bvchop n x))
-  :rule-classes :type-prescription)
-
-(in-theory (disable (:t bvchop))) ;natp-of-bvchop is at least as good
+;for Axe
+(defthmd natp-of-bvchop
+  (natp (bvchop n x)))
 
 (defthm bvchop-with-n-not-an-integer
   (implies (not (integerp n))
