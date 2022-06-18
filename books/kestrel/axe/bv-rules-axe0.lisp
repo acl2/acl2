@@ -29,7 +29,7 @@
 (defthmd integerp-of-floor
   (integerp (floor i j)))
 
-(defthmd rational-of-floor
+(defthmd rationalp-of-floor
   (rationalp (floor i j)))
 
 (defthmd acl2-numberp-of-floor

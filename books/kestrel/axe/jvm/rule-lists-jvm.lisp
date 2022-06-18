@@ -1856,7 +1856,7 @@
              bvlt-add-to-both-sides-constant-lemma ;expensive?
 
              ;rationalp-when-integerp ;drop
-             rational-of-floor
+             rationalp-of-floor
              rationalp-*2
              integerp-of-floor
 ;             bvuminus-of-bvuminus
