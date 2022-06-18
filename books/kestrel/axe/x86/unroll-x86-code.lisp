@@ -517,13 +517,13 @@
       ',output
       ',use-internal-contextsp
       ',prune
-      ,extra-rules             ;not quoted!
-      ,remove-rules            ;not quoted!
-      ,extra-assumption-rules  ;not quoted!
+      ,extra-rules ; gets evaluated since not quoted
+      ,remove-rules ; gets evaluated since not quoted
+      ,extra-assumption-rules ; gets evaluated since not quoted
       ',step-limit
       ',step-increment
       ',memoizep
-      ',monitor
+      ,monitor ; gets evaluated since not quoted
       ',print
       ',print-base
       ',produce-function
