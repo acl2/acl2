@@ -150,15 +150,7 @@
 
     (xdoc::li
      "Several theorems about the recognizer, fixer, equivalence,
-      and omap operations applied to this type of omaps."))
-
-   (xdoc::p
-    "See the implementation, which uses a readable backquote notation,
-     for details.")))
-
-(defxdoc defomap-implementation
-  :parents (defomap)
-  :short "Implementation of @(tsee defomap).")
+      and omap operations applied to this type of omaps."))))
 
 (program)
 
