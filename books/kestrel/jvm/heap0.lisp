@@ -26,7 +26,6 @@
 (include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "utilities")
 (include-book "utilities2") ; for rules like 2LIST-OF-DELETE
-;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (in-theory (disable g-iff-gen)))
 
@@ -285,6 +284,7 @@
 ;;
 
 ;returns a new heap
+; todo: i should probably change set-field to non-nil fix its value?
 (defund set-field (ad class-field-pair value heap)
   (declare (xargs :guard t)) ; require heapp?
   (let* ((old-instance (g ad heap))
