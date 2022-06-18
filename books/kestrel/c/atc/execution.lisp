@@ -1361,7 +1361,7 @@
        ((when (errorp sub)) sub)
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
-                                             :required (type-sint)
+                                             :required :integer
                                              :supplied (type-of-value sub))))
        (index (exec-integer sub))
        ((when (< index 0)) (error (list :negative-array-index
@@ -1408,6 +1408,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-arrsub-of-memberp ((str value-resultp)
+                                (mem identp)
+                                (sub value-resultp)
+                                (compst compustatep))
+  :returns (result value-resultp)
+  :short "Execute an array subscripting expression
+          of a structure pointer member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a combination of @(tsee exec-arrsub) and @(tsee exec-memberp),
+     but it is defined as a separate function because currently
+     those two functions are not really compositional.
+     Our current semantics of C is correct for the purposes of ATC,
+     but it is not full-fledged and compositional.
+     In particular, it should (and will) be extended so that
+     expression execution returns either a value or an object designator.")
+   (xdoc::p
+    "So here we formalize the execution of expressions of the form @('s->m[i]'),
+     where @('s') is a pointer to a structure,
+     @('m') is the name of a member of the structure of array type,
+     and @('i') is an index into the array."))
+  (b* ((str (value-result-fix str))
+       ((when (errorp str)) str)
+       ((unless (value-case str :pointer))
+        (error (list :mistype-arrsub-of-memberp
+                     :required :pointer
+                     :supplied (type-of-value str))))
+       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       (objdes (value-pointer->designator str))
+       (reftype (value-pointer->reftype str))
+       (struct (read-object objdes compst))
+       ((when (errorp struct))
+        (error (list :struct-not-found str (compustate-fix compst))))
+       ((unless (value-case struct :struct))
+        (error (list :not-struct str (compustate-fix compst))))
+       ((unless (equal reftype
+                       (type-struct (value-struct->tag struct))))
+        (error (list :mistype-struct-read
+                     :pointer reftype
+                     :array (type-struct (value-struct->tag struct)))))
+       (arr (value-struct-read mem struct))
+       ((when (errorp arr)) arr)
+       ((unless (value-case arr :array))
+        (error (list :not-array arr)))
+       (sub (value-result-fix sub))
+       ((when (errorp sub)) sub)
+       ((unless (value-integerp sub)) (error
+                                       (list :mistype-array :index
+                                             :required :integer
+                                             :supplied (type-of-value sub))))
+       (index (exec-integer sub))
+       ((when (< index 0)) (error (list :negative-array-index
+                                        :array arr
+                                        :index sub))))
+    (value-array-read index arr))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
@@ -1423,6 +1483,11 @@
     "We also reject pre/post-increment/decrement expressions,
      which are obviously non-pure.")
    (xdoc::p
+    "We use a specialized ACL2 function for the case of
+     an array subscript expression
+     whose array is a structure read expression by pointer.
+     See @(tsee exec-arrsub-of-memberp) for motivation.")
+   (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
      Thus, we may extend this ACL2 function
@@ -1436,9 +1501,16 @@
      e
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
-     :arrsub (exec-arrsub (exec-expr-pure e.arr compst)
-                          (exec-expr-pure e.sub compst)
-                          compst)
+     :arrsub (case (expr-kind e.arr)
+               (:memberp
+                (b* (((expr-memberp e.arr) e.arr))
+                  (exec-arrsub-of-memberp (exec-expr-pure e.arr.target compst)
+                                          e.arr.name
+                                          (exec-expr-pure e.sub compst)
+                                          compst)))
+               (t (exec-arrsub (exec-expr-pure e.arr compst)
+                               (exec-expr-pure e.sub compst)
+                               compst)))
      :call (error (list :non-pure-expr e))
      :member (error (list :not-supported-yet e))
      :memberp (exec-memberp (exec-expr-pure e.target compst)
@@ -1634,7 +1706,7 @@
     (xdoc::topstring
      (xdoc::p
       "This is only used for expressions that must be assignments.
-       For now we only support simple assignment expressions, with:")
+       For now we only support certain assignment expressions, with:")
      (xdoc::ul
       (xdoc::li
        "A left-hand side consisting of
@@ -1642,6 +1714,9 @@
         or an array subscripting expression
         where the array is a variable,
         or a structure pointer member expression
+        where the target is a variable,
+        or an array subscripting expression
+        where the array is a structure pointer member expression
         where the target is a variable.")
       (xdoc::li
        "A right-hand side consisting of a function call or a pure expression."))
@@ -1673,41 +1748,88 @@
            (write-var var val compst)))
         (:arrsub
          (b* ((arr (expr-arrsub->arr left))
-              (sub (expr-arrsub->sub left))
-              ((unless (expr-case arr :ident))
-               (error (list :expr-asg-arrsub-not-var left)))
-              (var (expr-ident->get arr))
-              (ptr (read-var var compst))
-              ((when (errorp ptr)) ptr)
-              ((unless (value-case ptr :pointer))
-               (error (list :mistype-array
-                            :required :pointer
-                            :supplied (type-of-value ptr))))
-              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
-              (objdes (value-pointer->designator ptr))
-              (reftype (value-pointer->reftype ptr))
-              (array (read-object objdes compst))
-              ((when (errorp array)) array)
-              ((unless (value-case array :array))
-               (error (list :not-array arr (compustate-fix compst))))
-              ((unless (equal reftype (value-array->elemtype array)))
-               (error (list :mistype-array-read
-                            :pointer reftype
-                            :array (value-array->elemtype array))))
-              (index (exec-expr-pure sub compst))
-              ((when (errorp index)) index)
-              ((unless (value-integerp index))
-               (error (list :mistype-array-index
-                            :required :integer
-                            :found index)))
-              (index (exec-integer index))
-              ((when (< index 0)) (error (list :negative-array-index
-                                               :pointer ptr
-                                               :array array
-                                               :index index)))
-              (new-array (value-array-write index val array))
-              ((when (errorp new-array)) new-array))
-           (write-object objdes new-array compst)))
+              (sub (expr-arrsub->sub left)))
+           (cond ((expr-case arr :ident)
+                  (b* ((var (expr-ident->get arr))
+                       (ptr (read-var var compst))
+                       ((when (errorp ptr)) ptr)
+                       ((unless (value-case ptr :pointer))
+                        (error (list :mistype-array
+                                     :required :pointer
+                                     :supplied (type-of-value ptr))))
+                       ((when (value-pointer-nullp ptr))
+                        (error (list :null-pointer)))
+                       (objdes (value-pointer->designator ptr))
+                       (reftype (value-pointer->reftype ptr))
+                       (array (read-object objdes compst))
+                       ((when (errorp array)) array)
+                       ((unless (value-case array :array))
+                        (error (list :not-array arr (compustate-fix compst))))
+                       ((unless (equal reftype (value-array->elemtype array)))
+                        (error (list :mistype-array-read
+                                     :pointer reftype
+                                     :array (value-array->elemtype array))))
+                       (index (exec-expr-pure sub compst))
+                       ((when (errorp index)) index)
+                       ((unless (value-integerp index))
+                        (error (list :mistype-array-index
+                                     :required :integer
+                                     :found index)))
+                       (index (exec-integer index))
+                       ((when (< index 0)) (error (list :negative-array-index
+                                                        :pointer ptr
+                                                        :array array
+                                                        :index index)))
+                       (new-array (value-array-write index val array))
+                       ((when (errorp new-array)) new-array))
+                    (write-object objdes new-array compst)))
+                 ((expr-case arr :memberp)
+                  (b* ((str (expr-memberp->target arr))
+                       (mem (expr-memberp->name arr))
+                       ((unless (expr-case str :ident))
+                        (error (list :expr-asg-arrsub-memberp-not-supported
+                                     str)))
+                       (var (expr-ident->get str))
+                       (ptr (read-var var compst))
+                       ((when (errorp ptr)) ptr)
+                       ((unless (value-case ptr :pointer))
+                        (error (list :mistype-struct
+                                     :required :pointer
+                                     :supplied (type-of-value ptr))))
+                       ((when (value-pointer-nullp ptr))
+                        (error (list :null-pointer)))
+                       (objdes (value-pointer->designator ptr))
+                       (reftype (value-pointer->reftype ptr))
+                       (struct (read-object objdes compst))
+                       ((when (errorp struct)) struct)
+                       ((unless (value-case struct :struct))
+                        (error (list :not-struct str (compustate-fix compst))))
+                       ((unless (equal reftype
+                                       (type-of-value struct)))
+                        (error (list :mistype-struct-read
+                                     :pointer reftype
+                                     :struct (type-of-value struct))))
+                       (array (value-struct-read mem struct))
+                       ((when (errorp array)) array)
+                       ((unless (value-case array :array))
+                        (error (list :not-array array)))
+                       (index (exec-expr-pure sub compst))
+                       ((when (errorp index)) index)
+                       ((unless (value-integerp index))
+                        (error (list :mistype-struct-array-read
+                                     :required :integer
+                                     :supplied index)))
+                       (index (exec-integer index))
+                       ((when (< index 0)) (error (list :negative-array-index
+                                                        :pointer ptr
+                                                        :array array
+                                                        :index index)))
+                       (new-array (value-array-write index val array))
+                       ((when (errorp new-array)) new-array)
+                       (new-struct (value-struct-write mem new-array struct))
+                       ((when (errorp new-struct)) new-struct))
+                    (write-object objdes new-struct compst)))
+                 (t (error (list :expr-asg-arrsub-not-supported arr))))))
         (:memberp
          (b* ((str (expr-memberp->target left))
               (mem (expr-memberp->name left))
@@ -1731,7 +1853,7 @@
                               (type-of-value struct)))
                (error (list :mistype-struct-read
                             :pointer reftype
-                            :array (type-of-value struct))))
+                            :struct (type-of-value struct))))
               (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-object objdes new-struct compst)))

@@ -1904,9 +1904,11 @@
 
   (defruled exec-expr-pure-when-arrsub
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :arrsub))
+                  (equal (expr-kind e) :arrsub)
+                  (equal arr (expr-arrsub->arr e))
+                  (not (expr-case arr :memberp)))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
+                    (exec-arrsub (exec-expr-pure arr compst)
                                  (exec-expr-pure (expr-arrsub->sub e) compst)
                                  compst)))
     :enable exec-expr-pure)
