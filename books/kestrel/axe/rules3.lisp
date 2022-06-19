@@ -26,6 +26,7 @@
 (include-book "kestrel/bv/rules11" :dir :system) ; for BVPLUS-OF-BVCAT-FITS-IN-LOW-BITS-CORE-NEGATIVE-K1-HELPER
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
+(include-book "kestrel/bv/sbvdivdown" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
 (include-book "rules1") ;drop? for BV-ARRAY-WRITE-EQUAL-REWRITE-ALT, to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
@@ -221,8 +222,6 @@
 
 (in-theory (disable |+-BECOMES-BVPLUS-HACK| DIVISIBILITY-IN-TERMS-OF-FLOOR))
 
-(theory-invariant (incompatible (:definition bv-array-read) (:rewrite NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))
-
 ;gen
 (defthm bvmult-of-4
   (equal (BVMULT '32 '4 x)
@@ -231,10 +230,6 @@
            (e/d (bvmult bvcat logapp BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                 (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          bvchop-of-*)))))
-
-(in-theory (disable BV-ARRAY-READ-OF-BV-ARRAY-WRITE-BOTH))
-
-;(in-theory (disable GET-SIZE-OF-EXPR))
 
 (defthm sbvdiv-hack
   (implies (natp x)
@@ -466,16 +461,7 @@
            (not (< (LOGEXT size X) k)))
   :hints (("Goal" :in-theory (enable logext logapp))))
 
-(defthm floor-minus-arg1-better
-  (implies (and (rationalp x)
-                (rationalp y)
-                (not (equal 0 y)))
-           (equal (floor (- x) y)
-                  (if (equal (floor x y) (/ x y))
-                      (- (floor x y))
-                      (- (- (floor x y)) 1)))))
 
-(in-theory (disable floor-minus-arg1))
 
 ;move up
 (defthmd truncate-becomes-floor-gen4-better-better
@@ -993,18 +979,19 @@
 ;bvlt-of-plus-arg1
                                                )))))
 ;move and gen
-(defthm floor-of-4-becomes-logtail
+(defthmd floor-of-4-becomes-logtail
   (implies (integerp x)
            (equal (floor x 4)
                   (logtail 2 x)))
   :hints (("Goal" :in-theory (enable logtail))))
 
 ;;strength reduction
+;rename
 (defthm bvdiv-of-4
   (equal (bvdiv 32 x 4)
          (slice 31 2 x))
-  :hints (("Goal" :in-theory (e/d (bvdiv slice bvchop-of-logtail
-                                         ) (anti-slice bvplus-recollapse rewrite-floor-mod)))))
+  :hints (("Goal" :in-theory (e/d (bvdiv slice bvchop-of-logtail floor-of-4-becomes-logtail)
+                                  (anti-slice bvplus-recollapse rewrite-floor-mod)))))
 
 ;rename?
 ;bad rule?
@@ -1838,11 +1825,12 @@
 (defthm bvmod-31-4
   (equal (bvmod 31 x 4)
          (bvchop 2 x))
-  :hints (("Goal" :in-theory (e/d (bvmod bvchop) (multiple-idioms-for-multiple-4
-                                                    mod-type
-                                                   mod-of-expt-of-2-constant-version
-                                                   mod-of-expt-of-2
-                                                   )))))
+  :hints (("Goal" :in-theory (e/d (bvmod bvchop)
+                                  (multiple-idioms-for-multiple-4
+                                   mod-type
+                                   mod-of-expt-of-2-constant-version
+                                   mod-of-expt-of-2
+                                   )))))
 
 ;gen!
 (defthm bvmod-3-4
@@ -1856,10 +1844,8 @@
 (defthm bvdiv-31-4
   (equal (bvdiv 31 x 4)
          (slice 30 2 x))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (enable bvdiv bvchop-when-i-is-not-an-integer
-                                  SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
-                                  bvchop-of-logtail-becomes-slice))))
+  :hints (("Goal" :in-theory (e/d (bvdiv slice bvchop-of-logtail floor-of-4-becomes-logtail)
+                                  (anti-slice bvplus-recollapse rewrite-floor-mod)))))
 
 (defthm high-slice-equal-1-rewrite
   (implies (unsigned-byte-p 32 x)
@@ -2116,6 +2102,7 @@
                                               slice-of-sum-cases
                                               ;;bvchop-of-sum-cases
                                               bvchop-of-logtail-becomes-slice
+                                              FLOOR-OF-4-BECOMES-LOGTAIL
                                               )
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   anti-bvplus bvlt-of-plus-arg2 bvlt-of-plus-arg1)))))

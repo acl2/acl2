@@ -271,13 +271,21 @@
 
 (defthmd floor-of---arg1
   (implies (and (rationalp i)
-                (rationalp j)
-                (not (equal j 0)))
+                (rationalp j))
            (equal (floor (- i) j)
                   (if (integerp (* i (/ j)))
                       (- (floor i j))
                     (+ -1 (- (floor i j))))))
   :hints (("Goal" :in-theory (enable floor))))
+
+(defthm floor-minus-arg1-better
+  (implies (and (rationalp x)
+                (rationalp y)
+                (not (equal 0 y)))
+           (equal (floor (- x) y)
+                  (if (equal (floor x y) (/ x y))
+                      (- (floor x y))
+                      (- (- (floor x y)) 1)))))
 
 (encapsulate
   ()
@@ -654,17 +662,6 @@
            (< (floor i j) 0))
   :rule-classes :type-prescription)
 
-;why disabled?
-(defthmd floor-minus-arg1
-  (implies (and (rationalp x)
-                (rationalp y)
-                )
-           (equal (floor (- x) y)
-                  (if (integerp (* x (/ y)))
-                      (- (floor x y))
-                      (- (- (floor x y)) 1))))
-  :hints (("Goal" :cases ((equal '0 y)))))
-
 (defthm floor-minus-arg2
   (implies (and (force (rationalp x))
                 (rationalp y)
@@ -683,8 +680,8 @@
                   (if (integerp (* (- x k) (/ y)))
                       (- (floor (- x k) y))
                       (- (- (floor (- x k) y)) 1))))
-  :hints (("Goal" :use (:instance floor-minus-arg1 (x (- k x)))
-           :in-theory (disable floor-minus-arg1))))
+  :hints (("Goal" :use (:instance floor-of---arg1 (i (- k x)) (j y))
+           :in-theory (disable floor-of---arg1))))
 
 (defthm floor-minus-arg2-hack
   (implies (and (syntaxp (quotep k))
@@ -709,8 +706,8 @@
                   (if (integerp (* (- k) (/ y)))
                       (- (floor (- k) y))
                     (- (- (floor (- k) y)) 1))))
-  :hints (("Goal" :use (:instance floor-minus-arg1 (x (- k)))
-           :in-theory (disable floor-minus-arg1))))
+  :hints (("Goal" :use (:instance floor-of---arg1 (i (- k)) (j y))
+           :in-theory (disable floor-of---arg1))))
 
 ;this is better than (part of) floor-type-1
 (defthm <-of-floor-and-0
