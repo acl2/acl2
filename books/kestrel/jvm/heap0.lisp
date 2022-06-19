@@ -478,6 +478,11 @@
                  (set-fields ad (cdr bindings) heap)
                  ))))
 
+(defthm set-fields-of-true-list-fix
+  (equal (set-fields ad (true-list-fix bindings) heap)
+         (set-fields ad bindings heap))
+  :hints (("Goal" :in-theory (enable set-fields true-list-fix))))
+
 (defthm set-fields-when-pairs-is-not-a-consp
   (implies (not (consp pairs))
            (equal (set-fields ad pairs heap)

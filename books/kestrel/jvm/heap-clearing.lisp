@@ -14,6 +14,31 @@
 (include-book "heap0")
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
+;move
+(defthm s-nil-becomes-clr
+  (equal (s a nil r)
+         (clr a r))
+  :hints (("Goal" :in-theory (e/d (clr) (s==r)))))
+
+(theory-invariant (incompatible (:rewrite s-nil-becomes-clr) (:definition clr)))
+
+(defthm rkeys-of-clr
+  (equal (rkeys (clr key r))
+         (set::delete key (rkeys r)))
+  :hints (("Goal"  :DO-NOT '(preprocess)
+           :in-theory (e/d (clr) (S-NIL-BECOMES-CLR ;looped
+                                  s==r
+                                  )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm clr-of-set-field
+  (equal (clr ad (set-field ad pair value heap))
+         (clr ad heap))
+  :hints (("Goal" :in-theory (enable set-field))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;
 ;; clear-field
 ;;
@@ -54,6 +79,17 @@
   (equal (clear-field ref pair (set-field ref pair value heap))
 	 (clear-field ref pair heap))
   :hints (("Goal" :in-theory (enable clear-field set-field ))))
+
+(defthm get-class-of-clear-field-irrel-pair
+  (implies (not (equal pair (class-pair)))
+           (equal (get-class ref (clear-field ref2 pair heap))
+                  (get-class ref heap)))
+  :hints (("Goal" :in-theory (e/d (get-class clear-field) ()))))
+
+(defthm clear-field-of-s
+ (equal (clear-field ad pair (s ad obj heap))
+        (s ad (clr pair obj) heap))
+ :hints (("Goal" :in-theory (e/d (clear-field) ()))))
 
 ;more theorems needed about clr?
 
@@ -168,10 +204,7 @@
            (get-field ad1 pair1 heap)))
   :hints (("Goal" :in-theory (e/d (clear-field) (set-to-nil-equal-clear-field)))))
 
-(defthm clr-of-set-field
-  (equal (clr ad (set-field ad pair value heap))
-         (clr ad heap))
-  :hints (("Goal" :in-theory (enable set-field))))
+
 
 (defthm clr-of-clear-field
   (equal (clr ad (clear-field ad value heap))
@@ -196,3 +229,8 @@
            (equal (CLR ad1 (SET-FIELD AD2 CLASS-FIELD-PAIR VALUE HEAP))
                   (SET-FIELD AD2 CLASS-FIELD-PAIR VALUE (clr ad1 HEAP))))
   :hints (("Goal" :in-theory (enable set-field))))
+
+(defthm g-of-clear-field-same
+  (equal (g ad (clear-field ad class-field-pair heap))
+         (clr class-field-pair (g ad heap)))
+  :hints (("Goal" :in-theory (e/d (clear-field) (SET-TO-NIL-EQUAL-CLEAR-FIELD)))))

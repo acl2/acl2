@@ -24,6 +24,56 @@
 
 (in-theory (disable key-list)) ;fixme move up
 
+(local (in-theory (disable true-listp)))
+
+
+
+;bozo expensive?
+;use iff?
+(defthm not-clr-when-not-s
+  (implies (not (s a val r))
+           (not (clr a r)))
+  :hints (("Goal" ;:do-not-preprocess
+           :cases (val)
+           :in-theory (e/d (clr) (s==r s-nil-becomes-clr)))))
+
+;move
+(defthm s-iff
+  (iff (s a v r)
+       (or v (clr a r))))
+
+;if a is nil, it could be made into a clr
+(defthm equal-of-nil-of-s-and-s
+  (implies (and v2
+                (not (equal a a2)))
+           (equal (equal nil (s a v (s a2 v2 r)))
+                  nil)))
+
+(defthm clr-non-nil-when-g-of-some-other-address-is-non-nil
+  (implies (and (equal (g a1 val) value)
+                value ;is not nil
+                (not (equal a1 a2)))
+           (clr a2 val))
+  :hints (("Goal" :in-theory (disable G-OF-CLR)
+           :use (:instance G-OF-CLR (R  val) (A2  A2) (A1  A1)))))
+
+(defthm clr-non-nil-when-get-field
+  (implies (and (equal (get-field ad pair heap) val)
+                val ;is not nil
+                (not (equal pair a)))
+           (clr a (g ad heap)))
+  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value val) (a2 a) (val (g ad heap)))
+           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
+
+(defthm clr-non-nil-when-get-field-2
+  (implies (and (get-field ad pair heap)
+                (not (equal pair a)))
+           (clr a (g ad heap)))
+  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value (get-field ad pair heap)) (a2 a) (val (g ad heap)))
+           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm len-of-strip-cars
   (equal (len (strip-cars x))
          (len x)))
@@ -161,7 +211,11 @@
 (defthm true-listp-gen-init-bindings-for-class
   (true-listp (gen-init-bindings-for-class field-info-alist class-name)))
 
-(local (in-theory (disable true-listp)))
+(defthm not-memberp-of-class-pair-and-strip-cars-of-gen-init-bindings-for-class
+  (implies (jvm::field-info-alistp field-info-alist)
+           (not (memberp (class-pair) (strip-cars (acl2::gen-init-bindings-for-class field-info-alist class-name)))))
+  :hints (("Goal" :in-theory (enable acl2::gen-init-bindings-for-class
+                                     jvm::field-info-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,6 +254,12 @@
                 (jvm::all-bound-in-class-tablep class-names class-table)
                 (jvm::class-tablep class-table))
            (acl2::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings class-names class-table))))
+  :hints (("Goal" :in-theory (enable acl2::gen-init-bindings))))
+
+(defthm not-memberp-of-class-pair-and-strip-cars-of-gen-init-bindings
+  (implies (and (jvm::class-tablep class-table)
+                (jvm::all-bound-in-class-tablep class-names class-table))
+           (not (memberp (class-pair) (strip-cars (acl2::gen-init-bindings class-names class-table)))))
   :hints (("Goal" :in-theory (enable acl2::gen-init-bindings))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -405,33 +465,6 @@
                   (set-field ad pair value (set-fields ad pairs heap))))
   :hints (("Goal" :in-theory (enable set-fields))))
 
-;move
-(defthm s-nil-becomes-clr
-  (equal (s a nil r)
-         (clr a r))
-  :hints (("Goal" :in-theory (e/d (clr) (s==r)))))
-
-(theory-invariant (incompatible (:rewrite s-nil-becomes-clr) (:definition clr)))
-
-;bozo expensive?
-;use iff?
-(defthm not-clr-when-not-s
-  (implies (not (s a val r))
-           (not (clr a r)))
-  :hints (("Goal" ;:do-not-preprocess
-           :cases (val)
-           :in-theory (e/d (clr) (s==r s-nil-becomes-clr)))))
-
-(defthm set-fields-of-true-list-fix
-  (equal (set-fields ad (true-list-fix bindings) heap)
-         (set-fields ad bindings heap))
-  :hints (("Goal" :in-theory (enable set-fields))))
-
-;move
-(defthm s-iff
-  (iff (s a v r)
-       (or v (clr a r))))
-
 (local
  (progn
 ;do we still need this?
@@ -474,16 +507,6 @@
               :in-theory (e/d (s-many set-fields set-field) ( ;S==R
                                                              )))))))
 
-
-;if a is nil, it could be made into a clr
-(defthm equal-of-nil-of-s-and-s
-  (implies (and v2
-                (not (equal a a2)))
-           (equal (equal nil (s a v (s a2 v2 r)))
-                  nil)))
-
-
-
 ;todo: the unique test might be expensive and seems like overkill
 ;it should suffice to find one pair with a non-nil value that is not shadowed by an earlier pair..
 (defthm rkeys-of-set-fields
@@ -518,49 +541,17 @@
            :use (:instance rkeys-of-set-field-cases (pair (CAAR PAIRS)) (value (CDAR PAIRS)) (heap (SET-FIELDS AD (CDR PAIRS) HEAP)))
            :expand ((set-fields ad pairs heap)))))
 
-
-
-
-(defthm clr-non-nil-when-g-of-some-other-address-is-non-nil
-  (implies (and (equal (g a1 val) value)
-                value ;is not nil
-                (not (equal a1 a2)))
-           (clr a2 val))
-  :hints (("Goal" :in-theory (disable G-OF-CLR)
-           :use (:instance G-OF-CLR (R  val) (A2  A2) (A1  A1)))))
-
-(defthm clr-non-nil-when-get-field
-  (implies (and (equal (get-field ad pair heap) val)
-                val ;is not nil
-                (not (equal pair a)))
-           (clr a (g ad heap)))
-  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value val) (a2 a) (val (g ad heap)))
-           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
-
-(defthm clr-non-nil-when-get-field-2
-  (implies (and (get-field ad pair heap)
-                (not (equal pair a)))
-           (clr a (g ad heap)))
-  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value (get-field ad pair heap)) (a2 a) (val (g ad heap)))
-           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
-
 (defthmd get-field-when-not-in-rkeys
   (implies (NOT (SET::IN AD (RKEYS HEAP)))
            (EQUAL (GET-FIELD AD pair HEAP)
                   nil))
   :hints (("Goal" :in-theory (enable GET-FIELD))))
 
-(defthm GET-CLASS-of-clear-field-irrel-pair
-  (implies (not (equal pair (CLASS-PAIR)))
-           (equal (GET-CLASS REF (CLEAR-FIELD REF2 pair HEAP))
-                  (GET-CLASS REF HEAP)))
-  :hints (("Goal" :in-theory (e/d (get-class clear-field) (SET-TO-NIL-EQUAL-CLEAR-FIELD)))))
-
 (defthm GET-CLASS-of-set-field-irrel-pair
   (implies (not (equal pair (CLASS-PAIR)))
            (equal (GET-CLASS REF (set-FIELD REF2 pair val HEAP))
                   (GET-CLASS REF HEAP)))
-  :hints (("Goal" :in-theory (e/d (get-class clear-field) (SET-TO-NIL-EQUAL-CLEAR-FIELD)))))
+  :hints (("Goal" :in-theory (e/d (get-class) ()))))
 
 (defthm in-rkeys-when-get-field-non-nil-two
   (implies (get-field ad pair heap)
@@ -570,39 +561,8 @@
     :in-theory (e/d (get-field)
                     (g-iff-gen)))))
 
-
-(defthm rkeys-of-clr
-  (equal (rkeys (clr key r))
-         (set::delete key (rkeys r)))
-  :hints (("Goal"  :DO-NOT '(preprocess)
-           :in-theory (e/d (clr) (S-NIL-BECOMES-CLR ;looped
-                                  s==r
-                                  )))))
-
-(defthm clear-field-of-s
- (equal (clear-field ad pair (s ad obj heap))
-        (s ad (clr pair obj) heap))
- :hints (("Goal" :in-theory (e/d (clear-field) (SET-TO-NIL-EQUAL-CLEAR-FIELD)))))
-
 ;(thm
 ; (equal (G ad (SET-FIELDS ad bindings heap))
-
-(defthm g-of-clear-field-same
-  (equal (g ad (clear-field ad class-field-pair heap))
-         (clr class-field-pair (g ad heap)))
-  :hints (("Goal" :in-theory (e/d (clear-field) (SET-TO-NIL-EQUAL-CLEAR-FIELD)))))
-
-(defthm not-memberp-of-class-pair-and-strip-cars-of-gen-init-bindings-for-class
-  (implies (jvm::field-info-alistp field-info-alist)
-           (not (memberp (class-pair) (strip-cars (acl2::gen-init-bindings-for-class field-info-alist class-name)))))
-  :hints (("Goal" :in-theory (enable acl2::gen-init-bindings-for-class
-                                     jvm::field-info-alistp))))
-
-(defthm not-memberp-of-class-pair-and-strip-cars-of-gen-init-bindings
-  (implies (and (jvm::class-tablep class-table)
-                (jvm::all-bound-in-class-tablep class-names class-table))
-           (not (memberp (class-pair) (strip-cars (acl2::gen-init-bindings class-names class-table)))))
-  :hints (("Goal" :in-theory (enable acl2::gen-init-bindings))))
 
 (defthm jvm::bound-in-heap-of-init-ref-in-heap
   (implies (jvm::class-namep class-name)
