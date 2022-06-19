@@ -62,20 +62,22 @@
 ;do not remove (helps justify the translation to STP)
 (defthm sbvrem-of-bvchop-arg2
   (implies (and (<= size size1)
-                (posp size)
+                (natp size)
                 (integerp size1))
            (equal (sbvrem size (bvchop size1 x) y)
                   (sbvrem size x y)))
-  :hints (("Goal" :in-theory (enable sbvrem))))
+  :hints (("Goal" :cases ((equal 0 size))
+           :in-theory (enable sbvrem))))
 
 ;do not remove (helps justify the translation to STP)
 (defthm sbvrem-of-bvchop-arg3
   (implies (and (<= size size1)
-                (posp size)
+                (natp size)
                 (integerp size1))
            (equal (sbvrem size y (bvchop size1 x))
                   (sbvrem size y x)))
-  :hints (("Goal" :in-theory (enable sbvrem))))
+  :hints (("Goal" :cases ((equal 0 size))
+           :in-theory (enable sbvrem))))
 
 (defthm unsigned-byte-p-forced-of-sbvrem
   (equal (unsigned-byte-p-forced size (sbvrem size x y))

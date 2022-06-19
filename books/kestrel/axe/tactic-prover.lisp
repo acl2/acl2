@@ -344,10 +344,13 @@
      bvshr-rewrite-for-constant-shift-amount             ; introduces slice
      bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
      ;; todo: handle more cases.  a general solution?
+     bvshl-16-cases ; todo: do something similar for rotate ops?
      bvshl-32-cases
      bvshl-64-cases
+     bvshr-16-cases
      bvshr-32-cases
      bvshr-64-cases
+     bvashr-16-cases
      bvashr-32-cases
      bvashr-64-cases
      ;; these are needed to resolve claims about the indiced being in bounds (todo: generalize the rules above):

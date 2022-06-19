@@ -824,3 +824,13 @@
            (equal (BVCHOP 1 (+ 1 (EXPT 2 i)))
                   1))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm <-of-bvchop-when-<-of-bvchop-bigger
+  (implies (and (< (bvchop freesize x) y)
+                (<= size freesize)
+                (integerp freesize))
+           (< (bvchop size x) y))
+  :hints (("Goal" :use (:instance <-of-bvchop-and-bvchop-same
+                                  (s2 freesize)
+                                  (s1 size))
+           :in-theory (disable <-of-bvchop-and-bvchop-same))))
