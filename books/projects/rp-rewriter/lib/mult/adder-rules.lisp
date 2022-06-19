@@ -47,7 +47,7 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   and$-is-adder-and$
   (equal (and$ a b)
          (merge-adder-and a b))
@@ -55,7 +55,7 @@
            :in-theory (e/d (adder-and$
                             merge-adder-and) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   or$-is-adder-or$
   (equal (or$ a b)
          (adder-or$ a b))
@@ -65,14 +65,14 @@
 (local
  (in-theory (enable merge-adder-sum)))
 
-(def-rp-rule$ t t sum-is-adder-b+
+(def-rp-rule :disabled t sum-is-adder-b+
   (equal (sum a b)
          (merge-adder-b+ a b))
   :hints (("Goal"
            :in-theory (e/d (sum adder-b+
                                 merge-adder-b+) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   pp-sum-is-adder-b+
   (equal (pp-sum a b)
          (merge-adder-b+ a b))
@@ -80,7 +80,7 @@
            :in-theory (e/d (pp-sum sum adder-b+
                                    merge-adder-b+) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   merge-pp-sum-is-adder-b+
   (equal (merge-pp-sum a b)
          (merge-adder-b+ a b))
@@ -89,7 +89,7 @@
                                    merge-adder-b+
                                    merge-pp-sum) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   merge-sum-is-adder-b+
   (equal (merge-sum a b)
          (merge-adder-b+ a b))
@@ -98,7 +98,7 @@
                                    merge-adder-b+
                                    merge-pp-sum) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   pp-sum-is-adder-b+-2
   (and (equal (m2 (pp-sum a b))
               (m2 (merge-adder-b+ a b)))
@@ -108,7 +108,7 @@
            :in-theory (e/d (pp-sum sum adder-b+
                                    merge-adder-b+) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-sum-comm1
   (implies (syntaxp (adder-sum-order a b))
            (equal (adder-b+ b a)
@@ -116,7 +116,7 @@
   :hints (("Goal"
            :in-theory (e/d (adder-b+ sum type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-sum-comm2
   (implies (syntaxp (adder-sum-order a b))
            (equal (adder-b+ b (adder-b+ a c))
@@ -124,7 +124,7 @@
   :hints (("Goal"
            :in-theory (e/d (adder-b+ sum type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-sum-reorder
   (implies t
            (equal (adder-b+ (adder-b+ a b) c)
@@ -132,7 +132,7 @@
   :hints (("Goal"
            :in-theory (e/d (adder-b+ sum type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-adder-and-comm1
   (implies (syntaxp (and (adder-and$-order a b)))
            (equal (adder-and b a)
@@ -140,7 +140,7 @@
   :hints (("Goal"
            :in-theory (e/d (adder-and and$) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-adder-and-comm2
   (implies (syntaxp (adder-and$-order a b))
            (equal (adder-and b (adder-and a c))
@@ -148,7 +148,7 @@
   :hints (("Goal"
            :in-theory (e/d (adder-and and$) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   b-and-reorder
   (equal (adder-and (adder-and a b) c)
          (adder-and a (adder-and b c)))
@@ -156,7 +156,7 @@
            :in-theory (e/d (adder-and
                             and$) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   b-or-comm1
   (implies (syntaxp (adder-or$-order a b))
            (equal (adder-or b a)
@@ -165,7 +165,7 @@
            :in-theory (e/d (adder-or
                             or$) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   b-or-comm2
   (implies (syntaxp (adder-or$-order a b))
            (equal (adder-or b (adder-or a c))
@@ -174,7 +174,7 @@
            :in-theory (e/d (adder-or
                             or$) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   b-or-reorder
   (equal (adder-or (adder-or a b) c)
          (adder-or a (adder-or b c)))
@@ -193,7 +193,7 @@
                              adder-sum))))))
 
 #|(progn
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     binary-not-to-adder-sum
     (implies (bitp a)
              (equal (binary-not a)
@@ -208,7 +208,7 @@
   (rp-attach-sc binary-not-to-adder-sum
                 binary-not-to-adder-sum-side-cond)
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     m2-of-adder-sum-1
     (equal (m2 (adder-sum 1 rest))
            (merge-adder-sum 1 (-- (m2 rest))))
@@ -221,7 +221,7 @@
   (rp-attach-sc m2-of-adder-sum-1
                 m2-of-adder-sum-1-side-cond)
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     adder-and-of-subtracted
     (implies (and (bitp a)
                   (bitp x)
@@ -234,7 +234,7 @@
     :hints (("Goal"
              :in-theory (e/d (bitp) ()))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     adder-and-of-subtracted-2
     (implies (and (bitp a)
                   (bitp x)
@@ -270,7 +270,7 @@
                 adder-and-of-subtracted-2-side-cond))||#
 
 
-  ;; (def-rp-rule$ t t
+  ;; (def-rp-rule :disabled t
   ;;   adder-or-of-subtracted
   ;;   (implies (and (bitp a)
   ;;                 (bitp x)
@@ -291,7 +291,7 @@
   ;;            (and (bitp (merge-adder-sum  (adder-or a x) (-- (adder-or a
   ;;                                                                      y)))))))
 
-  ;; (def-rp-rule$ t t
+  ;; (def-rp-rule :disabled t
   ;;   adder-or-of-subtracted-2
   ;;   (implies (and (bitp a)
   ;;                 (bitp x)
@@ -304,7 +304,7 @@
   ;;   :hints (("Goal"
   ;;            :in-theory (e/d (bitp) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-xor-is-s
   (implies (and (bitp a)
                 #|(syntaxp (and (equal (car a) '[])
@@ -332,7 +332,7 @@
 (rp-attach-sc bin-xor-is-s
               bin-xor-is-s-sc)
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-and-is-c
   (implies (and (bitp a)
                 (syntaxp (and (equal (car a) '[])
@@ -346,7 +346,7 @@
                             type-fix
                             n2b b+) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-and-is-c-1
   (implies (and (bitp a)
                 (bitp b))
@@ -358,7 +358,7 @@
                             type-fix
                             n2b b+) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-and-is-c-2
   (implies (and (bitp a)
                 (bitp b))
@@ -372,7 +372,7 @@
                             n2b b+) ()))))
 
 (progn
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     bin-and-is-c-3
     (implies (and (bitp ([] a ai))
                   (bitp ([] b bi)))
@@ -416,7 +416,7 @@
 #|(rp-attach-sc b-and-pair-is-c
               bin-and-is-c-sc)||#
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   c-of-same-c
   (implies (and (bitp a)
                 (bitp b))
@@ -429,7 +429,7 @@
                         (:e n2b)
                         (:e type-fix)))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p1
   (implies (and (bitp a1)
                 (bitp a2)
@@ -442,7 +442,7 @@
                                n2b
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p1a
   (implies (and (bitp a1)
                 (bitp a2)
@@ -455,7 +455,7 @@
                                n2b
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p1b
   (implies (and (bitp a1)
                 (bitp a2)
@@ -469,7 +469,7 @@
                                n2b
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p1b-v2
   (implies (and (bitp a1)
                 (bitp a2)
@@ -483,7 +483,7 @@
                             adder-sum )
                            (bin-or-p1b)))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p1b-v3
   (implies (and (bitp a1)
                 (bitp a2)
@@ -497,7 +497,7 @@
                             adder-sum )
                            (bin-or-p1b)))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p1c
   (implies (and (bitp a1)
                 (bitp a2)
@@ -510,7 +510,7 @@
                                n2b
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p2a
   (implies (and (bitp a1)
                 (bitp a2)
@@ -525,7 +525,7 @@
                                n2b
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p2b
   (implies (and (bitp a1)
                 (bitp a2)
@@ -542,7 +542,7 @@
                                n2b
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p2c
   (implies (and (bitp a1)
                 (bitp a2)
@@ -557,7 +557,7 @@
                                bitp
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bin-or-p3
   (implies (and (bitp a1)
                 (bitp a2)
@@ -576,7 +576,7 @@
                                or$
                                m2 b+ type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   or-of-and-of-the-same
   (implies t
            (and (equal (adder-or$ (adder-and$ single x)
@@ -659,7 +659,7 @@
 (rp-attach-sc bin-or-p3
               bin-or-p2-sc)
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-sum-of-pp-sum
   (and (equal (adder-sum (pp-sum a b) x)
               (merge-adder-sum a b x))
@@ -670,7 +670,7 @@
                             pp-sum
                             ) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   pp-sum-of-adder-sum
   (and (equal (pp-sum (adder-sum a b) x)
               (merge-adder-sum a b x))
@@ -681,7 +681,7 @@
                             pp-sum
                             ) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-sum-of-0
   (and (equal (adder-sum 0 x)
               (type-fix x))
@@ -692,7 +692,7 @@
                             sum
                             type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-type-fix
   (and (equal (adder-sum (type-fix x) y)
               (merge-adder-sum x y))
@@ -703,7 +703,7 @@
                             type-fix
                             sum) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   m2-of-adder-sum-m2
   (equal (m2 (adder-sum (m2 x) y))
          (m2 (merge-adder-sum x y)))
@@ -711,7 +711,7 @@
            :in-theory (e/d (adder-sum
                             m2) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   dummy-adder-final-step1
   (implies (and (bitp rest)
                 (bitp x))
@@ -721,7 +721,7 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-sum-of-nil
   (equal (adder-sum nil x)
          (type-fix x))
@@ -729,7 +729,7 @@
            :in-theory (e/d (adder-sum
                             type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   adder-sum-of-nil-2
   (equal (adder-sum nil x y)
          (merge-adder-sum x y))
@@ -737,7 +737,7 @@
            :in-theory (e/d (adder-sum
                             type-fix) ()))))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   some-combination-1
   (implies (and (bitp x)
                 (bitp a)
@@ -760,7 +760,7 @@
               some-combination-1-side-cond)
 
 (progn
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     adder-or-of-and-and-nots-with-m2
     (implies (and (bitp a)
                   (bitp b)
@@ -772,7 +772,7 @@
              :in-theory (e/d (adder-sum m2 sum type-fix adder-or adder-and and$
                                         or$ bitp) ()))))
 
-  (def-rp-rule$ t t
+  (def-rp-rule :disabled t
     adder-or-of-and-and-nots-with-f2
     (implies (and (bitp a)
                   (bitp b)
@@ -806,7 +806,7 @@
   (rp-attach-sc adder-or-of-and-and-nots-with-m2
                 adder-or-of-and-and-nots-with-m2-side-cond))
 
-(def-rp-rule$ t t
+(def-rp-rule :disabled t
   bit-of-adder-fncs
   (and (equal (bit-of (adder-and a b) 0)
               (adder-and a b))
@@ -823,20 +823,20 @@
   (local
    (in-theory (enable adder-and$ and$ or$ adder-or$)))
 
-  (def-rp-rule$ t t adder-and-of-1 (equal (adder-and x 1) (bit-fix x)))
-  (def-rp-rule$ t t adder-and-of-1-v2 (equal (adder-and 1 x) (bit-fix x)))
-  (def-rp-rule$ t t adder-and-of-0 (equal (adder-and x 0) 0))
-  (def-rp-rule$ t t adder-and-of-0-v2 (equal (adder-and 0 x) 0))
-  (def-rp-rule$ t t adder-or-of-0 (equal (adder-or x 0) (bit-fix x)))
-  (def-rp-rule$ t t adder-or-of-0-v2 (equal (adder-or 0 x) (bit-fix x)))
-  (def-rp-rule$ t t adder-or-of-1 (equal (adder-or x 1) 1))
-  (def-rp-rule$ t t adder-or-of-1-v2 (equal (adder-or 1 x) 1))
+  (def-rp-rule :disabled t adder-and-of-1 (equal (adder-and x 1) (bit-fix x)))
+  (def-rp-rule :disabled t adder-and-of-1-v2 (equal (adder-and 1 x) (bit-fix x)))
+  (def-rp-rule :disabled t adder-and-of-0 (equal (adder-and x 0) 0))
+  (def-rp-rule :disabled t adder-and-of-0-v2 (equal (adder-and 0 x) 0))
+  (def-rp-rule :disabled t adder-or-of-0 (equal (adder-or x 0) (bit-fix x)))
+  (def-rp-rule :disabled t adder-or-of-0-v2 (equal (adder-or 0 x) (bit-fix x)))
+  (def-rp-rule :disabled t adder-or-of-1 (equal (adder-or x 1) 1))
+  (def-rp-rule :disabled t adder-or-of-1-v2 (equal (adder-or 1 x) 1))
 
-  (def-rp-rule$ t t adder-or-of-the-same
+  (def-rp-rule :disabled t adder-or-of-the-same
     (equal (adder-or x x)
            (bit-fix x)))
 
-  (def-rp-rule$ t t adder-and-of-the-same
+  (def-rp-rule :disabled t adder-and-of-the-same
     (equal (adder-and x x)
            (bit-fix x))))
 

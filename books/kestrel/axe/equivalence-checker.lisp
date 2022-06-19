@@ -1774,6 +1774,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 (local
@@ -1808,6 +1809,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 (local
@@ -1842,6 +1844,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 (local
@@ -1877,6 +1880,7 @@
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
                                   BVCHOP-OF-IF))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -13690,6 +13694,7 @@
                         (cw "Done improving invars.)~%")
                         (mv nil improved-invars last-defthm-name state result-array-stobj)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv lst rand)
 (defun merge-rand (l1 l2 acc rand)
@@ -13697,7 +13702,7 @@
                   :guard (and
                               (true-listp acc))
                   :stobjs rand))
-  (cond ((atom l1) (mv (revappend acc l2) rand)) ;fixme null would be faster than atom
+  (cond ((atom l1) (mv (revappend acc l2) rand)) ; todo: would null be faster than atom?
         ((atom l2) (mv (revappend acc l1) rand))
         (t (mv-let (val rand)
                    (genrandom 2 rand)
@@ -13707,27 +13712,22 @@
 
 ;returns (mv lst rand)
 ;probably not truly random, but seems good enough..
-(skip-proofs
- (defun shuffle-list (l rand)
-   (declare (xargs :measure (len l)
-                   :guard (true-listp l)
-                   :verify-guards nil
-                   :stobjs rand))
-   (if (atom (cdr l))
-       (mv l rand)
-     (mv-let (first-half second-half)
-             (split-list-fast l)
-             (mv-let (first-half rand)
-                     (shuffle-list first-half rand)
-                     (mv-let (second-half rand)
-                             (shuffle-list second-half rand)
-                             (merge-rand first-half
-                                         second-half
-                                         nil
-                                         rand)))))))
-
-(skip-proofs (verify-guards shuffle-list))
-
+(defun shuffle-list (l rand)
+  (declare (xargs :guard (true-listp l)
+                  :stobjs rand
+                  :measure (len l)))
+  (if (atom (cdr l))
+      (mv l rand)
+    (mv-let (first-half second-half)
+      (split-list-fast l)
+      (mv-let (first-half rand)
+        (shuffle-list first-half rand)
+        (mv-let (second-half rand)
+          (shuffle-list second-half rand)
+          (merge-rand first-half
+                      second-half
+                      nil
+                      rand))))))
 
 ;takes an nth nest around a formal
 (defun get-formal-and-path (item path-acc)
@@ -20961,8 +20961,9 @@
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
+                         tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
-                         var-type-alist  ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
+                         var-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          print
                          traced-nodes ;do we use this?
                          user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
@@ -20991,6 +20992,8 @@
                          state rand result-array-stobj)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
                               (natp test-case-count)
                               (test-case-type-alistp var-type-alist)
                               (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
@@ -21014,6 +21017,7 @@
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
   (b* ((- (cw "~%(Proving top-level miter ~x0:~%" miter-name))
+       ;; Handle the case when dag-or-quotep is already a constant:
        ((when (quotep dag-or-quotep))
         (if (equal *t* dag-or-quotep)
             (prog2$ (cw "The DAG is already the constant t!)~%")
@@ -21021,10 +21025,6 @@
           (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil state rand result-array-stobj))))
        (dag dag-or-quotep)
-       ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
-       ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
-       (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
-       (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
        (interpreted-function-alist (make-interpreted-function-alist
                                     (get-non-built-in-supporting-fns-list (dag-fns dag) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
        ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
@@ -21032,27 +21032,20 @@
                                        (prog2$ (hard-error 'prove-miter-core "inconsistent interpreted function alists." nil) ;print more?
                                                nil)
                                      (append interpreted-function-alist user-interpreted-function-alist)))
-       (no-test-casesp (not (posp test-case-count)))
        ;; TODO: Use plain make-axe-rules here
        (rewriter-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append rewriter-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
        (prover-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append prover-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
+       ;; todo: why not always simplify (maybe there won't be any rules, but the tactic is now either :rewrite or :rewrite-and-sweep)?
        (simplifyp (or rewriter-rule-alist
-                      no-test-casesp
+                      (eq :rewrite tactic)
                       initial-rule-set
                       initial-rule-sets))
-       (max-conflicts (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts))
-       ;; could move a lot of stuff into these options:
-       (options (s :prove-constants prove-constants
-                   ;; (s :treat-as-purep treat-as-purep
-                   (s :debugp debug nil)
-                   ;;)
-                   ))
        ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
        ((mv erp dag-or-quotep state)
         (if simplifyp
             (progn$ (cw "(We begin by simplifying the miter:~%") ;(give the reason)?
                     ;; initial-rule-set(s) take precedence here, if supplied (fixme what if both are supplied?)
-; (and monitored-symbols (cw "Monitored symbols: ~x0." monitored-symbols)) ;printed by simp-dag?
+                    ;; (and monitored-symbols (cw "Monitored symbols: ~x0." monitored-symbols)) ;printed by simp-dag?
                     (if initial-rule-set
                         (simp-dag dag
                                   :rule-alist (make-rule-alist-simple initial-rule-set t (table-alist 'axe-rule-priorities-table (w state)))
@@ -21096,102 +21089,108 @@
        (- (and simplifyp (cw "Done simplifying.)~%"))))
     (if (quotep dag-or-quotep)
         ;; the simplified DAG is a quotep:
-        (if (equal *t* dag-or-quotep)
+        (if (equal *t* dag-or-quotep) ; todo: allow any non-nil constant?
             (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
                     (mv (erp-nil) t state rand result-array-stobj))
           (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil state rand result-array-stobj)))
       ;; Did not simplify to a constant:
-      (let* ((dag dag-or-quotep)
-             (state (if (and simplifyp print)
-                        (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
-                      state)))
-        ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
-;move this check down?
-        (if no-test-casesp
-            (progn$ (cw "DAG for error message:~%")
-                    (print-list dag)
-                    (if (< (dag-size dag) 10000)
-                        (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
-                      nil)
-                    (er hard? 'prove-miter-core "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
-                    (mv :no-test-cases nil state rand result-array-stobj))
-          ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
-          (b* ((dag-vars (dag-vars dag))
-               (sorted-dag-vars (merge-sort-symbol< dag-vars))
-               (vars-given-types (strip-cars var-type-alist))
-               (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-               (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
-                       ;; (hard-error 'prove-miter-core
-                       ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                       ;;               (acons #\0 sorted-dag-vars
-                       ;;                      (acons #\1 sorted-vars-given-types
-                       ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
-                       ;;                                    nil))))
-                       (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                           sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
-               ;;(prog2$ (mv nil state rand result-array-stobj))
-               ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
-               ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
-               ((mv erp dag ; todo: can this ever be a quotep?
-                    interpreted-function-alist state result-array-stobj)
-                (if (not specialize-fnsp)
-                    (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)
-                  (prog2$
-                   (cw "(Specializing fns:~%")
-                   (mv-let (erp new-function-names new-rule-names state result-array-stobj)
-                     (specialize-fns dag state result-array-stobj)
-                     (if erp
-                         (mv erp nil nil state result-array-stobj)
-                       (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
-                               (mv-let (erp dag state)
-                                 (quick-simp-dag dag ;fixme - use some more rules?!
-                                                 :rules new-rule-names ;ffffixme return new-rule-names ?
-                                                 :print :brief)
-                                 (if erp
-                                     (mv erp nil nil state result-array-stobj)
-                                   (let ((interpreted-function-alist
-                                          (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
-                                     (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
-                                             (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)))))))))))
-               ((when erp) (mv erp nil state rand result-array-stobj))
-               ;;fixme rename test-cases test-inputs?
-               ((mv test-cases rand)
-                ;; Make the random test cases (each assigns values to the input vars):
-                ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
-                ;;fixme what about test cases that don't satisfy the assumptions??
-                (make-test-cases test-case-count var-type-alist assumptions rand))
-               (analyzed-function-table (empty-analyzed-function-table))
-               ;;fixme move any stuff above here into miter-and-merge?
-               ((mv erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
-                ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
-                (miter-and-merge dag
-                                 miter-name
-                                 0
-                                 var-type-alist
-                                 interpreted-function-alist print traced-nodes
-                                 rewriter-rule-alist
-                                 prover-rule-alist
-                                 assumptions
-                                 extra-stuff
-                                 test-cases
-                                 monitored-symbols
-                                 use-context-when-miteringp
-                                 analyzed-function-table
-                                 unroll
-                                 tests-per-case
-                                 max-conflicts
-                                 t ;must-succeedp=t
-                                 pre-simplifyp
-                                 normalize-xors
-                                 options
-                                 rand state result-array-stobj))
-               ((when erp) (mv erp nil state rand result-array-stobj)))
-            (if provedp
-                (prog2$ (cw "Finished proving top-level miter!)~%")
-                        (mv (erp-nil) t state rand result-array-stobj))
-              (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
-                      (mv (erp-nil) nil state rand result-array-stobj)))))))))
+      (b* ((dag dag-or-quotep)
+           ((when (eq :rewrite tactic))
+            (cw "DAG for error message below:~%")
+            (print-list dag)             ; always print the DAG
+            (if (< (dag-size dag) 10000) ; print the term too, if small
+                (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+              nil)
+            (er hard? 'prove-miter-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
+            (mv :no-test-cases nil state rand result-array-stobj))
+           ;; Tactic is :rewrite-and-sweep:
+           (state (if (and simplifyp print)
+                      (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
+                    state))
+           ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
+           ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
+           (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
+           (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
+           ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
+           (dag-vars (dag-vars dag))
+           (sorted-dag-vars (merge-sort-symbol< dag-vars))
+           (vars-given-types (strip-cars var-type-alist))
+           (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
+           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
+                   ;; (hard-error 'prove-miter-core
+                   ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                   ;;               (acons #\0 sorted-dag-vars
+                   ;;                      (acons #\1 sorted-vars-given-types
+                   ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
+                   ;;                                    nil))))
+                   (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                       sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
+           ;;(prog2$ (mv nil state rand result-array-stobj))
+           ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
+           ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
+           ((mv erp dag ; todo: can this ever be a quotep?
+                interpreted-function-alist state result-array-stobj)
+            (if (not specialize-fnsp)
+                (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)
+              (prog2$
+               (cw "(Specializing fns:~%")
+               (mv-let (erp new-function-names new-rule-names state result-array-stobj)
+                 (specialize-fns dag state result-array-stobj)
+                 (if erp
+                     (mv erp nil nil state result-array-stobj)
+                   (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
+                           (mv-let (erp dag state)
+                             (quick-simp-dag dag ;fixme - use some more rules?!
+                                             :rules new-rule-names ;ffffixme return new-rule-names ?
+                                             :print :brief)
+                             (if erp
+                                 (mv erp nil nil state result-array-stobj)
+                               (let ((interpreted-function-alist
+                                      (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
+                                 (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
+                                         (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)))))))))))
+           ((when erp) (mv erp nil state rand result-array-stobj))
+           ;;fixme rename test-cases test-inputs?
+           ((mv test-cases rand)
+            ;; Make the random test cases (each assigns values to the input vars):
+            ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
+            ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
+            (make-test-cases test-case-count var-type-alist assumptions rand))
+           (analyzed-function-table (empty-analyzed-function-table))
+           ;; could move a lot of stuff into these options:
+           (options (s :prove-constants prove-constants
+                       (s :debugp debug nil)))
+           ;; todo: should we move any stuff above here into miter-and-merge?
+           ((mv erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
+            ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
+            (miter-and-merge dag
+                             miter-name
+                             0
+                             var-type-alist ; todo: filter out stuff only used for test case gen?
+                             interpreted-function-alist print traced-nodes
+                             rewriter-rule-alist
+                             prover-rule-alist
+                             assumptions
+                             extra-stuff
+                             test-cases
+                             monitored-symbols
+                             use-context-when-miteringp
+                             analyzed-function-table
+                             unroll
+                             tests-per-case
+                             (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)
+                             t ;must-succeedp=t
+                             pre-simplifyp
+                             normalize-xors
+                             options
+                             rand state result-array-stobj))
+           ((when erp) (mv erp nil state rand result-array-stobj)))
+        (if provedp
+            (prog2$ (cw "Finished proving top-level miter!)~%")
+                    (mv (erp-nil) t state rand result-array-stobj))
+          (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
+                  (mv (erp-nil) nil state rand result-array-stobj)))))))
 
 ;; Returns (mv erp event state rand result-array-stobj) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
@@ -21254,7 +21253,9 @@
   (b* (((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv nil '(value-triple :invisible) state rand result-array-stobj))
        ((mv erp provedp state rand result-array-stobj)
-        (prove-miter-core dag-or-quotep test-case-count
+        (prove-miter-core dag-or-quotep
+                          :rewrite-and-sweep ; todo: pass this in?
+                          test-case-count
                           var-type-alist ;compute this from the hyps?
                           print
                           traced-nodes ;do we use this?
@@ -22344,10 +22345,6 @@
         ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
         ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
         (mv (erp-t) nil state rand result-array-stobj))
-       ;; Todo: handle this better by passing in the tactic:
-       (tests (if (eq :rewrite tactic)
-                  0
-                tests))
        ((mv erp equality-dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ;; Make the initial rule sets:
@@ -22366,7 +22363,10 @@
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ;; Call the core function:
        ((mv erp provedp state rand result-array-stobj)
-        (prove-miter-core equality-dag tests types print
+        (prove-miter-core equality-dag
+                          tactic
+                          tests ; number of tests to run
+                          types print
                           nil ; traced-nodes
                           interpreted-function-alist
                           nil ;runes
@@ -22446,7 +22446,7 @@
                                     dag-or-term1
                                     dag-or-term2
                                     &key
-                                    (tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
+                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                     (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (assumptions 'nil) ;assumed when rewriting the miter
                                     (print ':brief)

@@ -42,20 +42,22 @@
 ;do not remove (helps justify the translation to STP)
 (defthm sbvdiv-of-bvchop-arg2
   (implies (and (<= size size1)
-                (posp size)
+                (natp size)
                 (integerp size1))
            (equal (sbvdiv size (bvchop size1 x) y)
                   (sbvdiv size x y)))
-  :hints (("Goal" :in-theory (enable sbvdiv))))
+  :hints (("Goal" :cases ((equal 0 size))
+           :in-theory (enable sbvdiv))))
 
 ;do not remove (helps justify the translation to STP)
 (defthm sbvdiv-of-bvchop-arg3
   (implies (and (<= size size1)
-                (posp size)
+                (natp size)
                 (integerp size1))
            (equal (sbvdiv size y (bvchop size1 x))
                   (sbvdiv size y x)))
-  :hints (("Goal" :in-theory (enable sbvdiv))))
+  :hints (("Goal" :cases ((equal 0 size))
+           :in-theory (enable sbvdiv))))
 
 ; a totalized version of sbvdiv, where division by 0 yields 0
 ;logically this is equal to sbvdiv (see theorem sbvdiv-total-becomes-sbvdiv)

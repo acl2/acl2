@@ -4265,25 +4265,37 @@
                  valid)
            (mv res-s-lst res-pp-lst res-c-lst valid)))))))
 
-(define pp-radix8+-fix ((pp-lst rp-term-listp))
+
+(define pp-radix8+-fix-aux2 ((pp-lst rp-term-listp))
   :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
   (if (atom pp-lst)
       (mv nil nil nil)
     (b* (((mv rest-s-lst rest-pp-lst rest-c-lst)
-          (pp-radix8+-fix (cdr pp-lst)))
+          (pp-radix8+-fix-aux2 (cdr pp-lst)))
          ((mv res-s-lst res-pp-lst res-c-lst valid)
           (pp-radix8+-fix-aux (car pp-lst))))
       (if valid
           (mv (s-sum-merge-aux res-s-lst rest-s-lst)
-              (pp-sum-merge-aux rest-pp-lst res-pp-lst)
+              (pp-sum-merge-aux res-pp-lst rest-pp-lst)
               (s-sum-merge-aux res-c-lst rest-c-lst))
         (mv rest-s-lst
             (cons-with-hint (car pp-lst)
                             rest-pp-lst
                             pp-lst)
             rest-c-lst)))))
+
+(define pp-radix8+-fix ((pp-lst rp-term-listp))
+  :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+  (b* (((mv res-s-lst res-pp-lst res-c-lst)
+        (pp-radix8+-fix-aux2 pp-lst))
+       (res-pp-lst (if (pp-lst-orderedp res-pp-lst)
+                       res-pp-lst
+                     (pp-sum-sort-lst res-pp-lst))))
+    (mv res-s-lst res-pp-lst res-c-lst)))
 
 (define pp-lst-is-a-part-of-radix8+-summation ((pp-lst))
   :returns (res booleanp)

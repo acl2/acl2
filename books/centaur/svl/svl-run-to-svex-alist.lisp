@@ -40,31 +40,17 @@
 (local
  (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))
 
-(rp::def-rp-rule$
- t nil
+(rp::def-rp-rule :disabled-for-acl2 t
  assoc-equal-opener-when-not-equal
  (implies (not (equal key1 key2))
           (equal (assoc-equal key1 (cons (cons key2 val) rest))
                  (assoc-equal key1 rest))))
 
-(rp::def-rp-rule$
- t nil
+(rp::def-rp-rule :disabled-for-acl2 t
  assoc-equal-opener-when-equal
  (implies t
           (equal (assoc-equal key (cons (cons key val) rest))
                  (cons key val))))
-
-
-;; :i-am-here
-;; (rp::def-rp-rule$
-;;  t t
-;;  bits-of-bits-exact-match
-;;  (implies (and (natp x)
-;;                (natp y))
-;;           (equal (bits (bits term x y) x y )
-;;                  (bits term x y )))
-;;  :hints (("Goal"
-;;           :in-theory (e/d () ()))))
 
 (defconst *svl-compose-rules*
   (reverse

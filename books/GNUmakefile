@@ -1216,9 +1216,15 @@ critpath.txt: $(OK_CERTS)
 
 # Targets for building whole directories of books.
 
-# basic is the default set of books to build:
+# basic is the default set of books to build, in the sense that "make"
+# is equivalent to "make basic".  Note that instructions on the
+# installation page recommend "make basic".  The quicklisp books are
+# avoided here, since otherwise the first impression of ACL2 could be
+# frustration over issues with installing OpenSSL, as may be necessary
+# when certifying Quicklisp books.  Thus we include only subsets of
+# the xdoc and tools targets.
 .PHONY: basic
-basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures apply
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc/init.cert tools-without-quicklisp misc data-structures apply
 
 .PHONY: acl2s
 acl2s: $(filter acl2s/%, $(OK_CERTS))
@@ -1336,8 +1342,14 @@ tau: $(filter tau/%, $(OK_CERTS))
 .PHONY: textbook
 textbook: $(filter textbook/%, $(OK_CERTS))
 
+OK_CERTS := $(CERT_PL_CERTS)
+TOOLS_BOOKS := $(filter tools/%, $(OK_CERTS))
+
 .PHONY: tools
-tools: $(filter tools/%, $(OK_CERTS))
+tools: $(TOOLS_BOOKS)
+
+.PHONY: tools-without-quicklisp
+tools-without-quicklisp: $(filter-out tools/oracle-time%, $(TOOLS_BOOKS))
 
 .PHONY: unicode
 unicode: $(filter unicode/%, $(OK_CERTS))

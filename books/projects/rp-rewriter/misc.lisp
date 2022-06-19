@@ -52,18 +52,37 @@
  (include-Book "proofs/rp-state-functions-lemmas"))
 
 
-(defund pull-keys-from-rest-args (rest-args keys)
-  (if (or (atom rest-args)
-          (atom (cdr rest-args)))
-      (mv nil rest-args)
-    (b* (((mv rest-pulled rest-rest)
-          (pull-keys-from-rest-args (cdr rest-args) keys)))
-      (if (member-equal (car rest-args) keys)
-          (mv (acons (car rest-args)
-                     (cadr rest-args)
-                     rest-pulled)
-              (cdr rest-rest))
-        (mv rest-pulled (cons-with-hint (car rest-args) rest-rest rest-args))))))
+(progn
+  (defund pull-keys-from-rest-args (rest-args keys)
+    (if (or (atom rest-args)
+            (atom (cdr rest-args)))
+        (mv nil rest-args)
+      (b* (((mv rest-pulled rest-rest)
+            (pull-keys-from-rest-args (cdr rest-args) keys)))
+        (if (member-equal (car rest-args) keys)
+            (mv (acons (car rest-args)
+                       (cadr rest-args)
+                       rest-pulled)
+                (cdr rest-rest))
+          (mv rest-pulled (cons-with-hint (car rest-args) rest-rest
+                                          rest-args))))))
+  (defund pull-name-and-body-from-args (args)
+    (if (or (atom args)
+            (atom (cdr args)))
+        (mv nil nil args)
+      (b* (((mv rule-name body rest-args)
+            (pull-name-and-body-from-args (cddr args)))
+           ((when (and rule-name body))
+            (mv rule-name body (append (take 2 args) rest-args)))
+           (cur (car args))
+           (cur-2 (cadr args)))
+        (if (not (keywordp cur))
+            (mv cur cur-2 (cddr args))
+          (mv nil nil args))))))
+         
+         
+    
+    
 
 (encapsulate
   nil
@@ -132,10 +151,25 @@
     `(def-rp-rule ,(sa base-name 'lambda-opener)
        (and ,@openers)))
 
-  (defun lambdas-to-other-rules (rule-name rule untranslated-rule
-                                           from-add-rp-rule hints)
+  (defun lambdas-to-other-rules (rule-name rule untranslated-rule args)
     (declare (xargs :mode :program))
-    (b* (((mv hyp lhs rhs iff)
+    (b* (((mv pulled-args args)
+          (pull-keys-from-rest-args args '(:disabled-for-rp
+                                           :disabled
+                                           :disabled-for-ACL2
+                                           :from-add-rp-rule)))
+         (from-add-rp-rule (cdr (hons-assoc-equal :from-add-rp-rule
+                                                  pulled-args)))
+         (disabled (cdr (hons-assoc-equal :disabled
+                                           pulled-args)))
+         (disabled-for-rp (or disabled
+                              (cdr (hons-assoc-equal :disabled-for-rp
+                                                     pulled-args))))
+         (disabled-for-acl2 (or disabled
+                                (cdr (hons-assoc-equal :disabled-for-acl2
+                                                       pulled-args))))
+         
+         ((mv hyp lhs rhs iff)
           (case-match rule
             (('implies hyp ('equal lhs rhs))
              (mv hyp lhs rhs nil))
@@ -201,19 +235,21 @@
                                 ,lhs-body
                                 ,rhs-body))
                       ,@openers)
-                 ,@hints))
+                 ,@args))
              
              
              ,@(if from-add-rp-rule
                    nil
-                 `((defthm ,rule-name
+                 `((,(if disabled-for-acl2 'defthmd 'defthm)
+                    ,rule-name
                      ,rule
                      :hints (("Goal"
                               :use ((:instance ,rule-name-for-rp))
                               :in-theory '(,rule-name-for-rp))))))
 
              (add-rp-rule ,rule-name
-                          :beta-reduce nil)
+                          :beta-reduce nil
+                          :disabled ,disabled-for-rp)
              (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
              #|(acl2::extend-pe-table ,rule-name-for-rp
                                     (def-rp-rule ,rule-name-for-rp
@@ -224,11 +260,13 @@
              :stack :pop
              :on (acl2::summary acl2::event)
              :summary-off (:other-than acl2::time acl2::rules)
-             (defthm ,rule-name
+             (,(if disabled-for-acl2 'defthmd 'defthm)
+              ,rule-name
                ,untranslated-rule
-               ,@hints))
+               ,@args))
            (add-rp-rule ,rule-name
-                        :beta-reduce nil)))))
+                        :beta-reduce nil
+                        :disabled ,disabled-for-rp)))))
 
   ;; (case-match rule
   ;;   (('implies p ('equal a b))
@@ -279,18 +317,13 @@
     `(make-event
       (b* (((mv err term & state)
             (acl2::translate1 ',rule t nil nil 'top-level (w state) state))
-
-           ((mv pulled-entries rest)
-            (pull-keys-from-rest-args ',rest '(:from-add-rp-rule)))
-           
            (- (if err (hard-error 'defthm-lambda "Error translating term ~%" nil) nil)))
         (mv err
             (lambdas-to-other-rules
              ',rule-name
              term
              ',rule
-             (cdr (hons-assoc-equal :from-add-rp-rule pulled-entries))
-             rest)
+             ',rest)
             state)))))
 
 (xdoc::defxdoc
@@ -467,27 +500,33 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
                      (value-triple ',new-rule-name))))
             rest-body)))))
 
-  (defun def-rp-rule-fn (rule-name rule hints)
-    `(progn
-       (defthm-lambda ,rule-name ,rule ,@hints)
-       #|(acl2::extend-pe-table ,rule-name
-                              (def-rp-rule ,rule-name ,rule ,@hints))|#
-       (value-triple ',rule-name)))
+  (defun def-rp-rule-fn (args)
+    (b* (((mv rule-name rule hints)
+          (pull-name-and-body-from-args args))
+         ((Unless (and rule-name rule))
+          (- (hard-error 'def-rp-rule-fn
+                         "Cannot pull out rule-name and body from these arguments: ~p0 ~%"
+                         (list (cons #\0 args))))))
+      `(progn
+         (defthm-lambda ,rule-name ,rule ,@hints)
+         #|(acl2::extend-pe-table ,rule-name
+         (def-rp-rule ,rule-name ,rule ,@hints))|#
+         (value-triple ',rule-name))))
 
-  (defmacro def-rp-rule (rule-name rule &rest hints)
+  (defmacro def-rp-rule (&rest args)
     `(with-output
        :off :all
        :on (error)
        :stack :push
-       ,(def-rp-rule-fn rule-name rule hints)))
+       ,(def-rp-rule-fn args)))
 
-  (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
+  #|(defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
     `(progn
        (,(if defthmd 'defthmd 'defthm)
         ,rule-name ,rule ,@hints)
        (with-output :off :all :gag-mode nil :on error
          (add-rp-rule  ,rule-name :disabled ,disabled
-                       :beta-reduce nil)))))
+                       :beta-reduce nil))))|#)
 
 (encapsulate
   nil
@@ -538,7 +577,7 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
     (b* ((vars-to-print (set-difference$ (acl2::all-vars (pseudo-term-fix term)) do-not-print)))
       `;(progn
 ;(table rw-opener-error-rules  ',name t)
-      (def-rp-rule$ t ,disabled
+      (def-rp-rule :disabled-for-acl2 t :disabled-for-rp ,disabled
         ,name
         (implies (hard-error
                   ',name

@@ -31,6 +31,9 @@
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
 (include-book "kestrel/bv/bvsx" :dir :system)
+(include-book "kestrel/bv/bvshl" :dir :system)
+(include-book "kestrel/bv/bvshr" :dir :system)
+(include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
@@ -563,7 +566,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun repeatbit-unguarded (n bit)
+(defund repeatbit-unguarded (n bit)
   (declare (xargs :guard t))
   (if (natp n)
       (if (natp bit)
@@ -620,3 +623,36 @@
 ;;                                      leftrotate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvshl-unguarded (width x shift-amount)
+  (declare (xargs :guard t))
+  (bvcat-unguarded (- (fix width) (fix shift-amount)) x shift-amount 0))
+
+(defthm bvshl-unguarded-correct
+  (equal (bvshl-unguarded width x shift-amount)
+         (bvshl width x shift-amount))
+  :hints (("Goal" :in-theory (enable bvshl bvshl-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvshr-unguarded (width x shift-amount)
+  (declare (xargs :guard t))
+  (slice-unguarded (+ -1 (fix width)) shift-amount x))
+
+(defthm bvshr-unguarded-correct
+  (equal (bvshr-unguarded width x shift-amount)
+         (bvshr width x shift-amount))
+  :hints (("Goal" :in-theory (enable bvshr bvshr-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvashr-unguarded (width x shift-amount)
+  (declare (xargs :guard t))
+  (bvsx-unguarded width
+                  (- (fix width) (fix shift-amount))
+                  (bvshr-unguarded width x shift-amount)))
+
+(defthm bvashr-unguarded-correct
+  (equal (bvashr-unguarded width x shift-amount)
+         (bvashr width x shift-amount))
+  :hints (("Goal" :in-theory (enable bvashr bvashr-unguarded))))

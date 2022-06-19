@@ -234,14 +234,16 @@ which submits an event.
            (index (rw-stack-size rp-state))
            (new-rw-stack
             (acons index
-                   (list
-                    (list ':type ':trying)
-                    (list ':rune (rp-rune rule))
-                    (list ':lhs (rp-lhs rule))
-                    (list ':rhs (rp-rhs rule))
-                    (list ':hyp (rp-hyp rule))
-                    (list ':context rp-context)
-                    (list ':var-bindings var-bindings))
+                   `((:type :trying)
+                     (:rune ,(rp-rune rule))
+                     (:lhs ,(rp-lhs rule))
+                     (:rhs ,(rp-rhs rule))
+                     (:hyp ,(rp-hyp rule))
+                     ,@(if (weak-custom-rewrite-rule-p (backchaining-rule rp-state)) ;; for guards
+                           `((:backchaining-rule ,(rp-rune (backchaining-rule rp-state))))
+                         nil)
+                     (:context ,rp-context)
+                     (:var-bindings ,var-bindings))
                    old-rw-stack))
            (rp-state (update-rw-stack new-rw-stack rp-state))
            (rp-state (update-rw-stack-size (1+ index) rp-state)))

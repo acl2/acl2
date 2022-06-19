@@ -578,7 +578,7 @@
                     :gag-mode nil
                     (make-event ,form))))
          (form (if (check-boolean local)
-                   (list 'local form)
+                   `(local ,form)
                  form)))
     form)
   :parents (lifters)

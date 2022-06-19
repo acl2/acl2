@@ -433,8 +433,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO: add rules for sbvdiv and sbvrem
-
 ;rename these?!
 (defthmd bvdiv-trim-arg1-dag
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
@@ -462,6 +460,68 @@
                 (natp size))
            (equal (bvdiv size y x)
                   (bvdiv size y (trim size x))))
+  :hints (("Goal":in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename these?!
+(defthmd sbvdiv-trim-arg1-dag
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
+                (natp size))
+           (equal (sbvdiv size x y)
+                  (sbvdiv size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd sbvdiv-trim-arg2-dag
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
+                (natp size))
+           (equal (sbvdiv size y x)
+                  (sbvdiv size y (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd sbvdiv-trim-arg1-dag-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+                (natp size))
+           (equal (sbvdiv size x y)
+                  (sbvdiv size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd sbvdiv-trim-arg2-dag-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+                (natp size))
+           (equal (sbvdiv size y x)
+                  (sbvdiv size y (trim size x))))
+  :hints (("Goal":in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename these?!
+(defthmd sbvrem-trim-arg1-dag
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
+                (natp size))
+           (equal (sbvrem size x y)
+                  (sbvrem size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd sbvrem-trim-arg2-dag
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
+                (natp size))
+           (equal (sbvrem size y x)
+                  (sbvrem size y (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd sbvrem-trim-arg1-dag-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+                (natp size))
+           (equal (sbvrem size x y)
+                  (sbvrem size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd sbvrem-trim-arg2-dag-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+                (natp size))
+           (equal (sbvrem size y x)
+                  (sbvrem size y (trim size x))))
   :hints (("Goal":in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

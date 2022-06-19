@@ -381,3 +381,52 @@
            (equal (bvlt size x (bvsx size old-size y))
                   (bvlt old-size x y)))
   :hints (("Goal" :in-theory (enable bvsx bvlt))))
+
+(defthm bvlt-of-bvcat-trim-special
+  (implies (and (natp lowsize)
+                (natp highsize))
+           (equal (BVLT (+ -1 HIGHSIZE LOWSIZE)
+                        (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL)
+                        X)
+                  (BVLT (+ -1 HIGHSIZE LOWSIZE)
+                        (BVCAT (+ -1 HIGHSIZE) HIGHVAL LOWSIZE LOWVAL)
+                        X)))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;move
+(defthm not-<-of-slice-and-slice-same-low-and-val
+  (implies (and (<= high1 high2)
+                (natp high1)
+                (natp high2))
+           (not (< (slice high2 low x)
+                   (slice high1 low x))))
+  :hints (("Goal" :cases ((<= low high1))
+           :in-theory (enable slice))))
+
+(defthm not-bvlt-of-slice-and-slice-narrower
+  (implies (and (<= high2 high1)
+                ;(<= high1 size)
+;                (<= low high2)
+                (natp high1)
+                (natp high2)
+                (natp low)
+;                (integerp x)
+                )
+           (not (bvlt size (slice high1 low x) (slice high2 low x))))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;; Is this true?
+;; (defthm sbvlt-of-bvcat-arg1
+;;   (implies (and (equal size (+ lowsize highsize))
+;;                 (posp highsize)
+;;                 (natp lowsize)
+;;                 (integerp x)
+;; ;                (sbvlt size (bvcat highsize highval lowsize lowval) x)
+;; ;               (equal (bvchop highsize highval) (slice (+ -1 size) lowsize x))
+;;                 )
+;;            (equal (sbvlt size (bvcat highsize highval lowsize lowval) x)
+;;                   (or (sbvlt highsize highval (slice (+ -1 size) lowsize x))
+;;                       (and (equal (bvchop highsize highval) (slice (+ -1 size) lowsize x))
+;;                            (bvlt lowsize lowval (bvchop lowsize x))))))
+;;   :otf-flg t
+;;   :hints (("Goal" :in-theory (enable sbvlt-rewrite boolor booland))))

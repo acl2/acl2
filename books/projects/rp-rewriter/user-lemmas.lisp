@@ -152,7 +152,7 @@ Forced term was:~% ~p0 ~% "
   :hints (("goal" 
            :in-theory '(return-last hard-error hide))))||#
 
-(def-rp-rule$ t nil
+(def-rp-rule :disabled-for-acl2 t
   force$-fail
   (implies
    (hard-error

@@ -44,7 +44,21 @@
              (pathnames (osicat:list-directory dir))
              (names     nil))
         (loop for pathname in pathnames do
-              (push (uiop:native-namestring pathname) names))
+              ;; Uiop:native-namestring produces an error on filenames that
+              ;; have wildcard characters in them.  This used to mean that we'd
+              ;; fail to list directories that had any such files in them. Now
+              ;; we handle this by trying instead to push the namestring.  If
+              ;; somehow this fails too, then we just ignore that particular
+              ;; pathname and don't include it in the directory listing.
+              (handler-case
+                  (push (uiop:native-namestring pathname) names)
+                (error (condition)
+                       (declare (ignore condition))
+                       (handler-case
+                           (push (namestring pathname) names)
+                         (error (condition)
+                                (declare (ignore condition))
+                                nil)))))
         (basenames names))
       (error (condition)
              (let ((condition-str (format nil "~a" condition)))

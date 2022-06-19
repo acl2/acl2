@@ -152,7 +152,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;fixme where do we document the format of var-type-alist (see axe-types.lisp, but that is incomplete?)?  a naked integer is a bv, a quoted integer is that constant
 ;returns (mv value rand)
 ;should we allow tuples?
 (mutual-recursion
@@ -368,6 +367,8 @@
                 (test-casesp acc))
            (test-casesp (mv-nth 0 (make-test-cases-aux test-cases-left test-case-number test-case-type-alist assumptions print acc rand))))
   :hints (("Goal" :in-theory (enable make-test-cases-aux))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv test-cases rand), where each test case is an alist from vars to values
 (defund make-test-cases (test-case-count test-case-type-alist assumptions rand)

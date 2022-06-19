@@ -223,10 +223,6 @@
     (equal (ullongp (if a b c))
            (if a (ullongp b) (ullongp c))))
 
-  (defruled pointerp-of-if
-    (equal (pointerp (if a b c))
-           (if a (pointerp b) (pointerp c))))
-
   (defruled booleanp-of-if
     (equal (booleanp (if a b c))
            (if a (booleanp b) (booleanp c))))
@@ -263,7 +259,6 @@
     ulongp-of-if
     sllongp-of-if
     ullongp-of-if
-    pointerp-of-if
     booleanp-of-if
     compustate->frames-of-if
     scope-fix-of-if
@@ -671,18 +666,7 @@
     (implies (valuep x)
              (not (errorp x)))
     :enable (errorp
-             valuep
-             ucharp
-             scharp
-             ushortp
-             sshortp
-             uintp
-             sintp
-             ulongp
-             slongp
-             ullongp
-             sllongp
-             pointerp))
+             valuep))
 
   (defruled not-errorp-when-value-listp-rewrite
     (implies (value-listp x)
