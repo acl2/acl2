@@ -123,6 +123,15 @@
   (bvshl-cases-term-fn width))
 
 ;pretty gross
+(defthmd bvshl-16-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 16))
+           (equal (bvshl 16 x shift-amount)
+                  (bvshl-cases-term 16)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+;pretty gross
 (defthmd bvshl-32-cases
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (natp shift-amount)

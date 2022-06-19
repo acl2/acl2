@@ -335,7 +335,7 @@
            (< (maxelem (cdr items)) x))
   :hints (("Goal" :in-theory (enable all-<))))
 
-(defthm rational-of-car--when-all-natp-cheap
+(defthm rationalp-of-car--when-all-natp-cheap
   (implies (and (all-natp items)
                 (consp items))
            (rationalp (car items)))
