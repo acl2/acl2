@@ -12,23 +12,8 @@
 (in-package "ACL2")
 
 (include-book "heap0")
+(include-book "maps")
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-
-;move
-(defthm s-nil-becomes-clr
-  (equal (s a nil r)
-         (clr a r))
-  :hints (("Goal" :in-theory (e/d (clr) (s==r)))))
-
-(theory-invariant (incompatible (:rewrite s-nil-becomes-clr) (:definition clr)))
-
-(defthm rkeys-of-clr
-  (equal (rkeys (clr key r))
-         (set::delete key (rkeys r)))
-  :hints (("Goal"  :DO-NOT '(preprocess)
-           :in-theory (e/d (clr) (S-NIL-BECOMES-CLR ;looped
-                                  s==r
-                                  )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,3 +219,26 @@
   (equal (g ad (clear-field ad class-field-pair heap))
          (clr class-field-pair (g ad heap)))
   :hints (("Goal" :in-theory (e/d (clear-field) (SET-TO-NIL-EQUAL-CLEAR-FIELD)))))
+
+
+(defthm clr-non-nil-when-get-field
+  (implies (and (equal (get-field ad pair heap) val)
+                val ;is not nil
+                (not (equal pair a)))
+           (clr a (g ad heap)))
+  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value val) (a2 a) (val (g ad heap)))
+           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
+
+(defthm clr-non-nil-when-get-field-2
+  (implies (and (get-field ad pair heap)
+                (not (equal pair a)))
+           (clr a (g ad heap)))
+  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value (get-field ad pair heap)) (a2 a) (val (g ad heap)))
+           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
+
+(defthm clr-non-nil-when-get-class
+  (implies (and (equal (get-class ad heap) val)
+                val
+                (not (equal (class-pair) a)))
+           (clr a (g ad heap)))
+  :hints (("Goal" :in-theory (enable get-class))))

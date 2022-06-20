@@ -14,7 +14,8 @@
 ;how much of this stuff is common with android?
 
 (include-book "heap0")
-(include-book "heap-clearing")
+(include-book "maps")
+;(include-book "heap-clearing")
 (include-book "classes") ;for jvm::class-decl-non-static-fields, get-superclasses, and maybe other stuff
 (include-book "class-tables") ;for all-bound-in-class-tablep
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
@@ -22,55 +23,7 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-(in-theory (disable key-list)) ;fixme move up
-
 (local (in-theory (disable true-listp)))
-
-
-
-;bozo expensive?
-;use iff?
-(defthm not-clr-when-not-s
-  (implies (not (s a val r))
-           (not (clr a r)))
-  :hints (("Goal" ;:do-not-preprocess
-           :cases (val)
-           :in-theory (e/d (clr) (s==r s-nil-becomes-clr)))))
-
-;move
-(defthm s-iff
-  (iff (s a v r)
-       (or v (clr a r))))
-
-;if a is nil, it could be made into a clr
-(defthm equal-of-nil-of-s-and-s
-  (implies (and v2
-                (not (equal a a2)))
-           (equal (equal nil (s a v (s a2 v2 r)))
-                  nil)))
-
-(defthm clr-non-nil-when-g-of-some-other-address-is-non-nil
-  (implies (and (equal (g a1 val) value)
-                value ;is not nil
-                (not (equal a1 a2)))
-           (clr a2 val))
-  :hints (("Goal" :in-theory (disable G-OF-CLR)
-           :use (:instance G-OF-CLR (R  val) (A2  A2) (A1  A1)))))
-
-(defthm clr-non-nil-when-get-field
-  (implies (and (equal (get-field ad pair heap) val)
-                val ;is not nil
-                (not (equal pair a)))
-           (clr a (g ad heap)))
-  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value val) (a2 a) (val (g ad heap)))
-           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
-
-(defthm clr-non-nil-when-get-field-2
-  (implies (and (get-field ad pair heap)
-                (not (equal pair a)))
-           (clr a (g ad heap)))
-  :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value (get-field ad pair heap)) (a2 a) (val (g ad heap)))
-           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

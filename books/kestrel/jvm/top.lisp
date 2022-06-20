@@ -30,6 +30,7 @@
 (include-book "utilities")
 (include-book "utilities2")
 (include-book "class-tables")
+(include-book "maps")
 (include-book "heap0")
 (include-book "heap-clearing")
 (include-book "heap")
