@@ -18,6 +18,7 @@
 
 (defxdoc primep
   :short "Recognizer of prime numbers."
+  :parents (acl2::number-theory)
   :long
   (xdoc::topstring
    (xdoc::p

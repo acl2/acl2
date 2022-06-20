@@ -66,6 +66,11 @@
                   :guard-hints (("Goal" :in-theory (enable field-idp)))))
   (cdr field-id))
 
+(defthm typep-of-field-id-type
+  (implies (field-idp id)
+           (typep (field-id-type id)))
+  :hints (("Goal" :in-theory (enable field-idp field-id-type))))
+
 ;;;
 ;;; the field-info structure
 ;;;

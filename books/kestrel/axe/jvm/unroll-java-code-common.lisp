@@ -24,7 +24,7 @@
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
 (include-book "kestrel/jvm/symbolic-execution" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
-(include-book "kestrel/bv/rules2" :dir :system) ; for sbvlt-of-bvsx
+(include-book "kestrel/bv/rules2" :dir :system) ; for sbvlt-of-bvsx-and-0
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
@@ -42,7 +42,7 @@
             getbit-of-myif
             not-equal-of-nil-and-s ;drop
             not-equal-nil-when-array-refp
-            sbvlt-of-bvsx ; todo; consider sbvlt-of-bvsx-new
+            sbvlt-of-bvsx-and-0 ; todo; consider sbvlt-of-bvsx-and-0-new
             sbvlt-of-bvcat-and-0
             jvm::not-equal-nil-when-java-boolean-as-int-p
             jvm::not-equal-nil-when-java-byte-as-int-p

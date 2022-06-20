@@ -29,7 +29,7 @@
 
 ;asking whether a bvsx is negative is the same as asking whether the top bit of
 ;the value being sign extended is 1.
-(defthm sbvlt-of-bvsx
+(defthm sbvlt-of-bvsx-and-0
   (implies (and (integerp size)
                 (posp n)
                 (< n size))
@@ -39,7 +39,7 @@
            :in-theory (enable bvsx sbvlt))))
 
 ;may be better, though it does shrink the size?
-(defthmd sbvlt-of-bvsx-new
+(defthmd sbvlt-of-bvsx-and-0-new
   (implies (and (integerp size)
                 (posp n)
                 (< n size))

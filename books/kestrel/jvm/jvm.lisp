@@ -1577,7 +1577,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (make-regular-float :pos n) ;;TODO: If this is 0.0, should we assume a positive 0?
+          :stack (push-operand (make-regular-float :pos n) ;;TODO: If this is 0.0, should we assume a positive 0?  I think so, since the sometimes does talk about -0.0.
                                (stack (thread-top-frame th s)))))
 
 ;n is 0 or 1

@@ -47,7 +47,7 @@
 
 ;; Checks that PAIR, a class-name + field-id pair is valid wrt the class-table-alist.
 (defund field-pair-okayp (pair class-table-alist)
-  (declare (xargs :guard (and (class-name-field-id-pairp pair)
+  (declare (xargs :guard (and (jvm::class-name-field-id-pairp pair)
                               (class-table-alistp class-table-alist))
                   :guard-hints (("Goal" :in-theory (enable alistp-when-class-table-alistp)))
                   ))
@@ -92,12 +92,12 @@
        (and (true-listp x) ; (:field <class-name-field-id-pair> <indicator-for-object>)
             (eql 2 (len (fargs x)))
             (eq :field (ffn-symb x))
-            (class-name-field-id-pairp (farg1 x))
+            (jvm::class-name-field-id-pairp (farg1 x))
             (output-indicatorp-aux (farg2 x)))
        (and (true-listp x) ; (:param-field <pair> <local-num>)
             (eql 2 (len (fargs x)))
             (eq :param-field (ffn-symb x))
-            (class-name-field-id-pairp (farg1 x))
+            (jvm::class-name-field-id-pairp (farg1 x))
             (natp (farg2 x)))
        (and (true-listp x) ; (:tuple <indicator1> ... <indicatorn>)
             (<= 1 (len (fargs x))) ;disallow the empty tuple
