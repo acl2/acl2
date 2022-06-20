@@ -396,9 +396,9 @@
    (t (mv-let (bad-fn-msg badge warrantp)
         (query-badge-userfn-structure fn (w *the-live-state*))
         (cond
-         ((or bad-fn-msg ; no badge for fn, or there is a badge but
+         ((or bad-fn-msg ; no badge for fn, or
 
-; There's a badge, but either
+; there's a badge, but either
 ; (a) we're in the prover, or any setting where attachments are not allowed,
 ;     and there's no warrant; or
 ; (b) attachments are allowed (as in the top-level loop), but fn is in logic
@@ -2470,7 +2470,15 @@
 ; we base our belief that ACL2 is sound on careful coding with attention to
 ; proofs like this.  When new features are added, we work out extensions of
 ; these proofs to explain those features, but we do not always re-write the
-; entire proof.]
+; entire proof.
+
+; This essay was written when every user-defined function that had a badge
+; also had a warrant.  ACL2 primitives known to apply$ had badges but
+; didn't need warrants.  User-defined functions got badges as a side-effect
+; of defwarrant.  Eventually we introduced defbadge, but this essay does not
+; reflect that.  So, for example, at the time this essay was written, if fn
+; had a badge then it was in :logic mode and fn had a warrant unless it was
+; primitive.]
 
 ; Essay on Admitting a Model for Apply$ and the Functions that Use It
 

@@ -13546,7 +13546,13 @@
 ; We use get-warrantp, above, to determine if val has a warrant function.
 ; Every function with a warrant is so marked in the :badge-userfn-structure of
 ; the badge-table.  All other functions known to apply$, e.g., primitives and
-; boot functions, have no warrants.
+; boot functions, have no warrants.  Note that collect-warranted-fns may
+; encounter unwarranted user-defined functions, e.g., as would happen when
+; exploring (binary-* x (apply$ 'sq (cons x 'nil))) if sq is unwarranted.  We
+; mention this simply because the sentence above, about ``All other
+; functions,'' might be misread to suggest that the only unwarranted functions
+; (that might be encountered here) are primitives or boot functions, but that's
+; not true.
 
                          (list val))
                         (t nil)))
