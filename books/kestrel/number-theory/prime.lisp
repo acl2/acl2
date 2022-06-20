@@ -18,6 +18,7 @@
 
 (defsection prime
   :short "Fixtype of prime numbers."
+  :parents (acl2::number-theory)
   (fty::deffixtype prime
     :pred primep
     :fix prime-fix
