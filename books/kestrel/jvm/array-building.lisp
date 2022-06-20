@@ -15,7 +15,7 @@
 
 ;; This book is about building array objects
 
-(include-book "heap")
+(include-book "heap") ; for default-value
 (include-book "arrays0")
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))

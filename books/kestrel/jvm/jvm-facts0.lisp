@@ -582,8 +582,6 @@
 ;;                                       CLASS-TABLE CTR))
 ;;           :in-theory (enable resolve-field-aux))))
 
-(in-theory (disable ACL2::HEAP-OBJECT-KEYP)) ;fixme move up
-
 ;; (thm
 ;;  (implies (and (not (equal nil (LOCKED-OBJECT (TOP-FRAME-of-thread TH S))))
 ;;                (NOT (EMPTY-CALL-STACKP (BINDING TH (THREAD-TABLE S))))

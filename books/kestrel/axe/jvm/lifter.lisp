@@ -3538,7 +3538,7 @@
 ;fixme what about fake fields? array contents, monitor stuff, etc.
 (defun make-unchangedness-claimp (class-name-field-id-pair class-table)
   (declare (ignore class-table)) ;fixme
-  ;; (declare (xargs :guard (and (class-name-field-id-pairp class-name-field-id-pair) ;should we allow :special-data?
+  ;; (declare (xargs :guard (and (jvm::class-name-field-id-pairp class-name-field-id-pair) ;should we allow :special-data?
   ;;                             (jvm::class-tablep class-table)))) ;;also need to know that that class and that field exist in the class-table...
   (if (equal class-name-field-id-pair (array-contents-pair)) ;FIXME unless the array elems are pointers?
       nil
@@ -4479,7 +4479,7 @@
       ;; (and (true-listp x) ;;(:field <pair> <indicator-for-object>)
       ;;      (eql 2 (len (fargs x)))
       ;;      (eq :field (ffn-symb x))
-      ;;      (class-name-field-id-pairp (farg1 x))
+      ;;      (jvm::class-name-field-id-pairp (farg1 x))
       ;;      (input-indicatorp (farg2 x)))
       ))
 
