@@ -2283,6 +2283,9 @@
 ; and TERMP.  We expect this function to hold on (w state).
 
   (declare (xargs :guard t))
+  #-acl2-loop-only
+  (cond ((eq alist (w *the-live-state*))
+         (return-from plist-worldp-with-formals t)))
   (cond ((atom alist) (eq alist nil))
         (t (and (consp (car alist))
                 (symbolp (car (car alist)))

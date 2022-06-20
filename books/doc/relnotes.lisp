@@ -391,6 +391,9 @@
     "Evaluation of @('prover-steps-counted state)') returns the prover steps
      counted for the most recently completed event.")
 
+   (xdoc::p
+    "Fixed with-supporters to work when including an uncertified book.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))

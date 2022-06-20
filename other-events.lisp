@@ -3488,19 +3488,22 @@
 ; The theory-invariant-table maps arbitrary keys to translated terms
 ; involving only the variables THEORY and STATE:
 
+(defun theory-invariant-table-guard (val world)
+  (declare (xargs :guard (plist-worldp-with-formals world)))
+  (and (weak-theory-invariant-record-p val)
+       (booleanp (access theory-invariant-record val
+                         :error))
+       (let ((book (access theory-invariant-record val
+                           :book)))
+         (or (stringp book)
+             (null book)))
+       (let ((tterm (access theory-invariant-record val
+                            :tterm)))
+         (and (termp tterm world)
+              (subsetp-eq (all-vars tterm) '(ens state))))))
+
 (table theory-invariant-table nil nil
-       :guard (and (consp val)
-                   (consp (cdr val))
-                   (booleanp (access theory-invariant-record val
-                                     :error))
-                   (let ((book (access theory-invariant-record val
-                                       :book)))
-                     (or (stringp book)
-                         (null book)))
-                   (let ((tterm (access theory-invariant-record val
-                                        :tterm)))
-                     (and (termp tterm world)
-                          (subsetp-eq (all-vars tterm) '(ens state))))))
+       :guard (theory-invariant-table-guard val world))
 
 (defun theory-invariant-fn (term state key error event-form)
   (when-logic

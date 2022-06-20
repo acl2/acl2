@@ -3676,7 +3676,7 @@
 ; on it.  This partitioning becomes important when we develop the cl-cache in
 ; which we store lambda objects for evaluation purposes.
 
-(defun type-expressions-from-type-spec (spec vars wrld)
+(defun type-expressions-from-type-spec (x vars wrld)
 
 ; Given an alleged type spec, like INTEGER, (SATISFIES EVENP), or (OR STRING
 ; CONS), and a list of variables, var, we generate the non-empty list of
@@ -3699,10 +3699,11 @@
 
   (cond ((null vars) nil)
         (t (let ((expr (translate-declaration-to-guard-gen
-                        spec (car vars) t wrld)))
+                        x (car vars) t wrld)))
              (cond
               ((null expr) nil)
-              (t (cons expr (subst-each-for-var (cdr vars) (car vars) expr))))))))
+              (t (cons expr
+                       (subst-each-for-var (cdr vars) (car vars) expr))))))))
 
 (defun syntactically-plausible-lambda-objectp1
   (edcls formals ignores ignorables type-exprs satisfies-exprs guard)
@@ -19238,15 +19239,16 @@
            (trans-er+ form ctx
                       "It is illegal to invoke ~@0 here because of a ~
                        signature mismatch.  This function call returns a ~
-                       result of shape ~x1~@2 where a result of shape ~x3 is ~
-                       required."
+                       result of shape ~X14~@2 where a result of shape ~X34 ~
+                       is required."
                       (if (consp fn) msg (msg "~x0" fn))
                       (prettyify-stobjs-out stobjs-out-call)
                       (if alist-in-out ; always true here?
                           " (after accounting for the replacement of some ~
                            input stobjs by congruent stobjs)"
                         "")
-                      (prettyify-stobjs-out stobjs-out-x))))))
+                      (prettyify-stobjs-out stobjs-out-x)
+                      nil)))))
        (t
 
 ; In this case, stobjs-out-call and (equivalently) stobjs-out-call are symbols,
