@@ -35,7 +35,7 @@
     (if provedp
         :proved
       ;; todo: return these, as terms, instead of printing them:
-      (print-dag-only-supporters-lst disjuncts 'dag-array dag-array))))
+      (print-dag-array-node-and-supporters-lst disjuncts 'dag-array dag-array))))
 
 ;; TODO: Get these into the build:
 ;; (get-disjuncts-tester 'x state)

@@ -1213,8 +1213,8 @@
 
 ;; Returns (mv erp dag-or-quotep).
 ;; Convert term to a DAG (or quoted constant).  Uses arrays to do the work.
-;doesn't handle inlined constants in the embedded dags?
 ;; See also make-term-into-dag-basic.
+;; TODO: doesn't handle inlined constants in the embedded dags?
 (defund dagify-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (make-term-into-dag term nil))

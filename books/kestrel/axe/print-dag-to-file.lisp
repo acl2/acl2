@@ -1,7 +1,7 @@
 ; Printing DAGs to files
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,13 +19,14 @@
 
 ;returns state
 (defun print-dag-to-file-aux (dag-lst channel state)
-  (declare (xargs :mode :program ; because of PPRINT-OBJECT-OR-STRING
+  (declare (xargs :mode :program ; because of PPRINT-OBJECT-OR-STRING (calling FMT would also require :program mode)
                   :stobjs state))
   (if (endp dag-lst)
       state
     (let ((entry (car dag-lst)))
       (pprogn (princ$ " " channel state)
-              (pprint-object-or-string entry channel state) ; todo: call something faster or nicer here?
+              (pprint-object-or-string entry channel state) ; todo: call something faster or nicer here?  Try print-object$.
+              ;; (fmt "~F0" (acons #\0 entry nil) channel state nil)
               (princ$ (newline-string) channel state)
               (print-dag-to-file-aux (rest dag-lst) channel state)))))
 

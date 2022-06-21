@@ -160,7 +160,7 @@
 (include-book "packbv-axe")
 (include-book "print-constant")
 (include-book "print-levels")
-(include-book "printing")
+(include-book "print-dag-to-file")
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
