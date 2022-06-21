@@ -361,7 +361,7 @@
                             (b* ((- (cw "(Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp)) ;print the instantiated-hyp and hyp num too?
                                  (- (cw "(Rewrote to:~%"))
                                  (- (if (member-eq print '(t :verbose :verbose!))
-                                        (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
+                                        (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
                                       (cw ":elided")))
                                  (- (cw ")~%"))
                                  ;; we used to have to save and restore the dag, but now the prover doesn't change any nodes, so that isn't necessary
