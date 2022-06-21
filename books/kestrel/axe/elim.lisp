@@ -332,7 +332,7 @@
            (nodenum-of-var (cdr res)))
         (progn$ (cw "(Eliminating destructors for variable ~x0." var)
                 (and (eq :verbose print) (cw "literals: ~x0~%" literal-nodenums))
-                (and (eq :verbose print) (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))
+                (and (eq :verbose print) (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array))
                 (let* ((len-of-var (lookup-eq var var-length-alist))
                        (dag-vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len))
                        (new-vars (make-var-names-aux (pack$ var '-) 0 (+ -1 len-of-var))) ;ffixme call a no-clash version?

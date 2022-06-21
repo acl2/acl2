@@ -79,7 +79,7 @@
 ;; Prints the node whose number is NODENUM, and any supporting nodes.
 ;; TODO: Improve whitespace and after last node.
 ;does this do the right thing for very small arrays?
-(defund print-dag-only-supporters (dag-array-name dag-array nodenum)
+(defund print-dag-array-node-and-supporters (dag-array-name dag-array nodenum)
   (declare (type (integer 0 *) nodenum)
            (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
@@ -89,7 +89,7 @@
           (cw ")~%")))
 
 ;; Prints the nodes whose numbers are in NODENUMS, and any supporting nodes.
-(defund print-dag-only-supporters-of-nodes (dag-array-name dag-array nodenums)
+(defund print-dag-array-nodes-and-supporters (dag-array-name dag-array nodenums)
   (declare (xargs :guard (and (all-natp nodenums)
                               (true-listp nodenums)
                               (consp nodenums)
@@ -101,7 +101,7 @@
           (cw ")~%")))
 
 ;; Separately prints the part of the DAG supporting each of the NODENUMS.
-(defund print-dag-only-supporters-lst (nodenums dag-array-name dag-array)
+(defund print-dag-array-node-and-supporters-lst (nodenums dag-array-name dag-array)
   (declare (xargs :guard (and (all-natp nodenums)
                               (true-listp nodenums)
                               (if (consp nodenums)
@@ -109,6 +109,6 @@
                                 t))))
   (if (endp nodenums)
       nil
-    (progn$ (print-dag-only-supporters dag-array-name dag-array (car nodenums))
+    (progn$ (print-dag-array-node-and-supporters dag-array-name dag-array (car nodenums))
             (cw "~%")
-            (print-dag-only-supporters-lst (cdr nodenums) dag-array-name dag-array))))
+            (print-dag-array-node-and-supporters-lst (cdr nodenums) dag-array-name dag-array))))

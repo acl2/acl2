@@ -2362,7 +2362,7 @@
                            disjuncts
                            (expressions-for-this-case disjuncts dag-array dag-len) ;call print-list on this?
                            )
-                       (print-dag-only-supporters-lst (strip-nots-from-possibly-negated-nodenums disjuncts) 'dag-array dag-array))))
+                       (print-dag-array-node-and-supporters-lst (strip-nots-from-possibly-negated-nodenums disjuncts) 'dag-array dag-array))))
        ;; First try without heuristic cuts (untranslatable things may still be cut out):
        ((mv result state)
         (prove-disjunction-with-stp-at-depth nil ;no depth limit

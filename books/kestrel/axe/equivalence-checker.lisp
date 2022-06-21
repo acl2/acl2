@@ -9435,7 +9435,7 @@
                   :verify-guards nil
                   :stobjs state))
   (b* ( ;;(- (and print (cw "(Subdag that supports the nodes:~%")))
-       ;;(- (and print (print-dag-only-supporters-of-nodes miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
+       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
        ;;(- (and print (cw ")~%")))
        ;;todo: move this printing to the caller?
        (smaller-node-supporting-vars (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
@@ -16808,7 +16808,7 @@
          (drop-non-supporters-array-two-nodes-with-name miter-array-name miter-array original-nodenum1 original-nodenum2) ;fixme or use a worklist?
          )
         ;;often there are ifs supporting the nodes with tests that have been replaced by constants (really?  shouldn't they have been merged with their then or else branches?
-        ;;(dummy3 (print-dag-only-supporters-list (list original-nodenum1 original-nodenum2) miter-array-name miter-array))
+        ;;(dummy3 (print-dag-array-node-and-supporters-list (list original-nodenum1 original-nodenum2) miter-array-name miter-array))
         ;;First try to prove the equality using existing lemmas.
         ;;fixme should we do this outside this function? might be expensive!
         ;;ffixme eventually pass the miter-array to the rewriter?? (be careful not to override existing nodes), but for now it has the wrong name
@@ -17706,7 +17706,7 @@
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
-                        ;;ffixme make a 2 node version of print-dag-only-supporters - we show the simplified miter - that should contain everything interesting from the dag
+                        ;;ffixme make a 2 node version of print-dag-array-node-and-supporters - we show the simplified miter - that should contain everything interesting from the dag
                         nil ;(print-array2 miter-array-name miter-array (+ 1 larger-nodenum))
                         )))
 ;fixme finish this.  the point was not to merge two nodes of different array types - but get-type-of-nodenum may sometimes give unfortunate errors here.
@@ -17965,7 +17965,7 @@
            ;;The equality didn't rewrite to a constant:
            (b* ((- (and (eq :verbose! print)
                         (prog2$ (cw "Equality rewrote to:~%")
-                                (print-dag-only-supporters 'dag-array dag-array miter-nodenum-or-quotep)))))
+                                (print-dag-array-node-and-supporters 'dag-array dag-array miter-nodenum-or-quotep)))))
              ;;fixme use miter-nodenum-or-quotep below here?
 ;fixme use the fact that the miter is pure!
 ;There are no recursive fns, but there might still be non-bv/array fns: fixme expand any non-rec fns?
@@ -18129,7 +18129,7 @@
          ;;We found a node to replace:
          (b* ((- (and (member nodenum-to-replace traced-nodes) ;do we ever use this?
                       (prog2$ (cw "DAG:~%")
-                              (print-dag-only-supporters miter-array-name miter-array (+ -1 miter-len)))))
+                              (print-dag-array-node-and-supporters miter-array-name miter-array (+ -1 miter-len)))))
               (use-proverp-flag (not (member nodenum-to-replace nodes-to-not-use-prover-for))))
            (if probably-constantp
                ;; The node is a probable constant:
