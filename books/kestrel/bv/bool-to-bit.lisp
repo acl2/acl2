@@ -47,3 +47,35 @@
 (defthm unsigned-byte-p-1-of-bool-to-bit
   (unsigned-byte-p 1 (bool-to-bit x))
   :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+(defthm getbit-0-of-bool-to-bit
+  (equal (getbit 0 (bool-to-bit x))
+         (bool-to-bit x))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+;use bitnot?
+(defthm bool-to-bit-of-equal-0-getbit-1
+  (equal (bool-to-bit (equal 0 (getbit n x)))
+         (bvnot 1 (getbit n x)))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+;use bitnot?
+(defthm bool-to-bit-of-equal-0-getbit-2
+  (equal (bool-to-bit (equal (getbit n x) 0))
+         (bvnot 1 (getbit n x)))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+;just run the function!
+(defthmd bool-to-bit-of-nil
+  (equal (bool-to-bit nil)
+         0))
+
+;just run the function!
+(defthmd bool-to-bit-of-t
+  (equal (bool-to-bit t)
+         1))
+
+(defthm bool-to-bit-of-not
+  (equal (bool-to-bit (not x))
+         (bitnot (bool-to-bit x)))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))
