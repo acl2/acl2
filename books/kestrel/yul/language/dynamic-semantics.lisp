@@ -146,7 +146,12 @@
        (fun+info (omap::in fun scope))
        ((when (consp fun+info)) (err (list :duplicate-function fun))))
     (omap::update fun (funinfo-for-fundef fundef) scope))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-funscope-for-fundefs
+    (implies (resulterrp funscope)
+             (error-info-wfp funscope))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,7 +264,12 @@
        ((when (consp fun+info))
         (make-funinfo+funenv :info (cdr fun+info) :env funenv)))
     (find-fun fun (cdr funenv)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-find-fun
+    (implies (resulterrp info)
+             (error-info-wfp info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,7 +293,11 @@
   ///
 
   (defrule ensure-funscope-disjoint-of-empty-funscope-not-error
-    (not (resulterrp (ensure-funscope-disjoint nil funenv)))))
+    (not (resulterrp (ensure-funscope-disjoint nil funenv))))
+
+  (defret error-info-wfp-of-ensure-funscope-disjoint
+    (implies (resulterrp _)
+             (error-info-wfp _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +325,18 @@
 
   (defrule add-funs-of-no-fundefs
     (equal (add-funs nil funenv)
-           (cons nil (funenv-fix funenv)))))
+           (cons nil (funenv-fix funenv))))
+
+  (defret error-info-wfp-of-add-funs
+    (implies (resulterrp new-funenv)
+             (error-info-wfp new-funenv))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       not-resulterrp-when-funenvp
+       funscopep-when-funscope-resultp-and-not-resulterrp
+       funenvp-when-funenv-resultp-and-not-resulterrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -385,7 +410,13 @@
        ((unless (consp var-val))
         (err (list :variable-not-found (identifier-fix var)))))
     (value-fix (cdr var-val)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-read-var-value
+    (implies (resulterrp val)
+             (error-info-wfp val))
+    :hints (("Goal" :in-theory (enable not-resulterrp-when-valuep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -409,7 +440,16 @@
   (defret len-of-read-vars-values
     (implies (not (resulterrp vals))
              (equal (len vals)
-                    (len vars)))))
+                    (len vars))))
+
+  (defret error-info-wfp-of-read-vars-values
+    (implies (resulterrp vals)
+             (error-info-wfp vals))
+    :hints (("Goal"
+             :in-theory
+             (enable not-resulterrp-when-value-listp
+                     valuep-when-value-resultp-and-not-resulterrp
+                     value-listp-when-value-list-resultp-and-not-resulterrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,7 +469,12 @@
                                  lstate))
        (new-cstate (change-cstate cstate :local new-lstate)))
     new-cstate)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-write-var-value
+    (implies (resulterrp new-cstate)
+             (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -454,7 +499,12 @@
         (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (write-var-value (car vars) (car vals) cstate)))
     (write-vars-values (cdr vars) (cdr vals) cstate))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-write-vars-values
+    (implies (resulterrp new-cstate)
+             (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -474,7 +524,12 @@
                                  lstate))
        (new-cstate (change-cstate cstate :local new-lstate)))
     new-cstate)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-add-var-value
+    (implies (resulterrp new-cstate)
+             (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -499,7 +554,12 @@
         (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
     (add-vars-values (cdr vars) (cdr vals) cstate))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-add-vars-values
+    (implies (resulterrp new-cstate)
+             (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -518,7 +578,12 @@
   (b* ((lstate (cstate->local cstate))
        (new-lstate (omap::restrict (identifier-set-fix vars) lstate)))
     (change-cstate cstate :local new-lstate))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-restrict-vars
+    (implies (resulterrp new-cstate)
+             (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -547,7 +612,12 @@
                                      (repeat (len out-vars) (value 0))
                                      cstate)))
     cstate)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-init-local
+    (implies (resulterrp new-cstate)
+             (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -638,7 +708,13 @@
         (err (list :non-singleton-path (path-fix path))))
        (var (car idens)))
     var)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-path-to-var
+    (implies (resulterrp var)
+             (error-info-wfp var))
+    :hints (("Goal" :in-theory (enable not-resulterrp-when-identifierp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -667,7 +743,18 @@
   (defret len-of-paths-to-vars
     (implies (not (resulterrp vars))
              (equal (len vars)
-                    (len paths)))))
+                    (len paths))))
+
+  (defret error-info-wfp-of-paths-to-vars
+    (implies (resulterrp vars)
+             (error-info-wfp vars))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       not-resulterrp-when-identifier-listp
+       identifierp-when-identifier-resultp-and-not-resulterrp
+       identifier-listp-when-identifier-list-resultp-and-not-resulterrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -683,7 +770,12 @@
   (b* (((ok var) (path-to-var path))
        ((ok val) (read-var-value var cstate)))
     (make-eoutcome :cstate cstate :values (list val)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-exec-path
+    (implies (resulterrp outcome)
+             (error-info-wfp outcome))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -698,7 +790,12 @@
      and does not change the computation state."))
   (b* (((ok val) (eval-literal lit)))
     (make-eoutcome :cstate cstate :values (list val)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-exec-literal
+    (implies (resulterrp outcome)
+             (error-info-wfp outcome))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1171,6 +1268,55 @@
 
   (fty::deffixequiv-mutual exec)
 
+  (std::defret-mutual error-info-wfp-of-exec
+    (defret error-info-wfp-of-exec-expression
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-expression)
+    (defret error-info-wfp-of-exec-expression-list
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-expression-list)
+    (defret error-info-wfp-of-exec-funcall
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-funcall)
+    (defret error-info-wfp-of-exec-function
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-function)
+    (defret error-info-wfp-of-exec-statement
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-statement)
+    (defret error-info-wfp-of-exec-statement-list
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-statement-list)
+    (defret error-info-wfp-of-exec-block
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-block)
+    (defret error-info-wfp-of-exec-for-iterations
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-for-iterations)
+    (defret error-info-wfp-of-exec-switch-rest
+      (implies (resulterrp outcome)
+               (error-info-wfp outcome))
+      :fn exec-switch-rest)
+    :hints (("Goal" :in-theory (enable not-resulterrp-when-soutcomep
+                                       not-resulterrp-when-eoutcomep
+                                       exec-expression
+                                       exec-expression-list
+                                       exec-funcall
+                                       exec-function
+                                       exec-statement
+                                       exec-statement-list
+                                       exec-block
+                                       exec-for-iterations
+                                       exec-switch-rest))))
+
   (defruled statement-kind-when-mode-regular
     (b* ((outcome (exec-statement stmt cstate funenv limit)))
       (implies (and (soutcomep outcome)
@@ -1202,4 +1348,9 @@
        ((unless (equal outcome.mode (mode-regular)))
         (err (list :top-block-move outcome.mode))))
     outcome.cstate)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-exec-top-block
+    (implies (resulterrp cstate)
+             (error-info-wfp cstate))))

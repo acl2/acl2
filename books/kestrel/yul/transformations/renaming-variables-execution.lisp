@@ -1344,21 +1344,27 @@
      based on looking at the keyword (assuming it is constant)."))
 
   (defruled resulterr-limitp-of-resulterr-of-info
-    (implies (resulterrp error)
-             (equal (resulterr-limitp (resulterr (fty::resulterr->info error)
-                                                 stack))
+    (implies (and (resulterrp error)
+                  (error-info-wfp error))
+             (equal (resulterr-limitp
+                     (resulterr (cons more (fty::resulterr->info error))))
                     (resulterr-limitp error)))
-    :enable resulterr-limitp)
+    :enable (resulterr-limitp
+             resulterr-limitp-aux
+             error-info-wfp))
 
   (defruled not-resulterr-limitp-of-const
     (implies (and (syntaxp (quotep kwd))
                   (not (equal kwd :limit)))
-             (not (resulterr-limitp (resulterr (cons kwd more) stack))))
-    :enable resulterr-limitp)
+             (not (resulterr-limitp
+                   (resulterr (list (list fn (cons kwd more)))))))
+    :enable (resulterr-limitp
+             resulterr-limitp-aux))
 
   (defruled not-resulterr-limitp-of-eval-literal
     (not (resulterr-limitp (eval-literal lit)))
     :enable (resulterr-limitp
+             resulterr-limitp-aux
              eval-literal
              eval-plain-string-literal
              eval-hex-string-literal))
@@ -1371,6 +1377,7 @@
     (implies (resulterrp (path-to-var path))
              (not (resulterr-limitp (path-to-var path))))
     :enable (resulterr-limitp
+             resulterr-limitp-aux
              path-to-var
              not-resulterrp-when-identifierp))
 
@@ -1409,6 +1416,7 @@
       (implies (resulterrp result)
                (not (resulterr-limitp result))))
     :enable (resulterr-limitp
+             resulterr-limitp-aux
              write-var-value))
 
   (defruled not-resulterr-limitp-of-write-vars-values
@@ -1425,6 +1433,7 @@
       (implies (resulterrp result)
                (not (resulterr-limitp result))))
     :enable (resulterr-limitp
+             resulterr-limitp-aux
              add-var-value))
 
   (defruled not-resulterr-limitp-of-add-vars-values
@@ -1441,7 +1450,8 @@
       (implies (resulterrp result)
                (not (resulterr-limitp result))))
     :enable (find-fun
-             resulterr-limitp))
+             resulterr-limitp
+             resulterr-limitp-aux))
 
   (defruled not-resulterr-limitp-of-init-local
     (b* ((result (init-local in-vars in-vals out-vars cstate)))
