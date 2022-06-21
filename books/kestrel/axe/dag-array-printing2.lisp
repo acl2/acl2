@@ -31,4 +31,4 @@
       (let ((term-size (nfix (size-of-node nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
         (if (< term-size max-term-size)
             (cw "~x0~%" (dag-to-term-aux-array dag-array-name dag-array nodenum))
-          (print-dag-only-supporters dag-array-name dag-array nodenum))))))
+          (print-dag-array-node-and-supporters dag-array-name dag-array nodenum))))))

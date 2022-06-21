@@ -23,6 +23,7 @@
 (include-book "prune")
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
 (include-book "dag-size")
+(include-book "make-term-into-dag-basic")
 (include-book "equivalent-dags")
 ;(include-book "dagify") ;todo
 (include-book "tools/prove-dollar" :dir :system)
@@ -79,14 +80,33 @@
 ;; Proof Problems
 ;;
 
-;; A "proof problem" is a DAG to be shown non-nil and a list of assumptions
-;; (terms) that can be assumed non-nil.
+;; A "proof problem" is a DAG to be shown true (non-nil) and a list of assumptions
+;; (terms) that can be assumed true (non-nil).
+;; TODO: Consider requiring (< (LEN (CAR PROBLEM)) 2147483647).
 (defun proof-problemp (prob)
   (declare (xargs :guard t))
   (and (true-listp prob)
        (eql 2 (len prob))
-       (weak-dag-or-quotep (first prob))
+       (pseudo-dag-or-quotep (first prob)) ; TODO: or don't even create a problem if it's a constant
        (pseudo-term-listp (second prob))))
+
+(defthm proof-problemp-forward-to-true-listp
+  (implies (proof-problemp prob)
+           (true-listp prob))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable proof-problemp))))
+
+(defthm proof-problemp-forward-to-pseudo-dag-or-quotep-of-car
+  (implies (proof-problemp prob)
+           (pseudo-dag-or-quotep (car prob)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable proof-problemp))))
+
+(defthm proof-problemp-forward-to-pseudo-term-listp-of-cadr
+  (implies (proof-problemp prob)
+           (pseudo-term-listp (second prob)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable proof-problemp))))
 
 (defun make-problem (dag assumptions)
   (declare (xargs :guard (and (weak-dag-or-quotep dag)
@@ -127,12 +147,13 @@
            (proof-problemsp (rest x)) ;todo: require non-empty?
            )))
 
-;; A common helper function
-(defun make-tactic-result (new-dag old-dag assumptions state)
+;; A common helper function.  Returns (mv result info state).
+(defund make-tactic-result (new-dag old-dag assumptions state)
   (declare (xargs :stobjs (state)
                   :guard (and (pseudo-dag-or-quotep new-dag)
                               (pseudo-dag-or-quotep old-dag)
                               (pseudo-term-listp assumptions)
+                              ;; So we can call equivalent-dags-or-quoteps (todo: relax this?):
                               (< (+ (len new-dag) (len old-dag))
                                  2147483646))))
   (if (quotep new-dag)
@@ -148,8 +169,17 @@
       ;; The DAG was changed, so we return one new problem
       (mv `(,*problems* ,(make-problem new-dag assumptions))
           nil
-          state
-         ))))
+          state))))
+
+(defthm tactic-resultp-of-mv-nth-0-of-make-tactic-result
+  (implies (and (pseudo-dag-or-quotep new-dag)
+                (pseudo-dag-or-quotep old-dag)
+                (pseudo-term-listp assumptions)
+                ;; So we can call equivalent-dags-or-quoteps (todo: relax this?):
+                (< (+ (len new-dag) (len old-dag))
+                   2147483646))
+           (tactic-resultp (mv-nth 0 (make-tactic-result new-dag old-dag assumptions state))))
+  :hints (("Goal" :in-theory (enable make-tactic-result))))
 
 ;;
 ;; The :rewrite tactic
@@ -199,9 +229,20 @@
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
                               (axe-print-levelp print))
-                  :verify-guards nil ; todo first strengthen proof-problemp to require pseudp-dagp
-                  :stobjs state))
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (disable myquotep)))))
   (b* ((dag (first problem))
+       ((when (quotep dag))
+        (if (unquote dag)
+            ;; Non-nil constant:
+            (prog2$ (cw "Note: The DAG is the constant ~x0.~%" (unquote dag))
+                    (mv *valid* nil state))
+          ;; The dag is the constant nil:
+          (prog2$
+           (cw "Note: The DAG is the constant NIL.~%")
+           (mv *invalid* nil state))))
+       ((when (not (< (len dag) 2147483647)))
+        (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Applying the Axe rewriter with precise contexts~%")))
        (term (dag-to-term dag))
@@ -218,6 +259,20 @@
                              normalize-xors
                              (w state)))
        ((when erp) (mv *error* nil state))
+       ((when (quotep dag))
+        ;; todo: factor out:
+        (if (unquote dag)
+            ;; Non-nil constant:
+            (prog2$ (cw "Note: The DAG is the constant ~x0.~%" (unquote dag))
+                    (mv *valid* nil state))
+          ;; The dag is the constant nil:
+          (prog2$
+           (cw "Note: The DAG is the constant NIL.~%")
+           (mv *invalid* nil state))))
+       ((when (not (< (+ (len new-dag) (len dag))
+                      2147483646)))
+        (cw "ERROR: Dags too large.")
+        (mv *error* nil state))
        (- (and print (cw "Done applying the Axe rewriter wiith contexts (term size: ~x0, DAG size: ~x1))~%"
                          (dag-or-quotep-size new-dag)
                          (if (quotep new-dag)
@@ -229,15 +284,26 @@
 ;; The :prune tactic
 ;;
 
-;; TODO: Deprecate?
+;; TODO: Deprecate in favor of apply-tactic-prune-with-rules?
 ;; Prune with no rules.
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 (defun apply-tactic-prune (problem print call-stp-when-pruning state)
-  (declare (xargs :stobjs (state)
-                  :mode :program ;todo
-                  :guard (and (proof-problemp problem)
-                              (booleanp call-stp-when-pruning))))
+  (declare (xargs :guard (and (proof-problemp problem)
+                              (booleanp call-stp-when-pruning))
+                  :stobjs (state)
+                  :guard-hints (("Goal" :in-theory (disable pseudo-dag-or-quotep quotep)))))
   (b* ((dag (first problem))
+       ((when (quotep dag))
+        (if (unquote dag)
+            ;; Non-nil constant:
+            (prog2$ (cw "Note: The DAG is the constant ~x0.~%" (unquote dag))
+                    (mv *valid* nil state))
+          ;; The dag is the constant nil:
+          (prog2$
+           (cw "Note: The DAG is the constant NIL.~%")
+           (mv *invalid* nil state))))
+       ((when (not (< (LEN dag) 2147483647)))
+        (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches without rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
@@ -249,8 +315,12 @@
                         call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
                         state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
-       ((mv erp new-dag) (dagify-term term))
+       ((mv erp new-dag) (make-term-into-dag-basic term nil))
        ((when erp) (mv *error* nil state))
+       ((when (not (< (+ (len new-dag) (len dag))
+                      2147483646)))
+        (cw "ERROR: Dags too large.")
+        (mv *error* nil state))
        (- (and print (cw "Done pruning branches)~%"))))
     (make-tactic-result new-dag dag assumptions state)))
 
@@ -260,13 +330,24 @@
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 (defun apply-tactic-prune-with-rules (problem rule-alist interpreted-function-alist monitor print call-stp-when-pruning state)
-  (declare (xargs :stobjs (state)
-                  :mode :program ;todo
-                  :guard (and (proof-problemp problem)
+  (declare (xargs :guard (and (proof-problemp problem)
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (booleanp call-stp-when-pruning))))
+                              (symbol-listp monitor)
+                              ;; print
+                              (booleanp call-stp-when-pruning))
+                  :stobjs (state)))
   (b* ((dag (first problem))
+       ((when (quotep dag))
+        (if (unquote dag)
+            ;; Non-nil constant:
+            (prog2$ (cw "Note: The DAG is the constant ~x0.~%" (unquote dag))
+                    (mv *valid* nil state))
+          ;; The dag is the constant nil:
+          (prog2$ (cw "Note: The DAG is the constant NIL.~%")
+                  (mv *invalid* nil state))))
+       ((when (not (< (len dag) 2147483647)))
+        (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches with rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
@@ -276,8 +357,12 @@
                         call-stp-when-pruning
                         state))
        ((when erp) (mv *error* nil state))
-       ((mv erp new-dag) (dagify-term term))
+       ((mv erp new-dag) (make-term-into-dag-basic term nil))
        ((when erp) (mv *error* nil state))
+       ((when (not (< (+ (len new-dag) (len dag))
+                      2147483646)))
+        (cw "ERROR: Dags too large.")
+        (mv *error* nil state))
        (- (and print (cw "Done pruning branches)~%"))))
     (make-tactic-result new-dag dag assumptions state)))
 
@@ -287,9 +372,10 @@
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 (defun apply-tactic-acl2 (problem print state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :guard (proof-problemp problem)
+                  :stobjs (state)
                   :mode :program ;; because this calls prove$-fn
-                  :guard (proof-problemp problem)))
+                  ))
   (b* ((dag (first problem))
        (assumptions (second problem))
        (term (dag-to-term dag))
@@ -476,7 +562,7 @@
 ;; Returns (mv exhaustivep state)
 (defun prove-cases-exhaustivep (cases assumptions state)
   (declare (xargs :stobjs state
-                  :mode :program
+                  :mode :program ; because this calls prove$-fn
                   :guard (and (pseudo-term-listp cases)
                               (pseudo-term-listp assumptions))))
   (b* (((mv & provedp state)
@@ -510,7 +596,7 @@
 ;; TODO: Spawn the exhaustivity obligation as just another thing to prove?
 (defun apply-tactic-cases (problem cases print state)
   (declare (xargs :stobjs (state)
-                  :mode :program
+                  :mode :program ; because this calls translate-terms
                   :guard (proof-problemp problem)))
   (b* ( ;(dag (first problem))
        (assumptions (second problem))

@@ -251,7 +251,7 @@
                  ;;         (if (quotep nodenum-or-quotep-to-put-in) ;always false?
                  ;;             (cw "~x0" nodenum-or-quotep-to-put-in)
                  ;;           (if print
-                 ;;               (print-dag-only-supporters 'dag-array dag-array nodenum-or-quotep-to-put-in)
+                 ;;               (print-dag-array-node-and-supporters 'dag-array dag-array nodenum-or-quotep-to-put-in)
                  ;;             (cw ":elided"))))
                  ))
              ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

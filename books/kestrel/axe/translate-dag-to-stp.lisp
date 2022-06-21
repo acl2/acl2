@@ -2376,7 +2376,7 @@
        ;; ((when (eq result *error*)) ;todo: can this happen or would a hard error have already been thrown?
        ;;  (progn$ (cw "!! ERROR !! Translated query core: ~x0~%" translated-query-core)
        ;;          (if nodenums-to-translate
-       ;;              (print-dag-only-supporters-list nodenums-to-translate dag-array-name dag-array)
+       ;;              (print-dag-array-node-and-supporters-list nodenums-to-translate dag-array-name dag-array)
        ;;            (cw "No nodenums to translate!"))
        ;;          (cw "cut-nodenum-type-alist:~%")
        ;;          (print-list cut-nodenum-type-alist)
