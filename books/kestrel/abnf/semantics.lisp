@@ -247,7 +247,7 @@
   (xdoc::topstring
    (xdoc::p
     "This collects all the leaves of a tree, left to right,
-     and assembles them into a string.")
+     and assembles them into a @(see abnf::string).")
    (xdoc::@def "tree->string")
    (xdoc::@def "tree-list->string")
    (xdoc::@def "tree-list-list->string"))
