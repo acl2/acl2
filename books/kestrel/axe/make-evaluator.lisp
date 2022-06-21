@@ -134,20 +134,20 @@
                 (all-natp worklist))
            (all-natp (mv-nth 0 (get-args-not-done-array args eval-array-name eval-array worklist worklist-extendedp)))))
 
-;assumes all args are done (and thus wrapped in a cons)
-(defun get-vals-of-args-array (args eval-array-name eval-array)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args)
-                              (implies (not (all-consp args))
-                                       (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep args)))))))
-  (if (endp args)
+;assumes all dargs are done (and thus wrapped in a cons)
+(defun get-vals-of-args-array (dargs eval-array-name eval-array)
+  (declare (xargs :guard (and (true-listp dargs)
+                              (all-dargp dargs)
+                              (implies (not (all-consp dargs))
+                                       (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep dargs)))))))
+  (if (endp dargs)
       nil
-    (let ((arg (first args)))
+    (let ((arg (first dargs)))
       (cons (if (consp arg)
                 (unquote arg)
               (car (aref1 eval-array-name eval-array arg)) ;strip off the cons
               )
-            (get-vals-of-args-array (rest args) eval-array-name eval-array)))))
+            (get-vals-of-args-array (rest dargs) eval-array-name eval-array)))))
 
 ;; ;record ops here might be a bit slow?
 ;; (defun pair-arities-with-calls (defuns-and-calls acc state)
@@ -397,14 +397,14 @@
                                          (aset1 eval-array-name eval-array nodenum (cons value nil))
                                          interpreted-function-alist array-depth))
                      ;;function call or if
-                     (let ((args (dargs expr)))
+                     (let ((dargs (dargs expr)))
                        (if (or (eq 'if fn) ;maybe also bif? ;ffixme boolif!  but add a boolfix..
                                (eq 'myif fn)
                                (eq 'bvif fn))
                            ;;if it's an ITE, only evaluate the branch we need
                            (let* ((test (if (eq 'bvif fn)
-                                            (second args)
-                                          (first args)))
+                                            (second dargs)
+                                          (first dargs)))
                                   (test-quotep (quotep test)) ;could we just check for a consp instead, since any cons must be a quote?
 
                                   (test-result (if test-quotep nil (aref1 eval-array-name eval-array test)))
@@ -419,8 +419,8 @@
                                                     (unquote test)
                                                   (car test-result)))
                                       (relevant-branch (if (eq 'bvif fn)
-                                                           (if test-val (third args) (fourth args))
-                                                         (if test-val (second args) (third args))))
+                                                           (if test-val (third dargs) (fourth dargs))
+                                                         (if test-val (second dargs) (third dargs))))
                                       (quotep-relevant-branch (quotep relevant-branch))
                                       (relevant-branch-result (if quotep-relevant-branch nil
                                                                 (aref1 eval-array-name eval-array relevant-branch)))
@@ -434,7 +434,7 @@
                                    ;; if the relevant branch has been computed, the value of the if/myif/bvif is just that branch,
                                    ;; except that for bvif we have to bvchop it - should we move this stuff up?
                                    (let* ((bvifp (eq fn 'bvif))
-                                          (size (and bvifp (first args)))
+                                          (size (and bvifp (first dargs)))
                                           (size-quotep (and bvifp (quotep size))) ;use consp?
                                           (size-result (and bvifp (not size-quotep) (aref1 eval-array-name eval-array size)))
                                           (bvif-and-size-not-done (and bvifp
@@ -460,14 +460,14 @@
                                                          interpreted-function-alist array-depth))))))))
                          ;;regular function call
                          (mv-let (nodenum-worklist worklist-extendedp)
-                           (get-args-not-done-array args eval-array-name eval-array nodenum-worklist nil)
+                           (get-args-not-done-array dargs eval-array-name eval-array nodenum-worklist nil)
                            (if worklist-extendedp
                                (,eval-dag-name nodenum-worklist ;has been extended
                                                dag-array-name dag-array var-value-alist
                                                eval-array-name eval-array
                                                interpreted-function-alist array-depth)
-                             ;;no args to compute, so call the function:
-                             (let* ((arg-values (get-vals-of-args-array args eval-array-name eval-array))
+                             ;;no dargs to compute, so call the function:
+                             (let* ((arg-values (get-vals-of-args-array dargs eval-array-name eval-array))
                                     (value (,apply-function-name fn arg-values interpreted-function-alist array-depth)))
                                (,eval-dag-name (cdr nodenum-worklist) dag-array-name dag-array var-value-alist
                                                eval-array-name
