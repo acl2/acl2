@@ -112,3 +112,31 @@
     (progn$ (print-dag-array-node-and-supporters dag-array-name dag-array (car nodenums))
             (cw "~%")
             (print-dag-array-node-and-supporters-lst (cdr nodenums) dag-array-name dag-array))))
+
+(defund print-dag-array-all-aux (nodenum dag-array-name dag-array first-elementp)
+  (declare (xargs :guard (and (integerp nodenum)
+                              (<= -1 nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
+                  :measure (+ 1 (nfix (+ 1 nodenum)))
+;                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
+                  :split-types t)
+	   (type integer nodenum))
+  (if (or (< nodenum 0)
+          (not (mbt (integerp nodenum))))
+      nil
+    (let ((expr (aref1 dag-array-name dag-array nodenum)))
+      (progn$ (if (not first-elementp) (cw "~% ") nil)
+              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
+              (print-dag-array-all-aux (+ -1 nodenum)
+                                       dag-array-name
+                                       dag-array
+                                       nil)))))
+
+;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM.
+(defund print-dag-array-all (nodenum dag-array-name dag-array)
+  (declare (xargs :guard (and (integerp nodenum)
+                              (<= -1 nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
+  (progn$ (cw "(")
+          (print-dag-array-all-aux nodenum dag-array-name dag-array t)
+          (cw ")~%")))
