@@ -48,7 +48,7 @@
 ;; Goes from INDEX down to 0, printing the nodes in NODE-LIST and all of their supporters.
 ;; TODO: Use a worklist algorithm (this currently goes through the nodes one-by-one).
 ;; TODO: Instead of using NODE-LIST, perhaps use an array of tags, unless we expect the number of relevant nodes to be small.
-(defund print-supporting-dag-nodes (index dag-array-name dag-array node-list first-elementp)
+(defund print-dag-array-aux (index dag-array-name dag-array node-list first-elementp)
   (declare (xargs :guard (and (integerp index)
                               (<= -1 index)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 index))
@@ -65,7 +65,7 @@
         (let ((expr (aref1 dag-array-name dag-array index)))
           (progn$ (if (not first-elementp) (cw "~% ") nil)
                   (cw "~F0" (cons index expr)) ;; TODO: Avoid this cons? (also in the other version)
-                  (print-supporting-dag-nodes (+ -1 index)
+                  (print-dag-array-aux (+ -1 index)
                                               dag-array-name
                                               dag-array
                                               (if (and (consp expr)
@@ -74,7 +74,7 @@
                                                 node-list)
                                               nil)))
       ;;skip this node:
-      (print-supporting-dag-nodes (+ -1 index) dag-array-name dag-array node-list nil))))
+      (print-dag-array-aux (+ -1 index) dag-array-name dag-array node-list nil))))
 
 ;; Prints the node whose number is NODENUM, and any supporting nodes.
 ;; TODO: Improve whitespace and after last node.
@@ -85,7 +85,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
                   :split-types t))
   (progn$ (cw "(")
-          (print-supporting-dag-nodes nodenum dag-array-name dag-array (list nodenum) t)
+          (print-dag-array-aux nodenum dag-array-name dag-array (list nodenum) t)
           (cw ")~%")))
 
 ;; Prints the nodes whose numbers are in NODENUMS, and any supporting nodes.
@@ -97,7 +97,7 @@
                   :guard-hints (("Goal" :in-theory (enable maxelem ;todo
                                                            )))))
   (progn$ (cw "(")
-          (print-supporting-dag-nodes (maxelem nodenums) dag-array-name dag-array nodenums t)
+          (print-dag-array-aux (maxelem nodenums) dag-array-name dag-array nodenums t)
           (cw ")~%")))
 
 ;; Separately prints the part of the DAG supporting each of the NODENUMS.
