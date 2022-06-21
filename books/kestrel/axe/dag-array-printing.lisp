@@ -1,7 +1,7 @@
 ; Printing DAG arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; This book deals with printing dags-arrays, typcially only printing the relevant nodes.
+;; This book deals with printing dags-arrays, typically only printing the relevant nodes.
 
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
@@ -29,7 +29,7 @@
 ;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
 ;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
 ;; TODO: This must already exist (keep-atoms?).
-(defun filter-nodenums (items acc)
+(defund filter-nodenums (items acc)
   (declare (xargs :guard (all-dargp items)))
   (if (atom items)
       acc
@@ -39,12 +39,15 @@
 
 (defthm true-listp-of-filter-nodenums
   (equal (true-listp (filter-nodenums items acc))
-         (true-listp acc)))
+         (true-listp acc))
+  :hints (("Goal" :in-theory (enable filter-nodenums))))
+
+;; TODO: Rename these functions to have "array" in their names.
 
 ;; Print the nodes in node-list and all of their supporters.  Doesn't print any nodes below low-index.
 ;; TODO: Make a specialized version for when low-index is 0.
 ;; TODO: Use a worklist algorithm (this currently goes through the nodes one-by-one).
-(defun print-supporting-dag-nodes (index low-index dag-array-name dag-array node-list first-elementp)
+(defund print-supporting-dag-nodes (index low-index dag-array-name dag-array node-list first-elementp)
   (declare (type (integer 0 *) low-index)
            (type integer index)
 	   (xargs :measure (+ 1 (nfix (- (+ 1 index) low-index)))
@@ -59,7 +62,7 @@
         ;;print this node (and add its supporters to node-list)
         (let ((expr (aref1 dag-array-name dag-array index)))
           (progn$ (if (not first-elementp) (cw "~% ") nil)
-                  (cw "~F0" (cons index expr)) ;ffixme skip this cons?! (also in the other version)
+                  (cw "~F0" (cons index expr)) ;; TODO: Avoid this cons? (also in the other version)
                   (print-supporting-dag-nodes (+ -1 index)
                                               low-index
                                               dag-array-name
@@ -77,10 +80,10 @@
                                   node-list
                                   nil))))
 
-;fixme whitespace and after last node isn't quite right
+;; Prints the node in DAG whose number is NODENUM, and any supporting nodes.
+;; TODO: Improve whitespace and after last node.
 ;does this do the right thing for very small arrays?
-;ffixme allow the key node to be not the top node?
-(defun print-dag-only-supporters (dag-array-name dag-array nodenum)
+(defund print-dag-only-supporters (dag-array-name dag-array nodenum)
   (declare (type (integer 0 *) nodenum)
            (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
@@ -89,7 +92,7 @@
           (print-supporting-dag-nodes nodenum 0 dag-array-name dag-array (list nodenum) t)
           (cw ")~%")))
 
-(defun print-dag-only-supporters-of-nodes (dag-array-name dag-array nodenums)
+(defund print-dag-only-supporters-of-nodes (dag-array-name dag-array nodenums)
   (declare (xargs :guard (and (all-natp nodenums)
                               (true-listp nodenums)
                               (consp nodenums)
@@ -105,7 +108,7 @@
     ;;print the close paren:
     (cw ")~%"))))
 
-(defun print-dag-only-supporters-lst (nodenums dag-array-name dag-array)
+(defund print-dag-only-supporters-lst (nodenums dag-array-name dag-array)
   (declare (xargs :guard (and (all-natp nodenums)
                               (true-listp nodenums)
                               (if (consp nodenums)
