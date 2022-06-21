@@ -14,7 +14,8 @@
 ;; Support for establishing that the intern-table only contains addresses of String objects
 
 (include-book "classes")
-(include-book "heap")
+(include-book "heap0")
+(include-book "heap") ; for init-ref-in-heap
 
 (local (in-theory (disable strip-cdrs))) ;make unlocal?
 
@@ -130,7 +131,8 @@
   (implies (and (intern-table-okp intern-table heap2)
                 (not (set::in ad (acl2::rkeys heap2))))
            (equal (intern-table-okp intern-table (acl2::set-fields ad bindings heap))
-                  (intern-table-okp intern-table heap))))
+                  (intern-table-okp intern-table heap)))
+  :hints (("Goal" :in-theory (enable acl2::set-fields))))
 
 (defthm intern-table-okp-of-set-fields-irrel-when-bound-same-heap
   (implies (and (intern-table-okp intern-table heap)

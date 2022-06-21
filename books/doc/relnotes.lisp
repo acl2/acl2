@@ -295,6 +295,10 @@
      @(tsee checkpoint-info-list) and @(tsee show-checkpoint-list) provide
      programmatic interfaces to key checkpoint information.")
 
+   (xdoc::p
+    "The new utility @(tsee book-runes-alist) returns an alist associating book
+     full pathnames with a list of the @(see rune)s introduced .")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
@@ -390,6 +394,9 @@
    (xdoc::p
     "Evaluation of @('prover-steps-counted state)') returns the prover steps
      counted for the most recently completed event.")
+
+   (xdoc::p
+    "Fixed with-supporters to work when including an uncertified book.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

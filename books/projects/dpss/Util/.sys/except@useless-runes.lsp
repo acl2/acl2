@@ -1,0 +1,3 @@
+(SUB-SEQ)
+(EXCEPT-FN)
+(GOAL-FN)

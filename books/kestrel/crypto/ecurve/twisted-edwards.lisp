@@ -1887,6 +1887,124 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define twisted-edwards-mul-fast ((scalar integerp)
+                                  (point pointp)
+                                  (curve twisted-edwards-curvep))
+  :guard (and (twisted-edwards-curve-completep curve)
+              (point-on-twisted-edwards-p point curve))
+  :returns (point1 pointp)
+  :short "Fast scalar multiplication in the twisted Edwards group."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee twisted-edwards-mul) but using
+     only doubling and addition in order to reduce the execution time to
+     @($\\mathcal{O}(log(scalar))$).")
+   (xdoc::p
+    "In the future we will either replace the body of
+     @('twisted-edwards-mul') by this definition and adapt
+     the users such as @('distributivity-over-scalar-addition'),
+     or prove equivalence of the two forms."))
+  (b* ((scalar (ifix scalar)))
+    (if (>= scalar 0)
+        (twisted-edwards-mul-fast-nonneg scalar point curve)
+      (twisted-edwards-neg
+       (twisted-edwards-mul-fast-nonneg (- scalar) point curve)
+       curve)))
+  :hooks (:fix)
+
+  :prepwork
+
+  ((define twisted-edwards-mul-fast-nonneg ((scalar natp)
+                                            (point pointp)
+                                            (curve twisted-edwards-curvep))
+     :guard (and (twisted-edwards-curve-completep curve)
+                 (point-on-twisted-edwards-p point curve))
+     :returns (point1 pointp)
+     (if (zp scalar)
+         (twisted-edwards-zero)
+       (if (evenp scalar)
+           (let ((half-scalar-mul (twisted-edwards-mul-fast-nonneg (/ scalar 2)
+                                                                   point
+                                                                   curve)))
+             (twisted-edwards-add half-scalar-mul half-scalar-mul curve))
+         (twisted-edwards-add point
+                              (twisted-edwards-mul-fast-nonneg (- scalar 1)
+                                                               point
+                                                               curve)
+                              curve)))
+
+     :hooks (:fix)
+     :verify-guards nil ; done below
+     ///
+
+     (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul-fast-nonneg
+       (implies (and (twisted-edwards-curve-completep curve)
+                     (pointp point)
+                     (point-on-twisted-edwards-p point curve))
+                (point-on-twisted-edwards-p (twisted-edwards-mul-fast-nonneg
+                                             scalar
+                                             point
+                                             curve)
+                                            curve)))
+
+     (verify-guards twisted-edwards-mul-fast-nonneg)
+
+     (defrule twisted-edwards-mul-fast-nonneg-of-0
+       (equal (twisted-edwards-mul-fast-nonneg 0 point curve)
+              (twisted-edwards-zero)))
+
+     (defrule twisted-edwards-mul-fast-nonneg-of-1
+       (implies (point-on-twisted-edwards-p point curve)
+                (equal (twisted-edwards-mul-fast-nonneg 1 point curve)
+                       (point-fix point))))
+
+     (defrule twisted-edwards-mul-fast-nonneg-of-zero
+       (equal (twisted-edwards-mul-fast-nonneg scalar
+                                               (twisted-edwards-zero)
+                                               curve)
+              (twisted-edwards-zero)))))
+
+  ///
+
+  (defret point-on-twisted-edwards-p-of-twisted-edwards-mul-fast
+    (point-on-twisted-edwards-p point1 curve)
+    :hyp (and (twisted-edwards-curve-completep curve)
+              (pointp point)
+              (point-on-twisted-edwards-p point curve)))
+
+  (defrule twisted-edwards-mul-fast-of-0
+    (equal (twisted-edwards-mul-fast 0 point curve)
+           (twisted-edwards-zero)))
+
+  (defrule twisted-edwards-mul-fast-of-1
+    (implies (point-on-twisted-edwards-p point curve)
+             (equal (twisted-edwards-mul-fast 1 point curve)
+                    (point-fix point))))
+
+  (defrule twisted-edwards-mul-fast-of-zero
+    (equal (twisted-edwards-mul-fast scalar (twisted-edwards-zero) curve)
+           (twisted-edwards-zero)))
+
+  (defrule twisted-edwards-mul-fast-of-minus1
+    (implies (point-on-twisted-edwards-p point curve)
+             (equal (twisted-edwards-mul-fast -1 point curve)
+                    (twisted-edwards-neg point curve))))
+
+  (defrule twisted-edwards-neg-of-mul-fast
+    (implies (and (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve))
+             (equal (twisted-edwards-neg (twisted-edwards-mul-fast scalar
+                                                                   point
+                                                                   curve)
+                                         curve)
+                    (twisted-edwards-mul-fast (- (ifix scalar)) point curve)))
+    :enable twisted-edwards-mul-fast
+    :prep-books ((include-book "kestrel/arithmetic-light/minus" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection twisted-edwards-mul-distributivity-over-scalar-addition
   :short "Distributivity of scalar multiplication over scalar addition."
   :long
