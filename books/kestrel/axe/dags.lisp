@@ -554,6 +554,20 @@
   (or (pseudo-dagp obj)
       (myquotep obj)))
 
+(defthm pseudo-dag-or-quotep-forward-to-pseudo-dagp-when-not-quote
+  (implies (and (pseudo-dag-or-quotep dag)
+                (not (quotep dag)))
+           (pseudo-dagp dag))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable pseudo-dag-or-quotep))))
+
+(defthm PSEUDO-DAG-OR-QUOTEP-when-quotep-cheap
+  (implies (quotep x)
+           (equal (PSEUDO-DAG-OR-QUOTEP x)
+                  (myquotep x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pseudo-dag-or-quotep))))
+
 ;;
 ;; dag-vars
 ;;
