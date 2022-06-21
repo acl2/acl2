@@ -276,9 +276,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define edwards-bls12-add ((point1 edwards-bls12-pointp) (point2 edwards-bls12-pointp))
+;; We plan to change edwards-bls12-mul to use twisted-edwards-mul-fast.
+(define edwards-bls12-mul-fast ((scalar integerp) (point edwards-bls12-pointp))
+  :returns (point1 edwards-bls12-pointp
+                   :hyp (edwards-bls12-pointp point)
+                   :hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
+  :short "Fast scalar multiplication on Edwards-Bls12."
+  (twisted-edwards-mul-fast scalar point (edwards-bls12-curve))
+  :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define edwards-bls12-add ((point1 edwards-bls12-pointp)
+                           (point2 edwards-bls12-pointp))
   :returns (point edwards-bls12-pointp
-                  :hyp (and (edwards-bls12-pointp point1) (edwards-bls12-pointp point2))
+                  :hyp (and (edwards-bls12-pointp point1)
+                            (edwards-bls12-pointp point2))
                   :hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
   :short "Group addition on Edwards-Bls12."
   (twisted-edwards-add point1 point2 (edwards-bls12-curve))
@@ -330,7 +343,9 @@
     "These are the points of order @($r$)."))
   (or (equal x (twisted-edwards-zero))
       (and (edwards-bls12-pointp x)
-           (twisted-edwards-point-orderp x (edwards-bls12-r) (edwards-bls12-curve))))
+           (twisted-edwards-point-orderp x
+                                         (edwards-bls12-r)
+                                         (edwards-bls12-curve))))
   :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp)))
   ///
 
@@ -347,7 +362,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the points in @($\\mathbb{J}^{(r)}$)
+    "These are the points of order @($r$)
      except for the zero point."))
   (and (edwards-bls12-pointp x)
        (twisted-edwards-point-orderp x (edwards-bls12-r) (edwards-bls12-curve)))
