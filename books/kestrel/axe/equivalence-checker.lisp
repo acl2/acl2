@@ -20958,7 +20958,7 @@
 
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
 ; Returns (mv erp provedp state rand result-array-stobj)
-;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
+;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
                          tactic
@@ -21347,6 +21347,7 @@
                    ',whole-form
                    state rand result-array-stobj))
 
+;; To understand the arguments, see prove-miter-aux.
 (defmacro prove-miter (&rest args)
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
