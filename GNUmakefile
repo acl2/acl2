@@ -297,6 +297,9 @@ TAGS-acl2-doc: $(ACL2_DEPS)
 	etags *.lisp -o TAGS-acl2-doc
 	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append)
 
+# The targets acl2r and acl2r.lisp were originally created to support
+# ACL2(r) builds.  It has more uses that that now.
+
 .PHONY: acl2r
 acl2r:
 	@rm -f acl2r.lisp
@@ -467,7 +470,7 @@ copy-distribution: acl2r.lisp
 #TAGS:
 #	@echo 'Skipping building of a tags table.'
 
-# We build acl2r.lisp so that we build ACL2(h) and not ACL2(c), for example.
+# We build acl2r.lisp so that we build ACL2(r) or ACL2(p), for example.
 TAGS:   $(ACL2_DEPS)
 	$(MAKE) acl2r
 	rm -f TAGS

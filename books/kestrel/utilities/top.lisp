@@ -16,6 +16,7 @@
 (include-book "bits-as-digits")
 (include-book "bits-and-bytes-as-digits")
 (include-book "bits-and-ubyte11s-as-digits")
+(include-book "book-runes-alist")
 (include-book "bytes-as-digits")
 (include-book "checkpoints")
 (include-book "copy-def")

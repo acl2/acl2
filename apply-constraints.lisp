@@ -266,7 +266,9 @@
 ; have badges known to the logical definition of BADGE but do not have
 ; warrants: there is no APPLY$-WARRANT-CONS because the badge of cons is
 ; built-in.  All 6 of the apply$ boot functions have badges known to BADGE and
-; do not have warrants: e.g., apply$ knows how to apply$ itself.  Once upon a
+; do not have warrants: e.g., apply$ knows how to apply$ itself.  But
+; user-defined functions -- even :program mode functions -- can have badges but
+; no warrants.  (:Program mode functions can't have warrants.)  Once upon a
 ; time multi-valued user-defined functions could have badges but no warrants.
 ; However, now that apply$ supports such functions multi-valued functions can
 ; have warrants.  See the Essay on the Badge-Table in translate.lisp.

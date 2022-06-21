@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,7 +19,7 @@
 
   :parents (fty-extensions fty)
 
-  :short "Introduce a fixtype for good and error results."
+  :short "Introduce a fixtype for good results and error results."
 
   :long
 
@@ -33,7 +33,7 @@
      "This is an experimental tool for now.")
 
     (xdoc::p
-     "It is common for functions to return error results in certain cases.
+     "It is common for a function to return an error result in certain cases.
       Otherwise, the function returns a good (i.e. non-error) result.")
 
     (xdoc::p
@@ -55,7 +55,7 @@
       even though the good result is irrelevant
       when the error result is non-@('nil'),
       some good result must be nonetheless returned,
-      which might be accidentally used as nothing could prevent that.
+      which might be accidentally used, as nothing could prevent that.
       The second approach avoids this issue,
       because if there is an error result then there is no good result at all;
       the downside is that the result may have two different types.
@@ -70,7 +70,7 @@
       (whether the first or second approach above is used),
       it is common to check whether the returned result is an error one,
       and in that case also return an error,
-      otherwise continuing the computation if the return result is a good one.
+      otherwise continuing the computation if the returned result is a good one.
       When using the error triple idiom,
       ACL2 provides @(tsee er-let*) to handle this pattern,
       which propagates the error triples unchanged;
@@ -95,16 +95,30 @@
       to reason about the disjunction of good and error results.
       Along with @('defresult'),
       a @(tsee b*) binder @(tsee patbind-ok) is provided
-      to support the check-and-propagate-error pattern described above.")
+      to support the check-and-propagate-error pattern described above;
+      related macros @(tsee err) and @(tsee err-push) are also provided.")
 
     (xdoc::p
-     "The @(tsee patbind-ok) binder assumes that
-      @('__function__') is bound to the enclosing function name.
+     "The @(tsee patbind-ok) binder,
+      as well as the @(tsee err) and @(tsee err-push) macros,
+      assume that @('__function__') is bound to the enclosing function name.
       This happens automatically when using @(tsee define).
       As explained in @(tsee patbind-ok),
       as errors are propagated from callee to caller,
-      the name of the callee is added to
-      a call stack trace in the error result.")
+      the name of the callee is added to the error result,
+      providing a call stack trace.")
+
+    (xdoc::p
+     "The fact that the same error result type, namely @(tsee resulterr),
+      is used in all the result types introduced by @('defresult')
+      is crucial to supporting the kind of error propagation explained above:
+      the same type of error result may be returned
+      by any function that returns a type defined via @('defresult'),
+      even if the good result types are different.
+      It is also crucial that the result type is defined
+      as a flat, and not tagged, union of good and error result:
+      otherwise, error results would have to be unwrapped and wrapped
+      depending on the result types of the callee and caller.")
 
     (xdoc::p
      "The fixtype of good and error results introduced by @('defresult')
@@ -195,7 +209,10 @@
       must be disjoint from @(tsee resulterr).
       Currently this is not quite explicated
       as an applicability condition as in other event macros,
-      but the macro will fail if the disjointness cannot be proved."))
+      but the macro will fail if the disjointness cannot be proved.
+      The @(':prepwork') option may be used to add events
+      to help the proofs (e.g. lemmas and rule enablements);
+      these events should be normally made local."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -279,12 +296,11 @@
     "This is the fixtype of error results for @(tsee defresult);
      see the introduction of @(tsee defresult) for background and motivation.")
    (xdoc::p
-    "An error result consists of some unconstrained information
-     and of a list of symbols that should be normally function names.
-     This list is treated like a call stack trace by @(tsee patbind-ok).
-     The stack's top is the @(tsee car) of the list."))
-  ((info acl2::any)
-   (stack acl2::symbol-list))
+    "An error result consists of some unconstrained information,
+     wrapped with @(':error') to make it distinct from any good value
+     (assuming that good values do not have the form @('(:error ...)'),
+     a condition that seems reasonably easy to satisfy)."))
+  ((info acl2::any))
   :tag :error
   :pred resulterrp)
 
@@ -299,47 +315,54 @@
    (xdoc::p
     "This can be used for results that
      either are errors or carry no information otherwise.
-     That is, @('nil') is the good result."))
+     That is, @('nil') is the (only) good result."))
   :pred resulterr-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::defmacro+
- err (x)
+ err (info)
  :parents (defresult)
  :short "Return an error result with a singleton stack."
  :long
  (xdoc::topstring
   (xdoc::p
    "This macro constructs an error result of fixtype @(tsee resulterr)
-    with the specified information
-    and with the current function name as singleton stack.")
+    with the specified information @('info'),
+    accompanied by the name of the current function @('fn'),
+    as a doublet @('(fn info)').
+    A singleton list with this doublet is returned.
+    This is a singleton stack,
+    in the sense that @(tsee err-push) pushes onto the stack
+    by @(tsee cons)ing additional pairs with the same form.")
   (xdoc::p
    "This assumes that @('__function__') is bound to the function name,
     which happens automatically with @(tsee define)."))
- `(make-resulterr :info ,x :stack (list __function__)))
+ `(make-resulterr :info (list (list __function__ ,info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::defmacro+
- err-push (error)
+ err-push (error &optional info)
  :parents (defresult)
- :short "Push the current function onto the stack of an error result."
+ :short "Push the current function onto the stack of an error result,
+         optionally with additional information."
  :long
  (xdoc::topstring
   (xdoc::p
    "This is useful when receiving an error result from a called function,
-     to add the caller to the stack before propagating the error.
-     This addition is handled automatically when using @(tsee patbind-ok),
-     but when that binder cannot be used for some reason,
-     then this @('err-push') macro is handy.")
+    to add the caller to the stack, and possibly more information,
+    before propagating the error.
+    This addition is handled automatically when using @(tsee patbind-ok),
+    actually using @('nil') as extra information;
+    when that binder cannot be used for some reason,
+    or when additional information must be pushed,
+    then this @('err-push') macro may come handy.")
   (xdoc::p
    "This assumes that @('__function__') is bound to the current function name,
-     which is automatically the case when using @(tsee define)."))
- `(b* ((error ,error)
-       (stack (resulterr->stack error))
-       (new-stack (cons __function__ stack)))
-    (change-resulterr error :stack new-stack)))
+    which is automatically the case when using @(tsee define)."))
+ `(b* ((stack (resulterr->info ,error)))
+    (resulterr (cons (list __function__ ,info) stack))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -358,7 +381,8 @@
      Otherwise, the binder proceeds with the rest of the computation.
      The aforementioned modification of the error consists in
      pushing the current function's name
-     onto the stack component of the error;
+     onto the stack component of the error,
+     without (i.e. with @('nil') additional information;
      this binder assumes that @('__function__') is bound to the function name,
      which is automatically the case when using @(tsee define).")
    (xdoc::p
@@ -375,7 +399,7 @@
    (xdoc::p
     "In order to support such a pattern,
      we generate an initial binding to a variable,
-     which we test whether it is an error or not,
+     a test of whether it is an error or not,
      and then a second binding of the pattern to the variable if not.
      As done in other binders that come with @(tsee b*),
      we pick a name for the first variable

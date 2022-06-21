@@ -7,6 +7,7 @@
 
 (include-book "legal-variablep")
 
+#+acl2-devel ; avoid error for redundant def. with raw Lisp code
 (verify-termination plist-worldp-with-formals)
 
 (defthm plist-worldp-with-formals-forward-to-plist-worldp
@@ -250,4 +251,4 @@
 (verify-termination logic-term-listp) ; and guards
 (verify-termination logic-fns-list-listp) ; and guards
 (verify-termination logic-term-list-listp) ; and guards
-
+(verify-termination theory-invariant-table-guard) ; and guards

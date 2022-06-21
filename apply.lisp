@@ -2518,8 +2518,9 @@
 
 ; Why might it be bad to allow mapstub to be badged while it calls the unbadged
 ; stub?  The simplest answer is that it violates one of our Assurances on
-; Badged Functions, namely ``(b) Every function called in its body has a
-; badge.''  But that begs the question.  Why do we care?
+; Badged Functions, namely ``(G2)(b) Every function called in its body has a
+; badge.''  (Note that apply$ is ancestral in mapstub, so mapstub is in G2.)
+; But that begs the question.  Why do we care?
 
 ; It is worrying because of functional instantiation.  There is no logical
 ; recording of the badge of stub.  It could be functionally instantiated with a
