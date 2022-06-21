@@ -13,8 +13,12 @@
 (in-package "ACL2")
 
 (include-book "axe-types")
-(include-book "evaluator") ; todo
+;(include-book "evaluator") ; todo
+(include-book "evaluator-basic")
 (include-book "misc/random" :dir :system)
+(include-book "kestrel/utilities/forms" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "kestrel/utilities/acons-fast" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -152,7 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv value rand)
+;returns (mv erp value rand)
 ;should we allow tuples?
 (mutual-recursion
  (defun gen-random-value (type rand var-value-alist)
@@ -171,9 +175,10 @@
                                   :in-theory (e/d (list-typep BV-TYPEP test-case-typep)
                                                   (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
-          (mv (unquote type) rand))
+          (mv (erp-nil) (unquote type) rand))
          ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?) ; todo: just use :eval for this?
-          (mv (lookup-eq-safe type var-value-alist)
+          (mv (erp-nil)
+              (lookup-eq-safe type var-value-alist) ; todo
               rand))
          ((bv-typep type) ;a bit-vector of the indicated width - should we allow this width to be random?
           ;; if it's a bit-vector
@@ -182,13 +187,15 @@
                  ;;(max (expt 2 width)) ;bozo precompute this on small values?
                  )
             (if (equal width 0)
-                (mv 0 rand)
-              (gen-random-bv width rand))))
+                (mv (erp-nil) 0 rand)
+              (b* (((mv value rand) (gen-random-bv width rand)))
+                (mv (erp-nil) value rand)))))
          ;; a value in the given range: should we allow the bounds to be random? ;fixme are the args of this good types? if we allow random endpoints, what if the range is empty?  maybe :range should take a start value and am interval length?
          ((eq :range (car type)) ;here the bounds are both inclusive
           (let ((low (second type))
                 (high (third type)))
-            (gen-random-integer-in-range low (+ 1 high) rand)))
+            (b* (((mv value rand) (gen-random-integer-in-range low (+ 1 high) rand)))
+              (mv (erp-nil) value rand))))
          ;;           ((eq :len (car type)) ;the length of something (probably a previously generated var - this is also a dependent type - more general facility for this?):
          ;;            (mv-let (value rand)
          ;;                    (gen-random-value (second type) rand var-value-alist) ;just lookup the value?
@@ -200,35 +207,39 @@
          ;;        (gen-random-value (second type) rand var-value-alist)
          ;;      (gen-random-value (third type) rand var-value-alist))))
          ((eq :eval (car type))
-          (mv (eval-axe-evaluator var-value-alist
-                                  (second type)
-                                  nil ;fixme?
-                                  0)
-              rand))
+          (b* (((mv erp value) (eval-axe-evaluator-basic var-value-alist
+                                                         (second type)
+                                                         nil ;fixme?
+                                                         1000000000))
+               ((when erp) (mv erp nil rand)))
+            (mv (erp-nil) value rand)))
          ;;a random element of the given set:
          ((eq :element (car type)) ;should the elements be allowed to be random?
           (let ((set (cdr type)))  ;or use cadr?
             (mv-let (index rand)
               (genrandom (len set) rand)
-              (mv (nth index set) rand))))
+              (mv (erp-nil) (nth index set) rand))))
          ;;a list, of the given element type and length - can the length be random? yes.?
          ((list-typep type)
           ;;            (or (eq :list (car type))
           ;;                ;;(eq 'array (car type)) ;i think the args to an array type aren't currently good types
           ;;                ) ;bozo why both? get rid of the 'array option? hmmm. it's used in translating...
-          (let ((element-type (list-type-element-type type))
-                (len-type (list-type-len-type type)))
-            (mv-let (len rand)
-              ;;if the len-type is a quoted constant, this just unquotes it:
-              (gen-random-value len-type rand var-value-alist)
-              (if (not (natp len)) ; todo: drop check if we restrict what the len-type of a list-type can be
-                  (mv (er hard? 'gen-random-value "List length not a natp.") rand)
-                (prog2$ (cw "List length: ~x0.~%" len)
-                        (gen-random-values len element-type rand var-value-alist))))))
-         (t (mv (er hard? 'gen-random-value "Unknown type: ~x0" type)
+          (b* ((element-type (list-type-element-type type))
+               (len-type (list-type-len-type type))
+               ((mv erp len rand)
+                ;;if the len-type is a quoted constant, this just unquotes it:
+                (gen-random-value len-type rand var-value-alist))
+               ((when erp) (mv erp nil rand)))
+            (if (not (natp len)) ; todo: drop check if we restrict what the len-type of a list-type can be
+                (prog2$ (er hard? 'gen-random-value "List length not a natp.")
+                        (mv (erp-t) nil rand))
+              (prog2$ (cw "List length: ~x0.~%" len)
+                      (gen-random-values len element-type rand var-value-alist)))))
+         (t (mv (erp-t)
+                (er hard? 'gen-random-value "Unknown type: ~x0" type)
                 rand))))
 
- ;;returns (mv values rand)
+ ;;returns (mv erp values rand)
  (defun gen-random-values (n type rand var-value-alist)
    (declare (xargs :guard (and (natp n)
                                (test-case-typep type)
@@ -236,13 +247,12 @@
                    :stobjs rand
                    :measure (make-ord 1 (+ 1 (acl2-count type)) (+ 1 (nfix n)))))
    (if (zp n)
-       (mv nil rand)
-     (mv-let (value rand)
-       (gen-random-value type rand var-value-alist)
-       (mv-let (values rand)
-         (gen-random-values (+ -1 n) type rand var-value-alist)
-         (mv (cons value values)
-             rand))))))
+       (mv (erp-nil) nil rand)
+     (b* (((mv erp value rand) (gen-random-value type rand var-value-alist))
+          ((when erp) (mv erp nil rand))
+          ((mv erp values rand) (gen-random-values (+ -1 n) type rand var-value-alist))
+          ((when erp) (mv erp nil rand)))
+       (mv (erp-nil) (cons value values) rand)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -291,44 +301,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv test-case rand).
+;; Returns (mv erp test-case rand).
 (defund make-test-case (test-case-type-alist acc rand)
   (declare (xargs :guard (and (test-case-type-alistp test-case-type-alist)
                               (test-casep acc))
                   :stobjs rand
                   :guard-hints (("Goal" :in-theory (enable test-case-type-alistp)))))
   (if (endp test-case-type-alist)
-      (mv acc rand)
+      (mv (erp-nil) acc rand)
     (let* ((entry (first test-case-type-alist))
            (var (car entry))
            (type (cdr entry)))
-      (mv-let (value rand)
-              (gen-random-value type rand acc)
-              (make-test-case (rest test-case-type-alist) (acons-fast var value acc) rand)))))
+      (b* (((mv erp value rand) (gen-random-value type rand acc))
+           ((when erp) (mv erp nil rand)))
+        (make-test-case (rest test-case-type-alist) (acons-fast var value acc) rand)))))
 
-(defthm test-casep-of-mv-nth-0-of-make-test-case
+(defthm test-casep-of-mv-nth-1-of-make-test-case
   (implies (and (test-case-type-alistp test-case-type-alist)
                 (test-casep acc))
-           (test-casep (mv-nth 0 (make-test-case test-case-type-alist acc rand))))
+           (test-casep (mv-nth 1 (make-test-case test-case-type-alist acc rand))))
   :hints (("Goal" :in-theory (enable test-casep make-test-case TEST-CASE-TYPE-ALISTP))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: might we need to pass in interpreted-functions?
+;; Returns (mv erp res).
 (defund test-case-satisfies-assumptionsp (test-case assumptions)
   (declare (xargs :guard (and (test-casep test-case)
                               (pseudo-term-listp assumptions))))
   (if (endp assumptions)
-      t
-    (let ((assumption (first assumptions)))
-      (and (equal t (eval-axe-evaluator test-case assumption nil ;interpreted-function-alist
-                                           0))
-           (test-case-satisfies-assumptionsp test-case (rest assumptions))
-           ))))
+      (mv (erp-nil) t)
+    (b* ((assumption (first assumptions))
+         ((mv erp value) (eval-axe-evaluator-basic test-case assumption
+                                                   nil ;interpreted-function-alist
+                                                   1000000000))
+         ((when erp) (mv erp value)))
+      (if (equal t value)
+          (test-case-satisfies-assumptionsp test-case (rest assumptions))
+        (mv (erp-nil) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv test-cases rand), where each test case is an alist from vars to values
+;returns (mv erp test-cases rand), where each test case is an alist from vars to values
 ;should we give them numbers?
 (defund make-test-cases-aux (test-cases-left test-case-number test-case-type-alist assumptions print acc rand)
   (declare (xargs :guard (and (natp test-cases-left)
@@ -336,54 +350,58 @@
                               (test-case-type-alistp test-case-type-alist)
                               (pseudo-term-listp assumptions)
                               (test-casesp acc))
-            :stobjs rand))
+                  :stobjs rand))
   (if (zp test-cases-left)
-      (mv (reverse acc)
+      (mv (erp-nil)
+          (reverse-list acc)
           rand)
-    (prog2$
-     (and print (cw "(Test case ~x0: " test-case-number))
-     (mv-let (test-case rand)
-             (make-test-case test-case-type-alist nil rand)
-             (prog2$ (and print (cw ")~%"))
-                     (if (test-case-satisfies-assumptionsp test-case assumptions)
-                         (make-test-cases-aux (+ -1 test-cases-left)
-                                              (+ 1 test-case-number)
-                                              test-case-type-alist
-                                              assumptions
-                                              print
-                                              (cons test-case acc)
-                                              rand)
-                       (prog2$ (cw "!! WARNING test case ~x0 does not satisfy assumptions. Dropping it. !!~%" test-case-number)
-                               (make-test-cases-aux (+ -1 test-cases-left) ;perhaps don't decrement the counter?
-                                                    (+ 1 test-case-number)
-                                                    test-case-type-alist
-                                                    assumptions
-                                                    print
-                                                    acc ;don't cons it on
-                                                    rand))))))))
+    (b* ((- (and print (cw "(Test case ~x0: " test-case-number)))
+         ((mv erp test-case rand) (make-test-case test-case-type-alist nil rand))
+         ((when erp) (mv erp nil rand))
+         (- (and print (cw ")~%")))
+         ((mv erp satp)
+          (test-case-satisfies-assumptionsp test-case assumptions))
+         ((when erp) (mv erp nil rand)))
+      (if satp
+          (make-test-cases-aux (+ -1 test-cases-left)
+                               (+ 1 test-case-number)
+                               test-case-type-alist
+                               assumptions
+                               print
+                               (cons test-case acc)
+                               rand)
+        (prog2$ (cw "!! WARNING test case ~x0 does not satisfy assumptions. Dropping it. !!~%" test-case-number)
+                (make-test-cases-aux (+ -1 test-cases-left) ;perhaps don't decrement the counter?
+                                     (+ 1 test-case-number)
+                                     test-case-type-alist
+                                     assumptions
+                                     print
+                                     acc ;don't cons it on
+                                     rand))))))
 
-(defthm test-casesp-of-mv-nth-0-of-make-test-cases-aux
+(defthm test-casesp-of-mv-nth-1-of-make-test-cases-aux
   (implies (and (test-case-type-alistp test-case-type-alist)
                 (test-casesp acc))
-           (test-casesp (mv-nth 0 (make-test-cases-aux test-cases-left test-case-number test-case-type-alist assumptions print acc rand))))
+           (test-casesp (mv-nth 1 (make-test-cases-aux test-cases-left test-case-number test-case-type-alist assumptions print acc rand))))
   :hints (("Goal" :in-theory (enable make-test-cases-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv test-cases rand), where each test case is an alist from vars to values
+;; Returns (mv erp test-cases rand), where each test case is an alist from vars to values.
+;; TODO: Consider passing in interpreted-functions?
 (defund make-test-cases (test-case-count test-case-type-alist assumptions rand)
   (declare (xargs :guard (and (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
                               (pseudo-term-listp assumptions))
                   :stobjs rand))
   (prog2$ (cw "(Making ~x0 test cases:~%" test-case-count)
-          (mv-let (test-cases rand)
+          (mv-let (erp test-cases rand)
                   (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand)
                   (prog2$ (cw ")~%")
-                          (mv test-cases rand)))))
+                          (mv erp test-cases rand)))))
 
-(defthm test-casesp-of-mv-nth-0-of-make-test-cases
+(defthm test-casesp-of-mv-nth-1-of-make-test-cases
   (implies (and (test-case-type-alistp test-case-type-alist)
                 (test-casesp acc))
-           (test-casesp (mv-nth 0 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
+           (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
   :hints (("Goal" :in-theory (enable make-test-cases))))

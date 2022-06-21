@@ -21152,11 +21152,12 @@
                                          (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)))))))))))
            ((when erp) (mv erp nil state rand result-array-stobj))
            ;;fixme rename test-cases test-inputs?
-           ((mv test-cases rand)
+           ((mv erp test-cases rand)
             ;; Make the random test cases (each assigns values to the input vars):
             ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
             ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
             (make-test-cases test-case-count var-type-alist assumptions rand))
+           ((when erp) (mv erp nil state rand result-array-stobj))
            (analyzed-function-table (empty-analyzed-function-table))
            ;; could move a lot of stuff into these options:
            (options (s :prove-constants prove-constants
