@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 ;; This book deals with printing dags-arrays, typically only printing the relevant nodes.
+;; See alsod dag-array-printing2.lisp.
 
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
@@ -44,27 +45,27 @@
 
 ;; TODO: Rename these functions to have "array" in their names.
 
-;; Print the nodes in node-list and all of their supporters.  Doesn't print any nodes below low-index.
-;; TODO: Make a specialized version for when low-index is 0.
+;; Goes from INDEX down to 0, printing the nodes in NODE-LIST and all of their supporters.
 ;; TODO: Use a worklist algorithm (this currently goes through the nodes one-by-one).
-(defund print-supporting-dag-nodes (index low-index dag-array-name dag-array node-list first-elementp)
-  (declare (type (integer 0 *) low-index)
-           (type integer index)
-	   (xargs :measure (+ 1 (nfix (- (+ 1 index) low-index)))
-                  :guard (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 index))
+;; TODO: Instead of using NODE-LIST, perhaps use an array of tags, unless we expect the number of relevant nodes to be small.
+(defund print-supporting-dag-nodes (index dag-array-name dag-array node-list first-elementp)
+  (declare (xargs :guard (and (integerp index)
+                              (<= -1 index)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 index))
                               (true-listp node-list))
-                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))))
-  (if (or (< index low-index)
-          (not (mbt (natp low-index)))
-          (not (mbt (natp index))))
+                  :measure (+ 1 (nfix (+ 1 index)))
+                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
+                  :split-types t)
+	   (type integer index))
+  (if (or (< index 0)
+          (not (mbt (integerp index))))
       nil
-    (if (member index node-list) ;fixme this could be slow.  use an array of tags?
+    (if (member index node-list) ; could be slow.
         ;;print this node (and add its supporters to node-list)
         (let ((expr (aref1 dag-array-name dag-array index)))
           (progn$ (if (not first-elementp) (cw "~% ") nil)
                   (cw "~F0" (cons index expr)) ;; TODO: Avoid this cons? (also in the other version)
                   (print-supporting-dag-nodes (+ -1 index)
-                                              low-index
                                               dag-array-name
                                               dag-array
                                               (if (and (consp expr)
@@ -73,14 +74,9 @@
                                                 node-list)
                                               nil)))
       ;;skip this node:
-      (print-supporting-dag-nodes (+ -1 index)
-                                  low-index
-                                  dag-array-name
-                                  dag-array
-                                  node-list
-                                  nil))))
+      (print-supporting-dag-nodes (+ -1 index) dag-array-name dag-array node-list nil))))
 
-;; Prints the node in DAG whose number is NODENUM, and any supporting nodes.
+;; Prints the node whose number is NODENUM, and any supporting nodes.
 ;; TODO: Improve whitespace and after last node.
 ;does this do the right thing for very small arrays?
 (defund print-dag-only-supporters (dag-array-name dag-array nodenum)
@@ -89,9 +85,10 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
                   :split-types t))
   (progn$ (cw "(")
-          (print-supporting-dag-nodes nodenum 0 dag-array-name dag-array (list nodenum) t)
+          (print-supporting-dag-nodes nodenum dag-array-name dag-array (list nodenum) t)
           (cw ")~%")))
 
+;; Prints the nodes whose numbers are in NODENUMS, and any supporting nodes.
 (defund print-dag-only-supporters-of-nodes (dag-array-name dag-array nodenums)
   (declare (xargs :guard (and (all-natp nodenums)
                               (true-listp nodenums)
@@ -99,15 +96,11 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
                   :guard-hints (("Goal" :in-theory (enable maxelem ;todo
                                                            )))))
-  (prog2$
-   ;;print the open paren:
-   (cw "(")
-   (prog2$
-    ;;print the elements
-    (print-supporting-dag-nodes (maxelem nodenums) 0 dag-array-name dag-array nodenums t)
-    ;;print the close paren:
-    (cw ")~%"))))
+  (progn$ (cw "(")
+          (print-supporting-dag-nodes (maxelem nodenums) dag-array-name dag-array nodenums t)
+          (cw ")~%")))
 
+;; Separately prints the part of the DAG supporting each of the NODENUMS.
 (defund print-dag-only-supporters-lst (nodenums dag-array-name dag-array)
   (declare (xargs :guard (and (all-natp nodenums)
                               (true-listp nodenums)
