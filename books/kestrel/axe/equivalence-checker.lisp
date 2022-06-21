@@ -48,7 +48,7 @@
 (include-book "subdagp") ; for subdag-of-somep
 (include-book "arrays-of-alists")
 ;(include-book "generic-head-aux-proof")
-(include-book "printing")
+(include-book "print-dag-to-file")
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 ;; Bring in the necessary rules (TODO: Drop these include-books after removing
 ;; mentions of axe-rules, amazing-rules-spec-and-dag, etc. in this file):
