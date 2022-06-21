@@ -100,7 +100,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;returns an integer in the range [low, high-1].
-(defun gen-random-integer-in-range (low high rand)
+(defund gen-random-integer-in-range (low high rand)
   (declare (xargs :guard (and (integerp low)
                               (integerp high)
                               (< low high))
@@ -159,7 +159,7 @@
 ;returns (mv erp value rand)
 ;should we allow tuples?
 (mutual-recursion
- (defun gen-random-value (type rand var-value-alist)
+ (defund gen-random-value (type rand var-value-alist)
    (declare (xargs :guard (and (test-case-typep type)
                                (symbol-alistp var-value-alist))
                    :stobjs rand
@@ -240,7 +240,7 @@
                 rand))))
 
  ;;returns (mv erp values rand)
- (defun gen-random-values (n type rand var-value-alist)
+ (defund gen-random-values (n type rand var-value-alist)
    (declare (xargs :guard (and (natp n)
                                (test-case-typep type)
                                (symbol-alistp var-value-alist))
