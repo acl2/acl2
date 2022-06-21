@@ -20,9 +20,12 @@
 
 ;; TODO: Rename rules end in -dag to instead end in -axe.
 
+;; TODO: Some of these are not BV rules.
+
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
 (local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
+(local (include-book "kestrel/bv/sbvdiv" :dir :system))
 ;(include-book "bv-rules-axe0") ;drop?
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
@@ -32,6 +35,7 @@
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "known-booleans")
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -2113,3 +2117,15 @@
            (equal (logxor x y)
                   (acl2::bvxor (max xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable acl2::bvxor))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd integerp-of-bv-array-read
+  (integerp (bv-array-read element-size len index data)))
+
+(defthmd natp-of-bv-array-read
+  (natp (bv-array-read element-size len index data)))
+
+;bozo more like this?  gen the 0?
+(defthmd bv-array-read-non-negative
+  (not (< (bv-array-read esize len index data) 0)))
