@@ -694,11 +694,16 @@
                                 (acons #\2 dag
                                        (acons #\3 nil nil))))))))
 
-(defun print-dag-or-quotep (obj)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Prints OBJ, which may be a dag or a quoted constant.
+(defund print-dag-or-quotep (obj)
   (declare (xargs :guard (weak-dag-or-quotep obj)))
   (if (quotep obj)
       (cw "~x0~%" obj)
     (print-list obj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;deprecate? maybe not. first add the functionality to get-subdag?
 (defund drop-nodes-past (nodenum dag-lst)
