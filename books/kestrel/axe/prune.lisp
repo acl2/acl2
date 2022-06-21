@@ -147,6 +147,7 @@
        ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag-or-quotep nil))
        (- (cw "Did not simplify to a constant.)~%"))
        ;; Is this needed, given that we simplified the test above using the assumptions?
+       ;; TODO: Also look for an equality in the other order?:
        ((when (or (member-equal test assumptions)
                   (member-equal test equality-assumptions))) ;; In case the test is not a known boolean (so rewriting can't rewrite it to t). ;todo: use simplified-test-term here?
         (prog2$ (cw "(The test is a known assumption.)")
@@ -197,6 +198,7 @@
  ;; tests (and any given assumptions).
 ;TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
  ;; TODO: Handle the case of an IF with the same branches after pruning them.
+ ;; TODO: Consider filtering out assumptions unusable by STP once instead of time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :stobjs (state)
                    :guard (and (pseudo-termp term)
@@ -380,9 +382,10 @@
           ;; TODO: Handle booland?
           ;; Look this up in the assumptions (if boolean or if only iff must be preserved -- could pass in an iff flag)?
           ;; TODO: Just do this for tests?
-          ;; Do this even when the node is an IF...
+          ;; Do this even when the node is an IF/MYIF/BOOLIF/BVIF ?
           (if (and (or (member-equal term assumptions)
-                       (member-equal term equality-assumptions))
+                       (member-equal term equality-assumptions) ; todo: also look for it with the equality reoriented?
+                       )
                    (member-eq (ffn-symb term) (known-booleans (w state)))) ;todo avoid repeated calls to known-booleans
               (mv (erp-nil) *t* state)
             ;; Prune branches in arguments:

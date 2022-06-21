@@ -87,7 +87,7 @@
                   (if (equal 0 (bvchop size x))
                       (- (logtail size x))
                     (+ -1 (- (logtail size x))))))
-  :hints (("Goal" :in-theory (e/d (logtail bvchop FLOOR-MINUS-ARG1
+  :hints (("Goal" :in-theory (e/d (logtail bvchop FLOOR-of---ARG1
                                            EQUAL-OF-0-AND-MOD)
                                   (MOD-OF-EXPT-OF-2)))))
 

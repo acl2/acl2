@@ -55,6 +55,12 @@
                   0))
   :hints (("Goal" :in-theory (e/d (bvdiv) nil))))
 
+(defthm bvdiv-when-not-integerp-arg2
+  (implies (not (integerp x))
+           (equal (bvdiv n x y)
+                  0))
+  :hints (("Goal" :in-theory (enable bvdiv))))
+
 (defthm bvdiv-of-bvchop-arg2
   (implies (and (<= size size1)
                 (natp size)
