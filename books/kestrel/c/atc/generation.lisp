@@ -6833,7 +6833,7 @@
          (raise "Internal error: not one reader ~x0." readers)
          (mv nil nil nil)))
        (reader (car readers))
-       (thm-name (pack 'exec-memberp-when-
+       (thm-name (pack 'exec-member-read-when-
                        recognizer
                        '-and-
                        (ident->name memname)))
@@ -6961,7 +6961,7 @@
                 writer-return-thms)
          (mv nil nil nil)))
        (writer-return-thm (car writer-return-thms))
-       (thm-name (pack 'exec-expr-asg-memberp-when-
+       (thm-name (pack 'exec-member-write-when-
                        recognizer
                        '-and-
                        (ident->name memname)))
