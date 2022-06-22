@@ -6799,8 +6799,7 @@
                                       (recognizer symbolp)
                                       (fixer-recognizer-thm symbolp)
                                       (not-error-thm symbolp)
-                                      (member member-typep)
-                                      (reader symbolp)
+                                      (meminfo defstruct-member-infop)
                                       (names-to-avoid symbol-listp)
                                       (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -6822,7 +6821,15 @@
      to calls of the reader.")
    (xdoc::p
     "We will extend this to array members soon."))
-  (b* ((memname (member-type->name member))
+  (b* ((memtype (defstruct-member-info->memtype meminfo))
+       (memname (member-type->name memtype))
+       (readers (defstruct-member-info->readers meminfo))
+       ((unless (and (consp readers)
+                     (endp (cdr readers))))
+        (prog2$
+         (raise "Internal error: not one reader ~x0." readers)
+         (mv nil nil nil)))
+       (reader (car readers))
        (thm-name (pack 'exec-memberp-when-
                        recognizer
                        '-and-
@@ -6867,8 +6874,7 @@
                                           (recognizer symbolp)
                                           (fixer-recognizer-thm symbolp)
                                           (not-error-thm symbolp)
-                                          (members member-type-listp)
-                                          (readers symbol-listp)
+                                          (meminfos defstruct-member-info-listp)
                                           (names-to-avoid symbol-listp)
                                           (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -6882,14 +6888,13 @@
   (xdoc::topstring
    (xdoc::p
     "This relies on @('readers') to be in the same order as @('members')."))
-  (b* (((when (endp members)) (mv nil nil names-to-avoid))
+  (b* (((when (endp meminfos)) (mv nil nil names-to-avoid))
        ((mv events thms names-to-avoid)
         (atc-gen-tag-member-read-thms tag
                                       recognizer
                                       fixer-recognizer-thm
                                       not-error-thm
-                                      (car members)
-                                      (car readers)
+                                      (car meminfos)
                                       names-to-avoid
                                       wrld))
        ((mv more-events more-thms names-to-avoid)
@@ -6897,8 +6902,7 @@
                                           recognizer
                                           fixer-recognizer-thm
                                           not-error-thm
-                                          (cdr members)
-                                          (cdr readers)
+                                          (cdr meminfos)
                                           names-to-avoid
                                           wrld)))
     (mv (append events more-events)
@@ -6910,9 +6914,7 @@
 (define atc-gen-tag-member-write-thms ((recognizer symbolp)
                                        (fixer-recognizer-thm symbolp)
                                        (not-error-thm symbolp)
-                                       (member member-typep)
-                                       (writer symbolp)
-                                       (writer-return-thm symbolp)
+                                       (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -6936,8 +6938,24 @@
      on identifiers to calls of the writer.")
    (xdoc::p
     "We will extend this to array members soon."))
-  (b* ((memname (member-type->name member))
-       (memtype (member-type->type member))
+  (b* ((memtype (defstruct-member-info->memtype meminfo))
+       (memname (member-type->name memtype))
+       (memtype (member-type->type memtype))
+       (writers (defstruct-member-info->writers meminfo))
+       ((unless (and (consp writers)
+                     (endp (cdr writers))))
+        (prog2$
+         (raise "Internal error: not one writer ~x0." writers)
+         (mv nil nil nil)))
+       (writer (car writers))
+       (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
+       ((unless (and (consp writer-return-thms)
+                     (endp (cdr writer-return-thms))))
+        (prog2$
+         (raise "Internal error: not one writer theorem ~x0."
+                writer-return-thms)
+         (mv nil nil nil)))
+       (writer-return-thm (car writer-return-thms))
        (thm-name (pack 'exec-expr-asg-memberp-when-
                        recognizer
                        '-and-
@@ -7051,14 +7069,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-tag-member-write-all-thms ((recognizer symbolp)
-                                           (fixer-recognizer-thm symbolp)
-                                           (not-error-thm symbolp)
-                                           (members member-type-listp)
-                                           (writers symbol-listp)
-                                           (writer-return-thms symbol-listp)
-                                           (names-to-avoid symbol-listp)
-                                           (wrld plist-worldp))
+(define atc-gen-tag-member-write-all-thms
+  ((recognizer symbolp)
+   (fixer-recognizer-thm symbolp)
+   (not-error-thm symbolp)
+   (meminfos defstruct-member-info-listp)
+   (names-to-avoid symbol-listp)
+   (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (member-write-thms "A @(tsee symbol-listp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -7072,23 +7089,19 @@
    (xdoc::p
     "This relies on @('writers') and @('writer-return-thms')
      to be in the same order as @('members')."))
-  (b* (((when (endp members)) (mv nil nil names-to-avoid))
+  (b* (((when (endp meminfos)) (mv nil nil names-to-avoid))
        ((mv events thms names-to-avoid)
         (atc-gen-tag-member-write-thms recognizer
                                        fixer-recognizer-thm
                                        not-error-thm
-                                       (car members)
-                                       (car writers)
-                                       (car writer-return-thms)
+                                       (car meminfos)
                                        names-to-avoid
                                        wrld))
        ((mv more-events more-thms names-to-avoid)
         (atc-gen-tag-member-write-all-thms recognizer
                                            fixer-recognizer-thm
                                            not-error-thm
-                                           (cdr members)
-                                           (cdr writers)
-                                           (cdr writer-return-thms)
+                                           (cdr meminfos)
                                            names-to-avoid
                                            wrld)))
     (mv (append events more-events)
@@ -7146,16 +7159,13 @@
         (er-soft+ ctx t irr
                   "There is no DEFSTRUCT associated to the tag ~x0."
                   tag))
-       (meminfos (defstruct-member-info-list->memtype-list
-                   (defstruct-info->members info)))
+       (meminfos (defstruct-info->members info))
+       (memtypes (defstruct-member-info-list->memtype-list meminfos))
        (tag-ident (defstruct-info->tag info))
        (recognizer (defstruct-info->recognizer info))
        (fixer-recognizer-thm (defstruct-info->fixer-recognizer-thm info))
        (not-error-thm (defstruct-info->not-error-thm info))
-       (readers (defstruct-info->readers info))
-       (writers (defstruct-info->writers info))
-       (writer-return-thms (defstruct-info->writer-return-thms info))
-       (struct-declons (atc-gen-struct-declon-list meminfos))
+       (struct-declons (atc-gen-struct-declon-list memtypes))
        ((mv read-thm-events read-thm-names names-to-avoid)
         (if proofs
             (atc-gen-tag-member-read-all-thms tag-ident
@@ -7163,7 +7173,6 @@
                                               fixer-recognizer-thm
                                               not-error-thm
                                               meminfos
-                                              readers
                                               names-to-avoid
                                               (w state))
           (mv nil nil names-to-avoid)))
@@ -7173,8 +7182,6 @@
                                                fixer-recognizer-thm
                                                not-error-thm
                                                meminfos
-                                               writers
-                                               writer-return-thms
                                                names-to-avoid
                                                (w state))
           (mv nil nil names-to-avoid)))
