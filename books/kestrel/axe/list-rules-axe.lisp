@@ -21,7 +21,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
 ;;Only needeed for Axe.
-(defthm equal-of-cons-alt
+(defthmd equal-of-cons-alt
   (implies (syntaxp (not (and (quotep x)
                               (quotep y))))
            (equal (equal z (cons x y))
@@ -29,7 +29,7 @@
                        (equal x (car z))
                        (equal y (cdr z))))))
 
-(defthm true-listp-of-repeat
+(defthmd true-listp-of-repeat
   (true-listp (repeat n x)))
 
 ;only useful for Axe since ACL2 knows this by types
@@ -43,24 +43,20 @@
          t))
 
 ;only needed by axe since ACL2 knows this by type reasoning
-(defthm consp-of-update-nth
+(defthmd consp-of-update-nth
   (consp (update-nth key val l)))
 
-(defthm integerp-of-len
+(defthmd integerp-of-len
   (integerp (len x)))
 
 ;rename
-(defthm len-non-negative
+(defthmd len-non-negative
   (not (< (len x) 0)))
 
-(defthm booleanp-of-memberp
+(defthmd booleanp-of-memberp
   (booleanp (memberp a x)))
 
-;rename
-(defthm member-equal-of-nil
-  (not (member-equal a nil)))
-
-(defthm equal-of-append-arg1
+(defthmd equal-of-append-arg1
   (equal (equal (append y z) x)
          (and (<= (len y) (len x))
               (equal (take (len y) x)
@@ -72,11 +68,11 @@
 (def-constant-opener memberp)
 
 ;; Only needed for Axe
-(defthm booleanp-of-items-have-len
+(defthmd booleanp-of-items-have-len
   (booleanp (items-have-len n lst)))
 
 ;; Only needed for Axe
-(defthm booleanp-of-all-true-listp
+(defthmd booleanp-of-all-true-listp
   (booleanp (all-true-listp x)))
 
 ;; Permuted, for Axe only
@@ -88,7 +84,7 @@
   :hints (("Goal" :in-theory (enable len))))
 
 ;mostly for axe
-(defthmd acl2::equal-of-cons-when-quotep
+(defthmd equal-of-cons-when-quotep
   (implies (syntaxp (quotep k))
            (equal (equal k (cons x y))
                   (and (consp k)
@@ -97,7 +93,7 @@
 
 ;or just turn equals around?
 ;only needed for axe
-(defthmd acl2::equal-of-cons-when-quotep-alt
+(defthmd equal-of-cons-when-quotep-alt
   (implies (syntaxp (quotep k))
            (equal (equal (cons x y) k)
                   (and (consp k)
