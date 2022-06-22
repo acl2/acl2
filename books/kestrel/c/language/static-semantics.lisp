@@ -1527,17 +1527,32 @@
      the singleton set with @('void')
      (because execution then continues after the block)
      and the variable table unchanged.
-     If the list is not empty, we check the first item.
-     If @('void') is not among the return types,
-     it means that the rest of the block is dead code:
-     execution never proceeds past the first block item;
-     thus, we do not even check the rest of the block
-     and we return the result of checking the first block item
-     as the result of checking the whole block.
-     If @('void') is among the return types of the first block item,
-     we check the rest of the block,
-     and we combine (i.e. take the union of) all the return types,
-     after removing @('void') from the types of the first block item."))
+     If the list of block items is a singleton,
+     we check the first and only item,
+     and return the result as the result of checking the singleton list;
+     we need to treat the singleton case differently from the next,
+     otherwise we would be always returning @('void') as one of the types,
+     because this is what the empty list of block items returns.
+     If the list of block items has two or more items,
+     we check the first item and the (non-empty) rest of the block.
+     We return the union of
+     (i) the return types from the first block item,
+     minus @('void') if present, and
+     (ii) the return types from the rest of the block.
+     The reason for removing @('void') from the first set
+     is that @('void') just indicates that execution
+     may go from the first block item to the rest of the block:
+     it does not represent a possible return type of the whole block.
+     Note that if @('void') is not among the first item's return types,
+     it means that the rest of the block is acually dead code:
+     execution never proceeds past the first block item.
+     Nonetheless, as explained above,
+     we also checking the rest of the block,
+     and we consider its possible return types.
+     This is consistent with the fact that [C]
+     does not say anything any special treatment of this kind of dead code;
+     it is also consistent with simple experiments with @('gcc') on Mac,
+     which show that code after a @('return') is checked, not ignored."))
 
   (define check-stmt ((s stmtp)
                       (funtab fun-tablep)
@@ -1666,7 +1681,7 @@
                           :variables vartab))
          (stype (check-block-item (car items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-error stype)))
-         ((unless (set::in (type-void) (stmt-type->return-types stype))) stype)
+         ((when (endp (cdr items))) stype)
          (rtypes1 (set::delete (type-void) (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
          (stype (check-block-item-list (cdr items) funtab vartab tagenv))
