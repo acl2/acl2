@@ -14237,6 +14237,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     when-pass-2
     loop$
     our-with-terminal-input
+    trust-mfc
     ))
 
 (defun untouchable-marker (mac)
