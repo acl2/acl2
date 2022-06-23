@@ -47,6 +47,7 @@
 (include-book "evenp")
 (include-book "even-and-odd")
 (include-book "lg")
+(include-book "log2")
 (include-book "power-of-2p")
 (include-book "rem")
 (include-book "ash")
