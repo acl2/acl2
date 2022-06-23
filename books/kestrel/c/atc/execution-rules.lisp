@@ -1249,6 +1249,8 @@
           (pack afixtype '-array-read))
          (atype-array-read-alt-def
           (pack atype-array-read '-alt-def))
+         (elemtype-when-apred
+          (pack 'value-array->elemtype-when- apred))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -1256,11 +1258,11 @@
                          (valuep x)
                          (value-case x :pointer)
                          (not (value-pointer-nullp x))
+                         (equal (value-pointer->reftype x)
+                                ,(type-to-maker atype))
                          (equal array
                                 (read-object (value-pointer->designator x)
                                              compst))
-                         (equal (value-pointer->reftype x)
-                                (value-array->elemtype array))
                          (,apred array)
                          (,ipred y)
                          (,atype-array-itype-index-okp array y))
@@ -1272,7 +1274,8 @@
                             exec-integer
                             ,atype-array-itype-index-okp
                             ,atype-array-read-itype
-                            ,atype-array-read-alt-def)
+                            ,atype-array-read-alt-def
+                            ,elemtype-when-apred)
                    :prep-lemmas
                    ((defrule lemma
                       (implies (and (,atype-array-index-okp array index)
