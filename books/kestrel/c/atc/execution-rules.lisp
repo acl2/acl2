@@ -1259,7 +1259,6 @@
                          (equal array
                                 (read-object (value-pointer->designator x)
                                              compst))
-                         (value-case array :array)
                          (equal (value-pointer->reftype x)
                                 (value-array->elemtype array))
                          (,apred array)
