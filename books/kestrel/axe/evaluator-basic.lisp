@@ -59,6 +59,7 @@
     (coerce coerce-unguarded) ; primitive
     all-natp
     all-unsigned-byte-p
+    (acons acons-unguarded)
     (endp endp-unguarded)
     (take take-unguarded)
     (char-code char-code-unguarded) ; primitive

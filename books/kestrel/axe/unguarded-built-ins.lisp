@@ -229,3 +229,14 @@
   (equal (binary-append-unguarded x y)
          (binary-append x y))
   :hints (("Goal" :in-theory (enable binary-append-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund acons-unguarded (key datum alist)
+  (declare (xargs :guard t))
+  (cons (cons key datum) alist))
+
+(defthm acons-unguarded-correct
+  (equal (acons-unguarded key datum alist)
+         (acons key datum alist))
+  :hints (("Goal" :in-theory (enable acons-unguarded))))
