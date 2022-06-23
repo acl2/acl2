@@ -26,7 +26,6 @@
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (msg/nil "A message (see @(tsee msg)) or @('nil').")
-  :mode :program
   :parents (fresh-namep)
   :short "Return either @('nil') or
           a message indicating why the name is not a legal new name."
@@ -85,7 +84,6 @@
   :guard (member-eq type
                     '(function macro const stobj constrained-function nil))
   :returns (msg/nil "A message (see @(tsee msg)) or @('nil').")
-  :mode :program
   :parents (fresh-namep fresh-namep-msg-weak)
   :short "Lift @(tsee fresh-namep-msg-weak) to lists."
   :long
