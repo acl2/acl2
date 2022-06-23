@@ -42,6 +42,10 @@
               (|ullong| c::ullong)
               (|sllong| c::sllong))
 
+(c::defstruct |scalar_and_array|
+              (|scalar| c::sint)
+              (|aggreg| (c::uchar 10)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Read members from structures.
@@ -72,6 +76,22 @@
         (c::boolean-from-sint
          (c::gt-slong-slong (struct-|point3D|-read-|z| |point|)
                             (c::slong-dec-const 0))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_scalar| (|a|)
+  (declare (xargs :guard (struct-|scalar_and_array|-p |a|)))
+  (struct-|scalar_and_array|-read-|scalar| |a|))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_aggreg| (|i| |a|)
+  (declare
+   (xargs
+    :guard (and (c::sintp |i|)
+                (struct-|scalar_and_array|-p |a|)
+                (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
+  (struct-|scalar_and_array|-read-|aggreg|-sint |i| |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,9 +141,12 @@
 (c::atc |point2D|
         |point3D|
         |integers|
+        |scalar_and_array|
         |read_x_from_point2D|
         |read_y_from_point2D|
         |allpos|
+        |read_scalar|
+        |read_aggreg|
         |return1|
         |return2|
         |return3|
