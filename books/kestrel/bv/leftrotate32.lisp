@@ -34,13 +34,19 @@
          0)
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
+;todo gen the 5 and move
+(defthm leftrotate-32-of-bvchop-5
+  (implies (natp amt)
+           (equal (leftrotate 32 (bvchop 5 amt) val)
+                  (leftrotate 32 (ifix amt) val)))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
 ;todo gen the 5
 (defthm leftrotate32-of-bvchop-5
   (implies (natp amt)
            (equal (leftrotate32 (bvchop 5 amt) val)
                   (leftrotate32 amt val)))
-  :hints (("Goal" :expand ((:with bvchop (BVCHOP 5 Amt)))
-           :in-theory (enable leftrotate32 leftrotate))))
+  :hints (("Goal" :in-theory (enable leftrotate32))))
 
 ;justifies the correctness of some operations performed by Axe
 (defthm unsigned-byte-p-32-of-leftrotate32
@@ -67,20 +73,13 @@
                   (leftrotate32 amt x)))
   :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))
 
-(defthm leftrotate32-of-bvchop-helper
-  (implies (natp amt)
-           (equal (leftrotate32 (bvchop 5 amt) val)
-                  (leftrotate32 amt val)))
-  :hints (("Goal" :expand (:with bvchop (BVCHOP 5 Amt))
-           :in-theory (enable leftrotate32 leftrotate))))
-
 (defthm leftrotate32-of-bvchop
   (implies (natp amt)
            (equal (leftrotate32 (bvchop 32 amt) val)
                   (leftrotate32 amt val)))
-  :hints (("Goal" :in-theory (disable leftrotate32 leftrotate32-of-bvchop-helper)
-           :use ((:instance leftrotate32-of-bvchop-helper (amt amt))
-                 (:instance leftrotate32-of-bvchop-helper (amt (bvchop 32 amt)))))))
+  :hints (("Goal" :in-theory (disable leftrotate32 leftrotate32-of-bvchop-5)
+           :use ((:instance leftrotate32-of-bvchop-5 (amt amt))
+                 (:instance leftrotate32-of-bvchop-5 (amt (bvchop 32 amt)))))))
 
 ;do not remove.  this helps justify how Axe translates leftrotate32 to STP:
 (defthm leftrotate32-of-mod
@@ -95,13 +94,6 @@
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
 (theory-invariant (incompatible (:rewrite leftrotate-becomes-leftrotate32) (:definition leftrotate32)))
-
-;gen
-(defthm leftrotate-32-of-bvchop-5
-  (implies (natp amt)
-           (equal (leftrotate 32 (bvchop 5 amt) val)
-                  (leftrotate 32 (ifix amt) val)))
-  :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthmd leftrotate32-open-when-constant-shift-amount
   (implies (syntaxp (quotep amt))
