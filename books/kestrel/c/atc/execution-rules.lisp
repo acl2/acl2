@@ -2185,6 +2185,8 @@
           (pack afixtype '-array-write- ifixtype))
          (atype-array-write-alt-def
           (pack afixtype '-array-write-alt-def))
+         (elemtype-when-apred
+          (pack 'value-array->elemtype-when- apred))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -2207,10 +2209,10 @@
                  (valuep ptr)
                  (value-case ptr :pointer)
                  (not (value-pointer-nullp ptr))
+                 (equal (value-pointer->reftype ptr)
+                        ,(type-to-maker atype))
                  (equal array
                         (read-object (value-pointer->designator ptr) compst1))
-                 (equal (value-pointer->reftype ptr)
-                        (value-array->elemtype array))
                  (,apred array)
                  (equal index (exec-expr-pure sub compst1))
                  (,ipred index)
@@ -2225,7 +2227,8 @@
                             exec-integer
                             ,atype-array-itype-index-okp
                             ,atype-array-write-itype
-                            ,atype-array-write-alt-def)
+                            ,atype-array-write-alt-def
+                            ,elemtype-when-apred)
                    :prep-lemmas
                    ((defrule lemma1
                       (implies (and (,atype-array-index-okp array index)
