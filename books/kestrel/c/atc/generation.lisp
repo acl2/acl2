@@ -6816,60 +6816,203 @@
      the ones that rewrite @(tsee exec-arrsub) to array readers,
      generated in @(see atc-exec-arrsub-rules-generation).")
    (xdoc::p
-    "For now we only generate these theorems for scalar members.
-     In this case, we rewrite calls of @(tsee exec-memberp)
+    "For a scalar member (which must have integer type),
+     we generate a single theorem that
+     rewrites calls of @(tsee exec-memberp)
      to calls of the reader.")
    (xdoc::p
-    "We will extend this to array members soon."))
+    "For an array member (which must have integer element type),
+     we generate 10 theorems, one for each integer index type.
+     The theorem rewrites calls of @(tsee exec-arrsub-of-memberp)
+     to calls of the readers.
+     The generation of these theorems relies on the fact that
+     the order of the readers and the checkers matches the order of
+     the types in @(tsee *integer-nonbool-nonchar-types*)."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
-       ((unless (type-integerp type))
-        (mv nil nil names-to-avoid))
        (readers (defstruct-member-info->readers meminfo))
-       ((unless (and (consp readers)
-                     (endp (cdr readers))))
+       (checkers (defstruct-member-info->checkers meminfo))
+       ((when (type-integerp type))
+        (b* (((unless (and (consp readers)
+                           (endp (cdr readers))))
+              (prog2$
+               (raise "Internal error: not one reader ~x0." readers)
+               (mv nil nil nil)))
+             (reader (car readers))
+             (thm-name (pack 'exec-member-read-when-
+                             recognizer
+                             '-and-
+                             (ident->name memname)))
+             ((mv thm-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix thm-name
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+             (formula
+              `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
+                             (valuep ptr)
+                             (value-case ptr :pointer)
+                             (not (value-pointer-nullp ptr))
+                             (equal struct
+                                    (read-object (value-pointer->designator ptr)
+                                                 compst))
+                             (value-case struct :struct)
+                             (equal (value-pointer->reftype ptr)
+                                    (type-struct (ident ,(ident->name tag))))
+                             (,recognizer struct))
+                        (equal (exec-memberp ptr
+                                             (ident ,(ident->name memname))
+                                             compst)
+                               (,reader struct))))
+             (hints `(("Goal"
+                       :in-theory
+                       '(exec-memberp
+                         not-errorp-when-valuep-rewrite
+                         value-resultp-when-valuep
+                         value-result-fix-when-value-resultp
+                         ,recognizer
+                         ,reader
+                         ,not-error-thm
+                         ,fixer-recognizer-thm))))
+             ((mv event &) (evmac-generate-defthm thm-name
+                                                  :formula formula
+                                                  :hints hints
+                                                  :enable nil)))
+          (mv (list event) (list thm-name) names-to-avoid)))
+       ((unless (type-case type :array))
         (prog2$
-         (raise "Internal error: not one reader ~x0." readers)
+         (raise "Internal error: member type ~x0." type)
          (mv nil nil nil)))
-       (reader (car readers))
-       (thm-name (pack 'exec-member-read-when-
-                       recognizer
-                       '-and-
-                       (ident->name memname)))
-       ((mv thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
-       (formula
-        `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
-                       (valuep ptr)
-                       (value-case ptr :pointer)
-                       (not (value-pointer-nullp ptr))
-                       (equal struct
-                              (read-object (value-pointer->designator ptr)
-                                           compst))
-                       (value-case struct :struct)
-                       (equal (value-pointer->reftype ptr)
-                              (type-struct (ident ,(ident->name tag))))
-                       (,recognizer struct))
-                  (equal (exec-memberp ptr
-                                       (ident ,(ident->name memname))
-                                       compst)
-                         (,reader struct))))
-       (hints `(("Goal"
-                 :in-theory
-                 '(exec-memberp
-                   not-errorp-when-valuep-rewrite
-                   value-resultp-when-valuep
-                   value-result-fix-when-value-resultp
-                   ,recognizer
-                   ,reader
-                   ,not-error-thm
-                   ,fixer-recognizer-thm))))
-       ((mv event &) (evmac-generate-defthm thm-name
-                                            :formula formula
-                                            :hints hints
-                                            :enable nil)))
-    (mv (list event) (list thm-name) names-to-avoid)))
+       (elemtype (type-array->of type))
+       ((unless (type-integerp elemtype))
+        (prog2$
+         (raise "Internal error: array member element type ~x0." elemtype)
+         (mv nil nil nil))))
+    (atc-gen-tag-member-read-thms-aux tag
+                                      recognizer
+                                      fixer-recognizer-thm
+                                      memname
+                                      elemtype
+                                      *integer-nonbool-nonchar-types*
+                                      readers
+                                      checkers
+                                      names-to-avoid
+                                      wrld))
+
+  :prepwork
+  ((define atc-gen-tag-member-read-thms-aux ((tag identp)
+                                             (recognizer symbolp)
+                                             (fixer-recognizer-thm symbolp)
+                                             (memname identp)
+                                             (elemtype typep)
+                                             (indextypes type-listp)
+                                             (readers symbol-listp)
+                                             (checkers symbol-listp)
+                                             (names-to-avoid symbol-listp)
+                                             (wrld plist-worldp))
+     :guard (and (type-integerp elemtype)
+                 (type-integer-listp indextypes))
+     :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+                  (member-read-thms "A @(tsee symbol-listp).")
+                  (updated-names-to-avoid "A @(tsee symbol-listp)."))
+     :mode :program
+     :parents nil
+     (b* (((when (endp indextypes)) (mv nil nil nil))
+          (indextype (car indextypes))
+          (reader (car readers))
+          (checker (car checkers))
+          (indexfixtype (integer-type-to-fixtype indextype))
+          (indextypep (pack indexfixtype 'p))
+          (genchecker (pack 'struct- tag '- memname '-index-okp))
+          (genreader (pack 'struct- tag '-read- memname))
+          (indextype-integer-value (pack indexfixtype '-integer-value))
+          (array-reader (pack indexfixtype '-array-read-alt-def))
+          (array-checker (pack indexfixtype '-array-index-okp))
+          (not-error-array-thm (pack 'not-errorp-when- indexfixtype '-arrayp))
+          (kind-array-thm (pack 'value-kind-when- indexfixtype '-arrayp))
+          (valuep-when-indextype (pack 'valuep-when- indextypep))
+          (type-thm (pack indexfixtype '->get$inline))
+          (thm-name (pack 'exec-member-read-when-
+                          recognizer
+                          '-and-
+                          (ident->name memname)
+                          '-
+                          indexfixtype))
+          ((mv thm-name names-to-avoid)
+           (fresh-logical-name-with-$s-suffix thm-name
+                                              nil
+                                              names-to-avoid
+                                              wrld))
+          (formula
+           `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
+                          (valuep ptr)
+                          (value-case ptr :pointer)
+                          (equal (value-pointer->reftype ptr)
+                                 (type-struct (ident ,(ident->name tag))))
+                          (equal struct
+                                 (read-object (value-pointer->designator ptr)
+                                              compst))
+                          (,recognizer struct)
+                          (equal array
+                                 (value-struct-read (ident
+                                                     ,(ident->name memname))
+                                                    struct))
+                          (,indextypep index)
+                          (,checker index))
+                     (equal (exec-arrsub-of-memberp ptr
+                                                    (ident
+                                                     ,(ident->name memname))
+                                                    index
+                                                    compst)
+                            (,reader index struct))))
+          (hints `(("Goal"
+                    :in-theory
+                    '(exec-arrsub-of-memberp
+                      value-struct-read
+                      exec-integer
+                      ifix
+                      integer-range-p
+                      not-errorp-when-valuep-rewrite
+                      value-fix-when-valuep
+                      value-result-fix-when-value-resultp
+                      value-resultp-when-valuep
+                      value-integerp
+                      value-unsigned-integerp-alt-def
+                      value-signed-integerp-alt-def
+                      (:e ident)
+                      ,@*integer-value-disjoint-rules*
+                      ,recognizer
+                      ,fixer-recognizer-thm
+                      ,checker
+                      ,genchecker
+                      ,reader
+                      ,genreader
+                      ,indextype-integer-value
+                      ,array-reader
+                      ,array-checker
+                      ,not-error-array-thm
+                      ,kind-array-thm
+                      ,valuep-when-indextype
+                      (:t ,type-thm)))))
+          ((mv event &) (evmac-generate-defthm thm-name
+                                               :formula formula
+                                               :hints hints
+                                               :enable nil))
+          ((mv events thm-names names-to-avoid)
+           (atc-gen-tag-member-read-thms-aux tag
+                                             recognizer
+                                             fixer-recognizer-thm
+                                             memname
+                                             elemtype
+                                             (cdr indextypes)
+                                             (cdr readers)
+                                             (cdr checkers)
+                                             names-to-avoid
+                                             wrld)))
+       (mv (cons event events)
+           (cons thm-name thm-names)
+           names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
