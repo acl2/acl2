@@ -1187,17 +1187,18 @@
 ;args are nodenums and/or quoteps
 ;;returns (mv worklist worklist-extendedp) where nodenum-worklist has been extended by any args to compute (non quoteps not marked done)
 ;; and worklist-extendedp indicates whether there were any such args
-(defund add-args-not-done (args done-nodes-array worklist worklist-extendedp)
+;rename?
+(defund add-args-not-done (dargs done-nodes-array worklist worklist-extendedp)
   (declare (xargs :guard (and (array1p 'done-nodes-array done-nodes-array)
-                              (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array)))))
-  (if (endp args)
+                              (bounded-darg-listp dargs (alen1 'done-nodes-array done-nodes-array)))))
+  (if (endp dargs)
       (mv worklist worklist-extendedp)
-    (let ((arg (first args)))
-      (if (or (quotep-arg arg) ;skip quoted constants
-              (aref1 'done-nodes-array done-nodes-array arg) ;;skip args that are marked as done
+    (let ((arg (first dargs)))
+      (if (or (consp arg) ; skip quoted constants
+              (aref1 'done-nodes-array done-nodes-array arg) ;;skip dargs that are marked as done
               )
-          (add-args-not-done (rest args) done-nodes-array worklist worklist-extendedp)
-        (add-args-not-done (rest args) done-nodes-array (cons arg worklist) t ;we've extended the worklist
+          (add-args-not-done (rest dargs) done-nodes-array worklist worklist-extendedp)
+        (add-args-not-done (rest dargs) done-nodes-array (cons arg worklist) t ;we've extended the worklist
                            )))))
 
 (defthm add-args-not-done-of-nil-arg1
@@ -1246,11 +1247,11 @@
                               (bounded-darg-listp dargs (alen1 test-case-array-name test-case-array)))))
   (if (endp dargs)
       nil
-    (let ((arg (first dargs)))
-      (cons (if (quotep-arg arg)
-                (unquote arg)
+    (let ((darg (first dargs)))
+      (cons (if (consp darg) ; check for quoted constant
+                (unquote darg)
               ;;otherwise it's a nodenum:
-              (aref1 test-case-array-name test-case-array arg))
+              (aref1 test-case-array-name test-case-array darg))
             (get-vals-of-args (rest dargs) test-case-array-name test-case-array)))))
 
 (defund num-true-nodes (n array-name array)
@@ -1290,8 +1291,6 @@
 ;;         (reverse (cons (car lst) acc))
 ;;       (evens-tail (cddr lst)
 ;;                   (cons (car lst) acc)))))
-
-;; ;fixme - where does this stuff go?!  Use defmergesort instead!
 
 ;; (defthm len-of-evens-tail-bound
 ;;   (implies (< 1 (len l))
@@ -2973,12 +2972,12 @@
 ;             probably-constant-node-alist ;pairs nodes with the constants they seem to be equal to
 ;             test-case-array-alist ; valid iff keep-test-casesp is non-nil, pairs array names with arrays that give values to all the nodes
 ;        )
-;fixme should this return the used test cases?
+;todo: should this return the used test cases (I guess they can be extracted from the test-case-array-alist)?
 (defund probable-facts (miter-array-name miter-array miter-len
-                                        miter-depth
-                                        test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
-                                        interpreted-function-alist print keep-test-casesp
-                                        debug-nodes)
+                                         miter-depth
+                                         test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
+                                         interpreted-function-alist print keep-test-casesp
+                                         debug-nodes)
   (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                               (< 0 miter-len)
                               (natp miter-depth)
