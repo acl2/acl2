@@ -162,6 +162,7 @@
 (include-book "print-constant")
 (include-book "print-levels")
 (include-book "print-dag-to-file")
+(include-book "print-dag-array-to-file")
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
