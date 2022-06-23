@@ -6827,7 +6827,9 @@
      to calls of the readers.
      The generation of these theorems relies on the fact that
      the order of the readers and the checkers matches the order of
-     the types in @(tsee *integer-nonbool-nonchar-types*)."))
+     the types in @(tsee *integer-nonbool-nonchar-types*).
+     Note that we need to exclude the first reader and checker,
+     which are the ones operating on ACL2 integers."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
@@ -6895,8 +6897,8 @@
                                       memname
                                       elemtype
                                       *integer-nonbool-nonchar-types*
-                                      readers
-                                      checkers
+                                      (cdr readers)
+                                      (cdr checkers)
                                       names-to-avoid
                                       wrld))
 
@@ -6923,14 +6925,22 @@
           (reader (car readers))
           (checker (car checkers))
           (indexfixtype (integer-type-to-fixtype indextype))
+          (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
-          (genchecker (pack 'struct- tag '- memname '-index-okp))
-          (genreader (pack 'struct- tag '-read- memname))
+          (genchecker (pack 'struct-
+                            (ident->name tag)
+                            '-
+                            (ident->name memname)
+                            '-index-okp))
+          (genreader (pack 'struct-
+                           (ident->name tag)
+                           '-read-
+                           (ident->name memname)))
           (indextype-integer-value (pack indexfixtype '-integer-value))
-          (array-reader (pack indexfixtype '-array-read-alt-def))
-          (array-checker (pack indexfixtype '-array-index-okp))
-          (not-error-array-thm (pack 'not-errorp-when- indexfixtype '-arrayp))
-          (kind-array-thm (pack 'value-kind-when- indexfixtype '-arrayp))
+          (array-reader (pack elemfixtype '-array-read-alt-def))
+          (array-checker (pack elemfixtype '-array-index-okp))
+          (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
+          (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
           (type-thm (pack indexfixtype '->get$inline))
           (thm-name (pack 'exec-member-read-when-
@@ -6948,6 +6958,7 @@
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                           (valuep ptr)
                           (value-case ptr :pointer)
+                          (not (value-pointer-nullp ptr))
                           (equal (value-pointer->reftype ptr)
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct
