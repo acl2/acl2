@@ -15115,6 +15115,8 @@
 
 ; Given a logical-namep we determine what sort of logical object it is.
 
+  (declare (xargs :guard (and (or (stringp name) (symbolp name))
+                              (plist-worldp wrld))))
   (cond ((stringp name) 'package)
         ((function-symbolp name wrld) 'function)
         ((getpropc name 'macro-body nil wrld) 'macro)
@@ -15132,7 +15134,7 @@
         ((getpropc name 'stobj-live-var nil wrld)
          'stobj-live-var)
         (quietp nil)
-        (t (er hard 'logical-name-type
+        (t (er hard? 'logical-name-type
                "~x0 is evidently a logical name but of undetermined type."
                name))))
 
@@ -15143,6 +15145,7 @@
 ; package, and to allow events to use the main Lisp package when they
 ; do not introduce functions, macros, or constants.
 
+  (declare (xargs :guard (plist-worldp w)))
   (cond ((not (symbolp name))
          (er-cmp ctx
                  "Names must be symbols and ~x0 is not."

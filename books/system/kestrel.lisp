@@ -10,6 +10,7 @@
 ;   Alessandro Coglio (coglio@kestrel.edu)
 ;   Eric Smith (eric.smith@kestrel.edu)
 ;   Matt Kaufmann (kaufmann@cs.utexas.edu)
+;   Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,3 +148,13 @@
 
 ; For verify-guards, we need to add a suitable guard to lookup-brr-stack, and
 ; perhaps to the other three functions above as well.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination the-live-var) ; and guards
+
+(verify-termination logical-name-type) ; and guards
+
+(verify-termination new-namep) ; and guards
+
+(verify-termination chk-all-but-new-name-cmp) ; and guards
