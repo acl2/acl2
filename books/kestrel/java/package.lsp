@@ -105,6 +105,7 @@
                          make-lambda
                          make-mv-let-call
                          maybe-natp
+                         maybe-string
                          maybe-stringp
                          msg-listp
                          mvify
@@ -218,4 +219,6 @@
                          std::tuple
                          set::list-in
                          str::chars-in-charset-p
-                         str::nat-to-dec-string)))
+                         str::nat-to-dec-string
+                         str::string-list
+                         str::string-list-fix)))

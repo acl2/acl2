@@ -625,7 +625,7 @@
        ((iconst ic) ic))
     (if ic.unsignedp
         (iconst-length-case
-         ic.type
+         ic.length
          :none (cond ((uint-integerp ic.value) (type-uint))
                      ((ulong-integerp ic.value) (type-ulong))
                      ((ullong-integerp ic.value) (type-ullong))
@@ -636,7 +636,7 @@
          :llong (cond ((ullong-integerp ic.value) (type-ullong))
                       (t (error (list :iconst-out-of-range ic)))))
       (iconst-length-case
-       ic.type
+       ic.length
        :none (if (iconst-base-case ic.base :dec)
                  (cond ((sint-integerp ic.value) (type-sint))
                        ((slong-integerp ic.value) (type-slong))
@@ -738,8 +738,8 @@
   (obj-adeclor-case
    declor
    :none :wellformed
-   :pointer (check-obj-adeclor declor.to)
-   :array (b* ((wf? (check-obj-adeclor declor.of))
+   :pointer (check-obj-adeclor declor.decl)
+   :array (b* ((wf? (check-obj-adeclor declor.decl))
                ((when (errorp wf?)) wf?)
                ((unless declor.size) :wellformed)
                (type? (check-iconst declor.size))
@@ -1066,9 +1066,32 @@
      A cast expression is never an lvalue.")
    (xdoc::p
     "The test of a conditional expression must be scalar.
-     For now we require the two branches to have arithmetic types;
-     the result has the type resulting from the usual arithmetic conversions.
-     See [C:6.5.15/3].
+     For now we require the two branches to have arithmetic types.
+     According to [C:6.5.15/3],
+     in this case the type of the conditional expression
+     is the one resulting from the usual arithmetic conversions [C:6.5.15/5].
+     This means that, at run time, in our dynamic semantics of C,
+     we need to convert the branch that is executed to that type;
+     but at run time we do not have information about
+     the type of the other branch (the one that is not executed).
+     Thus, in order to handle the execution properly,
+     the static semantics should add information to the abstract syntax
+     about the resulting type of the conditional expression,
+     so that the dynamic semantics can perform the conversion
+     while evaluating just one branch.
+     (Presumably, C compilers would generate code that performs the conversion,
+     if needed, for both branches of the conditional expression.)
+     To avoid this complication,
+     for now we make our static semantics more restrictive:
+     we require the two branches to have the same promoted type.
+     This means that that promoted type is also
+     the type resulting from the usual arithmetic conversions,
+     as can be easily seen in @(tsee uaconvert-types).
+     We may relax the treatment eventually,
+     but note that we would have to restructure the static semantics
+     to return possibly modified abstract syntax.
+     This is not surprising, as it is a used approach for compiler-like tools,
+     namely annotating abstract syntax trees with additional information.
      We apply both lvalue conversion and array-to-pointer conversion.
      A conditional expression is never an lvalue.")
    (xdoc::p
@@ -1203,8 +1226,11 @@
                  (error (list :cond-mistype-else e.test e.then e.else
                               :required :arithmetic
                               :supplied else-type)))
-                (type (uaconvert-types then-type else-type))
-                ((when (errorp type)) type))
+                (then-type (promote-type then-type))
+                (else-type (promote-type else-type))
+                ((unless (equal then-type else-type))
+                 (error (list :diff-promoted-types then-type else-type)))
+                (type then-type))
              (make-expr-type :type type :lvalue nil))))
   :measure (expr-count e)
   :verify-guards :after-returns
@@ -1501,17 +1527,32 @@
      the singleton set with @('void')
      (because execution then continues after the block)
      and the variable table unchanged.
-     If the list is not empty, we check the first item.
-     If @('void') is not among the return types,
-     it means that the rest of the block is dead code:
-     execution never proceeds past the first block item;
-     thus, we do not even check the rest of the block
-     and we return the result of checking the first block item
-     as the result of checking the whole block.
-     If @('void') is among the return types of the first block item,
-     we check the rest of the block,
-     and we combine (i.e. take the union of) all the return types,
-     after removing @('void') from the types of the first block item."))
+     If the list of block items is a singleton,
+     we check the first and only item,
+     and return the result as the result of checking the singleton list;
+     we need to treat the singleton case differently from the next,
+     otherwise we would be always returning @('void') as one of the types,
+     because this is what the empty list of block items returns.
+     If the list of block items has two or more items,
+     we check the first item and the (non-empty) rest of the block.
+     We return the union of
+     (i) the return types from the first block item,
+     minus @('void') if present, and
+     (ii) the return types from the rest of the block.
+     The reason for removing @('void') from the first set
+     is that @('void') just indicates that execution
+     may go from the first block item to the rest of the block:
+     it does not represent a possible return type of the whole block.
+     Note that if @('void') is not among the first item's return types,
+     it means that the rest of the block is acually dead code:
+     execution never proceeds past the first block item.
+     Nonetheless, as explained above,
+     we also checking the rest of the block,
+     and we consider its possible return types.
+     This is consistent with the fact that [C]
+     does not say anything any special treatment of this kind of dead code;
+     it is also consistent with simple experiments with @('gcc') on Mac,
+     which show that code after a @('return') is checked, not ignored."))
 
   (define check-stmt ((s stmtp)
                       (funtab fun-tablep)
@@ -1640,7 +1681,7 @@
                           :variables vartab))
          (stype (check-block-item (car items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-error stype)))
-         ((unless (set::in (type-void) (stmt-type->return-types stype))) stype)
+         ((when (endp (cdr items))) stype)
          (rtypes1 (set::delete (type-void) (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
          (stype (check-block-item-list (cdr items) funtab vartab tagenv))
@@ -1740,14 +1781,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check the identifier and the list of parameter declarations.
+    "We go through all the pointers, if any.
+     We check the identifier and the list of parameter declarations.
      We start with the empty variable table,
      and we return the final variable table that contains the parameters.
      This table is used when checking function definitions."))
-  (b* (((fun-declor declor) declor)
-       (wf (check-ident declor.name))
-       ((when (errorp wf)) wf))
-    (check-param-declon-list declor.params (var-table-init) tagenv))
+  (fun-declor-case
+   declor
+   :base (b* ((wf (check-ident declor.name))
+              ((when (errorp wf)) wf))
+           (check-param-declon-list declor.params (var-table-init) tagenv))
+   :pointer (check-fun-declor declor.decl tagenv))
+  :measure (fun-declor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1803,26 +1848,24 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       ((fun-declor fundef.declor) fundef.declor)
-       (out-tyname (make-tyname :tyspec fundef.tyspec
-                                :declor (obj-adeclor-none)))
+       ((mv name params out-tyname)
+        (tyspec+declor-to-ident+params+tyname fundef.tyspec fundef.declor))
        (wf (check-tyname out-tyname tagenv))
        ((when (errorp wf))
-        (error (list :bad-fun-out-type fundef.declor.name wf)))
+        (error (list :bad-fun-out-type name wf)))
        (out-type (tyname-to-type out-tyname))
        (vartab (check-fun-declor fundef.declor tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
-       ((mv & in-tynames)
-        (param-declon-list-to-ident+tyname-lists fundef.declor.params))
+       ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
        (in-types (type-name-list-to-type-list in-tynames))
        (ftype (make-fun-type :inputs in-types :output out-type))
-       (funtab (fun-table-add-fun fundef.declor.name ftype funtab))
+       (funtab (fun-table-add-fun name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
        (stype (check-block-item-list fundef.body funtab vartab tagenv))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
        ((unless (equal (stmt-type->return-types stype)
                        (set::insert out-type nil)))
-        (error (list :fundef-return-mistype fundef.declor.name
+        (error (list :fundef-return-mistype name
                      :required out-type
                      :inferred (stmt-type->return-types stype)))))
     funtab)

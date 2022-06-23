@@ -519,44 +519,47 @@
                        (rp-evlt term a))))
   :fn unpack-booth-meta
   ;;:otf-flg t
-  :hints (("Goal"
+  :hints (("goal"
            :do-not-induct t
            :use ((:instance pp-has-bitp-rp-implies
-                            (term (CADR TERM)))
+                            (term (cadr term)))
                  (:instance pp-has-bitp-rp-implies
-                            (term (cadr (CADR TERM)))))
-           :expand ((SUM-LIST-EVAL (LIST (CADR TERM)) A)
+                            (term (cadr (cadr term)))))
+           :expand ((sum-list-eval (list (cadr term)) a)
                     
-                    (SUM-LIST-EVAL (LIST (CADR (CADR TERM)))
-                                   A))
+                    (sum-list-eval (list (cadr (cadr term)))
+                                   a))
            :in-theory (e/d* (unpack-booth-meta
                              ;;has-bitp-rp-force-insert
-                             UNPACK-BOOTH
-                             S-C-RES
+                             unpack-booth
+                             s-c-res
                              regular-rp-evl-of_unpack-booth_when_mult-formula-checks_with-ex-from-rp
                              regular-rp-evl-of_unpack-booth_when_mult-formula-checks
                              regular-rp-evl-of_s-c-res_when_mult-formula-checks_with-ex-from-rp
                              regular-rp-evl-of_s-c-res_when_mult-formula-checks
-                             (:REWRITE REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                             regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             (:rewrite regular-rp-evl-of_--_when_mult-formula-checks)
                              )
                             (rp-termp
+                             
                              pp-has-bitp-rp-implies
                              bitp
-                             RP-TRANS-OPENER-WHEN-LIST
-                             RP-TRANS-OPENER
-                             EVAL-AND-ALL
+                             rp-trans-opener-when-list
+                             rp-trans-opener
+                             eval-and-all
                              valid-sc
                              ex-from-rp
                              not-include-rp-means-valid-sc-lst
                              not-include-rp-means-valid-sc
-                             NOT-INCLUDE-RP
-                             INCLUDE-FNC
-                             WHEN-EX-FROM-RP-IS-1
-                             SUM-OF-NEGATED-ELEMENTS
-                             EXPAND-SUM-FROM-THE-HYPS
-                             (:REWRITE SUM-CANCEL-COMMON)
-                             (:REWRITE MINUS-OF-MINUS)
-                             (:DEFINITION SUM-LIST-EVAL)
+                             not-include-rp
+                             include-fnc
+                             when-ex-from-rp-is-1
+                             sum-of-negated-elements
+                             expand-sum-from-the-hyps
+                             (:rewrite sum-cancel-common)
+                             (:rewrite minus-of-minus)
+                             (:definition sum-list-eval)
                              nfix
                              is-falist
                              rp-trans

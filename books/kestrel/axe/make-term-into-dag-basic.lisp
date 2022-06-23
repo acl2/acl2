@@ -16,11 +16,8 @@
 
 (include-book "make-term-into-dag-array-basic")
 
-;;;
-;;; make-term-into-dag-basic
-;;;
-
-;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
+;; Turns TERM into a dag.
+;; Returns (mv erp dag-or-quotep).  The result is dagp (a list), but arrays are used to do the work.
 ;; See also make-term-into-dag-simple.
 (defund make-term-into-dag-basic (term interpreted-function-alist)
   (declare (xargs :guard (and (pseudo-termp term)
@@ -36,7 +33,9 @@
         (mv erp nil)
       (if (consp nodenum-or-quotep) ; check for quotep
           (mv (erp-nil) nodenum-or-quotep)
-        (mv (erp-nil) (array-to-alist 'make-term-into-dag-basic-array dag-array dag-len))))))
+        (mv (erp-nil) (array-to-alist 'make-term-into-dag-basic-array dag-array
+                                      dag-len ; todo: use (+ 1 nodenum-or-quotep) ?
+                                      ))))))
 
 (local
  (defthm equal-of-quote-and-car-when-dargp
@@ -51,6 +50,14 @@
                 (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist))))
            (or (pseudo-dagp (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
                (myquotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))))
+  :hints (("Goal" :in-theory (e/d (make-term-into-dag-basic) (natp myquotep)))))
+
+(defthm pseudo-dag-or-quotep-of-mv-nth-1-of-make-term-into-dag-basic
+  (implies (and (pseudo-termp term)
+                (interpreted-function-alistp interpreted-function-alist)
+                ;; no error:
+                (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist))))
+           (pseudo-dag-or-quotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist))))
   :hints (("Goal" :in-theory (e/d (make-term-into-dag-basic) (natp myquotep)))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-make-term-into-dag-basic
@@ -73,6 +80,8 @@
               2147483647))
   :hints (("Goal" :in-theory (enable make-term-into-dag-basic))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
 ;; This wrapper has no invariant risk because it has a guard of t.
 (defund make-term-into-dag-basic-unguarded (term interpreted-function-alist)
@@ -82,6 +91,8 @@
       (prog2$ (er hard? 'make-term-into-dag-basic-unguarded "Bad input.")
               (mv (erp-t) nil))
     (make-term-into-dag-basic term interpreted-function-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the dag-or-quotep.  Does not return erp.
 (defund make-term-into-dag-basic! (term interpreted-function-alist)

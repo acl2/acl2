@@ -205,7 +205,7 @@
                            :oct (pprint-oct-const c.value)
                            :hex (pprint-hex-const c.value))
          (if c.unsignedp "U" "")
-         (pprint-iconst-length c.type)))
+         (pprint-iconst-length c.length)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -337,9 +337,9 @@
   (obj-declor-case
    declor
    :ident (pprint-ident declor.get)
-   :pointer (msg "*~@0" (pprint-obj-declor declor.to))
-   :array (b* ((sub (pprint-obj-declor declor.of)))
-            (if (obj-declor-case declor.of :pointer)
+   :pointer (msg "*~@0" (pprint-obj-declor declor.decl))
+   :array (b* ((sub (pprint-obj-declor declor.decl)))
+            (if (obj-declor-case declor.decl :pointer)
                 (msg "(~@0)[~@1]"
                      sub
                      (if declor.size
@@ -369,9 +369,9 @@
   (obj-adeclor-case
    declor
    :none ""
-   :pointer (msg "*~@0" (pprint-obj-adeclor declor.to))
-   :array (b* ((sub (pprint-obj-adeclor declor.of)))
-            (if (obj-adeclor-case declor.of :array)
+   :pointer (msg "*~@0" (pprint-obj-adeclor declor.decl))
+   :array (b* ((sub (pprint-obj-adeclor declor.decl)))
+            (if (obj-adeclor-case declor.decl :array)
                 (msg "(~@0)[~@1]"
                      sub
                      (if declor.size
@@ -1059,10 +1059,13 @@
 (define pprint-fun-declor ((declor fun-declorp))
   :returns (part msgp)
   :short "Pretty-print a function declarator."
-  (b* (((fun-declor declor) declor))
-    (msg "~@0(~@1)"
-         (pprint-ident declor.name)
-         (pprint-comma-sep (pprint-param-declon-list declor.params))))
+  (fun-declor-case
+   declor
+   :base (msg "~@0(~@1)"
+              (pprint-ident declor.name)
+              (pprint-comma-sep (pprint-param-declon-list declor.params)))
+   :pointer (msg "*~@0" (pprint-fun-declor declor.decl)))
+  :measure (fun-declor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -398,17 +398,17 @@
             1
           (b* (;; Uncomment this to print the test:
                ;; (- (cw "(Test:~%") ;todo: check for a constant test?
-               ;;    (print-dag-only-supporters 'dag-array dag-array (darg1 expr))
+               ;;    (print-dag-array-node-and-supporters 'dag-array dag-array (darg1 expr))
                ;;    (cw ")~%"))
                (then-branch (darg2 expr))
                ;; Uncomment this to print the then-branch:
                ;; (- (cw "(Then branch:~%") ;todo: check for a constant test?
-               ;;    (if (quotep then-branch) (cw "~x0~%" then-branch) (print-dag-only-supporters 'dag-array dag-array then-branch))
+               ;;    (if (quotep then-branch) (cw "~x0~%" then-branch) (print-dag-array-node-and-supporters 'dag-array dag-array then-branch))
                ;;    (cw ")~%"))
                (else-branch (darg3 expr))
                ;; Uncomment this to print the else-branch:
                ;; (- (cw "(Else branch:~%") ;todo: check for a constant test?
-               ;;    (if (quotep else-branch) (cw "~x0~%" else-branch) (print-dag-only-supporters 'dag-array dag-array else-branch))
+               ;;    (if (quotep else-branch) (cw "~x0~%" else-branch) (print-dag-array-node-and-supporters 'dag-array dag-array else-branch))
                ;;    (cw ")~%"))
                )
             (if (mbt (and (or (myquotep then-branch) ;for termination

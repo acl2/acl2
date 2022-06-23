@@ -48,8 +48,8 @@
                   (if (integerp (* (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X)) (/ y)))
                       (- (floor (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X))) y))
                     (+ -1 (- (floor (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X))) y))))))
-  :hints (("Goal" :use (:instance floor-minus-arg1 (x (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X)))))
-           :in-theory (disable floor-minus-arg1))))
+  :hints (("Goal" :use (:instance floor-of---arg1 (j y) (i (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X)))))
+           :in-theory (disable floor-of---arg1))))
 
 (defthm floor-of-sum-of-minus-expt-and-bvchop-arg2
   (implies (rationalp x)

@@ -862,7 +862,6 @@
             x86isa::no-duplicates-p-create-canonical-address-list
             acl2::slice-becomes-bvchop
             acl2::bvchop-of-bvchop
-            acl2::bvplus-recollapse ;rename
             acl2::bvchop-of-bvplus
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
@@ -982,7 +981,6 @@
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
-            acl2::bvplus-recollapse ;todo: rename
             acl2::bvplus-of-unary-minus
             acl2::bvplus-of-logext-arg1
             acl2::bvplus-of-logext
@@ -1246,6 +1244,7 @@
             ;; These are not strictly necessary but can help make failures more
             ;; clear / smaller:
             x86isa::mv-nth-0-of-rme-size-of-xw-when-app-view
+            ;; todo: make 64-bit versions of these:
             mv-nth-0-of-rme-size-of-set-eip-when-app-view
             mv-nth-0-of-rme-size-of-set-esp-when-app-view
             mv-nth-0-of-rme-size-of-set-ebp-when-app-view

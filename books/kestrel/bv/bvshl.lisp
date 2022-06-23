@@ -107,12 +107,13 @@
 (defund bvshl-cases-term-fn-aux (i width)
   (declare (xargs :guard (integerp width)
                   :measure (nfix (+ 1 i))))
-  (if (not (natp i))
-      nil
+  (if (not (posp i))
+      `((otherwise (bvshl ,width x 0))) ; covers 0 and all other cases: ensures that a number is always returned
     (cons ;`(,i (bvcat ,(- width i) x ,i 0)) ; or we could just put in a call of bvshl where the shift-amount is a constant, but then we'd need support for bvshl in the STP translation, or an opener rule
      `(,i (bvshl ,width x ,i))
      (bvshl-cases-term-fn-aux (+ -1 i) width))))
 
+;; TODO: Consider making a BVIF nest instead of using CASE
 (defund bvshl-cases-term-fn (width)
   (declare (xargs :guard (natp width)))
   `(case shift-amount
@@ -120,6 +121,15 @@
 
 (defmacro bvshl-cases-term (width)
   (bvshl-cases-term-fn width))
+
+;pretty gross
+(defthmd bvshl-16-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 16))
+           (equal (bvshl 16 x shift-amount)
+                  (bvshl-cases-term 16)))
+  :hints (("Goal" :in-theory (enable bvshl))))
 
 ;pretty gross
 (defthmd bvshl-32-cases

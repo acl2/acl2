@@ -152,7 +152,13 @@
      (xdoc::p
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
-       in case proof generation is (temporarily) broken."))
+       in case proof generation is (temporarily) broken.")
+     (xdoc::p
+      "Currently this must be set to @('nil')
+       when generating code that reads or writes
+       elements of array members of structures.
+       This limitation will be lifted by extending proof generation
+       to handle those operations."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
@@ -183,8 +189,8 @@
     "Representation of C Code in ACL2"
 
     (xdoc::p
-     "For now ATC supports the ACL2 representation of
-      a single C translation unit (which goes into the generated file).
+     "Currently ATC supports the ACL2 representation of
+      a single C translation unit, which goes into the generated file.
       This translation unit consists of
       one or more C function definitions
       and zero or more C structure type declarations.")
@@ -196,9 +202,9 @@
       as defined in Section `Portable ASCII C Identifiers' below
       (this is enforced by @(tsee defstruct)),
       represents the tag of the C structure type.
-      The requirements that all the structure targets @('ti') are distinct
+      The requirement that all the structure targets @('ti') are distinct
       implies that all their symbol names are distinct
-      (this is enforced by @(tsee defstruct).")
+      (this is enforced by @(tsee defstruct)).")
 
     (xdoc::p
      "Each C function definition is represented by an ACL2 function definition.
@@ -337,14 +343,16 @@
      (xdoc::li
       "If @('fn') is non-recursive, the unnormalized body must be
        a statement term for @('fn') with loop flag @('nil')
-       returning type @('T') and affecting variables @('vars'),
+       returning type @('T') and affecting variables @('vars')
+       (as defined below),
        where each variable in @('vars')
        is a formal parameter of @('fn') with pointer type
        and where @('T') is not @('void') if @('vars') is @('nil').
        The return type of the C function represented by @('fn') is @('T').")
      (xdoc::li
       "If @('fn') is recursive, the unnormalized body must be
-       a loop term for @('fn') affecting variables @('vars'),
+       a loop term for @('fn') affecting variables @('vars')
+       (as defined below),
        where each variable in @('vars')
        is a formal parameter of @('fn')."))
     (xdoc::p
@@ -380,7 +388,7 @@
        a statement term returning that C value.
        This represents a C @('return') statement
        whose expression is represented by the same term,
-       viewed as an expression term returning a C value.")
+       viewed as an expression term.")
      (xdoc::li
       "A term @('(mv ret var1 ... varn)'),
        when @('ret') is an expression term for @('fn')
@@ -504,7 +512,9 @@
       "A term
        @('(let ((var (struct-<tag>-write-<member> term var))) body)'),
        when @('<tag>') is a @(tsee defstruct) name,
-       @('<member>') is the name of of of the members of that @(tsee defstruct),
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<member>') has an integer type in the @(tsee defstruct),
        @('var') is in scope,
        @('var') has a pointer type whose referenced type is
        the C structure type represented by @('<tag>'),
@@ -518,8 +528,46 @@
        with the new value expression represented by @('term'),
        followed by the C code represented by @('body').")
      (xdoc::li
+      "A term
+       @('(let
+           ((var (struct-<tag>-write-<member>-<type> term1 term2 var))) body)'),
+       when @('<tag>') is a @(tsee defstruct) name,
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<member>') has an integer array type in the @(tsee defstruct)
+       with element type @('<type2>'),
+       @('<type>') and @('<type2>') are among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('var') is in scope,
+       @('var') has a pointer type whose referenced type is
+       the C structure type represented by @('<tag>'),
+       @('var') is one of the variables in @('vars'),
+       @('term1') is a pure expression term for @('fn')
+       returning the C type corresponding to @('<type2>'),
+       @('term2') is a pure expression term for @('fn')
+       returning the C type corresponding to @('<type>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       an element of a member of the structure represented by @('var')
+       via its pointer, using @('term1') as the index,
+       with the new value expression represented by @('term2'),
+       followed by the C code represented by @('body').")
+     (xdoc::li
       "A term @('(let ((var term)) body)'),
        when @('var') is assignable,
+       @('var') is among @('vars') if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('var')
        that is either a call of a target function
@@ -540,6 +588,9 @@
        the symbol name of @('var1') is distinct from
        the symbol names of all the other ACL2 variables in scope,
        each @('vari') with @('i') &gt; 1 is assignable,
+       each @('vari') with @('i') &gt; 1 is among @('vars')
+       if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is an expression term for @('fn')
        returning a non-@('void') non-pointer C type
        and affecting the variables @('(var2 ... varn)'), and
@@ -554,6 +605,9 @@
       "A term @('(mv-let (var1 var2 ... varn) (assignn term) body)'),
        when @('n') &gt; 1,
        each @('vari') is assignable,
+       each @('vari') with @('i') &gt; 1 is among @('vars')
+       if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is an expression term for @('fn')
        returning the same non-@('void') non-pointer C type
        as the C type of @('vari')
@@ -574,6 +628,8 @@
       "A term @('(mv-let (var1 ... varn) term body)'),
        when @('n') &gt; 1,
        each @('vari') is assignable,
+       each @('vari') is among @('vars') if it is a formal parameter of @('fn')
+       that has pointer type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('(var1 ... varn)')
        that is either a call of a recursive target function
@@ -837,11 +893,37 @@
       "A call of @('struct-<tag>-read-<member>')
        on an expression term for @('fn') returning @('U')
        when @('<tag>') is a @(tsee defstruct) name,
-       @('<member>') is the name of of of the members of that @(tsee defstruct),
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<member>') has an integer type in the @(tsee defstruct),
        @('T') is the C integer type of @('<member>'), and
        @('U') is the pointer type to
        the C structure type represented by @('<tag>').
-       This represents an structure member access expression by pointer.")
+       This represents an access to a structure member by pointer.")
+     (xdoc::li
+      "A call of @('struct-<tag>-read-<member>-<type>')
+       on expression terms for @('fn') returning @('U') and @('V')
+       when @('<tag>') is a @(tsee defstruct) name,
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('T') is the C element type of the array type of @('<member>'),
+       @('U') is the C type corresponding to @('<type>'), and
+       @('V') is the pointer type to
+       the C structure type represented by @('<tag>').
+       This represents an access to
+       an element of a structure member by pointer.")
      (xdoc::li
       "A call of @(tsee sint-from-boolean) on
        an expression term for @('fn') returning boolean,

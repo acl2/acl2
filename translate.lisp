@@ -3676,7 +3676,7 @@
 ; on it.  This partitioning becomes important when we develop the cl-cache in
 ; which we store lambda objects for evaluation purposes.
 
-(defun type-expressions-from-type-spec (spec vars wrld)
+(defun type-expressions-from-type-spec (x vars wrld)
 
 ; Given an alleged type spec, like INTEGER, (SATISFIES EVENP), or (OR STRING
 ; CONS), and a list of variables, var, we generate the non-empty list of
@@ -3699,10 +3699,11 @@
 
   (cond ((null vars) nil)
         (t (let ((expr (translate-declaration-to-guard-gen
-                        spec (car vars) t wrld)))
+                        x (car vars) t wrld)))
              (cond
               ((null expr) nil)
-              (t (cons expr (subst-each-for-var (cdr vars) (car vars) expr))))))))
+              (t (cons expr
+                       (subst-each-for-var (cdr vars) (car vars) expr))))))))
 
 (defun syntactically-plausible-lambda-objectp1
   (edcls formals ignores ignorables type-exprs satisfies-exprs guard)
@@ -4160,19 +4161,19 @@
 ; As of Version 8.3, every badged user-defined function had a warrant.  See
 ; Badges versus Warrants in apply-constraints.lisp.  But this may change and
 ; should not be assumed in the source code.  For example, currently defwarrant
-; insists that warrantable functions have a restricted form of measure,
+; insists that warrantable G2 functions have a restricted form of measure,
 ; permitting us to show that a model of apply$ could be admitted.  But we see
-; no reason why such a function couldn't be given a badge but no warrant.  Such
-; a function couldn't be apply$d but could be used in a function that is
-; apply$d.  (We once disallowed multi-valued functions to have warrants but
-; permitted them to be used in functions that did; but now apply$ handles
-; multi-valued functions.)  Or, perhaps we'll permit :program mode functions to
-; have badges so they can be handled by apply$ in the evaluation theory; they
-; would then have badges but not warrants (since warrants are necessarily
-; logical).  To allow such eventual extensions the :badge-userfn-structure
-; includes not just the badge but a flag indicating whether fn has been issued
-; a warrant.  If the warrantp flag is set for fn then its warrant function is
-; named APPLY$-WARRANT-fn.  See warrant-name.
+; no reason why such a function couldn't be given a badge but no warrant.
+; Indeed, that is allowed in Version 8.4.  Such a function can't be apply$d but
+; can be used in a function that is apply$d.  (We once disallowed multi-valued
+; functions to have warrants but permitted them to be used in functions that
+; did; but now apply$ handles multi-valued functions.)  Or, perhaps we'll
+; permit :program mode functions to have badges so they can be handled by
+; apply$ in the evaluation theory; they would then have badges but not warrants
+; (since warrants are necessarily logical).  To allow such eventual extensions
+; the :badge-userfn-structure includes not just the badge but a flag indicating
+; whether fn has been issued a warrant.  If the warrantp flag is set for fn
+; then its warrant function is named APPLY$-WARRANT-fn.  See warrant-name.
 
 ; On Why Warrantp is not in the Badge:
 
@@ -4432,7 +4433,10 @@
 ; badge-table entry :badge-userfn-structure.
 
 ; Note: The word ``executable'' in the name means this function is executable,
-; unlike its namesake, badge, which is just constrained.
+; unlike its namesake, badge, which is just constrained.  See the Essay on
+; Executable-tamep versus Tamep, etc.  for a fuller exploration of the
+; intuitive but grossly misleading notion that ``executable-badge is an
+; executable version of badge.''
 
 ; Aside: The apply$ primitives have badges stored in the *badge-prim-falist*.
 ; The apply$ boot functions have built-in badges as specified below.  All other
@@ -4511,7 +4515,55 @@
              (t nil)))))))
    (t nil)))
 
-; Compare this to the TAMEP clique.
+; Essay on Executable-tamep versus Tamep, etc.
+
+; Compare the following clique to the TAMEP clique.
+
+; The word ``executable'' in the names below means these functions are
+; executable, unlike their namesakes which are defined but which depend on the
+; constrained function badge and so can't be executed.  For example, consider
+; the definition of executable-tamep to tamep.  If you take the definition of
+; executable-tamep, drop the prefix ``executable-'' from all the subroutine
+; calls in the body and drop the wrld arguments there as well, the result is
+; the logical definition of tamep.  So that's a sort of informal inductive
+; proof that they're equivalent if we could do the same ``inductive'' proof for
+; every ``executatable-'' definition involved.  But badge and executable-badge
+; are very different.  Executable-badge, above, accesses the
+; badge-userfn-structure of the badge-table in the world, whereas badge calls
+; badge-userfn which is just constrained to return a badge.  The actual values
+; of badge on user-defined symbols as seen in proofs are supplied by warrant
+; hypotheses.  Thus, the intuitive idea that executable-tamep, say, is a way to
+; determine whether tamep is true depends on an implicit correspondence of the
+; world and the warrant hypotheses available.
+
+; (include-book "projects/apply/top" :dir :system)
+; (defun foo (x) (declare (xargs :mode :program)) (* x x))
+; (executable-tamep '(foo x) (w state))
+; ==> nil
+; (tamep '(foo x))
+; ==> error, badge-userfn undefined
+; (defbadge foo)
+; (executable-tamep '(foo x) (w state))
+; ==> T
+; (tamep '(foo x))
+; ==> T
+
+; So given that executable-tamep now says (foo x) is tame and (tamep '(foo x)) is T,
+; can we prove it?
+
+; (thm (tamep '(foo x)))
+; ==> failure
+; (verify-termination foo)
+; (thm (tamep '(foo x)))
+; ==> failure
+; (defwarrant foo)
+; (thm (tamep '(foo x)))
+; ==> failure
+; (thm (implies (warrant foo) (tamep '(foo x))))
+; ==> success!
+
+; So think of executable-tamep as ``an executable version of tamep'' only in
+; the sense just illustrated!
 
 (defabbrev executable-tamep-lambdap (fn wrld)
 
@@ -15063,6 +15115,8 @@
 
 ; Given a logical-namep we determine what sort of logical object it is.
 
+  (declare (xargs :guard (and (or (stringp name) (symbolp name))
+                              (plist-worldp wrld))))
   (cond ((stringp name) 'package)
         ((function-symbolp name wrld) 'function)
         ((getpropc name 'macro-body nil wrld) 'macro)
@@ -15080,7 +15134,7 @@
         ((getpropc name 'stobj-live-var nil wrld)
          'stobj-live-var)
         (quietp nil)
-        (t (er hard 'logical-name-type
+        (t (er hard? 'logical-name-type
                "~x0 is evidently a logical name but of undetermined type."
                name))))
 
@@ -15091,6 +15145,7 @@
 ; package, and to allow events to use the main Lisp package when they
 ; do not introduce functions, macros, or constants.
 
+  (declare (xargs :guard (plist-worldp w)))
   (cond ((not (symbolp name))
          (er-cmp ctx
                  "Names must be symbols and ~x0 is not."
@@ -17788,10 +17843,11 @@
 ; determine if a function has a badge we have to scan the 800+ entries in
 ; *badge-prim-falist*, the six apply$ boot fns, and the entries in the
 ; :badge-userfn-structure component of the badge-table.  But the only functions
-; with non-trivial ilks are apply$ and ev$ among the boot functions and perhaps
-; some functions among the userfns.  All other fns are either tame or unbadged
-; and by returning nil for those we don't have to search through the primitives
-; as we would to implement the ideal spec.
+; with non-trivial ilks are apply$ and ev$ among the boot functions, the loop$
+; scions like collect$, and perhaps some functions among the userfns.  All
+; other fns are either tame or unbadged and by returning nil for those we don't
+; have to search through the primitives as we would to implement the ideal
+; spec.
 
 ; While this spec is faster to implement than the ideal one it prevents
 ; translate from distinguishing supplying a lambda$ in an ordinary slot versus
@@ -19238,15 +19294,16 @@
            (trans-er+ form ctx
                       "It is illegal to invoke ~@0 here because of a ~
                        signature mismatch.  This function call returns a ~
-                       result of shape ~x1~@2 where a result of shape ~x3 is ~
-                       required."
+                       result of shape ~X14~@2 where a result of shape ~X34 ~
+                       is required."
                       (if (consp fn) msg (msg "~x0" fn))
                       (prettyify-stobjs-out stobjs-out-call)
                       (if alist-in-out ; always true here?
                           " (after accounting for the replacement of some ~
                            input stobjs by congruent stobjs)"
                         "")
-                      (prettyify-stobjs-out stobjs-out-x))))))
+                      (prettyify-stobjs-out stobjs-out-x)
+                      nil)))))
        (t
 
 ; In this case, stobjs-out-call and (equivalently) stobjs-out-call are symbols,
@@ -20542,12 +20599,12 @@
 ; Note: Ilk is the ilk of the slot in which x was found, and is always one of
 ; :FN, :EXPR, or NIL.  It is almost always NIL, e.g., when first entering from
 ; translate or during the translation of any actual to any ACL2 primitive
-; (badged or unbadged) except for the two primitives apply$ and ev$.  In fact,
-; the only values of ilk that actually matter are :FN and :FN?.  If x is being
-; passed into such a slot then lambda objects and lambda$ expressions are
-; allowed.  Otherwise such expressions trigger errors.  So providing an ilk of
-; NIL just has the effect of prohibiting x from being a lambda object or
-; lambda$.
+; (badged or unbadged) except for the two primitives apply$ and ev$ and the
+; loop$ scions.  In fact, the only values of ilk that actually matter are :FN
+; and :FN?.  If x is being passed into such a slot then lambda objects and
+; lambda$ expressions are allowed.  Otherwise such expressions trigger errors.
+; So providing an ilk of NIL just has the effect of prohibiting x from being a
+; lambda object or lambda$.
 
 ; (There is no special treatment of ilk :EXPR, i.e., we do not support any way
 ; for the user to type an untranslated term and have it turn into a quoted

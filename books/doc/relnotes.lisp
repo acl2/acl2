@@ -204,6 +204,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "bitcoin::bitcoin" "Bitcoin Library"))
+
+   (xdoc::p
+    "Executable specifications of Bech32 and Bech32 address encoding
+     have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
@@ -286,6 +294,10 @@
      checkpoint-list-pretty) and related (perhaps less useful) new utilities
      @(tsee checkpoint-info-list) and @(tsee show-checkpoint-list) provide
      programmatic interfaces to key checkpoint information.")
+
+   (xdoc::p
+    "The new utility @(tsee book-runes-alist) returns an alist associating book
+     full pathnames with a list of the @(see rune)s introduced .")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -383,6 +395,9 @@
     "Evaluation of @('prover-steps-counted state)') returns the prover steps
      counted for the most recently completed event.")
 
+   (xdoc::p
+    "Fixed with-supporters to work when including an uncertified book.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))
@@ -421,6 +436,15 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Build System Updates")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Default Build Target, `basic', Avoids Quicklisp Dependency")
+
+   (xdoc::p
+    "The default `make' target for certifying the @(see community-books), which
+     is still `basic', now certifies slightly fewer books so that it does not
+     depend on Quicklisp.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1597,7 +1621,7 @@
    @('first-non-member'), @('group')/@('ungroup') (for splitting and
    flattening), @('count-occs'), @('prefixp'), @('len-at-least'),
    @('remove-equal'), @('remove-duplicates-equal'), @('find-index'), and
-   @('remove-nth'). See @('[books]/kestrel/prime-fields/').")
+   @('remove-nth'). See @('[books]/kestrel/lists-light/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1898,7 +1922,7 @@
      for closed lambdas, processing @('defun') and @('defthm') forms, processing
      declares, the ACL2 state, @('system-books-dir'), fixing functions,
      @('acl2-count'), @('make-ord'), @('coerce'), @('map-symbol-name'), tuples,
-     @('myif'), and @'(mv-nth').")
+     @('myif'), and @('mv-nth').")
 
    (xdoc::p "Various improvements have been made to @('defopeners') and
    @('defopeners-mut-rec').")

@@ -10,10 +10,12 @@
 
 (in-package "ACL2")
 
+;; See example in defstobj-plus-tests.lisp.
+
 ;; TODO: Add support for hash table fields!
 ;; TODO: Add support for stobj table fields!
 ;; TODO: Consider not disabling recognizers for non-array fields
-;; TODO: Restrcict the theories used in the hints
+;; TODO: Restrict the theories used in the hints
 
 (include-book "split-keyword-args")
 (include-book "pack") ; todo: reduce or drop?
@@ -111,7 +113,7 @@
                                                      ,this-updater-fn
                                                      nth-update-nth
                                                      (:e nfix)))))
-                      
+
                       (defthm ,(pack$ length-fn '-of- this-updater-fn)
                         (equal (,length-fn (,this-updater-fn v ,stobj-name))
                                (,length-fn ,stobj-name))
@@ -122,9 +124,9 @@
                                         (,this-updater-fn v2 (,updater-fn i v1 ,stobj-name)))
                                  :hints (("Goal" :in-theory (enable ,updater-fn ,this-updater-fn))))
                                (defthm ,(pack$ resize-fn '-of- this-updater-fn)
-                                 (equal (,resize-fn i v1 (,this-updater-fn v2 ,stobj-name))
-                                        (,this-updater-fn v2 (,updater-fn i v1 ,stobj-name)))
-                                 :hints (("Goal" :in-theory (enable ,updater-fn ,this-updater-fn)))))))
+                                 (equal (,resize-fn i (,this-updater-fn v2 ,stobj-name))
+                                        (,this-updater-fn v2 (,resize-fn i ,stobj-name)))
+                                 :hints (("Goal" :in-theory (enable ,resize-fn ,this-updater-fn)))))))
                     (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-updater-fn))))
          ((eq 'hash-table type-kind)
           (progn$ ;(cw "NOTE: Hash table fields are not yet supported by defstobj+.")
@@ -292,6 +294,7 @@
              (type-claim-for-default-value (translate-declaration-to-guard-gen element-type 'default-value t nil))
              (type-claim-for-val (translate-declaration-to-guard-gen element-type 'val t nil))
              (type-claim-for-v (translate-declaration-to-guard-gen element-type 'v t nil))
+             ;; TODO: Is the type is not a trivial alias of another type, we might want to keep it closed up?:
              (type-claim-for-accessor (translate-declaration-to-guard-gen element-type `(,accessor-fn i ,stobj-name) t nil))
              )
         (mv `(;; Helper theorem:
@@ -574,6 +577,7 @@
 
            ,@theorems-for-fields
 
+           ;; Has to come after the theorems-for-fields, since this need rules about MAKE-LIST-AC.
            ;; The stobj creation function returns a well-formed stobj:
            (defthm ,(pack$ top-recognizer '-of- creator)
              (,top-recognizer (,creator))

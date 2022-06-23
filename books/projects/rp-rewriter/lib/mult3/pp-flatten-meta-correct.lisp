@@ -2609,6 +2609,16 @@
  (in-theory (disable RP-EVL-LST-OF-CONS)))
 
 (local
+ (progn
+   (create-regular-eval-lemma -- 1 mult-formula-checks)
+   (create-regular-eval-lemma bit-of 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-? 3 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-and 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-or 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-xor 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-NOT 1 mult-formula-checks)))
+
+(local
  (defthm RP-EVL-LST-OF-CONS-with-syntaxp
    (IMPLIES (and (CONSP ACL2::X-LST)
                  (syntaxp (and (consp ACL2::X-LST)
@@ -2643,14 +2653,17 @@
   :hints (("Goal"
            :in-theory (e/d (and-list) ()))))
 
+
 (defthm rp-evlt-of-create-and-list-instance
   (implies (and (rp-evl-meta-extract-global-facts)
-                (mult-formula-checks state))
+                (mult-formula-checks state)
+                (valid-sc-subterms lst a))
            (equal (rp-evlt (create-and-list-instance lst) a)
                   (and-list 0 (rp-evlt-lst lst A))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (create-and-list-instance
+                            regular-rp-evl-of_bit-of_when_mult-formula-checks
                             and-list)
                            ()))))
 
@@ -2658,7 +2671,8 @@
  (defthm pp-lists-to-term-p+-to-pp-lists-to-term-pp-lst
    (implies (and (mult-formula-checks state)
                  (pp-lists-p lst)
-                 (rp-evl-meta-extract-global-facts))
+                 (rp-evl-meta-extract-global-facts)
+                 (valid-sc-subterms-lst (strip-cdrs lst) a))
             (equal (rp-evlt (pp-lists-to-term-p+ lst) a)
                    (sum-list (rp-evlt-lst (pp-lists-to-term-pp-lst lst)  a))))
    :hints (("Goal"
@@ -2666,7 +2680,19 @@
             :expand ((:free (x y hash) (and-list hash (cons x y))))
             :induct (pp-lists-to-term-p+ lst)
             :in-theory (e/d (pp-lists-to-term-p+
-                             pp-lists-to-term-pp-lst) ())))))
+                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             pp-lists-to-term-pp-lst)
+                            ())))))
+
+(local
+ (defthm valid-sc-and-apply-sign-to-pp-lists
+   (implies (and ;;(true-listp pp-lists)
+                 (valid-sc-subterms-lst (strip-cdrs pp-lists) a))
+            (valid-sc-subterms-lst (strip-cdrs (apply-sign-to-pp-lists pp-lists sign)) a))
+   :hints (("goal"
+            :in-theory (e/d (valid-sc-subterms-lst
+                             apply-sign-to-pp-lists)
+                            (valid-sc-subterms))))))
 
 (local
  (defthm pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists
@@ -2687,6 +2713,7 @@
             :in-theory (e/d ()
                             (--
                              rp-evlt_of_pp-lists-to-term_of_pp-term-to-pp-lists
+                             
                              sum
                              valid-sc
                              and$
@@ -2712,15 +2739,7 @@
 ;;  (defthm ...
 ;;    (RP-EVL-OF-TRANS-LIST (LIST (LIST '-- term)) A)
 
-(local
- (progn
-   (create-regular-eval-lemma -- 1 mult-formula-checks)
-   (create-regular-eval-lemma bit-of 2 mult-formula-checks)
-   (create-regular-eval-lemma BINARY-? 3 mult-formula-checks)
-   (create-regular-eval-lemma BINARY-and 2 mult-formula-checks)
-   (create-regular-eval-lemma BINARY-or 2 mult-formula-checks)
-   (create-regular-eval-lemma BINARY-xor 2 mult-formula-checks)
-   (create-regular-eval-lemma BINARY-NOT 1 mult-formula-checks)))
+
 
 (local
  (defthmd and-list-to-binary-and

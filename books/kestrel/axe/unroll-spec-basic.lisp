@@ -135,12 +135,13 @@
        (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
-       ;; Compute the base set of rules (from which to add and remove) and also
+       ;; Compute the base set of rules (from which we remove the remove-rules and to which we add the extra-rules) and also
        ;; any opener events:
        ((mv pre-events base-rules)
         (if (eq rules :standard)
+            ;; Use the :standard rule set, which is (unroll-spec-basic-rules):
             (mv nil (unroll-spec-basic-rules))
-          (if (eq rules :auto)
+          (if (eq :auto rules)
               (b* (((mv defined-supporting-fns
                         & ;undefined-fns
                         & ;stopper-fns-encountered
@@ -148,18 +149,22 @@
                     (fns-supporting-term term
                                          ;; Don't open these functions:
                                          (append '(leftrotate ; don't open leftrotate
-                                                   nth update-nth len true-listp nthcdr firstn take
+                                                   nth update-nth len true-listp
+                                                   nthcdr ; opener could loop with nth-of-cdr, etc.
+                                                   firstn
+                                                   take
                                                    list-to-bv-array
                                                    ifix nfix
                                                    floor mod
                                                    )
                                                  *bv-and-array-fns-we-can-translate*)
                                          (w state)))
-                   ((mv events rule-names)
+                   ((mv opener-events opener-rule-names)
                     (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
-                   (- (cw "Will use the following ~x0 additional rules: ~X12~%" (len rule-names) rule-names nil))
+                   (- (cw "Will use the following ~x0 additional opener rules: ~X12~%" (len opener-rule-names) opener-rule-names nil))
                    ;; todo: name this rule set?:  what else should go in it
                    ;; try to use unroll-spec-basic-rules here
+                   ;; todo: could loop with the openers (e.g., )?
                    (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
                                          ;car-cons
                                          ;cdr-cons
@@ -174,9 +179,8 @@
                                                             ))
                                        (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
                                        (unsigned-byte-p-forced-rules)
-                                       rule-names)))
-                ;; todo: this doesn't include any standard rules -- should it?  they could loop with the openers (e.g., nth-of-cdr)
-                (mv events rule-names))
+                                       opener-rule-names)))
+                (mv opener-events rule-names))
             ;; rules is an explicit list of rules:
             (mv nil rules))))
        ;; Add the :extra-rules and remove the :remove-rules:
@@ -185,8 +189,7 @@
        ;; Submit any needed defopener rules:
        (state (submit-events-quiet pre-events state))
        ;; Make the rule-alist:
-       ((mv erp rule-alist)
-        (make-rule-alist rules (w state)))
+       ((mv erp rule-alist) (make-rule-alist rules (w state)))
        ((when erp) (mv erp nil state))
        ;; Create the interpreted-function-alist:
        (interpreted-function-alist
@@ -213,8 +216,7 @@
                              print
                              normalize-xors
                              (w state)))
-       ((when erp)
-        (mv erp nil state))
+       ((when erp) (mv erp nil state))
        ((when (quotep dag))
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
         (mv :unexpected-quotep nil state))
@@ -338,7 +340,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                                        ',whole-form
                                                        state))))
     (if (check-boolean local)
-        (list 'local form)
+        `(local ,form)
       form))
   :parents (axe) ; or can we consider this a lifter?
   :short "Open functions and unroll recursion in a spec."

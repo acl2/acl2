@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 (include-book "values")
+(include-book "errors")
 
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte16-list" :dir :system)
@@ -230,7 +231,13 @@
    (defrulel lemma2
      (implies (acl2::ubyte8-listp x)
               (acl2::byte-listp x))
-     :enable (acl2::byte-listp acl2::ubyte8-listp))))
+     :enable (acl2::byte-listp acl2::ubyte8-listp)))
+
+  ///
+
+  (defret error-info-wfp-of-eval-plain-string-literal
+    (implies (resulterrp val)
+             (error-info-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +303,13 @@
    (defrulel lemma2
      (implies (acl2::ubyte8-listp x)
               (acl2::byte-listp x))
-     :enable (acl2::byte-listp acl2::ubyte8-listp))))
+     :enable (acl2::byte-listp acl2::ubyte8-listp)))
+
+  ///
+
+  (defret error-info-wfp-of-eval-hex-string-literal
+    (implies (resulterrp val)
+             (error-info-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,4 +347,9 @@
                    (err (list :hex-number-too-large lit.get))))
    :plain-string (eval-plain-string-literal lit.get)
    :hex-string (eval-hex-string-literal lit.get))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret error-info-wfp-of-eval-literal
+    (implies (resulterrp val)
+             (error-info-wfp val))))

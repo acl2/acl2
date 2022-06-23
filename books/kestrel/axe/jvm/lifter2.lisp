@@ -1,7 +1,7 @@
 ; A compositional version of the JVM loop lifter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -121,12 +121,13 @@
        ((when (not (postludesp postludes)))
         (mv t (er hard 'lift-java-code2 "ERROR: Ill-formed postludes!") state))
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (class-alist (jvm::global-class-alist state))
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
        ;; Gather info about the main method to be lifted:
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
-       (class-alist (global-class-alist state))
+
        (class-table-map (alist-to-map class-alist))
        (all-class-names (strip-cars class-alist))
 ;TODO: Combine with similar code in unroll-java-code
@@ -278,7 +279,7 @@
        ((when (not (subsetp-eq assumption-vars (list state-var))))
         (mv t (er hard 'lift-java-code2 "ERROR: Bad vars in assumptions: ~x0!" (set-difference-eq assumption-vars (list state-var))) state))
        (- (cw "Will lift with these assumptions: ~x0." nicer-assumptions))
-       ((mv erp state-var-dag) (dagify-term2 state-var))
+       ((mv erp state-var-dag) (dagify-term state-var))
        ((when erp) (mv erp nil state))
        ((mv erp
             final-state-dag generated-events generated-rules

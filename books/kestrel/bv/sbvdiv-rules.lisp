@@ -184,8 +184,9 @@
                   (IF (INTEGERP (* (+ x1 (- x2)) (/ Y)))
                       (- (FLOOR (+ x1 (- x2)) Y))
                       (- (- (FLOOR (+ x1 (- x2)) Y)) 1))))
-  :hints (("Goal" :use (:instance floor-minus-arg1
-                                  (x (+ x1 (- x2)))))))
+  :hints (("Goal" :use (:instance floor-of---arg1
+                                  (j y)
+                                  (i (+ x1 (- x2)))))))
 
 (DEFTHM FLOOR-MINUS-ARG2-lemma
   (IMPLIES (AND (FORCE (RATIONALP X))
@@ -223,7 +224,7 @@
            :in-theory (e/d (BVCHOP-OF-MINUS-lemma
                             sbvdiv
                             bvdiv logapp bvuminus bvminus sbvlt BVCHOP-OF-SUM-CASES
-                            FLOOR-MINUS-ARG1
+                            floor-of---arg1
                             bvchop-reduce-when-top-bit-known
                             truncate-becomes-floor-other FLOOR-WHEN-INTEGERP-OF-QUOTIENT
                             FLOOR-MINUS-ARG1-lemma)
@@ -251,7 +252,7 @@
                                    truncate-becomes-floor-other
                                    FLOOR-MINUS-ARG2-lemma)
                            ( floor-of-minus-and-minus
-                             FLOOR-MINUS-ARG1
+                             FLOOR-OF---ARG1
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              my-FLOOR-upper-BOUND
                              ;;floor-bound
@@ -312,7 +313,7 @@
                             bvuminus
                             bvminus
                             floor-of-sum
-                            floor-minus-arg1
+                            floor-of---arg1
                             bvchop-of-sum-cases
                             ;BVCHOP-WHEN-TOP-BIT-0-WIDEN ; in rules.lisp
                             )

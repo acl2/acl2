@@ -1782,6 +1782,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
   ;; only internally.
   (backchaining-rule :type t :initially nil)
+  (backchaining-just-started :type t :initially nil)
   (rw-context-disabled :type (satisfies booleanp) :initially nil) 
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)

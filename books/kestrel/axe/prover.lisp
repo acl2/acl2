@@ -236,7 +236,7 @@
  ;;                                     (progn$ (cw "(Failed.  Reason: Failed to match free var in hyp (number ~x0): ~x1 for ~x2." hyp-num hyp rule-symbol)
  ;;                                             (cw "(Assumptions (to assume false):~%")
  ;; ;this can be big (print it just once per literal?)
- ;;                                             (if (eq print :verbose) (print-dag-only-supporters-lst nodenums-to-assume-false 'dag-array dag-array) (cw ":elided"))
+ ;;                                             (if (eq print :verbose) (print-dag-array-node-and-supporters-lst nodenums-to-assume-false 'dag-array dag-array) (cw ":elided"))
  ;;                                             ;;fixme print the  part of the dag array that supports the hyp??
  ;;                                             (cw ")~%Alist: ~x0~%)~%" alist)))
 
@@ -395,7 +395,7 @@
                                  ;; (print-list-on-one-line literal-nodenums)
                                  (- (cw "Literals:~%"))
                                  (- (if (member-eq print '(t :verbose :verbose!))
-                                        (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
+                                        (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
                                       (cw ":elided")))
                                  ;;ffixme print the assumptions
                                  (- (cw "~%"))
@@ -444,9 +444,9 @@
                            (and (member-eq rule-symbol monitored-symbols)
                                 (progn$ (cw "(Failed to relieve hyp ~x0, namely, ~x1, for ~x2. " hyp-num hyp rule-symbol)
                                         (cw "Reason: Rewrote to:~%")
-                                        (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep)
+                                        (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep)
                                         (cw "Alist: ~x0.~%(Assumptions (to assume false):~%" alist)
-                                        (print-dag-only-supporters-lst nodenums-to-assume-false 'dag-array dag-array)
+                                        (print-dag-array-node-and-supporters-lst nodenums-to-assume-false 'dag-array dag-array)
                                         (cw "))~%") ;;(cw "Alist: ~x0.~%Assumptions (to assume false): ~x1~%DAG:~x2)~%" alist nodenums-to-assume-false dag-array)
                                         ))
                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))))))))))))))
@@ -1325,7 +1325,7 @@
        (mv (erp-t) nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
      (if (endp work-list)
          (progn$ (and (eq :verbose print) (progn$ (cw "(Literals after rewriting them all:~%")
-                                                  (print-dag-only-supporters-lst done-list 'dag-array dag-array)
+                                                  (print-dag-array-node-and-supporters-lst done-list 'dag-array dag-array)
                                                   (cw "):~%")))
                  (mv (erp-nil)
                      nil ;provedp=nil
@@ -1341,7 +1341,7 @@
                                              print case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
             ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
             ;; (- (cw "Node ~x0 rewrote to ~x1 in dag:~%" literal-nodenum new-nodenum-or-quotep))
-            ;; (- (if (quotep new-nodenum-or-quotep) (cw ":elided") (if (eql literal-nodenum new-nodenum-or-quote) :no-change (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep))))
+            ;; (- (if (quotep new-nodenum-or-quotep) (cw ":elided") (if (eql literal-nodenum new-nodenum-or-quote) :no-change (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep))))
             )
          (if (eql new-nodenum-or-quotep literal-nodenum)
              ;; No change for this literal:
@@ -1500,7 +1500,7 @@
                                    literal-nodenums
                                    (expressions-for-this-case literal-nodenums dag-array dag-len)
                                    )
-                               (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)))
+                               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)))
                   (mv (erp-nil) nil literal-nodenums
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))))))))))
 
@@ -1575,7 +1575,7 @@
  ;;               (cw "Clause miter case: ~x0~%" (expressions-for-this-case literal-nodenums dag-array dag-len)) ;fixme just print this instead of consing it up?
  ;;               (cw "Clause miter literals:~%")
  ;;               ;; (print-array2 'dag-array dag-array dag-len)
- ;;               (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
+ ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
  ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
  ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
  ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
@@ -1764,7 +1764,7 @@
                                          print-max-conflicts-goalp
                                          (eq t print)
                                          (eq :verbose print)) ;new
-                                     (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
+                                     (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
                                    (cw ":elided (too big)~%"))
                                  (mv (erp-nil) :timed-out dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                        ;; Invalid (or error or counterexample or not-calling-stp).  todo: think about the cases here...
@@ -1790,10 +1790,10 @@
                            (progn$
                             (cw "Splitting on node ~x0:~%" nodenum)
                             ;;todo: elide this if too big:
-                            (print-dag-only-supporters 'dag-array dag-array nodenum)
+                            (print-dag-array-node-and-supporters 'dag-array dag-array nodenum)
                             (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                                  (progn$ (cw "Literals:~%")
-                                         (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
+                                         (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
 ;(cw "parent array:~%")
 ;(print-array2 'dag-parent-array dag-parent-array dag-len)
                                          ))
@@ -1815,7 +1815,7 @@
                                  (- (cw "(True Case: ~s0~%" case-1-designator))
                                  (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                                          (prog2$ (cw "Literals:~%")
-                                                 (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))))
+                                                 (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array))))
                                  ;;add the negation of nodenum to the dag:
                                  ((mv erp negation-of-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                                   (add-function-call-expr-to-dag-array 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist))

@@ -42,7 +42,7 @@
   (declare (xargs :guard (minstd-rand0p rand)))
   (mod (* *minstd-rand0-multiplier* rand) *m31*))
 
-;; TODO: Prove the we can never generate 0 (and thus get stuck), given a
+;; TODO: Prove that we can never generate 0 (and thus get stuck), given a
 ;; current value that satisfies minstd-randp.
 
 (defthm minstd-rand0p-of-minstd-rand0-next

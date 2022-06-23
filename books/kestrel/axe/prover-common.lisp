@@ -335,7 +335,7 @@
            (< (maxelem (cdr items)) x))
   :hints (("Goal" :in-theory (enable all-<))))
 
-(defthm rational-of-car--when-all-natp-cheap
+(defthm rationalp-of-car--when-all-natp-cheap
   (implies (and (all-natp items)
                 (consp items))
            (rationalp (car items)))
@@ -1399,7 +1399,7 @@
      ;; negation does not actually have a node.
      (and (not call-of-notp) (cw "(xxx NOT ~x0)~% " top-node-to-print))
      ;;print the elements
-     (print-supporting-dag-nodes top-node-to-print 0 dag-array-name dag-array (list top-node-to-print) t)
+     (print-dag-array-aux top-node-to-print dag-array-name dag-array (list top-node-to-print) t)
      ;;print the close paren:
      (cw ")~%"))))
 

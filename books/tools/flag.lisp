@@ -59,7 +59,9 @@
 (encapsulate
   ()
   (local (include-book "system/termp" :dir :system))
+  #+acl2-devel
   (verify-termination plist-worldp-with-formals)
+  #+acl2-devel
   (verify-guards plist-worldp-with-formals)
   (verify-termination arity)
   (verify-guards arity)

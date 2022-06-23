@@ -1817,15 +1817,17 @@
                              (
                               ))))))
 
-(def-rp-rule equal-of-bits-to-a-constant
-  (implies (and (natp x)
+(def-rp-rule 
+  equal-of-bits-to-a-constant
+  (implies (and (syntaxp (and :rewriting-main-term
+                              (or (and (consp x)
+                                       (quotep x))
+                                  (sv::4vec-p x))))
+                (natp x)
                 (natp size)
                 (> size 1)
                 (integerp y)
-                (natp start)
-                (syntaxp (or (and (consp x)
-                                  (quotep x))
-                             (sv::4vec-p x))))
+                (natp start))
            (and (equal (equal (svl::bits y start size) x)
                        (and (equal (svl::bits y start 1)
                                    (svl::bits x 0 1))

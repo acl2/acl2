@@ -1,7 +1,7 @@
 ; A book about boolxor (boolean-valued xor)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "bool-fix")
 
 ;TODO: compare to the built-in function xor!
+
 (defund boolxor (x y)
   (if x
       (if y nil t)
@@ -62,3 +63,19 @@
 ;; These help justify some things that Axe does:
 (defcong iff equal (boolxor x y) 1 :hints (("Goal" :in-theory (enable boolxor))))
 (defcong iff equal (boolxor x y) 2 :hints (("Goal" :in-theory (enable boolxor))))
+
+(defthm boolxor-of-constant-arg1
+  (implies (syntaxp (quotep x))
+           (equal (boolxor x y)
+                  (if x ; always resolvable
+                      (not y)
+                    (bool-fix y))))
+  :hints (("Goal" :in-theory (enable boolxor))))
+
+(defthm boolxor-of-constant-arg2
+  (implies (syntaxp (quotep y))
+           (equal (boolxor x y)
+                  (if y ; always resolvable
+                      (not x)
+                    (bool-fix x))))
+  :hints (("Goal" :in-theory (enable boolxor))))

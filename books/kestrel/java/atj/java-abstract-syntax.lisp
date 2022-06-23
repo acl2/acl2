@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "../language/integer-literals")
 (include-book "../language/primitive-types")
 
+(include-book "kestrel/fty/maybe-string" :dir :system)
 (include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
@@ -72,52 +73,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Library extensions.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection string-list
-  :short "Fixtype of lists of ACL2 strings,
-          i.e. values recognized by @(tsee string-listp)."
-  :long
-  (xdoc::topstring-p
-   "This is not specific to Java,
-    and it should be moved to a more general library eventually.")
-
-  (std::deffixer string-list-fix
-    :pred string-listp
-    :body-fix nil
-    :parents (string-list)
-    :short "Fixer for @(tsee string-list).")
-
-  (fty::deffixtype string-list
-    :pred string-listp
-    :fix string-list-fix
-    :equiv string-list-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection maybe-string
-  :short "Fixtype of ACL2 strings and @('nil'),
-          i.e. values recognized by @(tsee maybe-stringp)."
-  :long
-  (xdoc::topstring-p
-   "This is not specific to Java,
-    and it should be moved to a more general library eventually.")
-
-  (std::deffixer maybe-string-fix
-    :pred maybe-stringp
-    :body-fix nil
-    :parents (maybe-string)
-    :short "Fixer for @(tsee maybe-string).")
-
-  (fty::deffixtype maybe-string
-    :pred maybe-stringp
-    :fix maybe-string-fix
-    :equiv maybe-string-equiv
-    :define t
-    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

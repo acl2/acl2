@@ -1,7 +1,7 @@
 ; A JVM lifter for use when not unrolling
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -53,9 +53,10 @@
 (include-book "../rewriter" :ttags :all)
 (include-book "../make-axe-rules2")
 (include-book "../dag-to-term-with-lets")
+(include-book "../add-to-dag")
 ;(include-book "kestrel/bv/arith" :dir :system) ;todo?
 (include-book "jvm-rules-axe2") ;for smart if handling
-(include-book "../math-rules")
+(include-book "../math-rules") ; todo: why?
 (include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
@@ -698,9 +699,6 @@
 ;returns a list of lists of addresses
 (defun separate-pairs-by-class-name-and-field-name (pairs)
   (strip-cdrs (make-alist-by-seconds pairs nil)))
-
-;fixme make a compose-term-and-dags?
-;(defun compose-term-and-dags (term alist)
 
 ;; Returns (mv erp dag).
 (defun negate-dag (dag)
@@ -2538,7 +2536,7 @@
   (if (endp terms)
       (mv (erp-nil) nil state)
     (b* ((term (first terms))
-         ((mv erp dag) (dagify-term2 term))
+         ((mv erp dag) (dagify-term term))
          ((when erp) (mv erp nil state))
          ((mv erp result state)
           (quick-simp-dag dag
@@ -3166,7 +3164,7 @@
                   (make-loop-parameters-for-locals (+ -1 local-num) pc local-variable-table state-var excluded-locals one-rep-dag next-param-number updated-state-term
                                                    paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state))
         (b* ((initial-local-term `(jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))
-             ((mv erp initial-local-dag) (dagify-term2 initial-local-term))
+             ((mv erp initial-local-dag) (dagify-term initial-local-term))
              ((when erp) (mv erp nil nil nil nil nil state))
              ((mv erp updated-local-dag state)
               (get-local-dag local-num one-rep-dag state))
@@ -3260,7 +3258,7 @@
          (- (cw "Param ~x0 is ~X12.~%" next-param-num getfield-term nil))
          (updated-state-term `(set-field-in-state ,ad-term ,class-name-field-id-pair (nth ',next-param-num :loop-function-result) ,updated-state-term)) ;we wrap a set-field around the old updated-state-term
          (paramnum-update-alist (acons next-param-num value-dag paramnum-update-alist)) ;check that the values coming in are right
-         ((mv erp getfield-dag) (dagify-term2 getfield-term))
+         ((mv erp getfield-dag) (dagify-term getfield-term))
          ((when erp) (mv erp nil nil nil nil nil))
          (paramnum-extractor-alist (acons next-param-num getfield-dag paramnum-extractor-alist))
          (paramnum-name-alist (acons next-param-num getfield-term paramnum-name-alist)))
@@ -3316,7 +3314,7 @@
          (updated-state-term `(jvm::setstaticfield ,class-name ,field-id
                                                    (nth ',next-param-number :loop-function-result) ,updated-state-term))
          (paramnum-update-alist (acons next-param-number value-dag paramnum-update-alist))
-         ((mv erp get-static-field-dag) (dagify-term2 get-static-field-term))
+         ((mv erp get-static-field-dag) (dagify-term get-static-field-term))
          (paramnum-extractor-alist (acons next-param-number get-static-field-dag paramnum-extractor-alist))
          ((when erp) (mv erp nil nil nil nil nil))
          (paramnum-name-alist (acons next-param-number get-static-field-term paramnum-name-alist)))
@@ -3445,7 +3443,7 @@
       (mv (erp-nil) nil)
     (b* ((entry (car alist))
          (paramnum (car entry))
-         ((mv erp dag) (dagify-term2 `(nth ',paramnum params)))
+         ((mv erp dag) (dagify-term `(nth ',paramnum params)))
          ((when erp) (mv erp nil))
          ((mv erp rest-dags) (make-new-val-dags-read-only (cdr alist)))
          ((when erp) (mv erp nil)))
@@ -3540,7 +3538,7 @@
 ;fixme what about fake fields? array contents, monitor stuff, etc.
 (defun make-unchangedness-claimp (class-name-field-id-pair class-table)
   (declare (ignore class-table)) ;fixme
-  ;; (declare (xargs :guard (and (class-name-field-id-pairp class-name-field-id-pair) ;should we allow :special-data?
+  ;; (declare (xargs :guard (and (jvm::class-name-field-id-pairp class-name-field-id-pair) ;should we allow :special-data?
   ;;                             (jvm::class-tablep class-table)))) ;;also need to know that that class and that field exist in the class-table...
   (if (equal class-name-field-id-pair (array-contents-pair)) ;FIXME unless the array elems are pointers?
       nil
@@ -3590,7 +3588,7 @@
 (defun addressp-claims-for-fields-of-object (class-name class-table-map address-term heap-core)
   (if (not (jvm::class-namep class-name)) ;excludes stuff like (:array :int)
       nil
-    (let* ((superclass-names (get-superclasses class-name class-table-map))
+    (let* ((superclass-names (jvm::get-superclasses class-name class-table-map))
            (all-class-names (cons class-name superclass-names))
            )
       (addressp-claims-for-fields-of-classes all-class-names class-table-map address-term heap-core))))
@@ -4297,7 +4295,7 @@
                   :mode :program ;todo
                   :stobjs (state)))
   (b* (((mv erp state-dag) ;; (dagify-term 's0) ;this was bad when no classes were to be initialized because the hyp about (jvm::initialized-classes s0) never fired..
-        (dagify-term2 `(JVM::MAKE-STATE (JVM::THREAD-TABLE s0) ;fixme do we need a dummy frame below the current one?
+        (dagify-term `(JVM::MAKE-STATE (JVM::THREAD-TABLE s0) ;fixme do we need a dummy frame below the current one?
                                         (JVM::HEAP s0)
                                         (JVM::CLASS-TABLE s0)
                                         (JVM::HEAPREF-TABLE s0)
@@ -4481,7 +4479,7 @@
       ;; (and (true-listp x) ;;(:field <pair> <indicator-for-object>)
       ;;      (eql 2 (len (fargs x)))
       ;;      (eq :field (ffn-symb x))
-      ;;      (class-name-field-id-pairp (farg1 x))
+      ;;      (jvm::class-name-field-id-pairp (farg1 x))
       ;;      (input-indicatorp (farg2 x)))
       ))
 
@@ -4667,7 +4665,7 @@
   (declare (xargs :stobjs (state)
                   :mode :program))
   (b* ((before-term term)
-       ((mv erp before-dag) (dagify-term2 before-term))
+       ((mv erp before-dag) (dagify-term before-term))
        ((when erp) (mv erp nil state))
        ((mv erp after-dag) (compose-term-and-dag term state-var one-rep-dag))
        ((when erp) (mv erp nil state))
@@ -4854,7 +4852,7 @@
                    :stobjs (state)
                    :guard (<= 1 loop-depth)))
    (b* ( ;; Decompile the loop body completely, including any nested loops and subroutine calls, assuming the candidate invars:
-        ((mv erp state-var-dag) (dagify-term2 state-var))
+        ((mv erp state-var-dag) (dagify-term state-var))
         ((when erp) (mv erp nil nil nil nil nil nil nil nil nil state))
         ((mv erp body-dag ;what vars might be in this?  can assumptions introduce vars other than state-var?
              generated-events-acc new-generated-rules-acc new-next-loop-number new-interpreted-function-alist-alist new-interpreted-function-alist
@@ -6195,7 +6193,7 @@
                                   (eq :all classes-to-assume-initialized)))))
   ;;FFIXME is it cheating to run all class initializers first?
   (b* ((- (cw "(Decompiling program ~x0~%" tag))
-       (class-alist (global-class-alist state))
+       (class-alist (jvm::global-class-alist state))
        (class-table-map (alist-to-map class-alist))
        (all-class-names (strip-cars class-alist)) ; What if not all classes in the class table will actually be used?
        ((when (and (not (eq :all classes-to-assume-initialized))
@@ -6266,7 +6264,7 @@
        ((mv erp make-state-dag)
         ;;this state is like s0 but reflects the initialization:
         ;;fixme can't we make this more directly from initialized-state-dag?
-        (dagify-term2 `(jvm::make-state (jvm::thread-table s0)
+        (dagify-term `(jvm::make-state (jvm::thread-table s0)
                                         ,heap ;todo: improve
                                         (jvm::class-table s0)
                                         (jvm::heapref-table s0)
@@ -6392,12 +6390,13 @@
        ((when (not (postludesp postludes)))
         (mv t (er hard 'lift-java-code "ERROR: Ill-formed postludes!") state))
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (class-alist (jvm::global-class-alist state)) ;todo: redone in decompile-program
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
        ;; Gather info about the main method to be lifted:
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
-       (class-alist (global-class-alist state)) ;todo: redone in decompile-program
+
 ;TODO: Combine with similar code in unroll-java-code
        (class-info (lookup-equal method-class class-alist))
        ((when (not class-info))
@@ -6728,11 +6727,11 @@
                 (mv t nil state)))
        (assumptions (translate-terms assumptions 'lift-java-code-segment-fn (w state))) ;throws an error on bad input
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (class-alist (jvm::global-class-alist state))
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
-       (class-alist (global-class-alist state))
        (class-info (lookup-equal method-class class-alist))
        ((when (not class-info))
         (prog2$ (cw "ERROR: Error getting the class info for ~x0" method-class)

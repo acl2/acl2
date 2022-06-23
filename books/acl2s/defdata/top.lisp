@@ -313,7 +313,7 @@ macro.
 
 <p>
 As an example, after having <i>registered</i> @('odd') above, we can
-now use @('odd') to define other @'(defdata') types, e.g., a list of
+now use @('odd') to define other @('defdata') types, e.g., a list of
 odd numbers: 
 </p>
 @({

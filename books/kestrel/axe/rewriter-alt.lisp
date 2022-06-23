@@ -13,8 +13,10 @@
 (in-package "ACL2")
 
 ;; Instead of this rewriter, consider using rewriter-basic or another newer
-;; rewriter.  But note that xor simplification is built into this one (and
+;; rewriter.  But note that BVXOR simplification is built into this one (and
 ;; also now rewriter-basic) in a deep way.
+
+;; TODO: Add special handling for BITXOR like this has for BVXOR.
 
 (include-book "rewriter-common")
 (include-book "equality-pairs")
@@ -420,7 +422,7 @@
                                        (cw "(Axe Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp) ;print the instantiated-hyp and hyp num too?
                                        (cw "(Rewrote to:~%")
                                        (if (member-eq print '(t :verbose :verbose!))
-                                           (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
+                                           (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
                                          (cw ":elided"))
                                        (cw ")~%")
                                        ;; we used to have to save and restore the dag, but now the prover doesn't change any nodes, so that isn't necessary
@@ -471,7 +473,7 @@
                                                               (progn$
                                                                (cw "(Failed to relieve hyp: ~x0 for ~x1 (rewrote to non-constant).~%" hyp rule-symbol)
                                                                (cw "Reason: Rewrote to:~%")
-                                                               (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep)
+                                                               (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep)
                                                                ;;fixme print the equality array?
                                                                (cw "Alist: ~x0.~%Refined assumption alist: ~x1)~%" alist refined-assumption-alist)))
                                                          (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))))))))
@@ -480,7 +482,7 @@
                                                  (progn$
                                                   (cw "(Failed to relieve hyp: ~x0 for ~x1 (rewrote to non-constant).~%" hyp rule-symbol)
                                                   (cw "Reason: Rewrote to:~%")
-                                                  (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep)
+                                                  (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep)
                                                   ;;fixme print the equality array?
                                                   (cw "Alist: ~x0.~%Refined assumption alist: ~x1)~%" alist refined-assumption-alist)))
                                             (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))))))))))))))))))))
