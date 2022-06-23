@@ -14,7 +14,7 @@
 
 (include-book "dag-arrays")
 (include-book "test-cases")
-(include-book "evaluator") ; todo
+(include-book "evaluator") ; todo: use basic eval but need to avaluate dag-val-with-axe-evaluator in examples like rc4-loop, make this file a generator that takes an evaluator?
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
@@ -693,8 +693,12 @@
                                                         dag-array-name dag-array dag-len test-case test-case-array
                                                         done-nodes-array interpreted-function-alist test-case-array-name)
                               ;;the args are done, so call the function:
-                              (let* ((arg-values (get-vals-of-args dargs test-case-array-name test-case-array))
-                                     (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0)))
+                              (b* ((arg-values (get-vals-of-args dargs test-case-array-name test-case-array))
+                                   (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0))
+                                   ;; ((mv erp value) (apply-axe-evaluator-basic fn arg-values interpreted-function-alist 1000000000))
+                                   ;; ((when erp) (er hard? 'evaluate-test-case-aux "Error (~x0) evaluating: ~x1" erp expr)
+                                   ;;  (mv test-case-array done-nodes-array))
+                                   )
                                 (evaluate-test-case-aux (+ -1 count)
                                                         (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
                                                         (aset1 test-case-array-name test-case-array nodenum value)
