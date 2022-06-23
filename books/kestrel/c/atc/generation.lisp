@@ -6828,8 +6828,12 @@
      The generation of these theorems relies on the fact that
      the order of the readers and the checkers matches the order of
      the types in @(tsee *integer-nonbool-nonchar-types*).
-     Note that we need to exclude the first reader and checker,
-     which are the ones operating on ACL2 integers."))
+     Note that the @(tsee defstruct-member-info)
+     contains 11 readers and 11 checkers,
+     where the first reader and checker operate on ACL2 integers,
+     while the other 10 readers and 10 checkers operate on C integers.
+     We iterate through the 10 readers and checkers on C integers,
+     while using the reader and checker on ACL2 integers at each iteration."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
@@ -6897,6 +6901,8 @@
                                       memname
                                       elemtype
                                       *integer-nonbool-nonchar-types*
+                                      (car readers)
+                                      (car checkers)
                                       (cdr readers)
                                       (cdr checkers)
                                       names-to-avoid
@@ -6909,6 +6915,8 @@
                                              (memname identp)
                                              (elemtype typep)
                                              (indextypes type-listp)
+                                             (reader-acl2int symbolp)
+                                             (checker-acl2int symbolp)
                                              (readers symbol-listp)
                                              (checkers symbol-listp)
                                              (names-to-avoid symbol-listp)
@@ -6927,15 +6935,6 @@
           (indexfixtype (integer-type-to-fixtype indextype))
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
-          (genchecker (pack 'struct-
-                            (ident->name tag)
-                            '-
-                            (ident->name memname)
-                            '-index-okp))
-          (genreader (pack 'struct-
-                           (ident->name tag)
-                           '-read-
-                           (ident->name memname)))
           (indextype-integer-value (pack indexfixtype '-integer-value))
           (array-reader (pack elemfixtype '-array-read-alt-def))
           (array-checker (pack elemfixtype '-array-index-okp))
@@ -6996,9 +6995,9 @@
                       ,recognizer
                       ,fixer-recognizer-thm
                       ,checker
-                      ,genchecker
+                      ,checker-acl2int
                       ,reader
-                      ,genreader
+                      ,reader-acl2int
                       ,indextype-integer-value
                       ,array-reader
                       ,array-checker
@@ -7017,6 +7016,8 @@
                                              memname
                                              elemtype
                                              (cdr indextypes)
+                                             reader-acl2int
+                                             checker-acl2int
                                              (cdr readers)
                                              (cdr checkers)
                                              names-to-avoid
