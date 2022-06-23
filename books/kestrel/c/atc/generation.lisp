@@ -6860,12 +6860,11 @@
                              (valuep ptr)
                              (value-case ptr :pointer)
                              (not (value-pointer-nullp ptr))
+                             (equal (value-pointer->reftype ptr)
+                                    (type-struct (ident ,(ident->name tag))))
                              (equal struct
                                     (read-object (value-pointer->designator ptr)
                                                  compst))
-                             (value-case struct :struct)
-                             (equal (value-pointer->reftype ptr)
-                                    (type-struct (ident ,(ident->name tag))))
                              (,recognizer struct))
                         (equal (exec-memberp ptr
                                              (ident ,(ident->name memname))
