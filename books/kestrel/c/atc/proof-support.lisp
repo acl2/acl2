@@ -359,7 +359,15 @@
     (implies (and (syntaxp (quotep mem))
                   (identp mem))
              (equal (exec-memberp val mem compst)
-                    (exec-memberp val (ident (ident->name mem)) compst)))))
+                    (exec-memberp val (ident (ident->name mem)) compst))))
+
+  (defruled exec-arrsub-of-memberp-of-const-identifier
+    (implies
+     (and (syntaxp (quotep mem))
+          (identp mem))
+     (equal
+      (exec-arrsub-of-memberp str mem sub compst)
+      (exec-arrsub-of-memberp str (ident (ident->name mem)) sub compst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,7 +390,8 @@
     read-var-of-const-identifier
     write-var-of-const-identifier
     type-struct-of-const-identifier
-    exec-memberp-of-const-identifier))
+    exec-memberp-of-const-identifier
+    exec-arrsub-of-memberp-of-const-identifier))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
