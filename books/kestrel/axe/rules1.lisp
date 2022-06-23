@@ -634,7 +634,7 @@
 (defthmd even-when-power-of-2-and-at-least-2
   (implies (and (<= 2 n)
                 (power-of-2p n))
-           (integerp (binary-* 1/2 n)))
+           (integerp (* 1/2 n)))
   :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add)))))
 
 (defthm equal-of-nthcdr-and-subrange-of-minus1

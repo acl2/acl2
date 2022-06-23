@@ -399,3 +399,24 @@
                   (bvplus size (bvchop size k) x)))
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
+
+;rename
+(defthmd bvplus-recollapse
+  (implies (and (integerp x) ;these are new, since bvplus ifixes its args
+                (integerp y))
+           (equal (bvchop size (+ x y))
+                  (bvplus size x y)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(theory-invariant (incompatible (:definition bvplus) (:rewrite bvplus-recollapse)))
+
+;here we drop the bvchop (and thus avoid conflicts with the anti-bvplus rules)
+(defthmd bvplus-opener
+  (implies (and (unsigned-byte-p size (+ x y))
+                (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvplus size x y)
+                  (+ x y)))
+  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
+                                            )))))
