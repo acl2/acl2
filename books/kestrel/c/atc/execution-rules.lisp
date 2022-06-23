@@ -1923,6 +1923,19 @@
                                   compst)))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-arrsub-of-memberp
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :arrsub)
+                  (equal arr (expr-arrsub->arr e))
+                  (expr-case arr :memberp))
+             (equal (exec-expr-pure e compst)
+                    (exec-arrsub-of-memberp
+                     (exec-expr-pure (expr-memberp->target arr) compst)
+                     (expr-memberp->name arr)
+                     (exec-expr-pure (expr-arrsub->sub e) compst)
+                     compst)))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-unary
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :unary))
@@ -2023,6 +2036,7 @@
       exec-expr-pure-when-const
       exec-expr-pure-when-arrsub
       exec-expr-pure-when-memberp
+      exec-expr-pure-when-arrsub-of-memberp
       exec-expr-pure-when-unary
       exec-expr-pure-when-cast
       exec-expr-pure-when-strict-pure-binary
