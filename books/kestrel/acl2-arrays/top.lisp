@@ -16,3 +16,4 @@
 (include-book "expandable-arrays")
 (include-book "aref1-list")
 (include-book "aset1-list")
+(include-book "array-to-alist")
