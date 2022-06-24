@@ -243,3 +243,9 @@
                           prefixp-of-append-arg1-fw-2
                           prefixp-of-append-arg1-fw-1))))
   )
+
+(defthmd take-of-len-when-prefixp
+  (implies (prefixp x y)
+           (equal (take (len x) y)
+                  (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable prefixp))))

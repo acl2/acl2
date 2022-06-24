@@ -91,8 +91,6 @@
                            LOGAND-WITH-MASK
                            )))
 
-;include rotate book?
-
 ;rename
 (defthm bvchop-shift-gen-constant-version
   (implies (and (syntaxp (quotep k))
@@ -5468,12 +5466,12 @@
   :hints (("Goal" :use (:instance slice-too-high-is-0-new)
            :in-theory (enable bvlt unsigned-byte-p))))
 
-;gen
-(defthm leftrotate-of-bvxor-32
-  (equal (leftrotate 32 amt (bvxor 32 x y))
-         (bvxor 32 (leftrotate 32 amt x)
-                (leftrotate 32 amt y)))
-  :hints (("Goal" :in-theory (enable leftrotate natp))))
+(defthm leftrotate-of-bvxor
+  (equal (leftrotate size amt (bvxor size x y))
+         (bvxor size (leftrotate size amt x)
+                (leftrotate size amt y)))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable leftrotate natp))))
 
 (defthm leftrotate32-of-bvxor-32
   (equal (leftrotate32 amt (bvxor 32 x y))
@@ -7417,6 +7415,7 @@
                                   (;acl2::bvplus-recollapse
                                    )))))
 
+;; do we need these?
 (defthm bitand-of-leftrotate-arg1-trim
   (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
                          (quotep width)))
