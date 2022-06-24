@@ -7152,7 +7152,6 @@
                        (equal struct
                               (read-object (value-pointer->designator ptr)
                                            compst1))
-                       (value-case struct :struct)
                        (equal (value-pointer->reftype ptr)
                               (type-of-value struct))
                        (,recognizer struct))
@@ -7196,6 +7195,7 @@
                    sllong-fix-when-sllongp
                    ,writer
                    ,not-error-thm
+                   ,recognizer
                    ,fixer-recognizer-thm)
                  :use
                  (:instance ,writer-return-thm
