@@ -26,8 +26,7 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
-(local (include-book "merge-sort-less-than-rules")) ; reduce
-(local (include-book "rebuild-nodes")) ; reduce
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable true-listp-of-cdr)))
 
@@ -36,6 +35,13 @@
    (implies (consp x)
             (equal (true-listp (cdr x))
                    (true-listp x)))))
+
+(local
+   ;dup
+ (defthm all-<=-when-all-<
+   (implies (all-< x bound)
+            (all-<= x bound))
+   :hints (("Goal" :in-theory (enable all-< all-<=)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

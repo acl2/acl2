@@ -575,6 +575,7 @@
                                      find-var-and-expr-to-subst2
                                      NATP-OF-+-OF-1
                                      nth ;todo: why?
+                                     consp-of-cdr
                                      ))))
 
 
