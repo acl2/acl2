@@ -6860,12 +6860,11 @@
                              (valuep ptr)
                              (value-case ptr :pointer)
                              (not (value-pointer-nullp ptr))
+                             (equal (value-pointer->reftype ptr)
+                                    (type-struct (ident ,(ident->name tag))))
                              (equal struct
                                     (read-object (value-pointer->designator ptr)
                                                  compst))
-                             (value-case struct :struct)
-                             (equal (value-pointer->reftype ptr)
-                                    (type-struct (ident ,(ident->name tag))))
                              (,recognizer struct))
                         (equal (exec-memberp ptr
                                              (ident ,(ident->name memname))
@@ -7069,9 +7068,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-tag-member-write-thms ((recognizer symbolp)
+(define atc-gen-tag-member-write-thms ((tag identp)
+                                       (recognizer symbolp)
                                        (fixer-recognizer-thm symbolp)
                                        (not-error-thm symbolp)
+                                       (type-of-value-thm symbolp)
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
@@ -7150,12 +7151,11 @@
                        (valuep ptr)
                        (value-case ptr :pointer)
                        (not (value-pointer-nullp ptr))
+                       (equal (value-pointer->reftype ptr)
+                              (type-struct (ident ,(ident->name tag))))
                        (equal struct
                               (read-object (value-pointer->designator ptr)
                                            compst1))
-                       (value-case struct :struct)
-                       (equal (value-pointer->reftype ptr)
-                              (type-of-value struct))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
                          (write-object (value-pointer->designator ptr)
@@ -7197,7 +7197,9 @@
                    sllong-fix-when-sllongp
                    ,writer
                    ,not-error-thm
-                   ,fixer-recognizer-thm)
+                   ,recognizer
+                   ,fixer-recognizer-thm
+                   ,type-of-value-thm)
                  :use
                  (:instance ,writer-return-thm
                   (val (b* ((right (expr-binary->arg2 e))
@@ -7230,9 +7232,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-tag-member-write-all-thms
-  ((recognizer symbolp)
+  ((tag identp)
+   (recognizer symbolp)
    (fixer-recognizer-thm symbolp)
    (not-error-thm symbolp)
+   (type-of-value-thm symbolp)
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
@@ -7251,16 +7255,20 @@
      to be in the same order as @('members')."))
   (b* (((when (endp meminfos)) (mv nil nil names-to-avoid))
        ((mv events thms names-to-avoid)
-        (atc-gen-tag-member-write-thms recognizer
+        (atc-gen-tag-member-write-thms tag
+                                       recognizer
                                        fixer-recognizer-thm
                                        not-error-thm
+                                       type-of-value-thm
                                        (car meminfos)
                                        names-to-avoid
                                        wrld))
        ((mv more-events more-thms names-to-avoid)
-        (atc-gen-tag-member-write-all-thms recognizer
+        (atc-gen-tag-member-write-all-thms tag
+                                           recognizer
                                            fixer-recognizer-thm
                                            not-error-thm
+                                           type-of-value-thm
                                            (cdr meminfos)
                                            names-to-avoid
                                            wrld)))
@@ -7325,6 +7333,7 @@
        (recognizer (defstruct-info->recognizer info))
        (fixer-recognizer-thm (defstruct-info->fixer-recognizer-thm info))
        (not-error-thm (defstruct-info->not-error-thm info))
+       (type-of-value-thm (defstruct-info->type-of-value-thm info))
        (struct-declons (atc-gen-struct-declon-list memtypes))
        ((mv read-thm-events read-thm-names names-to-avoid)
         (if proofs
@@ -7338,9 +7347,11 @@
           (mv nil nil names-to-avoid)))
        ((mv write-thm-events write-thm-names names-to-avoid)
         (if proofs
-            (atc-gen-tag-member-write-all-thms recognizer
+            (atc-gen-tag-member-write-all-thms tag-ident
+                                               recognizer
                                                fixer-recognizer-thm
                                                not-error-thm
+                                               type-of-value-thm
                                                meminfos
                                                names-to-avoid
                                                (w state))
