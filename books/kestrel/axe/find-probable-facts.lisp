@@ -28,13 +28,8 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (disable true-listp-of-cdr)))
-
-(local
- (defthm true-listp-of-cdr-when-consp
-   (implies (consp x)
-            (equal (true-listp (cdr x))
-                   (true-listp x)))))
+(local (in-theory (e/d (true-listp-of-cdr-strong)
+                       (true-listp-of-cdr))))
 
 (local
    ;dup
