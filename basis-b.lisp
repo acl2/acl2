@@ -3579,6 +3579,8 @@
 ; renew-name to be (renewal-mode .  old-sig) where renewal-mode is :erase,
 ; :overwrite, or :reclassifying-overwrite.
 
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
   (let ((redefined (getpropc name 'redefined nil wrld)))
     (cond
      ((and (consp redefined)

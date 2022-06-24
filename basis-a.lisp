@@ -7804,6 +7804,7 @@
 ; has to check whether the actual is the live object.  We could hardly
 ; write (eq $S $S).
 
+  (declare (xargs :guard (symbolp name)))
   (packn-pos (list "*THE-LIVE-" name "*") name))
 
 (defun standard-co (state)

@@ -4277,20 +4277,20 @@
    was ignored.~%~%")
 
 (defconst *meta-level-function-problem-3*
-  "~%~%Meta-level function Problem:  You or some meta-level function applied ~x0 but not ~
-   from within the theorem prover's meta-level function handler.  This ~
-   suggests you are trying to test a meta-level function and have evidently ~
-   manufactured an allegedly suitable context.  Perhaps so. But that ~
-   is so difficult to check that we don't bother.  Instead we cause ~
-   this error and urge you to test your meta-level function by having the ~
+  "~%~%Meta-level function Problem:  This error can quite possibly be ~
+   avoided; see :DOC trust-mfc.  You or some meta-level function applied ~x0 ~
+   but not from within the theorem prover's meta-level function handler.  ~
+   This suggests you are trying to test a meta-level function and have ~
+   evidently manufactured an allegedly suitable context.  Perhaps so.  But ~
+   that is so difficult to check that we don't bother.  Instead we cause this ~
+   error and urge you to test your meta-level function by having the ~
    meta-level function handler invoke it as part of a test proof-attempt. To ~
-   do this, assume the metatheorem that you intend eventually to ~
-   prove.  You may do this by executing the appropriate DEFTHM event ~
-   embedded in a SKIP-PROOFS form.  Then use THM to submit ~
-   conjectures for proof and observe the behavior of your ~
-   metafunction.  Remember to undo the assumed metatheorem before you ~
-   attempt genuine proofs! If this suggestion isn't applicable to ~
-   your situation, contact the authors.~%~%")
+   do this, assume the metatheorem that you intend eventually to prove.  You ~
+   may do this by executing the appropriate DEFTHM event embedded in a ~
+   SKIP-PROOFS form.  Then use THM to submit conjectures for proof and ~
+   observe the behavior of your metafunction.  Remember to undo the assumed ~
+   metatheorem before you attempt genuine proofs! If this suggestion isn't ~
+   applicable to your situation, contact the authors.~%~%")
 
 ; We next introduce uninterpreted :logic mode functions with
 ; execute-only-in-meta-level-functions semantics, as per defun-overrides calls
@@ -4309,8 +4309,26 @@
 (defproxy mfc-ts-fn (* * state *) => *)
 (defproxy mfc-ts-ttree (* * state *) => (mv * *))
 
+
+(defmacro trust-mfc (&whole whole form)
+  #-acl2-loop-only (declare (ignore whole))
+  #+acl2-loop-only `(prog2$ (er hard 'trust-mfc
+                                "It is illegal to run ~x0 except in raw Lisp, ~
+                                 typically by way of a :program-mode function ~
+                                 body. ~ See :DOC trust-mfc.  Evaluation of ~
+                                 the form ~x1 has led to this error."
+                                'trust-mfc ',whole)
+                            ,form)
+  #-acl2-loop-only
+  `(let ((*trust-mfc*
+          (not (or (f-get-global 'in-prove-flg *the-live-state*)
+                   (f-get-global 'in-verify-flg *the-live-state*)))))
+     ,form))
+
 #-acl2-loop-only
 (progn
+
+(defvar *trust-mfc* nil)
 
 (defun mfc-ts-raw (term mfc state forcep)
   (declare (xargs :guard (state-p state)))
@@ -4333,12 +4351,15 @@
 
       (throw-raw-ev-fncall ev-fncall-val))
 
-     (*metafunction-context*
+     ((or *metafunction-context*
+          (and mfc ; or slower check: (weak-metafunction-context-p mfc)
+               *trust-mfc*))
 
 ; We are within the application of a meta-level function by the theorem prover.
 
       (cond
-       ((eq mfc *metafunction-context*)
+       ((or (eq mfc *metafunction-context*)
+            *trust-mfc*)
         (cond
          ((logic-termp term (access metafunction-context mfc :wrld))
 
@@ -4402,9 +4423,12 @@
     (cond
      ((not (live-state-p state))
       (throw-raw-ev-fncall ev-fncall-val))
-     (*metafunction-context*
+     ((or *metafunction-context*
+          (and mfc ; or slower check: (weak-metafunction-context-p mfc)
+               *trust-mfc*))
       (cond
-       ((eq mfc *metafunction-context*)
+       ((or (eq mfc *metafunction-context*)
+            *trust-mfc*)
         (let ((wrld  (access metafunction-context mfc :wrld))
               (rcnst (access metafunction-context mfc :rcnst)))
           (cond
@@ -4491,9 +4515,12 @@
     (cond
      ((not (live-state-p state))
       (throw-raw-ev-fncall ev-fncall-val))
-     (*metafunction-context*
+     ((or *metafunction-context*
+          (and mfc ; or slower check: (weak-metafunction-context-p mfc)
+               *trust-mfc*))
       (cond
-       ((eq mfc *metafunction-context*)
+       ((or (eq mfc *metafunction-context*)
+            *trust-mfc*)
         (let ((wrld  (access metafunction-context mfc :wrld))
               (rcnst (access metafunction-context mfc :rcnst))
               (ancestors (access metafunction-context mfc :ancestors)))
@@ -4592,9 +4619,12 @@
     (cond
      ((not (live-state-p state))
       (throw-raw-ev-fncall ev-fncall-val))
-     (*metafunction-context*
+     ((or *metafunction-context*
+          (and mfc ; or slower check: (weak-metafunction-context-p mfc)
+               *trust-mfc*))
       (cond
-       ((eq mfc *metafunction-context*)
+       ((or (eq mfc *metafunction-context*)
+            *trust-mfc*)
         (cond
          ((logic-termp term (access metafunction-context mfc :wrld))
           (let* ((force-flg (mfc-force-flg forcep mfc))
