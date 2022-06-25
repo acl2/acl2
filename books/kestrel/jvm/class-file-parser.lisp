@@ -1235,28 +1235,27 @@
     (mv (erp-nil)
         (acons :name name (acons :descriptor descriptor nil)))))
 
-;; Returs (mv erp constant).
-(defun get-ldc-constant (index constant-pool)
-  (declare (xargs :guard (and (natp index)
-                              )
+;; Returs (mv erp tagged-constant).
+(defund get-ldc-constant32 (index constant-pool)
+  (declare (xargs :guard (natp index)
                   :stobjs constant-pool))
   (b* (((mv erp entry) (lookup-in-constant-pool index constant-pool))
        ((when erp) (mv erp nil))
        (tag (lookup-eq-safe 'tag entry)))
     (if (eq tag :CONSTANT_Integer)
-        (mv (erp-nil) (lookup-eq-safe 'bytes entry)) ;an (untagged) BV32
+        (mv (erp-nil) (cons :int (lookup-eq-safe 'bytes entry))) ;a BV32
       (if (eq tag :CONSTANT_Float)
           (let ((val (lookup-eq-safe 'bytes entry)))
             (if (not (unsigned-byte-p 32 val))
                 (mv :bad-float-constant nil)
-              (mv (erp-nil) (parse-float val)))) ;this will be a java-floatp and so will have a tag of :float
+              (mv (erp-nil) (cons :float (parse-float val))))) ;this will be a java-floatp
         (if (eq tag :CONSTANT_string)
             (b* ((string_index (nfix (lookup-eq-safe 'string_index entry)))
                  ((mv erp string_index-entry) (lookup-in-constant-pool string_index constant-pool))
                  ((when erp) (mv erp nil))
                  (string-bytes (lookup-eq-safe 'bytes string_index-entry)) ;will be an ACL2 string (fixme what about unicode?)
                  )
-              (mv (erp-nil) string-bytes))
+              (mv (erp-nil) (cons :string string-bytes)))
           ;;There seems to be another case for class_info. for example, see this snippet from javap:
           ;; 12: ldc_w #95=<Class [C>
           ;; this seems to be related to java 1.5 class literals
@@ -1272,22 +1271,21 @@
                   ))
             (mv :unrecognized-stuff-for-ldc-or-ldc_w nil)))))))
 
-;; Returns (mv erp constant).
+;; Returns (mv erp tagged-constant).
 ;; This version is for longs/doubles only
-(defun get-ldc2_w-constant (index constant-pool)
-  (declare (xargs :guard (and (natp index)
-                              )
+(defund get-ldc-constant64 (index constant-pool)
+  (declare (xargs :guard (natp index)
                   :stobjs constant-pool))
   (b* (((mv erp entry) (lookup-in-constant-pool index constant-pool))
        ((when erp) (mv erp nil))
        (tag (lookup-eq-safe 'tag entry)))
     (if (eq tag :CONSTANT_Long)
-        (mv (erp-nil) (lookup-eq-safe 'bytes entry)) ;an (untagged) BV64
+        (mv (erp-nil) (cons :long (lookup-eq-safe 'bytes entry))) ;a BV64
       (if (eq tag :CONSTANT_Double)
           (let ((val (lookup-eq-safe 'bytes entry))) ;an (untagged) BV64
             (if (not (unsigned-byte-p 64 val))
                 (mv `(:bad-double-constant ,val) nil)
-              (mv (erp-nil) (parse-double val)))) ;this will be a java-doublep and so will have a tag of :double
+              (mv (erp-nil) (cons :double (parse-double val))))) ; a java-doublep
         (mv :unrecognized-stuff-for-ldc2_w nil)))))
 
 ;this usually needs to consume more bytes than just the opcode, so we pass in bytes and return extrabytecount
@@ -1421,28 +1419,28 @@
    ((eq opcode-name ':ldc)
     (if (not (consp bytes))
         (mv :not-enough-bytes nil 0)
-      (b* (((mv erp val) (get-ldc-constant (first bytes) constant-pool))
+      (b* (((mv erp tagged-val) (get-ldc-constant32 (first bytes) constant-pool))
            ((when erp) (mv erp nil 0)))
         (mv (erp-nil)
-            (list opcode-name val)
+            (list opcode-name tagged-val)
             1))))
    ;;this variant takes 2 bytes and uses them to assemble a 16-bit unsigned index into the constant pool
    ((eq opcode-name ':LDC_W)
     (if (not (consp (rest bytes)))
         (mv :not-enough-bytes nil 0)
-      (b* (((mv erp val) (get-ldc-constant (2bytes-to-int (first bytes) (second bytes)) constant-pool))
+      (b* (((mv erp tagged-val) (get-ldc-constant32 (2bytes-to-int (first bytes) (second bytes)) constant-pool))
            ((when erp) (mv erp nil 0)))
         (mv (erp-nil)
-            (list opcode-name val)
+            (list opcode-name tagged-val)
             2))))
    ;;this variant handles longs/doubles
    ((eq opcode-name ':LDC2_W)
     (if (not (consp (rest bytes)))
         (mv :not-enough-bytes nil 0)
-      (b* (((mv erp val) (get-ldc2_w-constant (2bytes-to-int (first bytes) (second bytes)) constant-pool))
+      (b* (((mv erp tagged-val) (get-ldc-constant64 (2bytes-to-int (first bytes) (second bytes)) constant-pool))
            ((when erp) (mv erp nil 0)))
         (mv (erp-nil)
-            (list opcode-name val)
+            (list opcode-name tagged-val)
             2))))
 
    ;;these take a single unsigned byte (if they are modified by a WIDE, they are handled when the WIDE opcode is processed)

@@ -83,12 +83,13 @@
   (declare (xargs :guard (java-floatp float)))
   (eq float *float-NaN*))
 
-;; Needed to distinguish constant values (e.g., in LDC)
-(defthm floats-are-not-bvs
-  (not (and (java-floatp val)
-            (unsigned-byte-p n val)))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable java-floatp))))
+;; ;; No longer needed:
+;; ;; Needed to distinguish constant values (e.g., in LDC)
+;; (defthm floats-are-not-bvs
+;;   (not (and (java-floatp val)
+;;             (unsigned-byte-p n val)))
+;;   :rule-classes nil
+;;   :hints (("Goal" :in-theory (enable java-floatp))))
 
 (defund make-regular-float (sign val)
   (declare (xargs :guard (and (float-signp sign)
@@ -212,12 +213,13 @@
   (declare (xargs :guard (java-doublep double)))
   (eq double *double-NaN*))
 
-;; Needed to distinguish constant values (e.g., in LDC)
-(defthm doubles-are-not-bvs
-  (not (and (java-doublep val)
-            (unsigned-byte-p n val)))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable java-doublep))))
+;; ;; No longer needed:
+;; ;; Needed to distinguish constant values (e.g., in LDC)
+;; (defthm doubles-are-not-bvs
+;;   (not (and (java-doublep val)
+;;             (unsigned-byte-p n val)))
+;;   :rule-classes nil
+;;   :hints (("Goal" :in-theory (enable java-doublep))))
 
 (defund make-regular-double (sign val)
   (declare (xargs :guard (and (float-signp sign)

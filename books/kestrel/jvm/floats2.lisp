@@ -87,7 +87,6 @@
 (defconst *java-float-nan* #x7fc00000)
 
 ;; We represent floats bit-vectors of size 32.
-;; TODO: We now need to tag any float values in parsed LDC instructions.
 (defun java-floatp (f)
   (declare (xargs :guard t))
   (and (ieee-floatp f)
