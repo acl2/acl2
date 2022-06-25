@@ -147,18 +147,12 @@
   (and (alistp x)
        (all-heapref-table-entryp x)))
 
-(defun empty-heapref-table () (declare (xargs :guard t)) nil)
+(defund empty-heapref-table () (declare (xargs :guard t)) nil)
 
 (defthm heapref-tablep-of-empty-heapref-table
   (heapref-tablep (empty-heapref-table)))
 
-;fixme define a custom lookup-equal for this
-(defthm addressp-of-lookup-equal-when-heapref-tablep
- (implies (and (heapref-tablep heapref-table)
-               (acl2::lookup-equal class-name heapref-table))
-          (addressp (acl2::lookup-equal class-name heapref-table)))
- :hints (("Goal" :in-theory (enable heapref-tablep))))
-
+;; todo: use a custom setter:
 (defthm heapref-tablep-of-acons
   (equal (heapref-tablep (acons class-name ad heapref-table))
          (and (heapref-tablep heapref-table)
@@ -166,11 +160,26 @@
               (addressp ad)))
   :hints (("Goal" :in-theory (enable heapref-tablep acons))))
 
-;; returns an address or nil (error: there should always be a result)
-(defun get-class-object (class-name heapref-table)
+;; returns an address or nil (error: there should always be a result?)
+(defund get-class-object (class-name heapref-table)
   (declare (xargs :guard (and (class-namep class-name)
                               (heapref-tablep heapref-table))))
   (acl2::lookup-equal class-name heapref-table))
+
+;drop?
+(local
+ (defthm addressp-of-lookup-equal-when-heapref-tablep
+   (implies (and (heapref-tablep heapref-table)
+                 (acl2::lookup-equal class-name heapref-table))
+            (addressp (acl2::lookup-equal class-name heapref-table)))
+   :hints (("Goal" :in-theory (enable heapref-tablep)))))
+
+(defthm addressp-of-get-classs-object
+  (implies (and (heapref-tablep heapref-table)
+                (get-class-object class-name heapref-table) ; the class is present
+                )
+           (addressp (get-class-object class-name heapref-table)))
+  :hints (("Goal" :in-theory (enable get-class-object))))
 
 ;;
 ;; The monitor-table
@@ -483,7 +492,6 @@
        (monitor-tablep           (nth 4 s))
        (static-field-mapp        (nth 5 s))
        ;(all-class-namesp         (nth 6 s)) ;;fixme put back
-       ;;;(booleanp                 (nth 7 s))
        (intern-tablep (nth 7 s))
        (intern-table-okp (nth 7 s) (nth 1 s))
        ))
