@@ -78,13 +78,11 @@
   (implies (no-duplicatesp-equal x)
            (not (MEMBERP a (REMOVE1-EQUAL a x)))))
 
-;; ;replace with assoc-equal
-;; (defun bound? (x alist)
-;;   (declare (xargs :guard (alistp alist)))
-;;   (assoc-equal x alist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;fixme used typed alists for this?
-
+;; Used in the thread-table
 ;acons might be sufficient if duplicates are okay, but maybe we do want to get rid of old bindings for a thread, to keep the values from getting huge (but will the binds just stack up when we have symbolic terms)?
 (defun bind (x y alist)
   (declare (xargs :guard (alistp alist)))
@@ -931,7 +929,7 @@
                                (jvm-statep s)
                                (bound-in-alistp th (thread-table s))
                                (call-stack-non-emptyp th s))
-                   :verify-guards nil;fixme remove
+                   :verify-guards nil ;TODO: remove
                    ))
   (let ((top-frame (thread-top-frame th s)))
     (lookup (pc top-frame) (method-program (method-info top-frame)))))

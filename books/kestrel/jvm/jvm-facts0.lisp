@@ -589,7 +589,7 @@
 ;;           (ADDRESSP (LOCKED-OBJECT (TOP-FRAME-of-thread TH S)))))
 
 ;; ;fixme putback
-;; (defthm framep-of-top-frame
+;; (defthm framep-of-thead-top-frame
 ;;   (implies (and (thread-designatorp th)
 ;;                 (jvm-statep s)
 ;;                 (bound-in-alistp th (thread-table s))
