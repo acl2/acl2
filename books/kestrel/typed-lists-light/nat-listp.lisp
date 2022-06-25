@@ -86,3 +86,10 @@
            (equal (nat-listp (take n l))
                   (<= (nfix n) (len l))))
   :hints (("Goal" :in-theory (enable take nat-listp))))
+
+;disble?
+(defthm natp-of-car-when-nat-listp-type
+  (implies (and (nat-listp x)
+                (consp x))
+           (natp (car x)))
+  :rule-classes :type-prescription)

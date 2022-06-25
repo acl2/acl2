@@ -1616,7 +1616,7 @@
                                      (b* (((mv erp val)
                                            (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
                                        (if erp
-                                           (if (eq :unknown-function erp)
+                                           (if (call-of :unknown-function erp)
                                                (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
                                              ;; anything else non-nil is a true error:
                                              (mv erp nil nil))
@@ -4482,7 +4482,7 @@
                          (b* (((mv erp val)
                                (,apply-axe-evaluator-to-quoted-args-name fn new-dargs interpreted-function-alist)))
                            (if erp
-                               (if (eq :unknown-function erp)
+                               (if (call-of :unknown-function erp)
                                    (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
                                  ;; anything else non-nil is a true error:
                                  (mv erp nil nil))

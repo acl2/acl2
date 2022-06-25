@@ -64,7 +64,7 @@
                       ;; Try to evaluate the ground term:
                       (mv-let (erp res)
                         (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)
-                        (if erp ;; May be :unknown-function
+                        (if erp ;; May be an :unknown-function form
                             (progn$
                              ;; If this message is printed a lot, we could suppress it:
                              ;; (cw "(Note: In instantiate-hyp: Failed to apply ~x0 to constant args.  Consider adding it to the evaluator, adding it to the interpreted-function-alist, or adding a constant-opener rule.)~%" fn)

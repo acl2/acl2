@@ -200,7 +200,7 @@
                   (let ((match (assoc-eq fn interpreted-function-alist)))
                     (if (not match)
                         (progn$ ;; (cw "Unknown function: ~x0 applied to args ~x1.  Consider passing it as an interpreted function, or adding it to the list of built-ins for the evaluator ~x2.  (This error also occurs when a function appears with an incorrect number of arguments.)" fn args ',base-name)
-                                (mv :unknown-function nil))
+                                (mv `(:unknown-function ,fn) nil))
                       (let* ((fn-info (cdr match))
                              (formals (first fn-info))
                              (body (second fn-info))
@@ -313,7 +313,7 @@
                  (let ((match (assoc-eq fn interpreted-function-alist)))
                    (if (not match)
                        ;; Unknown function: ~x0 applied to args ~x1 (pass it as an interpreted function, or add to the list of built-ins, or check the arity of the call).
-                       (mv :unknown-function nil)
+                       (mv `(:unknown-function ,fn) nil)
                      (let* ((fn-info (cdr match))
                             (formals (first fn-info))
                             (body (second fn-info))
