@@ -2519,11 +2519,12 @@
     bvcat-of-slice-and-x-adjacent-2
     bvcat-of-getbit-and-x-adjacent-2))
 
-;deprecate?
-(defun anti-blast-rules ()
-  (declare (xargs :guard t))
-  (reassemble-bv-rules))
+;; ;deprecate?
+;; (defun anti-blast-rules ()
+;;   (declare (xargs :guard t))
+;;   (reassemble-bv-rules))
 
+;; Only used in the equivalence checker
 (defun strengthening-rules ()
   (declare (xargs :guard t))
   (append '(bvlt-trim-constant-arg1
@@ -2542,7 +2543,6 @@
             equal-of-bvchop-and-constant-when-bvlt-constant-2
             equal-of-bvchop-and-constant-when-not-bvlt-constant-1
             equal-of-bvchop-and-constant-when-not-bvlt-constant-2
-
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
             bvlt-of-max-arg3
@@ -2587,7 +2587,7 @@
           (base-rules)
           (boolean-rules)))
 
-;outside-in rules
+;outside-in rules.  Only used un rewriter-alt.lisp.
 (defun oi-rules ()
   (declare (xargs :guard t))
   '(if-when-nil

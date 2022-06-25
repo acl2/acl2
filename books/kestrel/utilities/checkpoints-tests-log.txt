@@ -19,10 +19,7 @@ ACL2 !>>(DEFMACRO
          (CONS
           'LET
           (CONS
-           (CONS (CONS 'CHAN
-                       (CONS (CONS 'STANDARD-CO (CONS 'STATE 'NIL))
-                             'NIL))
-                 'NIL)
+           '((CHAN (STANDARD-CO STATE)))
            (CONS
             (CONS
              'PPROGN
@@ -38,8 +35,7 @@ ACL2 !>>(DEFMACRO
                                          (CONS (CONS 'QUOTE (CONS FORM 'NIL))
                                                'NIL)))
                              'NIL))
-                 (CONS 'CHAN
-                       (CONS 'STATE (CONS 'NIL 'NIL))))))
+                 '(CHAN STATE NIL))))
               (CONS
                (IF
                 PRINT
@@ -50,20 +46,12 @@ ACL2 !>>(DEFMACRO
                                     (CONS (CONS 'CONS
                                                 (CONS '#\0 (CONS FORM 'NIL)))
                                           'NIL))
-                              (CONS 'CHAN
-                                    (CONS 'STATE (CONS 'NIL 'NIL))))))
-                (CONS
-                 'PPROGN
-                 (CONS
-                     FORM
-                     (CONS (CONS 'PRINC$
-                                 (CONS '"----------"
-                                       (CONS 'CHAN (CONS 'STATE 'NIL))))
-                           (CONS (CONS 'NEWLINE
-                                       (CONS 'CHAN (CONS 'STATE 'NIL)))
-                                 (CONS (CONS 'NEWLINE
-                                             (CONS 'CHAN (CONS 'STATE 'NIL)))
-                                       'NIL))))))
+                              '(CHAN STATE NIL))))
+                (CONS 'PPROGN
+                      (CONS FORM
+                            '((PRINC$ "----------" CHAN STATE)
+                              (NEWLINE CHAN STATE)
+                              (NEWLINE CHAN STATE)))))
                'NIL)))
             'NIL))))
 
