@@ -152,13 +152,7 @@
      (xdoc::p
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
-       in case proof generation is (temporarily) broken.")
-     (xdoc::p
-      "Currently this must be set to @('nil')
-       when generating code that reads or writes
-       elements of array members of structures.
-       This limitation will be lifted by extending proof generation
-       to handle those operations."))
+       in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"

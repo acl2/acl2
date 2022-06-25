@@ -915,77 +915,105 @@ In the SPECIAL variable *backquote-counter* we keep track of the number of
 backquotes that are currently pending.  It is crucial that this variable
 be SPECIAL.")
 
+(defun constant-backquote-term-p (x)
+  (cond ((and (vectorp x) (not (stringp x))) ; see error case in backquote
+         nil)
+        ((atom x) t)
+        ((eq (car x) *comma*) nil)
+        ((eq (car x) *comma-atsign*) nil)
+
+; See backquote comments below.  We could have a more restrictive test for
+; LAMBDA objects but that's probably not worth it.  Returnig nil is safe.
+
+        ((eq (car x) 'lambda) nil)
+        (t (constant-backquote-lst-p x))))
+
+(defun constant-backquote-lst-p (l)
+  (cond ((atom l) t)
+        ((eq (car l) *comma*)
+         nil)
+        ((eq (car l) *comma-atsign*)
+         nil)
+        ((and (consp (car l))
+              (eq (caar l) *comma*))
+         nil)
+        ((and (consp (car l))
+              (eq (caar l) *comma-atsign*))
+         nil)
+        (t
+         (and (constant-backquote-term-p (car l))
+              (constant-backquote-lst-p (cdr l))))))
+
 (defun backquote (x)
 
   "The two functions BACKQUOTE and BACKQUOTE-LST implement backquote
 as described on pp. 349-350 of CLTL1 except that (a) use of vector
 notation causes an error and (b) the use of ,. is not permitted."
 
-; It must be emphasized that the ACL2 implementation of backquote is
-; only one of many implementations that are consistent with the Common
-; Lisp specification of backquote.  That spec requires only that
-; backquote produce a form that when evaluated will produce a
-; designated object.  We impose the requirement that *acl2-readtable*
-; be used both when checking files with ACL2 and when later compiling
-; or using those files.  This requirement guarantees that we obtain
-; the same behavior of backquote across all Common Lisps.  For
+; It must be emphasized that the ACL2 implementation of backquote is only one
+; of many implementations that are consistent with the Common Lisp
+; specification of backquote.  That spec requires only that backquote produce a
+; form that when evaluated will produce a designated object.  We impose the
+; requirement that *acl2-readtable* be used both when checking files with ACL2
+; and when later compiling or using those files.  This requirement guarantees
+; that we obtain the same behavior of backquote across all Common Lisps.  For
 ; example, it is an ACL2 theorem, across all Common Lisps that
 
 ;   (equal (car '`(,a)) 'cons)
 
-; This theorem is definitely not true about the implementation of
-; backquote provided by the implementors of each Common Lisp.  In
-; fact, the lefthand side of this theorem represents an informal
-; misuse of the backquote notation because one is intended to consider
-; the effects of evaluating backquoted forms, not the forms
-; themselves.  (In some Common Lisps, the lefthand side might even
-; evaluate to a symbol in a nonstandard package.)  Nevertheless,
-; because we inflict our definition of backquote on the ACL2 user at
-; all times, the above equation is a theorem throughout, so no harm is
-; done.  On the other hand, if we used the local implementation of
-; backquote of each particular Common Lisp, we would get different
-; ACL2 theorems in different Common Lisps, which would be bad.
+; This theorem is definitely not true about the implementation of backquote
+; provided by the implementors of each Common Lisp.  In fact, the lefthand side
+; of this theorem represents an informal misuse of the backquote notation
+; because one is intended to consider the effects of evaluating backquoted
+; forms, not the forms themselves.  (In some Common Lisps, the lefthand side
+; might even evaluate to a symbol in a nonstandard package.)  Nevertheless,
+; because we inflict our definition of backquote on the ACL2 user at all times,
+; the above equation is a theorem throughout, so no harm is done.  On the other
+; hand, if we used the local implementation of backquote of each particular
+; Common Lisp, we would get different ACL2 theorems in different Common Lisps,
+; which would be bad.
 
-; Unlike most implementors of backquote, we do no serious
-; optimization.  We feel this inattention to efficiency is justified
-; at the moment because in the usage we expect, the only serious costs
-; will be small ones, during compilation.
+; We do less optimization than many implementors of backquote, but we do use
+; quoted expressions for constant subterms (other than LAMBDA objects) rather
+; than consing new structure.
 
-; Our backquote always returns a cons-expression on a cons.  In
-; particular, '`(a) returns (CONS 'A 'NIL) and not '(a), which would
-; be legal in any backquote that produces a constant, e.g., one
-; containing no commas.  We rely on the fact that the backquote of a
-; cons is a cons-expression in our documentation of methods of
-; bypassing the restrictions translate puts on LAMBDA objects in :FN
-; slots.  For example, see :DOC gratuitous-lambda-object-restrictions.
+; Our backquote always returns a cons-expression for a LAMBDA object.  For
+; example, '`(lambda (x) x) evaluates to (CONS 'LAMBDA '((X) X)) and not
+; '(LAMBDA (X) X); the latter sort of result would be legal for any backquote
+; expression that produces a constant, e.g., one containing no commas.  We rely
+; on the fact that the backquote of a LAMBDA object is a cons-expression in our
+; documentation of methods of bypassing the restrictions translate puts on
+; LAMBDA objects in :FN slots.  For example, see :DOC
+; gratuitous-lambda-object-restrictions.
 
   (cond ((and (vectorp x) (not (stringp x)))
          (error "ACL2 does not handle vectors in backquote."))
-        ((atom x) (list 'quote x))
+        ((constant-backquote-term-p x) ; includes the case (atom x)
+         (list 'quote x))
         ((eq (car x) *comma*) (cadr x))
         ((eq (car x) *comma-atsign*) (error "`,@ is an error"))
         (t (backquote-lst x))))
 
 (defun backquote-lst (l)
-  (cond ((atom l) (list 'quote l))
-        ((eq (car l) *comma*)
-         (cadr l))
-        ((eq (car l) *comma-atsign*)
-         (error ". ,@ is illegal."))
-        ((and (consp (car l))
-              (eq (caar l) *comma*))
-         (list 'cons
-               (cadr (car l))
-               (backquote-lst (cdr l))))
-        ((and (consp (car l))
-              (eq (caar l) *comma-atsign*))
-         (cond ((null (cdr l))
-                (cadr (car l)))
-               (t (list 'append (cadr (car l)) (backquote-lst (cdr l))))))
-        (t
-         (list 'cons
-               (backquote (car l))
-               (backquote-lst (cdr l))))))
+
+; This function assumes (consp l).
+
+  (cond
+   ((eq (car l) *comma*)
+    (cadr l))
+   ((eq (car l) *comma-atsign*)
+    (error ". ,@ is illegal."))
+   (t (let ((r (if (constant-backquote-lst-p (cdr l)) ; includes (atom (cdr l))
+                   (list 'quote (cdr l))
+                 (backquote-lst (cdr l)))))
+        (cond ((and (consp (car l))
+                    (eq (caar l) *comma-atsign*))
+               (cond ((null (cdr l))
+                      (cadr (car l)))
+                     (t (list 'append (cadr (car l)) r))))
+              (t (list 'cons
+                       (backquote (car l))
+                       r)))))))
 
 (defvar *read-object-comma-count* nil)
 
