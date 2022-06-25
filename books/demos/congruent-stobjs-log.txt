@@ -25,9 +25,7 @@ Rules: NIL
  "[books]/std/testing/must-succeed.lisp"
 ACL2 !>>(DEFMACRO MUST-FAIL^ (X)
                   (CONS 'MUST-FAIL
-                        (CONS X
-                              (CONS ':WITH-OUTPUT-OFF
-                                    (CONS 'NIL 'NIL)))))
+                        (CONS X '(:WITH-OUTPUT-OFF NIL))))
 
 Summary
 Form:  ( DEFMACRO MUST-FAIL^ ...)
@@ -203,25 +201,14 @@ Form:  ( DEFUN UPDATE2 ...)
 Rules: ((:TYPE-PRESCRIPTION UPDATE1))
  UPDATE2
 ACL2 !>>(DEFMACRO
-         EVAL-FORM (FORM)
-         (CONS
-          'MAKE-EVENT
-          (CONS
-           (CONS
-            'ER-PROGN
-            (CONS
-             (CONS 'TRANS-EVAL
-                   (CONS (CONS 'QUOTE (CONS FORM 'NIL))
-                         (CONS (CONS 'QUOTE (CONS 'TOP 'NIL))
-                               (CONS 'STATE (CONS 'T 'NIL)))))
-             (CONS
-               (CONS 'VALUE
-                     (CONS (CONS 'QUOTE
-                                 (CONS (CONS 'VALUE-TRIPLE (CONS ':NIL 'NIL))
-                                       'NIL))
-                           'NIL))
-               'NIL)))
-           'NIL)))
+           EVAL-FORM (FORM)
+           (CONS 'MAKE-EVENT
+                 (CONS (CONS 'ER-PROGN
+                             (CONS (CONS 'TRANS-EVAL
+                                         (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                               '('TOP STATE T)))
+                                   '((VALUE '(VALUE-TRIPLE :NIL)))))
+                       'NIL)))
 
 Summary
 Form:  ( DEFMACRO EVAL-FORM ...)
@@ -393,38 +380,16 @@ ACL2 !>>(DEFMACRO
            (CONS
             'MV-LET
             (CONS
-             (CONS 'ERP
-                   (CONS 'TRANS
-                         (CONS 'BINDINGS (CONS 'STATE 'NIL))))
-             (CONS
-              (CONS
-               'TRANSLATE1
-               (CONS
-                (CONS 'QUOTE (CONS FORM 'NIL))
-                (CONS
-                     ':STOBJS-OUT
-                     (CONS (CONS 'QUOTE
-                                 (CONS (CONS (CONS ':STOBJS-OUT ':STOBJS-OUT)
-                                             'NIL)
-                                       'NIL))
-                           (CONS 'T
-                                 (CONS (CONS 'QUOTE
-                                             (CONS 'MUST-NOT-TRANSLATE 'NIL))
-                                       (CONS (CONS 'W (CONS 'STATE 'NIL))
-                                             (CONS 'STATE 'NIL))))))))
-              (CONS
-                   (CONS 'DECLARE
-                         (CONS (CONS 'IGNORE
-                                     (CONS 'TRANS (CONS 'BINDINGS 'NIL)))
-                               'NIL))
-                   (CONS (CONS 'VALUE
-                               (CONS (CONS 'NOT
-                                           (CONS (CONS 'NOT (CONS 'ERP 'NIL))
-                                                 'NIL))
-                                     'NIL))
-                         'NIL)))))
-           (CONS ':WITH-OUTPUT-OFF
-                 (CONS 'NIL 'NIL)))))
+               '(ERP TRANS BINDINGS STATE)
+               (CONS (CONS 'TRANSLATE1
+                           (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                 '(:STOBJS-OUT '((:STOBJS-OUT . :STOBJS-OUT))
+                                               T 'MUST-NOT-TRANSLATE
+                                               (W STATE)
+                                               STATE)))
+                     '((DECLARE (IGNORE TRANS BINDINGS))
+                       (VALUE (NOT (NOT ERP)))))))
+           '(:WITH-OUTPUT-OFF NIL))))
 
 Summary
 Form:  ( DEFMACRO MUST-NOT-TRANSLATE ...)
@@ -438,53 +403,25 @@ ACL2 !>>(DEFMACRO
            (CONS
             'MV-LET
             (CONS
-             (CONS 'ERP
-                   (CONS 'VAL (CONS 'STATE 'NIL)))
-             (CONS
-              (CONS 'TRANS-EVAL
-                    (CONS (CONS 'QUOTE (CONS FORM 'NIL))
-                          (CONS (CONS 'QUOTE (CONS 'MUST-FAIL+ 'NIL))
-                                (CONS 'STATE (CONS 'T 'NIL)))))
-              (CONS
-               (CONS 'DECLARE
-                     (CONS (CONS 'IGNORE (CONS 'VAL 'NIL))
-                           'NIL))
-               (CONS
-                (CONS
-                 'COND
-                 (CONS
-                  (CONS
-                   'ERP
-                   (CONS
-                    (CONS
-                     'VALUE
-                     (CONS
-                          (CONS 'QUOTE
-                                (CONS (CONS 'VALUE-TRIPLE
-                                            (CONS ':FAILED-AS-EXPECTED 'NIL))
-                                      'NIL))
-                          'NIL))
-                    'NIL))
-                  (CONS (CONS 'T
-                              (CONS (CONS 'SILENT-ERROR (CONS 'STATE 'NIL))
-                                    'NIL))
-                        'NIL)))
-                'NIL)))))
+              '(ERP VAL STATE)
+              (CONS (CONS 'TRANS-EVAL
+                          (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                '('MUST-FAIL+ STATE T)))
+                    '((DECLARE (IGNORE VAL))
+                      (COND (ERP (VALUE '(VALUE-TRIPLE :FAILED-AS-EXPECTED)))
+                            (T (SILENT-ERROR STATE)))))))
            'NIL)))
 
 Summary
 Form:  ( DEFMACRO MUST-FAIL+ ...)
 Rules: NIL
  MUST-FAIL+
-ACL2 !>>(DEFMACRO
-         MUST-SUCCEED+ (FORM)
-         (CONS 'MUST-SUCCEED
-               (CONS (CONS 'TRANS-EVAL
-                           (CONS (CONS 'QUOTE (CONS FORM 'NIL))
-                                 (CONS (CONS 'QUOTE
-                                             (CONS 'MUST-NOT-TRANSLATE 'NIL))
-                                       (CONS 'STATE (CONS 'T 'NIL)))))
-                     'NIL)))
+ACL2 !>>(DEFMACRO MUST-SUCCEED+ (FORM)
+                  (CONS 'MUST-SUCCEED
+                        (CONS (CONS 'TRANS-EVAL
+                                    (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                          '('MUST-NOT-TRANSLATE STATE T)))
+                              'NIL)))
 
 Summary
 Form:  ( DEFMACRO MUST-SUCCEED+ ...)
