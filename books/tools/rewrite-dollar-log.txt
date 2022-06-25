@@ -35,17 +35,11 @@ ACL2 !>>(DEFMACRO
           'MUST-FAIL
           (CONS
            FORM
-           (CONS
-            ':EXPECTED
-            (CONS
-                 EXPECTED
-                 (CONS ':WITH-OUTPUT-OFF
-                       (CONS (CONS 'PROOF-TREE
-                                   (CONS 'EVENT
-                                         (CONS 'SUMMARY
-                                               (CONS 'PROOF-BUILDER
-                                                     (CONS 'HISTORY 'NIL)))))
-                             'NIL)))))))
+           (CONS ':EXPECTED
+                 (CONS EXPECTED
+                       '(:WITH-OUTPUT-OFF
+                             (PROOF-TREE EVENT
+                                         SUMMARY PROOF-BUILDER HISTORY)))))))
 
 Summary
 Form:  ( DEFMACRO MF ...)
@@ -652,436 +646,112 @@ ACL2 !>>(MF
           (CONS
            'REWRITE$-RECORD
            (CONS
-            (CONS
-             (CONS ':STANDARD (CONS 'NIL ':ATOM))
-             (CONS
-              (ENS STATE)
-              (CONS
-               (CONS
-                'NIL
-                (CONS
-                 'NIL
-                 (CONS
-                  (CONS
-                   (CONS 'EQUAL ':NONE)
-                   (CONS
-                    (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
-                    (CONS
-                     (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
-                           'NIL)
-                     (CONS
-                      (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
-                      (CONS
-                       'IF
-                       (CONS
-                        (CONS 'CONSP (CONS 'L 'NIL))
-                        (CONS
-                         (CONS
-                          'IF
-                          (CONS
-                           (CONS 'ZP (CONS 'N 'NIL))
-                           (CONS
-                            (CONS 'CAR (CONS 'L 'NIL))
-                            (CONS
-                             (CONS
-                              'NTH
-                              (CONS (CONS 'BINARY-+
-                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
-                                                (CONS 'N 'NIL)))
-                                    (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
-                             'NIL))))
-                         (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
-                               'NIL))))))))
-                  'NIL)))
-               (CONS
-                (CONS 'T (CONS 'NIL 'NIL))
-                (CONS
-                 (CONS 'NIL 'NIL)
-                 (CONS
-                  (CONS (CONS 'T 'NIL) ':CLEAR)
-                  (CONS
-                   (CONS 'NIL 'NIL)
-                   (CONS
-                    (CONS
-                     (CONS '500 (CONS '100 'NIL))
-                     (CONS
-                      'SYS-CALL+
-                      (CONS
-                       'SYS-CALL*
-                       (CONS
-                        'SYS-CALL
-                        (CONS
-                         'SET-TEMP-TOUCHABLE-VARS
-                         (CONS
-                          'SET-TEMP-TOUCHABLE-FNS
-                          (CONS
-                           'SET-RAW-MODE-ON
-                           (CONS
-                            'REMOVE-UNTOUCHABLE-FN
-                            (CONS
-                             'OPEN-OUTPUT-CHANNEL!
-                             (CONS
-                              'HONS-CLEAR!
-                              (CONS
-                               'HONS-WASH!
-                               (CONS
-                                'COERCE-STATE-TO-OBJECT
-                                (CONS
-                                 'COERCE-OBJECT-TO-STATE
-                                 (CONS
-                                  'CREATE-STATE
-                                  (CONS
-                                   'USER-STOBJ-ALIST
-                                   (CONS
-                                    'F-PUT-LD-SPECIALS
-                                    (CONS
-                                     'EV-FNCALL
-                                     (CONS
-                                      'EV
-                                      (CONS
-                                       'EV-LST
-                                       (CONS
-                                        'EV-FNCALL!
-                                        (CONS
-                                         'EV-FNCALL-REC
-                                         (CONS
-                                          'EV-REC
-                                          (CONS
-                                           'EV-REC-LST
-                                           (CONS
-                                            'EV-REC-ACL2-UNWIND-PROTECT
-                                            (CONS
-                                             'EV-FNCALL-W
-                                             (CONS
-                                              'EV-FNCALL-W-BODY
-                                              (CONS
-                                               'EV-W
-                                               (CONS
-                                                'EV-W-LST
-                                                (CONS
-                                                 'SET-W
-                                                 (CONS
-                                                  'SET-W!
-                                                  (CONS
-                                                   'CLOAKED-SET-W!
-                                                   (CONS
-                                                    'INSTALL-EVENT
-                                                    (CONS
-                                                     'DEFUNS-FN1
-                                                     (CONS
-                                                      'PROCESS-EMBEDDED-EVENTS
-                                                      (CONS
-                                                       'ENCAPSULATE-PASS-2
-                                                       (CONS
-                                                        'INCLUDE-BOOK-FN1
-                                                        (CONS
-                                                         'MAYBE-ADD-COMMAND-LANDMARK
-                                                         (CONS
-                                                          'UBT-UBU-FN1
-                                                          (CONS
-                                                           'INSTALL-EVENT-DEFUNS
-                                                           (CONS
-                                                            'DEFTHM-FN1
-                                                            (CONS
-                                                             'DEFUNS-FN0
-                                                             (CONS
-                                                              'LD-READ-EVAL-PRINT
-                                                              (CONS
-                                                               'LD-LOOP
-                                                               (CONS
-                                                                'LD-FN-BODY
-                                                                (CONS
-                                                                 'LD-FN0
-                                                                 (CONS
-                                                                  'LD-FN1
-                                                                  (CONS
-                                                                   'UPDATE-USER-STOBJ-ALIST
-                                                                   (CONS
-                                                                    'BIG-N
-                                                                    (CONS
-                                                                     'DECREMENT-BIG-N
-                                                                     (CONS
-                                                                      'ZP-BIG-N
-                                                                      (CONS
-                                                                       'PROTECTED-EVAL
-                                                                       (CONS
-                                                                        'SET-SITE-EVISC-TUPLE
-                                                                        (CONS
-                                                                         'SET-EVISC-TUPLE-LST
-                                                                         (CONS
-                                                                          'SET-EVISC-TUPLE-FN1
-                                                                          (CONS
-                                                                           'SET-IPRINT-AR
-                                                                           (CONS
-                                                                            'INIT-IPRINT-FAL
-                                                                            (CONS
-                                                                             'UPDATE-IPRINT-FAL-REC
-                                                                             (CONS
-                                                                              'UPDATE-IPRINT-FAL
-                                                                              (CONS
-                                                                              \
- 'INIT-IPRINT-FAL+
-                                                                              \
- (CONS
-                                                                              \
-  'UNTOUCHABLE-MARKER
-                                                                              \
-  (CONS
-                                                                              \
-   'STOBJ-EVISCERATION-ALIST
-                                                                              \
-   (CONS
-                                                                              \
-    'TRACE-EVISCERATION-ALIST
-                                                                              \
-    (CONS
-                                                                              \
-     'UPDATE-ENABLED-STRUCTURE-ARRAY
-                                                                              \
-     (CONS
-                                                                              \
-      'APPLY-USER-STOBJ-ALIST-OR-KWOTE
-                                                                              \
-      (CONS
-                                                                              \
-       'DOPPELGANGER-APPLY$-USERFN
-                                                                              \
-       (CONS
-                                                                              \
-        'DOPPELGANGER-BADGE-USERFN
-                                                                              \
-        'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-                    'NIL))))))))
+            (CONS '(:STANDARD NIL . :ATOM)
+                  (CONS (ENS STATE)
+                        '((NIL NIL
+                               ((EQUAL . :NONE)
+                                (NTH N Z)
+                                ((:DEFINITION NTH))
+                                (NTH N L)
+                                IF (CONSP L)
+                                (IF (ZP N)
+                                    (CAR L)
+                                    (NTH (BINARY-+ '-1 N) (CDR L)))
+                                'NIL))
+                          (T NIL)
+                          (NIL)
+                          ((T) . :CLEAR)
+                          (NIL)
+                          ((500 100)
+                           SYS-CALL+ SYS-CALL*
+                           SYS-CALL SET-TEMP-TOUCHABLE-VARS
+                           SET-TEMP-TOUCHABLE-FNS
+                           SET-RAW-MODE-ON REMOVE-UNTOUCHABLE-FN
+                           OPEN-OUTPUT-CHANNEL! HONS-CLEAR!
+                           HONS-WASH! COERCE-STATE-TO-OBJECT
+                           COERCE-OBJECT-TO-STATE CREATE-STATE
+                           USER-STOBJ-ALIST F-PUT-LD-SPECIALS
+                           EV-FNCALL EV EV-LST EV-FNCALL!
+                           EV-FNCALL-REC EV-REC EV-REC-LST
+                           EV-REC-ACL2-UNWIND-PROTECT EV-FNCALL-W
+                           EV-FNCALL-W-BODY EV-W EV-W-LST SET-W
+                           SET-W! CLOAKED-SET-W! INSTALL-EVENT
+                           DEFUNS-FN1 PROCESS-EMBEDDED-EVENTS
+                           ENCAPSULATE-PASS-2 INCLUDE-BOOK-FN1
+                           MAYBE-ADD-COMMAND-LANDMARK
+                           UBT-UBU-FN1 INSTALL-EVENT-DEFUNS
+                           DEFTHM-FN1 DEFUNS-FN0
+                           LD-READ-EVAL-PRINT LD-LOOP LD-FN-BODY
+                           LD-FN0 LD-FN1 UPDATE-USER-STOBJ-ALIST
+                           BIG-N DECREMENT-BIG-N ZP-BIG-N
+                           PROTECTED-EVAL SET-SITE-EVISC-TUPLE
+                           SET-EVISC-TUPLE-LST SET-EVISC-TUPLE-FN1
+                           SET-IPRINT-AR INIT-IPRINT-FAL
+                           UPDATE-IPRINT-FAL-REC UPDATE-IPRINT-FAL
+                           INIT-IPRINT-FAL+ UNTOUCHABLE-MARKER
+                           STOBJ-EVISCERATION-ALIST
+                           TRACE-EVISCERATION-ALIST
+                           UPDATE-ENABLED-STRUCTURE-ARRAY
+                           APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                           DOPPELGANGER-APPLY$-USERFN
+                           DOPPELGANGER-BADGE-USERFN))))
             (CONS
              (CONS
-              (CONS
-               (CONS
-                (CONS ':STANDARD (CONS 'NIL ':ATOM))
-                (CONS
-                 (ENS STATE)
-                 (CONS
-                  (CONS 'NIL (CONS 'NIL 'NIL))
-                  (CONS
-                   (CONS 'NIL (CONS 'NIL 'NIL))
-                   (CONS
-                    (CONS 'NIL 'NIL)
-                    (CONS
-                     (CONS (CONS 'T 'NIL) ':CLEAR)
-                     (CONS
-                      (CONS 'NIL 'NIL)
-                      (CONS
-                       (CONS
-                        (CONS '500 (CONS '100 'NIL))
-                        (CONS
-                         'SYS-CALL+
-                         (CONS
-                          'SYS-CALL*
-                          (CONS
-                           'SYS-CALL
-                           (CONS
-                            'SET-TEMP-TOUCHABLE-VARS
-                            (CONS
-                             'SET-TEMP-TOUCHABLE-FNS
-                             (CONS
-                              'SET-RAW-MODE-ON
-                              (CONS
-                               'REMOVE-UNTOUCHABLE-FN
-                               (CONS
-                                'OPEN-OUTPUT-CHANNEL!
-                                (CONS
-                                 'HONS-CLEAR!
-                                 (CONS
-                                  'HONS-WASH!
-                                  (CONS
-                                   'COERCE-STATE-TO-OBJECT
-                                   (CONS
-                                    'COERCE-OBJECT-TO-STATE
-                                    (CONS
-                                     'CREATE-STATE
-                                     (CONS
-                                      'USER-STOBJ-ALIST
-                                      (CONS
-                                       'F-PUT-LD-SPECIALS
-                                       (CONS
-                                        'EV-FNCALL
-                                        (CONS
-                                         'EV
-                                         (CONS
-                                          'EV-LST
-                                          (CONS
-                                           'EV-FNCALL!
-                                           (CONS
-                                            'EV-FNCALL-REC
-                                            (CONS
-                                             'EV-REC
-                                             (CONS
-                                              'EV-REC-LST
-                                              (CONS
-                                               'EV-REC-ACL2-UNWIND-PROTECT
-                                               (CONS
-                                                'EV-FNCALL-W
-                                                (CONS
-                                                 'EV-FNCALL-W-BODY
-                                                 (CONS
-                                                  'EV-W
-                                                  (CONS
-                                                   'EV-W-LST
-                                                   (CONS
-                                                    'SET-W
-                                                    (CONS
-                                                     'SET-W!
-                                                     (CONS
-                                                      'CLOAKED-SET-W!
-                                                      (CONS
-                                                       'INSTALL-EVENT
-                                                       (CONS
-                                                        'DEFUNS-FN1
-                                                        (CONS
-                                                         'PROCESS-EMBEDDED-EVENTS
-                                                         (CONS
-                                                          'ENCAPSULATE-PASS-2
-                                                          (CONS
-                                                           'INCLUDE-BOOK-FN1
-                                                           (CONS
-                                                            'MAYBE-ADD-COMMAND-LANDMARK
-                                                            (CONS
-                                                             'UBT-UBU-FN1
-                                                             (CONS
-                                                              'INSTALL-EVENT-DEFUNS
-                                                              (CONS
-                                                               'DEFTHM-FN1
-                                                               (CONS
-                                                                'DEFUNS-FN0
-                                                                (CONS
-                                                                 'LD-READ-EVAL-PRINT
-                                                                 (CONS
-                                                                  'LD-LOOP
-                                                                  (CONS
-                                                                   'LD-FN-BODY
-                                                                   (CONS
-                                                                    'LD-FN0
-                                                                    (CONS
-                                                                     'LD-FN1
-                                                                     (CONS
-                                                                      'UPDATE-USER-STOBJ-ALIST
-                                                                      (CONS
-                                                                       'BIG-N
-                                                                       (CONS
-                                                                        'DECREMENT-BIG-N
-                                                                        (CONS
-                                                                         'ZP-BIG-N
-                                                                         (CONS
-                                                                          'PROTECTED-EVAL
-                                                                          (CONS
-                                                                           'SET-SITE-EVISC-TUPLE
-                                                                           (CONS
-                                                                            'SET-EVISC-TUPLE-LST
-                                                                            (CONS
-                                                                             'SET-EVISC-TUPLE-FN1
-                                                                             (CONS
-                                                                              'SET-IPRINT-AR
-                                                                              (CONS
-                                                                              \
- 'INIT-IPRINT-FAL
-                                                                              \
- (CONS
-                                                                              \
-  'UPDATE-IPRINT-FAL-REC
-                                                                              \
-  (CONS
-                                                                              \
-   'UPDATE-IPRINT-FAL
-                                                                              \
-   (CONS
-                                                                              \
-    'INIT-IPRINT-FAL+
-                                                                              \
-    (CONS
-                                                                              \
-     'UNTOUCHABLE-MARKER
-                                                                              \
-     (CONS
-                                                                              \
-      'STOBJ-EVISCERATION-ALIST
-                                                                              \
-      (CONS
-                                                                              \
-       'TRACE-EVISCERATION-ALIST
-                                                                              \
-       (CONS
-                                                                              \
-        'UPDATE-ENABLED-STRUCTURE-ARRAY
-                                                                              \
-        (CONS
-                                                                              \
-         'APPLY-USER-STOBJ-ALIST-OR-KWOTE
-                                                                              \
-         (CONS
-                                                                              \
-          'DOPPELGANGER-APPLY$-USERFN
-                                                                              \
-          (CONS
-                                                                              \
-           'DOPPELGANGER-BADGE-USERFN
-                                                                              \
-           'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-                       'NIL))))))))
-               (CONS 'NIL 'NIL))
-              (CONS
-               (CONS 'NIL (CONS 'NIL 'NIL))
-               (CONS
-                (CONS 'NIL
-                      (CONS (CONS 'NIL 'NIL)
-                            (CONS (CONS 'NIL 'NIL)
-                                  (CONS 'NIL 'NIL))))
-                (CONS
-                 (CONS 'REWRITE$-LAST-LITERAL-FN 'NIL)
-                 (CONS
-                  'NIL
-                  (CONS
-                   (CONS
-                    (CONS
-                     (CONS (CONS '0 'NIL) (CONS 'NIL '0))
-                     (CONS
-                      (CONS
-                       ':EXPAND
-                       (CONS
-                        (CONS
-                         (CONS 'EQUAL ':NONE)
-                         (CONS
-                          (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
-                          (CONS
-                           (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
-                                 'NIL)
-                           (CONS
-                            (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
-                            (CONS
-                             'IF
-                             (CONS
-                              (CONS 'CONSP (CONS 'L 'NIL))
-                              (CONS
-                               (CONS
-                                'IF
-                                (CONS
-                                 (CONS 'ZP (CONS 'N 'NIL))
-                                 (CONS
-                                  (CONS 'CAR (CONS 'L 'NIL))
-                                  (CONS
-                                   (CONS
-                                    'NTH
-                                    (CONS
-                                     (CONS
-                                          'BINARY-+
-                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
-                                                (CONS 'N 'NIL)))
-                                     (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
-                                   'NIL))))
-                               (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
-                                     'NIL))))))))
-                        'NIL))
-                      'NIL))
-                    'NIL)
-                   'NIL))))))
+                 (CONS (CONS '(:STANDARD NIL . :ATOM)
+                             (CONS (ENS STATE)
+                                   '((NIL NIL)
+                                     (NIL NIL)
+                                     (NIL)
+                                     ((T) . :CLEAR)
+                                     (NIL)
+                                     ((500 100)
+                                      SYS-CALL+ SYS-CALL*
+                                      SYS-CALL SET-TEMP-TOUCHABLE-VARS
+                                      SET-TEMP-TOUCHABLE-FNS
+                                      SET-RAW-MODE-ON REMOVE-UNTOUCHABLE-FN
+                                      OPEN-OUTPUT-CHANNEL! HONS-CLEAR!
+                                      HONS-WASH! COERCE-STATE-TO-OBJECT
+                                      COERCE-OBJECT-TO-STATE CREATE-STATE
+                                      USER-STOBJ-ALIST F-PUT-LD-SPECIALS
+                                      EV-FNCALL EV EV-LST EV-FNCALL!
+                                      EV-FNCALL-REC EV-REC EV-REC-LST
+                                      EV-REC-ACL2-UNWIND-PROTECT EV-FNCALL-W
+                                      EV-FNCALL-W-BODY EV-W EV-W-LST SET-W
+                                      SET-W! CLOAKED-SET-W! INSTALL-EVENT
+                                      DEFUNS-FN1 PROCESS-EMBEDDED-EVENTS
+                                      ENCAPSULATE-PASS-2 INCLUDE-BOOK-FN1
+                                      MAYBE-ADD-COMMAND-LANDMARK
+                                      UBT-UBU-FN1 INSTALL-EVENT-DEFUNS
+                                      DEFTHM-FN1 DEFUNS-FN0
+                                      LD-READ-EVAL-PRINT LD-LOOP LD-FN-BODY
+                                      LD-FN0 LD-FN1 UPDATE-USER-STOBJ-ALIST
+                                      BIG-N DECREMENT-BIG-N ZP-BIG-N
+                                      PROTECTED-EVAL SET-SITE-EVISC-TUPLE
+                                      SET-EVISC-TUPLE-LST SET-EVISC-TUPLE-FN1
+                                      SET-IPRINT-AR INIT-IPRINT-FAL
+                                      UPDATE-IPRINT-FAL-REC UPDATE-IPRINT-FAL
+                                      INIT-IPRINT-FAL+ UNTOUCHABLE-MARKER
+                                      STOBJ-EVISCERATION-ALIST
+                                      TRACE-EVISCERATION-ALIST
+                                      UPDATE-ENABLED-STRUCTURE-ARRAY
+                                      APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                                      DOPPELGANGER-APPLY$-USERFN
+                                      DOPPELGANGER-BADGE-USERFN))))
+                       '(NIL))
+                 '((NIL NIL)
+                   (NIL (NIL) (NIL) NIL)
+                   (REWRITE$-LAST-LITERAL-FN)
+                   NIL
+                   ((((0) NIL . 0)
+                     (:EXPAND ((EQUAL . :NONE)
+                               (NTH N Z)
+                               ((:DEFINITION NTH))
+                               (NTH N L)
+                               IF (CONSP L)
+                               (IF (ZP N)
+                                   (CAR L)
+                                   (NTH (BINARY-+ '-1 N) (CDR L)))
+                               'NIL))))))
              'NIL)))))
 
 
@@ -1102,436 +772,112 @@ ACL2 !>>(MF
           (CONS
            'REWRITE$-RECORD
            (CONS
-            (CONS
-             (CONS ':STANDARD (CONS 'NIL ':ATOM))
-             (CONS
-              (ENS STATE)
-              (CONS
-               (CONS
-                'NIL
-                (CONS
-                 'NIL
-                 (CONS
-                  (CONS
-                   (CONS 'EQUAL ':NONE)
-                   (CONS
-                    (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
-                    (CONS
-                     (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
-                           'NIL)
-                     (CONS
-                      (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
-                      (CONS
-                       'IF
-                       (CONS
-                        (CONS 'CONSP (CONS 'L 'NIL))
-                        (CONS
-                         (CONS
-                          'IF
-                          (CONS
-                           (CONS 'ZP (CONS 'N 'NIL))
-                           (CONS
-                            (CONS 'CAR (CONS 'L 'NIL))
-                            (CONS
-                             (CONS
-                              'NTH
-                              (CONS (CONS 'BINARY-+
-                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
-                                                (CONS 'N 'NIL)))
-                                    (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
-                             'NIL))))
-                         (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
-                               'NIL))))))))
-                  'NIL)))
-               (CONS
-                (CONS 'T (CONS 'NIL 'NIL))
-                (CONS
-                 (CONS 'NIL 'NIL)
-                 (CONS
-                  (CONS (CONS 'T 'NIL) ':CLEAR)
-                  (CONS
-                   (CONS 'NIL 'NIL)
-                   (CONS
-                    (CONS
-                     (CONS '500 (CONS '100 'NIL))
-                     (CONS
-                      'SYS-CALL+
-                      (CONS
-                       'SYS-CALL*
-                       (CONS
-                        'SYS-CALL
-                        (CONS
-                         'SET-TEMP-TOUCHABLE-VARS
-                         (CONS
-                          'SET-TEMP-TOUCHABLE-FNS
-                          (CONS
-                           'SET-RAW-MODE-ON
-                           (CONS
-                            'REMOVE-UNTOUCHABLE-FN
-                            (CONS
-                             'OPEN-OUTPUT-CHANNEL!
-                             (CONS
-                              'HONS-CLEAR!
-                              (CONS
-                               'HONS-WASH!
-                               (CONS
-                                'COERCE-STATE-TO-OBJECT
-                                (CONS
-                                 'COERCE-OBJECT-TO-STATE
-                                 (CONS
-                                  'CREATE-STATE
-                                  (CONS
-                                   'USER-STOBJ-ALIST
-                                   (CONS
-                                    'F-PUT-LD-SPECIALS
-                                    (CONS
-                                     'EV-FNCALL
-                                     (CONS
-                                      'EV
-                                      (CONS
-                                       'EV-LST
-                                       (CONS
-                                        'EV-FNCALL!
-                                        (CONS
-                                         'EV-FNCALL-REC
-                                         (CONS
-                                          'EV-REC
-                                          (CONS
-                                           'EV-REC-LST
-                                           (CONS
-                                            'EV-REC-ACL2-UNWIND-PROTECT
-                                            (CONS
-                                             'EV-FNCALL-W
-                                             (CONS
-                                              'EV-FNCALL-W-BODY
-                                              (CONS
-                                               'EV-W
-                                               (CONS
-                                                'EV-W-LST
-                                                (CONS
-                                                 'SET-W
-                                                 (CONS
-                                                  'SET-W!
-                                                  (CONS
-                                                   'CLOAKED-SET-W!
-                                                   (CONS
-                                                    'INSTALL-EVENT
-                                                    (CONS
-                                                     'DEFUNS-FN1
-                                                     (CONS
-                                                      'PROCESS-EMBEDDED-EVENTS
-                                                      (CONS
-                                                       'ENCAPSULATE-PASS-2
-                                                       (CONS
-                                                        'INCLUDE-BOOK-FN1
-                                                        (CONS
-                                                         'MAYBE-ADD-COMMAND-LANDMARK
-                                                         (CONS
-                                                          'UBT-UBU-FN1
-                                                          (CONS
-                                                           'INSTALL-EVENT-DEFUNS
-                                                           (CONS
-                                                            'DEFTHM-FN1
-                                                            (CONS
-                                                             'DEFUNS-FN0
-                                                             (CONS
-                                                              'LD-READ-EVAL-PRINT
-                                                              (CONS
-                                                               'LD-LOOP
-                                                               (CONS
-                                                                'LD-FN-BODY
-                                                                (CONS
-                                                                 'LD-FN0
-                                                                 (CONS
-                                                                  'LD-FN1
-                                                                  (CONS
-                                                                   'UPDATE-USER-STOBJ-ALIST
-                                                                   (CONS
-                                                                    'BIG-N
-                                                                    (CONS
-                                                                     'DECREMENT-BIG-N
-                                                                     (CONS
-                                                                      'ZP-BIG-N
-                                                                      (CONS
-                                                                       'PROTECTED-EVAL
-                                                                       (CONS
-                                                                        'SET-SITE-EVISC-TUPLE
-                                                                        (CONS
-                                                                         'SET-EVISC-TUPLE-LST
-                                                                         (CONS
-                                                                          'SET-EVISC-TUPLE-FN1
-                                                                          (CONS
-                                                                           'SET-IPRINT-AR
-                                                                           (CONS
-                                                                            'INIT-IPRINT-FAL
-                                                                            (CONS
-                                                                             'UPDATE-IPRINT-FAL-REC
-                                                                             (CONS
-                                                                              'UPDATE-IPRINT-FAL
-                                                                              (CONS
-                                                                              \
- 'INIT-IPRINT-FAL+
-                                                                              \
- (CONS
-                                                                              \
-  'UNTOUCHABLE-MARKER
-                                                                              \
-  (CONS
-                                                                              \
-   'STOBJ-EVISCERATION-ALIST
-                                                                              \
-   (CONS
-                                                                              \
-    'TRACE-EVISCERATION-ALIST
-                                                                              \
-    (CONS
-                                                                              \
-     'UPDATE-ENABLED-STRUCTURE-ARRAY
-                                                                              \
-     (CONS
-                                                                              \
-      'APPLY-USER-STOBJ-ALIST-OR-KWOTE
-                                                                              \
-      (CONS
-                                                                              \
-       'DOPPELGANGER-APPLY$-USERFN
-                                                                              \
-       (CONS
-                                                                              \
-        'DOPPELGANGER-BADGE-USERFN
-                                                                              \
-        'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-                    'NIL))))))))
+            (CONS '(:STANDARD NIL . :ATOM)
+                  (CONS (ENS STATE)
+                        '((NIL NIL
+                               ((EQUAL . :NONE)
+                                (NTH N Z)
+                                ((:DEFINITION NTH))
+                                (NTH N L)
+                                IF (CONSP L)
+                                (IF (ZP N)
+                                    (CAR L)
+                                    (NTH (BINARY-+ '-1 N) (CDR L)))
+                                'NIL))
+                          (T NIL)
+                          (NIL)
+                          ((T) . :CLEAR)
+                          (NIL)
+                          ((500 100)
+                           SYS-CALL+ SYS-CALL*
+                           SYS-CALL SET-TEMP-TOUCHABLE-VARS
+                           SET-TEMP-TOUCHABLE-FNS
+                           SET-RAW-MODE-ON REMOVE-UNTOUCHABLE-FN
+                           OPEN-OUTPUT-CHANNEL! HONS-CLEAR!
+                           HONS-WASH! COERCE-STATE-TO-OBJECT
+                           COERCE-OBJECT-TO-STATE CREATE-STATE
+                           USER-STOBJ-ALIST F-PUT-LD-SPECIALS
+                           EV-FNCALL EV EV-LST EV-FNCALL!
+                           EV-FNCALL-REC EV-REC EV-REC-LST
+                           EV-REC-ACL2-UNWIND-PROTECT EV-FNCALL-W
+                           EV-FNCALL-W-BODY EV-W EV-W-LST SET-W
+                           SET-W! CLOAKED-SET-W! INSTALL-EVENT
+                           DEFUNS-FN1 PROCESS-EMBEDDED-EVENTS
+                           ENCAPSULATE-PASS-2 INCLUDE-BOOK-FN1
+                           MAYBE-ADD-COMMAND-LANDMARK
+                           UBT-UBU-FN1 INSTALL-EVENT-DEFUNS
+                           DEFTHM-FN1 DEFUNS-FN0
+                           LD-READ-EVAL-PRINT LD-LOOP LD-FN-BODY
+                           LD-FN0 LD-FN1 UPDATE-USER-STOBJ-ALIST
+                           BIG-N DECREMENT-BIG-N ZP-BIG-N
+                           PROTECTED-EVAL SET-SITE-EVISC-TUPLE
+                           SET-EVISC-TUPLE-LST SET-EVISC-TUPLE-FN1
+                           SET-IPRINT-AR INIT-IPRINT-FAL
+                           UPDATE-IPRINT-FAL-REC UPDATE-IPRINT-FAL
+                           INIT-IPRINT-FAL+ UNTOUCHABLE-MARKER
+                           STOBJ-EVISCERATION-ALIST
+                           TRACE-EVISCERATION-ALIST
+                           UPDATE-ENABLED-STRUCTURE-ARRAY
+                           APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                           DOPPELGANGER-APPLY$-USERFN
+                           DOPPELGANGER-BADGE-USERFN))))
             (CONS
              (CONS
-              (CONS
-               (CONS
-                (CONS ':STANDARD (CONS 'NIL ':ATOM))
-                (CONS
-                 (ENS STATE)
-                 (CONS
-                  (CONS 'NIL (CONS 'NIL 'NIL))
-                  (CONS
-                   (CONS 'NIL (CONS 'NIL 'NIL))
-                   (CONS
-                    (CONS 'NIL 'NIL)
-                    (CONS
-                     (CONS (CONS 'T 'NIL) ':CLEAR)
-                     (CONS
-                      (CONS 'NIL 'NIL)
-                      (CONS
-                       (CONS
-                        (CONS '500 (CONS '100 'NIL))
-                        (CONS
-                         'SYS-CALL+
-                         (CONS
-                          'SYS-CALL*
-                          (CONS
-                           'SYS-CALL
-                           (CONS
-                            'SET-TEMP-TOUCHABLE-VARS
-                            (CONS
-                             'SET-TEMP-TOUCHABLE-FNS
-                             (CONS
-                              'SET-RAW-MODE-ON
-                              (CONS
-                               'REMOVE-UNTOUCHABLE-FN
-                               (CONS
-                                'OPEN-OUTPUT-CHANNEL!
-                                (CONS
-                                 'HONS-CLEAR!
-                                 (CONS
-                                  'HONS-WASH!
-                                  (CONS
-                                   'COERCE-STATE-TO-OBJECT
-                                   (CONS
-                                    'COERCE-OBJECT-TO-STATE
-                                    (CONS
-                                     'CREATE-STATE
-                                     (CONS
-                                      'USER-STOBJ-ALIST
-                                      (CONS
-                                       'F-PUT-LD-SPECIALS
-                                       (CONS
-                                        'EV-FNCALL
-                                        (CONS
-                                         'EV
-                                         (CONS
-                                          'EV-LST
-                                          (CONS
-                                           'EV-FNCALL!
-                                           (CONS
-                                            'EV-FNCALL-REC
-                                            (CONS
-                                             'EV-REC
-                                             (CONS
-                                              'EV-REC-LST
-                                              (CONS
-                                               'EV-REC-ACL2-UNWIND-PROTECT
-                                               (CONS
-                                                'EV-FNCALL-W
-                                                (CONS
-                                                 'EV-FNCALL-W-BODY
-                                                 (CONS
-                                                  'EV-W
-                                                  (CONS
-                                                   'EV-W-LST
-                                                   (CONS
-                                                    'SET-W
-                                                    (CONS
-                                                     'SET-W!
-                                                     (CONS
-                                                      'CLOAKED-SET-W!
-                                                      (CONS
-                                                       'INSTALL-EVENT
-                                                       (CONS
-                                                        'DEFUNS-FN1
-                                                        (CONS
-                                                         'PROCESS-EMBEDDED-EVENTS
-                                                         (CONS
-                                                          'ENCAPSULATE-PASS-2
-                                                          (CONS
-                                                           'INCLUDE-BOOK-FN1
-                                                           (CONS
-                                                            'MAYBE-ADD-COMMAND-LANDMARK
-                                                            (CONS
-                                                             'UBT-UBU-FN1
-                                                             (CONS
-                                                              'INSTALL-EVENT-DEFUNS
-                                                              (CONS
-                                                               'DEFTHM-FN1
-                                                               (CONS
-                                                                'DEFUNS-FN0
-                                                                (CONS
-                                                                 'LD-READ-EVAL-PRINT
-                                                                 (CONS
-                                                                  'LD-LOOP
-                                                                  (CONS
-                                                                   'LD-FN-BODY
-                                                                   (CONS
-                                                                    'LD-FN0
-                                                                    (CONS
-                                                                     'LD-FN1
-                                                                     (CONS
-                                                                      'UPDATE-USER-STOBJ-ALIST
-                                                                      (CONS
-                                                                       'BIG-N
-                                                                       (CONS
-                                                                        'DECREMENT-BIG-N
-                                                                        (CONS
-                                                                         'ZP-BIG-N
-                                                                         (CONS
-                                                                          'PROTECTED-EVAL
-                                                                          (CONS
-                                                                           'SET-SITE-EVISC-TUPLE
-                                                                           (CONS
-                                                                            'SET-EVISC-TUPLE-LST
-                                                                            (CONS
-                                                                             'SET-EVISC-TUPLE-FN1
-                                                                             (CONS
-                                                                              'SET-IPRINT-AR
-                                                                              (CONS
-                                                                              \
- 'INIT-IPRINT-FAL
-                                                                              \
- (CONS
-                                                                              \
-  'UPDATE-IPRINT-FAL-REC
-                                                                              \
-  (CONS
-                                                                              \
-   'UPDATE-IPRINT-FAL
-                                                                              \
-   (CONS
-                                                                              \
-    'INIT-IPRINT-FAL+
-                                                                              \
-    (CONS
-                                                                              \
-     'UNTOUCHABLE-MARKER
-                                                                              \
-     (CONS
-                                                                              \
-      'STOBJ-EVISCERATION-ALIST
-                                                                              \
-      (CONS
-                                                                              \
-       'TRACE-EVISCERATION-ALIST
-                                                                              \
-       (CONS
-                                                                              \
-        'UPDATE-ENABLED-STRUCTURE-ARRAY
-                                                                              \
-        (CONS
-                                                                              \
-         'APPLY-USER-STOBJ-ALIST-OR-KWOTE
-                                                                              \
-         (CONS
-                                                                              \
-          'DOPPELGANGER-APPLY$-USERFN
-                                                                              \
-          (CONS
-                                                                              \
-           'DOPPELGANGER-BADGE-USERFN
-                                                                              \
-           'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-                       'NIL))))))))
-               (CONS 'NIL 'NIL))
-              (CONS
-               (CONS 'NIL (CONS 'NIL 'NIL))
-               (CONS
-                (CONS 'NIL
-                      (CONS (CONS 'NIL 'NIL)
-                            (CONS (CONS 'NIL 'NIL)
-                                  (CONS 'NIL 'NIL))))
-                (CONS
-                 (CONS 'REWRITE$-LAST-LITERAL-FN 'NIL)
-                 (CONS
-                  'NIL
-                  (CONS
-                   (CONS
-                    (CONS
-                     (CONS (CONS '0 'NIL) (CONS 'NIL '0))
-                     (CONS
-                      (CONS
-                       ':EXPAND
-                       (CONS
-                        (CONS
-                         (CONS 'EQUAL ':NONE)
-                         (CONS
-                          (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
-                          (CONS
-                           (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
-                                 'NIL)
-                           (CONS
-                            (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
-                            (CONS
-                             'IF
-                             (CONS
-                              (CONS 'CONSP (CONS 'L 'NIL))
-                              (CONS
-                               (CONS
-                                'IF
-                                (CONS
-                                 (CONS 'ZP (CONS 'N 'NIL))
-                                 (CONS
-                                  (CONS 'CAR (CONS 'L 'NIL))
-                                  (CONS
-                                   (CONS
-                                    'NTH
-                                    (CONS
-                                     (CONS
-                                          'BINARY-+
-                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
-                                                (CONS 'N 'NIL)))
-                                     (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
-                                   'NIL))))
-                               (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
-                                     'NIL))))))))
-                        'NIL))
-                      'NIL))
-                    'NIL)
-                   'NIL))))))
+                 (CONS (CONS '(:STANDARD NIL . :ATOM)
+                             (CONS (ENS STATE)
+                                   '((NIL NIL)
+                                     (NIL NIL)
+                                     (NIL)
+                                     ((T) . :CLEAR)
+                                     (NIL)
+                                     ((500 100)
+                                      SYS-CALL+ SYS-CALL*
+                                      SYS-CALL SET-TEMP-TOUCHABLE-VARS
+                                      SET-TEMP-TOUCHABLE-FNS
+                                      SET-RAW-MODE-ON REMOVE-UNTOUCHABLE-FN
+                                      OPEN-OUTPUT-CHANNEL! HONS-CLEAR!
+                                      HONS-WASH! COERCE-STATE-TO-OBJECT
+                                      COERCE-OBJECT-TO-STATE CREATE-STATE
+                                      USER-STOBJ-ALIST F-PUT-LD-SPECIALS
+                                      EV-FNCALL EV EV-LST EV-FNCALL!
+                                      EV-FNCALL-REC EV-REC EV-REC-LST
+                                      EV-REC-ACL2-UNWIND-PROTECT EV-FNCALL-W
+                                      EV-FNCALL-W-BODY EV-W EV-W-LST SET-W
+                                      SET-W! CLOAKED-SET-W! INSTALL-EVENT
+                                      DEFUNS-FN1 PROCESS-EMBEDDED-EVENTS
+                                      ENCAPSULATE-PASS-2 INCLUDE-BOOK-FN1
+                                      MAYBE-ADD-COMMAND-LANDMARK
+                                      UBT-UBU-FN1 INSTALL-EVENT-DEFUNS
+                                      DEFTHM-FN1 DEFUNS-FN0
+                                      LD-READ-EVAL-PRINT LD-LOOP LD-FN-BODY
+                                      LD-FN0 LD-FN1 UPDATE-USER-STOBJ-ALIST
+                                      BIG-N DECREMENT-BIG-N ZP-BIG-N
+                                      PROTECTED-EVAL SET-SITE-EVISC-TUPLE
+                                      SET-EVISC-TUPLE-LST SET-EVISC-TUPLE-FN1
+                                      SET-IPRINT-AR INIT-IPRINT-FAL
+                                      UPDATE-IPRINT-FAL-REC UPDATE-IPRINT-FAL
+                                      INIT-IPRINT-FAL+ UNTOUCHABLE-MARKER
+                                      STOBJ-EVISCERATION-ALIST
+                                      TRACE-EVISCERATION-ALIST
+                                      UPDATE-ENABLED-STRUCTURE-ARRAY
+                                      APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                                      DOPPELGANGER-APPLY$-USERFN
+                                      DOPPELGANGER-BADGE-USERFN))))
+                       '(NIL))
+                 '((NIL NIL)
+                   (NIL (NIL) (NIL) NIL)
+                   (REWRITE$-LAST-LITERAL-FN)
+                   NIL
+                   ((((0) NIL . 0)
+                     (:EXPAND ((EQUAL . :NONE)
+                               (NTH N Z)
+                               ((:DEFINITION NTH))
+                               (NTH N L)
+                               IF (CONSP L)
+                               (IF (ZP N)
+                                   (CAR L)
+                                   (NTH (BINARY-+ '-1 N) (CDR L)))
+                               'NIL))))))
              'NIL)))))
 
 
@@ -1665,27 +1011,12 @@ ACL2 !>>(DEFMACRO
          MUST-EVAL-TO-RH (FORM RESULT)
          (CONS
           'MUST-EVAL-TO
-          (CONS
-           (CONS
-            'B*
-            (CONS
-             (CONS
-              (CONS
-               (CONS
-                 'ER
-                 (CONS (CONS 'LIST*
-                             (CONS 'HYPS
-                                   (CONS '?RREC
-                                         (CONS 'TTREE (CONS '?PAIRS 'NIL)))))
-                       'NIL))
-               (CONS FORM 'NIL))
-              'NIL)
-             (CONS (CONS 'VALUE
-                         (CONS (CONS 'LIST
-                                     (CONS 'HYPS (CONS 'TTREE 'NIL)))
-                               'NIL))
-                   'NIL)))
-           (CONS RESULT 'NIL))))
+          (CONS (CONS 'B*
+                      (CONS (CONS (CONS '(ER (LIST* HYPS ?RREC TTREE ?PAIRS))
+                                        (CONS FORM 'NIL))
+                                  'NIL)
+                            '((VALUE (LIST HYPS TTREE)))))
+                (CONS RESULT 'NIL))))
 
 Summary
 Form:  ( DEFMACRO MUST-EVAL-TO-RH ...)
@@ -1848,28 +1179,14 @@ ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((NOT (IF (NOT X) T Y)))
 ACL2 !>>(DEFMACRO
          MUST-EVAL-TO-CONTEXT (FORM RESULT)
          (CONS
-          'MUST-EVAL-TO
-          (CONS
-           (CONS
-            'ER-LET*
-            (CONS
-             (CONS (CONS 'X (CONS FORM 'NIL)) 'NIL)
-             (CONS
-              (CONS
-               'VALUE
-               (CONS
-                (CONS
-                    'LIST*
-                    (CONS (CONS 'CAR (CONS 'X 'NIL))
-                          (CONS (CONS 'ACCESS
-                                      (CONS 'REWRITE$-RECORD
-                                            (CONS (CONS 'CADR (CONS 'X 'NIL))
-                                                  (CONS ':TYPE-ALIST 'NIL))))
-                                (CONS (CONS 'CDDR (CONS 'X 'NIL))
-                                      'NIL))))
-                'NIL))
-              'NIL)))
-           (CONS RESULT 'NIL))))
+           'MUST-EVAL-TO
+           (CONS (CONS 'ER-LET*
+                       (CONS (CONS (CONS 'X (CONS FORM 'NIL)) 'NIL)
+                             '((VALUE (LIST* (CAR X)
+                                             (ACCESS REWRITE$-RECORD (CADR X)
+                                                     :TYPE-ALIST)
+                                             (CDDR X))))))
+                 (CONS RESULT 'NIL))))
 
 Summary
 Form:  ( DEFMACRO MUST-EVAL-TO-CONTEXT ...)
@@ -1921,44 +1238,21 @@ ACL2 !>>(MAKE-EVENT
            (CONS
             'PROGN
             (CONS
-             (CONS
-              'ASSERT-EVENT
-              (CONS
-               (CONS
-                'EQUAL
-                (CONS
-                   (CONS 'QUOTE (CONS HYPS 'NIL))
-                   (CONS (CONS 'QUOTE
-                               (CONS (CONS (CONS 'CONSP (CONS 'X 'NIL))
-                                           (CONS (CONS 'CONSP (CONS 'Y 'NIL))
-                                                 'NIL))
-                                     'NIL))
-                         'NIL)))
-               'NIL))
-             (CONS
-              (CONS
-               'ASSERT-EVENT
-               (CONS
-                (CONS
-                 'EQUAL
-                 (CONS
-                  (CONS 'QUOTE (CONS TTREE 'NIL))
-                  (CONS
-                   (CONS
-                    'QUOTE
-                    (CONS
-                        (CONS (CONS 'LEMMA
-                                    (CONS (CONS ':DEFINITION (CONS 'P5 'NIL))
-                                          'NIL))
-                              'NIL)
-                        'NIL))
-                   'NIL)))
-                'NIL))
-              (CONS (CONS 'DEFCONST
-                          (CONS '*RREC-3*
-                                (CONS (CONS 'QUOTE (CONS RREC 'NIL))
-                                      'NIL)))
-                    'NIL)))))))
+               (CONS 'ASSERT-EVENT
+                     (CONS (CONS 'EQUAL
+                                 (CONS (CONS 'QUOTE (CONS HYPS 'NIL))
+                                       '('((CONSP X) (CONSP Y)))))
+                           'NIL))
+               (CONS (CONS 'ASSERT-EVENT
+                           (CONS (CONS 'EQUAL
+                                       (CONS (CONS 'QUOTE (CONS TTREE 'NIL))
+                                             '('((LEMMA (:DEFINITION P5))))))
+                                 'NIL))
+                     (CONS (CONS 'DEFCONST
+                                 (CONS '*RREC-3*
+                                       (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                             'NIL)))
+                           'NIL)))))))
 :PASSED
 :PASSED
 

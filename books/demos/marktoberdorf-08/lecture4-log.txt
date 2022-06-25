@@ -78,30 +78,25 @@ M1 >>(DEFMACRO
           (CONS
            INV
            (CONS
-            (APPEND INPUTS (CONS 'S 'NIL))
+            (APPEND INPUTS '(S))
             (CONS
              (CONS
               'IF
               (CONS
-                (CONS 'MEMBER
-                      (CONS (CONS 'PC (CONS 'S 'NIL))
-                            (CONS (CONS 'QUOTE
-                                        (CONS (STRIP-CARS ANNOTATION-ALIST)
-                                              'NIL))
-                                  'NIL)))
-                (CONS (CONS 'AND
-                            (CONS (CONS 'EQUAL
-                                        (CONS (CONS 'PROGRAM (CONS 'S 'NIL))
-                                              (CONS PROG 'NIL)))
-                                  (CONS (CONS 'CASE
-                                              (CONS (CONS 'PC (CONS 'S 'NIL))
-                                                    ANNOTATION-ALIST))
-                                        'NIL)))
-                      (CONS (CONS INV
-                                  (APPEND INPUTS
-                                          (CONS (CONS 'STEP (CONS 'S 'NIL))
-                                                'NIL)))
-                            'NIL))))
+               (CONS 'MEMBER
+                     (CONS '(PC S)
+                           (CONS (CONS 'QUOTE
+                                       (CONS (STRIP-CARS ANNOTATION-ALIST)
+                                             'NIL))
+                                 'NIL)))
+               (CONS (CONS 'AND
+                           (CONS (CONS 'EQUAL
+                                       (CONS '(PROGRAM S) (CONS PROG 'NIL)))
+                                 (CONS (CONS 'CASE
+                                             (CONS '(PC S) ANNOTATION-ALIST))
+                                       'NIL)))
+                     (CONS (CONS INV (APPEND INPUTS '((STEP S))))
+                           'NIL))))
              'NIL))))
          (CONS
           (CONS
@@ -115,13 +110,9 @@ M1 >>(DEFMACRO
                (CONS
                 'AND
                 (CONS
-                 (CONS 'EQUAL
-                       (CONS 'PC
-                             (CONS (CONS 'PC (CONS 'S 'NIL)) 'NIL)))
+                 '(EQUAL PC (PC S))
                  (CONS
-                  (CONS 'SYNTAXP
-                        (CONS (CONS 'QUOTEP (CONS 'PC 'NIL))
-                              'NIL))
+                  '(SYNTAXP (QUOTEP PC))
                   (CONS
                    (CONS
                     'NOT
@@ -135,49 +126,32 @@ M1 >>(DEFMACRO
                                     'NIL)))
                      'NIL))
                    'NIL))))
-               (CONS
-                (CONS
-                  'EQUAL
-                  (CONS (CONS INV (APPEND INPUTS (CONS 'S 'NIL)))
-                        (CONS (CONS INV
-                                    (APPEND INPUTS
-                                            (CONS (CONS 'STEP (CONS 'S 'NIL))
-                                                  'NIL)))
-                              'NIL)))
-                'NIL)))
+               (CONS (CONS 'EQUAL
+                           (CONS (CONS INV (APPEND INPUTS '(S)))
+                                 (CONS (CONS INV (APPEND INPUTS '((STEP S))))
+                                       'NIL)))
+                     'NIL)))
              'NIL)))
           (CONS
            (CONS
             'DEFTHM
             (CONS
-             INV-STEP
-             (CONS
-              (CONS
-                  'IMPLIES
-                  (CONS (CONS INV (APPEND INPUTS (CONS 'S 'NIL)))
-                        (CONS (CONS INV
-                                    (APPEND INPUTS
-                                            (CONS (CONS 'STEP (CONS 'S 'NIL))
-                                                  'NIL)))
-                              'NIL)))
-              'NIL)))
+               INV-STEP
+               (CONS (CONS 'IMPLIES
+                           (CONS (CONS INV (APPEND INPUTS '(S)))
+                                 (CONS (CONS INV (APPEND INPUTS '((STEP S))))
+                                       'NIL)))
+                     'NIL)))
            (CONS
             (CONS
              'DEFTHM
              (CONS
               INV-RUN
               (CONS
-               (CONS
-                'IMPLIES
-                (CONS
-                 (CONS INV (APPEND INPUTS (CONS 'S 'NIL)))
-                 (CONS
-                  (CONS
-                       INV
-                       (APPEND INPUTS
-                               (CONS (CONS 'RUN (CONS 'SCHED (CONS 'S 'NIL)))
-                                     'NIL)))
-                  'NIL)))
+               (CONS 'IMPLIES
+                     (CONS (CONS INV (APPEND INPUTS '(S)))
+                           (CONS (CONS INV (APPEND INPUTS '((RUN SCHED S))))
+                                 'NIL)))
                (CONS
                 ':RULE-CLASSES
                 (CONS
@@ -191,7 +165,7 @@ M1 >>(DEFMACRO
                      (CONS
                           ':IN-THEORY
                           (CONS (CONS 'E/D
-                                      (CONS (CONS 'RUN 'NIL)
+                                      (CONS '(RUN)
                                             (CONS (CONS INV-DEF 'NIL) 'NIL)))
                                 'NIL)))
                     'NIL)
@@ -205,11 +179,7 @@ M1 >>(DEFMACRO
                 (CONS
                  'LET*
                  (CONS
-                  (CONS (CONS 'SK
-                              (CONS (CONS 'RUN
-                                          (CONS 'SCHED (CONS 'S0 'NIL)))
-                                    'NIL))
-                        'NIL)
+                  '((SK (RUN SCHED S0)))
                   (CONS
                    (CONS
                     'IMPLIES
@@ -219,31 +189,28 @@ M1 >>(DEFMACRO
                       (CONS
                        (CONS
                            'LET
-                           (CONS (CONS (CONS 'S (CONS 'S0 'NIL)) 'NIL)
+                           (CONS '((S S0))
                                  (CONS (CADR (ASSOC PRE-PC ANNOTATION-ALIST))
                                        'NIL)))
                        (CONS
                         (CONS 'EQUAL
-                              (CONS (CONS 'PC (CONS 'S0 'NIL))
-                                    (CONS PRE-PC 'NIL)))
+                              (CONS '(PC S0) (CONS PRE-PC 'NIL)))
                         (CONS
                          (CONS
-                          'EQUAL
-                          (CONS (CONS 'LOCALS (CONS 'S0 'NIL))
-                                (CONS (CONS 'LIST*
-                                            (APPEND INPUTS (CONS 'ANY 'NIL)))
-                                      'NIL)))
-                         (CONS (CONS 'EQUAL
-                                     (CONS (CONS 'PROGRAM (CONS 'S0 'NIL))
-                                           (CONS PROG 'NIL)))
-                               (CONS (CONS 'EQUAL
-                                           (CONS (CONS 'PC (CONS 'SK 'NIL))
-                                                 (CONS POST-PC 'NIL)))
-                                     'NIL))))))
+                             'EQUAL
+                             (CONS '(LOCALS S0)
+                                   (CONS (CONS 'LIST* (APPEND INPUTS '(ANY)))
+                                         'NIL)))
+                         (CONS
+                             (CONS 'EQUAL
+                                   (CONS '(PROGRAM S0) (CONS PROG 'NIL)))
+                             (CONS (CONS 'EQUAL
+                                         (CONS '(PC SK) (CONS POST-PC 'NIL)))
+                                   'NIL))))))
                      (CONS
                       (CONS
                           'LET
-                          (CONS (CONS (CONS 'S (CONS 'SK 'NIL)) 'NIL)
+                          (CONS '((S SK))
                                 (CONS (CADR (ASSOC POST-PC ANNOTATION-ALIST))
                                       'NIL)))
                       'NIL)))
@@ -260,15 +227,12 @@ M1 >>(DEFMACRO
                       (CONS
                        ':INSTANCE
                        (CONS
-                         INV-RUN
-                         (APPEND (PAIRLIS$ INPUTS (PAIRLIS-X2 INPUTS NIL))
-                                 (CONS (CONS 'S (CONS 'S0 'NIL))
-                                       (CONS (CONS 'SCHED (CONS 'SCHED 'NIL))
-                                             'NIL)))))
+                            INV-RUN
+                            (APPEND (PAIRLIS$ INPUTS (PAIRLIS-X2 INPUTS NIL))
+                                    '((S S0) (SCHED SCHED)))))
                       'NIL)))
                    'NIL)
-                  (CONS ':RULE-CLASSES
-                        (CONS 'NIL 'NIL)))))))
+                  '(:RULE-CLASSES NIL))))))
              'NIL))))))))
 
 Summary
