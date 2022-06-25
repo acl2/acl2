@@ -1267,7 +1267,7 @@
                    (string-bytes (lookup-eq-safe 'bytes name_index-entry))) ;will be an ACL2 string (fixme what about unicode?)
                 (if (not (stringp string-bytes)) ;rename string-bytes and the 'bytes field
                     (mv :bad-string nil)
-                  (mv (erp-nil) (list :class (turn-slashes-into-dots string-bytes))) ;the :class tag distinguishes this from the string case.
+                  (mv (erp-nil) (cons :class (turn-slashes-into-dots string-bytes))) ;the :class tag distinguishes this from the string case.
                   ))
             (mv :unrecognized-stuff-for-ldc-or-ldc_w nil)))))))
 
