@@ -64,13 +64,6 @@
           (not  (< (car (last x)) -1)))
   :hints (("Goal" :in-theory (enable last))))
 
-;disble?
-(defthm natp-of-car-when-nat-listp-type
-  (implies (and (nat-listp x)
-                (consp x))
-           (natp (car x)))
-  :rule-classes :type-prescription)
-
 (defthm integerp-of-car-of-last-when-all-natp
   (implies (and (all-natp x)
                 (consp x))
@@ -82,19 +75,6 @@
            (equal (nat-listp x)
                   (true-listp x)))
   :hints (("Goal" :in-theory (enable nat-listp all-natp))))
-
-(defthmd <-of-car-when-all-<
-  (implies (and (all-< items x)
-                (consp items))
-           (< (car items) x))
-  :hints (("Goal" :in-theory (enable all-<))))
-
-(defthm <-of-car-when-all-<-cheap
-  (implies (and (all-< items x)
-                (consp items))
-           (< (car items) x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (enable all-<))))
 
 (defthmd dargp-of-car-when-all-natp
   (implies (all-natp x)

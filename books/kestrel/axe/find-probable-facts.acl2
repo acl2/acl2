@@ -1,4 +1,4 @@
-; Cert-params for print-dag-to-file.lisp
+; Portcullis commands and cert params for find-probable-facts.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2022 Kestrel Institute
@@ -10,4 +10,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; cert-flags: ? T :TTAGS :all
+; cert-flags: ? T :SKIP-PROOFS-OKP T

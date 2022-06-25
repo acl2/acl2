@@ -14,6 +14,7 @@
 
 (include-book "misc/file-io" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system) ;for newline-string
+(include-book "kestrel/utilities/temp-dirs" :dir :system)
 
 (defttag print-to-file) ;this lets us call open-output-channel!
 
@@ -48,3 +49,12 @@
                               (print-dag-to-file-aux dag-lst channel state)
                               (princ$ ")" channel state)
                               (close-output-channel channel state)))))))
+
+;; Returns state
+(defun print-dag-to-temp-file (dag-lst base-filename state)
+  (declare (xargs :stobjs state
+                  :mode :program
+                  :guard (stringp base-filename)))
+  (mv-let (temp-dir-name state)
+    (maybe-make-temp-dir state)
+    (print-dag-to-file dag-lst (concatenate 'string temp-dir-name "/" base-filename) state)))
