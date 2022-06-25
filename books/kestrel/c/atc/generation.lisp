@@ -7090,144 +7090,412 @@
      the ones that rewrite @(tsee exec-expr-asg)
      that have @(':arrsub') left expressions
      to array writers,
-     generated in @(see atc-exec-expr-asg-arrsub-rules-generation).")
+     in @(see atc-exec-expr-asg-arrsub-rules-generation).")
    (xdoc::p
-    "For now we only generate these theorems for scalar members.
-     In this case, we rewrite calls of @(tsee exec-expr-asg)
-     on identifiers to calls of the writer.")
+    "For a scalar member (which must have integer type),
+     we generate a single theorem that
+     rewrites certain calls of @(tsee exec-expr-asg)
+     to calls of the writer.")
    (xdoc::p
-    "We will extend this to array members soon."))
+    "For an array member (which must have integer element type),
+     we generate 10 theorems, one for each integer index type.
+     The theorem rewrites certain calls of @(tsee exec-expr-asg)
+     to calls of the writers.
+     The generation of these theorems relies on the fact that
+     the order of the writers and the checkers matches the order of
+     the types in @(tsee *integer-nonbool-nonchar-types*).
+     Note that the @(tsee defstruct-member-info)
+     contains 11 writers and 11 checkers,
+     where the first writer and checker operate on ACL2 integers,
+     while the other 10 writers and 10 checkers operate on C integers.
+     We iterate through the 10 writers and checkers on C integers,
+     while using the writer and checker on ACL2 integers at each iteration."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
-       ((unless (type-integerp type))
-        (mv nil nil names-to-avoid))
        (writers (defstruct-member-info->writers meminfo))
-       ((unless (and (consp writers)
-                     (endp (cdr writers))))
-        (prog2$
-         (raise "Internal error: not one writer ~x0." writers)
-         (mv nil nil nil)))
-       (writer (car writers))
        (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
-       ((unless (and (consp writer-return-thms)
-                     (endp (cdr writer-return-thms))))
-        (prog2$
-         (raise "Internal error: not one writer theorem ~x0."
-                writer-return-thms)
-         (mv nil nil nil)))
        (writer-return-thm (car writer-return-thms))
-       (thm-name (pack 'exec-member-write-when-
-                       recognizer
-                       '-and-
-                       (ident->name memname)))
-       ((mv thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
-       (typep (atc-type-to-recognizer type wrld))
-       ((unless typep)
-        (raise "Internal error: unsupported member type ~x0." type)
-        (mv nil nil nil))
-       (formula
-        `(implies (and (syntaxp (quotep e))
-                       (equal (expr-kind e) :binary)
-                       (equal (binop-kind (expr-binary->op e)) :asg)
-                       (equal left (expr-binary->arg1 e))
-                       (equal right (expr-binary->arg2 e))
-                       (equal (expr-kind left) :memberp)
-                       (equal target (expr-memberp->target left))
-                       (equal member (expr-memberp->name left))
-                       (equal (expr-kind target) :ident)
-                       (equal member (ident ,(ident->name memname)))
-                       (not (zp limit))
-                       (equal val+compst1
-                              (exec-expr-call-or-pure right
-                                                      compst
-                                                      fenv
-                                                      (1- limit)))
-                       (equal val (mv-nth 0 val+compst1))
-                       (equal compst1 (mv-nth 1 val+compst1))
-                       (,typep val)
-                       (equal ptr (read-var (expr-ident->get target) compst1))
-                       (valuep ptr)
-                       (value-case ptr :pointer)
-                       (not (value-pointer-nullp ptr))
-                       (equal (value-pointer->reftype ptr)
-                              (type-struct (ident ,(ident->name tag))))
-                       (equal struct
-                              (read-object (value-pointer->designator ptr)
-                                           compst1))
-                       (,recognizer struct))
-                  (equal (exec-expr-asg e compst fenv limit)
-                         (write-object (value-pointer->designator ptr)
-                                       (,writer val struct)
-                                       compst1))))
-       (hints `(("Goal"
-                 :in-theory
-                 '(exec-expr-asg
-                   not-errorp-when-valuep-rewrite
-                   valuep-when-ucharp
-                   valuep-when-scharp
-                   valuep-when-ushortp
-                   valuep-when-sshortp
-                   valuep-when-uintp
-                   valuep-when-sintp
-                   valuep-when-ulongp
-                   valuep-when-slongp
-                   valuep-when-ullongp
-                   valuep-when-sllongp
-                   consp-when-ucharp
-                   consp-when-scharp
-                   consp-when-ushortp
-                   consp-when-sshortp
-                   consp-when-uintp
-                   consp-when-sintp
-                   consp-when-ulongp
-                   consp-when-slongp
-                   consp-when-ullongp
-                   consp-when-sllongp
-                   uchar-fix-when-ucharp
-                   schar-fix-when-scharp
-                   ushort-fix-when-ushortp
-                   sshort-fix-when-sshortp
-                   uint-fix-when-uintp
-                   sint-fix-when-sintp
-                   ulong-fix-when-ulongp
-                   slong-fix-when-slongp
-                   ullong-fix-when-ullongp
-                   sllong-fix-when-sllongp
-                   ,writer
-                   ,not-error-thm
-                   ,recognizer
-                   ,fixer-recognizer-thm
-                   ,type-of-value-thm)
-                 :use
-                 (:instance ,writer-return-thm
-                  (val (b* ((right (expr-binary->arg2 e))
-                            (val+compst1 (exec-expr-call-or-pure right
-                                                                 compst
-                                                                 fenv
-                                                                 (1- limit)))
-                            (val (mv-nth 0 val+compst1)))
-                         val))
-                  (struct (b* ((left (expr-binary->arg1 e))
-                               (right (expr-binary->arg2 e))
-                               (val+compst1 (exec-expr-call-or-pure right
-                                                                    compst
-                                                                    fenv
-                                                                    (1- limit)))
-                               (compst1 (mv-nth 1 val+compst1))
-                               (target (expr-memberp->target left))
-                               (ptr (read-var (c::expr-ident->get target)
+       (checkers (defstruct-member-info->checkers meminfo))
+       ((when (type-integerp type))
+        (b* (((unless (and (consp writers)
+                           (endp (cdr writers))))
+              (prog2$
+               (raise "Internal error: not one writer ~x0." writers)
+               (mv nil nil nil)))
+             (writer (car writers))
+             (thm-name (pack 'exec-member-write-when-
+                             recognizer
+                             '-and-
+                             (ident->name memname)))
+             ((mv thm-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix thm-name
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+             (typep (atc-type-to-recognizer type wrld))
+             ((unless typep)
+              (raise "Internal error: unsupported member type ~x0." type)
+              (mv nil nil nil))
+             (formula
+              `(implies (and (syntaxp (quotep e))
+                             (equal (expr-kind e) :binary)
+                             (equal (binop-kind (expr-binary->op e)) :asg)
+                             (equal left (expr-binary->arg1 e))
+                             (equal right (expr-binary->arg2 e))
+                             (equal (expr-kind left) :memberp)
+                             (equal target (expr-memberp->target left))
+                             (equal member (expr-memberp->name left))
+                             (equal (expr-kind target) :ident)
+                             (equal member (ident ,(ident->name memname)))
+                             (not (zp limit))
+                             (equal val+compst1
+                                    (exec-expr-call-or-pure right
+                                                            compst
+                                                            fenv
+                                                            (1- limit)))
+                             (equal val (mv-nth 0 val+compst1))
+                             (equal compst1 (mv-nth 1 val+compst1))
+                             (,typep val)
+                             (equal ptr (read-var (expr-ident->get target)
+                                                  compst1))
+                             (valuep ptr)
+                             (value-case ptr :pointer)
+                             (not (value-pointer-nullp ptr))
+                             (equal (value-pointer->reftype ptr)
+                                    (type-struct (ident ,(ident->name tag))))
+                             (equal struct
+                                    (read-object (value-pointer->designator ptr)
+                                                 compst1))
+                             (,recognizer struct))
+                        (equal (exec-expr-asg e compst fenv limit)
+                               (write-object (value-pointer->designator ptr)
+                                             (,writer val struct)
+                                             compst1))))
+             (hints `(("Goal"
+                       :in-theory
+                       '(exec-expr-asg
+                         not-errorp-when-valuep-rewrite
+                         valuep-when-ucharp
+                         valuep-when-scharp
+                         valuep-when-ushortp
+                         valuep-when-sshortp
+                         valuep-when-uintp
+                         valuep-when-sintp
+                         valuep-when-ulongp
+                         valuep-when-slongp
+                         valuep-when-ullongp
+                         valuep-when-sllongp
+                         consp-when-ucharp
+                         consp-when-scharp
+                         consp-when-ushortp
+                         consp-when-sshortp
+                         consp-when-uintp
+                         consp-when-sintp
+                         consp-when-ulongp
+                         consp-when-slongp
+                         consp-when-ullongp
+                         consp-when-sllongp
+                         uchar-fix-when-ucharp
+                         schar-fix-when-scharp
+                         ushort-fix-when-ushortp
+                         sshort-fix-when-sshortp
+                         uint-fix-when-uintp
+                         sint-fix-when-sintp
+                         ulong-fix-when-ulongp
+                         slong-fix-when-slongp
+                         ullong-fix-when-ullongp
+                         sllong-fix-when-sllongp
+                         ,writer
+                         ,not-error-thm
+                         ,recognizer
+                         ,fixer-recognizer-thm
+                         ,type-of-value-thm)
+                       :use
+                       (:instance
+                        ,writer-return-thm
+                        (val (b* ((right (expr-binary->arg2 e))
+                                  (val+compst1
+                                   (exec-expr-call-or-pure right
+                                                           compst
+                                                           fenv
+                                                           (1- limit)))
+                                  (val (mv-nth 0 val+compst1)))
+                               val))
+                        (struct (b* ((left (expr-binary->arg1 e))
+                                     (right (expr-binary->arg2 e))
+                                     (val+compst1
+                                      (exec-expr-call-or-pure right
+                                                              compst
+                                                              fenv
+                                                              (1- limit)))
+                                     (compst1 (mv-nth 1 val+compst1))
+                                     (target (expr-memberp->target left))
+                                     (ptr (read-var (c::expr-ident->get target)
+                                                    compst1))
+                                     (struct (read-object
+                                              (value-pointer->designator ptr)
+                                              compst1)))
+                                  struct))))))
+             ((mv event &) (evmac-generate-defthm thm-name
+                                                  :formula formula
+                                                  :hints hints
+                                                  :enable nil)))
+          (mv (list event) (list thm-name) names-to-avoid)))
+       ((unless (type-case type :array))
+        (prog2$
+         (raise "Internal error: member type ~x0." type)
+         (mv nil nil nil)))
+       (elemtype (type-array->of type))
+       ((unless (type-integerp elemtype))
+        (prog2$
+         (raise "Internal error: array member element type ~x0." elemtype)
+         (mv nil nil nil))))
+    (atc-gen-tag-member-write-thms-aux tag
+                                       recognizer
+                                       fixer-recognizer-thm
+                                       memname
+                                       elemtype
+                                       *integer-nonbool-nonchar-types*
+                                       (car writers)
+                                       (car checkers)
+                                       (cdr writers)
+                                       (cdr checkers)
+                                       writer-return-thm
+                                       not-error-thm
+                                       type-of-value-thm
+                                       names-to-avoid
+                                       wrld))
+
+  :prepwork
+  ((define atc-gen-tag-member-write-thms-aux ((tag identp)
+                                              (recognizer symbolp)
+                                              (fixer-recognizer-thm symbolp)
+                                              (memname identp)
+                                              (elemtype typep)
+                                              (indextypes type-listp)
+                                              (writer-acl2int symbolp)
+                                              (checker-acl2int symbolp)
+                                              (writers symbol-listp)
+                                              (checkers symbol-listp)
+                                              (writer-return-thm symbolp)
+                                              (not-error-thm symbolp)
+                                              (type-of-value-thm symbolp)
+                                              (names-to-avoid symbol-listp)
+                                              (wrld plist-worldp))
+     :guard (and (type-integerp elemtype)
+                 (type-integer-listp indextypes))
+     :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+                  (member-write-thms "A @(tsee symbol-listp).")
+                  (updated-names-to-avoid "A @(tsee symbol-listp)."))
+     :mode :program
+     :parents nil
+     (b* (((when (endp indextypes)) (mv nil nil nil))
+          (indextype (car indextypes))
+          (writer (car writers))
+          (checker (car checkers))
+          (indexfixtype (integer-type-to-fixtype indextype))
+          (elemfixtype (integer-type-to-fixtype elemtype))
+          (indextypep (pack indexfixtype 'p))
+          (elemtypep (pack elemfixtype 'p))
+          (indextype-integer-value (pack indexfixtype '-integer-value))
+          (array-writer (pack elemfixtype '-array-write-alt-def))
+          (array-checker (pack elemfixtype '-array-index-okp))
+          (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
+          (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
+          (valuep-when-indextype (pack 'valuep-when- indextypep))
+          (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
+          (indextype->get (pack indexfixtype '->get))
+          (type-thm (pack indexfixtype '->get$inline))
+          (thm-name (pack 'exec-member-write-when-
+                          recognizer
+                          '-and-
+                          (ident->name memname)
+                          '-
+                          indexfixtype))
+          (arrayp-of-arrary-write
+           (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
+          ((mv thm-name names-to-avoid)
+           (fresh-logical-name-with-$s-suffix thm-name
+                                              nil
+                                              names-to-avoid
+                                              wrld))
+          (formula
+           `(implies (and (syntaxp (quotep e))
+                          (equal (expr-kind e) :binary)
+                          (equal (binop-kind (expr-binary->op e)) :asg)
+                          (equal left (expr-binary->arg1 e))
+                          (equal right (expr-binary->arg2 e))
+                          (equal (expr-kind left) :arrsub)
+                          (equal array (expr-arrsub->arr left))
+                          (equal index (expr-arrsub->sub left))
+                          (equal (expr-kind array) :memberp)
+                          (equal target (expr-memberp->target array))
+                          (equal member (expr-memberp->name array))
+                          (equal (expr-kind target) :ident)
+                          (equal member (ident ,(ident->name memname)))
+                          (not (zp limit))
+                          (equal val+compst1
+                                 (exec-expr-call-or-pure right
+                                                         compst
+                                                         fenv
+                                                         (1- limit)))
+                          (equal val (mv-nth 0 val+compst1))
+                          (equal compst1 (mv-nth 1 val+compst1))
+                          (,elemtypep val)
+                          (equal idx (exec-expr-pure index compst1))
+                          (,indextypep idx)
+                          (,checker idx)
+                          (equal ptr (read-var (expr-ident->get target)
+                                               compst1))
+                          (valuep ptr)
+                          (value-case ptr :pointer)
+                          (not (value-pointer-nullp ptr))
+                          (equal (value-pointer->reftype ptr)
+                                 (type-struct (ident ,(ident->name tag))))
+                          (equal struct
+                                 (read-object (value-pointer->designator ptr)
                                               compst1))
-                               (struct (read-object (value-pointer->designator
-                                                     ptr)
-                                                    compst1)))
-                            struct))))))
-       ((mv event &) (evmac-generate-defthm thm-name
-                                            :formula formula
-                                            :hints hints
-                                            :enable nil)))
-    (mv (list event) (list thm-name) names-to-avoid)))
+                          (,recognizer struct))
+                     (equal (exec-expr-asg e compst fenv limit)
+                            (write-object (value-pointer->designator ptr)
+                                          (,writer idx val struct)
+                                          compst1))))
+          (hints `(("Goal"
+                    :in-theory
+                    '(exec-expr-asg
+                      exec-integer
+                      value-struct-read
+                      value-struct-write
+                      not-errorp-when-valuep-rewrite
+                      value-integerp
+                      value-unsigned-integerp-alt-def
+                      value-signed-integerp-alt-def
+                      value-fix-when-valuep
+                      ifix
+                      integer-range-p
+                      (:e ident)
+                      (:compound-recognizer consp-when-ucharp)
+                      ,recognizer
+                      ,fixer-recognizer-thm
+                      ,not-error-thm
+                      ,type-of-value-thm
+                      ,kind-array-thm
+                      ,indextype-integer-value
+                      ,checker
+                      ,checker-acl2int
+                      ,writer
+                      ,writer-acl2int
+                      ,not-error-array-thm
+                      ,array-writer
+                      ,array-checker
+                      ,valuep-when-elemtypep
+                      ,valuep-when-indextype
+                      ,@*integer-value-disjoint-rules*
+                      (:t ,type-thm))
+                    :use
+                    ((:instance
+                      ,writer-return-thm
+                      (index
+                       (,indextype->get
+                        (exec-expr-pure
+                         (expr-arrsub->sub (expr-binary->arg1 e))
+                         (mv-nth
+                          1
+                          (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                  compst
+                                                  fenv
+                                                  (+ -1 limit))))))
+                      (val
+                       (mv-nth
+                        0
+                        (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                compst
+                                                fenv
+                                                (+ -1 limit))))
+                      (struct
+                       (read-object
+                        (value-pointer->designator
+                         (read-var
+                          (expr-ident->get
+                           (expr-memberp->target
+                            (expr-arrsub->arr (expr-binary->arg1 e))))
+                          (mv-nth
+                           1
+                           (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                   compst
+                                                   fenv
+                                                   (+ -1 limit)))))
+                        (mv-nth
+                         1
+                         (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                 compst
+                                                 fenv
+                                                 (+ -1 limit))))))
+                     (:instance
+                      ,arrayp-of-arrary-write
+                      (array
+                       (value-struct-read-aux
+                        (ident ,(ident->name memname))
+                        (value-struct->members
+                         (read-object
+                          (value-pointer->designator
+                           (read-var
+                            (expr-ident->get
+                             (expr-memberp->target
+                              (expr-arrsub->arr (expr-binary->arg1 e))))
+                            (mv-nth
+                             1
+                             (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                     compst
+                                                     fenv
+                                                     (+ -1 limit)))))
+                          (mv-nth
+                           1
+                           (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                   compst
+                                                   fenv
+                                                   (+ -1 limit)))))))
+                      (index
+                       (,indextype->get
+                        (exec-expr-pure
+                         (expr-arrsub->sub (expr-binary->arg1 e))
+                         (mv-nth
+                          1
+                          (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                  compst
+                                                  fenv
+                                                  (+ -1 limit))))))
+                      (element
+                       (mv-nth
+                        0
+                        (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                compst
+                                                fenv
+                                                (+ -1 limit)))))))))
+          ((mv event &) (evmac-generate-defthm thm-name
+                                               :formula formula
+                                               :hints hints
+                                               :enable nil))
+          ((mv events thm-names names-to-avoid)
+           (atc-gen-tag-member-write-thms-aux tag
+                                              recognizer
+                                              fixer-recognizer-thm
+                                              memname
+                                              elemtype
+                                              (cdr indextypes)
+                                              writer-acl2int
+                                              checker-acl2int
+                                              (cdr writers)
+                                              (cdr checkers)
+                                              writer-return-thm
+                                              not-error-thm
+                                              type-of-value-thm
+                                              names-to-avoid
+                                              wrld)))
+       (mv (cons event events)
+           (cons thm-name thm-names)
+           names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
