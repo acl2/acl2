@@ -136,6 +136,26 @@
   (let ((|point| (struct-|point2D|-write-|y| (c::sint-dec-const 99) |point|)))
     |point|))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_scalar| (|v| |a|)
+  (declare (xargs :guard (and (c::sintp |v|)
+                              (struct-|scalar_and_array|-p |a|))))
+  (let ((|a| (struct-|scalar_and_array|-write-|scalar| |v| |a|)))
+    |a|))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_aggreg| (|i| |v| |a|)
+  (declare
+   (xargs
+    :guard (and (c::sintp |i|)
+                (c::ucharp |v|)
+                (struct-|scalar_and_array|-p |a|)
+                (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
+  (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-sint |i| |v| |a|)))
+    |a|))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |point2D|
@@ -152,4 +172,6 @@
         |return3|
         |write_x_to_point2D|
         |write_y_to_point2D|
+        |write_scalar|
+        |write_aggreg|
         :output-file "structs.c")
