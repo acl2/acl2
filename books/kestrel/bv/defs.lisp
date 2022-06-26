@@ -195,7 +195,9 @@
 
 ;floor of log (base 2) of x
 (defund lg (x)
-  (declare (type integer x))
+  (declare (xargs :guard (posp x)
+                  :split-types t)
+           (type integer x))
   (+ -1 (integer-length x)))
 
 ;just an alias for bvchop but only used for trimming (using bvchop caused loops if the rules weren't just right)

@@ -1,7 +1,7 @@
 ; Base-2 integer logarithm
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,20 +25,21 @@
 ;; TODO: Rename lg to floor-of-lg ?
 
 ;; TODO: what should lg of 0 be?
-;; TODO: Add a guard that x is positive?
+;; TODO: Extend to non-integers?
 
 ;; See also ceiling-of-lg.lisp.
 
-
-
+;; Returns the floor of the base 2 logarithm of x.  Not meaningful for 0.
 (defund lg (x)
-  (declare (type integer x))
+  (declare (xargs :guard (posp x)
+                  :split-types t)
+           (type integer x))
   (+ -1 (integer-length x)))
 
 (defthm lg-of-expt
-  (implies (natp n)
-           (equal (lg (expt 2 n))
-                  n))
+  (implies (natp x)
+           (equal (lg (expt 2 x))
+                  x))
   :hints (("Goal" :in-theory (enable lg))))
 
 (defthmd lg-of-both-sides
@@ -82,30 +83,44 @@
            (natp (lg x)))
   :rule-classes :type-prescription)
 
-(defthm expt-of-lg
+(defthm expt-of-lg-when-power-of-2p
   (implies (power-of-2p x)
            (equal (expt 2 (lg x))
                   x))
   :hints (("Goal" :in-theory (enable power-of-2p lg))))
 
+;; These next two help show that LG is correct:
+
+(defthm <=-of-expt-2-of-lg-linear
+  (implies (posp x)
+           (<= (expt 2 (lg x)) x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable lg))))
+
+(defthm <=-of-expt-2-of-+-of-1-and-lg-linear
+  (implies (posp x)
+           (< x (expt 2 (+ 1 (lg x)))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable lg))))
+
 (defthm <-of-expt-2-of-lg-same
-  (implies (posp n)
-           (equal (< (expt 2 (lg n)) n)
-                  (not (power-of-2p n))))
+  (implies (posp x)
+           (equal (< (expt 2 (lg x)) x)
+                  (not (power-of-2p x))))
   :hints (("Goal" :in-theory (enable lg))))
 
 (defthm <-of-expt-2-of-lg-same-linear
-  (implies (and (not (power-of-2p n))
-                (posp n))
-           (< (expt 2 (lg n)) n))
+  (implies (and (not (power-of-2p x))
+                (posp x))
+           (< (expt 2 (lg x)) x))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable lg))))
 
 (defthm <-of-lg-and-0
-  (implies (integerp i)
-           (equal (< (lg i) 0)
-                  (or (equal i 0)
-                      (equal i -1))))
+  (implies (integerp x)
+           (equal (< (lg x) 0)
+                  (or (equal x 0)
+                      (equal x -1))))
   :hints (("Goal" :in-theory (enable lg))))
 
 (defthm lg-of-*-of-1/2

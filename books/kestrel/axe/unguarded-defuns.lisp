@@ -354,7 +354,7 @@
 
 (defund lg-unguarded (x)
   (declare (xargs :guard t))
-  (lg (ifix x)))
+  (+ -1 (integer-length-unguarded x)))
 
 (defthm lg-unguarded-correct
   (equal (lg-unguarded x)

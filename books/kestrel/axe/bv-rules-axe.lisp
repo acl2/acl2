@@ -22,14 +22,9 @@
 
 ;; TODO: Some of these are not BV rules.
 
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
-(local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
-(local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
-(local (include-book "kestrel/bv/sbvdiv" :dir :system))
 ;(include-book "bv-rules-axe0") ;drop?
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
-(local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
 (include-book "kestrel/bv/defs" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
@@ -37,9 +32,13 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "known-booleans")
+(local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
+(local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
+(local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
+(local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
+(local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -2110,13 +2109,13 @@
   :hints (("Goal" :in-theory (e/d (trim) nil))))
 
 (defthmd logxor-becomes-bvxor-axe
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p xsize x)
                 (unsigned-byte-p ysize y))
            (equal (logxor x y)
-                  (acl2::bvxor (max xsize ysize) x y)))
-  :hints (("Goal" :in-theory (enable acl2::bvxor))))
+                  (bvxor (max xsize ysize) x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
