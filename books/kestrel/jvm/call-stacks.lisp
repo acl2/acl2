@@ -25,9 +25,12 @@
 
 ;;TODO: build a tool to support defining typed stacks.
 
-(defund call-stackp (stack) (declare (xargs :guard t)) (and (true-listp stack)
-                                                            ;; (acl2::all-framep stack) ;;todo: put back (search for all-framep-change for other changes)
-                                                            ))
+;; A call stack is a true list of frames
+(defund call-stackp (stack)
+  (declare (xargs :guard t))
+  (and (true-listp stack)
+       ;; (acl2::all-framep stack) ;;todo: put back (search for all-framep-change for other changes, but this will require real work to show that all created frames are ok; first clean up invokespecial and prove RV rules for lookup-method-for-invokespecial)
+       ))
 
 (defthm call-stackp-of-empty-call-stack
   (call-stackp (empty-call-stack)))

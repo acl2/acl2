@@ -3043,6 +3043,13 @@
                   (if test pc1 pc2)))
   :hints (("Goal" :in-theory (enable pc-if))))
 
+(defthm pcp-of-pc-if
+  (equal (pcp (pc-if test x y))
+         (if test
+             (pcp x)
+           (pcp y)))
+  :hints (("Goal" :in-theory (enable pc-if))))
+
 ;; TODO: these branch instructions now take signed offsets, not PCs to jump to,
 ;; but we could resolve the target ahead of time and just store the pc to jump
 ;; to.  Actually, perhaps we could always resolve the new PC values statically.
@@ -3879,30 +3886,49 @@
                                                    class-table
                                                    (+ -1 count)))))))))
 
+(defthm method-infop-of-mv-nth-1-of-lookup-method-for-invokespecial-aux
+  (implies (and (class-tablep class-table)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name
+                                                                 method-name
+                                                                 method-descriptor
+                                                                 class-table
+                                                                 count))))
+           (method-infop (mv-nth 1 (lookup-method-for-invokespecial-aux class-name
+                                                                     method-name
+                                                                     method-descriptor
+                                                                     class-table
+                                                                     count))))
+  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux))))
+
 (defthm class-namep-of-mv-nth-2-of-lookup-method-for-invokespecial-aux
-  (equal (class-namep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
-         (stringp (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))))
+  (implies (and (class-tablep class-table)
+                (class-namep class-name)
+                (bound-in-class-tablep class-name class-table)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))))
+           (class-namep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))))
+  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux))))
 
-(defthm class-namep-of-mv-nth-0-of-lookup-method-for-invokespecial-aux
-  (equal (class-namep (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
-         (stringp (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))))
-
-;; If an exception class is returned, it is bound.
-(defthm bound-in-class-tablep-of-mv-nth-0-of-lookup-method-for-invokespecial-aux
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
+;; If an exception class is returned (?), it is bound.
+(defthm bound-in-class-tablep-of-mv-nth-2-of-lookup-method-for-invokespecial-aux
+  (implies (and (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
                 (class-tablep class-table)
-                )
-           (bound-in-class-tablep (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
+                (class-namep class-name)
+                (bound-in-class-tablep class-name class-table))
+           (bound-in-class-tablep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
                                   class-table))
   :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux class-tablep))))
 
-(defthm bound-to-a-non-interfacep-of-mv-nth-0-of-lookup-method-for-invokespecial-aux
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
-                (class-tablep class-table)
-                )
-           (bound-to-a-non-interfacep (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
-                                      class-table))
-  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux class-tablep))))
+;; (defthm bound-to-a-non-interfacep-of-mv-nth-2-of-lookup-method-for-invokespecial-aux
+;;   (implies (and (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
+;;                 (class-tablep class-table)
+;;                 (class-namep class-name)
+;; ;                (bound-in-class-tablep class-name class-table)
+;;                 (bound-to-a-non-interfacep class-name class-table))
+;;            (bound-to-a-non-interfacep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
+;;                                       class-table))
+;;   :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux))))
 
 (defconst *dummy-class-name* "DUMMY-CLASS") ;todo: eventually use a keyword, but then this can't appear in a method-designator
 
@@ -3938,30 +3964,36 @@
                                                (+ 1 (len (get-superclasses c class-table))) ;sufficient to ensure we handle all the super classes.
                                                ))))))
 
+(defthm method-infop-of-mv-nth-1-of-lookup-method-for-invokespecial
+  (implies (and (jvm-statep s)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial inst th s))))
+           (method-infop (mv-nth 1 (lookup-method-for-invokespecial inst th s))))
+  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial))))
 
-(defthm class-namep-of-mv-nth-2-of-lookup-method-for-invokespecial
-  (equal (class-namep (mv-nth 2 (lookup-method-for-invokespecial inst th s)))
-         (stringp (mv-nth 2 (lookup-method-for-invokespecial inst th s)))))
+;; (defthm class-namep-of-mv-nth-2-of-lookup-method-for-invokespecial
+;;   (implies (and (jvm-statep s)
+;;                 ;; no error:
+;;                 (not (mv-nth 0 (lookup-method-for-invokespecial inst th s))))
+;;            (class-namep (mv-nth 2 (lookup-method-for-invokespecial inst th s))))
+;;   :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial))))
 
-(defthm class-namep-of-mv-nth-0-of-lookup-method-for-invokespecial
-  (equal (class-namep (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
-         (stringp (mv-nth 0 (lookup-method-for-invokespecial inst th s)))))
+;; need to deal with Object not having a superclass
+;; ;; If an exception class is returned, it is bound.
+;; (defthm bound-in-class-tablep-of-mv-nth-2-of-lookup-method-for-invokespecial
+;;   (implies (and (not (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
+;;                 (jvm-statep s))
+;;            (bound-in-class-tablep (mv-nth 2 (lookup-method-for-invokespecial inst th s))
+;;                                   (class-table s)))
+;;   :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial class-tablep))))
 
-;; If an exception class is returned, it is bound.
-(defthm bound-in-class-tablep-of-mv-nth-0-of-lookup-method-for-invokespecial
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
-                (jvm-statep s))
-           (bound-in-class-tablep (mv-nth 0 (lookup-method-for-invokespecial inst th s))
-                                  (class-table s)))
-  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial class-tablep))))
-
-(defthm bound-to-a-non-interfacep-of-mv-nth-0-of-lookup-method-for-invokespecial
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
-                (jvm-statep s)
-                )
-           (bound-to-a-non-interfacep (mv-nth 0 (lookup-method-for-invokespecial inst th s))
-                                      (class-table s)))
-  :hints (("Goal" :in-theory (e/d (lookup-method-for-invokespecial) (bound-to-a-non-interfacep)))))
+;; (defthm bound-to-a-non-interfacep-of-mv-nth-0-of-lookup-method-for-invokespecial
+;;   (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
+;;                 (jvm-statep s)
+;;                 )
+;;            (bound-to-a-non-interfacep (mv-nth 0 (lookup-method-for-invokespecial inst th s))
+;;                                       (class-table s)))
+;;   :hints (("Goal" :in-theory (e/d (lookup-method-for-invokespecial) (bound-to-a-non-interfacep)))))
 
 ; (:INVOKESPECIAL <class-name> <method-name> <method-descriptor> <param-types> <interfacep>)
 ;; This should remain closed unless we can resolve the method
@@ -4030,7 +4062,9 @@
     (erp closest-method-info actual-class-name)
     (lookup-method-for-invokespecial inst th s)
     (if erp
-        (if (stringp erp)
+        (if (and (class-namep erp)
+                 (bound-to-a-non-interfacep erp (class-table s)) ; todo: what if not?
+                 )
             (obtain-and-throw-exception erp (list "ERROR IN INVOKESPECIAL: Failed to resolve method." :debug-info inst) th s)
           (error-state erp s))
       (execute-invokespecial-helper closest-method-info actual-class-name s th inst))))
@@ -5881,18 +5915,6 @@
          )
   :hints (("Goal" :in-theory (enable thread-top-frame call-stack make-state thread-table))))
 
-(defthm method-infop-of-lookup-equal-helper
-  (implies (and (all-keys-bound-to-method-infosp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal all-keys-bound-to-method-infosp assoc-equal))))
-
-(defthm method-infop-of-lookup-equal
-  (implies (and (method-info-alistp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
-  :hints (("Goal" :in-theory (enable method-info-alistp all-keys-bound-to-method-infosp))))
-
 
 ;mentioned in the macro-expansion of prog2$
 ;TODO: Just enable return-last?
@@ -5905,21 +5927,7 @@
 ;;   :hints (("Goal" :in-theory (enable return-last))))
 
 
-;move?
-(defthm method-infop-of-mv-nth-1-of-lookup-method-for-invokespecial-aux
-  (implies (and (class-tablep class-table)
-                ;; no error:
-                (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name
-                                                                 method-name
-                                                                 method-descriptor
-                                                                 class-table
-                                                                 count))))
-           (method-infop (mv-nth 1 (lookup-method-for-invokespecial-aux class-name
-                                                                     method-name
-                                                                     method-descriptor
-                                                                     class-table
-                                                                     count))))
-  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux))))
+
 
 (defthm operand-stack-size-bound
   (implies (and (syntaxp (quotep k1))

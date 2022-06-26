@@ -588,14 +588,14 @@
 ;;                (JVM-STATEP S))
 ;;           (ADDRESSP (LOCKED-OBJECT (TOP-FRAME-of-thread TH S)))))
 
-;; ;fixme putback
-;; (defthm framep-of-thead-top-frame
+;; ; all-framep-change
+;; (defthm framep-of-thead-top-frame-better
 ;;   (implies (and (thread-designatorp th)
 ;;                 (jvm-statep s)
 ;;                 (bound-in-alistp th (thread-table s))
 ;;                 (call-stack-non-emptyp th s))
 ;;            (framep (thread-top-frame th s)))
-;;   :hints (("Goal" :in-theory (enable top-frame))))
+;;   :hints (("Goal" :in-theory (enable thread-top-frame))))
 
 (defthm pcp-of-myif
   (equal (pcp (myif test tp ep))
@@ -645,7 +645,7 @@
 (defthm jvm-statep-of-invoke-static-initializer-for-class
   (implies (and (class-namep class-to-initialize)
                 (jvm-statep s)
-;                (bound-in-class-tablep class-name (class-table s))
+                ;; (bound-in-class-tablep class-to-initialize (class-table s)) ; all-framep-change
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
 ;              (not (memberp class-name (initialized-classes s)))
@@ -656,6 +656,7 @@
 (defthm jvm-statep-of-invoke-static-initializer-for-next-class-helper
   (implies (and (class-namep class-name)
                 (all-class-namesp superclass-names)
+                ;; (all-bound-in-class-tablep superclass-names (class-table s)) ; all-framep-change
                 (jvm-statep s)
                 (bound-in-class-tablep class-name (class-table s))
                 (bound-in-alistp th (thread-table s))
@@ -678,7 +679,7 @@
   (implies (and (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
-;                (not (empty-call-stackp (binding th (thread-table s)))) ;new
+                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
                 )
            (jvm-statep (execute-java.lang.object.getclass th s)))
   :hints (("Goal" :in-theory (e/d (execute-java.lang.object.getclass) (acons)))))
@@ -687,7 +688,7 @@
   (implies (and (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
-;                (not (empty-call-stackp (binding th (thread-table s)))) ;new
+                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
                 )
            (jvm-statep (execute-java.lang.class.getPrimitiveClass th s)))
   :hints (("Goal" :in-theory (e/d (execute-java.lang.class.getPrimitiveClass
@@ -734,9 +735,9 @@
 ;fffixme: is this theorem really helpful for anything?  it's kind of nonsense without hyps saying that the stack looks right according to the instruction about to be executed...
 (defthm jvm-statep-of-do-inst
   (implies (and (jvm-statep s)
-;                (call-stack-non-emptyp th s)
-                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (program (thread-top-frame th s)))) ;fixme putback
-;;                (not (empty-call-stackp (binding th (thread-table s)))) ;new
+                ;; (call-stack-non-emptyp th s) ; all-framep-change
+                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
+                ;; (not (empty-call-stackp (binding th (thread-table s))))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
            (jvm-statep (do-inst (op-code inst) inst th s)))
