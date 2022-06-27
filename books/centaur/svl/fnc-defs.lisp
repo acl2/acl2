@@ -209,3 +209,8 @@
              :in-theory (e/d (equal-len-opener
                               equal-len-opener-size-0)
                              ())))))
+
+
+(defund ignore-and-return-t (x)
+  (declare (ignorable x))
+  t)

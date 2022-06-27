@@ -1133,7 +1133,7 @@
                                    y)))
      :hints (("goal"
               :use (( :instance ash-of-logapp-lemma
-                                (s1 (- s1))))
+                      (s1 (- s1))))
               :cases ((acl2-numberp s1))
               :in-theory (e/d ()
                               ()))))))
@@ -2359,7 +2359,6 @@
                                 logapp)
                                ())))))
 
-
   (defthm logcar-when-not-integer
     (implies (not (integerp x))
              (equal (acl2::logcar x) 0))
@@ -2373,12 +2372,12 @@
     :rule-classes :forward-chaining
     :hints (("Goal"
              :in-theory (e/d (acl2::logcdr) ()))))
-  
+
   (defthm lognot-of-logapp
     (implies (and ;;(natp size)
-                  ;;(integerp x)
-                  ;;(integerp y)
-                  )
+              ;;(integerp x)
+              ;;(integerp y)
+              )
              (equal (lognot (logapp size x y))
                     (logapp size
                             (lognot x)
@@ -4659,8 +4658,8 @@
                                (:type-prescription o<)
                                (:type-prescription acl2::logcdr-type)
                                (:type-prescription acl2::logcar$inline)
-;;                               (:forward-chaining
-;;                                acl2::|a <= b & ~(a = b)  =>  a < b|)
+                               ;;                               (:forward-chaining
+                               ;;                                acl2::|a <= b & ~(a = b)  =>  a < b|)
                                (:rewrite default-<-1)
                                (:rewrite default-<-2)
                                (:rewrite bitops::logand-with-negated-bitmask)))))))
@@ -5150,7 +5149,7 @@
                   (integerp y))
              (and (equal (logand x y)
                          (4vec-bitand x y))))
-    
+
     :hints (("Goal"
              :in-theory (e/d (SV::4VEC->UPPER
                               SV::4VEC->LOWER
@@ -5163,12 +5162,12 @@
   (ADD-svex-simplify-rule logand-to-4vec-bitand))
 
 (progn
-  (def-rp-rule :disabled-for-acl2 t 
+  (def-rp-rule :disabled-for-acl2 t
     lognot-to-4vec-bitnot
     (implies (and (integerp x))
              (and (equal (lognot x)
                          (sv::4vec-bitnot x))))
-    
+
     :hints (("Goal"
              :in-theory (e/d (SV::4VEC->UPPER
                               SV::4VEC->LOWER
@@ -5248,7 +5247,7 @@
              (integerp (- x))))
   (add-svex-simplify-rule integer-p-of-unary--)
 
-  (def-rp-rule :disabled-for-acl2 t 
+  (def-rp-rule :disabled-for-acl2 t
     logapp-to-4vec-concat
     (implies (and (integerp x)
                   (natp size)
@@ -5274,7 +5273,7 @@
   (add-svex-simplify-rule logapp-to-4vec-concat)
   (add-svex-simplify-rule logapp-to-4vec-concat-side-cond))
 
-(def-rp-rule :disabled-for-acl2 t 
+(def-rp-rule :disabled-for-acl2 t
   integerp-of--
   (implies (integerp x)
            (integerp (- x))))
@@ -5594,7 +5593,7 @@
 (add-svex-simplify-rule 4vec-sign-ext-to-4vec-concat-when-integerp
                         :disabled t)
 
-(def-rp-rule :disabled t 
+(def-rp-rule :disabled t
   4vec-sign-ext-to-4vec-concat-when-integerp-for-svex-simplify
   (implies (and (integerp x)
                 (posp size))
@@ -5623,7 +5622,7 @@
 
 (add-svex-simplify-rule 4vec-sign-ext-when-size=0)
 
-(def-rp-rule :disabled-for-acl2 t 
+(def-rp-rule :disabled-for-acl2 t
   logext-to-4vec-signext
   (implies (and (posp size)
                 (integerp y))
@@ -6209,6 +6208,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 4vec-bit?! lemmas
 
+
+
+
 (def-rp-rule integerp-of-4vec-bit?!
   (implies (and (integerp test)
                 (integerp then)
@@ -6395,22 +6397,128 @@
                   (4vec-part-select start size
                                     (sv::4vec-bit?! test then else)))))
 
-(def-rp-rule sv::4vec-bit?!-when-test=1
-  (equal (sv::4vec-bit?! 1 then else)
-         (sv::4vec-concat 1
-                          (4vec-part-select 0 1 then)
-                          (4vec-rsh 1 else)))
+(progn
+
+  (local
+   (defthm 4vec-bit?!-when-test-is-quoted-lemma
+     (IMPLIES (EQUAL (LOGHEAD 1 test)
+                     0)
+              (EQUAL
+               (LOGAPP
+                1 else
+                (LOGIOR (LOGAND (LOGTAIL 1 then)
+                                (LOGTAIL 1 test))
+                        (LOGAND (LOGTAIL 1 else)
+                                (LOGNOT (LOGTAIL 1 test)))))
+               (LOGIOR (LOGAND test
+                               then)
+                       (LOGAND else
+                               (LOGNOT test)))))
+     :hints (("Goal"
+              :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                bitops::ihsext-inductions)
+                               ())))))
+
+  (local
+   (defthm 4vec-bit?!-when-test-is-quoted-lemma-2
+     (implies (equal (loghead 1 test)
+                     1)
+              (equal
+               (logapp
+                1 then
+                (logior (logand (logtail 1 then)
+                                (logtail 1 test))
+                        (logand (logtail 1 else)
+                                (lognot (logtail 1 test)))))
+               (logior (logand test
+                               then)
+                       (logand else
+                               (lognot test)))))
+     :hints (("goal"
+              :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                bitops::ihsext-inductions)
+                               ())))))
+
+  (def-rp-rule 4vec-bit?!-when-test-is-quoted
+    (implies (syntaxp (and (quotep test)
+                           (not (equal test '-1))
+                           (not (equal test ''-1))
+                           (not (equal test '0))
+                           (not (equal test ''0))
+                           (not (equal test ''(-1 . 0)))
+                           (not (equal test '(-1 . 0)))
+                           (not (equal test '(0 . -1)))
+                           (not (equal test ''(0 . -1)))))
+             (equal (sv::4vec-bit?! test  then else)
+                    (sv::4vec-concat 1 (if (equal (4vec-part-select 0 1 test) 1)
+                                           (4vec-part-select 0 1 then)
+                                         (4vec-part-select 0 1 else))
+                                     (sv::4vec-bit?! (sv::4vec-rsh 1 test)
+                                                     (sv::4vec-rsh 1 then)
+                                                     (sv::4vec-rsh 1 else)))))
+    :hints (("goal"
+             :use ((:instance 4vec-bit?!-when-test-is-quoted-lemma
+                              (then (sv::4vec->lower then))
+                              (else (sv::4vec->lower else))
+                              (test (logand (sv::4vec->upper test)
+                                            (sv::4vec->lower test))))
+                   (:instance 4vec-bit?!-when-test-is-quoted-lemma
+                              (then (sv::4vec->upper then))
+                              (else (sv::4vec->upper else))
+                              (test (logand (sv::4vec->upper test)
+                                            (sv::4vec->lower test))))
+                   (:instance 4vec-bit?!-when-test-is-quoted-lemma-2
+                              (then (sv::4vec->lower then))
+                              (else (sv::4vec->lower else))
+                              (test (logand (sv::4vec->upper test)
+                                            (sv::4vec->lower test))))
+                   (:instance 4vec-bit?!-when-test-is-quoted-lemma-2
+                              (then (sv::4vec->upper then))
+                              (else (sv::4vec->upper else))
+                              (test (logand (sv::4vec->upper test)
+                                            (sv::4vec->lower test)))))
+             :in-theory (e/d (sv::4vec-bit?!
+                              ;;sv::4vec->upper
+                              4VEC-PART-SELECT
+                              ;;sv::4vec->lower
+                              4VEC-CONCAT
+                              4VEC-RSH
+                              4VEC-SHIFT-CORE)
+                             (sv::4vec-p
+                              not
+                              (:ELIM SV::4VEC-ELIM)
+                              4vec-bit?!-when-test-is-quoted-lemma
+                              4vec
+                              EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1)))))
+
+  (add-svex-simplify-rule 4vec-bit?!-when-test-is-quoted))
+
+
+(def-rp-rule 4vec-bit?!-when-test-is-quoted-2
+  (and (equal (sv::4vec-bit?! -1 then else)
+              (sv::4vec-fix then))
+       (equal (sv::4vec-bit?! 0 then else)
+              (sv::4vec-fix else))
+       (equal (sv::4vec-bit?! '(-1 . 0) then else)
+              (sv::4vec-fix else))
+       (equal (sv::4vec-bit?! '(0 . -1) then else)
+              (sv::4vec-fix else)))
   :hints (("Goal"
-           :expand ((sv::4vec-bit?! 1 then else))
+           :expand ((sv::4vec-bit?! -1 then else)
+                    (sv::4vec-bit?! 0 then else)
+                    (sv::4vec-bit?! '(-1 . 0) then else)
+                    (sv::4vec-bit?! '(0 . -1) then else))
            :in-theory (e/d* (4VEC-PART-SELECT
                              4VEC-RSH
                              bitops::ihsext-recursive-redefs
                              bitops::ihsext-inductions
                              4VEC-SHIFT-CORE
                              4VEC-CONCAT)
-                            (4vec)))))
+                            (4vec-bit?!-when-test-is-quoted
+                             4vec)))))
 
-(add-svex-simplify-rule sv::4vec-bit?!-when-test=1)
+(add-svex-simplify-rule 4vec-bit?!-when-test-is-quoted-2)
+
 
 (local
  (defthm 4vec-upper-and-lower-when-natp
@@ -6579,16 +6687,7 @@
                              acl2::logand-with-mask
                              sv::4vec-equal)))))
 
-(defthm 4vec-bit?!-when-test=-1
-  (equal (SV::4VEC-BIT?! -1 THEN ELSE)
-         (4vec-fix then))
-  :hints (("Goal"
-           :in-theory (e/d (SV::4VEC-BIT?!
 
-                            SV::4VEC->UPPER
-                            4VEC-FIX
-                            SV::4VEC->LOWER)
-                           ()))))
 
 (defthm 4vec-bit?!-when-test=-1-masked
   (implies (and (natp start)
@@ -6605,7 +6704,7 @@
                             4VEC-PART-SELECT)
                            (4vec-part-select-of-4vec-bit?!)))))
 
-(defthm 4vec-bit?!-when-test=dont-care
+(def-rp-rule 4vec-bit?!-when-test=dont-care
   (equal (SV::4VEC-BIT?! '(-1 . 0)  THEN ELSE)
          (4vec-fix else))
   :hints (("Goal"
@@ -6616,7 +6715,9 @@
                             SV::4VEC->LOWER)
                            ()))))
 
-(defthm 4vec-bit?!-when-test=z
+(add-svex-simplify-rule 4vec-bit?!-when-test=dont-care)
+
+(def-rp-rule 4vec-bit?!-when-test=z
   (equal (SV::4VEC-BIT?! '(0 . -1)  THEN ELSE)
          (4vec-fix else))
   :hints (("Goal"
@@ -6626,6 +6727,8 @@
                             4VEC-FIX
                             SV::4VEC->LOWER)
                            ()))))
+
+(add-svex-simplify-rule 4vec-bit?!-when-test=z)
 
 (defthm 4vec-bit?!-when-test=-dont-care-or-z-masked
   (implies (and (natp start)
@@ -7196,8 +7299,6 @@
 
 
 
-
-
 (def-rp-rule 3vec-fix-of-4vec-==
   (equal (sv::3vec-fix (sv::4vec-== x y))
          (sv::4vec-== x y))
@@ -7751,9 +7852,13 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 ;;:i-am-here
-(defthmd 4vec-==-with-constant
-  (implies (and (integerp x)
+(def-rp-rule :disabled t
+  4vec-==-with-constant
+  (implies (and (syntaxp (quotep y))
+                (integerp x)
                 (natp y)
+                ;; below is to prevent continuos rewriting.
+                (ignore-and-return-t (sv::4vec-rsh 500 x))
                 )
            (equal (sv::4vec-== x y)
                   (- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
@@ -7773,10 +7878,16 @@
                             4vec-part-select-better-opener)
                            ()))))
 
-(defthmd 4VEC-SYMWILDEQ-with-constant
-  (implies (and (integerp x)
+(add-svex-simplify-rule 4vec-==-with-constant)
+
+(def-rp-rule :disabled t
+  4vec-symwildeq-with-constant
+  (implies (and (syntaxp (quotep y))
+                (integerp x)
                 (natp y)
-               )
+                ;; below is to prevent continuos rewriting.
+                (ignore-and-return-t (sv::4vec-rsh 500 x))
+                )
            (equal (sv::4vec-symwildeq x y)
                   (- (sv::4vec-bitand
                       (if (equal (acl2::logcar y) 1)
@@ -7799,6 +7910,8 @@
                              SV::3VEC-BITOR
                              SV::3VEC-REDUCTION-AND)
                             ()))))
+
+(add-svex-simplify-rule 4vec-symwildeq-with-constant)
 
 (def-rp-rule 4vec-override-when-integerp
   (implies (integerp x)
@@ -7835,34 +7948,32 @@
                             SV::4VEC->LOWER)
                            ()))))
 
-
 (def-rp-rule 4vec-reduction-and-to-4vec-bitand
-     (implies (and (integerp x)
-                   (syntaxp (or (atom x)
-                                (not (equal (car x) 'UNARY--)))))
-              (equal
-               (sv::4vec-reduction-and x)
-               (- (sv::4vec-bitand (sv::4vec-part-select 0 1 x)
-                                   (- (sv::4vec-reduction-and (sv::4vec-rsh 1 x)))))))
-     :hints
-     (("goal" :in-theory
-       (e/d* (SV::BOOL->VEC
-              sv::4vec-reduction-and
-              sv::4vec-bitand
-              bitops::ihsext-recursive-redefs
-              bitops::ihsext-inductions sv::3vec-bitand
-              sv::4vec-part-select sv::4vec-concat
-              sv::4vec-rsh sv::4vec-shift-core
-              sv::3vec-reduction-and)
-             nil))))
+  (implies (and (integerp x)
+                (syntaxp (or (atom x)
+                             (not (equal (car x) 'UNARY--)))))
+           (equal
+            (sv::4vec-reduction-and x)
+            (- (sv::4vec-bitand (sv::4vec-part-select 0 1 x)
+                                (- (sv::4vec-reduction-and (sv::4vec-rsh 1 x)))))))
+  :hints
+  (("goal" :in-theory
+    (e/d* (SV::BOOL->VEC
+           sv::4vec-reduction-and
+           sv::4vec-bitand
+           bitops::ihsext-recursive-redefs
+           bitops::ihsext-inductions sv::3vec-bitand
+           sv::4vec-part-select sv::4vec-concat
+           sv::4vec-rsh sv::4vec-shift-core
+           sv::3vec-reduction-and)
+          nil))))
 
 (def-rp-rule 4vec-reduction-and-of-negated-bitp
-    (implies (bitp x)
-             (equal (sv::4vec-reduction-and (- x))
-                    (- x)))
-    :hints (("Goal"
-             :in-theory (e/d (bitp) ()))))
-
+  (implies (bitp x)
+           (equal (sv::4vec-reduction-and (- x))
+                  (- x)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (defthm logapp-same-var-merge
   (implies (and (natp csize1)
@@ -7874,6 +7985,7 @@
                                         (logtail (+ csize1 start1) x)))
                        (loghead (+ csize1 csize2)
                                 (logtail start1 x)))
+
                 (equal (logapp (+ csize1 csize2)
                                (logapp csize1
                                        (logtail start1 x)
@@ -7884,35 +7996,97 @@
                                other))))
   :hints (("Goal"
            :in-theory (e/d* (bitops::ihsext-recursive-redefs
-                            bitops::ihsext-inductions)
-                           ()))))
+                             bitops::ihsext-inductions)
+                            ()))))
+
+(defthm loghead-of-logapp-3
+  (implies (and (natp size1)
+                (natp size2)
+                (>= size1 size2))
+           (equal (loghead size1 (logapp size2 x y))
+                  (logapp size2 x
+                          (loghead (- size1 size2) y))))
+  :hints (("Goal"
+           :cases ((equal size1 size2))
+           :in-theory (e/d ()
+                           (ACL2::LOGHEAD-LOGAPP
+                            (:REWRITE ACL2::LOGAPP-0))))))
+
+(defthm logapp-same-var-merge-2
+  (implies (and (natp csize1)
+                (natp csize2)
+                (natp start1)
+                (natp size2))
+           (equal (loghead (+ csize1 csize2)
+                           (logapp csize1
+                                   (logtail start1 x)
+                                   (loghead size2
+                                            (logtail (+ csize1 start1)
+                                                     x))))
+                  (loghead (+ csize1 (min size2 csize2))
+                           (logtail start1 x))))
+  :hints (("Goal"
+           :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions)
+                            ()))))
 
 (defthm 4vec-concat-same-var-merge
   (implies (and (natp csize1)
                 (natp csize2)
                 (natp start1)
                 (natp start2)
+                (natp size2)
                 (equal start2 (+ start1 csize1)))
            (equal (svl::4vec-concat csize1 (sv::4vec-part-select start1 csize1 x)
                                     (svl::4vec-concat
                                      csize2 (sv::4vec-part-select start2
-                                                                  csize2 x)
+                                                                  size2 x)
                                      other))
-                  (svl::4vec-concat (+ csize1 csize2) (sv::4vec-part-select
-                                                       start1 (+ csize1 csize2) x)
+                  (svl::4vec-concat (+ csize1 csize2)
+                                    (sv::4vec-part-select
+                                     start1 (+ csize1 size2) x)
                                     other)))
   :hints (("Goal"
+           :use (#|(:instance logapp-insert-loghead
+                 (size (+ CSIZE1 CSIZE2))
+                 (x (LOGAPP CSIZE1
+                 (LOGTAIL START1 (SV::4VEC->LOWER X))
+                 (LOGHEAD SIZE2
+                 (LOGTAIL (+ CSIZE1 START1)
+                 (SV::4VEC->LOWER X)))))
+                 (y (SV::4VEC->LOWER OTHER)))|#)
            :in-theory (e/d* (4VEC-PART-SELECT
-                            4VEC-CONCAT
-                            bitops::ihsext-recursive-redefs
-                            bitops::ihsext-inductions
-                            4VEC-RSH
-                            4VEC-SHIFT-CORE)
-                           (logapp-of-logapp
-                            ;;SV::2VEC-P$INLINE
-                            sv::4vec-p
-                            sv::4vec)))))
+                             4VEC-CONCAT
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             4VEC-RSH
+                             4VEC-SHIFT-CORE)
+                            (logapp-of-logapp
+                             ;;BITOPS::LOGAPP-OF-LOGHEAD
+                             ;;SV::2VEC-P$INLINE
+                             sv::4vec-p
+                             sv::4vec)))))
 
+(defthm 4vec-concat-same-var-merge-2
+  (implies (and (natp csize1)
+                (natp start1)
+                (natp start2)
+                (natp size2)
+                (equal start2 (+ start1 csize1)))
+           (equal (svl::4vec-concat csize1
+                                    (sv::4vec-part-select start1 csize1 x)
+                                    (sv::4vec-part-select start2 size2 x))
+                  (sv::4vec-part-select start1 (+ csize1 size2) x)))
+  :hints (("goal"
+           :use ((:instance 4vec-concat-same-var-merge
+                            (other 0)
+                            (csize2 size2)))
+           :in-theory (e/d* (4vec-concat
+                             4vec-part-select)
+                            (4vec-concat-same-var-merge
+                             logapp-of-logapp
+                             sv::4vec-p
+                             sv::4vec)))))
 
 (defthm logapp-same-var-merge-with-lognot
   (implies (and (natp csize1)
@@ -7949,15 +8123,15 @@
                 (integerp x)
                 (equal start2 (+ start1 csize1)))
            (equal (svl::4vec-concat csize1 (svl::4vec-bitnot$ csize1 (sv::4vec-part-select start1 csize1 x))
-                                     (svl::4vec-concat
-                                      csize2 (svl::4vec-bitnot$ csize2 (sv::4vec-part-select start2
-                                                                                             csize2 x))
-                                      other))
+                                    (svl::4vec-concat
+                                     csize2 (svl::4vec-bitnot$ csize2 (sv::4vec-part-select start2
+                                                                                            csize2 x))
+                                     other))
                   (svl::4vec-concat (+ csize1 csize2) (svl::4vec-bitnot$
-                                                        (+ csize1 csize2)
-                                                        (sv::4vec-part-select
-                                                         start1 (+ csize1 csize2) x))
-                                     other)))
+                                                       (+ csize1 csize2)
+                                                       (sv::4vec-part-select
+                                                        start1 (+ csize1 csize2) x))
+                                    other)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (4VEC-PART-SELECT
@@ -7972,13 +8146,12 @@
                             (logapp-of-logapp
                              ;;SV::2VEC-P$INLINE
                              sv::4vec-p
-                             
+
                              sv::4vec))
            )))
 
-
 (encapsulate nil
-  
+
   (local
    (use-arithmetic-5 t))
 
@@ -7999,7 +8172,6 @@
 
 
 
-
 (defthmd logtail-of-loghead-reverse
   (implies (and (natp m)
                 (natp n))
@@ -8007,7 +8179,7 @@
                   (logtail n (loghead (+ n m) x))))
   :hints (("goal"
            #|:cases ((natp n)
-                   (natp m))|#
+           (natp m))|#
            :in-theory (e/d (BITOPS::LOGTAIL-OF-LOGHEAD)
                            (force
                             (:REWRITE ACL2::LOGTAIL-LOGHEAD))))))
@@ -8024,11 +8196,11 @@
                 (integerp x)
                 (integerp y))
            (equal (4vec-part-select start size (4vec-plus x y))
-                   (4vec-part-select
-                    start size
-                    (4vec-plus$ (+ start size)
-                                (4vec-part-select 0 (+ start size) x)
-                                (4vec-part-select 0 (+ start size) y)))))
+                  (4vec-part-select
+                   start size
+                   (4vec-plus$ (+ start size)
+                               (4vec-part-select 0 (+ start size) x)
+                               (4vec-part-select 0 (+ start size) y)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (4vec-plus
@@ -8051,5 +8223,3 @@
                             BITOPS::LOGTAIL-OF-LOGHEAD
                             (:REWRITE ACL2::LOGTAIL-LOGHEAD)
                             )))))
-
- 

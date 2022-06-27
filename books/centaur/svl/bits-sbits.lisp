@@ -2294,13 +2294,15 @@
                   (natp csize2)
                   (natp start1)
                   (natp start2)
+                  (natp size2)
                   (equal start2 (+ start1 csize1)))
-             (equal (svl::4vec-concat$ csize1 (svl::bits x start1 csize1)
-                                       (svl::4vec-concat$
-                                        csize2 (svl::bits x start2 csize2)
-                                        other))
+             (equal (svl::4vec-concat$ csize1
+                                       (svl::bits x start1 csize1)
+                                       (svl::4vec-concat$ csize2
+                                                          (svl::bits x start2 size2)
+                                                          other))
                     (svl::4vec-concat$ (+ csize1 csize2) (svl::bits x start1 (+
-                                                                              csize1 csize2))
+                                                                              csize1 size2))
 
                                        other)))
     :hints (("Goal"
@@ -2308,6 +2310,23 @@
              :in-theory (e/d (4VEC-CONCAT$)
                              (4vec-concat-same-var-merge)))))
   (add-svex-simplify-rule 4vec-concat$-same-var-merge))
+
+(progn
+  (def-rp-rule 4vec-concat$-same-var-merge-2
+    (implies (and (natp csize1)
+                  (natp start1)
+                  (natp start2)
+                  (natp size2)
+                  (equal start2 (+ start1 csize1)))
+             (equal (svl::4vec-concat$ csize1
+                                       (svl::bits x start1 csize1)
+                                       (svl::bits x start2 size2))
+                    (svl::bits x start1 (+ csize1 size2))))
+    :hints (("Goal"
+             :use ((:instance 4vec-concat-same-var-merge-2))
+             :in-theory (e/d (4VEC-CONCAT$)
+                             (4vec-concat-same-var-merge-2)))))
+  (add-svex-simplify-rule 4vec-concat$-same-var-merge-2))
 
 (progn
   (def-rp-rule 4vec-concat$-same-var-merge-with-4vec-bitnot$
@@ -2435,7 +2454,11 @@
                               sv::4vec->upper
                               sv::4vec->lower
                               sv::4vec-shift-core)
-                             ())))))
+                             ()))))
+
+  (add-svex-simplify-rule logcar-to-bits)
+  (add-svex-simplify-rule logcdr-to-4vec-rsh))
+
 (encapsulate
   nil
 
@@ -2457,4 +2480,133 @@
                               SV::4VEC-SHIFT-CORE
                               SV::4VEC-CONCAT
                               SV::4VEC-RSH)
-                             (SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1))))))
+                             (SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1)))))
+
+  (add-svex-simplify-rule logbitp-to-bits))
+
+#!SVL
+(encapsulate
+  nil
+
+  (local
+   (in-theory (enable SV::4VEC->UPPER
+                      SV::4VEC
+                      SV::4VEC->lower)))
+  
+  (def-rp-rule :disabled-for-acl2 t
+    logand-to-4vec-bitand
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (logand x y)
+                    (sv::4vec-bitand x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitand
+                              sv::3vec-bitand)
+                             (logand)))))
+  (def-rp-rule integerp-of-4vec-bitand
+    (implies (and (integerp x)
+                  (integerp y))
+             (integerp (sv::4vec-bitand x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitand
+                              sv::3vec-bitand)
+                             (logand)))))
+
+  (rp-attach-sc logand-to-4vec-bitand
+                integerp-of-4vec-bitand)
+
+  (add-svex-simplify-rule logand-to-4vec-bitand)
+
+  (def-rp-rule :disabled-for-acl2 t
+    logior-to-4vec-bitor
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (logior x y)
+                    (sv::4vec-bitor x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitor
+                              sv::3vec-bitor)
+                             (logior)))))
+  (def-rp-rule integerp-of-4vec-bitor
+    (implies (and (integerp x)
+                  (integerp y))
+             (integerp (sv::4vec-bitor x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitor
+                              sv::3vec-bitor)
+                             (logior)))))
+
+  (rp-attach-sc logior-to-4vec-bitor
+                integerp-of-4vec-bitor)
+
+  (add-svex-simplify-rule logior-to-4vec-bitor)
+
+  (def-rp-rule :disabled-for-acl2 t
+    logxor-to-4vec-bitxor
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (logxor x y)
+                    (sv::4vec-bitxor x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitxor
+                              sv::3vec-bitxor)
+                             (logxor)))))
+  (def-rp-rule integerp-of-4vec-bitxor
+    (implies (and (integerp x)
+                  (integerp y))
+             (integerp (sv::4vec-bitxor x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitxor
+                              sv::3vec-bitxor)
+                             (logxor)))))
+
+  (rp-attach-sc logxor-to-4vec-bitxor
+                integerp-of-4vec-bitxor)
+
+  (add-svex-simplify-rule logxor-to-4vec-bitxor)
+
+  
+  (def-rp-rule :disabled-for-acl2 t
+    lognor-to-4vec-bitnor
+    (implies (and (integerp x))
+             (equal (lognot x)
+                    (sv::4vec-bitnot x)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec-bitnot
+                              sv::3vec-bitnot)
+                             (lognot)))))
+  
+  (def-rp-rule integerp-of-4vec-bitnot
+    (implies (and (integerp x))
+             (integerp (sv::4vec-bitnot x)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitnot
+                              sv::3vec-bitnot)
+                             (logior)))))
+
+  (rp-attach-sc lognot-to-4vec-bitnot
+                integerp-of-4vec-bitnot)
+
+  (add-svex-simplify-rule lognot-to-4vec-bitnot))
+
+
+(rp::def-rp-rule unary--of-unary--
+  (implies (acl2-numberp x)
+           (equal (- (- x))
+                  x)))
+
+(svl::add-svex-simplify-rule unary--of-unary--)
+
+(rp::def-rp-rule integerp-of-unary--
+  (implies (integerp x)
+                (integerp (- x))) 
+  :hints (("Goal"
+           :in-theory (e/d () ()))))
+
+(svl::add-svex-simplify-rule integerp-of-unary--)
+
+(rp::def-rp-rule integerp-implies-acl2-numberp
+  (implies (integerp x)
+           (acl2-numberp x)))
+
+(svl::add-svex-simplify-rule integerp-implies-acl2-numberp)

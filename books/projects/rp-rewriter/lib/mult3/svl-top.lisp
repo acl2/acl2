@@ -267,11 +267,12 @@
 
 (progn
   (def-rp-rule 4vec-symwildeq-with-constant
-    (implies (and (integerp x)
-                  (posp y)
-                  (syntaxp (or (integerp y)
+    (implies (and (syntaxp (or (integerp y)
                                (and (quotep y)
-                                    (integerp (unquote y))))))
+                                    (integerp (unquote y)))))
+                  (integerp x)
+                  (posp y)
+                  (svl::ignore-and-return-t (sv::4vec-rsh 500 x)))
              (equal (sv::4vec-symwildeq x y)
                     (-- (sv::4vec-bitand
                          (if (equal (acl2::logcar y) 1)
@@ -362,11 +363,12 @@
 ;; 4vec-== lemmas
 (progn
   (def-rp-rule 4vec-==-with-constant
-    (implies (and (integerp x)
-                  (posp y)
-                  (syntaxp (or (integerp y)
+    (implies (and (syntaxp (or (integerp y)
                                (and (quotep y)
-                                    (integerp (unquote y))))))
+                                    (integerp (unquote y)))))
+                  (integerp x)
+                  (posp y)
+                  (svl::ignore-and-return-t (sv::4vec-rsh 500 x)))
              (equal (sv::4vec-== x y)
                     (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
                                              (acl2::logcar x)
