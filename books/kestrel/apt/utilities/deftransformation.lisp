@@ -1,6 +1,6 @@
 ; A tool to automate the boilerplate stuff that a transformation does.
 ;
-; Copyright (C) 2017-2021 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; STATUS: IN-PROGRESS
+;; STATUS: DRAFT
 
 ;; For a transformation called XXX, deftransformation expects a function to
 ;; exist called XXX-event, which takes the following arguments:
