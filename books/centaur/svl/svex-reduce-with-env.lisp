@@ -558,7 +558,9 @@
           (:var
            (b* (;;(svex.name (svex-var->name svex))
                 (val (hons-get svex env))
-                ((unless (consp val)) (4vec-part-select start size (sv::4vec-x)))
+                ((unless (consp val))
+                 (svex-reduce-w/-env-masked-return svex)
+                 #|(4vec-part-select start size (sv::4vec-x))|#)
                 (val (cdr val))
                 ((when (and (quotep val)
                             (consp (cdr val))
@@ -948,7 +950,9 @@ but did not resolve the branch ~%" first))))
           (:quote svex)
           (:var
            (b* ((val (hons-get svex env))
-                ((unless (consp val)) (sv::4vec-x))
+                ((unless (consp val))
+                 svex
+                 #|(sv::4vec-x)|#)
                 (val (cdr val))
                 ((when (and (quotep val)
                             (consp (cdr val))
@@ -1104,7 +1108,8 @@ but did not resolve the branch ~%" first))))
                      (:free (x y) (SV::4VEC-BIT?! -1 x y))
                      (:free (x y) (SV::4VEC-BIT?! '(0 . -1) x y))
                      (:free (x y) (SV::4VEC-BIT?! '(-1 . 0) x y)))
-            :in-theory (e/d () ())))))
+            :in-theory (e/d ()
+                            (4VEC-BIT?!-WHEN-TEST-IS-QUOTED))))))
 
 (local
  (defthm SV::4VEC-BIT?-of-constants
@@ -1752,7 +1757,7 @@ but did not resolve the branch ~%" first))))
                              (test 0)))
             :in-theory (e/d () (SV::4VEC-BIT?!-of-constants
                                 4vec-part-select-of-4vec-bit?!
-                                (:REWRITE 4VEC-BIT?!-WHEN-TEST=-1)
+                                
                                 (:REWRITE 4VEC-BIT?!-WHEN-TEST=-1-MASKED)
                                 (:REWRITE 4VEC-BIT?!-WHEN-TEST=-DONT-CARE-OR-Z-MASKED)
                                 (:REWRITE 4VEC-BIT?!-WHEN-TEST=DONT-CARE)

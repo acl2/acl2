@@ -122,8 +122,8 @@
 (add-rp-rule null)
 (add-rp-rule endp)
 (add-rp-rule eql)
-(add-rp-rule not :outside-in t)
-;;(add-rp-rule implies :outside-in t)
+(add-rp-rule not :rw-direction :outside-in)
+;;(add-rp-rule implies :rw-direction :outside-in)
 (add-rp-rule eq)
 (add-rp-rule eql)
 (add-rp-rule cons-equal)
@@ -187,8 +187,8 @@ Forced term is ~p2 ~% "
            y)
   :rule-classes nil)
 
-(add-rp-rule return-last-from-mbe :outside-in t)
+(add-rp-rule return-last-from-mbe :rw-direction :outside-in)
 
-(add-rp-rule acl2::throw-nonexec-error :outside-in t)
+(add-rp-rule acl2::throw-nonexec-error :rw-direction :outside-in)
 
 (add-rp-rule fmt-to-comment-window) 
