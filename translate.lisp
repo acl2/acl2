@@ -15135,7 +15135,9 @@
          'stobj-live-var)
         (quietp nil)
         (t (er hard? 'logical-name-type
-               "~x0 is evidently a logical name but of undetermined type."
+               "Implementation error: ~x0 was called on the name ~x0, which ~
+                suggests that this name is expected to be a logical name; yet ~
+                its type cannot be determined."
                name))))
 
 (defun chk-all-but-new-name-cmp (name ctx new-type w)
