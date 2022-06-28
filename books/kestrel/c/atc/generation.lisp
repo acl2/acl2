@@ -7149,16 +7149,8 @@
                              (equal (expr-kind target) :ident)
                              (equal member (ident ,(ident->name memname)))
                              (not (zp limit))
-                             (equal val+compst1
-                                    (exec-expr-call-or-pure right
-                                                            compst
-                                                            fenv
-                                                            (1- limit)))
-                             (equal val (mv-nth 0 val+compst1))
-                             (equal compst1 (mv-nth 1 val+compst1))
-                             (,typep val)
                              (equal ptr (read-var (expr-ident->get target)
-                                                  compst1))
+                                                  compst))
                              (valuep ptr)
                              (value-case ptr :pointer)
                              (not (value-pointer-nullp ptr))
@@ -7166,12 +7158,14 @@
                                     (type-struct (ident ,(ident->name tag))))
                              (equal struct
                                     (read-object (value-pointer->designator ptr)
-                                                 compst1))
-                             (,recognizer struct))
+                                                 compst))
+                             (,recognizer struct)
+                             (equal val (exec-expr-pure right compst))
+                             (,typep val))
                         (equal (exec-expr-asg e compst fenv limit)
                                (write-object (value-pointer->designator ptr)
                                              (,writer val struct)
-                                             compst1))))
+                                             compst))))
              (hints `(("Goal"
                        :in-theory
                        '(exec-expr-asg
@@ -7214,28 +7208,15 @@
                        :use
                        (:instance
                         ,writer-return-thm
-                        (val (b* ((right (expr-binary->arg2 e))
-                                  (val+compst1
-                                   (exec-expr-call-or-pure right
-                                                           compst
-                                                           fenv
-                                                           (1- limit)))
-                                  (val (mv-nth 0 val+compst1)))
-                               val))
+                        (val (b* ((left (expr-binary->arg1 e)))
+                               (exec-expr-pure (expr-binary->arg2 e) compst)))
                         (struct (b* ((left (expr-binary->arg1 e))
-                                     (right (expr-binary->arg2 e))
-                                     (val+compst1
-                                      (exec-expr-call-or-pure right
-                                                              compst
-                                                              fenv
-                                                              (1- limit)))
-                                     (compst1 (mv-nth 1 val+compst1))
                                      (target (expr-memberp->target left))
                                      (ptr (read-var (c::expr-ident->get target)
-                                                    compst1))
+                                                    compst))
                                      (struct (read-object
                                               (value-pointer->designator ptr)
-                                              compst1)))
+                                              compst)))
                                   struct))))))
              ((mv event &) (evmac-generate-defthm thm-name
                                                   :formula formula
@@ -7335,19 +7316,8 @@
                           (equal (expr-kind target) :ident)
                           (equal member (ident ,(ident->name memname)))
                           (not (zp limit))
-                          (equal val+compst1
-                                 (exec-expr-call-or-pure right
-                                                         compst
-                                                         fenv
-                                                         (1- limit)))
-                          (equal val (mv-nth 0 val+compst1))
-                          (equal compst1 (mv-nth 1 val+compst1))
-                          (,elemtypep val)
-                          (equal idx (exec-expr-pure index compst1))
-                          (,indextypep idx)
-                          (,checker idx)
                           (equal ptr (read-var (expr-ident->get target)
-                                               compst1))
+                                               compst))
                           (valuep ptr)
                           (value-case ptr :pointer)
                           (not (value-pointer-nullp ptr))
@@ -7355,12 +7325,17 @@
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct
                                  (read-object (value-pointer->designator ptr)
-                                              compst1))
-                          (,recognizer struct))
+                                              compst))
+                          (,recognizer struct)
+                          (equal idx (exec-expr-pure index compst))
+                          (,indextypep idx)
+                          (,checker idx)
+                          (equal val (exec-expr-pure right compst))
+                          (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
                             (write-object (value-pointer->designator ptr)
                                           (,writer idx val struct)
-                                          compst1))))
+                                          compst))))
           (hints `(("Goal"
                     :in-theory
                     '(exec-expr-asg
@@ -7398,21 +7373,10 @@
                       ,writer-return-thm
                       (index
                        (,indextype->get
-                        (exec-expr-pure
-                         (expr-arrsub->sub (expr-binary->arg1 e))
-                         (mv-nth
-                          1
-                          (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                  compst
-                                                  fenv
-                                                  (+ -1 limit))))))
+                        (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                        compst)))
                       (val
-                       (mv-nth
-                        0
-                        (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                compst
-                                                fenv
-                                                (+ -1 limit))))
+                       (exec-expr-pure (expr-binary->arg2 e) compst))
                       (struct
                        (read-object
                         (value-pointer->designator
@@ -7420,18 +7384,8 @@
                           (expr-ident->get
                            (expr-memberp->target
                             (expr-arrsub->arr (expr-binary->arg1 e))))
-                          (mv-nth
-                           1
-                           (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                   compst
-                                                   fenv
-                                                   (+ -1 limit)))))
-                        (mv-nth
-                         1
-                         (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                 compst
-                                                 fenv
-                                                 (+ -1 limit))))))
+                          compst))
+                        compst)))
                      (:instance
                       ,arrayp-of-arrary-write
                       (array
@@ -7444,35 +7398,15 @@
                             (expr-ident->get
                              (expr-memberp->target
                               (expr-arrsub->arr (expr-binary->arg1 e))))
-                            (mv-nth
-                             1
-                             (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                     compst
-                                                     fenv
-                                                     (+ -1 limit)))))
-                          (mv-nth
-                           1
-                           (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                   compst
-                                                   fenv
-                                                   (+ -1 limit)))))))
+                            compst))
+                          compst))))
                       (index
                        (,indextype->get
                         (exec-expr-pure
                          (expr-arrsub->sub (expr-binary->arg1 e))
-                         (mv-nth
-                          1
-                          (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                  compst
-                                                  fenv
-                                                  (+ -1 limit))))))
+                         compst)))
                       (element
-                       (mv-nth
-                        0
-                        (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                compst
-                                                fenv
-                                                (+ -1 limit)))))))))
+                       (exec-expr-pure (expr-binary->arg2 e) compst)))))))
           ((mv event &) (evmac-generate-defthm thm-name
                                                :formula formula
                                                :hints hints
