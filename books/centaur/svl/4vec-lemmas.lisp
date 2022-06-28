@@ -4091,7 +4091,7 @@
                             SV::3VEC-FIX) ()))))
 
 (add-svex-simplify-rule 4vec-bitand-with-0
-                        :outside-in :both)
+                        :rw-direction :both)
 
 (def-rp-rule 4vec-bitand-with--1
   (and (equal (sv::4vec-bitand -1 x)
@@ -4145,7 +4145,7 @@
                             SV::3VEC-?*) ()))))
 
 (add-svex-simplify-rule 4vec-?*-test=0
-                        :outside-in :both)
+                        :rw-direction :both)
 
 (def-rp-rule 4vec-?*-test=1
   (equal (4vec-?* 1 x y)
@@ -4155,7 +4155,7 @@
                             SV::3VEC-?*) ()))))
 
 (add-svex-simplify-rule 4vec-?*-test=1
-                        :outside-in :both)
+                        :rw-direction :both)
 
 (def-rp-rule 4vec-?-with-0
   (and (equal (sv::4vec-? 0 x y)
@@ -4170,7 +4170,7 @@
                              ifix) ()))))
 
 (add-svex-simplify-rule 4vec-?-with-0
-                        :outside-in :both)
+                        :rw-direction :both)
 
 (def-rp-rule 4vec-?-with-1
   (and (equal (sv::4vec-? 1 x y)
@@ -4185,7 +4185,7 @@
                              ifix) ()))))
 
 (add-svex-simplify-rule 4vec-?-with-1
-                        :outside-in :both)
+                        :rw-direction :both)
 
 (def-rp-rule integerp-4vec?
   (implies (and (integerp test)
@@ -4306,7 +4306,7 @@
                             SV::3VEC-?*) ()))))
 
 (add-svex-simplify-rule 4vec-?-of-test=0
-                        :outside-in :both)
+                        :rw-direction :both)
 
 (def-rp-rule :disabled t
   bitp-of-4vec-?*
@@ -7483,9 +7483,9 @@
                              ()))))
 
   (add-svex-simplify-rule 4vec-?*-to-if
-                          :outside-in :both
+                          :rw-direction :both
                           :disabled t)
-  ;;(add-rp-rule 4vec-?*-to-if :outside-in t)
+  ;;(add-rp-rule 4vec-?*-to-if :rw-direction :outside-in)
 
   (defthmd 4vec-?-to-if
     (implies (integerp test)
@@ -7499,9 +7499,9 @@
                              ()))))
 
   (add-svex-simplify-rule 4vec-?-to-if
-                          :outside-in :both
+                          :rw-direction :both
                           :disabled t)
-  ;;(add-rp-rule 4vec-?-to-if :outside-in t)
+  ;;(add-rp-rule 4vec-?-to-if :rw-direction :outside-in)
 
   (defthmd 4vec-?!-to-if
     (implies (integerp test)
@@ -7514,9 +7514,10 @@
                               SV::3VEC-?)
                              ()))))
 
-  (add-svex-simplify-rule 4vec-?!-to-if :outside-in :both
+  (add-svex-simplify-rule 4vec-?!-to-if
+                          :rw-direction :both
                           :disabled t)
-  ;;(add-rp-rule 4vec-?!-to-if :outside-in t)
+  ;;(add-rp-rule 4vec-?!-to-if :rw-direction :outside-in)
 
   (def-rp-rule 4vec-p-of-if
     (implies (and (4vec-p x)
@@ -7586,7 +7587,7 @@
            :in-theory (e/d () ()))))
 
 (add-svex-simplify-rule 4vec-rsh-of-if
-                        :outside-in :both)|#
+                        :rw-direction :both)|#
 
 (def-rp-rule 4vec-?*-of-0-or-1
   (and (equal (4vec-?* 0 then else)      (4vec-fix else))
@@ -7605,7 +7606,7 @@
                            ()))))
 
 (add-svex-simplify-rule 4vec-?*-of-0-or-1
-                        :outside-in :both)
+                        :rw-direction :both)
 
 (local
  (defthm 3vec-fix-equivalence

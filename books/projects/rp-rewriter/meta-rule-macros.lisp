@@ -87,7 +87,7 @@
             (fix-args/returns-package (cdr lst))))))
 
 (defun add-meta-rule-guard (meta-fnc trig-fnc formula-checks
-                                     returns outside-in
+                                     returns rw-direction
                                      valid-syntaxp cl-name-prefix state)
 
   (declare (xargs :guard t
@@ -134,10 +134,13 @@ but instead you passed ~p0~%"
                        "You need to pass a t or nil for :valid-syntaxp keyword~%"
                        nil))
 
-       (or (booleanp outside-in)
-           (equal outside-in ':both)
+       (or (equal rw-direction nil)
+           (equal rw-direction ':both)
+           (equal rw-direction ':inside-out)
+           (equal rw-direction ':outside-in)
            (hard-error 'add-meta-rule-guard
-                       "You need to pass a t, nil or :both for :outside-in keyword~%"
+                       "You need to pass a :inside-out, nil (same as~
+ :inside-out), :outside-in or :both for :rw-direction keyword~%"
                        nil))
        (or (symbolp cl-name-prefix)
            (hard-error 'add-meta-rule-guard
@@ -180,7 +183,7 @@ but instead you passed ~p0~%"
    trig-fnc ;; trigger function name
    meta-fnc ;; function name that meta rule executes
    valid-syntaxp ;; if meta rule returns valid-syntax (rp-valid-termp)
-   outside-in ;; rewriting direction outside-in, inside-out or both
+   rw-direction ;; rewriting direction outside-in, inside-out or both
    returns ;; return vals of "meta-fnc"
    args
    correctness-lemma)
@@ -195,12 +198,12 @@ but instead you passed ~p0~%"
    priority)
   t)
 
-(defund add-meta-rule-fn (meta-fnc trig-fnc formula-checks  returns outside-in
+(defund add-meta-rule-fn (meta-fnc trig-fnc formula-checks  returns rw-direction
                                    valid-syntaxp hints cl-name-prefix disabledp
                                    state)
   (declare (xargs :guard (add-meta-rule-guard meta-fnc trig-fnc
                                               formula-checks returns
-                                              outside-in valid-syntaxp
+                                              rw-direction valid-syntaxp
                                               cl-name-prefix state)
                   :stobjs (state)))
   (b* ((rune `(:meta ,meta-fnc . ,trig-fnc))
@@ -214,7 +217,7 @@ but instead you passed ~p0~%"
                     :trig-fnc trig-fnc
                     :meta-fnc meta-fnc
                     :valid-syntaxp valid-syntaxp
-                    :outside-in outside-in
+                    :rw-direction rw-direction
                     :returns returns
                     :correctness-lemma correctness-lemma
                     :args args)))
@@ -224,8 +227,8 @@ but instead you passed ~p0~%"
 
        (table rp-rules ',rune
               ',(cond
-                 ((equal outside-in ':both) `(:both . t))
-                 (outside-in `(:outside-in . t))
+                 ((equal rw-direction ':both) `(:both . t))
+                 ((equal rw-direction ':outside-in) `(:outside-in . t))
                  (t `(:inside-out . t))))
 
        (table rp-rw-all-meta-rules ',rune ',entry)
@@ -281,7 +284,7 @@ but instead you passed ~p0~%"
                               trig-fnc
                               formula-checks
                               (returns 'term)
-                              (outside-in 'nil)
+                              (rw-direction 'nil)
                               (valid-syntaxp 't)
                               (disabledp 'nil)
                               hints
@@ -291,7 +294,7 @@ but instead you passed ~p0~%"
                       ',trig-fnc
                       ',formula-checks
                       ',returns
-                      ',outside-in
+                      ',rw-direction
                       ',valid-syntaxp
                       ',hints
                       ',cl-name-prefix
@@ -555,8 +558,9 @@ necessary for most cases. </li>
 which means that it only returns the rewritten term. Other acceptable forms are
 (mv term dont-rw), (mv term dont-rw rp-state), (mv term rp-state) etc. in any
 order. </li>
-<li> :outside-in  whether the meta rule be applied from outside-in or
-inside-out. You can pass t, nil, or :both. If you choose to make it outside-in,
+<li> :rw-direction  whether the meta rule be applied from outside-in or
+inside-out. You can pass :inside-out, nil (same as :inside-out), :outside-in or
+:both. If you choose to make it an outside-in rule,
 then it is recommended that you input the current dont-rw structure to the meta
 function and update
 it accordingly. </li>

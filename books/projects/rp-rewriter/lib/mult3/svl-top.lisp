@@ -1623,7 +1623,7 @@
                             2vec-adder-is-4vec-adder
                             )))))
 
-(rp::add-rp-rule rp::4vec-plus-chain-1 :outside-in :both)
+(rp::add-rp-rule rp::4vec-plus-chain-1 :rw-direction :both)
 
 (progn
   ;; Find Full and Half adder patterns from SVEX when defined with the + sign
@@ -1744,7 +1744,7 @@
     :hints (("Goal"
 	     :in-theory (e/d (bitp) ()))))
 
-  (add-rp-rule HA-patterned-4vec-plus :outside-in :both)
+  (add-rp-rule HA-patterned-4vec-plus :rw-direction :both)
 
   (def-rp-rule FA-patterned-4vec-plus
     (implies (and (bitp x)
@@ -1757,7 +1757,7 @@
     :hints (("Goal"
 	     :in-theory (e/d (bitp) ()))))
 
-  (add-rp-rule FA-patterned-4vec-plus :outside-in :both))|#
+  (add-rp-rule FA-patterned-4vec-plus :rw-direction :both))|#
 
 
 (progn
@@ -1787,7 +1787,7 @@
                               SV::4VEC->lower)
                              (RP::4VEC-PLUS++-IS-4VEC-ADDER)))))
   (add-rp-rule pull-out-dumb-twos-complement
-               :outside-in :both))
+               :rw-direction :both))
 
 (def-rp-rule 4vec-reduction-and-of---bitp
   (implies (bitp x)
