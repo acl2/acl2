@@ -12,7 +12,6 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
-(include-book "values")
 (include-book "arrays")
 
 (include-book "../language/portable-ascii-identifiers")

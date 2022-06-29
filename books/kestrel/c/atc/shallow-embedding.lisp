@@ -16,6 +16,7 @@
 (include-book "conditional-expressions")
 (include-book "let-designations")
 (include-book "defstruct")
+(include-book "defobject-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
