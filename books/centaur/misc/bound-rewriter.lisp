@@ -1,10 +1,6 @@
 ; Centaur Miscellaneous Books
 ; Copyright (C) 2008-2011 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -787,6 +783,24 @@
 ;;                        ;; (match-tree-obj-equals-subst-when-successful)
 ;;                        )))
 
+(encapsulate
+  (((boundrw-rewrite-trace * * state) => *
+    :formals (x new-x state)
+    :guard (and (pseudo-termp x) (pseudo-termp new-x))))
+  (local (defun boundrw-rewrite-trace (x new-x state)
+           (declare (xargs :stobjs state)
+                    (ignorable x new-x state))
+           nil)))
+
+(define boundrw-rewrite-trace-default ((x pseudo-termp)
+                                       (new-x pseudo-termp)
+                                       state)
+  (declare (ignore x new-x state))
+  nil
+  ///
+  (defattach boundrw-rewrite-trace boundrw-rewrite-trace-default))
+
+
 (define boundrw-rewrite ((x pseudo-termp)
                          (direction booleanp)
                          (bound-alist boundrw-substlist-p)
@@ -810,9 +824,11 @@
            (treematch
             x
             ((binary-+ (:? a) (:? b))
-             (boundrw-apply 'binary-+ (list
-                                       (boundrw-rewrite a direction bound-alist negative-bound-alist)
-                                       (boundrw-rewrite b direction bound-alist negative-bound-alist))))
+             (b* ((new-a (boundrw-rewrite a direction bound-alist negative-bound-alist))
+                  (new-b (boundrw-rewrite b direction bound-alist negative-bound-alist)))
+               (boundrw-rewrite-trace a new-a state)
+               (boundrw-rewrite-trace b new-b state)
+               (boundrw-apply 'binary-+ (list new-a new-b))))
             ((unary-- (:? a))
              (boundrw-apply 'unary-- (list
                                       (boundrw-rewrite a (not direction) negative-bound-alist bound-alist))))
