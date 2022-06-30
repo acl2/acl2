@@ -122,7 +122,15 @@
        (i.e. the element type of the array),
        and where the notion of constant expression term returning @('T')
        is defined below.
-       This list represents an array initializer [C:6.7.9].")))
+       This list represents an array initializer [C:6.7.9].")
+     (xdoc::p
+      "The terms must be guard-verifiable.
+       This requirement is checked implicitly
+       by generating the @('object-<name>-init') function
+       (see the `"
+      xdoc::*evmac-section-generated-title*
+      "' section below)
+       via an event that requires its guard verification.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -291,7 +299,9 @@
        and @('<type>') is the integer fixtype name
        specified in the @(':type') input.
        The recognizer @('object-<name>-p') is
-       in the same package as the @('name') input."))
+       in the same package as the @('name') input.
+       The function is in logic mode and guard-verified;
+       its guard verification is always expected to succeed."))
 
     (xdoc::desc
      "@('object-<name>-init')"
@@ -311,4 +321,9 @@
        and @('<term1>'), @('<term2>'), etc.
        are the terms in the list in the @(':init') input.
        The nullary function @('object-<name>-init') is
-       in the same package as the @('name') input.")))))
+       in the same package as the @('name') input.
+       The function is in logic mode and guard-verified:
+       its guard verification checks some of the requirements
+       on the @(':init') input mentioned in the `"
+      xdoc::*evmac-section-inputs-title*
+      "' section above.")))))
