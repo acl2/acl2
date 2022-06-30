@@ -363,7 +363,7 @@
    (xdoc::p
     "The keys are strings that are @(tsee symbol-name)s of
      symbols that represent the tags of the structures.
-     The name of each such symbol is a portable ASCII C identifiers,
+     The name of each such symbol is a portable ASCII C identifier,
      but this constraint is not enforced in the table's guard.
      The keys in the table are unique.")
    (xdoc::p
