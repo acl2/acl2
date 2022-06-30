@@ -224,7 +224,7 @@
                 (enables (append (list ;; (install-not-normalized-name fn)
                                   ;; (install-not-normalized-name new-fn)
                                   )
-                                 'nil))
+                                 nil))
                 (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                 (becomes-theorem (make-becomes-theorem fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory)
                                                        t
@@ -258,7 +258,7 @@
                   (enables (append (list ;; (install-not-normalized-name fn)
                                     ;;(install-not-normalized-name new-fn)
                                     )
-                                   'nil))
+                                   nil))
                   (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                   (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
                   (becomes-theorem (make-becomes-theorem fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory)
@@ -331,7 +331,7 @@
                                                              fns
                                                              function-renaming
                                                              ;;TODO: Add the $not-normalized rules for all functions?
-                                                             'nil
+                                                             nil
                                                              '(theory 'minimal-theory)
                                                              wrld))
               (becomes-theorems-to-export (clean-up-defthms becomes-theorems))

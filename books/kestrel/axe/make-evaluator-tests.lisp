@@ -296,15 +296,15 @@
                       EVAL-ARRAY NODENUM (CONS VALUE NIL))
                INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH))
          (LET
-          ((ARGS (DARGS EXPR)))
+          ((DARGS (DARGS EXPR)))
           (IF
            (OR (EQ 'IF FN)
                (EQ 'MYIF FN)
                (EQ 'BVIF FN))
            (LET*
             ((TEST (IF (EQ 'BVIF FN)
-                       (SECOND ARGS)
-                       (FIRST ARGS)))
+                       (SECOND DARGS)
+                       (FIRST DARGS)))
              (TEST-QUOTEP (QUOTEP TEST))
              (TEST-RESULT
               (IF TEST-QUOTEP NIL
@@ -322,9 +322,9 @@
                              (CAR TEST-RESULT)))
                (RELEVANT-BRANCH
                 (IF (EQ 'BVIF FN)
-                    (IF TEST-VAL (THIRD ARGS) (FOURTH ARGS))
-                    (IF TEST-VAL (SECOND ARGS)
-                        (THIRD ARGS))))
+                    (IF TEST-VAL (THIRD DARGS) (FOURTH DARGS))
+                    (IF TEST-VAL (SECOND DARGS)
+                        (THIRD DARGS))))
                (QUOTEP-RELEVANT-BRANCH (QUOTEP RELEVANT-BRANCH))
                (RELEVANT-BRANCH-RESULT
                 (IF QUOTEP-RELEVANT-BRANCH NIL
@@ -342,7 +342,7 @@
                 INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
                (LET*
                 ((BVIFP (EQ FN 'BVIF))
-                 (SIZE (AND BVIFP (FIRST ARGS)))
+                 (SIZE (AND BVIFP (FIRST DARGS)))
                  (SIZE-QUOTEP (AND BVIFP (QUOTEP SIZE)))
                  (SIZE-RESULT
                   (AND BVIFP (NOT SIZE-QUOTEP)
@@ -379,7 +379,7 @@
            (MV-LET
              (NODENUM-WORKLIST WORKLIST-EXTENDEDP)
              (GET-ARGS-NOT-DONE-ARRAY
-              ARGS EVAL-ARRAY-NAME
+              DARGS EVAL-ARRAY-NAME
               EVAL-ARRAY NODENUM-WORKLIST NIL)
              (IF
               WORKLIST-EXTENDEDP
@@ -391,7 +391,7 @@
               (LET*
                ((ARG-VALUES
                  (GET-VALS-OF-ARGS-ARRAY
-                  ARGS EVAL-ARRAY-NAME EVAL-ARRAY))
+                  DARGS EVAL-ARRAY-NAME EVAL-ARRAY))
                 (VALUE
                  (APPLY-LEN-EVALUATOR
                   FN ARG-VALUES INTERPRETED-FUNCTION-ALIST

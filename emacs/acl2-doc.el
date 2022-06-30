@@ -357,7 +357,7 @@
 (defun acl2-doc-gzipped-file (filename)
   (concat filename ".gz"))
 
-(defun acl2-doc-download-aux (file-url file-pathname)
+(defun acl2-doc-download-aux-1 (file-url file-pathname)
   (let ((file-backup (concat file-pathname ".backup"))
         (file-gzipped (acl2-doc-gzipped-file file-pathname)))
     (cond ((file-exists-p file-pathname)
@@ -365,8 +365,8 @@
                     file-pathname
                     file-backup)
            (rename-file file-pathname file-backup 0)))
-    (message "Preparing to download %s"
-             file-url)
+    (message "Preparing to download URL\n%s\ninto file\n%s"
+             file-url file-gzipped)
     (url-copy-file file-url file-gzipped)
     (cond ((file-exists-p file-gzipped)
            (cond
@@ -385,6 +385,25 @@
                  (error "Gunzip failed")))))
           (t (error "Download/install failed")
              nil))))
+
+(defvar acl2-doc-download-error "")
+
+(defun acl2-doc-download-aux (url pathname)
+  (condition-case err
+      (acl2-doc-download-aux-1 url pathname)
+    (error
+     (progn
+       (setq acl2-doc-download-error
+	     (format "You can copy URL %s
+directly to file %s
+and then apply gunzip to that file."
+		     url
+		     (acl2-doc-gzipped-file pathname)))
+       (error "Download failed (message: %s).
+The following message is saved in Emacs variable acl2-doc-download-error:
+%s"
+	      (error-message-string err)
+	      acl2-doc-download-error)))))
 
 (defun acl2-doc-download ()
   "Download the ``bleeding edge'' ACL2+Books Manual from the web;
@@ -643,7 +662,7 @@ for confirmation."
   (push (car (cdr entry)) *acl2-doc-all-topics-rev*)
   (acl2-doc-display-message entry extra))
 
-(defun acl2-doc-display (name &optional extra)
+(defun acl2-doc-display (name &optional extra new-buffer)
 
 ;;; Name should be a symbol.  We display the topic and adjust the
 ;;; history and return history.  Do not use this for the "l" or "r"
@@ -651,7 +670,7 @@ for confirmation."
 ;;; with those history variables.
 
   (let ((tuple (assoc name (acl2-doc-state-alist))))
-    (cond (tuple (switch-to-acl2-doc-buffer)
+    (cond (tuple (switch-to-acl2-doc-buffer new-buffer)
                  (let ((new-entry (cons 0 tuple)))
                    (if *acl2-doc-history*
                        (let ((old-entry (pop *acl2-doc-history*)))
@@ -769,6 +788,13 @@ for confirmation."
 
   (interactive (acl2-doc-completing-read "Go to topic" nil))
   (acl2-doc-display name))
+
+(defun acl2-doc-go-new-buffer (name)
+
+  "Go to the specified topic; performs completion."
+
+  (interactive (acl2-doc-completing-read "Go to topic (new buffer)" nil))
+  (acl2-doc-display name nil t))
 
 (defun acl2-doc-go-from-anywhere (name)
 
@@ -1698,6 +1724,7 @@ with, for example, meta-3 control-t /."
 (define-key acl2-doc-mode-map "\t" 'acl2-doc-tab)
 (define-key acl2-doc-mode-map "/" 'acl2-doc-definition)
 (define-key acl2-doc-mode-map "g" 'acl2-doc-go)
+(define-key acl2-doc-mode-map "G" 'acl2-doc-go-new-buffer)
 (define-key acl2-doc-mode-map "h" 'acl2-doc-help)
 (define-key acl2-doc-mode-map "?" 'acl2-doc-summary)
 (define-key acl2-doc-mode-map "i" 'acl2-doc-index)

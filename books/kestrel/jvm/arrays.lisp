@@ -13,6 +13,7 @@
 
 (include-book "array-building")
 (include-book "floats")
+(include-book "heap-clearing") ; drop?
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -27,14 +28,6 @@
 ;                    CONSP-FROM-LEN-CHEAP
                     ;list::open-equiv
                     ))
-
-;move
-(defthm clr-non-nil-when-get-class
-  (implies (and (equal (get-class ad heap) val)
-                val
-                (not (equal (class-pair) a)))
-           (clr a (g ad heap)))
-  :hints (("Goal" :in-theory (enable get-class))))
 
 ;;Recognize a list of java-floats:
 (defforall-simple jvm::java-floatp :guard t)

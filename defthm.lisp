@@ -10443,12 +10443,47 @@
                               state)
             (print-info-for-rules (cdr info) chan state))))
 
+(defun replace-prop (symb key val world-alist)
+  (cond ((endp world-alist)
+         nil)
+        ((and (eq (caar world-alist) symb)
+              (eq (cadar world-alist) key))
+         (cons (list* symb key val) (cdr world-alist)))
+        (t (cons (car world-alist)
+                 (replace-prop symb key val (cdr world-alist))))))
+
+(defun restrict-pkg-imports (props wrld-segment wrld)
+
+; We modify props by restricting the 'lemmas property of 'pkg-imports to just
+; the lemmas introduced in wrld-segment.  See pr-body.
+
+  (let ((trip (assoc-eq-eq 'pkg-imports 'lemmas props)))
+    (cond (trip
+           (let ((old-pkg-imports (getpropc 'pkg-imports 'lemmas nil
+                                            (nthcdr (length wrld-segment)
+                                                    wrld))))
+             (replace-prop 'pkg-imports
+                           'lemmas
+                           (take (- (length (cddr trip))
+                                    (length old-pkg-imports))
+                                 (cddr trip))
+                           props)))
+          (t props))))
+
 (defun pr-body (wrld-segment numes wrld state)
   (print-info-for-rules
-   (info-for-rules (actual-props wrld-segment nil nil)
-                   numes
-                   (ens-maybe-brr state)
-                   wrld)
+   (let* ((props (actual-props wrld-segment nil nil))
+          (props (if (eq numes t)
+
+; When numes is t, we are not restricting by nume and also we are executing
+; :pr!, not :pr.  The value of the 'lemmas property of 'pkg-imports includes a
+; lemma for every package, not just the packages introduced in wrld-segment.
+; We call restrict-pkg-imports to restrict those lemmas to just the
+; newly-introduced packages.
+
+                     (restrict-pkg-imports props wrld-segment wrld)
+                   props)))
+     (info-for-rules props numes (ens-maybe-brr state) wrld))
    (standard-co state)
    state))
 

@@ -1385,6 +1385,7 @@
                check-safe-swcase-list
                check-safe-literal
                resulterr-limitp
+               resulterr-limitp-aux
                equal-of-mode-kind-continue
                equal-of-mode-kind-break
                equal-of-mode-kind-leave
@@ -1439,7 +1440,8 @@
                       (not (resulterrp cstate)))))
   :enable (check-safe-top-block
            exec-top-block
-           resulterr-limitp)
+           resulterr-limitp
+           resulterr-limitp-aux)
   :disable exec-block-static-soundness
   :use (:instance exec-block-static-soundness
         (cstate (cstate nil))

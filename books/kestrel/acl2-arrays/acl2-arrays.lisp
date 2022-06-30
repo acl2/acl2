@@ -1,7 +1,7 @@
 ; A library for reasoning about ACL2 arrays (aref1, aset1, etc.)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -707,7 +707,9 @@
                                        :maximum-length (min (* 2 size) *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                             )
                                        :default default
-                                       :name name)
+                                       ;; no :order given here means the order is effectively <
+                                       :name name ;; could perhaps omit this
+                                       )
                          nil)))
 
 (defthm default-of-make-empty-array-with-default
@@ -990,8 +992,9 @@
            (car acc)))
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
-;; The indices in the result will be decreasing.
-;; TODO: Put the length argument last?
+;; Creates an alist mapping indices (from LEN-1 down to 0) to their values in the ARRAY.
+;; The indices in the result will be decreasing (critical for Axe since the result will often be an Axe DAG).
+;; TODO: Can we avoid this, since the array is backed by an alist (albeit with a header node)?  Maybe call compress1 to remove dups, but watch the order?
 (defund array-to-alist (array-name array len)
   (declare (xargs :guard (and (array1p array-name array)
                               (natp len)
@@ -1007,6 +1010,10 @@
 (defthm true-listp-of-array-to-alist-type
   (true-listp (array-to-alist array-name array len))
   :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm alistp-of-array-to-alist
+  (alistp (array-to-alist array-name array len))
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
 (defthm car-of-array-to-alist
@@ -1528,3 +1535,8 @@
              (+ 1 (max-key alist 0))
            1))
   :hints (("Goal" :in-theory (enable make-into-array))))
+
+(defthm make-into-array-of-nil
+  (equal (make-into-array array-name nil)
+         (make-empty-array array-name 1))
+  :hints (("Goal" :in-theory (enable make-into-array MAKE-INTO-ARRAY-WITH-LEN MAKE-EMPTY-ARRAY MAKE-EMPTY-ARRAY-WITH-DEFAULT))))

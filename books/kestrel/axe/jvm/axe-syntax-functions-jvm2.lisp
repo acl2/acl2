@@ -65,7 +65,7 @@
                               (third (unquote (darg6 expr)))
                               (unquote (darg1 expr)))
         (prog2$ nil
-                ;;(print-dag-only-supporters 'dag-array dag-array frame)
+                ;;(print-dag-array-node-and-supporters 'dag-array dag-array frame)
                 ;;(er hard? 'get-stack-height-and-pc-from-frame "Unexpected frame: ~x0, in DAG printed just above." expr)
                 :error)))))
 
@@ -355,7 +355,7 @@
                    (quotep loop-headers)))
          (prog2$ (er hard? 'choose-state-to-step "Unexpected segment-pcs or loop-headers: ~x0 ~x1." segment-pcs loop-headers)
                  nil)
-       ;;(cw "Dag: ~x0.~%" (print-dag-only-supporters-list (list nest) 'dag-array dag-array))
+       ;;(cw "Dag: ~x0.~%" (print-dag-array-node-and-supporters-list (list nest) 'dag-array dag-array))
        (let ((res (choose-state-to-step-helper nest
                                                base-stack
                                                (unquote segment-pcs)

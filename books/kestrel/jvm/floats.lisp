@@ -24,6 +24,10 @@
 
 ;; TODO: Add rounding!
 
+;; TODO: The JVM Spec version 18 says that the bit patterns of NaN can be
+;; inspected with methods such as Float.floatToRawIntBits.  So, we really
+;; should store all the bits of NaNs.
+
 ;;
 ;; Floats
 ;;
@@ -66,14 +70,13 @@
 
 (defund regular-floatp (float)
   (declare (xargs :guard (java-floatp float)))
-  (consp float)) ;given that we know it's a float, we can just check consp (all non-regular float are atoms)
+  (consp float)) ;given that we know it's a float, we can just check consp (all non-regular floats are atoms)
 
+;; Test whether a float is an infinity
 (defund float-infinitep (float)
   (declare (xargs :guard (java-floatp float)))
   (or (eq float *float-negative-infinity*)
       (eq float *float-infinity*)))
-
-
 
 ;; Test whether a float is NaN
 (defund float-nanp (float)

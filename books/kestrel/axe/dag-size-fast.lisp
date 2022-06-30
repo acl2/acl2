@@ -53,36 +53,6 @@
   :hints (("Goal" :in-theory (enable reverse-list strip-cars))))
 
 ;;;
-;;; add-darg-sizes
-;;;
-
-(defund add-darg-sizes (dargs size-array acc)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs)
-                              (size-arrayp 'size-array size-array (+ 1 (largest-non-quotep dargs)))
-                              (natp acc))
-                  :split-types t
-                  :guard-hints (("Goal" :in-theory (disable natp))))
-           (type (integer 0 *) acc))
-  (if (endp dargs)
-      acc
-    (let ((darg (first dargs)))
-      (add-darg-sizes (rest dargs)
-                      size-array
-                      (if (consp darg) ;check for a quotep, which we say has size 1
-                          (+ 1 acc)
-                        ;; dargs is a nodenum, so look up its size:
-                        (+ (the (integer 0 *) (aref1 'size-array size-array darg))
-                           acc))))))
-
-(defthm natp-of-add-darg-sizes
-  (implies (and (all-dargp dargs)
-                (size-arrayp 'size-array size-array (+ 1 (largest-non-quotep dargs)))
-                (natp acc))
-           (natp (add-darg-sizes dargs size-array acc)))
-  :hints (("Goal" :in-theory (enable add-darg-sizes))))
-
-;;;
 ;;; make-size-array-for-rev-dag-aux
 ;;;
 

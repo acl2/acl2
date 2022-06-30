@@ -21,4 +21,6 @@
 
 ;; The height of the call stack of thread (TH) in state S.
 (defund stack-height (s)
+  (declare (xargs :guard (and (jvm::jvm-statep s)
+                              (jvm::bound-in-alistp (th) (jvm::thread-table s)))))
   (jvm::call-stack-size (jvm::call-stack (th) s)))

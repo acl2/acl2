@@ -69,28 +69,22 @@
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
   (declare (xargs :guard t))
-  `(booland-of-bool-fix-arg1
-    booland-of-bool-fix-arg2 ;add more like these?
+  `(;; Rules about bool-fix:
+    booland-of-bool-fix-arg1
+    booland-of-bool-fix-arg2
     boolor-of-bool-fix-arg1
     boolor-of-bool-fix-arg2
+    boolxor-of-bool-fix-arg1
+    boolxor-of-bool-fix-arg2
+    bool-fix-of-bool-fix
+    if-of-bool-fix-arg1 ; add a rule for myif too?
+    boolif-of-bool-fix-arg1
+    boolif-of-bool-fix-arg2
+    boolif-of-bool-fix-arg3
 
-    boolor-of-not-same-three-terms-alt
-    boolor-of-not-same-three-terms
-    boolor-of-not-same-alt
-    boolor-of-not-same
-    boolor-of-t-arg1
-    boolor-of-t-arg2
-    boolor-of-nil-arg1
-    boolor-of-nil-arg2
-    boolor-same
-    boolor-same-2
-    boolor-of-not-of-boolor-of-not-same
-
-    ;; booland-of-t ;use booland-of-non-nil instead
-    booland-of-non-nil ;use these more? ffixme these should fire before commutativity..
-    booland-of-non-nil-arg2
-    booland-of-nil-arg1
-    booland-of-nil-arg2
+    ;; Rules about booland:
+    booland-of-constant-arg1
+    booland-of-constant-arg2
     booland-same
     booland-same-2
     ;; booland-commute-constant ; trying without since we know how to handle any particular constant
@@ -99,22 +93,37 @@
     booland-of-not-same
     booland-of-not-same-alt ;drop?
 
+    ;; Rules about boolor:
+    boolor-of-constant-arg1
+    boolor-of-constant-arg2
+    boolor-same
+    boolor-same-2
+    boolor-of-not-same-three-terms-alt
+    boolor-of-not-same-three-terms
+    boolor-of-not-same-alt
+    boolor-of-not-same
+    boolor-of-not-of-boolor-of-not-same
+
+    ;; Rules about boolxor:
+    boolxor-of-constant-arg1
+    boolxor-of-constant-arg2
+    boolxor-same-1
+    boolxor-same-2
+
+    ;; Rules about boolif:
+    boolif-when-quotep-arg1
+    boolif-when-quotep-arg2 ; introduces boolor, or booland of not
+    boolif-when-quotep-arg3 ; introduces boolor of not, or booland
+    boolif-of-not-same-arg2-alt
+    boolif-of-not-same-arg3-alt
     boolif-x-x-y
     boolif-x-y-x
     boolif-same-branches
-    boolif-when-quotep-arg1
-    boolif-when-quotep-arg2
-    boolif-when-quotep-arg3
 
-    boolif-of-not-same-arg2-alt
-    boolif-of-not-same-arg3-alt
-
-    boolif-of-bool-fix-arg2
-    boolif-of-bool-fix-arg3
-
+    ;; Rules about iff:
     ;or should we open iff?
-    iff-of-t-arg1
-    iff-of-t-arg2
+    iff-of-t-arg1 ; gen?
+    iff-of-t-arg2 ; gen?
     iff-of-nil-arg1
     iff-of-nil-arg2))
 
@@ -133,7 +142,7 @@
             bool-fix-when-booleanp
             equal-same
             not-<-same
-            turn-equal-around-axe
+            turn-equal-around-axe ; may be dangerous?
             not-of-bool-fix
 
             ifix-does-nothing
@@ -159,10 +168,9 @@
             fix-when-acl2-numberp
             acl2-numberp-of-+
             acl2-numberp-of-fix
-            = ;Sun Dec  5 14:57:44 2010
-            double-rewrite
-            eql ; can arise from CASE
-            )
+            = ; introduces EQUAL
+            eql ; introduces EQUAL ; EQL can arise from CASE
+            double-rewrite)
           (mv-nth-rules)
           (booleanp-rules)))
 
@@ -769,10 +777,12 @@
      bvplus-of-bvuminus-same-2-alt)))
 
 ;todo combine this with core-rules-bv
-;some of these are not bv rules?
+;todo: some of these are not bv rules?
 (defun more-rules-bv-misc ()
   (declare (xargs :guard t))
-  '(bitnot-becomes-bitxor-with-1 ; todo: which way should we go here?
+  '(if-becomes-myif ;can ifs ever arise from simulation?  probably? ; todo: move
+
+    bitnot-becomes-bitxor-with-1 ; todo: which way should we go here?
 
     <-of-bvif-constants-false
     <-of-bvif-constants-true
@@ -868,13 +878,12 @@
     signed-byte-p-of-bvif
 ;    inst-length-of-myif
 ;    index-into-program-of-bvif ;or should we enable index-into-program?
-    lookup-of-bvif
+    lookup-of-bvif ; drop or more?
 
     myif-of-constants-becomes-bvif
 
     ;; myif-when-not-nil ;expensive! replaced 1/12/09
 
-    if-becomes-myif ;can ifs ever arise from simulation?  probably?
     ;;     BVAND-TRIM-CONSTANT-3
     ;;     BVAND-TRIM-CONSTANT-2
 
@@ -923,7 +932,6 @@
     unsigned-byte-p-of-bvor2
     unsigned-byte-p-of-bvor3))
 
-
 (defun update-nth2-rules ()
   (declare (xargs :guard t))
   '(true-listp-of-update-nth2
@@ -966,6 +974,9 @@
     cdr-of-cdr-becomes-nthcdr ;these nthcdr rules are new
     nthcdr-of-cdr-combine
     cdr-of-nthcdr
+    consp-of-nthcdr
+    len-of-nthcdr
+    nth-of-nthcdr
     nthcdr-of-1
     nthcdr-of-0
     nthcdr-when-not-posp ;drop?
@@ -1032,14 +1043,13 @@
             cons-nth-onto-subrange-alt
             equal-subrange-nthcdr-rewrite
             true-listp-of-firstn
-            consp-of-nthcdr
+
 ;firstn-of-cdr-becomes-subrange ; drop?
             append-of-take-and-cons-when-nth ;could be expensive
             append-subrange-subrange-adjacent-alt
             equal-of-append-arg1
             cons-of-nth-and-nth-plus-1
-            len-of-nthcdr
-            nth-of-nthcdr
+
             subrange-of-0
             append-of-take-and-subrange-alt
             equal-of-cons
@@ -1528,7 +1538,7 @@
     bvif-trim-arg2-dag
     ;; bvif-trim-arg1-dag-all ; use instead?
     ;; bvif-trim-arg2-dag-all ; use instead?
-    ))
+    leftrotate32-trim-amt-all))
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
@@ -1631,8 +1641,6 @@
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
 
-            leftrotate32-trim-amt-all ;move to trim rules?
-
             ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
             bvplus-commutative-axe
             bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
@@ -1719,7 +1727,7 @@
           (trim-helper-rules)      ;many dups here with the above...
           (list-to-bv-array-rules) ;move to parents?
           ;;(yet-more-rules-jvm) ;TTODO: Drop this.  It includes JVM rules..  dropping this broke des-encrypt
-          (yet-more-rules-non-jvm)
+          (yet-more-rules-non-jvm) ; not bv rules?
           (array-reduction-rules)
           (more-rules-bv-misc)))
 
@@ -1756,7 +1764,6 @@
 ;;             fix)))
 
 ;;normalize boolif nests that are really ands?
-
 
 ;; TODO: add many more rules to this?
 (defun arithmetic-rules ()
@@ -2595,6 +2602,10 @@
 ;;
 ;; priorities
 ;;
+
+;; Want these to fire before commutativity:
+(table axe-rule-priorities-table 'booland-of-constant-arg1 -1)
+(table axe-rule-priorities-table 'booland-of-constant-arg2 -1)
 
 ;try this before bv-array-read-of-bv-array-write-both-better-work-hard, since this one has only a single work-hard
 ;would like a way to NOT try the both version if this one fails

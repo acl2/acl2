@@ -18,5 +18,6 @@
 
 (std::deffixer prime-fix
   :short "Fixer for @(tsee primep)."
+  :parents (acl2::number-theory)
   :pred primep
   :body-fix 2)

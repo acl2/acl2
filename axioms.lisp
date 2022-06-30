@@ -13955,6 +13955,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     apply-user-stobj-alist-or-kwote ; no raw code but ill-guarded; see comments
     accp-info
     read-file-iterate-safe
+    #+acl2-devel plist-worldp-with-formals ; *the-live-state* (performance)
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -13999,7 +14000,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     strip-cdrs ; strip-cdrs1
     compress2 ; [seems like we can live with logic code]
     strip-cars ; strip-cars1
-    plist-worldp ; *the-live-state* (huge performance penalty?)
+    plist-worldp ; *the-live-state* (performance)
+    #-acl2-devel plist-worldp-with-formals ; *the-live-state* (performance)
     wormhole-p ; *WORMHOLEP*
     may-need-slashes-fn ;*suspiciously-first-numeric-array* ...
     has-propsp ; EQ, GET, ...
@@ -14235,6 +14237,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     when-pass-2
     loop$
     our-with-terminal-input
+    trust-mfc
     ))
 
 (defun untouchable-marker (mac)
@@ -14695,7 +14698,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (useless-runes . nil)
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
-    (verify-termination-on-raw-program-okp . (apply$-lambda apply$-prim))
+    (verify-termination-on-raw-program-okp
+     .
+     (apply$-lambda apply$-prim plist-worldp-with-formals))
     (walkabout-alist . nil)
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold

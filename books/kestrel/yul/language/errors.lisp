@@ -31,6 +31,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define error-info-wfp ((error resulterrp))
+  :returns (yes/no booleanp)
+  :short "Check if the information in an error is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For certain purposes, we need to know that
+     the errors generated (and propagated) in our Yul formalization
+     are well-formed according to certain criteria.
+     Specifically, we need to know that
+     the information is always a @(tsee cons).
+     For better encapsulation and possible future extension,
+     we capture that in this predicate."))
+  (consp (fty::resulterr->info error))
+  :hooks (:fix)
+  ///
+
+  (defrule error-info-wfp-of-resulterr-of-cons
+    (error-info-wfp (resulterr (cons a b)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define resulterr-limitp (x)
   :returns (yes/no booleanp)
   :short "Recognize limit errors."
@@ -47,15 +69,30 @@
    (xdoc::p
     "Here we define a predicate that recognizes limit errors,
      i.e. values of type @(tsee resulterr)
-     whose information starts with the keyword @(':limit').
+     whose innermost information starts with the keyword @(':limit'),
+     where `innermost' refers to
+     the stack discussed in @(tsee fty::err) and @(tsee fty::err-push).
      The adequacy of this predicate definition depends on
      the definition of the ACL2 execution functions for Yul,
      in particular the fact that they return error limits of this form.
      This predicate must be adapted if that form changes."))
   (and (resulterrp x)
        (b* ((info (fty::resulterr->info x)))
-         (and (consp info)
-              (eq (car info) :limit)))))
+         (resulterr-limitp-aux info)))
+  :prepwork
+  ((define resulterr-limitp-aux (stack)
+     :returns (yes/no booleanp)
+     :parents nil
+     (cond ((atom stack) nil)
+           ((atom (cdr stack)) (b* ((fun-info (car stack))
+                                    ((unless (and (consp fun-info)
+                                                  (consp (cdr fun-info))))
+                                     nil)
+                                    (info (cadr fun-info))
+                                    ((unless (consp info)) nil))
+                                 (eq (car info) :limit)))
+           (t (resulterr-limitp-aux (cdr stack))))
+     :guard-debug t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

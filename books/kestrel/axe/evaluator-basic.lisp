@@ -19,13 +19,10 @@
 (include-book "unguarded-built-ins")
 (include-book "unguarded-defuns")
 (include-book "make-evaluator-simple")
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
-(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 ;; TODO: Add more functions!  Add more bv functions.
 (defconst *axe-evaluator-basic-fns-and-aliases*
@@ -55,6 +52,7 @@
     booleanp
     boolor
     booland
+    bool-fix$inline
     true-listp
     (denominator denominator-unguarded) ; primitive
     (numerator numerator-unguarded) ; primitive
@@ -113,6 +111,9 @@
     (bvcat bvcat-unguarded)
     (trim trim-unguarded)
     (bvsx bvsx-unguarded)
+    (bvshl bvshl-unguarded)
+    (bvshr bvshr-unguarded)
+    (bvashr bvashr-unguarded)
 
     (bvplus bvplus-unguarded)
     (bvuminus bvuminus-unguarded)

@@ -328,7 +328,7 @@
                       (enables (append (list ;; (install-not-normalized-name fn)
                                         ;; (install-not-normalized-name new-fn)
                                         )
-                                       ',enables))
+                                       ,enables))
                       ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
                       (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                       (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables
@@ -367,7 +367,7 @@
                         (enables (append (list ;; (install-not-normalized-name fn)
                                           ;; (install-not-normalized-name new-fn)
                                           )
-                                         ',enables))
+                                         ,enables))
                         (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                         (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
                         (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled)
@@ -443,7 +443,7 @@
                                                                    fns
                                                                    function-renaming
                                                                    ;;TODO: Add the $not-normalized rules for all functions?
-                                                                   ',enables
+                                                                   ,enables
                                                                    '(theory 'minimal-theory)
                                                                    wrld))
                     (becomes-theorems-to-export (clean-up-defthms becomes-theorems)))
@@ -504,7 +504,7 @@
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
                                        ;; All of these are baked into the generated transformation, not passed into each call of the transformation:
-                                       (enables 'nil) ; enables to use in all equivalence proofs
+                                       (enables 'nil) ; enables to use in all equivalence proofs, a form to be spliced into the generated code, can mention FN and state
                                        (measure-enables 'nil) ; for when :measure-hints is :auto
                                        (guard-enables 'nil) ; for when :guard-hints is :auto
                                        (make-becomes-theorem-name 'make-becomes-theorem)
@@ -519,7 +519,7 @@
                  ',function-body-transformer
                  ',transform-specific-required-args
                  ',transform-specific-keyword-args-and-defaults
-                 ,enables
+                 ',enables
                  ,measure-enables
                  ,guard-enables
                  ',make-becomes-theorem-name

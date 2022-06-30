@@ -1145,33 +1145,32 @@
             (('-- x) (mv x t))
             (& (mv cur nil))))
          ((mv s-lst rest-pp-lst c-lst)
-          (ex-from-pp-lst-aux (cdr pp-lst))))
-      (case-match cur
-        (('and-list & ('list x))
-         (b* (((unless (has-bitp-rp x))
-               (mv s-lst
-                   (cons-with-hint cur-orig rest-pp-lst pp-lst)
-                   c-lst))
-              (x-extracted (ex-from-rp x)))
-           (case-match x-extracted
-             (('s & & &)
-              (mv (cons (if signed `(-- ,x) x) s-lst)
-                  rest-pp-lst
-                  c-lst))
-             (('c & & & &)
-              (mv s-lst rest-pp-lst
-                  (cons (if signed `(-- ,x) x) c-lst)))
-             (('s-c-res s pp c)
-              (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
-                  (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
-                  (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
-             (& (mv s-lst
-                    (cons-with-hint cur-orig
-                                    rest-pp-lst
-                                    pp-lst)
-                    c-lst)))))
+          (ex-from-pp-lst-aux (cdr pp-lst)))
+         (x (case-match cur
+              (('and-list & ('list x))
+               x)
+              (& cur)))
+         ((unless (has-bitp-rp x))
+          (mv s-lst
+              (cons-with-hint cur-orig rest-pp-lst pp-lst)
+              c-lst))
+         (x-extracted (ex-from-rp x)))
+      (case-match x-extracted
+        (('s & & &)
+         (mv (cons (if signed `(-- ,x) x) s-lst)
+             rest-pp-lst
+             c-lst))
+        (('c & & & &)
+         (mv s-lst rest-pp-lst
+             (cons (if signed `(-- ,x) x) c-lst)))
+        (('s-c-res s pp c)
+         (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
+             (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
+             (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
         (& (mv s-lst
-               (cons-with-hint cur-orig rest-pp-lst pp-lst)
+               (cons-with-hint cur-orig
+                               rest-pp-lst
+                               pp-lst)
                c-lst))))))
 
 (define ex-from-pp-lst ((pp-lst rp-term-listp))

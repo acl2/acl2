@@ -145,7 +145,7 @@
                     (cw "~x0" expr)
                   (if (not (keep-atoms (dargs expr)))
                       (cw "All args are constants so not printing a DAG.~%")
-                    (print-dag-only-supporters-of-nodes 'dag-array dag-array (keep-atoms (dargs expr)))))
+                    (print-dag-array-nodes-and-supporters 'dag-array dag-array (keep-atoms (dargs expr)))))
                 (er hard? 'get-pc-from-frame "Unexpected frame: ~x0.  See DAG just above." expr)
                 (mv (erp-t) nil))))))
 
@@ -458,7 +458,7 @@
                                         (mv :finished nil nil)
                                       (prog2$ (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls.~%" stripped-expr)
                                               (mv :error nil nil)))))))))
-                      (progn$ (print-dag-only-supporters 'dag-array dag-array nest)
+                      (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest)
                               (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
                               (mv :error nil nil))))))))))))))
 
@@ -558,7 +558,7 @@
     (progn$
      ;; Uncomment this to print info on branches:
      ;; (cw "(~x0 branches in myif nest.)~%" (count-myif-branches nest dag-array))
-     ;;(cw "Dag: ~x0.~%" (print-dag-only-supporters-list (list nest) 'dag-array dag-array))
+     ;;(cw "Dag: ~x0.~%" (print-dag-array-node-and-supporters-list (list nest) 'dag-array dag-array))
      (mv-let (status stack-height pc)
        (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)
        (if (eq :ready status)

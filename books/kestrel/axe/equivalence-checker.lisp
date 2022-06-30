@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "test-cases")
 (include-book "jvm/rule-lists-jvm") ;drop?
 (include-book "rules-in-rule-lists")
 (include-book "make-axe-rules2")
@@ -23,7 +24,6 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
-(include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
@@ -48,7 +48,7 @@
 (include-book "subdagp") ; for subdag-of-somep
 (include-book "arrays-of-alists")
 ;(include-book "generic-head-aux-proof")
-(include-book "printing")
+(include-book "print-dag-to-file")
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 ;; Bring in the necessary rules (TODO: Drop these include-books after removing
 ;; mentions of axe-rules, amazing-rules-spec-and-dag, etc. in this file):
@@ -79,14 +79,175 @@
 ;;                     LIST::FIX-OF-NTHCDR))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "merge-sort-less-than-rules"))
 
-(local (in-theory (disable acl2-count)))
+(local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
+                       (acl2-count symbol-alistp))))
+
+(defthm not-<-of-maxelem-and-nth
+  (implies (and (< n (len x))
+                (natp n))
+           (not (< (maxelem x) (nth n x))))
+  :hints (("Goal" :in-theory (enable maxelem (:i nth)))))
+
+;;move
+(defthm nat-listp-of-add-to-end
+  (implies (and (nat-listp lst)
+                (natp val))
+           (nat-listp (add-to-end val lst)))
+  :hints (("Goal" :in-theory (enable add-to-end))))
+
+;move
+(defthm nat-listp-of-remove1-equal
+  (implies (nat-listp nats)
+           (nat-listp (remove1-equal a nats)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
+
+(defthm all-consp-of-array-to-alist-aux
+  (implies (all-consp acc)
+           (all-consp (array-to-alist-aux n len array-name array acc)))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm all-consp-of-array-to-alist
+  (all-consp (array-to-alist array-name array len))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm nat-listp-of-strip-cars-of-of-array-to-alist-aux
+  (implies (nat-listp (strip-cars acc))
+           (nat-listp (strip-cars (array-to-alist-aux n len array-name array acc))))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm nat-listp-of-strip-cars-of-of-array-to-alist
+  (nat-listp (strip-cars (array-to-alist array-name array len)))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm all-<-of-strip-cars-of-of-array-to-alist-aux
+  (implies (and (all-< (strip-cars acc) bound)
+                (<= len bound))
+           (all-< (strip-cars (array-to-alist-aux n len array-name array acc)) bound))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm all-<-of-strip-cars-of-of-array-to-alist
+  (implies (<= len bound)
+           (all-< (strip-cars (array-to-alist array-name array len)) bound))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defund nat-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (nat-listp (first x))
+         (nat-list-listp (rest x)))))
+
+(defthm nat-list-listp-of-cons
+  (equal (nat-list-listp (cons a x))
+         (and (nat-listp a)
+              (nat-list-listp x)))
+  :hints (("Goal" :in-theory (enable nat-list-listp))))
+
+(defthmd nat-listp-of-car-when-nat-list-listp
+  (implies (nat-list-listp x)
+           (nat-listp (car x)))
+  :hints (("Goal" :in-theory (enable nat-list-listp))))
+
+(local (in-theory (enable nat-listp-of-car-when-nat-list-listp)))
+
+(defthm nat-list-listp-forward-to-true-listp
+  (implies (nat-list-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable nat-list-listp))))
+
+(defthm nat-list-listp-of-append
+  (equal (nat-list-listp (append x y))
+         (and (nat-list-listp (true-list-fix x))
+              (nat-list-listp y)))
+  :hints (("Goal" :in-theory (enable nat-list-listp append))))
+
+(defthm nat-listp-of-lookup-equal
+  (implies (nat-list-listp (strip-cdrs alist))
+           (nat-listp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs
+                                     nat-list-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund all-all-< (x bound)
+  (declare (xargs :guard (and (nat-list-listp x) ;gen?
+                              (rationalp bound))
+                  :guard-hints (("Goal" :in-theory (enable nat-list-listp)))))
+  (if (endp x)
+      t
+    (and (all-< (first x) bound)
+         (all-all-< (rest x) bound))))
+
+(defthm all-all-<-of-nil
+  (all-all-< nil bound)
+  :hints (("Goal" :in-theory (enable all-all-<))))
+
+(defthm all-<-of-car-when-all-all-<
+  (implies (and (all-all-< x bound)
+                (consp x))
+           (all-< (car x) bound))
+  :hints (("Goal" :in-theory (enable all-all-<))))
+
+(defthm all-all-<-of-cons
+  (equal (all-all-< (cons a x) bound)
+         (and (all-< a bound)
+              (all-all-< x bound)))
+  :hints (("Goal" :in-theory (enable all-all-<))))
+
+(defthm all-all-<-of-append
+  (equal (all-all-< (append x y) bound)
+         (and (all-all-< x bound)
+              (all-all-< y bound)))
+  :hints (("Goal" :in-theory (enable all-all-<))))
+
+(defthm all-<-of-lookup-equal
+  (implies (all-all-< (strip-cdrs alist) bound)
+           (all-< (lookup-equal key alist) bound))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs
+                                     all-all-<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;move
+(defthm <-of-acl2-count-of-g-aux-and-acl2-count
+  (implies (and (not (ifrp rec))
+                (set::in key (key-set rec))
+                ;key
+                )
+           (< (acl2-count (g-aux key rec))
+              (acl2-count rec)))
+  :hints (("Goal" :in-theory (enable g-aux key-set))))
+
+;move
+(defthm <-of-acl2-count-of-g-and-acl2-count
+  (implies (and (set::in key (rkeys rec))
+                key)
+           (< (acl2-count (g key rec)) (acl2-count rec)))
+  :hints (("Goal" :expand (set::in key '(nil))
+           :in-theory (enable g acl2->rcd g-aux rkeys))))
+
+    ;move
+(defthm <-of-acl2-count-of-g-and-acl2-count-linear
+  (implies (and (set::in key (rkeys rec))
+                key)
+           (< (acl2-count (g key rec)) (acl2-count rec)))
+  :rule-classes :linear
+  :hints (("Goal" :expand (set::in key '(nil))
+           :in-theory (enable g acl2->rcd g-aux rkeys))))
+
+
 
 ;; (in-theory (disable LIST::MEMBER-EQ-IS-MEMBERP-PROPOSITIONALLY
 ;;                     LIST::MEMBER-IS-MEMBERP-PROPOSITIONALLY
@@ -491,6 +652,8 @@
 ;could do better?
 (mutual-recursion
  (defun call-appears-at-top-level (expr name)
+   (declare (xargs :guard (and (pseudo-termp expr)
+                               (symbolp name))))
    (if (atom expr)
        nil
      (let* ((fn (ffn-symb expr)))
@@ -505,10 +668,12 @@
                  (or (call-appears-at-top-level (third fn) name)
                      ;;(call-appears-at-top-level-lst (fargs expr) name) ;what if we bind the call to a var and then return it
                      )
-               ;if there is a recursive call in expr, it is inside another function call:
+               ;;if there is a recursive call in expr, it is inside another function call:
                nil)))))))
 
  (defun call-appears-at-top-level-lst (exprs name)
+   (declare (xargs :guard (and (pseudo-term-listp exprs)
+                               (symbolp name))))
    (if (endp exprs)
        nil
      (or (call-appears-at-top-level (car exprs) name)
@@ -517,19 +682,19 @@
 ;not quite right (assumes there is only 1 call)
 ;what does this enforce about the if-nest?
 (defun tail-recursivep (name state)
-  (declare (xargs :stobjs (state)
-                  :verify-guards nil))
+  (declare (xargs :guard (symbolp name)
+                  :stobjs state))
   (let* ((props (getprops name 'current-acl2-world (w state)))
          (body (lookup-eq 'unnormalized-body props)))
-    (if (not body)
+    (if (or (not body)
+            (not (pseudo-termp body)) ;not possible
+            )
         nil ;(hard-error 'tail-recursivep "No body for ~x0." (acons #\0 name nil))
     (call-appears-at-top-level body name))))
 
 ;ffixme what about packing functions?  we may not want to generate lemmas about them..
 (defun is-a-rec-fn-to-handle (fn state)
-  (declare (xargs :stobjs state
-;                  :guard (symbolp fn)
-                  ))
+  (declare (xargs :stobjs state))
   (and (symbolp fn) ;excludes lambdas (fixme but lambdas should not appear in dags, so drop this?)
        (not (member-eq fn *built-in-fns*))
        (recursive-functionp fn state)))
@@ -544,9 +709,13 @@
 ;find rec-fn nodes at or below index
 ;now only returns nodes that are tagged
 (defun filter-rec-fn-nodes2 (index dag-array-name dag-array tag-array-name tag-array state)
-  (declare (xargs :measure (nfix (+ 1 index))
-                  :stobjs state
-                  :verify-guards nil))
+  (declare (xargs :guard (and (array1p dag-array-name dag-array)
+                              (array1p tag-array-name tag-array)
+                              (integerp index)
+                              (< index (alen1 dag-array-name dag-array))
+                              (< index (alen1 tag-array-name tag-array)))
+                  :measure (nfix (+ 1 index))
+                  :stobjs state))
   (if (not (natp index))
       nil
     (let ((tag (aref1 tag-array-name tag-array index)))
@@ -557,21 +726,21 @@
               (cons index (filter-rec-fn-nodes2 (+ -1 index) dag-array-name dag-array tag-array-name tag-array state))
             (filter-rec-fn-nodes2 (+ -1 index) dag-array-name dag-array tag-array-name tag-array state)))))))
 
-(mutual-recursion
- (defun contains-a-lambda (term)
-   (if (atom term)
-       nil
-     (let ((fn (ffn-symb term)))
-       (if (eq fn 'quote)
-           nil
-         (if (consp fn)
-             t ;it's a lambda
-           (contains-a-lambda-list (fargs term)))))))
- (defun contains-a-lambda-list (terms)
-   (if (endp terms)
-       nil
-     (or (contains-a-lambda (car terms))
-         (contains-a-lambda-list (cdr terms))))))
+;; (mutual-recursion
+;;  (defun contains-a-lambda (term)
+;;    (if (atom term)
+;;        nil
+;;      (let ((fn (ffn-symb term)))
+;;        (if (eq fn 'quote)
+;;            nil
+;;          (if (consp fn)
+;;              t ;it's a lambda
+;;            (contains-a-lambda-list (fargs term)))))))
+;;  (defun contains-a-lambda-list (terms)
+;;    (if (endp terms)
+;;        nil
+;;      (or (contains-a-lambda (car terms))
+;;          (contains-a-lambda-list (cdr terms))))))
 
 ;; ;requires fn to be a symbol and so doesn't support lambdas
 ;; (mutual-recursion
@@ -596,8 +765,10 @@
 ;requires fn to be a symbol (not a lambda)
 ;does handle lambdas in expr
 
-
 (defun lambda-surrounded-fn-call-with-no-other-calls-of-fnp (fn term)
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (equal fn 'quote))
+                              (pseudo-termp term))))
   (or (and (call-of fn term)
            (not (some-expr-calls-fn fn (fargs term)))
            ;;(exprs-with-no-call fn (fargs term))
@@ -610,36 +781,45 @@
            )))
 
 ;handles lambdas in certain places
-(mutual-recursion
- (defun base-cases-in-ite (term fn)
-   (if (not (call-of 'if term))
-       (if (not (expr-calls-fn fn term))
-           (list term) ;it's a base case
-         (if (lambda-surrounded-fn-call-with-no-other-calls-of-fnp fn term) ;overkill to check this?
-             nil ;;recursive call
-           (hard-error 'base-cases-in-ite "Expected an ITE or a base-case or a recursive call but got ~x0."
-                       (acons #\0 term nil))))
-     ;;it's an ITE:
-     (let* ( ;(test (first (fargs term)))
-            (then-part (second (fargs term)))
-            (else-part (third (fargs term))))
-       ;;does not process the exit-test
-       (append (base-cases-in-ite then-part fn)
-               (base-cases-in-ite else-part fn))))))
+(defun base-cases-in-ite (term fn)
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (equal fn 'quote))
+                              (pseudo-termp term))))
+  (if (not (call-of 'if term))
+      (if (not (expr-calls-fn fn term))
+          (list term) ;it's a base case
+        (if (lambda-surrounded-fn-call-with-no-other-calls-of-fnp fn term) ;overkill to check this?
+            nil ;;recursive call
+          (hard-error 'base-cases-in-ite "Expected an ITE or a base-case or a recursive call but got ~x0."
+                      (acons #\0 term nil))))
+    ;;it's an ITE:
+    (let* ( ;(test (first (fargs term)))
+           (then-part (second (fargs term)))
+           (else-part (third (fargs term))))
+      ;;does not process the exit-test
+      (append (base-cases-in-ite then-part fn)
+              (base-cases-in-ite else-part fn)))))
 
 ;the items can appear in any order, but there can't be duplicates
 (defun cons-nest-of-unique-itemsp (nest items)
+  (declare (xargs :guard (and (pseudo-termp nest)
+                              (pseudo-term-listp items))))
   (or (equal *nil* nest)
       (and (call-of 'cons nest)
            (member-equal (first (fargs nest)) items)
            (cons-nest-of-unique-itemsp (second (fargs nest)) (remove-equal (first (fargs nest)) items)))))
 
 (defun trivial-base-case-termp (term formals)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp formals))))
   (if (consp term)
       (cons-nest-of-unique-itemsp term formals)
     (member-eq term formals)))
 
 (defun ite-nest-with-base-cases-and-lambda-wrapped-rec-callp (fn term)
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (equal fn 'quote))
+                              (pseudo-termp term))))
   (if (not (expr-calls-fn fn term))
       ;; it's a base case:
       t
@@ -660,8 +840,11 @@
 ;this routine is now a bit more flexible about lambdas
 ;is the result guaranteed to be a nice tail rec fn?
 (defun need-to-peel-off-base-casep (fn state)
-  (declare (xargs :stobjs (state)
-                  :verify-guards nil))
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (eq 'quote fn)))
+                  :stobjs state
+                  :verify-guards nil ; todo, need properties of BASE-CASES-IN-ITE
+                  ))
   (let* ((formals (fn-formals fn (w state)))
          (body (fn-body fn t (w state))))
     (and (ite-nest-with-base-cases-and-lambda-wrapped-rec-callp fn body) ;allows lambdas in certain places (must not intervene in the ITE nest) ffixme relax this restriction?!
@@ -832,12 +1015,12 @@
   (get-function-args-allows-lambdas-aux 0 arity fn term))
 
 (defun getprops-non-nil (fn state)
-  (declare (xargs :stobjs (state)
-                  :verify-guards nil))
+  (declare (xargs :guard (symbolp fn)
+                  :stobjs state))
   (let ((result (getprops fn 'current-acl2-world (w state))))
     (if result
         result
-      (hard-error 'getprops-non-nil "couldn't get props for ~x0." (acons #\0 fn nil)))))
+      (er hard? 'getprops-non-nil "couldn't get props for ~x0." fn))))
 
 ;recognizes tail recursive functions of the form:
 ;; (defun <fn> (param0 param1 ...) (if <exit-test-expr> <base-case-expr> (<fn> <update-expr0> <update-expr1> ...)))
@@ -851,7 +1034,8 @@
 ;fixme note that the update-expr-list may contain the same call of the update function in each update-expr (for example, call is-a-nice-tail-function on process-blocks for md5)
 ;--consider trying to recover that sharing?!
 (defun is-a-nice-tail-function (fn state)
-  (declare (xargs :stobjs (state) :verify-guards nil))
+  (declare (xargs :stobjs (state)
+                  :verify-guards nil))
   (let* ((props (getprops-non-nil fn state))
          (body (lookup-eq 'unnormalized-body props)))
     (if (not body) ;if it's a primitive function...
@@ -1003,7 +1187,7 @@
 ;args are nodenums and/or quoteps
 ;;returns (mv worklist worklist-extendedp) where nodenum-worklist has been extended by any args to compute (non quoteps not marked done)
 ;; and worklist-extendedp indicates whether there were any such args
-(defun add-args-not-done (args done-nodes-array worklist worklist-extendedp)
+(defund add-args-not-done (args done-nodes-array worklist worklist-extendedp)
   (declare (xargs :guard (and (array1p 'done-nodes-array done-nodes-array)
                               (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array)))))
   (if (endp args)
@@ -1016,146 +1200,703 @@
         (add-args-not-done (rest args) done-nodes-array (cons arg worklist) t ;we've extended the worklist
                            )))))
 
+(defthm add-args-not-done-of-nil-arg1
+  (equal (add-args-not-done nil done-nodes-array worklist worklist-extendedp)
+         (mv worklist worklist-extendedp))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm nat-listp-of-mv-nth-0-of-add-args-not-done
+  (implies (and ;(array1p 'done-nodes-array done-nodes-array)
+            (all-dargp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
+            (NAT-LISTP WORKLIST))
+           (nat-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm all-<-of-mv-nth-0-of-add-args-not-done
+  (implies (and ;(array1p 'done-nodes-array done-nodes-array)
+            (bounded-darg-listp args bound)
+            (all-< WORKLIST bound))
+           (all-< (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
+                   bound))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm true-listp-of-mv-nth-0-of-add-args-not-done
+  (implies (true-listp worklist)
+           (true-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+;; once it's true, it stays true
+(defthm mv-nth-1-of-add-args-not-done-of-t
+  (mv-nth 1 (add-args-not-done args done-nodes-array worklist t))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+(defthm mv-nth-0-of-add-args-not-done-when-not-mv-nth-1-of-add-args-not-done
+  (implies (not (mv-nth 1 (add-args-not-done args done-nodes-array worklist worklist-extendedp)))
+           (equal (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
+                  worklist))
+  :hints (("Goal" :in-theory (enable add-args-not-done))))
+
+
 ;args are nodenums with values in the array, or quoteps
 ;looks up the nodenums and unquotes the constants
 ;does similar functionality exist elsewhere (array names might differ)?
-(defun get-vals-of-args (args test-case-array-name test-case-array)
+(defund get-vals-of-args (dargs test-case-array-name test-case-array)
   (declare (xargs :guard (and (array1p test-case-array-name test-case-array)
-                              (bounded-darg-listp args (alen1 test-case-array-name test-case-array)))))
-  (if (endp args)
+                              (bounded-darg-listp dargs (alen1 test-case-array-name test-case-array)))))
+  (if (endp dargs)
       nil
-    (let ((arg (first args)))
+    (let ((arg (first dargs)))
       (cons (if (quotep-arg arg)
                 (unquote arg)
               ;;otherwise it's a nodenum:
               (aref1 test-case-array-name test-case-array arg))
-            (get-vals-of-args (rest args) test-case-array-name test-case-array)))))
+            (get-vals-of-args (rest dargs) test-case-array-name test-case-array)))))
+
+(defund num-true-nodes (n array-name array)
+  (declare (xargs :measure (nfix (+ 1 n))))
+  (if (not (natp n))
+      0
+      (if (aref1 array-name array n)
+          (+ 1
+             (num-true-nodes (+ -1 n) array-name array))
+        (num-true-nodes (+ -1 n) array-name array))))
+
+(defthm <=-of-num-true-nodes-linear
+  (implies (and (integerp n)
+                (<= -1 n))
+           (<= (num-true-nodes n array-name array)
+               (+ 1 n)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable num-true-nodes))))
+
+(defund print-vals-of-nodes (nodenums array-name array)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (array1p array-name array)
+                              (all-< nodenums (alen1 array-name array)))))
+  (if (endp nodenums)
+      nil
+    (prog2$ (cw "Node ~x0 is ~x1.~%" (first nodenums) (aref1 array-name array (car nodenums)))
+            (print-vals-of-nodes (rest nodenums) array-name array))))
+
+
+;; ;move, optimize
+;; (defund evens-tail (lst acc)
+;;   (declare (xargs :guard (true-listp acc)
+;;                   ))
+;;   (if (atom lst)
+;;       (reverse acc)
+;;     (if (atom (cdr lst))
+;;         (reverse (cons (car lst) acc))
+;;       (evens-tail (cddr lst)
+;;                   (cons (car lst) acc)))))
+
+;; ;fixme - where does this stuff go?!  Use defmergesort instead!
+
+;; (defthm len-of-evens-tail-bound
+;;   (implies (< 1 (len l))
+;;            (< (len (evens-tail l acc))
+;;               (+ (len acc) (len l))))
+;;   :hints (("Goal" :expand (evens-tail (cddr l)
+;;                                       (cons (car l) acc))
+;;            :in-theory (enable evens-tail))))
+
+;; (defthm evens-tail-of-singleton
+;;   (implies (equal (len l) 1)
+;;            (equal (evens-tail l nil)
+;;                   (list (car l))))
+;;   :hints (("Goal" :in-theory (enable evens-tail reverse))))
+
+;; ;; (defun odds-tail (l)
+;; ;;   (declare (xargs :guard t))
+;; ;;   (if (consp l)
+;; ;;       (evens-tail (cdr l) nil)
+;; ;;     nil))
+
+;; (in-theory (disable evens-tail))
+
+;; comparison function for the sort
+(defun-inline lexorder-of-cdrs (x y)
+  (declare (xargs :guard (and (consp x)
+                              (consp y))))
+  (lexorder (cdr x) (cdr y)))
+
+;; todo: put the merge-sort arg first
+;; todo: pass in a list-pred (a kind of alist)?
+(defmergesort merge-lexorder-of-cdrs
+  merge-sort-lexorder-of-cdrs
+  lexorder-of-cdrs
+  consp)
+
+(local
+ (defthmd alistp-when-all-consp
+   (implies (all-consp x)
+            (equal (alistp x)
+                   (true-listp x)))
+   :hints (("Goal" :in-theory (enable alistp)))))
+
+(local
+ (defthmd alistp-becomes-all-consp
+   (equal (alistp x)
+          (and (all-consp x)
+               (true-listp x)))
+   :hints (("Goal" :in-theory (enable alistp)))))
+
+;; (defthm alistp-of-merge-lexorder-of-cdrs
+;;   (implies (and (alistp l1)
+;;                 (alistp l2)
+;;                 (alistp acc))
+;;            (alistp (merge-lexorder-of-cdrs l1 l2 acc)))
+;;   :hints (("Goal" :in-theory (enable merge-lexorder-of-cdrs))))
+
+(defthm alistp-of-merge-sort-lexorder-of-cdrs
+  (implies (alistp l)
+           (alistp (merge-sort-lexorder-of-cdrs l)))
+  :hints (("Goal" :in-theory (enable merge-sort-lexorder-of-cdrs alistp-becomes-all-consp))))
+
+(defthm nat-listp-of-strip-cars-of-mv-nth-0-of-split-list-fast-aux
+  (implies (and (nat-listp (strip-cars lst))
+                (nat-listp (strip-cars acc))
+                (<= (len tail) (len lst)))
+           (nat-listp (strip-cars (mv-nth 0 (split-list-fast-aux lst tail acc)))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm nat-listp-of-strip-cars-of-mv-nth-1-of-split-list-fast-aux
+  (implies (and (nat-listp (strip-cars lst))
+                (nat-listp (strip-cars acc))
+                (<= (len tail) (len lst)))
+           (nat-listp (strip-cars (mv-nth 1 (split-list-fast-aux lst tail acc)))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm nat-listp-of-strip-cars-of-mv-nth-0-of-split-list-fast
+  (implies (nat-listp (strip-cars lst))
+           (nat-listp (strip-cars (mv-nth 0 (split-list-fast lst)))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm nat-listp-of-strip-cars-of-mv-nth-1-of-split-list-fast
+  (implies (nat-listp (strip-cars lst))
+           (nat-listp (strip-cars (mv-nth 1 (split-list-fast lst)))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm nat-listp-of-strip-cars-of-merge-lexorder-of-cdrs
+  (implies (and (nat-listp (strip-cars l1))
+                (nat-listp (strip-cars l2))
+                (nat-listp (strip-cars acc)))
+           (nat-listp (strip-cars (merge-lexorder-of-cdrs l1 l2 acc))))
+  :hints (("Goal" :in-theory (enable merge-lexorder-of-cdrs))))
+
+(defthm nat-listp-of-strip-cars-of-merge-sort-lexorder-of-cdrs
+  (implies (nat-listp (strip-cars lst))
+           (nat-listp (strip-cars (merge-sort-lexorder-of-cdrs lst))))
+  :hints (("Goal" :in-theory (enable merge-sort-lexorder-of-cdrs))))
+
+(defthm all-<-of-strip-cars-of-mv-nth-0-of-split-list-fast-aux
+  (implies (and (all-< (strip-cars lst) bound)
+                (all-< (strip-cars acc) bound)
+                (<= (len tail) (len lst)))
+           (all-< (strip-cars (mv-nth 0 (split-list-fast-aux lst tail acc)))
+                  bound))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm all-<-of-strip-cars-of-mv-nth-1-of-split-list-fast-aux
+  (implies (and (all-< (strip-cars lst) bound)
+                (all-< (strip-cars acc) bound)
+                (<= (len tail) (len lst)))
+           (all-< (strip-cars (mv-nth 1 (split-list-fast-aux lst tail acc)))
+                   bound))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm all-<-of-strip-cars-of-mv-nth-0-of-split-list-fast
+  (implies (all-< (strip-cars lst) bound)
+           (all-< (strip-cars (mv-nth 0 (split-list-fast lst))) bound))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm all-<-of-strip-cars-of-mv-nth-1-of-split-list-fast
+  (implies (all-< (strip-cars lst) bound)
+           (all-< (strip-cars (mv-nth 1 (split-list-fast lst))) bound))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm all-<-of-strip-cars-of-merge-lexorder-of-cdrs
+  (implies (and (all-< (strip-cars l1) bound)
+                (all-< (strip-cars l2) bound)
+                (all-< (strip-cars acc) bound))
+           (all-< (strip-cars (merge-lexorder-of-cdrs l1 l2 acc))
+                   bound))
+  :hints (("Goal" :in-theory (enable merge-lexorder-of-cdrs))))
+
+(defthm all-<-of-strip-cars-of-merge-sort-lexorder-of-cdrs
+  (implies (all-< (strip-cars lst) bound)
+           (all-< (strip-cars (merge-sort-lexorder-of-cdrs lst)) bound))
+  :hints (("Goal" :in-theory (enable merge-sort-lexorder-of-cdrs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm nat-listp-of-mv-nth-0-of-split-list-fast-aux
+;;   (implies (and (nat-listp lst)
+;;                 (nat-listp acc)
+;;                 (<= (len tail) (len lst)))
+;;            (nat-listp (mv-nth 0 (split-list-fast-aux lst tail acc))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm nat-listp-of-mv-nth-1-of-split-list-fast-aux
+;;   (implies (and (nat-listp lst)
+;;                 (nat-listp acc)
+;;                 (<= (len tail) (len lst)))
+;;            (nat-listp (mv-nth 1 (split-list-fast-aux lst tail acc))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm nat-listp-of-mv-nth-0-of-split-list-fast
+;;   (implies (nat-listp lst)
+;;            (nat-listp (mv-nth 0 (split-list-fast lst))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm nat-listp-of-mv-nth-1-of-split-list-fast
+;;   (implies (nat-listp lst)
+;;            (nat-listp (mv-nth 1 (split-list-fast lst))))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm nat-listp-of-merge-<
+;;   (implies (and (nat-listp l1)
+;;                 (nat-listp l2)
+;;                 (nat-listp acc))
+;;            (nat-listp (merge-< l1 l2 acc)))
+;;   :hints (("Goal" :in-theory (enable merge-<))))
+
+;; (defthm nat-listp-of-merge-sort-<
+;;   (implies (nat-listp lst)
+;;            (nat-listp (merge-sort-< lst)))
+;;   :hints (("Goal" :in-theory (enable merge-sort-<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm all-<-of-mv-nth-0-of-split-list-fast-aux
+;;   (implies (and (all-< lst bound)
+;;                 (all-< acc bound)
+;;                 (<= (len tail) (len lst)))
+;;            (all-< (mv-nth 0 (split-list-fast-aux lst tail acc))
+;;                   bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm all-<-of-mv-nth-1-of-split-list-fast-aux
+;;   (implies (and (all-< lst bound)
+;;                 (all-< acc bound)
+;;                 (<= (len tail) (len lst)))
+;;            (all-< (mv-nth 1 (split-list-fast-aux lst tail acc))
+;;                    bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+;; (defthm all-<-of-mv-nth-0-of-split-list-fast
+;;   (implies (all-< lst bound)
+;;            (all-< (mv-nth 0 (split-list-fast lst)) bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm all-<-of-mv-nth-1-of-split-list-fast
+;;   (implies (all-< lst bound)
+;;            (all-< (mv-nth 1 (split-list-fast lst)) bound))
+;;   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+;; (defthm all-<-of-merge-<
+;;   (implies (and (all-< l1 bound)
+;;                 (all-< l2 bound)
+;;                 (all-< acc bound))
+;;            (all-< (merge-< l1 l2 acc)
+;;                    bound))
+;;   :hints (("Goal" :in-theory (enable merge-<))))
+
+;; (defthm all-<-of-merge-sort-<
+;;   (implies (all-< lst bound)
+;;            (all-< (merge-sort-< lst) bound))
+;;   :hints (("Goal" :in-theory (enable merge-sort-<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm num-true-nodes-of-aset1
+;;   (implies (and (array1p array-name array)
+;;                 (natp n)
+;;                 (< n (alen1 array-name array))
+;;                 (natp index)
+;;                 (<= index n)
+;;                 val)
+;;            (equal (num-true-nodes n array-name (aset1 array-name array index val))
+;;                   (if (aref1 array-name array index)
+;;                       (num-true-nodes n array-name array)
+;;                     (+ 1 (num-true-nodes n array-name array)))))
+;;   :hints (("Goal" :expand ((num-true-nodes 0 array-name (aset1 array-name array 0 val))))))
 
 ;returns (mv test-case-array done-nodes-array), where TEST-CASE-ARRAY will have values for each node that is relevant (supports the nodes in the initial work-list) on this test case (note that because of ifs, the set of relevant nodes can differ between test cases).  nodes that have had their values set in TEST-CASE-ARRAY will be associated with t in DONE-NODES-ARRAY
 ;ffixme could speed this up using stobj arrays?
 ;fixme if there are no ifs in the dag, it would probably be faster to just evaluate every node in order?
 ;ffffixme add short-circuit evaluation for booland and boolor?
-(skip-proofs
- (defun evaluate-test-case-aux (nodenum-worklist dag-array-name dag-array
-                                                 var-value-alist ;the test case (gives values for variables)
-                                                 test-case-array done-nodes-array
-                                                 interpreted-function-alist test-case-array-name)
-   (declare (xargs :verify-guards nil))
-   (if (endp nodenum-worklist)
-       (mv test-case-array done-nodes-array)
-     (let ((nodenum (first nodenum-worklist)))
-       (if (aref1 'done-nodes-array done-nodes-array nodenum)
-           ;;it's possible that the node became done while this copy of its nodenum was sitting on the worklist (it was pushed again and processed, while this copy of it was still sitting there)
-           (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
-         ;;the node is not yet done:
-         (let ((expr (aref1 dag-array-name dag-array nodenum)))
-           (if (variablep expr)
-               (b* ((entry (assoc-eq expr var-value-alist))
-                    (- (if (not entry)
-                           (cw "WARNING: No entry for ~x0 in alist.~%" expr)  ;previously this was an error
-                         nil))
-                    (value (cdr entry)))
-                 (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                         (aset1 ;-safe
-                                          test-case-array-name test-case-array nodenum value)
-                                         (aset1 ;-safe
-                                          'done-nodes-array done-nodes-array nodenum t)
-                                         interpreted-function-alist test-case-array-name))
-             (let ((fn (ffn-symb expr)))
-               (if (eq 'quote fn)
-                   (let ((value (unquote expr)))
-                     (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                             (aset1 ;-safe
-                                              test-case-array-name test-case-array nodenum value)
-                                             (aset1 ;-safe
-                                              'done-nodes-array done-nodes-array nodenum t)
-                                             interpreted-function-alist test-case-array-name))
-                 ;;function call or if (clean this up?)
-                 (let ((args (fargs expr)))
-                   (if (or (eq 'myif fn)
-                           (eq 'bvif fn)
-                           (eq 'boolif fn)
-                           (eq 'if fn))
-                       ;;if it's an ITE, only evaluate the branch we need
-                       (let* ((test (if (eq 'bvif fn)
-                                        (second args)
-                                      (first args)))
-                              (test-quotep (quotep-arg test))
-                              (test-done (or test-quotep
-                                             (aref1 'done-nodes-array done-nodes-array test))))
-                         (if (not test-done)
-                             ;;will reanalyze the ITE node once the test is evaluated:
-                             (evaluate-test-case-aux (cons test nodenum-worklist) dag-array-name dag-array var-value-alist
-                                                     test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
-                           ;;we know the result of the test, so handle the relevant branch
-                           (let* ((test-val (if test-quotep
-                                                (unquote test)
-                                              (aref1 test-case-array-name test-case-array test)))
-                                  (relevant-branch (if (eq 'bvif fn)
-                                                       (if test-val (third args) (fourth args))
-                                                     (if test-val (second args) (third args))))
-                                  (quotep-relevant-branch (quotep-arg relevant-branch))
-                                  (relevant-branch-done (or quotep-relevant-branch
-                                                            (aref1 'done-nodes-array done-nodes-array relevant-branch))))
-                             (if (not relevant-branch-done)
-                                 ;;will reanalyze the ITE node once the relevant branch is evaluated:
-                                 (evaluate-test-case-aux (cons relevant-branch nodenum-worklist) dag-array-name
-                                                         dag-array var-value-alist test-case-array done-nodes-array
-                                                         interpreted-function-alist test-case-array-name)
-                               ;; if the relevant branch has been computed, the value of the ITE is just that branch,
-                               ;; except that for bvif/boolif we have to bvchop/bool-fix it
-                               (let* ((bvif-and-size-not-done (and (eq fn 'bvif)
-                                                                   (let ((size (first args)))
-                                                                     (not (or (quotep-arg size)
-                                                                              (aref1 'done-nodes-array done-nodes-array size)))))))
-                                 (if bvif-and-size-not-done
-                                     ;;will reanalyze the ITE node once the size arg. is evaluated:
-                                     (evaluate-test-case-aux (cons (first args) nodenum-worklist) dag-array-name
-                                                             dag-array var-value-alist test-case-array done-nodes-array
-                                                             interpreted-function-alist test-case-array-name)
-                                   (let* ((relevant-branch-value (if quotep-relevant-branch
-                                                                     (unquote relevant-branch)
-                                                                   (aref1 test-case-array-name test-case-array relevant-branch)))
-                                          (value (if (eq fn 'bvif)
-                                                     (bvchop (let ((size (first args)))
-                                                                (if (quotep-arg size)
-                                                                    (unquote size)
-                                                                  (aref1 test-case-array-name test-case-array size)))
-                                                              relevant-branch-value)
-                                                   (if (eq fn 'boolif)
-                                                       (bool-fix relevant-branch-value)
-                                                     relevant-branch-value))))
-                                     (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                                             (aset1 ;-safe
-                                                              test-case-array-name test-case-array nodenum value)
-                                                             (aset1 ;-safe
-                                                              'done-nodes-array done-nodes-array nodenum t)
-                                                             interpreted-function-alist test-case-array-name))))))))
-                     ;;regular function call:
-                     (mv-let (nodenum-worklist worklist-extendedp)
-                             (add-args-not-done args done-nodes-array nodenum-worklist nil)
-                             (if worklist-extendedp
-                                 ;;will reanalyze this node once the args are done:
-                                 (evaluate-test-case-aux nodenum-worklist ;has been extended
-                                                         dag-array-name dag-array var-value-alist test-case-array
-                                                         done-nodes-array interpreted-function-alist test-case-array-name)
-                               ;;the args are done, so call the function:
-                               (let* ((arg-values (get-vals-of-args args test-case-array-name test-case-array))
-                                      (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0)))
-                                 (evaluate-test-case-aux (rest nodenum-worklist) dag-array-name dag-array var-value-alist
-                                                         (aset1 ;-safe
-                                                          test-case-array-name test-case-array nodenum value)
-                                                         (aset1 ;-safe
-                                                          'done-nodes-array done-nodes-array nodenum t)
-                                                         interpreted-function-alist
-                                                         test-case-array-name)))))))))))))))
+(defund evaluate-test-case-aux (count ; forces termination (todo: try having two kinds of :examined status for IF nodes (whether the test has been pushed, whether the relevant branch has been pushed), and base a measure on that
+                                nodenum-worklist
+                                dag-array-name dag-array dag-len
+                                test-case ;the test case (gives values for variables)
+                                test-case-array
+                                done-nodes-array
+                                interpreted-function-alist test-case-array-name)
+  (declare (xargs ;; :measure (make-ord 1 (+ 1 (- (nfix (alen1 'done-nodes-array done-nodes-array))
+            ;;                              (num-true-nodes (+ -1 (alen1 'done-nodes-array done-nodes-array))
+            ;;                                              'done-nodes-array done-nodes-array)))
+            ;;                    (len nodenum-worklist))
+            :guard (and (natp count)
+                        (nat-listp nodenum-worklist)
+                        (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                        (all-< nodenum-worklist dag-len)
+                        (array1p test-case-array-name test-case-array)
+                        (equal (alen1 test-case-array-name test-case-array) dag-len)
+                        (array1p 'done-nodes-array done-nodes-array)
+                        (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
+                        (symbol-alistp test-case)
+                        (interpreted-function-alistp interpreted-function-alist))
+            :verify-guards nil ; done below
+            ))
+  (if (zp count)
+      (prog2$ (er hard? 'evaluate-test-case-aux "Limit reached.")
+              (mv test-case-array done-nodes-array))
+    (if (endp nodenum-worklist)
+        (mv test-case-array done-nodes-array)
+      (let ((nodenum (first nodenum-worklist)))
+        (if (aref1 'done-nodes-array done-nodes-array nodenum)
+            ;;it's possible that the node became done while this copy of its nodenum was sitting on the worklist (it was pushed again and processed, while this copy of it was still sitting there)
+            (evaluate-test-case-aux (+ -1 count) (rest nodenum-worklist) dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+          ;;the node is not yet done:
+          (let ((expr (aref1 dag-array-name dag-array nodenum)))
+            (if (variablep expr)
+                (b* ((entry (assoc-eq expr test-case))
+                     (- (if (not entry)
+                            (cw "WARNING: No entry for ~x0 in alist.~%" expr) ;previously this was an error
+                          nil))
+                     (value (cdr entry)))
+                  (evaluate-test-case-aux (+ -1 count)
+                                          (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                          (aset1 test-case-array-name test-case-array nodenum value)
+                                          (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                          interpreted-function-alist test-case-array-name))
+              (let ((fn (ffn-symb expr)))
+                (if (eq 'quote fn)
+                    (let ((value (unquote expr)))
+                      (evaluate-test-case-aux (+ -1 count)
+                                              (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                              (aset1 test-case-array-name test-case-array nodenum value)
+                                              (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                              interpreted-function-alist test-case-array-name))
+                  ;;function call or if (clean this up?)
+                  (let ((dargs (dargs expr)))
+                    (if (or (eq 'if fn)
+                            (eq 'myif fn))
+                        (if (not (mbe :exec (consp (cdr (cdr dargs)))
+                                      :logic (<= 3 (len dargs)))) ; for guard proof
+                            (prog2$ (er hard? 'evaluate-test-case-aux "Arity mismatch: ~x0" expr)
+                                    (mv test-case-array done-nodes-array))
+                          ;; It's an IF/MYIF, so only evaluate the branch we need:
+                          (let* ((test (first dargs))
+                                 (test-quotep (quotep-arg test))
+                                 (test-done (or test-quotep
+                                                (aref1 'done-nodes-array done-nodes-array test))))
+                            (if (not test-done)
+                                ;;will reanalyze the IF/MYIF node once the test is evaluated:
+                                (evaluate-test-case-aux (+ -1 count)
+                                                        (cons test nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                        test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+                              ;;we know the result of the test, so handle the relevant branch
+                              (let* ((test-val (if test-quotep
+                                                   (unquote test)
+                                                 (aref1 test-case-array-name test-case-array test)))
+                                     (relevant-branch (if test-val (second dargs) (third dargs)))
+                                     (quotep-relevant-branch (quotep-arg relevant-branch))
+                                     (relevant-branch-done (or quotep-relevant-branch
+                                                               (aref1 'done-nodes-array done-nodes-array relevant-branch))))
+                                (if (not relevant-branch-done)
+                                    ;;will reanalyze the IF/MYIF again after once the relevant branch is evaluated:
+                                    (evaluate-test-case-aux (+ -1 count)
+                                                            (cons relevant-branch nodenum-worklist) dag-array-name
+                                                            dag-array dag-len test-case test-case-array done-nodes-array
+                                                            interpreted-function-alist test-case-array-name)
+                                  ;; if the relevant branch has been computed, the value of the IF/MYIF is just that branch
+                                  (let ((relevant-branch-value (if quotep-relevant-branch
+                                                                   (unquote relevant-branch)
+                                                                 (aref1 test-case-array-name test-case-array relevant-branch))))
+                                    (evaluate-test-case-aux (+ -1 count)
+                                                            (rest nodenum-worklist)
+                                                            dag-array-name dag-array dag-len
+                                                            test-case
+                                                            (aset1 test-case-array-name test-case-array nodenum relevant-branch-value)
+                                                            (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                            interpreted-function-alist test-case-array-name)))))))
+                      (if (eq 'boolif fn)
+                          (if (not (mbe :exec (consp (cdr (cdr dargs)))
+                                        :logic (<= 3 (len dargs))))
+                              (prog2$ (er hard? 'evaluate-test-case-aux "Arity mismatch: ~x0" expr)
+                                      (mv test-case-array done-nodes-array))
+                            ;; It's a BOOLIF so only evaluate the branch we need:
+                            (let* ((test (first dargs))
+                                   (test-quotep (quotep-arg test))
+                                   (test-done (or test-quotep
+                                                  (aref1 'done-nodes-array done-nodes-array test))))
+                              (if (not test-done)
+                                  ;;will reanalyze the BOOLIF node once the test is evaluated:
+                                  (evaluate-test-case-aux (+ -1 count)
+                                                          (cons test nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                          test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+                                ;;we know the result of the test, so handle the relevant branch
+                                (let* ((test-val (if test-quotep
+                                                     (unquote test)
+                                                   (aref1 test-case-array-name test-case-array test)))
+                                       (relevant-branch (if test-val (second dargs) (third dargs)))
+                                       (quotep-relevant-branch (quotep-arg relevant-branch))
+                                       (relevant-branch-done (or quotep-relevant-branch
+                                                                 (aref1 'done-nodes-array done-nodes-array relevant-branch))))
+                                  (if (not relevant-branch-done)
+                                      ;;will reanalyze the BOOLIF node once the relevant branch is evaluated:
+                                      (evaluate-test-case-aux (+ -1 count)
+                                                              (cons relevant-branch nodenum-worklist) dag-array-name
+                                                              dag-array dag-len test-case test-case-array done-nodes-array
+                                                              interpreted-function-alist test-case-array-name)
+                                    ;; if the relevant branch has been computed, the value of the BOOLIF is just that branch,
+                                    ;; except that we have to bvchop/bool-fix it
+                                    (let* ((relevant-branch-value (if quotep-relevant-branch
+                                                                      (unquote relevant-branch)
+                                                                    (aref1 test-case-array-name test-case-array relevant-branch)))
+                                           (value (bool-fix relevant-branch-value)))
+                                      (evaluate-test-case-aux (+ -1 count)
+                                                              (rest nodenum-worklist)
+                                                              dag-array-name dag-array dag-len test-case
+                                                              (aset1 test-case-array-name test-case-array nodenum value)
+                                                              (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                              interpreted-function-alist test-case-array-name)))))))
+                        (if (eq 'bvif fn)
+                            (if (not (mbe :exec (consp (cdr (cdr (cdr dargs))))
+                                          :logic (<= 4 (len dargs))))
+                                (prog2$ (er hard? 'evaluate-test-case-aux "Arity mismatch: ~x0" expr)
+                                        (mv test-case-array done-nodes-array))
+                              ;; It's a BVIF, so only evaluate the branch we need:
+                              (let* ((test (second dargs))
+                                     (test-quotep (quotep-arg test))
+                                     (test-done (or test-quotep
+                                                    (aref1 'done-nodes-array done-nodes-array test))))
+                                (if (not test-done)
+                                    ;;will reanalyze the BVIF node once the test is evaluated:
+                                    (evaluate-test-case-aux (+ -1 count)
+                                                            (cons test nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                            test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+                                  ;;we know the result of the test, so handle the relevant branch
+                                  (let* ((test-val (if test-quotep
+                                                       (unquote test)
+                                                     (aref1 test-case-array-name test-case-array test)))
+                                         (relevant-branch (if test-val (third dargs) (fourth dargs)))
+                                         (quotep-relevant-branch (quotep-arg relevant-branch))
+                                         (relevant-branch-done (or quotep-relevant-branch
+                                                                   (aref1 'done-nodes-array done-nodes-array relevant-branch))))
+                                    (if (not relevant-branch-done)
+                                        ;;will reanalyze the BVIF node once the relevant branch is evaluated:
+                                        (evaluate-test-case-aux (+ -1 count)
+                                                                (cons relevant-branch nodenum-worklist) dag-array-name
+                                                                dag-array dag-len test-case test-case-array done-nodes-array
+                                                                interpreted-function-alist test-case-array-name)
+                                      ;; if the relevant branch has been computed, the value of the BVIF is just that branch,
+                                      ;; except that we have to bvchop it
+                                      (let* ((size-not-done (let ((size (first dargs)))
+                                                              (not (or (quotep-arg size)
+                                                                       (aref1 'done-nodes-array done-nodes-array size))))))
+                                        (if size-not-done
+                                            ;;will reanalyze the BVIF node once the size arg. is evaluated: ; TODO: Handle the size and the test together
+                                            (evaluate-test-case-aux (+ -1 count)
+                                                                    (cons (first dargs) nodenum-worklist) dag-array-name
+                                                                    dag-array dag-len test-case test-case-array done-nodes-array
+                                                                    interpreted-function-alist test-case-array-name)
+                                          (let* ((relevant-branch-value (if quotep-relevant-branch
+                                                                            (unquote relevant-branch)
+                                                                          (aref1 test-case-array-name test-case-array relevant-branch)))
+                                                 (value (bvchop (nfix ; justified by bvchop-of-nfix
+                                                                 (let ((size (first dargs)))
+                                                                   (if (quotep-arg size)
+                                                                       (unquote size)
+                                                                     (aref1 test-case-array-name test-case-array size))))
+                                                                (ifix ; justified by bvchop-of-ifix
+                                                                 relevant-branch-value))))
+                                            (evaluate-test-case-aux (+ -1 count)
+                                                                    (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                                    (aset1 test-case-array-name test-case-array nodenum value)
+                                                                    (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                                    interpreted-function-alist test-case-array-name)))))))))
+                          ;;regular function call:
+                          (mv-let (nodenum-worklist worklist-extendedp)
+                            (add-args-not-done dargs done-nodes-array nodenum-worklist nil)
+                            (if worklist-extendedp
+                                ;;will reanalyze this node once the args are done:
+                                (evaluate-test-case-aux (+ -1 count)
+                                                        nodenum-worklist ;has been extended
+                                                        dag-array-name dag-array dag-len test-case test-case-array
+                                                        done-nodes-array interpreted-function-alist test-case-array-name)
+                              ;;the args are done, so call the function:
+                              (let* ((arg-values (get-vals-of-args dargs test-case-array-name test-case-array))
+                                     (value (apply-axe-evaluator fn arg-values interpreted-function-alist 0)))
+                                (evaluate-test-case-aux (+ -1 count)
+                                                        (rest nodenum-worklist) dag-array-name dag-array dag-len test-case
+                                                        (aset1 test-case-array-name test-case-array nodenum value)
+                                                        (aset1 'done-nodes-array done-nodes-array nodenum t)
+                                                        interpreted-function-alist
+                                                        test-case-array-name)))))))))))))))))
 
-(skip-proofs (verify-guards evaluate-test-case-aux))
+(verify-guards evaluate-test-case-aux
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+            :in-theory (e/d (cadr-becomes-nth-of-1
+                             consp-of-cdr)
+                            (natp)))))
 
-;returns test-case-array, which has the name test-case-array-name
-;ffixe use a separate array?
-(defun tag-not-done-nodes-as-unused (current-nodenum done-nodes-array test-case-array test-case-array-name)
-  (declare (xargs :measure (nfix (+ 1 current-nodenum))))
+(local
+ (defthm array1p-of-mv-nth-0-of-evaluate-test-case-aux
+   (implies (and (nat-listp nodenum-worklist)
+                 (all-< nodenum-worklist dag-len)
+                 (array1p test-case-array-name test-case-array)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (equal (alen1 test-case-array-name test-case-array) dag-len)
+                 ;;(array1p 'done-nodes-array done-nodes-array)
+                 ;;(symbol-alistp test-case)
+                 ;;(interpreted-function-alistp interpreted-function-alist)
+                 )
+            (array1p test-case-array-name
+                     (mv-nth 0 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name))))
+   :hints (("Goal"
+            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME))
+                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME)))
+            :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                             cadr-becomes-nth-of-1
+                             consp-of-cdr)
+                            (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
+                                  BVCHOP-OF-IF))))))
+
+(local
+ (defthm alen1-of-mv-nth-0-of-evaluate-test-case-aux
+   (implies (and (nat-listp nodenum-worklist)
+                 (all-< nodenum-worklist dag-len)
+                 (array1p test-case-array-name test-case-array)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (equal (alen1 test-case-array-name test-case-array) dag-len)
+                 ;;(array1p 'done-nodes-array done-nodes-array)
+                 ;;(symbol-alistp test-case)
+                 ;;(interpreted-function-alistp interpreted-function-alist)
+                 )
+            (equal (alen1 test-case-array-name (mv-nth 0 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
+                   (alen1 test-case-array-name test-case-array)))
+   :hints (("Goal"
+            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME))
+                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME)))
+            :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                             cadr-becomes-nth-of-1
+                             consp-of-cdr)
+                            (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
+                                  BVCHOP-OF-IF))))))
+
+(local
+ (defthm array1p-of-mv-nth-1-of-evaluate-test-case-aux
+   (implies (and (nat-listp nodenum-worklist)
+                 (all-< nodenum-worklist dag-len)
+          ;(array1p test-case-array-name test-case-array)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
+                 (array1p 'done-nodes-array done-nodes-array)
+                 ;;(symbol-alistp test-case)
+                 ;;(interpreted-function-alistp interpreted-function-alist)
+                 )
+            (array1p 'done-nodes-array
+                     (mv-nth 1 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name))))
+   :hints (("Goal"
+            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME))
+                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME)))
+            :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                             cadr-becomes-nth-of-1
+                             consp-of-cdr)
+                            (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
+                                  BVCHOP-OF-IF))))))
+
+(local
+ (defthm alen1-of-mv-nth-1-of-evaluate-test-case-aux
+   (implies (and (nat-listp nodenum-worklist)
+                 (all-< nodenum-worklist dag-len)
+          ;(array1p test-case-array-name test-case-array)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
+                 (array1p 'done-nodes-array done-nodes-array)
+                 ;;(symbol-alistp test-case)
+                 ;;(interpreted-function-alistp interpreted-function-alist)
+                 )
+            (equal (alen1 'done-nodes-array (mv-nth 1 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
+                   (alen1 'done-nodes-array done-nodes-array)))
+   :hints (("Goal"
+            :induct t
+            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME))
+                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
+                                                              DAG-ARRAY-NAME DAG-ARRAY
+                                                              dag-len
+                                                              TEST-CASE
+                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
+                                                              INTERPRETED-FUNCTION-ALIST
+                                                              TEST-CASE-ARRAY-NAME)))
+            :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+                             cadr-becomes-nth-of-1
+                             consp-of-cdr)
+                            (natp USE-ALL-RATIONALP-FOR-CAR
+                                  nfix ifix ;; these greatly reduce case splits
+                                  BVCHOP-OF-IF))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns test-case-array, which has the name test-case-array-name.
+;;ffixme use a separate array?
+;;todo: this seems inefficient for very sparse tests.
+(defund tag-not-done-nodes-as-unused (current-nodenum done-nodes-array test-case-array test-case-array-name)
+  (declare (xargs :guard (and (integerp current-nodenum)
+                              (array1p test-case-array-name test-case-array)
+                              (array1p 'done-nodes-array done-nodes-array)
+                              (< current-nodenum (alen1 'done-nodes-array done-nodes-array))
+                              (< current-nodenum (alen1 test-case-array-name test-case-array)))
+                  :measure (nfix (+ 1 current-nodenum))))
   (if (not (natp current-nodenum))
       test-case-array
     (let* ((donep (aref1 'done-nodes-array done-nodes-array current-nodenum)))
@@ -1165,230 +1906,1156 @@
                                       (aset1-safe test-case-array-name test-case-array current-nodenum :unused)
                                       test-case-array-name)))))
 
-(skip-proofs (verify-guards tag-not-done-nodes-as-unused))
+(local
+ (defthm array1p-of-tag-not-done-nodes-as-unused
+   (implies (and (integerp current-nodenum)
+                 (array1p test-case-array-name test-case-array)
+                 ;(array1p 'done-nodes-array done-nodes-array)
+                 ;(< current-nodenum (alen1 'done-nodes-array done-nodes-array))
+                 (< current-nodenum (alen1 test-case-array-name test-case-array)))
+            (array1p test-case-array-name (tag-not-done-nodes-as-unused current-nodenum done-nodes-array test-case-array test-case-array-name)))
+   :hints (("Goal" :in-theory (enable tag-not-done-nodes-as-unused)))))
 
-;returns TEST-CASE-ARRAY, which has the name TEST-CASE-ARRAY-NAME and which has values for each node that supports any node in NODES-TO-EVAL for this test case (different test cases may evaluate the ifs differently)
-; TEST-CASE-ARRAY will associate irrelevant nodes with the value :unused - FFIXME what if a node actually evaluates to :unused?  could return done-nodes-array (but if we are keeping several done-node-arrays we might want to give them different names paralleling the test case array names)
-;fixme count and print the number of nodes that are not :unused
-(defun evaluate-test-case (nodes-to-eval
-                           max-nodenum ;why pass this in?
-                           dag-array-name dag-array var-value-alist interpreted-function-alist
-                           test-case-array-name)
-  (mv-let (test-case-array done-nodes-array)
-          (evaluate-test-case-aux nodes-to-eval ;initial worklist
-                                  dag-array-name dag-array var-value-alist
-                                  ;;would it be faster to reuse this array and just clear it out here?
-                                  (make-empty-array test-case-array-name (+ 1 max-nodenum))
-                                  ;;would it be faster to reuse this array and just clear it out here?
-                                  (make-empty-array 'done-nodes-array (+ 1 max-nodenum))
-                                  interpreted-function-alist test-case-array-name)
-;can we avoid this step? just return the done-nodes-array?
-          (tag-not-done-nodes-as-unused max-nodenum done-nodes-array test-case-array test-case-array-name)))
-
-(skip-proofs (verify-guards evaluate-test-case))
-
-(local (in-theory (disable divisibility-in-terms-of-floor))) ;bozo
-
-;;returns an integer in the range [low, high)
-;fffixme doesn't work if the range is too big?
-(defun gen-random-integer-in-range (low high rand)
-  (declare (xargs :stobjs (rand)
-                  :guard-hints (("Goal" :in-theory (enable GENRANDOM)))
-                  :guard (and (integerp low) (> low 0) (integerp high) (< low high))))
-  (mv-let (value rand)
-          (genrandom (- high low) rand)
-          (mv (+ low value) rand)))
-
-;returns (val rand)
-;since genrandom doesn't work for a BV of more than one 31 bits, we have to generate it in chunks
-(defun gen-random-bv (size rand)
-  (declare (xargs :stobjs (rand)
-                  :measure (nfix size)
-                  :guard (and (posp size))
-                  :guard-hints (("Goal" :in-theory (enable genrandom)))
-                  :verify-guards nil ;done below
-
-                  ))
-  (if (or (not (natp size))
-          (< size 32))
-      (genrandom (expt 2 size) rand)
-    (mv-let (first-chunk rand)
-      (genrandom (expt 2 31) ;compute
-                 rand)
-      (mv-let (rest-chunk rand)
-        (gen-random-bv (- size 31) rand)
-        (mv (bvcat 31 first-chunk (- size 31) rest-chunk)
-            rand)))))
-
-(defthm integerp-of-mv-nth-0-of-genrandom
-  (implies (integerp max)
-           (integerp (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
-
-;; i think mv-nth is preferable to val??
-(defthm integerp-of-mv-nth-0-of-gen-random-bv
-  (integerp (mv-nth 0 (gen-random-bv size rand)))
-  :hints (("Goal" :in-theory (enable genrandom)))) ;why doesn't integerp-of-mv-nth-0-of-genrandom suffice here?
-
-(verify-guards gen-random-bv)
-
-;fixme where do we document the format of var-type-alist (see the TYPES section in size.lisp, but that is incomplete?)?  a naked integer is a bv, a quoted integer is that constant
-;returns (mv value rand)
-;should we allow tuples?
-(mutual-recursion
- (defun gen-random-value (type rand var-value-alist)
-   (declare (xargs :stobjs (rand)
-                   :measure (make-ord 1 (+ 1 (acl2-count type)) 0)
-                   :hints (("Goal" :in-theory (enable LIST-TYPE-ELEMENT-TYPE LIST-TYPE-LEN-TYPE BV-TYPEP list-typep)))
-                   :verify-guards nil))
-   (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
-          (mv (unquote type) rand))
-         ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?)
-          (mv (lookup-eq-safe type var-value-alist)
-              rand))
-         ((bv-typep type) ;a bit-vector of the indicated width - should we allow this width to be random?
-          ;; if it's a bit-vector
-          ;; look up the variable's width and generate a random value of that width
-          (let* ((width (bv-type-width type))
-                 ;;(max (expt 2 width)) ;bozo precompute this on small values?
+(local
+ (defthm alen1-of-tag-not-done-nodes-as-unused
+   (implies (and ;(integerp current-nodenum)
+                 ;(array1p test-case-array-name test-case-array)
+                 ;(array1p 'done-nodes-array done-nodes-array)
+                 ;(< current-nodenum (alen1 'done-nodes-array done-nodes-array))
+                 (< current-nodenum (alen1 test-case-array-name test-case-array))
                  )
-            (gen-random-bv width rand)))
-         ;; a value in the given range: should we allow the bounds to be random? ;fixme are the args of this good types? if we allow random endpoints, what if the range is empty?  maybe :range should take a start value and am interval length?
-         ((eq :range (car type)) ;here the bounds are both inclusive
-          (let ((low (second type))
-                (high (third type)))
-            (gen-random-integer-in-range low (+ 1 high) rand)))
-         ;;ffixme deprecate:
-         ;;           ((eq :len (car type)) ;the length of something (probably a previously generated var - this is also a dependent type - more general facility for this?):
-         ;;            (mv-let (value rand)
-         ;;                    (gen-random-value (second type) rand var-value-alist) ;just lookup the value?
-         ;;                    (mv (len value) rand)))
-         ((eq :choice (car type)) ;fixme add support for probabilities other than 50/50
-          (mv-let (val rand)
-            (genrandom 2 rand)
-            (if (eql 0 val)
-                (gen-random-value (second type) rand var-value-alist)
-              (gen-random-value (third type) rand var-value-alist))))
-         ((eq :eval (car type))
-          (mv (eval-axe-evaluator var-value-alist
-                                  (second type)
-                                  nil ;fixme?
-                                  0)
-              rand))
+            (equal (alen1 test-case-array-name (tag-not-done-nodes-as-unused current-nodenum done-nodes-array test-case-array test-case-array-name))
+                   (alen1 test-case-array-name test-case-array)))
+   :hints (("Goal" :in-theory (enable tag-not-done-nodes-as-unused)))))
 
-;a random element of the given set:
-         ((eq :element (car type)) ;should the elements be allowed to be random?
-          (let ((set (cdr type)))  ;or use cadr?
-            (mv-let (index rand)
-              (genrandom (len set) rand)
-              (mv (nth index set) rand))))
-         ;;a list, of the given element type and length - can the length be random? yes.?
-         ((list-typep type)
-          ;;            (or (eq :list (car type))
-          ;;                ;;(eq 'array (car type)) ;i think the args to an array type aren't currently good types
-          ;;                ) ;bozo why both? get rid of the 'array option? hmmm. it's used in translating...
-          (let ((element-type (list-type-element-type type))
-                (len-type (list-type-len-type type)))
-            (mv-let (len rand)
-              ;;if the len-type is a quoted constant, this just unquotes it:
-              (gen-random-value len-type rand var-value-alist)
-              (prog2$ (cw "List length: ~x0.~%" len)
-                      (gen-random-values len element-type rand var-value-alist)))))
-         (t (mv (hard-error 'gen-random-value "Unknown type: ~x0" (acons #\0 type nil))
-                rand))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- ;;returns (mv values rand)
- (defun gen-random-values (n type rand var-value-alist)
-   (declare (xargs :stobjs (rand)
-                   :measure (make-ord 1 (+ 1 (acl2-count type)) (+ 1 (nfix n)))
-                   :verify-guards nil))
-   (if (zp n)
-       (mv nil rand)
-     (mv-let (value rand)
-       (gen-random-value type rand var-value-alist)
-       (mv-let (values rand)
-         (gen-random-values (+ -1 n) type rand var-value-alist)
-         (mv (cons value values)
-             rand))))))
+;; Returns TEST-CASE-ARRAY, which has the name TEST-CASE-ARRAY-NAME and which has values for each node that supports any node in NODES-TO-EVAL for this test case (different test cases may evaluate the ifs differently)
+; TEST-CASE-ARRAY will associate irrelevant nodes with the value :unused - FFIXME what if a node actually evaluates to :unused?  could return done-nodes-array (but if we are keeping several done-node-arrays we might want to give them different names paralleling the test case array names)
+;; todo: count and print the number of nodes that are not :unused
+(defund evaluate-test-case (nodes-to-eval ; we'll find values for all of these nodes
+                            dag-array-name dag-array
+                            test-case
+                            interpreted-function-alist
+                            test-case-array-name)
+  (declare (xargs :guard (and (nat-listp nodes-to-eval)
+                              (consp nodes-to-eval) ; must be at least one node, so we can find the max
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
+                              (test-casep test-case)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (symbolp test-case-array-name))))
+  (let* ((max-nodenum (maxelem nodes-to-eval))
+         (dag-len (+ 1 max-nodenum)) ; the effective length of the dag, for the purposes of this test case
+         ;;would it be faster to reuse this array and just clear it out here?
+         (test-case-array (make-empty-array test-case-array-name dag-len))
+         ;;would it be faster to reuse this array and just clear it out here?
+         (done-nodes-array (make-empty-array 'done-nodes-array dag-len)))
+    (mv-let (test-case-array done-nodes-array)
+      (evaluate-test-case-aux 1000000000 ; todo
+                              nodes-to-eval ;initial worklist
+                              dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
+      ;;can we avoid this step? just return the done-nodes-array?
+      (tag-not-done-nodes-as-unused max-nodenum done-nodes-array test-case-array test-case-array-name))))
 
-(skip-proofs (verify-guards gen-random-value))
+(local
+ (defthm array1p-of-evaluate-test-case
+   (implies (and (nat-listp nodes-to-eval)
+                 (consp nodes-to-eval) ; must be at least one node, so we can find the max
+                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
+                 (test-casep test-case)
+                 (interpreted-function-alistp interpreted-function-alist)
+                 (symbolp test-case-array-name))
+            (array1p test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name)))
+   :hints (("Goal" :in-theory (enable evaluate-test-case)))))
 
-;returns (mv alist rand)
-(defun make-test-case (var-type-alist acc rand)
-  (declare (xargs :stobjs rand
-                  :verify-guards nil))
-  (if (endp var-type-alist)
-      (mv acc rand)
-    (let* ((entry (first var-type-alist))
-           (var (car entry))
-           (type (cdr entry)))
-      (mv-let (value rand)
-              (gen-random-value type rand acc)
-              (make-test-case (rest var-type-alist) (acons-fast var value acc) rand)))))
+(local
+ (defthm alen1-of-evaluate-test-case
+   (implies (and (nat-listp nodes-to-eval)
+                 (consp nodes-to-eval) ; must be at least one node, so we can find the max
+                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
+                 (symbolp test-case-array-name)
+                 )
+            (equal (alen1 test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name))
+                   (+ 1 (maxelem nodes-to-eval))))
+   :hints (("Goal" :in-theory (enable evaluate-test-case)))))
 
-(skip-proofs (verify-guards make-test-case))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;ffixme might we need to pass in interpreted-functions
-(defun test-case-satisfies-assumptionsp (test-case assumptions)
-  (if (endp assumptions)
-      t
-    (let ((assumption (first assumptions)))
-      (and (equal t (eval-axe-evaluator test-case assumption nil ;interpreted-function-alist
-                                           0))
-           (test-case-satisfies-assumptionsp test-case (rest assumptions))
-           ))))
+;; If the test passed (top node evaluated to T), returns TEST-CASE-ARRAY, which has a value for each node that supports the top node for this test (and :unused for other nodes) and which has name TEST-CASE-ARRAY-NAME.  If the test failed, returns nil.
+(defund evaluate-and-check-test-case (test-case
+                                      dag-array-name dag-array dag-len
+                                      interpreted-function-alist
+                                      test-case-array-name
+                                      debug-nodes ; call these debug nodes?  this notion of tracing is differenct from the tracing we do for rec-fns
+                                      )
+  (declare (xargs :guard (and (test-casep test-case)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< 0 dag-len)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (symbolp test-case-array-name)
+                              (nat-listp debug-nodes)
+                              (all-< debug-nodes dag-len))))
+  (let* ((top-nodenum (+ -1 dag-len))
+         (test-case-array
+          (evaluate-test-case (list top-nodenum)
+                              dag-array-name dag-array
+                              test-case
+                              interpreted-function-alist
+                              test-case-array-name))
+         (top-node-value (aref1 test-case-array-name test-case-array top-nodenum)))
+    (if (eq t top-node-value) ; TODO: Consider relaxing this to allow any non-nil value.
+        (prog2$ (print-vals-of-nodes debug-nodes test-case-array-name test-case-array)
+                test-case-array)
+      ;;fixme return an error flag and catch it later?
+      (progn$ (cw "!!!! We found a test case that does not evaluate to true:~%")
+              (cw "Test case: ~x0~%" test-case)
+              (print-array2 test-case-array-name test-case-array dag-len) ;this can be big!
+              (er hard? 'evaluate-and-check-test-case "Untrue test case (see above)")))))
 
-(skip-proofs (verify-guards test-case-satisfies-assumptionsp))
+(local
+ (defthm array1p-of-evaluate-and-check-test-case
+   (implies (and (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes) ; no error
+                 (test-casep test-case)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (< 0 dag-len)
+                 (interpreted-function-alistp interpreted-function-alist)
+                 (symbolp test-case-array-name)
+                 (nat-listp debug-nodes)
+                 (all-< debug-nodes dag-len))
+            (array1p test-case-array-name (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes)))
+   :hints (("Goal" :in-theory (enable evaluate-and-check-test-case)))))
 
-;returns (mv test-cases rand), where each test case is an alist from vars to values
-;should we give them numbers?
-(defun make-test-cases-aux (test-cases-left test-case-number var-type-alist assumptions print acc rand)
-  (declare (xargs :stobjs rand
-                  :verify-guards nil))
-  (if (zp test-cases-left)
-      (mv (reverse acc)
-          rand)
-    (prog2$
-     (and print (cw "(Test case ~x0: " test-case-number))
-     (mv-let (test-case rand)
-             (make-test-case var-type-alist nil rand)
-             (prog2$ (and print (cw ")~%"))
-                     (if (test-case-satisfies-assumptionsp test-case assumptions)
-                         (make-test-cases-aux (+ -1 test-cases-left)
-                                              (+ 1 test-case-number)
-                                              var-type-alist
-                                              assumptions
-                                              print
-                                              (cons test-case acc)
-                                              rand)
-                       (prog2$ (cw "!! WARNING test case ~x0 does not satisfy assumptions. Dropping it. !!~%" test-case-number)
-                               (make-test-cases-aux (+ -1 test-cases-left) ;perhaps don't decrement the counter?
-                                                    (+ 1 test-case-number)
-                                                    var-type-alist
-                                                    assumptions
-                                                    print
-                                                    acc ;don't cons it on
-                                                    rand))))))))
+(local
+ (defthm alen1-of-evaluate-and-check-test-case
+   (implies (and (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes) ; no error
+                 (test-casep test-case)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (< 0 dag-len)
+                 (interpreted-function-alistp interpreted-function-alist)
+                 (symbolp test-case-array-name)
+                 (nat-listp debug-nodes)
+                 (all-< debug-nodes dag-len))
+            (equal (alen1 test-case-array-name (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes))
+                   dag-len))
+   :hints (("Goal" :in-theory (enable evaluate-and-check-test-case)))))
 
-(skip-proofs (verify-guards make-test-cases-aux))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv test-cases rand), where each test case is an alist from vars to values
-(defun make-test-cases (test-case-count var-type-alist assumptions rand)
-  (declare (xargs :stobjs rand
-                  :verify-guards nil))
-  (prog2$ (cw "(Making ~x0 test cases:~%" test-case-count)
-          (mv-let (test-cases rand)
-                  (make-test-cases-aux test-case-count 0 var-type-alist assumptions nil nil rand)
-                  (prog2$ (cw ")~%")
-                          (mv test-cases rand)))))
+(defun find-val-other-than (val nodenums test-case-array test-case-array-name)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< nodenums (alen1 test-case-array-name test-case-array)))))
+  (if (endp nodenums)
+      nil ;failed to find such a val
+    (let* ((nodenum (first nodenums))
+           (val2 (aref1 test-case-array-name test-case-array nodenum)))
+      (if (equal val val2)
+          ;;keep looking:
+          (find-val-other-than val (cdr nodenums) test-case-array test-case-array-name)
+        ;;we found a difference:
+        t))))
 
-(skip-proofs (verify-guards make-test-cases))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;returns an alist pairing values with nodenum lists
+;the alist may include shadowed pairs
+;fixme think about :unused nodes
+(defund test-case-alist-for-set (set test-case-array-name test-case-array acc)
+  (declare (xargs :guard (and (nat-listp set)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< set (alen1 test-case-array-name test-case-array))
+                              (alistp acc))))
+  (if (endp set)
+      acc
+    (let* ((nodenum (first set))
+           (value (aref1 test-case-array-name test-case-array nodenum))
+           (nodes-for-value (lookup-equal value acc)))
+      (test-case-alist-for-set (cdr set) test-case-array-name test-case-array
+                               (acons-fast value (cons nodenum nodes-for-value) acc)))))
+
+(local
+ (defthm alistp-of-test-case-alist-for-set
+   (implies (alistp acc)
+            (alistp (test-case-alist-for-set set test-case-array-name test-case-array acc)))
+   :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
+
+(local
+ (defthm all-consp-of-strip-cdrs-of-test-case-alist-for-set
+   (implies (all-consp (strip-cdrs acc))
+            (all-consp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
+   :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
+
+(local
+ (defthm all-all-<-of-strip-cdrs-of-test-case-alist-for-set
+   (implies (and (nat-listp set)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (alistp acc)
+                 (all-all-< (strip-cdrs acc) bound)
+                 (<= (alen1 test-case-array-name test-case-array) bound))
+            (all-all-< (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc)) bound))
+   :hints (("Goal" :in-theory (enable test-case-alist-for-set all-all-<)))))
+
+(local
+ (defthm nat-list-listp-of-strip-cdrs-of-test-case-alist-for-set
+   (implies (and (nat-listp set)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (alistp acc)
+                 (NAT-LIST-LISTP (STRIP-CDRS ACC)))
+            (nat-list-listp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
+   :hints (("Goal" :in-theory (enable test-case-alist-for-set nat-list-listp)))))
+
+;; Returns (mv non-singletons singleton-count).
+(defund drop-and-count-singletons (lst non-singletons-acc count-acc)
+  (declare (xargs :guard (and (integerp count-acc)
+                              (true-listp lst))))
+  (if (endp lst)
+      (mv non-singletons-acc count-acc)
+    (let* ((item (car lst)))
+      (if (and (consp item) ; drop if all are known to be non empty lists?
+               (not (consp (cdr item))))
+          ;; it's a singleton, so drop it and count it:
+          (drop-and-count-singletons (cdr lst) non-singletons-acc (+ 1 count-acc))
+        ;; it's not a singleton, so keep it:
+        (drop-and-count-singletons (cdr lst) (cons item non-singletons-acc) count-acc)))))
+
+(local
+ (defthm true-listp-of-mv-nth-0-of-drop-and-count-singletons
+   (implies (true-listp acc)
+            (true-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-drop-and-count-singletons
+   (implies (and (nat-list-listp acc)
+                 (nat-list-listp lst))
+            (nat-list-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons
+                                      nat-list-listp)))))
+
+(local
+ (defthm all-consp-of-mv-nth-0-of-drop-and-count-singletons
+   (implies (and (all-consp acc)
+                 (all-consp lst)
+                 )
+            (all-consp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons
+                                      nat-list-listp)))))
+
+(local
+ (defthm all-all-<-of-mv-nth-0-of-drop-and-count-singletons
+   (implies (and (all-all-< acc bound)
+                 (all-all-< lst bound)
+                 )
+            (all-all-< (mv-nth 0 (drop-and-count-singletons lst acc count-acc))
+                       bound))
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons
+                                      nat-list-listp
+                                      all-all-<)))))
+
+(local
+ (defthm natp-mv-nth-1-of-drop-and-count-singletons
+   (implies (natp count-acc)
+            (natp (mv-nth 1 (drop-and-count-singletons lst acc count-acc))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
+
+;ignores later pairs that bind already-bound keys
+(defund strip-cdrs-unique (lst keys-seen acc)
+  (declare (xargs :guard (and (alistp lst)
+                              (true-listp keys-seen))))
+  (if (endp lst)
+      acc ;we don't bother to reverse this
+    (let* ((entry (car lst))
+           (key (car entry)))
+      (if (member-equal key keys-seen)
+          (strip-cdrs-unique (cdr lst) keys-seen acc)
+        (strip-cdrs-unique (cdr lst) (cons key keys-seen) (cons (cdr entry) acc))))))
+
+(local
+ (defthm true-listp-of-strip-cdrs-unique
+   (implies (true-listp acc)
+            (true-listp (strip-cdrs-unique lst keys-seen acc)))
+   :hints (("Goal" :in-theory (enable strip-cdrs-unique)))))
+
+(local
+ (defthm nat-list-listp-of-strip-cdrs-unique
+   (implies (and (nat-list-listp acc)
+                 (nat-list-listp (strip-cdrs lst)))
+            (nat-list-listp (strip-cdrs-unique lst keys-seen acc)))
+   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
+
+(local
+ (defthm all-consp-of-strip-cdrs-unique
+   (implies (and (all-consp acc)
+                 (all-consp (strip-cdrs lst)))
+            (all-consp (strip-cdrs-unique lst keys-seen acc)))
+   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
+
+(local
+ (defthm all-all-<-of-strip-cdrs-unique
+   (implies (and (all-all-< acc bound)
+                 (all-all-< (strip-cdrs lst) bound))
+            (all-all-< (strip-cdrs-unique lst keys-seen acc) bound))
+   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp all-all-<)))))
+
+;;we first make an alist whose keys are data values (often 0 or 1?) and whose vals are sets of nodenums
+;returns (mv new-sets new-singleton-count)
+(defund split-set (set test-case-array test-case-array-name)
+  (declare (xargs :guard (and (nat-listp set)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< set (alen1 test-case-array-name test-case-array)))))
+  (let* ((alist (test-case-alist-for-set set test-case-array-name test-case-array nil)) ;this could be slow?  better to pair nodenums with vals and merge-sort the pairs by value?
+         (new-node-sets (strip-cdrs-unique alist nil nil)) ;don't cons this up?
+         )
+    ;;fixme combine this with the work above:
+    (drop-and-count-singletons new-node-sets nil 0)))
+
+(local
+ (defthm true-listp-of-mv-nth-0-of-split-set
+   (true-listp (mv-nth 0 (split-set set test-case-array test-case-array-name)))
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-split-set
+   (implies (and (nat-listp set)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< set (alen1 test-case-array-name test-case-array)))
+            (nat-list-listp (mv-nth 0 (split-set set test-case-array test-case-array-name))))
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+(local
+ (defthm all-consp-of-mv-nth-0-of-split-set
+   (implies (and (nat-listp set)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< set (alen1 test-case-array-name test-case-array)))
+            (all-consp (mv-nth 0 (split-set set test-case-array test-case-array-name))))
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+(local
+ (defthm all-all-<-of-mv-nth-0-of-split-set
+   (implies (and (nat-listp set)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (<= (alen1 test-case-array-name test-case-array) bound))
+            (all-all-< (mv-nth 0 (split-set set test-case-array test-case-array-name))
+                       bound))
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-split-set
+   (natp (mv-nth 1 (split-set set test-case-array test-case-array-name)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable split-set)))))
+
+;takes a set and adds zero or more sets to acc (also returns a new singleton count)
+;returns (mv acc new-singleton-count change-flg)
+;set should have at least two elements
+;should not return singletons or empty sets
+;most of the time, this won't be able to distinguish any nodes and so will return (list set) - we try to make that case fast (don't recons the whole set)...
+;inline this?
+(defund try-to-split-set (set test-case-array-name test-case-array print acc)
+  (declare (xargs :guard (and (nat-listp set)
+                              (consp set)
+                              (array1p test-case-array-name test-case-array)
+                              ;; print
+                              (all-< set (alen1 test-case-array-name test-case-array))
+                              (true-listp acc))))
+  (let* ((first-nodenum (first set))
+         (first-val (aref1 test-case-array-name test-case-array first-nodenum))
+         (need-to-splitp (find-val-other-than first-val (rest set) test-case-array test-case-array-name)))
+    (if (not need-to-splitp)
+        ;;in this case we don't recons the whole set
+        (mv (cons set acc) 0 nil) ;fixme try to save even this cons?
+      (prog2$ (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set)))
+              (mv-let (new-sets new-singleton-count)
+                      (split-set set test-case-array test-case-array-name) ;fixme pass acc into this?
+                      (mv (append new-sets acc)
+                          new-singleton-count t))))))
+
+(local
+ (defthm true-listp-of-mv-nth-0-of-try-to-split-set
+   (implies (true-listp acc)
+            (true-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-try-to-split-set
+   (implies (and (nat-listp set)
+                 (consp set)
+                 (array1p test-case-array-name test-case-array)
+                 ;; print
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (true-listp acc)
+                 (nat-list-listp acc))
+            (nat-list-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm all-consp-of-mv-nth-0-of-try-to-split-set
+   (implies (and (nat-listp set)
+                 (consp set)
+                 (array1p test-case-array-name test-case-array)
+                 ;; print
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (true-listp acc)
+                 (nat-list-listp acc)
+                 (all-consp acc))
+            (all-consp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm all-all-<-of-mv-nth-0-of-try-to-split-set
+   (implies (and (nat-listp set)
+                 (all-< set bound)
+                 (array1p test-case-array-name test-case-array)
+                 ;; print
+                 (all-< set (alen1 test-case-array-name test-case-array))
+                 (true-listp acc)
+                 (nat-list-listp acc)
+                 (all-all-< acc bound)
+                 (<= (alen1 test-case-array-name test-case-array) bound)
+                 )
+            (all-all-< (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))
+                       bound))
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-try-to-split-set
+   (natp (mv-nth 1 (try-to-split-set set test-case-array-name test-case-array print acc)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+(local
+ (defthm booleanp-of-mv-nth-2-of-try-to-split-set
+   (booleanp (mv-nth 2 (try-to-split-set set test-case-array-name test-case-array print acc)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+
+
+;try to split the sets using test-case-array
+;returns (mv new-sets new-singleton-count changep)
+;sets are moved from SETS to ACC.  as they are moved they are split if indicated by this test case.
+;sets are lists of nodenums.  each set has length at least 2 (singleton sets are dropped).
+(defund new-probably-equal-node-sets (sets test-case-array acc singleton-count-acc print test-case-array-name changep)
+  (declare (xargs :guard (and (nat-list-listp sets)
+                              (all-consp sets)
+                              (array1p test-case-array-name test-case-array)
+                              (true-listp acc)
+                              (natp singleton-count-acc)
+                              ;; print
+                              (all-all-< sets (alen1 test-case-array-name test-case-array))
+                              (booleanp changep))
+                  :guard-hints (("Goal" :in-theory (enable all-all-<)))))
+  (if (endp sets)
+      (mv acc singleton-count-acc changep)
+    (let* ((set (first sets)))
+      (mv-let (acc ;has the new sets appended onto it
+               new-singleton-count change-flg-for-this-set)
+              (try-to-split-set set test-case-array-name test-case-array print acc)
+              (new-probably-equal-node-sets (rest sets)
+                                            test-case-array
+                                            acc
+                                            (+ singleton-count-acc new-singleton-count)
+                                            print
+                                            test-case-array-name
+                                            (or changep change-flg-for-this-set))))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-new-probably-equal-node-sets
+   (implies (and (nat-list-listp sets)
+                 (nat-list-listp acc)
+          ;                (all-consp acc)
+                 (all-consp sets)
+                 (array1p test-case-array-name test-case-array)
+                 (natp singleton-count-acc)
+                 ;; print
+                 (all-all-< sets (alen1 test-case-array-name test-case-array))
+                 (booleanp changep))
+            (nat-list-listp (mv-nth 0 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+   :hints (("Goal" :in-theory (enable new-probably-equal-node-sets all-all-<)))))
+
+(local
+ (defthm all-consp-of-mv-nth-0-of-new-probably-equal-node-sets
+   (implies (and (nat-list-listp sets)
+                 (nat-list-listp acc)
+                 (all-consp acc)
+                 (all-consp sets)
+                 (array1p test-case-array-name test-case-array)
+                 (natp singleton-count-acc)
+                 ;; print
+                 (all-all-< sets (alen1 test-case-array-name test-case-array))
+                 (booleanp changep))
+            (all-consp (mv-nth 0 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+   :hints (("Goal" :in-theory (enable new-probably-equal-node-sets all-all-<)))))
+
+(local
+ (defthm all-all-<-of-mv-nth-0-of-new-probably-equal-node-sets
+   (implies (and (<= (alen1 test-case-array-name test-case-array) dag-len)
+                 (nat-list-listp sets)
+                 (nat-list-listp acc)
+                 (all-consp acc)
+                 (all-consp sets)
+                 (array1p test-case-array-name test-case-array)
+                 (natp singleton-count-acc)
+                 (ALL-ALL-< ACC DAG-LEN)
+                 ;; print
+                 (all-all-< sets (alen1 test-case-array-name test-case-array))
+                 (booleanp changep))
+            (all-all-< (mv-nth 0 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))
+                       dag-len))
+   :hints (("Goal" :in-theory (enable new-probably-equal-node-sets all-all-<)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-new-probably-equal-node-sets
+   (implies (natp singleton-count-acc)
+            (natp (mv-nth 1 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+   :rule-classes (:rewrite :type-prescription)
+   :hints (("Goal" :in-theory (enable new-probably-equal-node-sets)))))
+
+(local
+ (defthm booleanp-of-mv-nth-2-of-new-probably-equal-node-sets
+   (implies (booleanp changep)
+            (booleanp (mv-nth 2 (new-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+   :rule-classes (:rewrite :type-prescription)
+   :hints (("Goal" :in-theory (enable new-probably-equal-node-sets)))))
+
+
+
+;; Looks for an initial segment of NODE-TO-VALUE-ALIST all of whose vals are SIG.
+;; Returns (mv entries-with-value remaining-node-to-value-alist).
+(defund find-entries-with-value (node-to-value-alist value acc)
+  (declare (xargs :guard (and (alistp node-to-value-alist)
+                              (nat-listp (strip-cars node-to-value-alist))
+                              (nat-listp acc))))
+  (if (endp node-to-value-alist)
+      (mv acc node-to-value-alist)
+    (let* ((entry (car node-to-value-alist))
+           (nodenum (car entry))
+           (value2 (cdr entry)))
+      (if (equal value value2)
+          (find-entries-with-value (cdr node-to-value-alist) value (cons nodenum acc))
+        ;; stop looking, since the entries are sorted by value and we found a difference:
+        (mv acc node-to-value-alist)))))
+
+(local
+ (defthm nat-listp-of-mv-nth-0-of-find-entries-with-value
+   (implies (and (nat-listp (strip-cars node-to-value-alist))
+                 (nat-listp acc))
+            (nat-listp (mv-nth 0 (find-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm all-<-of-mv-nth-0-of-find-entries-with-value
+   (implies (and (all-< (strip-cars node-to-value-alist) bound)
+                 (all-< acc bound)
+                 )
+            (all-< (mv-nth 0 (find-entries-with-value node-to-value-alist value acc)) bound))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm <=-of-len-of-mv-nth-1-of-find-entries-with-value
+   (<= (len (mv-nth 1 (find-entries-with-value node-to-value-alist value acc)))
+       (len node-to-value-alist))
+   :rule-classes :linear
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+   (implies (nat-listp (strip-cars node-to-value-alist))
+            (nat-listp (strip-cars (mv-nth 1 (find-entries-with-value node-to-value-alist value acc)))))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm alistp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+   (implies (alistp node-to-value-alist)
+            (alistp (mv-nth 1 (find-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+(local
+ (defthm all-<-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+   (implies (and (all-< (strip-cars node-to-value-alist) bound)
+                 (all-< acc bound)
+                 )
+            (all-< (strip-cars (mv-nth 1 (find-entries-with-value node-to-value-alist value acc))) bound))
+   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+
+;; Returns (mv sets singleton-count).
+(defund group-same-entries (node-to-value-alist acc singleton-count)
+  (declare (xargs :guard (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                              (nat-listp (strip-cars node-to-value-alist))
+                              (nat-list-listp acc)
+                              (natp singleton-count))
+                  :measure (len node-to-value-alist)))
+  (if (atom node-to-value-alist)
+      (mv acc singleton-count)
+    (let* ((entry (car node-to-value-alist))
+           (nodenum (car entry))
+           (value (cdr entry)))
+      (mv-let (equiv-set node-to-value-alist)
+        (find-entries-with-value (cdr node-to-value-alist) value nil)
+        (if equiv-set ; there's at least one other node with the same value
+            (group-same-entries node-to-value-alist (cons (cons nodenum equiv-set) acc) singleton-count)
+          (group-same-entries node-to-value-alist acc (+ 1 singleton-count)))))))
+
+(local
+ (defthm all-all-<-of-mv-nth-0-of-group-same-entries
+   (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                 (nat-listp (strip-cars node-to-value-alist))
+                 (all-< (strip-cars node-to-value-alist) bound)
+                 (nat-list-listp acc)
+                 (all-all-< acc bound)
+                 (natp singleton-count))
+            (all-all-< (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count)) bound))
+   :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+(local
+ (defthm all-consp-of-mv-nth-0-of-group-same-entries
+   (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                 (nat-listp (strip-cars node-to-value-alist))
+                 (nat-list-listp acc)
+                 (all-consp acc)
+                 (natp singleton-count))
+            (all-consp (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count))))
+   :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-group-same-entries
+   (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                 (nat-listp (strip-cars node-to-value-alist))
+                 (nat-list-listp acc)
+                 (all-consp acc)
+                 (natp singleton-count))
+            (nat-list-listp (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count))))
+   :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-group-same-entries
+   (implies (natp singleton-count)
+            (natp (mv-nth 1 (group-same-entries node-to-value-alist acc singleton-count))))
+   :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;Handles nodes that are used on this test case but have not been used on a previous test case.
+;Such nodes are moved from the never-used-nodes list to the probably-constant-node-alist, where they are paired with their value on this test case.
+;Returns (mv never-used-nodes probably-constant-node-alist changep) where changep remains true if it was initially true.
+;fixme might be faster to process more than 1 test case at a time
+(defund handle-newly-used-nodes (never-used-nodes ;these are moved to acc or get entries in the alist
+                                 probably-constant-node-alist ;;pairs nodenums with probable constants
+                                 test-case-array-name test-case-array
+                                 acc
+                                 changep)
+  (declare (xargs :guard (and (nat-listp never-used-nodes)
+                              (alistp probably-constant-node-alist)
+                              (array1p test-case-array-name test-case-array)
+                              (all-< never-used-nodes (alen1 test-case-array-name test-case-array))
+                              ;; acc
+                              (booleanp changep))))
+  (if (endp never-used-nodes)
+      (mv acc probably-constant-node-alist changep)
+    (let* ((nodenum (first never-used-nodes))
+           (value (aref1 test-case-array-name test-case-array nodenum)))
+      (if (eq :unused value)
+          ;; the node is still unused:
+          (handle-newly-used-nodes (rest never-used-nodes)
+                                   probably-constant-node-alist
+                                   test-case-array-name test-case-array
+                                   (cons nodenum acc)
+                                   changep)
+        ;;the node is used for the first time on this test case:
+        (handle-newly-used-nodes (rest never-used-nodes)
+                                 (acons-fast nodenum value probably-constant-node-alist)
+                                 test-case-array-name test-case-array
+                                 acc
+                                 t)))))
+
+(local
+ (defthm nat-listp-of-mv-nth-0-of-handle-newly-used-nodes
+   (implies (and (nat-listp never-used-nodes)
+                 (nat-listp acc))
+            (nat-listp (mv-nth 0 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep))))
+   :hints (("Goal" :in-theory (enable handle-newly-used-nodes)))))
+
+(local
+ (defthm all-<-of-mv-nth-0-of-handle-newly-used-nodes
+   (implies (and (nat-listp never-used-nodes)
+                 (alistp probably-constant-node-alist)
+                 (array1p test-case-array-name test-case-array)
+                 (all-< never-used-nodes (alen1 test-case-array-name test-case-array))
+                 (all-< never-used-nodes dag-len)
+                 (all-< acc dag-len)
+                 (booleanp changep))
+            (all-< (mv-nth 0 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep))
+                   dag-len))
+   :hints (("Goal" :in-theory (enable handle-newly-used-nodes)))))
+
+(local
+ (defthm alistp-of-mv-nth-1-of-handle-newly-used-nodes
+   (implies (alistp probably-constant-node-alist)
+            (alistp (mv-nth 1 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep))))
+   :hints (("Goal" :in-theory (enable handle-newly-used-nodes)))))
+
+(local
+ (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-handle-newly-used-nodes
+   (implies (and (nat-listp never-used-nodes)
+                 (nat-listp (strip-cars probably-constant-node-alist)))
+            (nat-listp (strip-cars (mv-nth 1 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep)))))
+   :hints (("Goal" :in-theory (enable handle-newly-used-nodes)))))
+
+(local
+ (defthm all-<-of-strip-cars-of-mv-nth-1-of-handle-newly-used-nodes
+   (implies (and (all-< never-used-nodes bound)
+                 (all-< (strip-cars probably-constant-node-alist) bound))
+            (all-< (strip-cars (mv-nth 1 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep)))
+                   bound))
+   :hints (("Goal" :in-theory (enable handle-newly-used-nodes)))))
+
+(local
+ (defthm booleanp-of-mv-nth-2-of-handle-newly-used-nodes
+   (implies (booleanp changep)
+            (booleanp (mv-nth 2 (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array acc changep))))
+   :hints (("Goal" :in-theory (enable handle-newly-used-nodes)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;this function drops any pairs which are invalidated by the current test case
+;this rebuilds the whole alist - hope that is okay...
+;returns (mv probably-constant-node-alist changep)
+;fixme might be faster to process more than 1 test case at a time
+;every node in probably-constant-node-alist has been used on at least one test case
+(defund new-probably-constant-alist (probably-constant-node-alist ;;pairs nodenums with probable constants
+                                     test-case-array-name test-case-array
+                                     acc ;pairs are moved from probably-constant-node-alist to this
+                                     changep)
+  (declare (xargs :guard (and (alistp probably-constant-node-alist)
+                              (nat-listp (strip-cars probably-constant-node-alist))
+                              (array1p test-case-array-name test-case-array)
+                              (all-< (strip-cars probably-constant-node-alist)
+                                     (alen1 test-case-array-name test-case-array))
+                              ;; acc
+                              (booleanp changep))))
+  (if (endp probably-constant-node-alist)
+      (mv acc changep)
+    (let* ((pair (first probably-constant-node-alist))
+           (nodenum (car pair))
+           (probable-value (cdr pair))
+           (value-for-this-test-case (aref1 test-case-array-name test-case-array nodenum)))
+      (if (or (eq :unused value-for-this-test-case)
+              (equal probable-value value-for-this-test-case))
+          ;; this test case doesn't invalidate the pair:
+          (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
+                                       (cons pair acc) changep)
+        ;; the node is used and the value is different from the value in the alist, so drop the pair:
+        (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
+                                     acc t)))))
+
+(local
+ (defthm alistp-of-mv-nth-0-of-new-probably-constant-alist
+   (implies (and (alistp probably-constant-node-alist)
+                 (nat-listp (strip-cars probably-constant-node-alist))
+                 (array1p test-case-array-name test-case-array)
+                 (all-< (strip-cars probably-constant-node-alist)
+                        (alen1 test-case-array-name test-case-array))
+                 (nat-listp (strip-cars acc))
+                 (alistp acc)
+                 (booleanp changep))
+            (alistp (mv-nth 0 (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array acc changep))))
+   :hints (("Goal" :in-theory (enable new-probably-constant-alist)))))
+
+(local
+ (defthm nat-listp-of-strip-cars-of-mv-nth-0-of-new-probably-constant-alist
+   (implies (and (alistp probably-constant-node-alist)
+                 (nat-listp (strip-cars probably-constant-node-alist))
+                 (array1p test-case-array-name test-case-array)
+                 (all-< (strip-cars probably-constant-node-alist)
+                        (alen1 test-case-array-name test-case-array))
+                 (nat-listp (strip-cars acc))
+                 (booleanp changep))
+            (nat-listp (strip-cars (mv-nth 0 (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array acc changep)))))
+   :hints (("Goal" :in-theory (enable new-probably-constant-alist)))))
+
+(local
+ (defthm all-<-of-strip-cars-of-mv-nth-0-of-new-probably-constant-alist
+   (implies (and (alistp probably-constant-node-alist)
+                 (nat-listp (strip-cars probably-constant-node-alist))
+                 (array1p test-case-array-name test-case-array)
+                 (all-< (strip-cars probably-constant-node-alist)
+                        (alen1 test-case-array-name test-case-array))
+                 (nat-listp (strip-cars acc))
+                 (ALL-< (STRIP-CARS ACC) BOUND)
+                 (booleanp changep)
+                 (<= (alen1 test-case-array-name test-case-array) bound)
+                 )
+            (all-< (strip-cars (mv-nth 0 (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array acc changep)))
+                   bound))
+   :hints (("Goal" :in-theory (enable new-probably-constant-alist)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; run test cases and use them to split probably-equal-node-sets and eliminate probable constants
+;; returns (mv all-passedp probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist), where test-case-array-alist is valid iff keep-test-casesp is non-nil
+;ffixme think about what to do with nodes that are unreachable (don't influence the top node, because of ifs) on a single test case, or on all test cases.  maybe i now handle that?
+;now the tests come in randomized?
+(defund update-probable-facts-with-test-cases (test-cases
+                                               singleton-count
+                                               dag-array-name dag-array dag-len
+                                               probably-equal-node-sets
+                                               never-used-nodes
+                                               probably-constant-node-alist
+                                               interpreted-function-alist print
+                                               test-case-array-name-base
+                                               keep-test-casesp
+                                               test-case-array-alist
+                                               test-case-number
+                                               debug-nodes
+                                               num-of-last-interesting-test-case)
+  (declare (xargs :guard (and (test-casesp test-cases)
+                              (natp singleton-count)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< 0 dag-len)
+                              (nat-list-listp probably-equal-node-sets)
+                              (all-consp probably-equal-node-sets)
+                              (all-all-< probably-equal-node-sets dag-len)
+                              (nat-listp never-used-nodes)
+                              (all-< never-used-nodes dag-len)
+                              (alistp probably-constant-node-alist)
+                              (nat-listp (strip-cars probably-constant-node-alist))
+                              (all-< (strip-cars probably-constant-node-alist) dag-len)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              ;; print
+                              (symbolp test-case-array-name-base)
+                              (booleanp keep-test-casesp)
+                              (alistp test-case-array-alist)
+                              (natp test-case-number)
+                              (nat-listp debug-nodes)
+                              (all-< debug-nodes dag-len)
+                              (or (null num-of-last-interesting-test-case)
+                                  (natp num-of-last-interesting-test-case)))
+                  :guard-hints (("Goal" :in-theory (disable natp strip-cars)))))
+  (if (or (endp test-cases)
+          ;;stop if we've done at least 100 test cases and nothing has happened in the last 90% of them:
+          ;;fixme could allow the user to change the 10 and the 100 here:
+          (if (and t ;abandon-testing-when-boringp ;(or t abandon-testing-when-boringp)
+                   num-of-last-interesting-test-case
+                   (<= 100 test-case-number)
+                   (<= (* 10 num-of-last-interesting-test-case) test-case-number))
+              (prog2$ (cw "(Abandoning testing because nothing interesting is happening.)")
+                      t)
+            nil))
+      (mv t ; all tests passed
+          probably-equal-node-sets never-used-nodes probably-constant-node-alist
+          (reverse test-case-array-alist) ;new; keeps this in sync with the test cases (or do non-interesting ones get dropped?)
+          )
+    (b* ((- ;;TODO: Only print when things change?:
+          (cw "(Test ~x0 (~x1 total sets, ~x2 singletons, ~x3 constants)"
+              test-case-number
+              (+ singleton-count (len probably-equal-node-sets)) ;slow? could keep a count?
+              singleton-count
+              (len probably-constant-node-alist) ;slow?
+              ))
+         (test-case (first test-cases))
+         (test-case-array-name (if keep-test-casesp
+                                   (pack$ test-case-array-name-base '- (nat-to-string test-case-number))
+                                 ;;if we are not keeping test cases (e.g., because they'd take too much memory), reuse the same array:
+                                 test-case-array-name-base))
+         ;; Evaluate the test case and ensure the top node is true:
+         (test-case-array
+          (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist
+                                        test-case-array-name
+                                        debug-nodes))
+         ((when (not test-case-array)) ; some test failed! (rare)
+          (mv nil probably-equal-node-sets never-used-nodes probably-constant-node-alist nil))
+         (changep nil)
+         ;; Update the probably-equal-node-sets:
+         ((mv new-sets new-singleton-count changep)
+          (new-probably-equal-node-sets probably-equal-node-sets test-case-array nil 0 print test-case-array-name changep))
+         ;; Handle nodes that are used for the first time on this test case (they become probable constants):
+         ((mv never-used-nodes probably-constant-node-alist changep)
+          (handle-newly-used-nodes never-used-nodes
+                                   probably-constant-node-alist
+                                   test-case-array-name
+                                   test-case-array
+                                   nil
+                                   changep))
+         ;; Update the probable constants (TODO: Do this before handle-newly-used-nodes):
+         ((mv probably-constant-node-alist changep)
+          (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array nil changep))
+         (- (if (and (or (eq print :verbose)
+                         (eq print :verbose!))
+                     changep) ; todo: use this value to decide whether to keep the test case? maybe keep the first few boring ones so we have enough..
+                (cw "~%interesting test case ~x0.)~%" test-case)
+              (cw ")~%"))))
+      (update-probable-facts-with-test-cases (rest test-cases)
+                                             (+ singleton-count new-singleton-count)
+                                             dag-array-name dag-array dag-len
+                                             new-sets
+                                             never-used-nodes
+                                             probably-constant-node-alist
+                                             interpreted-function-alist print test-case-array-name-base keep-test-casesp
+                                             (if keep-test-casesp
+                                                 (acons-fast test-case-array-name
+                                                             test-case-array
+                                                             test-case-array-alist)
+                                               nil)
+                                             (+ 1 test-case-number)
+                                             debug-nodes
+                                             (if changep
+                                                 test-case-number
+                                               num-of-last-interesting-test-case)))))
+
+;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
+;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
+;returns (mv initial-probably-equal-node-sets initial-singleton-count)
+(defund initial-probably-equal-node-sets (dag-len test-case-array-name test-case-array)
+  (declare (xargs :guard (and (array1p test-case-array-name test-case-array)
+                              (natp dag-len)
+                              (<= dag-len (alen1 test-case-array-name test-case-array)))))
+  (let* ((node-to-value-alist (array-to-alist test-case-array-name test-case-array dag-len)) ; avoid this?
+         (sorted-node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist)) ; sorted by the values
+         )
+    (group-same-entries sorted-node-to-value-alist nil 0)))
+
+(local
+ (defthm all-all-<-of-mv-nth-0-of-initial-probably-equal-node-sets
+   (implies (and (array1p test-case-array-name test-case-array)
+                 (natp dag-len)
+                 (<= dag-len (alen1 test-case-array-name test-case-array))
+                 (<= dag-len bound))
+            (all-all-< (mv-nth 0 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array)) bound))
+   :hints (("Goal" :in-theory (enable initial-probably-equal-node-sets)))))
+
+(local
+ (defthm all-consp-of-mv-nth-0-of-initial-probably-equal-node-sets
+  (implies (and (array1p test-case-array-name test-case-array)
+                (natp dag-len)
+                (<= dag-len (alen1 test-case-array-name test-case-array))
+                )
+           (all-consp (mv-nth 0 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (enable initial-probably-equal-node-sets)))))
+
+(local
+ (defthm nat-list-listp-of-mv-nth-0-of-initial-probably-equal-node-sets
+  (implies (and (array1p test-case-array-name test-case-array)
+                (natp dag-len)
+                (<= dag-len (alen1 test-case-array-name test-case-array))
+                )
+           (nat-list-listp (mv-nth 0 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (enable initial-probably-equal-node-sets)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-initial-probably-equal-node-sets
+  (implies (and (array1p test-case-array-name test-case-array)
+                (natp dag-len)
+                (<= dag-len (alen1 test-case-array-name test-case-array))
+                )
+           (natp (mv-nth 1 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (e/d (initial-probably-equal-node-sets) (natp))))))
+
+
+;; Returns (mv never-used-nodes probably-constant-node-alist ;pairs nodenums used on the first test case with their values
+;;         )
+(defund harvest-probable-constants-from-first-test-case (nodenum
+                                                         miter-len
+                                                         test-case-array-name test-case-array
+                                                         never-used-nodes
+                                                         probably-constant-node-alist)
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp miter-len)
+                              (array1p test-case-array-name test-case-array)
+                              (<= miter-len (alen1 test-case-array-name test-case-array))
+                              (nat-listp never-used-nodes)
+                              (alistp probably-constant-node-alist))
+                  :measure (nfix (+ 1 (- miter-len nodenum)))))
+  (if (or (<= miter-len nodenum)
+          (not (integerp miter-len))
+          (not (integerp nodenum))
+          )
+      (mv never-used-nodes probably-constant-node-alist)
+    (let* ((value (aref1 test-case-array-name test-case-array nodenum)))
+      (if (eq :unused value)
+          (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
+                                                           (cons nodenum never-used-nodes)
+                                                           probably-constant-node-alist)
+        (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
+                                                         never-used-nodes
+                                                         (acons-fast nodenum value probably-constant-node-alist))))))
+
+(local
+ (defthm all-<-of-mv-nth-0-of-harvest-probable-constants-from-first-test-case
+   (implies (and (natp nodenum)
+                 (natp miter-len)
+                 (array1p test-case-array-name test-case-array)
+                 (<= miter-len (alen1 test-case-array-name test-case-array))
+                 (nat-listp never-used-nodes)
+                 (ALL-< NEVER-USED-NODES MITER-LEN)
+                 (alistp probably-constant-node-alist))
+            (all-< (mv-nth 0 (harvest-probable-constants-from-first-test-case nodenum
+                                                                              miter-len
+                                                                              test-case-array-name test-case-array
+                                                                              never-used-nodes
+                                                                              probably-constant-node-alist))
+                   miter-len))
+   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+
+(local
+ (defthm nat-listp-of-mv-nth-0-of-harvest-probable-constants-from-first-test-case
+   (implies (and (natp nodenum)
+                 (natp miter-len)
+                 (array1p test-case-array-name test-case-array)
+                 (<= miter-len (alen1 test-case-array-name test-case-array))
+                 (nat-listp never-used-nodes)
+                 (ALL-< NEVER-USED-NODES MITER-LEN)
+                 (alistp probably-constant-node-alist))
+            (nat-listp (mv-nth 0 (harvest-probable-constants-from-first-test-case nodenum
+                                                                                  miter-len
+                                                                                  test-case-array-name test-case-array
+                                                                                  never-used-nodes
+                                                                                  probably-constant-node-alist))))
+   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+
+(local
+ (defthm alistp-of-mv-nth-1-of-harvest-probable-constants-from-first-test-case
+   (implies (and (natp nodenum)
+                 (natp miter-len)
+                 (array1p test-case-array-name test-case-array)
+                 (<= miter-len (alen1 test-case-array-name test-case-array))
+                 (nat-listp never-used-nodes)
+                 (alistp probably-constant-node-alist))
+            (alistp (mv-nth 1 (harvest-probable-constants-from-first-test-case nodenum
+                                                                               miter-len
+                                                                               test-case-array-name test-case-array
+                                                                               never-used-nodes
+                                                                               probably-constant-node-alist))))
+   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+
+(local
+ (defthm all-<-of-strip-cars-of-mv-nth-1-of-harvest-probable-constants-from-first-test-case
+   (implies (and (natp nodenum)
+                 (natp miter-len)
+                 (array1p test-case-array-name test-case-array)
+                 (<= miter-len (alen1 test-case-array-name test-case-array))
+                 (nat-listp never-used-nodes)
+                 (alistp probably-constant-node-alist)
+                 (all-< (strip-cars probably-constant-node-alist) miter-len))
+            (all-< (strip-cars (mv-nth 1 (harvest-probable-constants-from-first-test-case nodenum
+                                                                                          miter-len
+                                                                                          test-case-array-name test-case-array
+                                                                                          never-used-nodes
+                                                                                          probably-constant-node-alist)))
+                   miter-len))
+   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+
+(local
+ (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-harvest-probable-constants-from-first-test-case
+   (implies (and (natp nodenum)
+                 (natp miter-len)
+                 (array1p test-case-array-name test-case-array)
+                 (<= miter-len (alen1 test-case-array-name test-case-array))
+                 (nat-listp never-used-nodes)
+                 (alistp probably-constant-node-alist)
+                 (all-< (strip-cars probably-constant-node-alist) miter-len)
+                 (NAT-LISTP (STRIP-CARS PROBABLY-CONSTANT-NODE-ALIST)))
+            (nat-listp (strip-cars (mv-nth 1 (harvest-probable-constants-from-first-test-case nodenum
+                                                                                              miter-len
+                                                                                              test-case-array-name test-case-array
+                                                                                              never-used-nodes
+                                                                                              probably-constant-node-alist)))))
+   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+
+;repeatedly generate a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes
+;;returns (mv all-passedp
+;             probably-equal-node-sets ;includes sets believed to be a constant
+;             never-used-nodes
+;             probably-constant-node-alist ;pairs nodes with the constants they seem to be equal to
+;             test-case-array-alist ; valid iff keep-test-casesp is non-nil, pairs array names with arrays that give values to all the nodes
+;        )
+;fixme should this return the used test cases?
+(defund probable-facts (miter-array-name miter-array miter-len
+                                        miter-depth
+                                        test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
+                                        interpreted-function-alist print keep-test-casesp
+                                        debug-nodes)
+  (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< 0 miter-len)
+                              (natp miter-depth)
+                              (test-casesp test-cases)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              ;; print
+                              (booleanp keep-test-casesp)
+                              (nat-listp debug-nodes)
+                              (ALL-< DEBUG-NODES MITER-LEN))
+                  :guard-hints (("Goal" :in-theory (disable natp)))))
+  (b* ((test-cases test-cases ;(firstn 1024 test-cases) ;Thu Feb 17 20:25:10 2011
+                   )
+       (- (cw "(Evaluating test cases (keep-test-casesp is ~x0):~%" keep-test-casesp))
+       ;; use the first test case to make initial-probably-equal-node-sets (I think this is faster than starting with one huge set and then splitting it):
+       (- (cw "(Test 0 (initial)"))
+       (test-case-array-name-base (pack$ 'test-case-array-depth- miter-depth '-)) ;using the depth is new
+       (first-test-case-array-name (pack$ test-case-array-name-base 0))
+       (test-case-array
+        (evaluate-and-check-test-case (first test-cases)
+                                      miter-array-name
+                                      miter-array
+                                      miter-len
+                                      interpreted-function-alist
+                                      first-test-case-array-name
+                                      debug-nodes))
+       ((when (not test-case-array)) ; actually, a hard erorr will have already been thrown
+        (mv nil                      ; all-passedp
+            nil nil nil nil))
+       ((mv initial-probably-equal-node-sets initial-singleton-count)
+        (initial-probably-equal-node-sets miter-len first-test-case-array-name test-case-array))
+       ((mv initial-never-used-nodes
+            initial-probably-constant-node-alist ;pairs nodenums used on the first test case with their values
+            )
+        (harvest-probable-constants-from-first-test-case 0
+                                                         miter-len
+                                                         first-test-case-array-name test-case-array
+                                                         nil
+                                                         nil))
+       ;;((array-to-alist first-test-case-array-name test-case-array miter-len)) ;slow?
+       ;;save the first test case in the test-case-array-alist:
+       (test-case-array-alist (if keep-test-casesp
+                                  (acons-fast first-test-case-array-name test-case-array nil)
+                                nil))
+       (- (cw ")~%"))
+       ;;use additional test cases to split the sets and update the probable constant facts:
+       ((mv all-passedp probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist)
+        (update-probable-facts-with-test-cases (rest test-cases)
+                                               initial-singleton-count
+                                               miter-array-name
+                                               miter-array
+                                               miter-len
+                                               initial-probably-equal-node-sets
+                                               initial-never-used-nodes
+                                               initial-probably-constant-node-alist
+                                               interpreted-function-alist
+                                               print
+                                               test-case-array-name-base
+                                               keep-test-casesp ;just check whether test-case-array-alist is nil?
+                                               test-case-array-alist
+                                               1 ;test case number
+                                               debug-nodes
+                                               nil ;;number of last interesting test case
+                                               ))
+       (- (cw ")~%")))
+    (mv all-passedp
+        probably-equal-node-sets
+        never-used-nodes
+        probably-constant-node-alist
+        test-case-array-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;TEST-CASE-ARRAY-NAME and TEST-CASE-ARRAY may be nil - fffixme what happens in that case?
 ;;returns the trace of the execution of the recursive function at nodenum, or nil if nodenum isn't used on this test case (but only if TEST-CASE-ARRAY is non-nil)
 ;fixme - handle the case when too many cases are skipped!? done elsewhere?
 (defun get-trace-for-node (nodenum dag-array-name dag-array interpreted-function-alist
-                                   var-value-alist ;the test case
+                                   test-case ;the test case
                                    test-case-array-name
                                    test-case-array)
   (declare (xargs :verify-guards nil))
@@ -1407,26 +3074,28 @@
                         (acons #\0 expr nil))
           ;;regular function call
           (let* ((fn (ffn-symb expr))
-                 (args (fargs expr))
+                 (dargs (dargs expr))
                  ;;first generate values for the arguments
                  (arg-vals (if test-case-array
                                ;;if we passed in a test-case-array, just look-up the arg vals
-                               (get-vals-of-args args test-case-array-name test-case-array)
+                               (get-vals-of-args dargs test-case-array-name test-case-array)
                              ;;no test-case-array was passed in, so we have to compute the whole test case:
-                             (let* ((args-to-eval (keep-atoms args))
-                                    ;;fffixme this may crash if the node is :unused in the whole test case:
-                                    ;;should we evaluate things top-down like we do the whole miter to try to detect such cases?
-                                    ;;fixme this sets unused nodes to :unused - don't bother?
-                                    (test-case-array (evaluate-test-case
-                                                      args-to-eval ;initial worklist
-                                                      (+ -1 nodenum) ;fffixme overkill?
-                                                      dag-array-name
-                                                      dag-array
-                                                      (prog2$ nil ;(cw "evaluating partial test case for ~x0.~%" var-value-alist)
-                                                              var-value-alist)
-                                                      interpreted-function-alist
-                                                      'test-case-array)))
-                               (get-vals-of-args args 'test-case-array test-case-array)))))
+                             (let* ((dargs-to-eval (keep-atoms dargs)))
+                               (if (not dargs-to-eval)
+                                   ;; args were all constants:
+                                   dargs
+                                 (let (;;fffixme this may crash if the node is :unused in the whole test case:
+                                       ;;should we evaluate things top-down like we do the whole miter to try to detect such cases?
+                                       ;;fixme this sets unused nodes to :unused - don't bother?
+                                       (test-case-array (evaluate-test-case
+                                                         dargs-to-eval ;initial worklist
+                                                         dag-array-name
+                                                         dag-array
+                                                         (prog2$ nil ;(cw "evaluating partial test case for ~x0.~%" test-case)
+                                                                 test-case)
+                                                         interpreted-function-alist
+                                                         'test-case-array)))
+                                   (get-vals-of-args dargs 'test-case-array test-case-array)))))))
             ;;evaluate and trace the recursive function call:
             (mv-let (value trace)
                     (apply-axe-evaluator-with-tracing
@@ -1522,18 +3191,19 @@
 
 (skip-proofs (verify-guards get-traces-for-two-nodes))
 
-(skip-proofs
- (defun flatten-trace (trace)
-   (declare (xargs :measure (acl2-count trace)))
-   (if (endp trace)
-       nil
-     (let* ((args (g :args trace))
-            (result (g :result trace))
-            (sub-traces (g :sub-traces trace)))
-       (if (<= (len sub-traces) 1) ;covers the base case of nil too
-           (cons (s :args args (s :return-value result nil))
-                 (flatten-trace (first sub-traces)))
-         (hard-error 'flatten-trace "We don't support traces where the function doesn't make exactly 1 recursive call" nil))))))
+(defun flatten-trace (trace)
+  (declare (xargs :measure (acl2-count trace)
+                  :hints (("Goal" :in-theory (enable acl2-count)
+                           :cases ((g :sub-traces trace))))))
+  (if (endp trace)
+      nil
+    (let* ((args (g :args trace))
+           (result (g :result trace))
+           (sub-traces (g :sub-traces trace)))
+      (if (<= (len sub-traces) 1) ;covers the base case of nil too
+          (cons (s :args args (s :return-value result nil))
+                (flatten-trace (first sub-traces)))
+        (hard-error 'flatten-trace "We don't support traces where the function doesn't make exactly 1 recursive call" nil)))))
 
 (defun flatten-traces (traces)
   (if (endp traces)
@@ -1618,17 +3288,13 @@
 
 (skip-proofs (verify-guards make-bounds-and-type-facts))
 
-(set-bogus-mutual-recursion-ok t)
+;; (defun bvplus-list-list (n x y)
+;;   (if (endp x)
+;;       nil
+;;     (cons (bvplus-list n (car x) (car y))
+;;           (bvplus-list-list n (cdr x) (cdr y)))))
 
-
-
-(defun bvplus-list-list (n x y)
-  (if (endp x)
-      nil
-    (cons (bvplus-list n (car x) (car y))
-          (bvplus-list-list n (cdr x) (cdr y)))))
-
-(skip-proofs (verify-guards bvplus-list-list))
+;; (skip-proofs (verify-guards bvplus-list-list))
 
 (defun nth-list-aux (n items acc)
   (declare (type (integer 0 *) n)
@@ -4561,112 +6227,48 @@
   (prog2$ nil ;(cw "Comparing sigs ~x0 and ~x1~%" (car entry1) (car entry2)) ;BBOZO remove
           (sig-<-aux (cdr entry1) (cdr entry2))))
 
-(defun merge-sig-< (l1 l2 acc)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (true-listp acc))
-                  :verify-guards nil
-                  :measure (+ (len l1) (len l2))))
-  (cond ((endp l1)
-         (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((sig-< (car l1) (car l2))
-         (merge-sig-< (cdr l1)
-                      l2 (cons (car l1) acc)))
-        (t (merge-sig-< l1 (cdr l2)
-                        (cons (car l2) acc)))))
+;; (defun merge-sig-< (l1 l2 acc)
+;;   (declare (xargs :guard (and (true-listp l1)
+;;                               (true-listp l2)
+;;                               (true-listp acc))
+;;                   :verify-guards nil
+;;                   :measure (+ (len l1) (len l2))))
+;;   (cond ((endp l1)
+;;          (revappend acc l2))
+;;         ((endp l2) (revappend acc l1))
+;;         ((sig-< (car l1) (car l2))
+;;          (merge-sig-< (cdr l1)
+;;                       l2 (cons (car l1) acc)))
+;;         (t (merge-sig-< l1 (cdr l2)
+;;                         (cons (car l2) acc)))))
 
-(skip-proofs (verify-guards merge-sig-<))
+;; (skip-proofs (verify-guards merge-sig-<))
 
-(defund evens-tail (lst acc)
-  (declare (xargs :guard (true-listp acc)
-                  ))
-  (if (atom lst)
-      (reverse acc)
-    (if (atom (cdr lst))
-        (reverse (cons (car lst) acc))
-      (evens-tail (cddr lst)
-                  (cons (car lst) acc)))))
 
-;fixme - where does this stuff go?!  Use defmergesort instead!
 
-(defthm len-of-evens-tail-bound
-  (implies (< 1 (len l))
-           (< (len (evens-tail l acc))
-              (+ (len acc) (len l))))
-  :hints (("Goal" :expand (evens-tail (cddr l)
-                                      (cons (car l) acc))
-           :in-theory (enable evens-tail))))
+;; ;fffixme use my new fast merge-sort (make sure it is faster)
+;; (defun merge-sort-sig-< (l)
+;;   (declare (xargs :guard (true-listp l)
+;;                   :verify-guards nil
+;;                   :measure (len l)
+;;                   :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
+;;                                         (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
+;;                            :expand (
+;;                                    ; (EVENS-TAIL (CONS L1 L2) NIL)
+;;                                     )
+;;                            :in-theory (disable len-of-evens-tail-bound)))
+;;                   ))
+;;   (cond ((endp (cdr l)) l)
+;;         (t (merge-sig-< (merge-sort-sig-< (evens-tail l nil))
+;;                         (merge-sort-sig-< (odds-tail l))
+;;                         nil
+;;                         ))))
 
-(defthm evens-tail-of-singleton
-  (implies (equal (len l) 1)
-           (equal (evens-tail l nil)
-                  (list (car l))))
-  :hints (("Goal" :in-theory (enable evens-tail reverse))))
+;; (skip-proofs (verify-guards merge-sort-sig-<))
 
-(defun odds-tail (l)
-  (declare (xargs :guard t))
-  (if (consp l)
-      (evens-tail (cdr l) nil)
-    nil))
 
-(in-theory (disable evens-tail))
 
-;fffixme use my new fast merge-sort (make sure it is faster)
-(defun merge-sort-sig-< (l)
-  (declare (xargs :guard (true-listp l)
-                  :verify-guards nil
-                  :measure (len l)
-                  :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
-                                        (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
-                           :expand (
-                                   ; (EVENS-TAIL (CONS L1 L2) NIL)
-                                    )
-                           :in-theory (disable len-of-evens-tail-bound)))
-                  ))
-  (cond ((endp (cdr l)) l)
-        (t (merge-sig-< (merge-sort-sig-< (evens-tail l nil))
-                        (merge-sort-sig-< (odds-tail l))
-                        nil
-                        ))))
 
-(skip-proofs (verify-guards merge-sort-sig-<))
-
-(defun merge-lexorder-of-cdrs! (l1 l2 acc)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (true-listp acc))
-                  :verify-guards nil
-                  :measure (+ (len l1) (len l2))))
-  (cond ((endp l1)
-         (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((lexorder (cdr (car l1)) (cdr (car l2))) ;note the cdrs
-         (merge-lexorder-of-cdrs! (cdr l1)
-                                  l2 (cons (car l1) acc)))
-        (t (merge-lexorder-of-cdrs! l1 (cdr l2)
-                                    (cons (car l2) acc)))))
-
-(skip-proofs (verify-guards merge-lexorder-of-cdrs!))
-
-(defun merge-sort-lexorder-of-cdrs (l)
-  (declare (xargs :guard (true-listp l)
-                  :verify-guards nil
-                  :measure (len l)
-                  :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
-                                        (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
-                           :expand (
-; (EVENS-TAIL (CONS L1 L2) NIL)
-                                    )
-                           :in-theory (disable len-of-evens-tail-bound)))
-                  ))
-  (cond ((endp (cdr l)) l)
-        (t (merge-lexorder-of-cdrs! (merge-sort-lexorder-of-cdrs (evens-tail l nil))
-                            (merge-sort-lexorder-of-cdrs (odds-tail l))
-                            nil
-                            ))))
-
-(skip-proofs (verify-guards merge-sort-lexorder-of-cdrs))
 
 ;;
 ;; deciding which nodes to translate to STP (and which nodes to not translate, i.e., to cut)
@@ -5954,24 +7556,24 @@
 ;;                 (mv t (car terms) alist)
 ;;               (unify-any-term (cdr terms) pattern)))))
 
-;;return (mv lhs rhs) where one if x and the other is y
-;fixme does this do the right thing with old vars?
-(defun orient-equality (formals x y)
-  (let* ((vars-in-x (get-vars-from-term x))
-         (vars-in-y (get-vars-from-term x))
-         (formals-in-x (intersection-eq formals vars-in-x))
-         (formals-in-y (intersection-eq formals vars-in-y))
-         (x-smallerp (if formals-in-x
-                         (if formals-in-y
-                             t ;arbitrary
-                           nil)
-                       (if formals-in-y
-                           t
-                         t ; arbitrary
-                         )))
-         (lhs (if x-smallerp x y))
-         (rhs (if x-smallerp y x)))
-    (mv lhs rhs)))
+;; ;;return (mv lhs rhs) where one if x and the other is y
+;; ;fixme does this do the right thing with old vars?
+;; (defun orient-equality (formals x y)
+;;   (let* ((vars-in-x (get-vars-from-term x))
+;;          (vars-in-y (get-vars-from-term x))
+;;          (formals-in-x (intersection-eq formals vars-in-x))
+;;          (formals-in-y (intersection-eq formals vars-in-y))
+;;          (x-smallerp (if formals-in-x
+;;                          (if formals-in-y
+;;                              t ;arbitrary
+;;                            nil)
+;;                        (if formals-in-y
+;;                            t
+;;                          t ; arbitrary
+;;                          )))
+;;          (lhs (if x-smallerp x y))
+;;          (rhs (if x-smallerp y x)))
+;;     (mv lhs rhs)))
 
 
 
@@ -6977,177 +8579,37 @@
         (prog2$ (cw "Dropping connection ~x0 to prevent loops.~%" term)
                 (remove-connections-that-might-loop (rest terms) terms-to-check))))))
 
-;make this a macro?
-(defun droplast (lst)
-  (butlast lst 1))
+;; ;make this a macro?
+;; (defun droplast (lst)
+;;   (butlast lst 1))
 
-(defmap-simple droplast)
+;; (defmap-simple droplast)
 
-(defun find-val-other-than (val nodenums test-case-array test-case-array-name)
-  (if (endp nodenums)
-      nil ;failed to find such a val
-    (let* ((nodenum (first nodenums))
-           (val2 (aref1 test-case-array-name test-case-array nodenum)))
-      (if (equal val val2)
-          ;;keep looking:
-          (find-val-other-than val (cdr nodenums) test-case-array test-case-array-name)
-        ;;we found a difference:
-        t))))
 
-(skip-proofs (verify-guards find-val-other-than))
 
-;returns an alist pairing values with nodenum lists
-;the alist may include shadowed pairs
-;fixme think about :unused nodes
-(defun test-case-alist-for-set (set test-case-array-name test-case-array acc)
-  (if (endp set)
-      acc
-    (let* ((nodenum (first set))
-           (value (aref1 test-case-array-name test-case-array nodenum))
-           (nodes-for-value (lookup-equal value acc)))
-      (test-case-alist-for-set (cdr set) test-case-array-name test-case-array
-                               (acons-fast value (cons nodenum nodes-for-value) acc)))))
 
-(skip-proofs (verify-guards test-case-alist-for-set))
 
-;; (defun drop-singletons (lst acc)
+;; ;tail-recursive (we don't bother to reverse the acc)
+;; (defun strip-cdrs-and-rev (lst acc)
 ;;   (if (endp lst)
 ;;       acc
-;;     (let* ((item (car lst)))
-;;       (if (and (consp item)
-;;                (not (consp (cdr item))))
-;;           ;drop the singleton
-;;           (drop-singletons (cdr lst) acc)
-;;         (drop-singletons (cdr lst) (cons item acc))))))
+;;     (strip-cdrs-and-rev (cdr lst) (cons (cdr (car lst)) acc))))
 
-;returns (mv non-singleton-sets singleton-count)
-(defun drop-and-count-singletons (lst acc count-acc)
-  (declare (xargs :guard (and (integerp count-acc)
-                              (true-listp lst))))
-  (if (endp lst)
-      (mv acc count-acc)
-    (let* ((item (car lst)))
-      (if (and (consp item)
-               (not (consp (cdr item))))
-          ;;drop the singleton:
-          (drop-and-count-singletons (cdr lst) acc (+ 1 count-acc))
-        (drop-and-count-singletons (cdr lst) (cons item acc) count-acc)))))
+;; ;each pair in the resulting alist pairs a value with the list of nodenums that have the value under the current test case
+;; ;BOZO speed this up.
+;; (defun make-full-dag-val-alist (n dag-len test-case-array acc test-case-array-name)
+;;   (declare (xargs :verify-guards nil
+;;                   :measure (+ 1 (nfix (- dag-len n)))))
+;;   (if (or (>= n dag-len)
+;;           (not (natp n))
+;;           (not (natp dag-len)))
+;;       acc
+;;     (let* ((val (aref1 test-case-array-name test-case-array n))
+;;            (val-nodenums (lookup-equal val acc)))
+;;       (make-full-dag-val-alist (+ 1 n) dag-len test-case-array (acons-fast val (cons n val-nodenums) acc)
+;;                                test-case-array-name))))
 
-;ignores later pairs that bind already-bound keys
-(defun strip-cdrs-unique (lst keys-seen acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (all-consp lst)
-                              (true-listp keys-seen))))
-  (if (endp lst)
-      acc ;we don't bother to reverse this
-    (let* ((entry (car lst))
-           (key (car entry)))
-      (if (member-equal key keys-seen)
-          (strip-cdrs-unique (cdr lst) keys-seen acc)
-        (strip-cdrs-unique (cdr lst) (cons key keys-seen) (cons (cdr entry) acc))))))
 
-;;we first make an alist whose keys are data values (often 0 or 1?) and whose vals are sets of nodenums
-;returns (mv new-sets new-singleton-count)
-(defun split-set (set test-case-array test-case-array-name)
-  (let* ((alist (test-case-alist-for-set set test-case-array-name test-case-array nil)) ;this could be slow?  better to pair nodenums with vals and merge-sort the pairs by value?
-         (new-node-sets (strip-cdrs-unique alist nil nil)) ;don't cons this up?
-         )
-    ;;fixme combine this with the work above:
-    (drop-and-count-singletons new-node-sets nil 0)))
-
-(skip-proofs (verify-guards split-set))
-
-;takes a set and adds zero or more sets to acc (also returns a new singleton count)
-;returns (mv acc new-singleton-count change-flg)
-;set should have at least two elements
-;should not return singletons or empty sets
-;most of the time, this won't be able to distinguish any nodes and so will return (list set) - we try to make that case fast (don't recons the whole set)...
-;inline this?
-(defun try-to-split-set (set test-case-array-name test-case-array print acc)
-  (let* ((first-nodenum (first set))
-         (first-val (aref1 test-case-array-name test-case-array first-nodenum))
-         (need-to-splitp (find-val-other-than first-val (rest set) test-case-array test-case-array-name)))
-    (if (not need-to-splitp)
-        ;;in this case we don't recons the whole set
-        (mv (cons set acc) 0 nil) ;fixme try to save even this cons?
-      (prog2$ (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set)))
-              (mv-let (new-sets new-singleton-count)
-                      (split-set set test-case-array test-case-array-name) ;fixme pass acc into this?
-                      (mv (append new-sets acc)
-                          new-singleton-count t))))))
-
-(skip-proofs (verify-guards try-to-split-set))
-
-;try to split the sets using test-case-array
-;returns (mv new-sets new-singleton-count changep)
-;sets are moved from SETS to ACC.  as they are moved they are split if indicated by this test case.
-;sets are lists of nodenums.  each set has length at least 2 (singleton sets are dropped).
-(defun new-probably-equal-node-sets (sets test-case-array acc singleton-count-acc print test-case-array-name changep)
-  (if (endp sets)
-      (mv acc singleton-count-acc changep)
-    (let* ((set (first sets)))
-      (mv-let (acc ;has the new sets appended onto it
-               new-singleton-count change-flg-for-this-set)
-              (try-to-split-set set test-case-array-name test-case-array print acc)
-              (new-probably-equal-node-sets (rest sets)
-                                            test-case-array
-                                            acc
-                                            (+ singleton-count-acc new-singleton-count)
-                                            print
-                                            test-case-array-name
-                                            (or changep change-flg-for-this-set))))))
-
-(skip-proofs (verify-guards new-probably-equal-node-sets))
-
-;tail-recursive (we don't bother to reverse the acc)
-(defun strip-cdrs-and-rev (lst acc)
-  (if (endp lst)
-      acc
-    (strip-cdrs-and-rev (cdr lst) (cons (cdr (car lst)) acc))))
-
-;each pair in the resulting alist pairs a value with the list of nodenums that have the value under the current test case
-;BOZO speed this up.
-(defun make-full-dag-val-alist (n dag-len test-case-array acc test-case-array-name)
-  (declare (xargs :verify-guards nil
-                  :measure (+ 1 (nfix (- dag-len n)))))
-  (if (or (>= n dag-len)
-          (not (natp n))
-          (not (natp dag-len)))
-      acc
-    (let* ((val (aref1 test-case-array-name test-case-array n))
-           (val-nodenums (lookup-equal val acc)))
-      (make-full-dag-val-alist (+ 1 n) dag-len test-case-array (acons-fast val (cons n val-nodenums) acc)
-                               test-case-array-name))))
-
-;returns (mv entries-with-sig remaining-entries)
-(defun find-entries-with-sig (entries sig acc)
-  (if (endp entries)
-      (mv acc entries)
-    (let* ((entry (car entries))
-           (nodenum (car entry))
-           (sig2 (cdr entry)))
-      (if (equal sig sig2)
-          (find-entries-with-sig (cdr entries) sig (cons nodenum acc))
-        ;;stop looking, since the sigs are sorted and we found a difference
-        (mv acc entries)))))
-
-(skip-proofs (verify-guards find-entries-with-sig))
-
-;returns (mv sets singleton-count)
-(skip-proofs
- (defun group-same-entries (entries acc singleton-count)
-   (if (atom entries)
-       (mv acc singleton-count)
-     (let* ((entry (car entries))
-            (nodenum (car entry))
-            (sig (cdr entry)))
-       (mv-let (equiv-set entries)
-               (find-entries-with-sig (cdr entries) sig nil)
-               (if equiv-set ;not a singleton
-                   (group-same-entries entries (cons (cons nodenum equiv-set) acc) singleton-count)
-                 (group-same-entries entries acc (+ 1 singleton-count))))))))
-
-(skip-proofs (verify-guards group-same-entries))
 
 ;; ;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
 ;; (defun initial-probably-equal-node-sets (dag-len test-case-array test-case-array-name)
@@ -7766,22 +9228,22 @@
         (prog2$ (cw "dropping ~x0: (vars: ~x1, formals1: ~x2, formals2: ~x3)~%" item vars var-set1 var-set2)
                 (drop-items-that-dont-have-vars-from-both-sets (cdr items) var-set1 var-set2))))))
 
-(defun orient-equality2 (term)
-  (declare (xargs :mode :program))
-  (if (and (call-of 'equal term)
-           (not (symbolp (farg1 term))) ;new!! we keep this so that vars get substituted - can that loop?!
-           (smaller-termp (farg1 term) (farg2 term)))
-      `(equal ,(farg2 term) ,(farg1 term))
-    term))
+;; (defun orient-equality2 (term)
+;;   (declare (xargs :mode :program))
+;;   (if (and (call-of 'equal term)
+;;            (not (symbolp (farg1 term))) ;new!! we keep this so that vars get substituted - can that loop?!
+;;            (smaller-termp (farg1 term) (farg2 term)))
+;;       `(equal ,(farg2 term) ,(farg1 term))
+;;     term))
 
-;change each equality to have the bigger term first
-;ffixme what about when there is a var that's equated to something else
-(defun orient-equalities (terms)
-  (declare (xargs :mode :program))
-  (if (endp terms)
-      nil
-    (cons (orient-equality2 (first terms))
-          (orient-equalities (rest terms)))))
+;; ;change each equality to have the bigger term first
+;; ;ffixme what about when there is a var that's equated to something else
+;; (defun orient-equalities (terms)
+;;   (declare (xargs :mode :program))
+;;   (if (endp terms)
+;;       nil
+;;     (cons (orient-equality2 (first terms))
+;;           (orient-equalities (rest terms)))))
 
 ;for now this just skips a few specific functions - fixme add a check that the found function is recursive
 (skip-proofs
@@ -7821,7 +9283,8 @@
 ;returns (mv provedp
 ;            nodenums-translated ;;in decreasing order
 ;            state)
-(defun attempt-aggressively-cut-equivalence-proof (smaller-nodenum
+
+(defund attempt-aggressively-cut-equivalence-proof (smaller-nodenum
                                                    larger-nodenum
                                                    dag-array-name
                                                    dag-array ;this is the miter-array
@@ -7829,7 +9292,18 @@
                                                    var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
                                                    print max-conflicts miter-name
                                                    state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :guard (and (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< smaller-nodenum dag-len)
+                              (< larger-nodenum dag-len)
+                              (symbol-alistp var-type-alist)
+                              ;; print
+                              (natp max-conflicts) ; allow nil?
+                              (symbolp miter-name))
+            :verify-guards nil
+            :stobjs state))
   (b* (
        (- (and print (cw " (Cutting at shared nodes...")))
        (num-nodes-to-consider (+ 1 larger-nodenum))
@@ -7888,7 +9362,9 @@
 ;would like to reuse this for pure constants
 ;returns (mv success-flg state)
 (defun attempt-cut-equivalence-proofs (min-depth max-depth depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
-  (declare (xargs :mode :program :stobjs state)
+  (declare (xargs :mode :program
+                  :verify-guards nil
+                  :stobjs state)
            (irrelevant miter-name) ;todo
            )
   (if (or (not (natp min-depth))
@@ -7944,9 +9420,11 @@
                                                            miter-array-name miter-array miter-len
                                                            var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
                                                            print max-conflicts miter-name state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :mode :program
+                  :verify-guards nil
+                  :stobjs state))
   (b* ( ;;(- (and print (cw "(Subdag that supports the nodes:~%")))
-       ;;(- (and print (print-dag-only-supporters-of-nodes miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
+       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
        ;;(- (and print (cw ")~%")))
        ;;todo: move this printing to the caller?
        (smaller-node-supporting-vars (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
@@ -8160,295 +9638,7 @@
 (defun make-var-type-alist-from-hyps (hyps)
   (make-var-type-alist-from-hyps-aux hyps hyps nil))
 
-;;
-;; evaluation of test cases:
-;;
 
-(defun print-vals-of-nodes (nodenums array-name array)
-  (if (endp nodenums)
-      nil
-    (prog2$ (cw "Node ~x0 is ~x1.~%" (car nodenums) (aref1 array-name array (car nodenums)))
-            (print-vals-of-nodes (rest nodenums) array-name array))))
-
-(skip-proofs (verify-guards print-vals-of-nodes))
-
-;; returns TEST-CASE-ARRAY, which has a value for each node that supports the top node for this test (and :unused for other nodes) and which has name TEST-CASE-ARRAY-NAME
-;; also checks that the top node evaluates to true
-(defun evaluate-and-check-test-case (var-value-alist ;the test case
-                                     dag-array-name dag-array dag-len
-                                     interpreted-function-alist
-                                     test-case-array-name
-                                     traced-nodes)
-  (declare (xargs :verify-guards nil))
-  (let* ((top-nodenum (+ -1 dag-len))
-         (test-case-array
-          (evaluate-test-case (list top-nodenum)
-                              top-nodenum dag-array-name
-                              dag-array var-value-alist
-                              interpreted-function-alist
-                              test-case-array-name))
-         (top-node-value (aref1 test-case-array-name test-case-array top-nodenum)))
-    (if (eq 't top-node-value) ;fixme relax to any non-nil value?
-        (prog2$ (print-vals-of-nodes traced-nodes test-case-array-name test-case-array)
-                test-case-array)
-      ;;fixme return an error flag and catch it later?
-      (progn$ (cw "!!!! We found a test case that does not evaluate to true:~%")
-              (cw "Test case: ~x0~%" var-value-alist)
-              (print-array2 test-case-array-name test-case-array dag-len) ;this can be big!
-              (er hard? 'evaluate-and-check-test-case "Untrue test case (see above)")))))
-
-(skip-proofs (verify-guards evaluate-and-check-test-case))
-
-;Handles nodes that are used on this test case but have not been used on a previous test case.
-;Such nodes are moved from the unused list to the probably-constant-node-alist, where they are paired with their value on this test case.
-;Returns (mv never-used-nodes probably-constant-node-alist changep)
-;fixme might be faster to process more than 1 test case at a time
-(defun handle-newly-used-nodes (never-used-nodes ;these are moved to acc or get entries in the alist
-                                probably-constant-node-alist ;;pairs nodenums with probable constants
-                                test-case-array-name test-case-array
-                                acc
-                                changep)
-  (if (endp never-used-nodes)
-      (mv acc probably-constant-node-alist changep)
-    (let* ((nodenum (first never-used-nodes))
-           (value (aref1 test-case-array-name test-case-array nodenum)))
-      (if (eq :unused value)
-          ;; the node is still unused:
-          (handle-newly-used-nodes (rest never-used-nodes)
-                                   probably-constant-node-alist
-                                   test-case-array-name test-case-array
-                                   (cons nodenum acc)
-                                   changep)
-        ;;the node is used for the first time on this test case:
-        (handle-newly-used-nodes (rest never-used-nodes)
-                                 (acons-fast nodenum value probably-constant-node-alist)
-                                 test-case-array-name test-case-array
-                                 acc
-                                 t)))))
-
-(skip-proofs (verify-guards handle-newly-used-nodes))
-
-;this function drops any pairs which are invalidated by the current test case
-;this rebuilds the whole alist - hope that is okay...
-;returns (mv probably-constant-node-alist changep)
-;fixme might be faster to process more than 1 test case at a time
-;every node in probably-constant-node-alist has been used on at least one test case
-(defun new-probably-constant-alist (probably-constant-node-alist ;;pairs nodenums with probable constants
-                                    test-case-array-name test-case-array
-                                    acc ;pairs are moved from probably-constant-node-alist to this
-                                    changep)
-  (if (endp probably-constant-node-alist)
-      (mv acc changep)
-    (let* ((pair (first probably-constant-node-alist))
-           (nodenum (car pair))
-           (probable-value (cdr pair))
-           (value-for-this-test-case (aref1 test-case-array-name test-case-array nodenum)))
-      (if (or (eq :unused value-for-this-test-case)
-              (equal probable-value value-for-this-test-case))
-          ;; this test case doesn't invalidate the pair:
-          (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
-                                       (cons pair acc) changep)
-        ;; the node is used and the value is  different from the value in the alist, so drop the pair:
-        (new-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
-                                     acc t)))))
-
-(skip-proofs (verify-guards new-probably-constant-alist))
-
-;; run test cases and use them to split probably-equal-node-sets and eliminate probable constants
-;; returns (mv probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist), where test-case-array-alist is valid iff keep-test-casesp is non-nil
-;ffixme think about what to do with nodes that are unreachable (don't influence the top node, because of ifs) on a single test case, or on all test cases.  maybe i now handle that?
-;now the tests come in randomized?
-(defun update-probable-facts-with-test-cases (test-cases singleton-count dag-array-name dag-array dag-len
-                                                         probably-equal-node-sets
-                                                         never-used-nodes
-                                                         probably-constant-node-alist
-                                                         interpreted-function-alist print
-                                                         test-case-array-name-base
-                                                         keep-test-casesp
-                                                         test-case-array-alist
-                                                         test-case-number
-                                                         traced-nodes
-                                                         num-of-last-interesting-test-case
-                                                         )
-  (if (or (endp test-cases)
-          ;;stop if we've done at least 100 test cases and nothing has happened in the last 90% of them:
-          ;;fixme could allow the user to change the 10 and the 100 here:
-          (if (and t ;abandon-testing-when-boringp ;(or t abandon-testing-when-boringp)
-                   num-of-last-interesting-test-case
-                   (<= 100 test-case-number)
-                   (<= (* 10 num-of-last-interesting-test-case) test-case-number))
-              (prog2$ (cw "(Abandoning testing because nothing interesting is happening.)")
-                      t)
-            nil))
-      (mv probably-equal-node-sets never-used-nodes probably-constant-node-alist
-          (reverse test-case-array-alist) ;new; keeps this in sync with the test cases (or do non-interesting ones get dropped?)
-          )
-    (prog2$
-;;TODO: Only print when things change:
-     (cw "(Test ~x0 (~x1 total sets, ~x2 singletons, ~x3 constants)"
-         test-case-number
-         (+ singleton-count (len probably-equal-node-sets)) ;slow? could keep a count?
-         singleton-count
-         (len probably-constant-node-alist) ;expensive?
-         )
-     (b* ((test-case (first test-cases))
-          (test-case-array-name (if keep-test-casesp
-                                    (pack$ test-case-array-name-base '- (nat-to-string test-case-number))
-                                  ;;if we are not keeping test cases (e.g., because they'd take too much memory), reuse the same array:
-                                  test-case-array-name-base))
-          (test-case-array
-           (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist
-                                         test-case-array-name
-                                         traced-nodes))
-;(- (cw "done filling array."))
-          )
-       (mv-let (new-sets new-singleton-count changep)
-         (new-probably-equal-node-sets probably-equal-node-sets test-case-array nil 0 print test-case-array-name
-                                       nil ;changep
-                                       )
-         (mv-let (never-used-nodes probably-constant-node-alist changep)
-           (handle-newly-used-nodes never-used-nodes
-                                    probably-constant-node-alist
-                                    test-case-array-name
-                                    test-case-array
-                                    nil
-                                    changep)
-           (mv-let (probably-constant-node-alist changep)
-             (new-probably-constant-alist probably-constant-node-alist
-                                          test-case-array-name
-                                          test-case-array
-                                          nil
-                                          changep)
-             (prog2$ (if (and (or (eq print :verbose)
-                                  (eq print :verbose!))
-                              changep) ;ffffixme use this value to decide whether to keep the test case? maybe keep the first few boring ones so we have enough..
-                         (cw "~%interesting test case ~x0.)~%" test-case)
-                       (cw ")~%"))
-                     (update-probable-facts-with-test-cases (rest test-cases)
-                                                            (+ singleton-count new-singleton-count)
-                                                            dag-array-name dag-array dag-len
-                                                            new-sets
-                                                            never-used-nodes
-                                                            probably-constant-node-alist
-                                                            interpreted-function-alist print test-case-array-name-base keep-test-casesp
-                                                            (if keep-test-casesp
-                                                                (acons-fast test-case-array-name
-                                                                            test-case-array
-                                                                            test-case-array-alist)
-                                                              nil)
-                                                            (+ 1 test-case-number)
-                                                            traced-nodes
-                                                            (if changep
-                                                                test-case-number
-                                                              num-of-last-interesting-test-case)
-                                                            )))))))))
-
-(skip-proofs (verify-guards update-probable-facts-with-test-cases))
-
-;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
-;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
-;returns (mv initial-probably-equal-node-sets initial-singleton-count)
-(defun initial-probably-equal-node-sets-better (dag-len test-case-array test-case-array-name)
-  (let* ((signature-alist (array-to-alist test-case-array-name test-case-array dag-len))
-         (sorted-signature-alist (merge-sort-lexorder-of-cdrs signature-alist)))
-    (mv-let (sets singleton-count)
-            (group-same-entries sorted-signature-alist nil 0) ;bozo should we disallow any nodes?
-            (mv sets singleton-count))))
-
-(skip-proofs (verify-guards initial-probably-equal-node-sets-better))
-
-;; Returns (mv never-used-nodes probably-constant-node-alist ;pairs nodenums used on the first test case with their values
-;;         )
-(defun harvest-probable-constants-from-first-test-case (nodenum miter-len test-case-array-name test-case-array
-                                                                never-used-nodes
-                                                                probably-constant-node-alist)
-  (declare (xargs :measure (nfix (+ 1 (- miter-len nodenum)))))
-  (if (or (<= miter-len nodenum)
-          (not (integerp miter-len))
-          (not (integerp nodenum))
-          )
-      (mv never-used-nodes probably-constant-node-alist)
-    (let* ((value (aref1 test-case-array-name test-case-array nodenum)))
-      (if (eq :unused value)
-          (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
-                                                           (cons nodenum never-used-nodes)
-                                                           probably-constant-node-alist)
-        (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
-                                                         never-used-nodes
-                                                         (acons-fast nodenum value probably-constant-node-alist))))))
-
-(skip-proofs (verify-guards harvest-probable-constants-from-first-test-case))
-
-;repeatedly generate a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes
-;returns (mv probably-equal-node-sets ;includes sets believed to be a constant
-;            never-used-nodes
-;            probably-constant-node-alist ;pairs nodes with the constants they seem to be equal to
-;            test-case-array-alist ; valid iff keep-test-casesp is non-nil, pairs array names with arrays that give values to all the nodes
-;        )
-;fixme should this return the used test cases?
-(defun probable-facts (miter-array-name miter-array miter-len miter-depth
-                                        test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
-                                        interpreted-function-alist print keep-test-casesp
-                                        traced-nodes)
-  (let ((test-cases test-cases ;(firstn 1024 test-cases) ;Thu Feb 17 20:25:10 2011
-                    ))
-    (progn$ (cw "(Evaluating test cases (keep-test-casesp is ~x0):~%" keep-test-casesp)
-            ;; use the first test case to make initial-probably-equal-node-sets (I think this is faster than starting with one huge set and then splitting it):
-            (cw "(Test 0 (initial)")
-            (let* ((test-case-array-name-base (pack$ 'test-case-array-depth- miter-depth '-)) ;using the depth is new
-                   (first-test-case-array-name (pack$ test-case-array-name-base 0))
-                   (test-case-array
-                    (evaluate-and-check-test-case (first test-cases)
-                                                  miter-array-name
-                                                  miter-array
-                                                  miter-len
-                                                  interpreted-function-alist
-                                                  first-test-case-array-name
-                                                  traced-nodes)))
-              (mv-let
-               (initial-probably-equal-node-sets initial-singleton-count)
-               (initial-probably-equal-node-sets-better miter-len test-case-array first-test-case-array-name)
-               (mv-let
-                (never-used-nodes
-                 probably-constant-node-alist ;pairs nodenums used on the first test case with their values
-                 )
-                (harvest-probable-constants-from-first-test-case 0
-                                                                 miter-len
-                                                                 first-test-case-array-name test-case-array
-                                                                 nil
-                                                                 nil)
-                (let* ( ;((array-to-alist first-test-case-array-name test-case-array miter-len)) ;slow?
-                       ;;save the first test case in the test-case-array-alist:
-                       (test-case-array-alist (if keep-test-casesp
-                                                  (acons-fast first-test-case-array-name test-case-array nil)
-                                                nil)))
-                  (prog2$ (cw ")~%")
-                          ;;use additional test cases to split the sets and update the probable constant facts:
-                          (mv-let (probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist)
-                                  (update-probable-facts-with-test-cases (rest test-cases)
-                                                                         initial-singleton-count
-                                                                         miter-array-name
-                                                                         miter-array
-                                                                         miter-len
-                                                                         initial-probably-equal-node-sets
-                                                                         never-used-nodes
-                                                                         probably-constant-node-alist
-                                                                         interpreted-function-alist
-                                                                         print
-                                                                         test-case-array-name-base
-                                                                         keep-test-casesp ;just check whether test-case-array-alist is nil?
-                                                                         test-case-array-alist
-                                                                         1 ;test case number
-                                                                         traced-nodes
-                                                                         nil ;;number of last interesting test case
-                                                                         )
-                                  (prog2$ (cw ")~%")
-                                          (mv probably-equal-node-sets
-                                              never-used-nodes
-                                              probably-constant-node-alist
-                                              test-case-array-alist)))))))))))
-
-(skip-proofs (verify-guards probable-facts))
 
 (defun remove-set-of-unused-nodes (probably-equal-node-sets never-used-nodes acc)
   (if (endp probably-equal-node-sets)
@@ -8486,59 +9676,171 @@
 (defconst *smaller-nodes-that-might-be-equal* :smaller-nodes-that-might-be-equal)
 (defconst *larger-nodes-that-might-be-equal* :larger-nodes-that-might-be-equal)
 
-;;tag-array2 associates each nodenums with a little alist from tags to their values
-(defun get-node-tag (nodenum tag tag-array2)
-  (declare (type symbol tag)
+(defconst *sweep-array-tags* (list *probable-constant* *smaller-nodes-that-might-be-equal* *larger-nodes-that-might-be-equal*))
+
+(defun sweep-info-tag-and-valuep (tag val)
+  (declare (xargs :guard t))
+  (if (eq *probable-constant* tag)
+      (or (null val)
+          (myquotep val))
+    (and (or (eq *smaller-nodes-that-might-be-equal* tag)
+             (eq *larger-nodes-that-might-be-equal* tag))
+         (nat-listp val))))
+
+(defund sweep-infop (info)
+  (declare (xargs :guard t))
+  (if (atom info)
+      (null info)
+    (let* ((entry (first info)))
+      (and (consp entry)
+           (let ((tag (car entry))
+                 (val (cdr entry)))
+             (and (sweep-info-tag-and-valuep tag val)
+                  (sweep-infop (rest info))))))))
+
+;(def-typed-acl2-array2 sweep-info-arrayp sweep-infop) ; todo: this should work
+(def-typed-acl2-array2 sweep-info-arrayp (sweep-infop val)) ; todo: reduce output, todo: avoid backtracking to do induction
+
+(local
+ (defthm alistp-when-sweep-infop
+   (implies (sweep-infop info)
+            (alistp info))
+   :hints (("Goal" :in-theory (enable sweep-infop)))))
+
+(local
+ (defthm nat-listp-of-lookup-equal-when-sweep-infop
+   (implies (sweep-infop sweep-info)
+            (nat-listp (lookup-equal :smaller-nodes-that-might-be-equal sweep-info)))
+   :hints (("Goal" :in-theory (enable sweep-infop lookup-equal)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;sweep-info-array associates each nodenums with a little alist from tags to their values
+(defund get-node-tag (nodenum tag sweep-info-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (symbolp tag)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (< nodenum (alen1 'sweep-info-array sweep-info-array)))
+                  :split-types t)
            (type (integer 0 *) nodenum)
-           (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (< nodenum (alen1 'tag-array2 tag-array2))
-                              (array-of-alistsp nodenum 'tag-array2 tag-array2))))
-  (let ((node-tags (aref1 'tag-array2 tag-array2 nodenum)))
+           (type symbol tag))
+  (let ((node-tags (aref1 'sweep-info-array sweep-info-array nodenum)))
     (lookup-eq tag node-tags)))
 
-(defund set-tag (nodenum tag val tag-array2)
-  (declare (type symbol tag)
-           (type (integer 0 *) nodenum)
-           (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (< nodenum (alen1 'tag-array2 tag-array2))
-                              (array-of-alistsp nodenum 'tag-array2 tag-array2))))
-  (let* ((node-tags (aref1 'tag-array2 tag-array2 nodenum))
-         (new-node-tags (acons-fast tag val node-tags)))
-    (aset1-safe 'tag-array2 tag-array2 nodenum new-node-tags)))
+(local
+ (defthm true-listp-of-get-node-tag-of-smaller-nodes-that-might-be-equal
+   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (natp index)
+                 (< index (alen1 'sweep-info-array sweep-info-array)))
+            (true-listp (get-node-tag index :smaller-nodes-that-might-be-equal sweep-info-array)))
+   :rule-classes (:rewrite :type-prescription)
+   :hints (("Goal" :use (:instance type-of-aref1-when-sweep-info-arrayp
+                                   (array-name 'sweep-info-array)
+                                   (array sweep-info-array)
+                                   )
+            :in-theory (e/d (get-node-tag sweep-infop)
+                            (type-of-aref1-when-sweep-info-arrayp))))))
 
-;returns tag-array2
+(local
+ (defthm nat-listp-of-get-node-tag-of-smaller-nodes-that-might-be-equal
+   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (natp index)
+                 (< index (alen1 'sweep-info-array sweep-info-array)))
+            (nat-listp (get-node-tag index :smaller-nodes-that-might-be-equal sweep-info-array)))
+   :hints (("Goal" :use (:instance type-of-aref1-when-sweep-info-arrayp
+                                   (array-name 'sweep-info-array)
+                                   (array sweep-info-array)
+                                   )
+            :in-theory (e/d (get-node-tag sweep-infop)
+                            (type-of-aref1-when-sweep-info-arrayp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund set-tag (nodenum tag val sweep-info-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (symbolp tag)
+                              (sweep-info-tag-and-valuep tag val)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (< nodenum (alen1 'sweep-info-array sweep-info-array)))
+                  :split-types t)
+           (type (integer 0 *) nodenum)
+           (type symbol tag))
+  (let* ((node-tags (aref1 'sweep-info-array sweep-info-array nodenum))
+         (new-node-tags (acons-fast tag val node-tags)))
+    (aset1-safe 'sweep-info-array sweep-info-array nodenum new-node-tags)))
+
+(local
+ (defthm sweep-info-arrayp-of-set-tag
+   (implies (and (natp nodenum)
+                 (sweep-info-tag-and-valuep tag val)
+                 (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (< nodenum (alen1 'sweep-info-array sweep-info-array))
+                 )
+            (sweep-info-arrayp 'sweep-info-array (set-tag nodenum tag val sweep-info-array)))
+   :hints (("Goal" :in-theory (enable set-tag sweep-infop)))))
+
+(local
+ (defthm alen1-of-set-tag
+   (implies (and (natp nodenum)
+                 (sweep-info-tag-and-valuep tag val)
+                 (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (< nodenum (alen1 'sweep-info-array sweep-info-array))
+                 )
+            (equal (alen1 'sweep-info-array (set-tag nodenum tag val sweep-info-array))
+                   (alen1 'sweep-info-array sweep-info-array)))
+   :hints (("Goal" :in-theory (enable set-tag sweep-infop)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;returns sweep-info-array
 ;moves nodes one at a time from node-set to smaller-nodes-from-this-set
-(defun tag-probably-equal-node-set (node-set ;should be sorted
-                                    smaller-nodes-from-this-set ;should be kept sorted (ffixme maybe that's too expensive, in which case choose the minimum one when this is used? but then removing the node may be slow?  maybe that is more rare?)
-                                    tag-array2)
-  (declare (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (true-listp smaller-nodes-from-this-set)
-                              (true-listp node-set)
-                              (all-natp node-set)
-                              (array-of-alistsp (+ -1 (alen1 'tag-array2 tag-array2)) 'tag-array2 tag-array2)
-                              (all-< node-set (alen1 'tag-array2 tag-array2)))
-                  :guard-hints (("Goal" :in-theory (enable set-tag)))
-                  :otf-flg t))
+(defund tag-probably-equal-node-set (node-set ;should be sorted
+                                     smaller-nodes-from-this-set ;should be kept sorted (ffixme maybe that's too expensive, in which case choose the minimum one when this is used? but then removing the node may be slow?  maybe that is more rare?)
+                                     sweep-info-array)
+  (declare (xargs :guard (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (nat-listp smaller-nodes-from-this-set)
+                              (nat-listp node-set)
+                              (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
+                  :guard-hints (("Goal" :in-theory (enable)))))
   (if (endp node-set)
-      tag-array2
+      sweep-info-array
     (let* ((node (car node-set))
            ;;fixme could handle the tagging stuff better with separate arrays? but that would mean more consing?
-           (tag-array2 (set-tag node *larger-nodes-that-might-be-equal* (cdr node-set) tag-array2)) ;don't bother to record for the smallest node in each set?
-           (tag-array2 (set-tag node *smaller-nodes-that-might-be-equal* smaller-nodes-from-this-set tag-array2)))
+           (sweep-info-array (set-tag node *larger-nodes-that-might-be-equal* (cdr node-set) sweep-info-array)) ;don't bother to record for the smallest node in each set?
+           (sweep-info-array (set-tag node *smaller-nodes-that-might-be-equal* smaller-nodes-from-this-set sweep-info-array)))
       (tag-probably-equal-node-set (cdr node-set)
                                    (add-to-end node smaller-nodes-from-this-set) ;preserves sorting
-                                   tag-array2))))
+                                   sweep-info-array))))
 
-;returns tag-array2
+(defthm sweep-info-arrayp-of-tag-probably-equal-node-set
+  (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                (nat-listp smaller-nodes-from-this-set)
+                (true-listp node-set)
+                (all-natp node-set)
+                (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
+           (sweep-info-arrayp 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array)))
+  :hints (("Goal" :in-theory (enable tag-probably-equal-node-set))))
+
+(defthm alen1-arrayp-of-tag-probably-equal-node-set
+  (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                (nat-listp smaller-nodes-from-this-set)
+                (true-listp node-set)
+                (all-natp node-set)
+                (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
+           (equal (alen1 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array))
+                  (alen1 'sweep-info-array sweep-info-array)))
+  :hints (("Goal" :in-theory (enable tag-probably-equal-node-set))))
+
+;returns sweep-info-array
 ;Tag the elements of probably-equal node sets but exclude sets that are probably constant (TODO: try not excluding them)
-(defun tag-probably-equal-node-sets (node-sets tag-array2 probably-constant-node-alist)
-  (declare (xargs :guard (and (array1p 'tag-array2 tag-array2)
-                              (true-listp node-sets)
-                              (all-all-natp node-sets))
-                  :verify-guards nil
-                  ))
+(defun tag-probably-equal-node-sets (node-sets sweep-info-array probably-constant-node-alist)
+  (declare (xargs :guard (and (nat-list-listp node-sets)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (all-all-< node-sets (alen1 'sweep-info-array sweep-info-array))
+                              (alistp probably-constant-node-alist))
+                  :guard-hints (("Goal" :in-theory (enable TRUE-LISTP-WHEN-NAT-LISTP-REWRITE)))))
   (if (endp node-sets)
-      tag-array2
+      sweep-info-array
     (let* ((node-set (first node-sets))
            (node (car node-set))
            (probably-constantp (assoc node probably-constant-node-alist))
@@ -8549,105 +9851,116 @@
                          )))
       (tag-probably-equal-node-sets (rest node-sets)
                                     (if tag-setp
-                                        (tag-probably-equal-node-set (merge-sort-< node-set) nil tag-array2)
-                                      tag-array2)
+                                        (tag-probably-equal-node-set (merge-sort-< node-set) nil sweep-info-array)
+                                      sweep-info-array)
                                     probably-constant-node-alist))))
 
-(skip-proofs (verify-guards tag-probably-equal-node-sets))
 
-;returns tag-array2
+;returns sweep-info-array
 ;is the alist passed in guaranteed to not have any extra pairs?
-(defun tag-probably-constant-nodes2 (probably-constant-node-alist tag-array2)
-  (declare (xargs ;:guard (ALIST-with-integer-keysp signature-alist)
-            :verify-guards nil))
+(defund tag-probably-constant-nodes2 (probably-constant-node-alist sweep-info-array)
+  (declare (xargs :guard (and (alistp probably-constant-node-alist)
+                              (nat-listp (strip-cars probably-constant-node-alist))
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (all-< (strip-cars probably-constant-node-alist) (alen1 'sweep-info-array sweep-info-array)))))
   (if (endp probably-constant-node-alist)
-      tag-array2
+      sweep-info-array
     (let* ((entry (car probably-constant-node-alist))
            (nodenum (car entry))
            (value (cdr entry))
            ;;fixme, can we handle this for every type of constant (like lists and other non-bv stuff)?
-           (tag-array2 (set-tag nodenum *probable-constant* (enquote value) tag-array2)))
-      (tag-probably-constant-nodes2 (cdr probably-constant-node-alist) tag-array2))))
-
-(skip-proofs (verify-guards tag-probably-constant-nodes2))
+           (sweep-info-array (set-tag nodenum *probable-constant* (enquote value) sweep-info-array)))
+      (tag-probably-constant-nodes2 (cdr probably-constant-node-alist) sweep-info-array))))
 
 ;make tail-recursive
-;use this more??!
-(defun remove-one-eql (item lst)
-  (if (endp lst)
-      nil
-    (if (eql (car lst) item)
-        (cdr lst) ;stop looking
-      (cons (car lst) (remove-one-eql item (cdr lst))))))
+;; ;todo: use REMOVE1-EQL?
+;; (defun remove-one-eql (item lst)
+;;   (declare (xargs :guard (and (EQLABLEP ITEM)
+;;                               (true-listp lst))))
+;;   (if (endp lst)
+;;       nil
+;;     (if (eql (car lst) item)
+;;         (cdr lst) ;stop looking
+;;       (cons (car lst) (remove-one-eql item (cdr lst))))))
 
-(defun remove-node-from-smaller-nodes-that-might-be-equal (nodenum nodenum-to-remove tag-array2)
-  (let* ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* tag-array2))
-         (smaller-nodes-that-might-be-equal (remove-one-eql nodenum-to-remove smaller-nodes-that-might-be-equal))
-         (tag-array2 (set-tag nodenum *smaller-nodes-that-might-be-equal* smaller-nodes-that-might-be-equal tag-array2)))
-    tag-array2))
+(defun remove-node-from-smaller-nodes-that-might-be-equal (nodenum nodenum-to-remove sweep-info-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp nodenum-to-remove)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (< nodenum (alen1 'sweep-info-array sweep-info-array)))))
+  (let* ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* sweep-info-array))
+         (smaller-nodes-that-might-be-equal (remove1 nodenum-to-remove smaller-nodes-that-might-be-equal))
+         (sweep-info-array (set-tag nodenum *smaller-nodes-that-might-be-equal* smaller-nodes-that-might-be-equal sweep-info-array)))
+    sweep-info-array))
 
-(defun remove-node-from-smaller-nodes-that-might-be-equal-list (nodenums nodenum-to-remove tag-array2)
+(defun remove-node-from-smaller-nodes-that-might-be-equal-list (nodenums nodenum-to-remove sweep-info-array)
   (if (endp nodenums)
-      tag-array2
+      sweep-info-array
     (remove-node-from-smaller-nodes-that-might-be-equal-list
      (cdr nodenums)
      nodenum-to-remove
-     (remove-node-from-smaller-nodes-that-might-be-equal (car nodenums) nodenum-to-remove tag-array2))))
+     (remove-node-from-smaller-nodes-that-might-be-equal (car nodenums) nodenum-to-remove sweep-info-array))))
 
-(defun update-tags-for-proved-constant-node (nodenum tag-array2)
-  (let* ((tag-array2 (set-tag nodenum *probable-constant* nil tag-array2)) ;don't try to prove the node is constant (we just proved it)
+(defun update-tags-for-proved-constant-node (nodenum sweep-info-array)
+  (let* ((sweep-info-array (set-tag nodenum *probable-constant* nil sweep-info-array)) ;don't try to prove the node is constant (we just proved it)
          ;;don't try to prove some other node is equal to this one:
-         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* tag-array2))
-         (tag-array2 (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum tag-array2)))
-    tag-array2))
+         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-info-array))
+         (sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-info-array)))
+    sweep-info-array))
 
 ;we failed to prove the node is constant, but we might be able to prove it equal to some other node we think is the same constant..
-(defun update-tags-for-failed-constant-node (nodenum tag-array2)
-  (let* ((tag-array2 (set-tag nodenum *probable-constant* nil tag-array2))) ;don't try to prove that it is the constant
+(defun update-tags-for-failed-constant-node (nodenum sweep-info-array)
+  (let* ((sweep-info-array (set-tag nodenum *probable-constant* nil sweep-info-array))) ;don't try to prove that it is the constant
     ;;we leave the node among the smaller-nodes-that-might-be-equal for larger nodes in its set
-    tag-array2))
+    sweep-info-array))
 
 ;we proved that nodenum equals some smaller node (and we changed refs to it to point to that smaller node)
 ;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
-(defun update-tags-for-proved-equal-node (nodenum tag-array2)
-  (let* ((tag-array2 (set-tag nodenum *smaller-nodes-that-might-be-equal* nil tag-array2)) ;don't try to prove it equal to anything else
+(defun update-tags-for-proved-equal-node (nodenum sweep-info-array)
+  (let* ((sweep-info-array (set-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-info-array)) ;don't try to prove it equal to anything else
          ;;don't try to prove some other node is equal to this one (we've essentially removed this one from the dag):
-         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* tag-array2))
-         (tag-array2 (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum tag-array2)))
-    tag-array2))
+         (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-info-array))
+         (sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-info-array)))
+    sweep-info-array))
 
 ;we failed to prove that nodenum is equal to smaller-nodenum-we-tried-to-prove-it-equal-to
 ;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
-(defun update-tags-for-failed-equal-node (nodenum smaller-nodenum-we-tried-to-prove-it-equal-to tag-array2)
+(defun update-tags-for-failed-equal-node (nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-info-array)
   ;;nodenum may still be provably equal to other nodes on the list (if any)
-  (let* ((tag-array2 (remove-node-from-smaller-nodes-that-might-be-equal nodenum smaller-nodenum-we-tried-to-prove-it-equal-to tag-array2)))
-    tag-array2))
+  (let* ((sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-info-array)))
+    sweep-info-array))
 
 ;;go from the bottom up, looking for the next node to handle (is there guaranteed to always be one? i think so.)
 ;we handle the smallest numbered node that is either 1) an (unhandled) probable constant or 2) the larger of two (unhandled) probably-equal nodes in the same set
 ;returns (mv nodenum probably-constantp other-val) where other-val is the quoted constant or the smaller nodenum that nodenum is probably equal to
 ;indicates failure (should never happen) by returning nil for nodenum (and other return vals are irrelevant in that case)
-(defun find-a-node-to-replace (nodenum tag-array2 len)
-  (declare (xargs :measure
-                  (+ 1 (nfix (- len nodenum)))
+(defund find-a-node-to-replace (nodenum sweep-info-array len)
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp len)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (<= nodenum len)
+                              (<= len (alen1 'sweep-info-array sweep-info-array)) ; usually equal??
+                              )
+       ;           :verify-guards nil ; todo
+                  :measure (+ 1 (nfix (- len nodenum)))
                   :hints (("Goal" :in-theory (enable natp)))))
-  (if (or (not (natp nodenum))
-          (not (natp len))
+  (if (or (not (mbt (natp nodenum)))
+          (not (mbt (natp len)))
           (>= nodenum len))
       (mv nil ;failure
           nil nil)
-    (let ((probable-constant (get-node-tag nodenum *probable-constant* tag-array2)))
+    (let ((probable-constant (get-node-tag nodenum *probable-constant* sweep-info-array)))
       ;;if it's probably-constant, we handle it now:
       (if probable-constant
           (mv nodenum t probable-constant)
 ;if it's probably equal to a node smaller than it (not handling the pair until we reach the larger node allows constant nodes or other probably equal pairs that intrude between members of a some probably-equal pair P to be handled before P, which is, i think, the best policy)
-        (let ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* tag-array2)))
+        (let ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* sweep-info-array)))
           (if smaller-nodes-that-might-be-equal
               (mv nodenum nil (car smaller-nodes-that-might-be-equal)) ;fixme if the proof for this smaller-node-that-might-be-equal fails but there are others, we'll redo the search and find this same node again (slow?!)
             ;;no smaller nodes in the same probably equal set, so keep looking:
-            (find-a-node-to-replace (+ 1 nodenum) tag-array2 len)))))))
+            (find-a-node-to-replace (+ 1 nodenum) sweep-info-array len)))))))
 
-(skip-proofs (verify-guards find-a-node-to-replace))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun enquote-cdrs (alist)
   (declare (xargs :guard (alistp alist)))
@@ -8933,6 +10246,8 @@
 ;the quotep checks on arguments could be consp checks?
 ;fixme compare to can-always-translate-expr-to-stp?
 (defun pure-fn-call-exprp (expr)
+  (declare (xargs :guard (dag-function-call-exprp expr)
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
   (let ((fn (ffn-symb expr)))
     ;;(member-eq fn *bv-and-array-fns-we-can-translate*)
     ;;maybe we should check that operands are of the right type?
@@ -8941,27 +10256,30 @@
           ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
           ((boolor booland boolif not bitnot bitxor bitor bitand) t)
           ((bv-array-write bv-array-read bvsx slice)
-           (and (quotep (farg1 expr))
-                (quotep (farg2 expr))))
+           (and (consp (rest (dargs expr)))
+                (quotep (darg1 expr))
+                (quotep (darg2 expr))))
           ((bvnot bvand bvor bvxor bvmult bvminus bvuminus bvplus bvdiv bvmod sbvdiv sbvrem bvchop ;$inline
                   getbit sbvlt bvlt bvle bvif leftrotate32)
-           (quotep (farg1 expr))) ;fixme make sure the value is okay?
-          (bvcat (and (quotep (farg1 expr))
-                      (quotep (farg3 expr))))
+           (and (consp (dargs expr))
+                (quotep (darg1 expr)))) ;fixme make sure the value is okay?
+          (bvcat (and (consp (rest (rest (dargs expr))))
+                      (quotep (darg1 expr))
+                      (quotep (darg3 expr))))
           (otherwise nil))))
 
-(skip-proofs (verify-guards pure-fn-call-exprp))
-
 (defund expr-is-purep (expr)
+  (declare (xargs :guard (dag-exprp expr)))
   ;; (declare (xargs :guard t))
   (or (variablep expr) ;check more?
       (fquotep expr)   ;check more?
       (pure-fn-call-exprp expr)))
 
-(skip-proofs (verify-guards expr-is-purep))
-
 (defun miter-is-purep-aux (index len miter-array-name miter-array)
-  (declare (xargs :measure (nfix (- len index))))
+  (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array len)
+                              (natp index)
+                              (<= index len))
+                  :measure (nfix (- len index))))
   (if (or (>= index len)
           (not (natp index))
           (not (natp len)))
@@ -8971,12 +10289,11 @@
       (prog2$ (cw "(Node ~x0 is not pure.)~%" index)
               nil))))
 
-(skip-proofs (verify-guards miter-is-purep-aux))
-
-;ffixme ;use property lists?
+; todo: ;use property lists?
 ;ffixme check indices, sizes, and shift amounts, etc.!
 (defun miter-is-purep (miter-array-name miter-array miter-len)
-;  (let ((supporting-fns (fns-that-support-node (+ -1 miter-len) miter-array-name miter-array))) ;inefficient to cons this up?
+  (declare (xargs :guard (pseudo-dag-arrayp miter-array-name miter-array miter-len)))
+          ;  (let ((supporting-fns (fns-that-support-node (+ -1 miter-len) miter-array-name miter-array))) ;inefficient to cons this up?
 ;    (subsetp-eq supporting-fns *bv-and-array-fns-we-can-translate*)
   (let ((result (miter-is-purep-aux 0 miter-len miter-array-name miter-array)))
     (prog2$ (if result
@@ -8984,10 +10301,10 @@
               (cw "(Miter is not pure.)~%"))
             result)))
 
-(skip-proofs (verify-guards miter-is-purep))
-
 (skip-proofs
  (defun nodes-are-purep (worklist dag-array-name dag-array done-array)
+   ;; (declare (xargs :guard (and (nat-listp worklist)
+   ;;                             (all-< worklist ..))))
    (if (endp worklist)
        t
      (let ((nodenum (first worklist)))
@@ -9651,27 +10968,27 @@
                              base-name
                              test-case-count
                              test-case-alist-acc
-                             traced-nodes)
+                             debug-nodes)
   (if (endp test-cases)
       (reverse test-case-alist-acc)
     (b* ((test-case (first test-cases))
          (test-case-array-name (pack$ base-name '- test-case-count))
          (- (and print (member-eq print '(t :verbose :verbose!)) (cw "~%Evaluating test case ~x0.~%" test-case-count)))
-         (test-case-array
+         (test-case-array ; fixme: handle the case where a test failed and this is nil (except current a hard error will have already been thrown):
           (evaluate-and-check-test-case test-case
                                         miter-array-name
                                         miter-array
                                         miter-len
                                         interpreted-function-alist
                                         test-case-array-name
-                                        traced-nodes)))
+                                        debug-nodes)))
       (make-test-case-alist (rest test-cases)
                             miter-array-name miter-array miter-len
                             interpreted-function-alist print
                             base-name
                             (+ 1 test-case-count)
                             (acons test-case-array-name test-case-array test-case-alist-acc)
-                            traced-nodes))))
+                            debug-nodes))))
 
 (skip-proofs (verify-guards make-test-case-alist))
 
@@ -10699,11 +12016,11 @@
             (replace-in-dags new-other-formals-update-dags remove-placeholders-alist state result-array-stobj))
            ((when erp) (mv erp nil nil state result-array-stobj))
            (new-other-formals-update-dag-alist (pairlis$-fast other-formals new-other-formals-update-dags))
-           ((mv erp dag-for-duplicate-numcdrs-formal) (dagify-term2 `(binary-+ '1 ,duplicate-numcdrs-formal)))
+           ((mv erp dag-for-duplicate-numcdrs-formal) (dagify-term `(binary-+ '1 ,duplicate-numcdrs-formal)))
            ((when erp) (mv erp nil nil state result-array-stobj))
-           ((mv erp dag-for-numcdrs-formal) (dagify-term2 `(binary-+ '1 ,numcdrs-formal))) ;this is what was already there, except in dag form
+           ((mv erp dag-for-numcdrs-formal) (dagify-term `(binary-+ '1 ,numcdrs-formal))) ;this is what was already there, except in dag form
            ((when erp) (mv erp nil nil state result-array-stobj))
-           ((mv erp dag-for-list-formal) (dagify-term2 lst-formal))
+           ((mv erp dag-for-list-formal) (dagify-term lst-formal))
            ((when erp) (mv erp nil nil state result-array-stobj))
            (full-formals-update-dag-alist
             (acons duplicate-numcdrs-formal dag-for-duplicate-numcdrs-formal
@@ -12366,6 +13683,7 @@
                         (cw "Done improving invars.)~%")
                         (mv nil improved-invars last-defthm-name state result-array-stobj)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv lst rand)
 (defun merge-rand (l1 l2 acc rand)
@@ -12373,7 +13691,7 @@
                   :guard (and
                               (true-listp acc))
                   :stobjs rand))
-  (cond ((atom l1) (mv (revappend acc l2) rand)) ;fixme null would be faster than atom
+  (cond ((atom l1) (mv (revappend acc l2) rand)) ; todo: would null be faster than atom?
         ((atom l2) (mv (revappend acc l1) rand))
         (t (mv-let (val rand)
                    (genrandom 2 rand)
@@ -12383,27 +13701,22 @@
 
 ;returns (mv lst rand)
 ;probably not truly random, but seems good enough..
-(skip-proofs
- (defun shuffle-list (l rand)
-   (declare (xargs :measure (len l)
-                   :guard (true-listp l)
-                   :verify-guards nil
-                   :stobjs rand))
-   (if (atom (cdr l))
-       (mv l rand)
-     (mv-let (first-half second-half)
-             (split-list-fast l)
-             (mv-let (first-half rand)
-                     (shuffle-list first-half rand)
-                     (mv-let (second-half rand)
-                             (shuffle-list second-half rand)
-                             (merge-rand first-half
-                                         second-half
-                                         nil
-                                         rand)))))))
-
-(skip-proofs (verify-guards shuffle-list))
-
+(defun shuffle-list (l rand)
+  (declare (xargs :guard (true-listp l)
+                  :stobjs rand
+                  :measure (len l)))
+  (if (atom (cdr l))
+      (mv l rand)
+    (mv-let (first-half second-half)
+      (split-list-fast l)
+      (mv-let (first-half rand)
+        (shuffle-list first-half rand)
+        (mv-let (second-half rand)
+          (shuffle-list second-half rand)
+          (merge-rand first-half
+                      second-half
+                      nil
+                      rand))))))
 
 ;takes an nth nest around a formal
 (defun get-formal-and-path (item path-acc)
@@ -13099,7 +14412,7 @@
                                         (make-var-type-alist-from-hyps hyps) ;used if we need to call STP
                                         interpreted-function-alist
                                         print
-                                        nil ;traced-nodes (or pass these around?)
+                                        nil ;debug-nodes (or pass these around?)
                                         rewriter-rule-alist
                                         prover-rule-alist
                                         hyps
@@ -15450,7 +16763,7 @@
                                                 test-cases
                                                 test-case-array-alist step-num
                                                 analyzed-function-table unroll
-;tag-array2
+;sweep-info-array
                                                 some-goal-timed-outp nodenums-not-to-unroll
                                                 options
                                                 rand state result-array-stobj)
@@ -15463,7 +16776,7 @@
 ;ffixme i wonder if the rewrites here are so expensive that we should just rewrite the dag after every merge?
         ;;fffixme delay generating the context until after the first rewrite below (which will handle ifs with constant tests - seems common)
         (- (cw " (Context for node ~x0: " original-nodenum2))
-        (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len ;tag-array2
+        (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len ;sweep-info-array
                                           )) ;fixme compute before the sweep?  how would tranforming the dag affect things?
         (- (cw "~x0)~%" context))
         (context-nodenums (get-nodenums-mentioned-in-context context))
@@ -15484,7 +16797,7 @@
          (drop-non-supporters-array-two-nodes-with-name miter-array-name miter-array original-nodenum1 original-nodenum2) ;fixme or use a worklist?
          )
         ;;often there are ifs supporting the nodes with tests that have been replaced by constants (really?  shouldn't they have been merged with their then or else branches?
-        ;;(dummy3 (print-dag-only-supporters-list (list original-nodenum1 original-nodenum2) miter-array-name miter-array))
+        ;;(dummy3 (print-dag-array-node-and-supporters-list (list original-nodenum1 original-nodenum2) miter-array-name miter-array))
         ;;First try to prove the equality using existing lemmas.
         ;;fixme should we do this outside this function? might be expensive!
         ;;ffixme eventually pass the miter-array to the rewriter?? (be careful not to override existing nodes), but for now it has the wrong name
@@ -16265,7 +17578,7 @@
                                                        test-cases test-case-array-alist
                                                        step-num ;use this even in the pure case?
                                                        analyzed-function-table unroll miter-is-purep
-                                                       ;;tag-array2
+                                                       ;;sweep-info-array
                                                        some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                                        options
                                                        rand state result-array-stobj)
@@ -16282,7 +17595,8 @@
        (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
             (pure-assumptionsp assumptions) ;fffixme don't recompute this each time
             (or miter-is-purep
-                (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
+                (if nil ;(g :treat-as-purep options)
+                    (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
                 (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
                 ;;                 ;;fixme what if we could cut and then get a pure miter?  maybe we should always cut out the non-pure stuff and try it! but then try the non-pure approach too...
                 ;; ;fixme pre-compute which nodes are pure (update that info when merging nodes?)
@@ -16311,7 +17625,7 @@
                                                  print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                  extra-stuff monitored-symbols
                                                  assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
-;tag-array2
+;sweep-info-array
                                                  some-goal-timed-outp nodenums-not-to-unroll options rand state result-array-stobj))))) ;fixme pass in miter-name?
 
  ;;       (if cut-proofs
@@ -16376,12 +17690,12 @@
                                                             print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                             extra-stuff monitored-symbols
                                                             assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-                                                            ;;tag-array2
+                                                            ;;sweep-info-array
                                                             some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
-                        ;;ffixme make a 2 node version of print-dag-only-supporters - we show the simplified miter - that should contain everything interesting from the dag
+                        ;;ffixme make a 2 node version of print-dag-array-node-and-supporters - we show the simplified miter - that should contain everything interesting from the dag
                         nil ;(print-array2 miter-array-name miter-array (+ 1 larger-nodenum))
                         )))
 ;fixme finish this.  the point was not to merge two nodes of different array types - but get-type-of-nodenum may sometimes give unfortunate errors here.
@@ -16394,7 +17708,7 @@
                                         print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                         extra-stuff monitored-symbols
                                         assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-;tag-array2
+;sweep-info-array
                                         some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
         ((when erp) (mv erp nil nil nil nil rand state result-array-stobj))
         ((when (eq result :error)) (mv (erp-t) nil nil nil nil rand state result-array-stobj)) ; todo: drop once impossible
@@ -16443,7 +17757,7 @@
                                        rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist
                                        assumptions ;terms we can assume non-nil (we can't actually assume them to be 't right?)
                                        monitored-symbols step-num analyzed-function-table miter-depth unroll miter-is-purep
-                                       ;;tag-array2
+                                       ;;sweep-info-array
                                        use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (cw "  Trying to prove node ~x0 is the constant ~x1.~%" nodenum constant-value)) ;add parens?
@@ -16458,7 +17772,8 @@
          (cw "  Trivial equality.~%")
          (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj)))
      ;; Not a trivial equality:
-     (if (and (not (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
+     (if (and (not (if nil ;(g :treat-as-purep options)
+                       (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
               (or (not miter-is-purep)
                   (not (pure-assumptionsp assumptions)) ;fixme precompute and thread through?
                   ))
@@ -16470,7 +17785,7 @@
               (- (cw "(Making the equality and rewriting:~%"))
 ;ffixme if rewriting or proving ends in a goal that is clearly not valid then stop right there?
               (- (cw " (Context for node ~x0: " nodenum))
-              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len ;tag-array2
+              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len ;sweep-info-array
                                                 )) ;fixme check if any of the context nodes are quoteps?
               (- (cw "~x0)~%" context))
               (context-nodenums (get-nodenums-mentioned-in-context context))
@@ -16570,7 +17885,8 @@
                       (nodes-with-rec-fns (remove-duplicates ;-eql
                                            nodes-with-rec-fns))
                       (- (cw "Supporting rec. fn. nodes: ~x0.~%" nodes-with-rec-fns)))
-                   (if (and (not (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
+                   (if (and (not (if nil ;(g :treat-as-purep options)
+                                     (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
                             nodes-with-rec-fns)
                        ;;ffixme what if we have already handled all the nodes?  this can loop??
                        (mv-let (erp result analyzed-function-table rand state result-array-stobj) ;;where result is (list new-runes new-fns)
@@ -16638,7 +17954,7 @@
            ;;The equality didn't rewrite to a constant:
            (b* ((- (and (eq :verbose! print)
                         (prog2$ (cw "Equality rewrote to:~%")
-                                (print-dag-only-supporters 'dag-array dag-array miter-nodenum-or-quotep)))))
+                                (print-dag-array-node-and-supporters 'dag-array dag-array miter-nodenum-or-quotep)))))
              ;;fixme use miter-nodenum-or-quotep below here?
 ;fixme use the fact that the miter is pure!
 ;There are no recursive fns, but there might still be non-bv/array fns: fixme expand any non-rec fns?
@@ -16707,7 +18023,7 @@
                                                    test-case-array-alist ;parent-array-name parent-array
                                                    assumptions monitored-symbols step-num
                                                    analyzed-function-table unroll miter-is-purep
-                                                   ;;tag-array2
+                                                   ;;sweep-info-array
                                                    use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (eq :unused constant-value)
@@ -16729,7 +18045,7 @@
                    (try-to-prove-node-is-constant constant-value nodenum expr miter-array-name miter-array miter-len var-type-alist
                                                   print interpreted-function-alist extra-stuff
                                                   rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist assumptions monitored-symbols step-num
-                                                  analyzed-function-table miter-depth unroll miter-is-purep ;tag-array2
+                                                  analyzed-function-table miter-depth unroll miter-is-purep ;sweep-info-array
                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
                    (if erp
                        (mv erp nil miter-array analyzed-function-table rand state result-array-stobj)
@@ -16763,9 +18079,9 @@
  ;; if the top node is reached and something was merged, but the top node wasn't proved true, result is :did-something, meaning simplify (to use the merged stuff and sweep again)
  ;; Result can also be a cons whose car is :new-rules or :apply-rule.
  (defun perform-miter-sweep-aux (changep miter-array-name miter-array miter-len miter-depth
-                                         tag-array2 ;helps us choose the next node to attack
+                                         sweep-info-array ;helps us choose the next node to attack
 ;parent-array-name parent-array
-                                         var-type-alist top-node print traced-nodes interpreted-function-alist
+                                         var-type-alist top-node print debug-nodes interpreted-function-alist
                                          rewriter-rule-alist prover-rule-alist
                                          extra-stuff monitored-symbols assumptions
                                          test-cases test-case-array-alist sweep-num
@@ -16792,7 +18108,7 @@
           ;;Find a node to replace:
           ((mv nodenum-to-replace probably-constantp other-val ;the quoted constant or smaller nodenum it's probably-equal to
                )
-           (find-a-node-to-replace next-nodenum-to-consider tag-array2 miter-len)))
+           (find-a-node-to-replace next-nodenum-to-consider sweep-info-array miter-len)))
        (if (not (integerp nodenum-to-replace))
            (if changep ;print the dag?
                (prog2$ (cw "!! couldn't find any node to replace but something changed on this sweep.)")
@@ -16800,9 +18116,9 @@
              (prog2$ (cw "!! couldn't find any node to replace and nothing changed on this sweep !!)")
                      (mv (erp-nil) :did-nothing miter-array analyzed-function-table rand state result-array-stobj)))
          ;;We found a node to replace:
-         (b* ((- (and (member nodenum-to-replace traced-nodes) ;do we ever use this?
+         (b* ((- (and (member nodenum-to-replace debug-nodes) ;do we ever use this?
                       (prog2$ (cw "DAG:~%")
-                              (print-dag-only-supporters miter-array-name miter-array (+ -1 miter-len)))))
+                              (print-dag-array-node-and-supporters miter-array-name miter-array (+ -1 miter-len)))))
               (use-proverp-flag (not (member nodenum-to-replace nodes-to-not-use-prover-for))))
            (if probably-constantp
                ;; The node is a probable constant:
@@ -16820,7 +18136,7 @@
 ;parent-array-name parent-array
                                                                   assumptions monitored-symbols
                                                                   step-num analyzed-function-table unroll miter-is-purep
-                                                                  ;;tag-array2
+                                                                  ;;sweep-info-array
                                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)))
                     ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
                     (- (cw ")~%")))
@@ -16828,19 +18144,19 @@
                  (if (or (eq :proved result)
                          (eq :failed result)
                          (eq :timed-out result))
-                     (let* ((tag-array2 (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
-                                            (update-tags-for-proved-constant-node nodenum-to-replace tag-array2)
-                                          (update-tags-for-failed-constant-node nodenum-to-replace tag-array2)))
+                     (let* ((sweep-info-array (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
+                                            (update-tags-for-proved-constant-node nodenum-to-replace sweep-info-array)
+                                          (update-tags-for-failed-constant-node nodenum-to-replace sweep-info-array)))
                             ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
                             )
                        ;;continue sweeping:
                        (perform-miter-sweep-aux (or changep (eq :proved result))
                                                 miter-array-name
                                                 miter-array miter-len miter-depth
-                                                tag-array2
+                                                sweep-info-array
 ;parent-array-name parent-array
                                                 var-type-alist top-node print
-                                                traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                                debug-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                 extra-stuff monitored-symbols assumptions test-cases
                                                 test-case-array-alist sweep-num (+ 1 step-num) total-steps
                                                 nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
@@ -16869,7 +18185,7 @@
                     print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                     extra-stuff monitored-symbols assumptions
                     test-cases test-case-array-alist step-num analyzed-function-table unroll
-                    miter-is-purep ;tag-array2
+                    miter-is-purep ;sweep-info-array
                     some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
                   ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
                   (- (cw ")~%"))
@@ -16884,15 +18200,15 @@
                    ;;                                     (and (not new-runes)
                    ;;                                      (not new-fn-names))
                    ;; no rules or fns were generated, so continue the sweep:
-                   (let* ((tag-array2 (if (eq :proved result)
-                                          (update-tags-for-proved-equal-node nodenum-to-replace tag-array2)
-                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val tag-array2))))
+                   (let* ((sweep-info-array (if (eq :proved result)
+                                          (update-tags-for-proved-equal-node nodenum-to-replace sweep-info-array)
+                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val sweep-info-array))))
                      (perform-miter-sweep-aux (or changep (eq :proved result))
                                               miter-array-name
                                               miter-array miter-len miter-depth ;depth-array
-                                              tag-array2 ;parent-array-name parent-array
+                                              sweep-info-array ;parent-array-name parent-array
                                               var-type-alist
-                                              top-node print traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
+                                              top-node print debug-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
                                               assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) total-steps nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
                                               analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
                                               (or some-goal-timed-outp
@@ -16913,7 +18229,7 @@
  (defun perform-miter-sweep (miter-name miter-array-name miter-array miter-len miter-depth var-type-alist
                                         test-cases ;give values to the input vars (may be more here than we want to use)
                                         interpreted-function-alist print
-                                        traced-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff monitored-symbols assumptions use-context-when-miteringp
+                                        debug-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff monitored-symbols assumptions use-context-when-miteringp
                                         sweep-num analyzed-function-table unroll max-conflicts options rand state result-array-stobj)
    (declare (xargs :guard (not (eq 'dag-array miter-array-name)) :mode :program :stobjs (rand state result-array-stobj)))
    ;;ffixme what if the miter is a constant?? maybe not possible..
@@ -16931,7 +18247,8 @@
         (miter-is-purep (miter-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
         ((mv shuffled-test-cases rand) ;fixme can we do this less often?  we want the test cases in their original order when analyzing traces of rec fns..
          (shuffle-list test-cases rand))
-        ((mv probably-equal-node-sets ;includes probably-constant nodes
+        ((mv & ; all-passedp ; actually a hard error will already have been thrown
+             probably-equal-node-sets ;includes probably-constant nodes
              never-used-nodes
              probably-constant-node-alist
              test-case-array-alist ;invalid (nil?) if we are not keeping test cases
@@ -16941,26 +18258,26 @@
                          shuffled-test-cases
                          interpreted-function-alist print
                          (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec fns but the miter is somehow not pure?)
-                         traced-nodes
+                         debug-nodes
                          ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
                          ))
         (probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
-        (tag-array2-name 'tag-array2) ;ffixme use a different name, according to the miter depth?
+        (sweep-info-array-name 'sweep-info-array) ;ffixme use a different name, according to the miter depth?
         ;; Set up the tags that are used to choose which node or node pair to handle next:
-        (tag-array2 (make-empty-array tag-array2-name miter-len))
+        (sweep-info-array (make-empty-array sweep-info-array-name miter-len))
         ;;mark all nodes that are probably constants:
         ;;the tags are the constant values themselves (quoted)
         ;;ffixme don't bother doing tagging for nodes that are :unused (might be a large set?!)
-        (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
-                            (tag-probably-constant-nodes2 probably-constant-node-alist tag-array2)))
+        (sweep-info-array (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
+                            (tag-probably-constant-nodes2 probably-constant-node-alist sweep-info-array)))
         ;; mark nodes that are probably equal to other nodes (including constants, in case we can't prove x=const and y=const but can prove x=y):
-        (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
-                            (tag-probably-equal-node-sets probably-equal-node-sets tag-array2 probably-constant-node-alist)))
+        (sweep-info-array (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
+                            (tag-probably-equal-node-sets probably-equal-node-sets sweep-info-array probably-constant-node-alist)))
         (num-probably-equal-node-sets (count-merges-in-probably-equal-node-sets probably-equal-node-sets 0)) ;; TODO: Can we really count this ahead of time?
         (num-probable-constants (len probably-constant-node-alist))
         (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" num-probably-equal-node-sets) ;fixme this total should exclude the probably constant nodes..
                    (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
-                                      (print-non-constant-probably-equal-sets probably-equal-node-sets tag-array2) ;sort these?
+                                      (print-non-constant-probably-equal-sets probably-equal-node-sets sweep-info-array) ;sort these?
                                       ))
                    (cw ")~%")
                    (cw "~%(Probably-constant nodes (~x0 total)" num-probable-constants)
@@ -16975,10 +18292,10 @@
          (perform-miter-sweep-aux nil ;initial changep
                                   miter-array-name
                                   miter-array miter-len miter-depth ;depth-array
-                                  tag-array2
+                                  sweep-info-array
                                   ;;parent-array-name parent-array
                                   var-type-alist (+ -1 miter-len) ;nodenum of top node
-                                  print traced-nodes interpreted-function-alist
+                                  print debug-nodes interpreted-function-alist
                                   rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols assumptions
                                   (firstn 512 test-cases) ;fixme
                                   test-case-array-alist
@@ -16995,7 +18312,7 @@
                                   rand state result-array-stobj))
         ((when erp)
          (mv erp nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj)))
-     ;;tag-array2 may encode information about failed merges.  We could return it and fix it up after simplifying the dag instead of recalculating it.  A better plan might be to return test cases when possible that disambiguate nodes that failed to merge (not always possible if some nodes were cut out).
+     ;;sweep-info-array may encode information about failed merges.  We could return it and fix it up after simplifying the dag instead of recalculating it.  A better plan might be to return test cases when possible that disambiguate nodes that failed to merge (not always possible if some nodes were cut out).
      (if (eq :proved-miter result)
          (prog2$ (cw "Sweep ~x0 proved the miter (~x1)!)~%" sweep-num miter-name)
                  (mv (erp-nil) :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
@@ -17195,7 +18512,7 @@
  (defun perform-miter-sweeps (miter-name miter-array-name miter-array miter-len miter-depth
                                          var-type-alist
                                          test-cases
-                                         interpreted-function-alist print traced-nodes
+                                         interpreted-function-alist print debug-nodes
                                          rewriter-rule-alist prover-rule-alist transformation-rules
                                          assumptions extra-stuff monitored-symbols
                                          use-context-when-miteringp sweep-num analyzed-function-table unroll
@@ -17203,7 +18520,7 @@
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (mv-let (erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj)
      (perform-miter-sweep miter-name miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
-                          print traced-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff
+                          print debug-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff
                           monitored-symbols assumptions use-context-when-miteringp sweep-num analyzed-function-table unroll
                           max-conflicts options rand state result-array-stobj)
      (if erp
@@ -17214,7 +18531,7 @@
              (mv (erp-nil) :done miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
            (if (eq :did-something result)
                (perform-miter-sweeps miter-name miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
-                                     print traced-nodes
+                                     print debug-nodes
                                      rewriter-rule-alist prover-rule-alist transformation-rules
                                      assumptions
                                      extra-stuff
@@ -17306,7 +18623,7 @@
                                                      unroll
                                                      monitored-symbols max-conflicts
                                                      sweep-count print
-                                                     traced-nodes
+                                                     debug-nodes
                                                      normalize-xors
                                                      proof-name miter-depth options
                                                      rand state result-array-stobj)
@@ -17336,7 +18653,7 @@
                                           (pack$ 'test-case-array "-" (nat-to-string miter-depth)) ;depth is new Wed Sep  8 09:36:05 2010
                                           0 ;;initial test-case-count
                                           nil
-                                          traced-nodes)))
+                                          debug-nodes)))
                (prog2$ (cw "Evaluated ~x0 test cases.)~%(Will now analyze recursive functions for sweep ~x1.)~%"
                            (len test-case-array-alist) sweep-count)
                        (mv-let (erp changep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)
@@ -17419,7 +18736,7 @@
                                                                                                  unroll
                                                                                                  monitored-symbols max-conflicts
                                                                                                  (+ 1 sweep-count)
-                                                                                                 print traced-nodes
+                                                                                                 print debug-nodes
                                                                                                  normalize-xors
                                                                                                  proof-name miter-depth options
                                                                                                  rand state result-array-stobj)
@@ -17469,7 +18786,7 @@
                                                         analyzed-function-table unroll monitored-symbols max-conflicts
                                                         0 ;sweep count
                                                         print
-                                                        nil ;fffixme traced-nodes
+                                                        nil ;fffixme debug-nodes
                                                         normalize-xors ;drop?
                                                         proof-name miter-depth options rand state result-array-stobj)
            (if erp
@@ -17519,7 +18836,7 @@
                          var-type-alist ;used if we need to call STP (callers can compute from the assumptions using make-var-type-alist-from-hyps)
                          interpreted-function-alist
                          print
-                         traced-nodes ;do we still use this?
+                         debug-nodes ;do we still use this?
                          rewriter-rule-alist
                          prover-rule-alist
                          assumptions ; a list of terms to be assumed non-nil
@@ -17536,7 +18853,8 @@
                          normalize-xors
                          options
                          rand state result-array-stobj)
-   (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
+   (declare (xargs :guard (test-case-type-alistp var-type-alist) ; todo: allows more than we can handle when calling stp
+                   :mode :program :stobjs (rand state result-array-stobj)))
    (if (quotep dag-or-quotep) ;get rid of this and improve pre simp to take a constant?
        (let ((val (unquote dag-or-quotep)))
          (if (eq t val)
@@ -17596,7 +18914,7 @@
                                      var-type-alist
                                      test-cases
                                      interpreted-function-alist print
-                                     traced-nodes
+                                     debug-nodes
                                      rewriter-rule-alist
                                      prover-rule-alist
                                      nil
@@ -17673,7 +18991,7 @@
                                                        var-type-alist
                                                        interpreted-function-alist
                                                        print
-                                                       traced-nodes
+                                                       debug-nodes
                                                        rewriter-rule-alist
                                                        prover-rule-alist
                                                        assumptions
@@ -17745,7 +19063,7 @@
                                         var-type-alist ;ffixme think about this?
                                         interpreted-function-alist ;make sure these alists are always consistent?
                                         print
-                                        traced-nodes
+                                        debug-nodes
                                         rewriter-rule-alist
                                         prover-rule-alist
                                         assumptions-for-true-case
@@ -17791,7 +19109,7 @@
                                             var-type-alist ;ffixme think about this?
                                             interpreted-function-alist
                                             print
-                                            traced-nodes
+                                            debug-nodes
                                             rewriter-rule-alist
                                             prover-rule-alist
                                             assumptions-for-false-case
@@ -17851,7 +19169,7 @@
 ;; ;;                                               nil ;;var-type-alist FILLMEIN how important is this, since we're passing in tests?
 ;; ;;                                               interpreted-function-alist
 ;; ;;                                               :verbose        ;;print
-;; ;;                                               nil           ;;traced-nodes
+;; ;;                                               nil           ;;debug-nodes
 ;; ;;                                               nil ;;rewriter-rule-alist FILLMEIN (how important are rules in the mitering process?)
 ;; ;;                                               nil ;;extra-rules FILLMEIN?
 ;; ;;                                               nil ;;assumptions FILLMEIN? (how important?)
@@ -18044,12 +19362,12 @@
 ;; (skip -proofs (verify-guards contains-only-elements-in-set-eql))
 
 ;; ;walk through all the nodes
-;; (defun tag-probably-constant-nodes (signature-alist tag-array2)
+;; (defun tag-probably-constant-nodes (signature-alist sweep-info-array)
 ;;   (declare (xargs :guard (ALIST-with-integer-keysp signature-alist)
 ;;                   :verify-guards nil
 ;;                   ))
 ;;   (if (not (consp signature-alist))
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((entry (car signature-alist))
 ;;            (sig (cdr entry)))
 ;;       (if (and (all-the-same-constant sig)
@@ -18063,10 +19381,10 @@
 ;;                                                   *probable-constant-that-needs-to-be-replaced*
 ;;                                                   ;always quoting distinguishes between a node that is the constant nil and a node that's just not constant
 ;;                                                   (list 'quote (car sig))
-;;                                                   tag-array2)))
+;;                                                   sweep-info-array)))
 ;;         (tag-probably-constant-nodes (cdr signature-alist)
 ;;                                      ;;not explicitly setting *probable-constant-that-needs-to-be-replaced* to t amounts to setting it to nil
-;;                                      tag-array2)))))
+;;                                      sweep-info-array)))))
 
 ;; (skip -proofs (verify-guards tag-probably-constant-nodes))
 
@@ -18739,16 +20057,16 @@
 ;;       (all-equal-item item (cdr sig)))))
 
 ;; ;have to pass in whole-set, since set itself gets smaller as we walk down it
-;; (defun tag-nodes-as-probably-equal (set tag-array2 whole-set)
+;; (defun tag-nodes-as-probably-equal (set sweep-info-array whole-set)
 ;;   (declare (xargs :guard t
 ;;                   :verify-guards nil))
 ;;   (if (not (consp set))
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((nodenum (car set)))
 ;;       (set-tag nodenum
 ;;                *probably-equal-node-that-needs-to-be-replaced*
 ;;                whole-set
-;;                (tag-nodes-as-probably-equal (cdr set) tag-array2 whole-set)))))
+;;                (tag-nodes-as-probably-equal (cdr set) sweep-info-array whole-set)))))
 
 ;; (skip -proofs (verify-guards tag-nodes-as-probably-equal))
 
@@ -18804,7 +20122,7 @@
 ;; (skip -proofs (verify-guards add-node-sizes-to-size-array))
 
 ;; ;should we make sure one node in the set is ready?  will there always be such a node?
-;; (defun get-nodenum-for-minimum-replacement-set (n len current-best-size current-best-nodenum tag-array2 size-array)
+;; (defun get-nodenum-for-minimum-replacement-set (n len current-best-size current-best-nodenum sweep-info-array size-array)
 ;;   (declare (xargs :measure (+ 1 (nfix (- len n)))
 ;;                   ))
 ;;   (if (or (not (natp n))
@@ -18812,16 +20130,16 @@
 ;;           (>= n len))
 ;;       current-best-nodenum
 ;;     (let ((size (aref1 'size-array size-array n)))
-;;       (if (and (get-node-tag n *probable-constant-that-needs-to-be-replaced* tag-array2)
+;;       (if (and (get-node-tag n *probable-constant-that-needs-to-be-replaced* sweep-info-array)
 ;;                (< size
 ;;                   current-best-size))
 ;;           (get-nodenum-for-minimum-replacement-set (+ 1 n)
 ;;                                                    len
 ;;                                                    size
 ;;                                                    n
-;;                                                    tag-array2
+;;                                                    sweep-info-array
 ;;                                                    size-array)
-;;         (let* ((equal-set (get-node-tag n *probably-equal-node-that-needs-to-be-replaced* tag-array2))
+;;         (let* ((equal-set (get-node-tag n *probably-equal-node-that-needs-to-be-replaced* sweep-info-array))
 ;;                (sum-of-sizes (sum-of-node-sizes equal-set size-array)) ;use sum-of-node-sizes2?
 ;;                )
 ;;           (if (and equal-set
@@ -18831,13 +20149,13 @@
 ;;                                                        len
 ;;                                                        sum-of-sizes
 ;;                                                        n
-;;                                                        tag-array2
+;;                                                        sweep-info-array
 ;;                                                        size-array)
 ;;             (get-nodenum-for-minimum-replacement-set (+ 1 n)
 ;;                                                      len
 ;;                                                      current-best-size
 ;;                                                      current-best-nodenum
-;;                                                      tag-array2
+;;                                                      sweep-info-array
 ;;                                                      size-array)))))))
 
 ;; (skip -proofs (verify-guards get-nodenum-for-minimum-replacement-set))
@@ -18846,82 +20164,82 @@
 ;the only case may be that a node in a to-be-replaced probably-equal set depends on another node in the same set - or there are 2 sets, each depending on the other
 ;not quite sure what to do here, so i'm trying this:
 ;FIXME think this through! look for a node set with at least one ready node and where the other node would be ready except it depends on the first node (node sets are just pairs now, right?)
-;; (defun find-nodenum-to-replace-when-no-safe-sets (len tag-array2 dag-array-name dag-array)
+;; (defun find-nodenum-to-replace-when-no-safe-sets (len sweep-info-array dag-array-name dag-array)
 ;;   (let* ((size-array (make-empty-array 'size-array len))
 ;;          (size-array (add-node-sizes-to-size-array 0 len dag-array-name dag-array size-array))
 ;;          ;;bozo on the big number below
-;;          (nodenum (get-nodenum-for-minimum-replacement-set 0 len 100000000000000000000000000 'error-didnt-find-any-nodenums-to-replace tag-array2 size-array)))
+;;          (nodenum (get-nodenum-for-minimum-replacement-set 0 len 100000000000000000000000000 'error-didnt-find-any-nodenums-to-replace sweep-info-array size-array)))
 ;;     (if nodenum  ;FIXME nodenum may always be an integer...
 ;;         nodenum
 ;;       (hard-error 'find-nodenum-to-replace-when-no-safe-sets "Didn't find any node to replace" nil))))
 
 ;; (skip -proofs (verify-guards find-nodenum-to-replace-when-no-safe-sets))
 
-;; (defun all-ready (nodenums tag-array2)
+;; (defun all-ready (nodenums sweep-info-array)
 ;;   (if (atom nodenums)
 ;;       t
-;;     (if (get-node-tag (car nodenums) *ready* tag-array2)
-;;         (all-ready (cdr nodenums) tag-array2)
+;;     (if (get-node-tag (car nodenums) *ready* sweep-info-array)
+;;         (all-ready (cdr nodenums) sweep-info-array)
 ;;       nil)))
 
 ;; (skip -proofs (verify-guards all-ready))
 
 
-;; (defun all-nodes-are-ready (items tag-array2)
+;; (defun all-nodes-are-ready (items sweep-info-array)
 ;;   (if (atom items)
 ;;       t
 ;;     (let ((item (car items)))
 ;;       (if (not (integerp item)) ;this skips quoteps and array names
-;;           (all-nodes-are-ready (cdr items) tag-array2)
-;;         (if (get-node-tag item *ready* tag-array2)
-;;             (all-nodes-are-ready (cdr items) tag-array2)
+;;           (all-nodes-are-ready (cdr items) sweep-info-array)
+;;         (if (get-node-tag item *ready* sweep-info-array)
+;;             (all-nodes-are-ready (cdr items) sweep-info-array)
 ;;           nil)))))
 
-;; (defun no-nodes-are-to-be-replaced (items tag-array2)
+;; (defun no-nodes-are-to-be-replaced (items sweep-info-array)
 ;;   (if (atom items)
 ;;       t
 ;;     (let ((item (car items)))
 ;;       (if (not (integerp item)) ;this skips quoteps and array names
-;;           (no-nodes-are-to-be-replaced (cdr items) tag-array2)
-;;         (if (or (get-node-tag item *probable-constant-that-needs-to-be-replaced* tag-array2)
-;;                 (get-node-tag item *probably-equal-node-that-needs-to-be-replaced* tag-array2))
+;;           (no-nodes-are-to-be-replaced (cdr items) sweep-info-array)
+;;         (if (or (get-node-tag item *probable-constant-that-needs-to-be-replaced* sweep-info-array)
+;;                 (get-node-tag item *probably-equal-node-that-needs-to-be-replaced* sweep-info-array))
 ;;             nil
-;;           (no-nodes-are-to-be-replaced (cdr items) tag-array2))))))
+;;           (no-nodes-are-to-be-replaced (cdr items) sweep-info-array))))))
 
-;a node is "ready" (reflected in the tag-array2) if it does not depend on any unhandled probably-equal or probably-constant nodes.
+;a node is "ready" (reflected in the sweep-info-array) if it does not depend on any unhandled probably-equal or probably-constant nodes.
 ;ffixme what if it depends on a node that it is probably equal to? we'll have to check for that separately
 
 ;; ; initially, no nodes are ready because there are no ready tags set
 ;; ; constants and variables are ready
 ;; ; a function call node is ready if all of its children are ready and not to-be-replaced
-;; (defun compute-initial-readiness-info (n len dag-array-name dag-array tag-array2)
+;; (defun compute-initial-readiness-info (n len dag-array-name dag-array sweep-info-array)
 ;;   (declare (xargs :measure (+ 1 (nfix (- len n)))))
 ;;   (if (or (not (natp n))
 ;;           (not (natp len))
 ;;           (>= n len))
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((expr (aref1 dag-array-name dag-array n))
 ;;            (node-is-ready (or (variablep expr)
 ;;                               (fquotep expr)
 ;;                               ;;function call:
-;;                               (and (all-nodes-are-ready (fargs expr) tag-array2)
-;;                                    (no-nodes-are-to-be-replaced (fargs expr) tag-array2)))))
+;;                               (and (all-nodes-are-ready (fargs expr) sweep-info-array)
+;;                                    (no-nodes-are-to-be-replaced (fargs expr) sweep-info-array)))))
 ;;       (compute-initial-readiness-info (+ 1 n)
 ;;                                       len dag-array-name
 ;;                                       dag-array
-;;                                       (if node-is-ready (set-tag n *ready* t tag-array2) tag-array2)))))
+;;                                       (if node-is-ready (set-tag n *ready* t sweep-info-array) sweep-info-array)))))
 
 ;; ;this dag-array already has array-names put in? - where else do such dags get used?
 ;; (skip -proofs
 ;; ;we make nodenums and any of their ancestors ready (if possible)
 ;; ;we do this since, when we handle a node, its ancestors might become ready
-;; (defun propagate-readiness-info (nodenums dag-array-name dag-array parent-array tag-array2)
+;; (defun propagate-readiness-info (nodenums dag-array-name dag-array parent-array sweep-info-array)
 ;;   (if (atom nodenums)
-;;       tag-array2
+;;       sweep-info-array
 ;;     (let* ((nodenum (car nodenums))
-;;            (ready-tag (get-node-tag nodenum *ready* tag-array2)))
+;;            (ready-tag (get-node-tag nodenum *ready* sweep-info-array)))
 ;;       (if ready-tag ;if already ready, skip it
-;;           (propagate-readiness-info (cdr nodenums) dag-array-name dag-array parent-array tag-array2)
+;;           (propagate-readiness-info (cdr nodenums) dag-array-name dag-array parent-array sweep-info-array)
 ;;         ;;otherwise, try to make the node ready
 ;;         (let ((expr (aref1 dag-array-name dag-array nodenum)))
 ;;           (if (or (variablep expr)
@@ -18929,40 +20247,40 @@
 ;;               ;;this shouldn't happen
 ;;               (hard-error 'propagate-readiness-info "I'm surprised to see this called on a non-function-call-node, but node ~x0 is ~x1." (acons #\0 nodenum (acons #\1 expr nil)))
 ;;             ;;if the node should be made ready (same logic as above):
-;;             (if (and (all-nodes-are-ready (fargs expr) tag-array2)
-;;                      (no-nodes-are-to-be-replaced (fargs expr) tag-array2))
+;;             (if (and (all-nodes-are-ready (fargs expr) sweep-info-array)
+;;                      (no-nodes-are-to-be-replaced (fargs expr) sweep-info-array))
 ;;                 ;;make the node ready and add its parents for processing...
 ;;                 (propagate-readiness-info (union$ (aref1 'parent-array parent-array nodenum)
 ;;                                                      (cdr nodenums))
 ;;                                           dag-array-name dag-array
 ;;                                           parent-array
-;;                                           (set-tag nodenum *ready* t tag-array2))
+;;                                           (set-tag nodenum *ready* t sweep-info-array))
 ;;               ;;otherwise, skip the node (and don't add its parents for consideration)
 ;;               (propagate-readiness-info (cdr nodenums)
 ;;                                          dag-array-name dag-array
 ;;                                         parent-array
-;;                                         tag-array2)))))))))
+;;                                         sweep-info-array)))))))))
 
 ;; ;set the constant or variable node to ready and try to make its ancestors ready
-;; (defun set-ready-and-propagate (nodenum dag-array-name dag-array parent-array tag-array2)
+;; (defun set-ready-and-propagate (nodenum dag-array-name dag-array parent-array sweep-info-array)
 ;;   (propagate-readiness-info
 ;;    (aref1 'parent-array parent-array nodenum)
 ;;    dag-array-name dag-array
 ;;    parent-array
-;;    (set-tag nodenum *ready* t tag-array2)))
+;;    (set-tag nodenum *ready* t sweep-info-array)))
 
-;; ;returns tag-array2
-;; (defun make-ancestors-ready-if-appropriate (nodenum dag-array-name dag-array parent-array tag-array2)
+;; ;returns sweep-info-array
+;; (defun make-ancestors-ready-if-appropriate (nodenum dag-array-name dag-array parent-array sweep-info-array)
 ;;   (propagate-readiness-info (aref1 'parent-array parent-array nodenum)
 ;;                              dag-array-name dag-array
 ;;                             parent-array
-;;                             tag-array2))
+;;                             sweep-info-array))
 
-;; (defun set-ready-lst (nodenums tag-array2)
+;; (defun set-ready-lst (nodenums sweep-info-array)
 ;;   (if (atom nodenums)
-;;       tag-array2
+;;       sweep-info-array
 ;;     (set-ready-lst (cdr nodenums)
-;;                    (set-tag (car nodenums) *ready* t tag-array2))))
+;;                    (set-tag (car nodenums) *ready* t sweep-info-array))))
 
 ;; ;can we save consing this up?
 ;; (defun get-all-parents (nodenums parent-array)
@@ -18971,11 +20289,11 @@
 ;;     (union$ (aref1 'parent-array parent-array (car nodenums))
 ;;                (get-all-parents (cdr nodenums) parent-array))))
 
-;; (defun set-ready-lst-and-propagate (nodenums dag-array-name dag-array parent-array tag-array2)
+;; (defun set-ready-lst-and-propagate (nodenums dag-array-name dag-array parent-array sweep-info-array)
 ;;   (propagate-readiness-info (get-all-parents nodenums parent-array)
 ;;                             dag-array-name dag-array
 ;;                             parent-array
-;;                             (set-ready-lst nodenums tag-array2)))
+;;                             (set-ready-lst nodenums sweep-info-array)))
 
 
 ;make term into a dag-lst which could be considered an extension of dag-array
@@ -19464,7 +20782,7 @@
             (formals (lookup-eq 'formals props))
             (arity (len formals))
 ;             (function-call (cons function-name formals))
-            ((mv erp body-dag) (dagify-term2 body)) ;ffixme use a better dagify?
+            ((mv erp body-dag) (dagify-term body)) ;ffixme use a better dagify?
             ((when erp) (mv erp nil nil state result-array-stobj))
 
             (formal-slot-alist (pairlis$ formals (ints-in-range 0 (+ -1 arity))))
@@ -19629,13 +20947,14 @@
 
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
 ; Returns (mv erp provedp state rand result-array-stobj)
-;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
+;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
+                         tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
-                         var-type-alist  ;compute this from the hyps?
+                         var-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          print
-                         traced-nodes ;do we use this?
+                         debug-nodes ;do we use this?
                          user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
 ;ffixme allow the use of rule phases?!
                          runes          ;used for both the rewriter and prover
@@ -19657,12 +20976,15 @@
                          normalize-xors ;fixme use the more, deeper in?
                          miter-name     ;the name of this proof
                          prove-constants
-                         treat-as-purep
+                         ;; treat-as-purep
                          debug
                          state rand result-array-stobj)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
                               (natp test-case-count)
+                              (test-case-type-alistp var-type-alist)
                               (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
                               (not (assoc-eq t var-type-alist)) ;consider relaxing this?
@@ -19684,6 +21006,7 @@
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
   (b* ((- (cw "~%(Proving top-level miter ~x0:~%" miter-name))
+       ;; Handle the case when dag-or-quotep is already a constant:
        ((when (quotep dag-or-quotep))
         (if (equal *t* dag-or-quotep)
             (prog2$ (cw "The DAG is already the constant t!)~%")
@@ -19691,10 +21014,6 @@
           (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil state rand result-array-stobj))))
        (dag dag-or-quotep)
-       ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
-       ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
-       (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
-       (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
        (interpreted-function-alist (make-interpreted-function-alist
                                     (get-non-built-in-supporting-fns-list (dag-fns dag) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
        ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
@@ -19702,25 +21021,20 @@
                                        (prog2$ (hard-error 'prove-miter-core "inconsistent interpreted function alists." nil) ;print more?
                                                nil)
                                      (append interpreted-function-alist user-interpreted-function-alist)))
-       (no-test-casesp (not (posp test-case-count)))
        ;; TODO: Use plain make-axe-rules here
        (rewriter-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append rewriter-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
        (prover-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append prover-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
+       ;; todo: why not always simplify (maybe there won't be any rules, but the tactic is now either :rewrite or :rewrite-and-sweep)?
        (simplifyp (or rewriter-rule-alist
-                      no-test-casesp
+                      (eq :rewrite tactic)
                       initial-rule-set
                       initial-rule-sets))
-       (max-conflicts (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts))
-       ;; could move a lot of stuff into these options:
-       (options (s :prove-constants prove-constants
-                   (s :treat-as-purep treat-as-purep
-                      (s :debugp debug nil))))
        ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
        ((mv erp dag-or-quotep state)
         (if simplifyp
             (progn$ (cw "(We begin by simplifying the miter:~%") ;(give the reason)?
                     ;; initial-rule-set(s) take precedence here, if supplied (fixme what if both are supplied?)
-; (and monitored-symbols (cw "Monitored symbols: ~x0." monitored-symbols)) ;printed by simp-dag?
+                    ;; (and monitored-symbols (cw "Monitored symbols: ~x0." monitored-symbols)) ;printed by simp-dag?
                     (if initial-rule-set
                         (simp-dag dag
                                   :rule-alist (make-rule-alist-simple initial-rule-set t (table-alist 'axe-rule-priorities-table (w state)))
@@ -19764,102 +21078,109 @@
        (- (and simplifyp (cw "Done simplifying.)~%"))))
     (if (quotep dag-or-quotep)
         ;; the simplified DAG is a quotep:
-        (if (equal *t* dag-or-quotep)
+        (if (equal *t* dag-or-quotep) ; todo: allow any non-nil constant?
             (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
                     (mv (erp-nil) t state rand result-array-stobj))
           (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil state rand result-array-stobj)))
       ;; Did not simplify to a constant:
-      (let* ((dag dag-or-quotep)
-             (state (if (and simplifyp print)
-                        (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
-                      state)))
-        ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
-;move this check down?
-        (if no-test-casesp
-            (progn$ (cw "DAG for error message:~%")
-                    (print-list dag)
-                    (if (< (dag-size dag) 10000)
-                        (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
-                      nil)
-                    (er hard? 'prove-miter-core "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
-                    (mv :no-test-cases nil state rand result-array-stobj))
-          ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
-          (b* ((dag-vars (dag-vars dag))
-               (sorted-dag-vars (merge-sort-symbol< dag-vars))
-               (vars-given-types (strip-cars var-type-alist))
-               (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-               (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
-                       ;; (hard-error 'prove-miter-core
-                       ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                       ;;               (acons #\0 sorted-dag-vars
-                       ;;                      (acons #\1 sorted-vars-given-types
-                       ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
-                       ;;                                    nil))))
-                       (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                           sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
-               ;;(prog2$ (mv nil state rand result-array-stobj))
-               ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
-               ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
-               ((mv erp dag ; todo: can this ever be a quotep?
-                    interpreted-function-alist state result-array-stobj)
-                (if (not specialize-fnsp)
-                    (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)
-                  (prog2$
-                   (cw "(Specializing fns:~%")
-                   (mv-let (erp new-function-names new-rule-names state result-array-stobj)
-                     (specialize-fns dag state result-array-stobj)
-                     (if erp
-                         (mv erp nil nil state result-array-stobj)
-                       (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
-                               (mv-let (erp dag state)
-                                 (quick-simp-dag dag ;fixme - use some more rules?!
-                                                 :rules new-rule-names ;ffffixme return new-rule-names ?
-                                                 :print :brief)
-                                 (if erp
-                                     (mv erp nil nil state result-array-stobj)
-                                   (let ((interpreted-function-alist
-                                          (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
-                                     (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
-                                             (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)))))))))))
-               ((when erp) (mv erp nil state rand result-array-stobj))
-               ;;fixme rename test-cases test-inputs?
-               ((mv test-cases rand)
-                ;; Make the random test cases (each assigns values to the input vars):
-                ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
-                ;;fixme what about test cases that don't satisfy the assumptions??
-                (make-test-cases test-case-count var-type-alist assumptions rand))
-               (analyzed-function-table (empty-analyzed-function-table))
-               ;;fixme move any stuff above here into miter-and-merge?
-               ((mv erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
-                ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
-                (miter-and-merge dag
-                                 miter-name
-                                 0
-                                 var-type-alist
-                                 interpreted-function-alist print traced-nodes
-                                 rewriter-rule-alist
-                                 prover-rule-alist
-                                 assumptions
-                                 extra-stuff
-                                 test-cases
-                                 monitored-symbols
-                                 use-context-when-miteringp
-                                 analyzed-function-table
-                                 unroll
-                                 tests-per-case
-                                 max-conflicts
-                                 t ;must-succeedp=t
-                                 pre-simplifyp
-                                 normalize-xors
-                                 options
-                                 rand state result-array-stobj))
-               ((when erp) (mv erp nil state rand result-array-stobj)))
-            (if provedp
-                (prog2$ (cw "Finished proving top-level miter!)~%")
-                        (mv (erp-nil) t state rand result-array-stobj))
-              (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
-                      (mv (erp-nil) nil state rand result-array-stobj)))))))))
+      (b* ((dag dag-or-quotep)
+           ((when (eq :rewrite tactic))
+            (cw "DAG for error message below:~%")
+            (print-list dag)             ; always print the DAG
+            (if (< (dag-size dag) 10000) ; print the term too, if small
+                (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+              nil)
+            (er hard? 'prove-miter-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
+            (mv :no-test-cases nil state rand result-array-stobj))
+           ;; Tactic is :rewrite-and-sweep:
+           (state (if (and simplifyp print)
+                      (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
+                    state))
+           ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
+           ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
+           (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
+           (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
+           ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
+           (dag-vars (dag-vars dag))
+           (sorted-dag-vars (merge-sort-symbol< dag-vars))
+           (vars-given-types (strip-cars var-type-alist))
+           (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
+           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
+                   ;; (hard-error 'prove-miter-core
+                   ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                   ;;               (acons #\0 sorted-dag-vars
+                   ;;                      (acons #\1 sorted-vars-given-types
+                   ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
+                   ;;                                    nil))))
+                   (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                       sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
+           ;;(prog2$ (mv nil state rand result-array-stobj))
+           ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
+           ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
+           ((mv erp dag ; todo: can this ever be a quotep?
+                interpreted-function-alist state result-array-stobj)
+            (if (not specialize-fnsp)
+                (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)
+              (prog2$
+               (cw "(Specializing fns:~%")
+               (mv-let (erp new-function-names new-rule-names state result-array-stobj)
+                 (specialize-fns dag state result-array-stobj)
+                 (if erp
+                     (mv erp nil nil state result-array-stobj)
+                   (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
+                           (mv-let (erp dag state)
+                             (quick-simp-dag dag ;fixme - use some more rules?!
+                                             :rules new-rule-names ;ffffixme return new-rule-names ?
+                                             :print :brief)
+                             (if erp
+                                 (mv erp nil nil state result-array-stobj)
+                               (let ((interpreted-function-alist
+                                      (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
+                                 (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
+                                         (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)))))))))))
+           ((when erp) (mv erp nil state rand result-array-stobj))
+           ;;fixme rename test-cases test-inputs?
+           ((mv erp test-cases rand)
+            ;; Make the random test cases (each assigns values to the input vars):
+            ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
+            ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
+            (make-test-cases test-case-count var-type-alist assumptions rand))
+           ((when erp) (mv erp nil state rand result-array-stobj))
+           (analyzed-function-table (empty-analyzed-function-table))
+           ;; could move a lot of stuff into these options:
+           (options (s :prove-constants prove-constants
+                       (s :debugp debug nil)))
+           ;; todo: should we move any stuff above here into miter-and-merge?
+           ((mv erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
+            ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
+            (miter-and-merge dag
+                             miter-name
+                             0
+                             var-type-alist ; todo: filter out stuff only used for test case gen?
+                             interpreted-function-alist print debug-nodes
+                             rewriter-rule-alist
+                             prover-rule-alist
+                             assumptions
+                             extra-stuff
+                             test-cases
+                             monitored-symbols
+                             use-context-when-miteringp
+                             analyzed-function-table
+                             unroll
+                             tests-per-case
+                             (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)
+                             t ;must-succeedp=t
+                             pre-simplifyp
+                             normalize-xors
+                             options
+                             rand state result-array-stobj))
+           ((when erp) (mv erp nil state rand result-array-stobj)))
+        (if provedp
+            (prog2$ (cw "Finished proving top-level miter!)~%")
+                    (mv (erp-nil) t state rand result-array-stobj))
+          (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
+                  (mv (erp-nil) nil state rand result-array-stobj)))))))
 
 ;; Returns (mv erp event state rand result-array-stobj) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
@@ -19867,7 +21188,7 @@
                        test-case-count ;the total number of tests to generate?  some may not be used
                        var-type-alist  ;compute this from the hyps?
                        print
-                       traced-nodes ;do we use this?
+                       debug-nodes ;do we use this?
                        interpreted-function-alist
 ;ffixme allow the use of rule phases?!
                        runes          ;used for both the rewriter and prover
@@ -19889,7 +21210,7 @@
                        normalize-xors ;fixme use the more, deeper in?
                        miter-name     ;the name of this proof
                        prove-constants
-                       treat-as-purep
+                       ;; treat-as-purep
                        debug
                        whole-form
                        state rand result-array-stobj)
@@ -19922,10 +21243,12 @@
   (b* (((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv nil '(value-triple :invisible) state rand result-array-stobj))
        ((mv erp provedp state rand result-array-stobj)
-        (prove-miter-core dag-or-quotep test-case-count
+        (prove-miter-core dag-or-quotep
+                          :rewrite-and-sweep ; todo: pass this in?
+                          test-case-count
                           var-type-alist ;compute this from the hyps?
                           print
-                          traced-nodes ;do we use this?
+                          debug-nodes ;do we use this?
                           interpreted-function-alist
                           ;;ffixme allow the use of rule phases?!
                           runes      ;used for both the rewriter and prover
@@ -19947,7 +21270,7 @@
                           normalize-xors ;fixme use the more, deeper in?
                           miter-name
                           prove-constants
-                          treat-as-purep
+                          ;; treat-as-purep
                           debug
                           state rand result-array-stobj)))
     ;; Depending on how it went, maybe introduce a theorem:
@@ -19982,7 +21305,7 @@
                                   (name ''unnamedmiter)
                                   (tests-per-case '512)
                                   (print 'nil)
-                                  (traced-nodes 'nil)
+                                  (debug-nodes 'nil)
                                   (interpreted-function-alist 'nil) ;affects soundness
                                   (assumptions 'nil) ;affects soundness
                                   (runes 'nil) ;used for both the rewriter and prover, affects soundness
@@ -20000,19 +21323,20 @@
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
                                   (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (normalize-xors 't)
-                                  (treat-as-purep 'nil)
+                                  ;; (treat-as-purep 'nil)
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                                   )
-  `(prove-miter-fn ,dag-or-quotep ,test-case-count ,var-type-alist ,print ,traced-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+  `(prove-miter-fn ,dag-or-quotep ,test-case-count ,var-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                    ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name
                    ,prove-constants
-                   ,treat-as-purep
+                   ;; ,treat-as-purep
                     ,debug
                    ',whole-form
                    state rand result-array-stobj))
 
+;; To understand the arguments, see prove-miter-aux.
 (defmacro prove-miter (&rest args)
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
@@ -20115,7 +21439,7 @@
 
 ;; cool!  i guess the probably constant stuff handles the top node too?  but the program needs to check before saying "ok"
 
-;; (defun gen-lemmas-to-prove-dag-is-t-fn (dag test-case-count var-type-alist state rand print traced-nodes cut-proofs)
+;; (defun gen-lemmas-to-prove-dag-is-t-fn (dag test-case-count var-type-alist state rand print debug-nodes cut-proofs)
 ;;   (declare (xargs :guard t
 ;;                   :mode :program
 ;;                   :stobjs (state rand)
@@ -20124,7 +21448,7 @@
 ;;           (prog2$ (if print (cw "Making signature alist...~%" nil) nil)
 ;;                   (make-signature-alist dag test-case-count rand))
 ;;           (mv-let (lems state)
-;;                   (gen-lemmas-to-prove-dag-is-t-helper sig-alist dag var-type-alist print traced-nodes state cut-proofs)
+;;                   (gen-lemmas-to-prove-dag-is-t-helper sig-alist dag var-type-alist print debug-nodes state cut-proofs)
 ;;                   (mv nil ;error flag?
 ;;                       (cons 'progn lems)
 ;;                       state
@@ -20860,7 +22184,7 @@
 ;;                           name
 ;;                           tests-per-case
 ;;                           print
-;;                           traced-nodes
+;;                           debug-nodes
 ;;                           interpreted-function-alist
 ;;                           assumptions
 ;;                           runes
@@ -20887,7 +22211,7 @@
 ;;                :name name
 ;;                :tests-per-case tests-per-case
 ;;                :print print
-;;                :traced-nodes traced-nodes
+;;                :debug-nodes debug-nodes
 ;;                :interpreted-function-alist interpreted-function-alist
 ;;                :assumptions assumptions
 ;;                :runes runes
@@ -20918,7 +22242,7 @@
 ;;                                   ,(lookup-keyword :name rest)
 ;;                                   ,(lookup-keyword :tests-per-case rest)
 ;;                                   ,(lookup-keyword :printp rest)
-;;                                   ,(lookup-keyword :traced-nodes rest)
+;;                                   ,(lookup-keyword :debug-nodes rest)
 ;;                                   ,(lookup-keyword :interpreted-function-alist rest)
 ;;                                   ,(lookup-keyword :assumptions rest)
 ;;                                   ,(lookup-keyword :runes rest)
@@ -20941,7 +22265,7 @@
 ;todo: deprecate?  unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
 (defmacro prove-equality (term1 term2 &rest rest)
   `(make-event
-    (b* (((mv erp dag) (dagify-term2 '(equal ,term1 ,term2)))
+    (b* (((mv erp dag) (dagify-term '(equal ,term1 ,term2)))
          ((when erp) (mv erp nil state rand result-array-stobj)))
       (prove-miter-aux dag
                        ,(lookup-keyword-safe :test-case-count rest)
@@ -20973,7 +22297,7 @@
   (declare (xargs :guard (and (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
-                              (symbol-alistp types) ;todo constrain the cdrs
+                              (test-case-type-alistp types)
                               (symbolp name)
                               ;; print
                               (booleanp debug)
@@ -21012,10 +22336,6 @@
         ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
         ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
         (mv (erp-t) nil state rand result-array-stobj))
-       ;; Todo: handle this better by passing in the tactic:
-       (tests (if (eq :rewrite tactic)
-                  0
-                tests))
        ((mv erp equality-dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ;; Make the initial rule sets:
@@ -21034,8 +22354,11 @@
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ;; Call the core function:
        ((mv erp provedp state rand result-array-stobj)
-        (prove-miter-core equality-dag tests types print
-                          nil ; traced-nodes
+        (prove-miter-core equality-dag
+                          tactic
+                          tests ; number of tests to run
+                          types print
+                          nil ; debug-nodes
                           interpreted-function-alist
                           nil ;runes
                           nil ;rules
@@ -21056,7 +22379,7 @@
                           normalize-xors
                           miter-name
                           t   ;prove-constants
-                          nil ; treat-as-purep
+                          ;; nil ; treat-as-purep
                           debug
                           state rand result-array-stobj))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
@@ -21114,7 +22437,7 @@
                                     dag-or-term1
                                     dag-or-term2
                                     &key
-                                    (tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
+                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                     (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (assumptions 'nil) ;assumed when rewriting the miter
                                     (print ':brief)

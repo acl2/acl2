@@ -34,16 +34,14 @@
 ;(in-theory (disable BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P)) ;slow
 (in-theory (disable mod floor))
 
-;move
-(defthm integerp-of-bvchop
+;for Axe
+(defthmd integerp-of-bvchop
   (integerp (bvchop size x))
   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm natp-of-bvchop
-  (natp (bvchop n x))
-  :rule-classes :type-prescription)
-
-(in-theory (disable (:t bvchop))) ;natp-of-bvchop is at least as good
+;for Axe
+(defthmd natp-of-bvchop
+  (natp (bvchop n x)))
 
 (defthm bvchop-with-n-not-an-integer
   (implies (not (integerp n))
@@ -570,6 +568,7 @@
   :rule-classes ((:linear))
   :hints (("Goal" :in-theory (enable natp))))
 
+;; Do not remove: helps justify the correctness of some operations done by Axe.
 (defthm bvchop-of-nfix
   (equal (bvchop (nfix n) x)
          (bvchop n x)))
@@ -825,3 +824,13 @@
            (equal (BVCHOP 1 (+ 1 (EXPT 2 i)))
                   1))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm <-of-bvchop-when-<-of-bvchop-bigger
+  (implies (and (< (bvchop freesize x) y)
+                (<= size freesize)
+                (integerp freesize))
+           (< (bvchop size x) y))
+  :hints (("Goal" :use (:instance <-of-bvchop-and-bvchop-same
+                                  (s2 freesize)
+                                  (s1 size))
+           :in-theory (disable <-of-bvchop-and-bvchop-same))))

@@ -2283,6 +2283,9 @@
 ; and TERMP.  We expect this function to hold on (w state).
 
   (declare (xargs :guard t))
+  #-acl2-loop-only
+  (cond ((eq alist (w *the-live-state*))
+         (return-from plist-worldp-with-formals t)))
   (cond ((atom alist) (eq alist nil))
         (t (and (consp (car alist))
                 (symbolp (car (car alist)))
@@ -3576,6 +3579,8 @@
 ; renew-name to be (renewal-mode .  old-sig) where renewal-mode is :erase,
 ; :overwrite, or :reclassifying-overwrite.
 
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
   (let ((redefined (getpropc name 'redefined nil wrld)))
     (cond
      ((and (consp redefined)

@@ -223,10 +223,6 @@
     (equal (ullongp (if a b c))
            (if a (ullongp b) (ullongp c))))
 
-  (defruled pointerp-of-if
-    (equal (pointerp (if a b c))
-           (if a (pointerp b) (pointerp c))))
-
   (defruled booleanp-of-if
     (equal (booleanp (if a b c))
            (if a (booleanp b) (booleanp c))))
@@ -263,7 +259,6 @@
     ulongp-of-if
     sllongp-of-if
     ullongp-of-if
-    pointerp-of-if
     booleanp-of-if
     compustate->frames-of-if
     scope-fix-of-if
@@ -364,7 +359,15 @@
     (implies (and (syntaxp (quotep mem))
                   (identp mem))
              (equal (exec-memberp val mem compst)
-                    (exec-memberp val (ident (ident->name mem)) compst)))))
+                    (exec-memberp val (ident (ident->name mem)) compst))))
+
+  (defruled exec-arrsub-of-memberp-of-const-identifier
+    (implies
+     (and (syntaxp (quotep mem))
+          (identp mem))
+     (equal
+      (exec-arrsub-of-memberp str mem sub compst)
+      (exec-arrsub-of-memberp str (ident (ident->name mem)) sub compst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,7 +390,8 @@
     read-var-of-const-identifier
     write-var-of-const-identifier
     type-struct-of-const-identifier
-    exec-memberp-of-const-identifier))
+    exec-memberp-of-const-identifier
+    exec-arrsub-of-memberp-of-const-identifier))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -671,18 +675,7 @@
     (implies (valuep x)
              (not (errorp x)))
     :enable (errorp
-             valuep
-             ucharp
-             scharp
-             ushortp
-             sshortp
-             uintp
-             sintp
-             ulongp
-             slongp
-             ullongp
-             sllongp
-             pointerp))
+             valuep))
 
   (defruled not-errorp-when-value-listp-rewrite
     (implies (value-listp x)

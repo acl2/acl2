@@ -8788,7 +8788,7 @@
 ; Q.E.D.
 
 ; What we've seen is that ACL2 has always supported the idea that a :logic mode
-; function might use apply$ to call undefined quoted ``function symbol'' and
+; function might use apply$ to call an undefined quoted ``function symbol'' and
 ; the :logic mode function behaves reasonably (soundly) as the formerly
 ; undefined function becomes more acceptable to apply$.
 
@@ -8802,7 +8802,7 @@
 ; hopeless to imagine enforcing a rule against :logic mode functions
 ; ``calling'' :program mode functions via apply$.  The best we can do is
 ; guarantee that evaluation -- whether in the evaluation theory or the logic --
-; handles non-logical arguments correctly.  And that's pretty straightforward
+; handles non-:logic arguments correctly.  And that's pretty straightforward
 ; simply because the logic doesn't know anything about userfns except what
 ; warrants tell it, and the doppelgangers for badge-userfn and apply$-userfn
 ; handle things correctly.

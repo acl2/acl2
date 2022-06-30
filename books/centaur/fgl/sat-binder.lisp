@@ -458,6 +458,7 @@
   :formula-check sat-formula-checks)
 
 (add-fgl-binder-meta sat-check-raw sat-check-raw-binder)
+(disable-execution sat-check-raw)
 
 
 
@@ -633,6 +634,7 @@
   :formula-check sat-formula-checks)
 
 (add-fgl-binder-meta sat-check-with-witness-raw sat-check-with-witness-raw-binder)
+(disable-execution sat-check-with-witness-raw)
 
 
 

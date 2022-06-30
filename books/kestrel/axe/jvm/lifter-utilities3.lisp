@@ -1,7 +1,7 @@
 ; Even more utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -84,7 +84,7 @@
            (ignore th) ;todo!
            )
   (b* ((- (cw "(Running initializer for ~x0.~%" class-name))
-       ((mv erp term-to-run) (dagify-term2 `(run-until-return-from-stack-height
+       ((mv erp term-to-run) (dagify-term `(run-until-return-from-stack-height
                                              (binary-+ '1 (stack-height s0))
                                              ;; The dag-to-term here might be slow:
                                              (jvm::invoke-static-initializer-for-next-class ',class-name (th) ,(dag-to-term s-dag))
@@ -98,7 +98,7 @@
                                  (run-until-return-from-stack-height-rules-smart)
                                  (rule-list-1001))
                   :monitor monitored-rules
-                  :interpreted-function-alist (make-interpreted-function-alist '(get-SUPERCLASSES) (w state))
+                  :interpreted-function-alist (make-interpreted-function-alist '(jvm::get-superclasses) (w state))
                   :assumptions hyps
                   ;; :print t
                   ;; :print-interval 100000
@@ -223,7 +223,7 @@
                   :mode :program))
   (b* ((state-var 's0)
        (assumptions (translate-terms assumptions 'initialize-classes-in-arbitrary-state-fn (w state)))
-       ((mv erp state-var-dag) (dagify-term2 state-var)) ;todo: could call a dagify-var
+       ((mv erp state-var-dag) (dagify-term state-var)) ;todo: could call a dagify-var
        ((when erp) (mv erp nil state))
        ((mv erp result-dag state)
         (initialize-classes class-names
@@ -231,7 +231,7 @@
                             state-var-dag
                             (append `((equal (jvm::initialized-classes ,state-var) 'nil))
                                     (standard-hyps-basic0 state-var)
-                                    (translate-terms (class-table-hyps2 state-var (global-class-alist state)) 'fake (w state))
+                                    (translate-terms (class-table-hyps2 state-var (jvm::global-class-alist state)) 'fake (w state))
                                     assumptions
                                     )
                             (append '(set-static-field-of-set-static-field-diff-class-axe
@@ -916,7 +916,7 @@
        (generated-assumptions (initialized-class-assumptions-for-static-fields static-field-triples heap-triples base-static-field-map-term base-heap-term))
        (- (cw "(Generated ~x0 assumptions established by the static initializers of ~x1:~%~X23.)~%" (len generated-assumptions) class-names generated-assumptions nil))
        ;; ;; Sanity check
-       ((mv erp initialized-state-dag) (dagify-term2 initialized-state-term))
+       ((mv erp initialized-state-dag) (dagify-term initialized-state-term))
        ((when erp) (mv erp nil state))
        ((mv erp dag-to-prove) (compose-term-and-dag (make-conjunction-from-list generated-assumptions) state-var initialized-state-dag))
        ((when erp) (mv erp nil state))

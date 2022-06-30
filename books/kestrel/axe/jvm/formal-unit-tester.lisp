@@ -481,7 +481,7 @@
             (cw "(Will try to show that it returns true.)~%")))
        (param-slot-to-name-alist (make-param-slot-to-name-alist method-info :auto))
        (param-var-assumptions (parameter-var-assumptions method-info param-slot-to-name-alist))
-       ;; Populate the global-class-alist (so that unroll-java-code can find the code):
+       ;; Populate the jvm::global-class-alist (so that unroll-java-code can find the code):
        ;; TODO: Pull this out
        ;; TODO: Don't bother to submit this event, just add the class to an alist?
        (state ;(mv state constant-pool)

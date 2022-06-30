@@ -13,6 +13,7 @@
 
 (include-book "../language/types")
 (include-book "../language/abstract-syntax-operations")
+(include-book "../language/integer-ranges")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,6 +71,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define positive-to-iconst ((pos posp))
+  :returns (iconst iconstp)
+  :short "Turn a positive integer into an integer constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We always generate a decimal constant
+     of the smallest type that can represent it.
+     We cause an internal error if the integer is too large
+     even for @('unsigned long long').
+     This is never expected to happen,
+     given expected invariants that hold when this function is called."))
+  (cond ((<= pos (sint-max)) (make-iconst :value pos
+                                          :base (iconst-base-dec)
+                                          :unsignedp nil
+                                          :length (iconst-length-none)))
+        ((<= pos (uint-max)) (make-iconst :value pos
+                                          :base (iconst-base-dec)
+                                          :unsignedp t
+                                          :length (iconst-length-none)))
+        ((<= pos (slong-max)) (make-iconst :value pos
+                                           :base (iconst-base-dec)
+                                           :unsignedp nil
+                                           :length (iconst-length-long)))
+        ((<= pos (ulong-max)) (make-iconst :value pos
+                                           :base (iconst-base-dec)
+                                           :unsignedp t
+                                           :length (iconst-length-long)))
+        ((<= pos (sllong-max)) (make-iconst :value pos
+                                            :base (iconst-base-dec)
+                                            :unsignedp nil
+                                            :length (iconst-length-llong)))
+        ((<= pos (ullong-max)) (make-iconst :value pos
+                                            :base (iconst-base-dec)
+                                            :unsignedp t
+                                            :length (iconst-length-llong)))
+        (t (prog2$
+            (raise "Internal error: ~x0 too large." pos)
+            (ec-call (iconst-fix :irrelevant))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-to-tyname ((type typep))
   :returns (tyname tynamep)
   :short "Turn a type into a type name."
@@ -102,10 +145,13 @@
       :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
       :struct (mv (tyspecseq-struct type.tag) (obj-adeclor-none))
       :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.to)))
-                 (mv tyspec (make-obj-adeclor-pointer :to declor)))
-      :array (b* (((mv tyspec declor) (type-to-tyname-aux type.of)))
-               (mv tyspec (make-obj-adeclor-array :of declor
-                                                  :size nil))))
+                 (mv tyspec (make-obj-adeclor-pointer :decl declor)))
+      :array (b* (((mv tyspec declor) (type-to-tyname-aux type.of))
+                  (size (if type.size
+                            (positive-to-iconst type.size)
+                          nil)))
+               (mv tyspec (make-obj-adeclor-array :decl declor
+                                                  :size size))))
      :measure (type-count type)
      :verify-guards :after-returns
      :hooks (:fix))))

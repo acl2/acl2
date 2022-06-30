@@ -22,7 +22,7 @@
   ''("ARRAY" "contents" . "dummy-descriptor"))
 
 (defthm heap-object-keyp-of-array-contents-pair
-  (heap-object-keyp (array-contents-pair)))
+  (jvm::heap-object-keyp (array-contents-pair)))
 
 ;use this more?  make it a macro?
 (defun array-contents (ref heap)

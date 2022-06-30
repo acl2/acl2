@@ -1,0 +1,14 @@
+; Portcullis commands and cert params for this dir
+;
+; Copyright (C) 2022 Kestrel Technology, LLC
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(INCLUDE-BOOK "kestrel/x86/portcullis" :DIR :SYSTEM)
+
+; cert-flags: ? T :SKIP-PROOFS-OKP T :TTAGS :ALL
+

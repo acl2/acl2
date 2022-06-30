@@ -40,6 +40,7 @@
        ()
        (local (include-book "kestrel/lists-light/revappend" :dir :system))
 
+       ;; Checks that all elements of X satisfy the PRED.
        ;; We try to be compatible here with what defforall does.
        (defund ,list-pred (x)
          (declare (xargs :guard t
@@ -74,6 +75,7 @@
 
        ,@(and verify-guards `((verify-guards ,list-pred)))
 
+       ;; Merge 2 sorted lists
        (defund ,merge-name (l1 l2 acc)
          (declare (xargs :measure (+ (len l1) (len l2))
                          :hints (("Goal" :in-theory nil
@@ -100,6 +102,7 @@
                     (consp acc)))
          :hints (("Goal" :in-theory (enable ,merge-name))))
 
+       ;; Merge sort the list L
        (defund ,merge-sort-name (l)
          (declare (xargs :measure (len l)
                          :hints (("Goal" :in-theory nil

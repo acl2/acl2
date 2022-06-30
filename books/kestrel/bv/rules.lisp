@@ -32,6 +32,7 @@
 (include-book "bvnot")
 (include-book "bitxor")
 (include-book "bvmult")
+(include-book "bvmod")
 (include-book "bvuminus")
 ;(include-book "kestrel/booleans/booleans" :dir :system) ;why included here? maybe to get bool-to-bit...
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
@@ -39,10 +40,10 @@
 (include-book "leftrotate")
 (include-book "leftrotate32")
 (include-book "rightrotate32")
-(include-book "sbvrem")
+;;(include-book "sbvrem")
 (include-book "bvdiv")
-(include-book "sbvdiv")
-(include-book "sbvdivdown")
+;;(include-book "sbvdiv")
+;;(include-book "sbvdivdown")
 (include-book "bvsx")
 (include-book "repeatbit2")
 (include-book "bvshr")
@@ -1621,11 +1622,11 @@
 ;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable))))
 
-(defthm bvxor-1-equal-0
-  (equal (equal (bvxor 1 x y) 0)
-         (xor (mynot (equal 0 (getbit 0 x)))
-              (equal 0 (getbit 0 y))))
-  :hints (("Goal" :in-theory (e/d (xor mynot bitxor bvxor) (BVXOR-1-BECOMES-BITXOR)))))
+;; (defthm bvxor-1-equal-0
+;;   (equal (equal (bvxor 1 x y) 0)
+;;          (xor (mynot (equal 0 (getbit 0 x)))
+;;               (equal 0 (getbit 0 y))))
+;;   :hints (("Goal" :in-theory (e/d (xor mynot bitxor bvxor) (BVXOR-1-BECOMES-BITXOR)))))
 
 
 ;gen the 1
@@ -1697,11 +1698,11 @@
                                      bvchop-1-becomes-getbit
                                      bvchop-lognot-bvchop)))))
 
-(defthm bvnot-equal-0-rewrite
-  (equal (equal 0 (bvnot 1 x))
-         (mynot (equal 0 (getbit 0 x))))
-  :hints (("Goal" :in-theory (e/d (bitnot) (BITNOT-BECOMES-BITXOR-WITH-1 ;bozo
-                                        )))))
+;; (defthm bvnot-equal-0-rewrite
+;;   (equal (equal 0 (bvnot 1 x))
+;;          (mynot (equal 0 (getbit 0 x))))
+;;   :hints (("Goal" :in-theory (e/d (bitnot) (BITNOT-BECOMES-BITXOR-WITH-1 ;bozo
+;;                                         )))))
 
 (defthm bvxor-of-bvnot-1
   (equal (bvxor 1 (bvnot 1 x) y)
@@ -1715,11 +1716,6 @@
 ;;
 ;; bool-to-bit - do we translate this op to stp?
 ;;
-
-(defthm getbit-0-of-bool-to-bit
-  (equal (getbit 0 (bool-to-bit x))
-         (bool-to-bit x))
-  :hints (("Goal" :in-theory (enable bool-to-bit))))
 
 (defthm bvif-lognot-size-1
   (equal (bvif 1 test (bvnot 1 x) x)
@@ -1739,18 +1735,6 @@
          (bvxor 1 (bool-to-bit x)
                   (bool-to-bit y)))
   :hints (("Goal" :in-theory (enable bool-to-bit xor))))
-
-;use bitnot?
-(defthm bool-to-bit-of-equal-0-getbit-1
-  (equal (bool-to-bit (equal 0 (getbit n x)))
-         (bvnot 1 (getbit n x)))
-  :hints (("Goal" :in-theory (enable bool-to-bit))))
-
-;use bitnot?
-(defthm bool-to-bit-of-equal-0-getbit-2
-  (equal (bool-to-bit (equal (getbit n x) 0))
-         (bvnot 1 (getbit n x)))
-  :hints (("Goal" :in-theory (enable bool-to-bit))))
 
 (defthm bvif-0-1
   (equal (bvif 1 test 0 1)
@@ -2485,13 +2469,13 @@
   (implies (unsigned-byte-p 1 x)
            (equal (bvif 1 (equal 1 x) y 0)
                   (bitand x y)))
-  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) ( bitnot-becomes-bitxor-with-1)))))
+  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) (bitnot-becomes-bitxor-with-1)))))
 
 (defthm bvif-equal-1-usb1-2-gen
   (implies (unsigned-byte-p 1 x)
            (equal (bvif 1 (equal 1 x) 0 y)
                   (bitand y (bitnot x))))
-  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) ( bitnot-becomes-bitxor-with-1)))))
+  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) (bitnot-becomes-bitxor-with-1)))))
 
 (defthm bvand-of-logext
   (implies (and (<= size1 size2)
@@ -4769,16 +4753,6 @@
                   (myif test (bool-to-bit x) (bool-to-bit y))))
   :hints (("Goal" :in-theory (enable myif bool-to-bit boolif))))
 
-;just run the function!
-(defthm bool-to-bit-of-nil
-  (equal (bool-to-bit nil)
-         0))
-
-;just run the function!
-(defthm bool-to-bit-of-t
-  (equal (bool-to-bit t)
-         1))
-
 ;fixme do we use this?
 ;the test is a bit, not a boolean
 (defun bif (bit x y)
@@ -4804,13 +4778,6 @@
                 (unsigned-byte-p 1 y))
            (equal (bif x y 0)
                   (bitand x y))))
-
-(defthm bool-to-bit-of-not
-  (equal (bool-to-bit (not x))
-         (bitnot (bool-to-bit x)))
-  :hints (("Goal" :in-theory (e/d (bool-to-bit) ( bitxor-of-1-becomes-bitnot-arg1))
-           :do-not '(preprocess))))
-
 
 (defthm bitxnor-of-getbit-0
   (equal (bitxnor (getbit 0 x) y)
@@ -6230,7 +6197,7 @@
                     (bvlt 31 x k))))
   :hints (("Goal"
            :use ((:instance split-with-bvcat (x k) (hs 1) (ls 31)))
-           :in-theory (e/d (sbvdivdown bvlt getbit-when-bvlt-of-small-helper)
+           :in-theory (e/d ( bvlt getbit-when-bvlt-of-small-helper)
                            (<-becomes-bvlt <-becomes-bvlt-alt
                                            EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
                                            BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT)))))

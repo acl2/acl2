@@ -21,23 +21,11 @@
 ;; TODO: To evaluate a function defined using MBE, we might prefer to evaluate the :exec part.
 
 ;try to include less (but we need the functions to eval them)
-(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
-(include-book "make-evaluator")
-(include-book "unguarded-primitives")
-(include-book "unguarded-built-ins")
-(include-book "unguarded-defuns")
 (include-book "kestrel/utilities/world" :dir :system) ;for fn-definedp
-(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
-(include-book "kestrel/lists-light/add-to-end" :dir :system)
-(include-book "kestrel/lists-light/group" :dir :system) ;drop?
-(include-book "kestrel/lists-light/group2" :dir :system) ;drop?
-(include-book "kestrel/lists-light/ungroup" :dir :system) ;drop?
-(include-book "kestrel/lists-light/first-non-member" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;reduce?
+(include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
-(include-book "kestrel/bv/bitnot" :dir :system)
-(include-book "kestrel/bv/bvshl" :dir :system)
-(include-book "kestrel/bv/bitxor" :dir :system)
+(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; reduce?
@@ -47,18 +35,27 @@
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system)
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
+(include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
+(include-book "kestrel/lists-light/add-to-end" :dir :system)
+(include-book "kestrel/lists-light/group" :dir :system) ;drop?
+(include-book "kestrel/lists-light/group2" :dir :system) ;drop?
+(include-book "kestrel/lists-light/ungroup" :dir :system) ;drop?
+(include-book "kestrel/lists-light/first-non-member" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
 (include-book "kestrel/lists-light/update-subrange" :dir :system)
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
-(include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;for array-elem-2d
-(include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
+(include-book "kestrel/maps/maps" :dir :system) ;for key-list
+(include-book "make-evaluator")
+(include-book "unguarded-primitives")
+(include-book "unguarded-built-ins")
+(include-book "unguarded-defuns")
 (include-book "safe-unquote")
 (include-book "interpreted-function-alists") ; for make-interpreted-function-alist
-(include-book "print-constant") ; drop?
-(include-book "kestrel/maps/maps" :dir :system) ;for key-list
-(include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
+(include-book "print-constant") ; drop from the evaluator?
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -70,7 +67,7 @@
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
 ;; Restricts ALIST to just the given KEYS.
-(defun get-entries-eq (keys alist)
+(defund get-entries-eq (keys alist)
   (declare (xargs :guard (and (symbol-listp keys)
                               (symbol-alistp alist))))
   (if (endp keys)
@@ -79,33 +76,35 @@
            (entry (assoc-eq key alist)))
       (cons entry
             (get-entries-eq (cdr keys) alist)))))
-;fixme move
+
+;todo: move
+;for Axe only, so disabled.
 (defthm booleanp-of-in
   (booleanp (set::in a x)))
 
-(defun reverse-fast (x)
+(defund reverse-fast (x)
   (declare (xargs :guard (true-listp x)))
   (revappend x nil))
 
-(defun equal-lst-exec (val lst acc)
+(defund equal-lst-exec (val lst acc)
   (declare (xargs :guard (true-listp acc)))
   (if (atom lst)
       (reverse-fast acc)
     (equal-lst-exec val (cdr lst) (cons (equal val (car lst)) acc))))
 
 ;without the max call this loops when n=0
-(defun take-every-nth-aux (n lst acc)
+(defund take-every-nth-aux (n lst acc)
   (declare (xargs :guard (and (true-listp lst)
                               (true-listp acc))))
    (if (endp lst)
        (reverse-fast acc) ;BOZO or is the built in reverse faster
      (take-every-nth-aux n (nthcdr (max 1 (nfix n)) lst) (cons (car lst) acc))))
 
-(defun take-every-nth (n lst)
+(defund take-every-nth (n lst)
   (declare (xargs :guard (true-listp lst)))
   (take-every-nth-aux n lst nil))
 
-(defun bvplus-lst (size val lst)
+(defund bvplus-lst (size val lst)
   (declare (type (integer 0 *) size))
   (if (atom lst)
       nil
@@ -113,7 +112,7 @@
           (bvplus-lst size val (cdr lst)))))
 
 ;reverses the order - not any more, that caused problems
-(defun keep-items-less-than (bound lst acc)
+(defund keep-items-less-than (bound lst acc)
   (declare (xargs :guard (true-listp acc)))
   (if (atom lst)
       (reverse-fast acc)
@@ -140,9 +139,11 @@
 (defthm keep-items-less-than-unguarded-correct
   (equal (keep-items-less-than-unguarded bound lst acc)
          (keep-items-less-than bound lst acc))
-  :hints (("Goal" :in-theory (enable keep-items-less-than-unguarded))))
+  :hints (("Goal" :in-theory (enable keep-items-less-than-unguarded
+                                     keep-items-less-than
+                                     REVERSE-FAST))))
 
-(defun all-items-less-than (bound lst)
+(defund all-items-less-than (bound lst)
   (declare (xargs :guard t))
   (if (atom lst)
       t
@@ -339,7 +340,7 @@
 ;todo: get rid of set-field, set-fields, and get-field
 ;todo: see adapt the simpler format of stuff like this that we use in evaluator-simple.  also generate check THMS like the ones that it generates
 ;; TODO: The functions actually get checked in the reverse order of how they appear here -- change that
-(defun axe-evaluator-function-info ()
+(defund axe-evaluator-function-info ()
   (declare (xargs :guard t))
   (acons 1
          ;fixme it would be nice to allow a single symbol in each spot of this list:
@@ -597,7 +598,7 @@
 
 (mutual-recursion
  ;; This is dag-aware
- (defun get-called-fns-aux (term acc)
+ (defund get-called-fns-aux (term acc)
    (declare (xargs :guard (and (pseudo-termp term)
                                (symbol-listp acc))
                    :verify-guards nil ;done below
@@ -617,7 +618,7 @@
              (get-called-fns-aux-lst (fargs term) (add-to-set-eq fn acc))))))))
 
  ;; This is dag-aware
- (defun get-called-fns-aux-lst (terms acc)
+ (defund get-called-fns-aux-lst (terms acc)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (symbol-listp acc))))
    (if (endp terms)
@@ -637,13 +638,20 @@
     (implies (and (pseudo-term-listp terms)
                   (symbol-listp acc))
              (symbol-listp (get-called-fns-aux-lst terms acc)))
-    :flag get-called-fns-aux-lst))
+    :flag get-called-fns-aux-lst)
+  :hints (("Goal" :in-theory (enable get-called-fns-aux
+                                     get-called-fns-aux-lst))))
 
 (verify-guards get-called-fns-aux :hints (("Goal" :expand ((pseudo-termp term)))))
 
-(defun get-called-fns (term)
+(defund get-called-fns (term)
   (declare (xargs :guard (pseudo-termp term)))
   (get-called-fns-aux term nil))
+
+(defthm symbol-listp-of-get-called-fns
+  (implies (pseudo-termp term)
+           (symbol-listp (get-called-fns term)))
+  :hints (("Goal" :in-theory (enable get-called-fns))))
 
 ;ffixme what about primitives and recursion and mutual recursion and constrained functions?
 ;TODO Would be nice to track the call chain so we can report it in the error message.
@@ -714,7 +722,7 @@
 ;now throws an error if any of the fns are supported by acl2 primitives not in *axe-evaluator-functions*
 ;ffffixme what about embedded dags?!
 ;todo: exclude the evaluator functions themselves?
-(defun get-non-built-in-supporting-fns-list (fn-names wrld)
+(defund get-non-built-in-supporting-fns-list (fn-names wrld)
   (declare (xargs :guard (and (symbol-listp fn-names)
                               (plist-worldp wrld))))
   (get-all-supporting-fns-aux 1000000000
@@ -723,6 +731,11 @@
                               t                           ;throw-errorp
                               nil ;empty-acc
                               wrld))
+
+(defthmd symbol-listp-of-get-non-built-in-supporting-fns-list
+  (implies (symbol-listp fn-names)
+           (symbol-listp (get-non-built-in-supporting-fns-list fn-names wrld)))
+  :hints (("Goal" :in-theory (enable get-non-built-in-supporting-fns-list))))
 
 ;; (defun get-non-built-in-supporting-fns-list-tolerant (fn-names wrld)
 ;;   (declare (xargs :stobjs state :verify-guards nil))
@@ -764,7 +777,7 @@
 ;;                     (eval-dag2-no-array dag alist)))))
 
 ;todo: rename to sound less general (make-alist-for-quoted-vars?)
-(defun make-acons-nest (vars)
+(defund make-acons-nest (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (if (endp vars)
       *nil*
@@ -792,7 +805,7 @@
 ;include the fns themselves if they are not base fns
 ;fixme do we need the ones called in nested dag-val calls?
 ;todo: compare to get-non-built-in-supporting-fns-list
-(defun supporting-non-base-fns (count fns interpreted-function-alist throw-errorp acc)
+(defund supporting-non-base-fns (count fns interpreted-function-alist throw-errorp acc)
   (declare (xargs :guard (and (symbol-listp fns)
                               (symbol-listp acc)
                               (interpreted-function-alistp interpreted-function-alist))
@@ -829,13 +842,13 @@
                                          (cons fn acc))))))))))
 
 ;fixme can we omit ones mentioned only in nested calls to dag-val (since they will be given values in those calls)?
-(defun supporting-interpreted-function-alist (fns interpreted-function-alist throw-errorp)
+(defund supporting-interpreted-function-alist (fns interpreted-function-alist throw-errorp)
   (let ((supporting-non-base-fns (supporting-non-base-fns 1000000000 fns interpreted-function-alist throw-errorp nil)))
     (get-entries-eq supporting-non-base-fns interpreted-function-alist)))
 
 ;fixme use this more?
 ;; interpreted-function-alist must give meaning to all non-built-in functions in DAG.
-(defun wrap-dag-in-dag-val (dag interpreted-function-alist)
+(defund wrap-dag-in-dag-val (dag interpreted-function-alist)
   (if (quotep dag)
       dag
     (let* ((dag-vars (dag-vars dag))
@@ -850,7 +863,7 @@
 ;; Create a term equivalent to DAG, where the meaning of any non-built-in
 ;; functions that support DAG comes from WRLD.
 ;fixme use this more?
-(defun embed-dag-in-term (dag wrld)
+(defund embed-dag-in-term (dag wrld)
   (declare (xargs :guard (and (or (quotep dag)
                                   (weak-dagp dag))
                               (plist-worldp wrld))))

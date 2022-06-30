@@ -19,6 +19,12 @@
        (true-listp val)
        (equal (len val) length)))
 
+(defthm bv-arrayp-forward-to-natp
+  (implies (bv-arrayp element-width length val)
+           (natp length))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable bv-arrayp))))
+
 (defthm len-when-bv-arrayp
   (implies (bv-arrayp bytesize numcols item1)
            (equal (len item1)

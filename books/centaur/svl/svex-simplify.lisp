@@ -216,6 +216,8 @@
                                                      (hons-list 'sv::bitnot x))))
     (('svl::4vec-plus$ size x y)  (mv nil (hons-list 'sv::partsel 0 size
                                                      (hons-list '+ x y))))
+    (('acl2::logcar$inline x)     (mv nil (hons-list 'sv::partsel 0 1 x)))
+    
     (('svl::bits val s w)         (mv nil (hons-list 'sv::partsel s w val)))
     (('svl::sbits s w new old)    (mv nil (hons-list 'sv::partinst s w old new)))
     (('svl::4vec-concat$ & & &)   (mv nil (hons 'sv::concat   (cdr term))))
@@ -224,6 +226,8 @@
     (('sv::4vec-bit-extract & &)  (mv nil (hons 'sv::bitsel   (cdr term))))
     (('sv::3vec-fix &)            (mv nil (hons 'sv::unfloat  (cdr term))))
     (('4vec-bitnot &)             (mv nil (hons 'sv::bitnot   (cdr term))))
+    (('acl2::lognot &)            (mv nil (hons 'sv::bitnot   (cdr term))))
+    
     (('4vec-bitand & &)           (mv nil (hons 'sv::bitand   (cdr term))))
     (('4vec-bitor & &)            (mv nil (hons 'sv::bitor    (cdr term))))
     (('sv::4vec-bitxor & &)       (mv nil (hons 'sv::bitxor   (cdr term))))
@@ -241,10 +245,12 @@
     (('4vec-concat & & &)         (mv nil (hons 'concat       (cdr term))))
     (('sv::4vec-rev-blocks & & &) (mv nil (hons 'sv::blkrev   (cdr term))))
     (('4vec-rsh & &)              (mv nil (hons 'sv::rsh      (cdr term))))
+    (('acl2::logcdr$inline & &)   (mv nil (hons 'sv::rsh      (cdr term))))
     (('4vec-lsh & &)              (mv nil (hons 'sv::lsh      (cdr term))))
     (('4vec-plus & &)             (mv nil (hons '+            (cdr term))))
     (('sv::4vec-minus & &)        (mv nil (hons 'sv::b-       (cdr term))))
     (('sv::4vec-uminus &)         (mv nil (hons 'sv::u-       (cdr term))))
+    (('unary-- &)                 (mv nil (hons 'sv::u-       (cdr term))))
     (('sv::4vec-times & &)        (mv nil (hons '*            (cdr term))))
     (('sv::4vec-quotient & &)     (mv nil (hons '/            (cdr term))))
     (('sv::4vec-remainder & &)    (mv nil (hons 'sv::%        (cdr term))))

@@ -82,6 +82,7 @@
                                        exec-iconst
                                        exec-arrsub
                                        exec-memberp
+                                       exec-arrsub-of-memberp
                                        exec-unary
                                        exec-cast
                                        exec-binary-strict-pure
@@ -115,8 +116,8 @@
       (:e tyname->tyspec)
       (:e tyname->declor)
       (:e obj-adeclor-kind)
-      (:e obj-adeclor-pointer->to)
-      (:e obj-adeclor-array->of)
+      (:e obj-adeclor-pointer->decl)
+      (:e obj-adeclor-array->decl)
       tyspecseq-to-type
       (:e tyspecseq-kind)
       (:e tyspecseq-struct->tag))))
@@ -135,8 +136,7 @@
      such as @(tsee sintp)."))
 
   (defval *atc-valuep-rules*
-    '(valuep-when-pointerp
-      valuep-when-scharp
+    '(valuep-when-scharp
       valuep-when-ucharp
       valuep-when-sshortp
       valuep-when-ushortp
@@ -304,7 +304,7 @@
       type-of-value-when-slongp
       type-of-value-when-ullongp
       type-of-value-when-sllongp
-      type-of-value-when-pointerp
+      type-of-value-when-value-pointer
       type-of-value-when-uchar-arrayp
       type-of-value-when-schar-arrayp
       type-of-value-when-ushort-arrayp
@@ -619,13 +619,19 @@
   (xdoc::topstring
    (xdoc::p
     "To symbolically execute an identifier (as an expression),
-     we simply expand the definition of @(tsee exec-ident)
-     which unconditionally yields @(tsee read-var).
+     we use a rule that is like the definition,
+     but provides a bit of separation/abstraction from the definition,
+     and it also avoids the binding of @('__function__').
      The @(tsee read-var) call may undergo further rewriting,
      as explained in @(see atc-read-var-rules)."))
 
+  (defruled exec-ident-open
+    (equal (exec-ident id compst)
+           (read-var id compst))
+    :enable exec-ident)
+
   (defval *atc-exec-ident-rules*
-    '(exec-ident)))
+    '(exec-ident-open)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -635,27 +641,155 @@
   (xdoc::topstring
    (xdoc::p
     "To symbolically execute a constant,
-     we simply expand the definitions of a number of functions,
-     starting with @(tsee exec-const)
-     and including all the functions called by it (directly or indirectly)
-     except for the fixtype constructors of the integer values
-     (i.e. @(tsee sint) etc.).
+     which in our current C subset may only be an integer constant,
+     we use rules corresponding to the possible integer types of the constant.
+     The rules are openers for @(tsee exec-const),
+     under suitable conditions.
      The argument of @(tsee exec-const) is a quoted constant
      during symbolic execution,
      because it is taken from the ASTs being executed;
-     thus, for certain functions we only need to enable
-     the executable counterpart."))
+     thus, we enable the executable counterparts
+     of the fixtype functions that operate on constants
+     and of the @('<type>-integerp') predicates."))
+
+  (defruled exec-const-to-sint
+    (implies (and (syntaxp (quotep const))
+                  (const-case const :int)
+                  (equal iconst (const-int->get const))
+                  (not (iconst->unsignedp iconst))
+                  (iconst-length-case (iconst->length iconst) :none)
+                  (equal value (iconst->value iconst))
+                  (sint-integerp value))
+             (equal (exec-const const)
+                    (sint value)))
+    :enable (exec-const
+             exec-iconst))
+
+  (defruled exec-const-to-slong
+    (implies (and (syntaxp (quotep const))
+                  (const-case const :int)
+                  (equal iconst (const-int->get const))
+                  (not (iconst->unsignedp iconst))
+                  (equal value (iconst->value iconst))
+                  (slong-integerp value)
+                  (equal length (iconst->length iconst))
+                  (equal base (iconst->base iconst))
+                  (or (and (iconst-length-case length :none)
+                           (not (sint-integerp value))
+                           (or (iconst-base-case base :dec)
+                               (not (uint-integerp value))))
+                      (iconst-length-case length :long)))
+             (equal (exec-const const)
+                    (slong value)))
+    :enable (exec-const
+             exec-iconst))
+
+  (defruled exec-const-to-sllong
+    (implies (and (syntaxp (quotep const))
+                  (const-case const :int)
+                  (equal iconst (const-int->get const))
+                  (not (iconst->unsignedp iconst))
+                  (equal value (iconst->value iconst))
+                  (sllong-integerp value)
+                  (equal length (iconst->length iconst))
+                  (equal base (iconst->base iconst))
+                  (or (and (iconst-length-case length :none)
+                           (not (slong-integerp value))
+                           (or (iconst-base-case base :dec)
+                               (not (ulong-integerp value))))
+                      (and (iconst-length-case length :long)
+                           (not (slong-integerp value))
+                           (or (iconst-base-case base :dec)
+                               (not (ulong-integerp value))))
+                      (iconst-length-case length :llong)))
+             (equal (exec-const const)
+                    (sllong value)))
+    :enable (exec-const
+             exec-iconst
+             slong-integerp-alt-def
+             sint-integerp-alt-def
+             ulong-integerp-alt-def
+             uint-integerp-alt-def))
+
+  (defruled exec-const-to-uint
+    (implies (and (syntaxp (quotep const))
+                  (const-case const :int)
+                  (equal iconst (const-int->get const))
+                  (iconst-length-case (iconst->length iconst) :none)
+                  (equal value (iconst->value iconst))
+                  (uint-integerp value)
+                  (or (iconst->unsignedp iconst)
+                      (and (not (iconst-base-case (iconst->base iconst) :dec))
+                           (not (sint-integerp value)))))
+             (equal (exec-const const)
+                    (uint value)))
+    :enable (exec-const
+             exec-iconst))
+
+  (defruled exec-const-to-ulong
+    (implies (and (syntaxp (quotep const))
+                  (const-case const :int)
+                  (equal iconst (const-int->get const))
+                  (equal value (iconst->value iconst))
+                  (ulong-integerp value)
+                  (equal length (iconst->length iconst))
+                  (equal base (iconst->base iconst))
+                  (or (and (iconst->unsignedp iconst)
+                           (or (and (iconst-length-case length :none)
+                                    (not (uint-integerp value)))
+                               (iconst-length-case length :long)))
+                      (and (not (iconst-base-case base :dec))
+                           (not (slong-integerp value))
+                           (or (and (iconst-length-case length :none)
+                                    (not (uint-integerp value)))
+                               (iconst-length-case length :long)))))
+             (equal (exec-const const)
+                    (ulong value)))
+    :enable (exec-const
+             exec-iconst
+             sint-integerp-alt-def
+             slong-integerp-alt-def))
+
+  (defruled exec-const-to-ullong
+    (implies (and (syntaxp (quotep const))
+                  (const-case const :int)
+                  (equal iconst (const-int->get const))
+                  (equal value (iconst->value iconst))
+                  (ullong-integerp value)
+                  (equal length (iconst->length iconst))
+                  (equal base (iconst->base iconst))
+                  (or (and (iconst->unsignedp iconst)
+                           (or (iconst-length-case length :llong)
+                               (not (ulong-integerp value))))
+                      (and (not (iconst-base-case base :dec))
+                           (not (sllong-integerp value))
+                           (or (iconst-length-case length :llong)
+                               (not (ulong-integerp value))))))
+             (equal (exec-const const)
+                    (ullong value)))
+    :enable (exec-const
+             exec-iconst
+             sint-integerp-alt-def
+             slong-integerp-alt-def
+             sllong-integerp-alt-def
+             uint-integerp-alt-def
+             ulong-integerp-alt-def))
 
   (defval *atc-exec-const-rules*
-    '(exec-const
+    '(exec-const-to-sint
+      exec-const-to-uint
+      exec-const-to-slong
+      exec-const-to-ulong
+      exec-const-to-sllong
+      exec-const-to-ullong
       (:e const-kind)
       (:e const-int->get)
-      exec-iconst
       (:e iconst->base)
-      (:e iconst->type)
+      (:e iconst->length)
       (:e iconst->unsignedp)
       (:e iconst->value)
       (:e iconst-length-kind)
+      (:e iconst-base-kind)
       (:e sint-integerp)
       (:e uint-integerp)
       (:e slong-integerp)
@@ -1108,20 +1242,28 @@
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-index-okp
+          (pack afixtype '-array-index-okp))
          (atype-array-read-itype
           (pack afixtype '-array-read- ifixtype))
+         (atype-array-read
+          (pack afixtype '-array-read))
+         (atype-array-read-alt-def
+          (pack atype-array-read '-alt-def))
+         (elemtype-when-apred
+          (pack 'value-array->elemtype-when- apred))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                          ,(atc-syntaxp-hyp-for-expr-pure 'y)
-                         (pointerp x)
+                         (valuep x)
+                         (value-case x :pointer)
                          (not (value-pointer-nullp x))
+                         (equal (value-pointer->reftype x)
+                                ,(type-to-maker atype))
                          (equal array
                                 (read-object (value-pointer->designator x)
                                              compst))
-                         (value-case array :array)
-                         (equal (value-pointer->reftype x)
-                                (value-array->elemtype array))
                          (,apred array)
                          (,ipred y)
                          (,atype-array-itype-index-okp array y))
@@ -1132,7 +1274,15 @@
                    :enable (exec-arrsub
                             exec-integer
                             ,atype-array-itype-index-okp
-                            ,atype-array-read-itype))))
+                            ,atype-array-read-itype
+                            ,atype-array-read-alt-def
+                            ,elemtype-when-apred)
+                   :prep-lemmas
+                   ((defrule lemma
+                      (implies (and (,atype-array-index-okp array index)
+                                    (integerp index))
+                               (not (< index 0)))
+                      :enable ,atype-array-index-okp)))))
       (mv name event)))
 
   (define atc-exec-arrsub-rules-gen-loop-itypes ((atype typep)
@@ -1757,9 +1907,11 @@
 
   (defruled exec-expr-pure-when-arrsub
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :arrsub))
+                  (equal (expr-kind e) :arrsub)
+                  (equal arr (expr-arrsub->arr e))
+                  (not (expr-case arr :memberp)))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
+                    (exec-arrsub (exec-expr-pure arr compst)
                                  (exec-expr-pure (expr-arrsub->sub e) compst)
                                  compst)))
     :enable exec-expr-pure)
@@ -1772,6 +1924,19 @@
                                                   compst)
                                   (expr-memberp->name e)
                                   compst)))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-arrsub-of-memberp
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :arrsub)
+                  (equal arr (expr-arrsub->arr e))
+                  (expr-case arr :memberp))
+             (equal (exec-expr-pure e compst)
+                    (exec-arrsub-of-memberp
+                     (exec-expr-pure (expr-memberp->target arr) compst)
+                     (expr-memberp->name arr)
+                     (exec-expr-pure (expr-arrsub->sub e) compst)
+                     compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary
@@ -1874,6 +2039,7 @@
       exec-expr-pure-when-const
       exec-expr-pure-when-arrsub
       exec-expr-pure-when-memberp
+      exec-expr-pure-when-arrsub-of-memberp
       exec-expr-pure-when-unary
       exec-expr-pure-when-cast
       exec-expr-pure-when-strict-pure-binary
@@ -2028,8 +2194,14 @@
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-index-okp
+          (pack afixtype '-array-index-okp))
          (atype-array-write-itype
           (pack afixtype '-array-write- ifixtype))
+         (atype-array-write-alt-def
+          (pack afixtype '-array-write-alt-def))
+         (elemtype-when-apred
+          (pack 'value-array->elemtype-when- apred))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -2049,13 +2221,13 @@
                  (equal compst1 (mv-nth 1 val+compst1))
                  (,epred val)
                  (equal ptr (read-var (expr-ident->get arr) compst1))
-                 (pointerp ptr)
+                 (valuep ptr)
+                 (value-case ptr :pointer)
                  (not (value-pointer-nullp ptr))
+                 (equal (value-pointer->reftype ptr)
+                        ,(type-to-maker atype))
                  (equal array
                         (read-object (value-pointer->designator ptr) compst1))
-                 (value-case array :array)
-                 (equal (value-pointer->reftype ptr)
-                        (value-array->elemtype array))
                  (,apred array)
                  (equal index (exec-expr-pure sub compst1))
                  (,ipred index)
@@ -2069,7 +2241,24 @@
                    :enable (exec-expr-asg
                             exec-integer
                             ,atype-array-itype-index-okp
-                            ,atype-array-write-itype))))
+                            ,atype-array-write-itype
+                            ,atype-array-write-alt-def
+                            ,elemtype-when-apred)
+                   :prep-lemmas
+                   ((defrule lemma1
+                      (implies (and (,atype-array-index-okp array index)
+                                    (integerp index))
+                               (not (< index 0)))
+                      :enable ,atype-array-index-okp)
+                    (defrule lemma2
+                      (implies (and (,apred array)
+                                    (integerp index)
+                                    (,atype-array-index-okp array index)
+                                    (,epred val))
+                               (not (errorp
+                                     (value-array-write index val array))))
+                      :use (:instance ,atype-array-write-alt-def
+                            (elem val)))))))
       (mv name event)))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
@@ -2216,9 +2405,7 @@
                   (equal compst1 (mv-nth 1 val?+compst1))
                   (value-optionp val?)
                   (equal (type-of-value-option val?)
-                         (tyname-to-type
-                          (make-tyname :tyspec (fun-info->result info)
-                                       :declor (obj-adeclor-none)))))
+                         (tyname-to-type (fun-info->result info))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
     :enable exec-fun)

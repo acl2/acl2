@@ -145,7 +145,7 @@
 
 
 
-(local (defthm match-tree-pseudo-termp
+(local (defthmd match-tree-pseudo-termp
          (b* (((mv ok subst) (match-tree pat x alist)))
            (implies ok
                     (equal (pseudo-termp x)
@@ -153,11 +153,14 @@
          :hints(("Goal" :in-theory (enable match-tree-is-subst-tree)))))
 
 
+(local (in-theory (enable match-tree-obj-equals-subst-when-successful
+                          match-tree-alist-opener-theory)))
+
 (defsection unify-lit-with-equality-rule
 
-  (local (def-match-tree-rewrites (implies (:? hyp-term)
-                                           (equal (:? lhs)
-                                                  (:? rhs)))))
+  ;; (local (def-match-tree-rewrites (implies (:? hyp-term)
+  ;;                                          (equal (:? lhs)
+  ;;                                                 (:? rhs)))))
 
   (defund unify-lit-with-equality-rule (lit rule)
     (declare (xargs :guard (and (pseudo-termp lit)
@@ -207,7 +210,7 @@
                            (x rule)
                            (a (repl-ev-alist
                                (mv-nth 1 (simple-one-way-unify
-                                          (hyp-term rule) lit nil))
+                                          (cadr rule) lit nil))
                                a))))))))
 
 
@@ -408,9 +411,6 @@
 ;;                             (table-alist 'replace-equalities-rules world))))))
 
 
-;; NOTE: This is mostly an example of usage, but is also pretty useful so we'll
-;; leave it non-local.
-
 ;; This is the replacement we generally want to make...
 (defthm match-tree-replace-equalities
   (implies (mv-nth 0 (match-tree pat x alist))
@@ -427,14 +427,16 @@
                   (match-tree pat x alist)))
   :rule-classes nil)
 
-(add-replace-equalities-rule match-tree-replace-equalities)
-(add-replace-equalities-rule match-tree-block-self-subst)
+(local (add-replace-equalities-rule match-tree-replace-equalities))
+(local (add-replace-equalities-rule match-tree-block-self-subst))
 
 
 
 (local
  (progn
-   (in-theory (disable match-tree-pseudo-termp))
+   (in-theory (disable match-tree-pseudo-termp
+                       match-tree-obj-equals-subst-when-successful
+                       match-tree-alist-rw-when-matched))
 
    (defthm foo
      (mv-let (ok alist)

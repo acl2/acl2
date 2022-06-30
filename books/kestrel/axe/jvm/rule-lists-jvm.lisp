@@ -696,7 +696,7 @@
             get-field-class-when-array-refp
             get-field-class-when-array-ref-listp-one-dim
             jvm::make-array-type      ;dangerous?
-            acl2::array-contents ;; we enable this to expost get-field
+            acl2::array-contents ;; we enable this to expose get-field
 
             ;; rules about initialize-one-dim-array:
             jvm::get-field-class-of-initialize-one-dim-array
@@ -866,16 +866,16 @@
             jvm::lookup-method-for-invokespecial-aux-base-3
             jvm::lookup-method-for-invokespecial-aux-base-4
             jvm::superclassp
-;jvm::classp
-            jvm::bound-to-a-classp
-            jvm::bound-to-an-interfacep
+            ;;jvm::classp
+            jvm::is-a-classp
+            jvm::is-an-interfacep
             jvm::make-one-dim-array-type
             ;; jvm::array-classp
 ;jvm::non-array-classp
             jvm::class-implements-interfacep
             jvm::get-superinterfaces-aux-base
             jvm::get-superinterfaces-aux-opener
-            acl2::get-superinterfaces
+            jvm::get-superinterfaces
 ;     get-class-of-initialize-2d-array
 ;     get-class-field-of-initialize-2d-array
             jvm::intern-table-of-make-state
@@ -1021,7 +1021,7 @@
 
             jvm::get-superclasses-aux-opener
             jvm::get-superclasses-aux-base
-            get-superclasses ;class-decl-superclasses ;should we add this to eval-fn?
+            jvm::get-superclasses ;class-decl-superclasses ;should we add this to eval-fn?
 ;     jvm::method-sync
             jvm::method-program-constant-opener ; we keep method-program itself closed because it is used in 'poised' assumptions
             jvm::method-program-of-acons
@@ -1856,7 +1856,7 @@
              bvlt-add-to-both-sides-constant-lemma ;expensive?
 
              ;rationalp-when-integerp ;drop
-             rational-of-floor
+             rationalp-of-floor
              rationalp-*2
              integerp-of-floor
 ;             bvuminus-of-bvuminus

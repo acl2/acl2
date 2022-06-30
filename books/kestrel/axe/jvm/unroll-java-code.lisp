@@ -22,12 +22,11 @@
 ;; information and others not have it?).
 
 (include-book "unroll-java-code-common")
-(include-book "output-indicators")
 (include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
-;(include-book "../dag-size-fast")
+(include-book "../make-term-into-dag-basic")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in rewriter-basic
 (include-book "../dag-info")
@@ -208,7 +207,7 @@
             (er hard? 'unroll-java-code-fn "Method descriptor is missing in ~x0." method-designator-string)
             nil nil nil nil
             state))
-       (class-alist (global-class-alist state))
+       (class-alist (jvm::global-class-alist state))
        (all-class-names (strip-cars class-alist))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
@@ -332,7 +331,7 @@
        (rule-alists (remove-from-rule-alists remove-rules rule-alists))
 
        ;; Convert the term into a dag for passing to repeatedly-run:
-       ((mv erp dag-to-simulate) (dagify-term term-to-run-with-output-extractor))
+       ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-run-with-output-extractor nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        (step-limit 1000000)
        (step-increment (if chunkedp 100 1000000))
@@ -438,7 +437,7 @@
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
        ;; Adds the descriptor if omitted and unambiguous:
-       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
@@ -579,7 +578,7 @@
                     :gag-mode nil
                     (make-event ,form))))
          (form (if (check-boolean local)
-                   (list 'local form)
+                   `(local ,form)
                  form)))
     form)
   :parents (lifters)
