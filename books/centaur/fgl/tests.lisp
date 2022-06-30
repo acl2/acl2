@@ -736,8 +736,6 @@
          (src2-lane (if maskbit (bitops::nth-slice32 lane src2) 0)))
     (if maskbit (* src1-lane src2-lane) 0)))
 
-(include-book "std/testing/eval" :dir :system)
-
 
 (local
  (progn
