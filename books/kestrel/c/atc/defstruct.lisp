@@ -1467,4 +1467,4 @@
   (xdoc::topstring
    (xdoc::p
     "See @(see shallow-structures)."))
-  `(make-event (defstruct-fn ',args ',call 'struct state)))
+  `(make-event (defstruct-fn ',args ',call 'defstruct state)))
