@@ -303,12 +303,12 @@
                               
                               (or (and (not (equal side1 0))
                                        (not (equal side1 ''0)))
-                                  (and (unpack-booth-later-enabled)
-                                       (include-fnc side2 'binary-or)))
+                                  #|(and (unpack-booth-later-enabled)
+                                       (include-fnc side2 'binary-or))|#)
                               (or (and (not (equal side2 0))
                                        (not (equal side2 ''0)))
-                                  (and (unpack-booth-later-enabled)
-                                       (include-fnc side1 'binary-or)))
+                                  #|(and (unpack-booth-later-enabled)
+                                       (include-fnc side1 'binary-or))|#)
                               
                               (or ;;(pp-has-bitp-rp side1)
                                (single-s-p (ex-from-rp-loose side1))
@@ -329,11 +329,13 @@
                                   (bit-of-p (ex-from-rp-loose side2))
                                   (binary-fnc-p (ex-from-rp-loose side2)))||#)))
            (equal (equal side1 side2)
-                  (equal (unpack-booth
+                  (equal (s-spec (list 2 side1 side2))
+                         0)
+                  #|(equal (unpack-booth
                           (s-spec (list 2
                                        (unpack-booth side1)
                                        (unpack-booth side2))))
-                         0)))
+                         0)|#))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 

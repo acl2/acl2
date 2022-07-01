@@ -1388,12 +1388,14 @@
 
   (def-rp-rule :disabled-for-acl2 t
     unsigned-byte-p-redefined-with-loghead
-    (implies (natp size)
+    (implies (and (natp size)
+                  (syntaxp :rewriting-main-term))
              (equal (unsigned-byte-p size x)
-                    (and (integerp x)
+                    (and (hide (unsigned-byte-p size x))
+                         (integerp x)
                          (equal x (loghead size x)))
                     #|(and (hide (unsigned-byte-p size x))
-                    (integerp x) ; ; ; ;
+                    (integerp x) ; ; ; ; ;
                     (equal (ash x (- size)) 0))|#))
     :hints (("Goal"
              :expand ((hide (unsigned-byte-p size x)))
@@ -1412,9 +1414,10 @@
                   (syntaxp (atom x)))
              (equal (unsigned-byte-p size x)
                     (and (integerp x)
+                         (hide (unsigned-byte-p size x))
                          (equal x (loghead size x)))
                     #|(and (hide (unsigned-byte-p size x))
-                    (integerp x) ; ; ;
+                    (integerp x) ; ; ; ;
                     (equal (ash x (- size)) 0))|#))
     :hints (("Goal"
              :expand ((hide (unsigned-byte-p size x)))

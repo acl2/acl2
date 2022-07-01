@@ -50,6 +50,9 @@
 
 (include-book "../meta-rule-macros")
 
+(local
+ (in-theory (enable falist-consistent)))
+
 (def-formula-checks-default-evl
  rp-evl
  (strip-cars *small-evl-fncs*))
