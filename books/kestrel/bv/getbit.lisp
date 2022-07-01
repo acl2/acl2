@@ -574,3 +574,14 @@
   :hints (("Goal" :in-theory (e/d (getbit)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of-+-of-expt-gen
+  (implies (and (< n i)
+                (integerp x)
+                (natp n)
+                (integerp i))
+           (equal (getbit n (+ x (expt 2 i)))
+                  (getbit n x)))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))
