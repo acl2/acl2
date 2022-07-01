@@ -16,8 +16,11 @@
 ;we expect bit to be 0 or 1
 ;bozo this should probably be changed to chop bit down to a one bit quantity first
 (defund repeatbit (n bit)
-  (declare (type integer n)
-           (type (integer 0 *) bit)) ;tighten to only allow 0 or 1?
+  (declare (xargs :guard (and (natp n)
+                              (bitp bit))
+                  :split-types t)
+           (type (integer 0 *) n)
+           (type (integer 0 1) bit))
   (if (not (natp n))
       0
     (if (= 0 bit)

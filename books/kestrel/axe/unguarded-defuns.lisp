@@ -569,7 +569,7 @@
 (defund repeatbit-unguarded (n bit)
   (declare (xargs :guard t))
   (if (natp n)
-      (if (natp bit)
+      (if (bitp bit)
           (repeatbit n bit)
         (repeatbit n 1))
     0))
