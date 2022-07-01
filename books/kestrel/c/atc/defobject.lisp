@@ -104,7 +104,7 @@
      The keys in the table are unique.")
    (xdoc::p
     "The values are the information about the objects
-     See @(tsee defstruct-object)."))
+     See @(tsee defobject-info)."))
 
   (make-event
    `(table ,*defobject-table* nil nil
