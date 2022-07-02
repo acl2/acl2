@@ -786,6 +786,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum initer
+  :short "Fixtype of initializers [C:6.7.9]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only model initializers tht consists of
+     either a single expression or a list of expressions,
+     where the latter models a list between curly braces
+     of initializers consisting of single expressions.
+     Note that, since currently we do not model the comma operator,
+     our use of any expressions here
+     matches the use of assignment expressions in [C]."))
+  (:single ((get expr)))
+  (:list ((get expr-list)))
+  :pred initerp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod obj-declon
   :short "Fixtype of object declarations [C:6.7]."
   :long
@@ -799,7 +817,7 @@
     "For now we define an object declaration as consisting of
      a type specification sequence,
      an object declarator,
-     and an initializing expression.
+     and an initializer.
      We could easily make the initializer optional for greater generality.")
    (xdoc::p
     "For now we model
@@ -813,7 +831,7 @@
      with an initializer."))
   ((tyspec tyspecseq)
    (declor obj-declor)
-   (init expr))
+   (init initerp))
   :tag :obj-declon
   :pred obj-declonp)
 

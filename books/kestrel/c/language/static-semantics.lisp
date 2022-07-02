@@ -1453,6 +1453,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-initer ((initer initerp)
+                      (funtab fun-tablep)
+                      (vartab var-tablep)
+                      (tagenv tag-envp))
+  :returns (type type-resultp)
+  :short "Check an initializer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only accept single initializers
+     with pure or call expresions,
+     and we return the type of the only eexpression in the initializer."))
+  (initer-case
+   initer
+   :single (check-expr-call-or-pure initer.get funtab vartab tagenv)
+   :list (error (list :not-supported-initializer initer.get)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-stmt
   :short "Check a statement."
   :long
@@ -1655,7 +1675,7 @@
           (type (tyname-to-type tyname))
           ((when (type-case type :void))
            (error (list :declon-error-type-void item.get)))
-          (init-type (check-expr-call-or-pure init funtab vartab tagenv))
+          (init-type (check-initer init funtab vartab tagenv))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
           (init-type (apconvert-type init-type))
