@@ -74,7 +74,7 @@
     (xdoc::li
      "The call of @(tsee defobject),
       used for redundancy checking.")))
-  ((name ident)
+  ((name-ident ident)
    (type type)
    (init expr-list)
    (recognizer symbolp)
@@ -461,7 +461,7 @@
         `(define ,initializer-name ()
            :returns (object ,recognizer-name)
            (,type-array-of (list ,@init))))
-       (info (make-defobject-info :name name-ident
+       (info (make-defobject-info :name-ident name-ident
                                   :type type
                                   :init exprs
                                   :recognizer recognizer-name
