@@ -55,6 +55,13 @@
       will spare us from having to double-check the invariants
       if we were to construct the identifier from the string.")
     (xdoc::li
+     "The name, as a symbol.
+      This is so we can ensure that ACL2 functions use the exact symbol
+      to access the external object.
+      The @(tsee defobject) table stores the name as key,
+      but the name is only the @(tsee symbol-name),
+      and loses the @(tsee package-symbol-name) information.")
+    (xdoc::li
      "The type of the object.
       Currently this must be an array type with specified size,
       but in the future this may become more general.")
@@ -75,6 +82,7 @@
      "The call of @(tsee defobject),
       used for redundancy checking.")))
   ((name-ident ident)
+   (name-symbol symbol)
    (type type)
    (init expr-list)
    (recognizer symbolp)
@@ -462,6 +470,7 @@
            :returns (object ,recognizer-name)
            (,type-array-of (list ,@init))))
        (info (make-defobject-info :name-ident name-ident
+                                  :name-symbol name
                                   :type type
                                   :init exprs
                                   :recognizer recognizer-name
