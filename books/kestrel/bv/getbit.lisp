@@ -347,7 +347,8 @@
                                    bvchop-of-logtail-becomes-slice
                                    bvchop-1-becomes-getbit)))))
 
-(defthm bitp-of-getbit
+;; Only needed by Axe?
+(defthmd bitp-of-getbit
   (bitp (getbit n x)))
 
 ;; could restrict to when the v's are identical
@@ -570,6 +571,17 @@
 (defthm getbit-0-of--
   (equal (getbit 0 (- x))
          (getbit 0 x))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of-+-of-expt-gen
+  (implies (and (< n i)
+                (integerp x)
+                (natp n)
+                (integerp i))
+           (equal (getbit n (+ x (expt 2 i)))
+                  (getbit n x)))
   :hints (("Goal" :in-theory (e/d (getbit)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))

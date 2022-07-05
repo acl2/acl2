@@ -126,7 +126,7 @@
                           :use-internal-contextsp use-internal-contextsp
                           ;; pass print, so we can cause rule hits to be printed:
                           :print print ; :brief ;nil
-;                             :print-interval 10000 ;todo: pass in
+                          ;; :print-interval 10000 ;todo: pass in
                           :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
                           :memoizep memoizep))
          ((when erp) (mv erp nil state))
