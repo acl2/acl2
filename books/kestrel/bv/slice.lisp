@@ -645,3 +645,14 @@
            (< (slice high low x) k))
   :hints (("Goal" :use (:instance UNSIGNED-BYTE-P-OF-SLICE (n (+ 1 high (- low))))
            :in-theory (e/d (UNSIGNED-BYTE-P)( UNSIGNED-BYTE-P-OF-SLICE UNSIGNED-BYTE-P-OF-SLICE-GEN)))))
+
+(defthm slice-of-+-of-expt-gen
+  (implies (and (< high i)
+                (integerp x)
+                (integerp high)
+                (natp low)
+                (natp i))
+           (equal (slice high low (+ x (expt 2 i)))
+                  (slice high low x)))
+  :hints (("Goal" :cases ((<= low high))
+           :in-theory (enable slice bvchop-of-logtail))))
