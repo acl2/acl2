@@ -11,10 +11,11 @@
 
 (in-package "ACL2")
 
+(include-book "bvchop-def")
+(local (include-book "bvchop"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
 ;we expect bit to be 0 or 1
-;bozo this should probably be changed to chop bit down to a one bit quantity first
 (defund repeatbit (n bit)
   (declare (xargs :guard (and (natp n)
                               (bitp bit))
@@ -23,9 +24,12 @@
            (type (integer 0 1) bit))
   (if (not (natp n))
       0
-    (if (= 0 bit)
-        0
-      (+ -1 (expt 2 n)))))
+    ;; chop BIT down to 1 bit if needed:
+    (let ((bit (mbe :logic (bvchop 1 bit)
+                    :exec bit)))
+      (if (= 0 bit)
+          0
+        (+ -1 (expt 2 n))))))
 
 (defthm repeatbit-of-0
   (equal (repeatbit n 0)
@@ -49,16 +53,14 @@
 (defthm unsigned-byte-p-of-repeatbit
   (implies (natp n)
            (unsigned-byte-p n (repeatbit n bit)))
-  :hints (("Goal" :in-theory (enable repeatbit))))
+  :hints (("Goal" :in-theory (enable repeatbit unsigned-byte-p))))
 
 (defthm equal-of-repeatbit-and-repeatbit
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y)
-                )
-           (equal (equal (repeatbit n x)
-                         (repeatbit n y))
-                  (or (not (posp n))
-                      (equal x y))))
+  (equal (equal (repeatbit n x)
+                (repeatbit n y))
+         (or (not (posp n))
+             (equal (bvchop 1 x)
+                    (bvchop 1 y))))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm repeatbit-of-1-arg2
@@ -67,29 +69,28 @@
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm repeatbit-of-1
-  (implies (unsigned-byte-p 1 x)
-           (equal (repeatbit 1 x)
-                  x))
+  (equal (repeatbit 1 x)
+         (bvchop 1 x))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm repeatbit-equal-0-rewrite-2
   (implies (and (< 0 n)
                 (integerp n))
            (equal (equal (repeatbit n bit) 0)
-                  (equal 0 bit)))
+                  (equal 0 (bvchop 1 bit))))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm repeatbit-equal-0-rewrite
   (implies (posp n)
            (equal (equal (repeatbit n bit) 0)
-                  (equal bit 0)))
+                  (equal (bvchop 1 bit) 0)))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm repeatbit-equal-0-rewrite-1
   (implies (and (< 0 n)
                 (integerp n))
            (equal (equal 0 (repeatbit n bit))
-                  (equal 0 bit)))
+                  (equal 0 (bvchop 1 bit))))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm repeatbit-base
@@ -104,9 +105,9 @@
                   (if (not (posp n))
                       (equal k 0)
                     (if (equal k 0)
-                        (equal bit 0)
+                        (equal (bvchop 1 bit) 0)
                       (if (equal k (+ -1 (expt 2 n)))
-                          (not (equal bit 0))
+                          (not (equal (bvchop 1 bit) 0))
                         nil)))))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
@@ -116,11 +117,11 @@
                 (posp k)
                 (natp n))
            (equal (< (repeatbit n bit) k)
-                  (equal bit 0)))
+                  (equal (bvchop 1 bit) 0)))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm <-of-0-and-repeatbit
   (equal (< 0 (repeatbit n bit))
          (and (posp n)
-              (not (equal 0 bit))))
+              (not (equal 0 (bvchop 1 bit)))))
   :hints (("Goal" :in-theory (enable repeatbit))))
