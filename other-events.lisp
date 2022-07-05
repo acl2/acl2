@@ -28136,13 +28136,7 @@
 ; Args is known to be a true-listp.
 
   (cond ((endp args)
-         (value (list erasures explicit-erasures
-
-; We sort the attachment-alist so that chk-acceptable-defattach gets a sorted
-; alist that can ultimately lead to avoidance of proof obligations via
-; event-responsible-for-proved-constraint.
-
-                      (merge-sort-symbol-alistp attachment-alist)
+         (value (list erasures explicit-erasures attachment-alist
                       helper-alist-lst)))
         (t
          (let ((arg (car args))
@@ -28500,10 +28494,12 @@
 
 ; We remove pairs from attachment-alist for which no attachment will be made,
 ; returning the ones that are left together with the corresponding elements of
-; helpers-lst and a list of fns for which :attach nil is specified.
+; helpers-lst and a list of fns for which :attach nil is specified.  The order
+; is reversed for the pared-down attachment-alist and helpers-lst, which were
+; presumably passed in the reverse of the desired order.
 
   (cond ((endp attachment-alist)
-         (mv (reverse aa) (reverse hl) attach-nil-lst))
+         (mv aa hl attach-nil-lst))
         (t (let ((pair (assoc-eq :ATTACH (car helpers-lst))))
              (cond ((if pair (cdr pair) attach-by-default)
                     (filter-for-attachment (cdr attachment-alist)
@@ -28666,7 +28662,13 @@
                            (value (list constraint-helpers
                                         erasures
                                         explicit-erasures
-                                        attachment-alist
+
+; We sort the attachment-alist so that chk-acceptable-defattach gets a sorted
+; alist that can ultimately lead to avoidance of proof obligations via
+; event-responsible-for-proved-constraint.
+
+                                        (merge-sort-symbol-alistp
+                                         attachment-alist)
                                         attachment-alist-exec
                                         helper-alist-lst-exec
                                         skip-checks
@@ -29827,15 +29829,16 @@
 (defun chk-acceptable-defattach (args proved-fnl-insts-alist ctx wrld state)
 
 ; Given the arguments to defattach, args, we either return an error (mv t nil
-; state) or else we return (mv nil (erasures explicit-erasures attachment-alist
-; new-entries ttree . records) state), where:
+; state) or else we return (mv nil (erasures explicit-erasures
+; attachment-alist-sorted new-entries ttree . records) state), where:
 ; - erasures is a list of attachment pairs currently in wrld that need to be
 ;   removed
 ; - explicit-erasures contains all f for which f is associated with nil in args
-; - attachment-alist associates function symbols with their proposed
-;   attachments;
-; - attachment-alist-exec is a subsequence of attachment-alist, designating
-;   attachment pairs that are to be installed for execution;
+; - attachment-alist-sorted associates function symbols with their proposed
+;   attachments, sorted by car (using symbol-<);
+; - attachment-alist-exec is a sublist of attachment-alist-sorted (but
+;   attachment-alist-exec has not been sorted, designating attachment pairs
+;   that are to be installed for execution;
 ; - new-entries is a list to be used for extending (global-val
 ;   'proved-functional-instances-alist wrld);
 ; - ttree is a tag-tree obtained from the proofs done on behalf of the
@@ -29846,7 +29849,8 @@
 ; attachment-alist-exec is missing a 'constraint-lst property or has a
 ; 'constrainedp property of nil.  Any proposed attachment or unattachment that
 ; agrees with the current attachment status will cause a suitable warning, and
-; will not be included in the erasures or attachment-alist that we return.
+; will not be included in the erasures or attachment-alist-sorted that we
+; return.
 
   (cond
    ((eq (context-for-encapsulate-pass-2 wrld
@@ -29863,7 +29867,7 @@
       (let* ((constraint-helper-alist (nth 0 tuple))
              (erasures                (nth 1 tuple))
              (explicit-erasures       (nth 2 tuple))
-             (attachment-alist        (nth 3 tuple))
+             (attachment-alist-sorted (nth 3 tuple))
              (attachment-alist-exec   (nth 4 tuple))
              (guard-helpers-lst       (nth 5 tuple))
              (skip-checks             (nth 6 tuple))
@@ -29875,13 +29879,13 @@
                (and (not skip-checks-t)
                     (defaxiom-supporter-msg-list
 
-; With some thought we might be able to replace attachment-alist just below by
-; attachment-alist-exec.  But as we write this comment, we prefer to be
-; conservative, in order to avoid rethinking the underlying theory merely in
+; With some thought we might be able to replace attachment-alist-sorted just
+; below by attachment-alist-exec.  But as we write this comment, we prefer to
+; be conservative, in order to avoid rethinking the underlying theory merely in
 ; order to support what we think is an optimization that is unlikely ever to
 ; matter.
 
-                      (strip-cars attachment-alist)
+                      (strip-cars attachment-alist-sorted)
                       wrld))))
         (cond
          (defaxiom-supporter-msg-list
@@ -29896,14 +29900,15 @@
          (t
           (er-let*
               ((records (cond (skip-checks (value :skipped)) ; not used
-                              (t (chk-defattach-loop attachment-alist erasures
-                                                     wrld ctx state))))
+                              (t (chk-defattach-loop attachment-alist-sorted
+                                                     erasures wrld ctx
+                                                     state))))
                (goal/event-names/new-entries
                 (cond ((and (not skip-checks-t)
-                            attachment-alist)
+                            attachment-alist-sorted)
                        (defattach-constraint
-                         attachment-alist proved-fnl-insts-alist wrld ctx
-                         state))
+                         attachment-alist-sorted proved-fnl-insts-alist wrld
+                         ctx state))
                       (t (value nil))))
                (goal (value (car goal/event-names/new-entries)))
                (event-names (value (cadr goal/event-names/new-entries)))
@@ -29912,17 +29917,18 @@
                                   ld-skip-proofsp
                                   (null attachment-alist-exec))
                               (value nil))
-                             (t (prove-defattach-guards attachment-alist-exec
-                                                        guard-helpers-lst
-                                                        ctx ens wrld state))))
+                             (t (prove-defattach-guards
+                                 attachment-alist-exec
+                                 guard-helpers-lst
+                                 ctx ens wrld state))))
                (ttree2
                 (er-progn
                  (chk-assumption-free-ttree ttree1 ctx state)
                  (cond ((and (not skip-checks-t)
                              (not ld-skip-proofsp)
-                             attachment-alist)
+                             attachment-alist-sorted)
                         (prove-defattach-constraint goal event-names
-                                                    attachment-alist
+                                                    attachment-alist-sorted
                                                     constraint-helper-alist
                                                     ctx ens wrld state))
                        (t (value nil))))))
@@ -29930,7 +29936,7 @@
              (chk-assumption-free-ttree ttree2 ctx state)
              (value (list erasures
                           explicit-erasures
-                          attachment-alist
+                          attachment-alist-sorted
                           attachment-alist-exec
                           new-entries
                           (cons-tag-trees ttree1 ttree2)
@@ -29976,16 +29982,16 @@
            (global-val 'proved-functional-instances-alist wrld)))
      (er-let* ((tuple (chk-acceptable-defattach args proved-fnl-insts-alist ctx
                                                 wrld state)))
-       (let ((erasures              (strip-cars (nth 0 tuple)))
-             (explicit-erasures     (nth 1 tuple))
-             (attachment-alist      (nth 2 tuple))
-             (attachment-alist-exec (nth 3 tuple))
-             (new-entries           (nth 4 tuple))
-             (ttree                 (nth 5 tuple))
-             (records               (nth 6 tuple))
-             (skip-checks           (nth 7 tuple))
-             (attach-nil-lst        (nth 8 tuple)))
-         (let* ((attachment-fns (strip-cars attachment-alist))
+       (let ((erasures                (strip-cars (nth 0 tuple)))
+             (explicit-erasures       (nth 1 tuple))
+             (attachment-alist-sorted (nth 2 tuple))
+             (attachment-alist-exec   (nth 3 tuple))
+             (new-entries             (nth 4 tuple))
+             (ttree                   (nth 5 tuple))
+             (records                 (nth 6 tuple))
+             (skip-checks             (nth 7 tuple))
+             (attach-nil-lst          (nth 8 tuple)))
+         (let* ((attachment-fns (strip-cars attachment-alist-sorted))
                 (wrld0 (global-set? 'attach-nil-lst
                                     attach-nil-lst
                                     wrld
@@ -29998,7 +30004,7 @@
                                               (car attachment-fns)
                                               (putprop (car attachment-fns)
                                                        'attachment
-                                                       attachment-alist
+                                                       attachment-alist-sorted
                                                        wrld1)))
                              (t wrld1)))
                 (wrld3 (cond (new-entries
