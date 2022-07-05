@@ -1653,7 +1653,8 @@
 
 ; This property is stored by defstobj on all supporting functions.
 
-                 STOBJ-FUNCTION))
+                 STOBJ-FUNCTION
+                 GLOBAL-STOBJS))
 
 ; The properties above are stored by the defun, constrain or defstobj
 ; that introduced name and we erase them.
@@ -1667,7 +1668,8 @@
               wrld)))
    ((eq (caar old-getprops) 'lemmas)
 
-; We erase from the lemmas property just those rules stored by the introductory event.
+; We erase from the lemmas property just those rules stored by the introductory
+; event.
 
     (renew-name/overwrite
      name
