@@ -114,7 +114,7 @@
                               :hyp (rp-term-listp lst))
   (if (and (consp lst)
            (atom (cdr lst))
-           (or (bit-of-p (car lst))
+           (or (bit-of-p (ex-from-rp (car lst)))
                (has-bitp-rp (car lst))))
       (car lst)
     `(and-list ',(and-list-hash lst) (list . ,lst))))
@@ -774,8 +774,18 @@
             (cdar lst)
             (apply-sign-to-pp-lists (cdr lst) sign)))))
 
-(define pp-lists-limit ()
-  2047)
+(encapsulate
+  (((pp-lists-limit) => *))
+  (local
+   (defun pp-lists-limit ()
+     2047))
+  (defthm integerp-of-pp-lists-limit
+    (integerp (pp-lists-limit))))
+
+(define return-16000 ()
+  16000)
+
+(defattach pp-lists-limit return-16000)
 
 (define pp-term-to-pp-lists ((term pp-term-p)
                              (sign booleanp))
