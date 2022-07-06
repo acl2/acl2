@@ -457,8 +457,10 @@
                 (representable-normalp k p rat))
            (mv-let (sign biased-exponent trailing-significand)
              (encode-normal-number k p rat)
-             (and (unsigned-byte-p 1 sign)
+             (and (bitp sign)
                   (unsigned-byte-p (wfn k p) biased-exponent)
+                  (< 0 biased-exponent) ; not all zeros
+                  (< biased-exponent (+ -1 (expt 2 (wfn k p)))) ; not all ones
                   (unsigned-byte-p (- p 1) trailing-significand))))
   :hints (("Goal" :in-theory (enable encode-normal-number representable-normalp representable-positive-normalp
                                      wfn bias emax emin
@@ -548,8 +550,9 @@
                 (representable-subnormalp k p rat))
            (mv-let (sign trailing-significand)
              (encode-subnormal-number k p rat)
-             (and (unsigned-byte-p 1 sign)
-                  (unsigned-byte-p (- p 1) trailing-significand))))
+             (and (bitp sign)
+                  (unsigned-byte-p (- p 1) trailing-significand)
+                  (< 0 trailing-significand))))
   :hints (("Goal" :in-theory (enable encode-subnormal-number representable-subnormalp representable-positive-subnormalp unsigned-byte-p))))
 
 (defthm <-of-0-and-mv-nth-1-of-encode-subnormal-number-linear
@@ -592,7 +595,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Prove that every normal is at least this
 (defund smallest-positive-normal (k p)
   (declare (xargs :guard (and (formatp k p)
                               (< 1 (- k p)) ; must be exponent values available other than all zeros and all ones (TODO: Add to formatp?)
@@ -639,7 +641,7 @@
   ;; The sign bit is a single bit:
   (defthm unsigned-byte-p-1-of-mv-nth-0-of-choose-bits-for-nan
     (implies (formatp k p)
-             (unsigned-byte-p 1 (mv-nth 0 (choose-bits-for-nan k p oracle)))))
+             (bitp (mv-nth 0 (choose-bits-for-nan k p oracle)))))
   ;; The trailing significand has p-1 bits:
   (defthm unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan
     (implies (and (formatp k p)
@@ -720,7 +722,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Prove that every normal is at most this
 (defund largest-positive-normal (k p)
   (declare (xargs :guard (and (formatp k p)
                               (< 1 (- k p)) ; must be exponent values available other than all zeros and all ones (TODO: Add to formatp?)
@@ -742,66 +743,214 @@
                                                            *-of-expt-and-expt
                                                            *-of-/-of-expt-and-expt))))
 
-;todo:
-;; (defthm <-of-decode-normal-number-and-largest-positive-normal-correct-helper
-;;   (implies (and (formatp k p)
-;;                 (bitp sign1)
-;;                 (unsigned-byte-p (wfn k p) biased-exponent1)
-;;                 (< 0 biased-exponent1)                         ; not all zeros
-;;                 (< biased-exponent1 (+ -1 (expt 2 (wfn k p)))) ; not all ones
-;;                 (unsigned-byte-p (- p 1) trailing-significand1)
-;;                 (bitp sign2)
-;;                 (unsigned-byte-p (wfn k p) biased-exponent2)
-;;                 (< 0 biased-exponent2)                         ; not all zeros
-;;                 (< biased-exponent2 (+ -1 (expt 2 (wfn k p)))) ; not all ones
-;;                 (unsigned-byte-p (- p 1) trailing-significand2))
-;;            (equal (< (decode-normal-number k p sign1 biased-exponent1 trailing-significand1)
-;;                      (decode-normal-number k p sign2 biased-exponent2 trailing-significand2))
-;;                   (if (and (equal 1 sign1) (equal 0 sign2))
-;;                       t
-;;                     (if (and (equal 0 sign1) (equal 1 sign2))
-;;                         nil
-;;                       ;; signs are the same
-;;                       (if (< biased-exponent1 biased-exponent2)
-;;                           t
-;;                         (if (< biased-exponent2 biased-exponent1)
-;;                             nil
-;;                           ;; exponents are the same:
-;;                           (< trailing-significand1 trailing-significand2)))))))
-;;   :hints (("Goal" :in-theory (e/d (decode-normal-number
-;;                                    <=-of-+-and-+-when-<=-and-<=
-;;                                    <=-of-*-and-*-when-<=-and-<=)
-;;                                   (distributivity)))))
+;; todo: clean this up:
 
-;; ;todo:
-;; (defthm largest-positive-normal-correct-helper
-;;   (implies (and (formatp k p)
-;;                 (bitp sign) ; todo bitp vs unsigned-byte-p
-;;                 (unsigned-byte-p (wfn k p) biased-exponent)
-;;                 (< 0 biased-exponent) ; not all zeros
-;;                 (< biased-exponent (+ -1 (expt 2 (wfn k p)))) ; not all ones
-;;                 (unsigned-byte-p (- p 1) trailing-significand))
-;;            (<= (decode-normal-number k p
-;;                                      sign
-;;                                      biased-exponent
-;;                                      trailing-significand)
-;;                (largest-positive-normal k p)))
-;;   :hints (("Goal" :in-theory (enable largest-positive-normal decode-normal-number
-;;                                      ;;bias emin emax wfn
-;;                                      *-of-expt-and-expt
-;;                                      *-of-/-of-expt-and-expt))))
+(local
+ (defthm <-transitive
+   (implies (and (< x y)
+                 (< y z))
+            (< x z))))
 
-;; (defthm largest-positive-normal-correct
-;;   (implies (and (representable-positive-normalp k p rat)
-;;                 (rationalp rat)
-;;                 (formatp k p))
-;;            (<= rat (largest-positive-normal k p)))
-;;   :hints (("Goal" :in-theory (enable largest-positive-normal representable-positive-normalp decode-normal-number
-;;                                                            ;bias emin emax wfn
-;;                                                            *-of-expt-and-expt
-;;                                                            *-of-/-of-expt-and-expt))))
+(local
+ (defthm <-transitive-with-<=
+   (implies (and (< x y)
+                 (<= y z))
+            (< x z))))
+
+(defthmd *-of-2-and-expt
+  (implies (integerp i)
+           (equal (* 2 (expt 2 i))
+                  (expt 2 (+ 1 i))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+(defthm <-of-expt-2-and-*-of-2-and-expt-2
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (< (expt '2 i) (binary-* '2 (expt '2 j)))
+                  (< i (+ 1 j))))
+  :hints (("Goal" :in-theory (enable *-of-2-and-expt))))
+
+(local
+ (defthm helper
+   (implies (and (<= 1 s1)
+                 (< s1 2)
+                 (<= 1 s2)
+                 (< s2 2)
+                 (<= (* 2 e1) e2)
+                 (rationalp s1)
+                 (rationalp s2)
+                 (rationalp e1)
+                 (< 0 e1)
+                 (rationalp e2)
+                 (< 0 e2)
+                 )
+            (< (* s1 e1)
+               (* s2 e2)))
+   :hints (("Goal" :use (:instance <-transitive-with-<=
+                                   (x (* s1 (/ s2)))
+                                   (y 2)
+                                   (z (* e2 (/ e1))))
+            :in-theory (disable <-transitive-with-<= <-transitive)))))
+
+(local
+ (defthm helper2
+   (implies (and (<= 1 s1)
+                 (< s1 2)
+                 (<= 1 s2)
+                 (< s2 2)
+                 (<= (* 2 e1) e2)
+                 (rationalp s1)
+                 (rationalp s2)
+                 (rationalp e1)
+                 (< 0 e1)
+                 (rationalp e2)
+                 (< 0 e2)
+                 )
+            (<= (* s1 e1)
+                (* s2 e2)))
+   :hints (("Goal" :use (:instance <-transitive-with-<=
+                                   (x (* s1 (/ s2)))
+                                   (y 2)
+                                   (z (* e2 (/ e1))))
+            :in-theory (disable <-transitive-with-<= <-transitive)))))
+
+(defthm <-of-decode-normal-number-and-decode-normal-number
+  (implies (and (formatp k p)
+                (bitp sign1)
+                (unsigned-byte-p (wfn k p) biased-exponent1)
+                (< 0 biased-exponent1)                         ; not all zeros
+                (< biased-exponent1 (+ -1 (expt 2 (wfn k p)))) ; not all ones
+                (unsigned-byte-p (- p 1) trailing-significand1)
+                (bitp sign2)
+                (unsigned-byte-p (wfn k p) biased-exponent2)
+                (< 0 biased-exponent2)                         ; not all zeros
+                (< biased-exponent2 (+ -1 (expt 2 (wfn k p)))) ; not all ones
+                (unsigned-byte-p (- p 1) trailing-significand2))
+           (equal (< (decode-normal-number k p sign1 biased-exponent1 trailing-significand1)
+                     (decode-normal-number k p sign2 biased-exponent2 trailing-significand2))
+                  (if (and (equal 1 sign1) (equal 0 sign2))
+                      t
+                    (if (and (equal 0 sign1) (equal 1 sign2))
+                        nil
+                      (if (and (equal 0 sign1) (equal 0 sign2))
+                          ;; both positive:
+                          (if (< biased-exponent1 biased-exponent2)
+                              t
+                            (if (< biased-exponent2 biased-exponent1)
+                                nil
+                              ;; exponents are the same:
+                              (< trailing-significand1 trailing-significand2)))
+                        ;; both negative:
+                        (if (< biased-exponent1 biased-exponent2)
+                            nil
+                          (if (< biased-exponent2 biased-exponent1)
+                              t
+                            ;; exponents are the same:
+                            (< trailing-significand2 trailing-significand1))))))))
+  :hints (("Goal" :in-theory (e/d (decode-normal-number
+                                   <=-of-+-and-+-when-<=-and-<=
+                                   <=-of-*-and-*-when-<=-and-<=)
+                                  (distributivity)))))
+
+(defthm <=-of-decode-normal-number-and-largest-positive-normal
+  (implies (and (formatp k p)
+                (bitp sign) ; todo bitp vs unsigned-byte-p
+                (unsigned-byte-p (wfn k p) biased-exponent)
+                (< 0 biased-exponent)                         ; not all zeros
+                (< biased-exponent (+ -1 (expt 2 (wfn k p)))) ; not all ones
+                (unsigned-byte-p (- p 1) trailing-significand))
+           (<= (decode-normal-number k p
+                                     sign
+                                     biased-exponent
+                                     trailing-significand)
+               (largest-positive-normal k p)))
+  :hints (("Goal" :in-theory (enable largest-positive-normal ;decode-normal-number
+                                     ;;bias emin emax wfn
+                                     *-of-expt-and-expt
+                                     *-of-/-of-expt-and-expt))))
+
+(defthm largest-positive-normal-correct
+  (implies (and (representable-normalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= rat (largest-positive-normal k p)))
+  :hints (("Goal" :use (decode-normal-number-of-encode-normal-number
+                        (:instance <=-of-decode-normal-number-and-largest-positive-normal
+                                   (sign (mv-nth 0 (encode-normal-number k p rat)))
+                                   (biased-exponent (mv-nth 1 (encode-normal-number k p rat)))
+                                   (trailing-significand (mv-nth 2 (encode-normal-number k p rat))))
+                        encode-normal-number-type)
+           :in-theory (e/d (representable-normalp
+                            representable-positive-normalp)
+                           (decode-normal-number-of-encode-normal-number
+                            bitp
+                            encode-normal-number-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;; TODO: Define largest and largest positive subnormals, and prove properties
+;; TODO: Define largest subnormal, and prove properties
+
+(defund largest-positive-subnormal (k p)
+  (declare (xargs :guard (and (formatp k p)
+                              (< 1 p) ; ensure there is a nonzero trailing-significand
+                              )
+                  :guard-hints (("Goal" :in-theory (enable wfn unsigned-byte-p)))
+                  ))
+  (decode-subnormal-number k p
+                           0                    ;positive
+                           (+ -1 (expt 2 (- p 1))) ; max trailing-significand
+                           ))
+
+(defthm <-of-decode-subnormal-number-and-decode-subnormal-number
+  (implies (and (formatp k p)
+                (bitp sign1)
+                (unsigned-byte-p (- p 1) trailing-significand1)
+                (< 0 trailing-significand1)
+                (bitp sign2)
+                (unsigned-byte-p (- p 1) trailing-significand2)
+                (< 0 trailing-significand2))
+           (equal (< (decode-subnormal-number k p sign1 trailing-significand1)
+                     (decode-subnormal-number k p sign2 trailing-significand2))
+                  (if (and (equal 1 sign1) (equal 0 sign2))
+                      t
+                    (if (and (equal 0 sign1) (equal 1 sign2))
+                        nil
+                      (if (and (equal 0 sign1) (equal 0 sign2))
+                          ;; both positive:
+                          (< trailing-significand1 trailing-significand2)
+                        ;; both negative:
+                        (< trailing-significand2 trailing-significand1))))))
+  :hints (("Goal" :in-theory (e/d (decode-subnormal-number
+                                   <=-of-+-and-+-when-<=-and-<=
+                                   <=-of-*-and-*-when-<=-and-<=)
+                                  (distributivity)))))
+
+(defthm <=-of-decode-subnormal-number-and-largest-positive-subnormal
+  (implies (and (formatp k p)
+                (bitp sign) ; todo bitp vs unsigned-byte-p
+                (unsigned-byte-p (- p 1) trailing-significand)
+                (< 0 trailing-significand))
+           (<= (decode-subnormal-number k p sign trailing-significand)
+               (largest-positive-subnormal k p)))
+  :hints (("Goal" :in-theory (enable largest-positive-subnormal ;decode-subnormal-number
+                                     ;;bias emin emax wfn
+                                     *-of-expt-and-expt
+                                     *-of-/-of-expt-and-expt))))
+
+(defthm largest-positive-subnormal-correct
+  (implies (and (representable-subnormalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= rat (largest-positive-subnormal k p)))
+  :hints (("Goal" :use (decode-subnormal-number-of-encode-subnormal-number
+                        (:instance <=-of-decode-subnormal-number-and-largest-positive-subnormal
+                                   (sign (mv-nth 0 (encode-subnormal-number k p rat)))
+                                   (trailing-significand (mv-nth 1 (encode-subnormal-number k p rat))))
+                        encode-subnormal-number-type)
+           :in-theory (e/d (representable-subnormalp
+                            representable-positive-subnormalp)
+                           (decode-subnormal-number-of-encode-subnormal-number
+                            bitp
+                            encode-subnormal-number-type
+                            unsigned-byte-p)))))
