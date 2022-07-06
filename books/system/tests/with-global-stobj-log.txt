@@ -1444,6 +1444,50 @@ Rules: ((:TYPE-PRESCRIPTION STATE-P))
  :ATTACHMENTS-RECORDED
 ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
                        => STATE
+                       :GLOBAL-STOBJS ((ST ST ST2 ST2))))
+                     (LOCAL (DEFUN CRN3 (X STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (F-PUT-GLOBAL 'ABC X STATE))))
+
+
+ACL2 Error in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):  Illegal
+signature for CRN3: the value of keyword :GLOBAL-STOBJS contains the
+names ST and ST2 more than once, but duplicates are not allowed.  See
+:DOC with-global-stobj.
+
+
+Summary
+Form:  ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
+                       => STATE
+                       :GLOBAL-STOBJS ((ST) ST)))
+                     (LOCAL (DEFUN CRN3 (X STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (F-PUT-GLOBAL 'ABC X STATE))))
+
+
+ACL2 Error in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):  Illegal
+signature for CRN3: the value of keyword :GLOBAL-STOBJS contains the
+name ST more than once, but duplicates are not allowed.  See :DOC with-
+global-stobj.
+
+
+Summary
+Form:  ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
+                       => STATE
                        :GLOBAL-STOBJS ((ST))))
                      (LOCAL (DEFUN CRN3 (X STATE)
                                    (DECLARE (XARGS :STOBJS STATE))

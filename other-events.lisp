@@ -3701,6 +3701,18 @@
               of symbols (in fact, stobj names).  The :GLOBAL-STOBJS value ~
               ~x1 is thus illegal.~@2"
              fn x *see-doc-with-global-stobj*))
+        ((or (duplicates (car x))
+             (duplicates (cdr x))
+             (intersection-eq (car x) (cdr x)))
+         (er soft ctx
+             "Illegal signature for ~x0: the value of keyword :GLOBAL-STOBJS ~
+              contains the name~#1~[~/s~] ~&1 more than once, but duplicates ~
+              are not allowed.~@2"
+             fn
+             (or (duplicates (car x))
+                 (duplicates (cdr x))
+                 (intersection-eq (car x) (cdr x)))
+             *see-doc-with-global-stobj*))
         ((and (not (equal x '(nil . nil)))
               (not (member-eq 'state formals)))
          (er soft ctx
@@ -29947,21 +29959,16 @@
 (defun defattach-global-stobjs-msg (attachment-alist-exec wrld state)
   (cond ((endp attachment-alist-exec) nil)
         (t (let* ((f (caar attachment-alist-exec))
-                  (g (cdar attachment-alist-exec)) 
+                  (g (cdar attachment-alist-exec))
                   (gs-f (getpropc f 'global-stobjs nil wrld))
                   (gs-f-reads (car gs-f))
                   (gs-f-writes (cdr gs-f))
                   (gs-g (getpropc g 'global-stobjs nil wrld))
                   (gs-g-reads (car gs-g))
-                  (gs-g-writes (cdr gs-g))
-                  (assumep (or (eq (ld-skip-proofsp state)
-                                   'include-book)
-                               (eq (ld-skip-proofsp state)
-                                   'include-book-with-locals))))
-             (cond ((or assumep
-                        (and (subsetp-eq gs-g-writes gs-f-writes)
-                             (subsetp-eq gs-g-reads
-                                         (append gs-f-writes gs-f-reads))))
+                  (gs-g-writes (cdr gs-g)))
+             (cond ((and (subsetp-eq gs-g-writes gs-f-writes)
+                         (subsetp-eq gs-g-reads
+                                     (append gs-f-writes gs-f-reads)))
                     (defattach-global-stobjs-msg
                       (cdr attachment-alist-exec) wrld state))
                    (t (msg
@@ -30056,7 +30063,10 @@
                       (strip-cars attachment-alist-sorted)
                       wrld)))
              (defattach-global-stobjs-msg
-               (defattach-global-stobjs-msg attachment-alist-exec wrld state)))
+               (and (not (member-eq (ld-skip-proofsp state)
+                                    '(include-book include-book-with-locals)))
+                    (defattach-global-stobjs-msg attachment-alist-exec wrld
+                      state))))
         (cond
          (defaxiom-supporter-msg-list
            (er soft ctx
@@ -34473,7 +34483,7 @@
 
 ;      (a) Suppose M2 is a stable child memory other than M.  If M or M2 is
 ;          from a writable node, then M and M2 are disjoint.
-;       
+;
 ;      (b) M is disjoint from the free memory.
 
 ; (C2) Let N be a known stobj node of gs with stobj name st.  Then st is bound

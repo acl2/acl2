@@ -507,7 +507,7 @@
 (encapsulate
   (((crn1 *) => * :global-stobjs ((st) . nil)))
   (local (defun crn1 (x) x)))
-  
+
 ; same error as just above
 (encapsulate
   (((crn1 *) => * :formals (x) :guard (consp x) :global-stobjs ((st) . nil)))
@@ -550,6 +550,19 @@
 ; ok
 (defattach crn2 wr0)
 
+; error: duplicate :global-stobjs
+(encapsulate
+  (((crn3 * state) => state :global-stobjs ((st st st2 st2) . nil)))
+  (local (defun crn3 (x state)
+           (declare (xargs :stobjs state))
+           (f-put-global 'abc x state))))
+
+; error: duplicate :global-stobjs
+(encapsulate
+  (((crn3 * state) => state :global-stobjs ((st) . (st))))
+  (local (defun crn3 (x state)
+           (declare (xargs :stobjs state))
+           (f-put-global 'abc x state))))
 ; ok
 (encapsulate
   (((crn3 * state) => state :global-stobjs ((st) . nil)))
