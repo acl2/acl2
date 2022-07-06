@@ -80,7 +80,7 @@
     "This leads to our definition of portably ASCII identifiers,
      which consists of ASCII letters and digits and underscore,
      with the first character not a digit.
-     They must also distinct from keywords [C:6.4.2.1/4]."))
+     They must also be distinct from keywords [C:6.4.2.1/4]."))
   :order-subtopics t
   :default-parent t)
 

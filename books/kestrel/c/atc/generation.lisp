@@ -17,6 +17,7 @@
 (include-book "shallow-embedding")
 (include-book "proof-support")
 (include-book "table")
+(include-book "term-checkers")
 
 (include-book "fty-pseudo-terms")
 
@@ -811,381 +812,6 @@
              :array (raise "Internal error: type ~x0." type))
    :array (raise "Internal error: type ~x0." type))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-symbol-2part ((sym symbolp))
-  :returns (mv (yes/no booleanp)
-               (part1 symbolp)
-               (part2 symbolp))
-  :short "Check if a symbol consists of two parts separated by dash."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the symbol has the form @('<part1>-<part2>'),
-     with @('<part1>') and @('<part2>') non-empty and without dashes,
-     we return an indication of success and the two parts.
-     Otherwise, we return an indication of failure and @('nil') as the parts.
-     The two returned symbols, when the function is successful,
-     are interned in the same package as the input symbol."))
-  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
-       ((unless (= (len parts) 2)) (mv nil nil nil))
-       (part1 (intern-in-package-of-symbol (first parts) sym))
-       (part2 (intern-in-package-of-symbol (second parts) sym)))
-    (mv t part1 part2)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-symbol-3part ((sym symbolp))
-  :returns (mv (yes/no booleanp)
-               (part1 symbolp)
-               (part2 symbolp)
-               (part3 symbolp))
-  :short "Check if a symbol consists of three parts separated by dash."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the symbol has the form @('<part1>-<part2>-<part3>'),
-     with @('<part1>') and @('<part2>') and @('<part3>')
-     non-empty and without dashes,
-     we return an indication of success and the three parts.
-     Otherwise, we return an indication of failure and @('nil') as the parts.
-     The three returned symbols, when the function is successful,
-     are interned in the same package as the input symbol."))
-  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
-       ((unless (= (len parts) 3)) (mv nil nil nil nil))
-       (part1 (intern-in-package-of-symbol (first parts) sym))
-       (part2 (intern-in-package-of-symbol (second parts) sym))
-       (part3 (intern-in-package-of-symbol (third parts) sym)))
-    (mv t part1 part2 part3)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-symbol-4part ((sym symbolp))
-  :returns (mv (yes/no booleanp)
-               (part1 symbolp)
-               (part2 symbolp)
-               (part3 symbolp)
-               (part4 symbolp))
-  :short "Check if a symbol consists of four parts separated by dash."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the symbol has the form @('<part1>-<part2>-<part3>-<part4>'),
-     with @('<part1>') and @('<part2>') and @('<part3>') and @('<part4>')
-     non-empty and without dashes,
-     we return an indication of success and the four parts.
-     Otherwise, we return an indication of failure and @('nil') as the parts.
-     The four returned symbols, when the function is successful,
-     are interned in the same package as the input symbol."))
-  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
-       ((unless (= (len parts) 4)) (mv nil nil nil nil nil))
-       (part1 (intern-in-package-of-symbol (first parts) sym))
-       (part2 (intern-in-package-of-symbol (second parts) sym))
-       (part3 (intern-in-package-of-symbol (third parts) sym))
-       (part4 (intern-in-package-of-symbol (fourth parts) sym)))
-    (mv t part1 part2 part3 part4)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-symbol-5part ((sym symbolp))
-  :returns (mv (yes/no booleanp)
-               (part1 symbolp)
-               (part2 symbolp)
-               (part3 symbolp)
-               (part4 symbolp)
-               (part5 symbolp))
-  :short "Check if a symbol consists of five parts separated by dash."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the symbol has the form @('<part1>-<part2>-<part3>-<part4>-<part5>'),
-     with @('<part1>') and @('<part2>')
-     and @('<part3>') and @('<part4>') and @('<part5>')
-     non-empty and without dashes,
-     we return an indication of success and the five parts.
-     Otherwise, we return an indication of failure and @('nil') as the parts.
-     The five returned symbols, when the function is successful,
-     are interned in the same package as the input symbol."))
-  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
-       ((unless (= (len parts) 5)) (mv nil nil nil nil nil nil))
-       (part1 (intern-in-package-of-symbol (first parts) sym))
-       (part2 (intern-in-package-of-symbol (second parts) sym))
-       (part3 (intern-in-package-of-symbol (third parts) sym))
-       (part4 (intern-in-package-of-symbol (fourth parts) sym))
-       (part5 (intern-in-package-of-symbol (fifth parts) sym)))
-    (mv t part1 part2 part3 part4 part5)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-iconst ((term pseudo-termp) (ctx ctxp) state)
-  :returns (mv erp
-               (val (tuple (yes/no booleanp)
-                           (const iconstp)
-                           (out-type typep)
-                           val))
-               state)
-  :short "Check if a term represents an integer constant."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the term is a call of a function @('<type>-<base>-const')
-     on a quoted integer constant,
-     we return the C integer constant represented by this call.
-     We also return the C integer type of the constant."))
-  (b* (((acl2::fun (no)) (list nil (irr-iconst) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (acl2::value (no)))
-       ((pseudo-term-fncall term) term)
-       ((mv okp type base const) (atc-check-symbol-3part term.fn))
-       ((unless (and okp
-                     (member-eq type '(sint uint slong ulong sllong ullong))
-                     (member-eq base '(dec oct hex))
-                     (eq const 'const)))
-        (acl2::value (no)))
-       ((unless (list-lenp 1 term.args))
-        (raise "Internal error: ~x0 not applied to 1 argument." term)
-        (acl2::value (no)))
-       (arg (first term.args))
-       ((unless (pseudo-term-case arg :quote))
-        (er-soft+ ctx t (no)
-                  "The function ~x0 must be applied to a quoted constant, ~
-                   but it is applied to ~x1 instead."
-                  term.fn arg))
-       (val (pseudo-term-quote->val arg))
-       ((unless (natp val))
-        (er-soft+ ctx t (no)
-                  "The function ~x0 ~
-                   must be applied to a quoted natural number, ~
-                   but it is applied to ~x1 instead. ~
-                   Since this is required by the guard of ~x0, ~
-                   this call is unreachable under the guard."
-                  term.fn val))
-       (inrangep (case type
-                   (sint (sint-integerp val))
-                   (uint (uint-integerp val))
-                   (slong (slong-integerp val))
-                   (ulong (ulong-integerp val))
-                   (sllong (sllong-integerp val))
-                   (ullong (ullong-integerp val))
-                   (t (impossible))))
-       ((unless inrangep)
-        (er-soft+ ctx t (no)
-                  "The function ~x0
-                   must be applied to a quoted natural number ~
-                   representable in the C type corresponding to ~x1, ~
-                   but it is applied to ~x2 instead."
-                  term.fn type val))
-       (base (case base
-               (dec (iconst-base-dec))
-               (oct (iconst-base-oct))
-               (hex (iconst-base-hex))
-               (t (impossible))))
-       ((mv const type)
-        (case type
-          (sint (mv (make-iconst :value val
-                                 :base base
-                                 :unsignedp nil
-                                 :length (iconst-length-none))
-                    (type-sint)))
-          (uint (mv (make-iconst :value val
-                                 :base base
-                                 :unsignedp t
-                                 :length (iconst-length-none))
-                    (type-uint)))
-          (slong (mv (make-iconst :value val
-                                  :base base
-                                  :unsignedp nil
-                                  :length (iconst-length-long))
-                     (type-slong)))
-          (ulong (mv (make-iconst :value val
-                                  :base base
-                                  :unsignedp t
-                                  :length (iconst-length-long))
-                     (type-ulong)))
-          (sllong (mv (make-iconst :value val
-                                   :base base
-                                   :unsignedp nil
-                                   :length (iconst-length-llong))
-                      (type-sllong)))
-          (ullong (mv (make-iconst :value val
-                                   :base base
-                                   :unsignedp t
-                                   :length (iconst-length-llong))
-                      (type-ullong)))
-          (t (mv (impossible) (impossible))))))
-    (acl2::value (list t const type)))
-  ///
-  (more-returns
-   (val (and (consp val)
-             (true-listp val))
-        :name typeset-of-atc-check-iconst
-        :rule-classes :type-prescription)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-unop ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (op unopp)
-               (arg pseudo-termp)
-               (in-type typep)
-               (out-type typep))
-  :short "Check if a term may represent a unary expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the term is a call of one of the ACL2 functions
-     that represent C unary operators,
-     we return the operator and the argument term.")
-   (xdoc::p
-    "We also return the input and output C types of the operator.")
-   (xdoc::p
-    "If the term does not have that form, we return an indication of failure.
-     The term may represent some other kind of C expression."))
-  (b* (((acl2::fun (no)) (mv nil (irr-unop) nil (irr-type) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
-       ((when (not okp)) (no))
-       (in-type (fixtype-to-integer-type fixtype))
-       ((when (not in-type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (first term.args)))
-    (case op
-      (plus (mv t (unop-plus) arg in-type (promote-type in-type)))
-      (minus (mv t (unop-minus) arg in-type (promote-type in-type)))
-      (bitnot (mv t (unop-bitnot) arg in-type (promote-type in-type)))
-      (lognot (mv t (unop-lognot) arg in-type (type-sint)))
-      (t (no))))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-unop-arg
-    (implies yes/no
-             (< (pseudo-term-count arg)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-binop ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (op binopp)
-               (arg1 pseudo-termp)
-               (arg2 pseudo-termp)
-               (in-type1 typep)
-               (in-type2 typep)
-               (out-type typep))
-  :short "Check if a term may represent a strict pure binary expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the term is a call of one of the ACL2 functions
-     that represent C strict pure binary operators,
-     we return the operator and the argument terms.")
-   (xdoc::p
-    "We also return the input and output C types of the operator.")
-   (xdoc::p
-    "If the term does not have that form, we return an indication of failure."))
-  (b* (((acl2::fun (no))
-        (mv nil (irr-binop) nil nil (irr-type) (irr-type) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part term.fn))
-       ((when (not okp)) (no))
-       (in-type1 (fixtype-to-integer-type fixtype1))
-       ((when (not in-type1)) (no))
-       (in-type2 (fixtype-to-integer-type fixtype2))
-       ((when (not in-type2)) (no))
-       ((unless (list-lenp 2 term.args)) (no))
-       (arg1 (first term.args))
-       (arg2 (second term.args)))
-    (case op
-      (add (mv t (binop-add) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (sub (mv t (binop-sub) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (mul (mv t (binop-mul) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (div (mv t (binop-div) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (rem (mv t (binop-rem) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (shl (mv t (binop-shl) arg1 arg2
-               in-type1 in-type2 (promote-type in-type1)))
-      (shr (mv t (binop-shr) arg1 arg2
-               in-type1 in-type2 (promote-type in-type1)))
-      (lt (mv t (binop-lt) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (le (mv t (binop-le) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (gt (mv t (binop-gt) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (ge (mv t (binop-ge) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (eq (mv t (binop-eq) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (ne (mv t (binop-ne) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (bitand (mv t (binop-bitand) arg1 arg2
-                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (bitxor (mv t (binop-bitxor) arg1 arg2
-                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (bitior (mv t (binop-bitior) arg1 arg2
-                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (t (no))))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-binop-arg1
-    (implies yes/no
-             (< (pseudo-term-count arg1)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-binop-arg2
-    (implies yes/no
-             (< (pseudo-term-count arg2)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-conv ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (tyname tynamep)
-               (arg pseudo-termp)
-               (in-type typep)
-               (out-type typep))
-  :short "Check if a term may represent a conversion."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the term is a call of one of the ACL2 functions
-     that represents C integer conversions,
-     we return the C type name for the destination type
-     and the argument term.")
-   (xdoc::p
-    "We also return the input and output C types of the conversion.
-     The output type is redundant,
-     because it can be determined from the returned type name.
-     But we return it for uniformity and simplicity.")
-   (xdoc::p
-    "If the term does not have the form explained above,
-     we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil (irr-tyname) nil (irr-type) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp dtype from stype) (atc-check-symbol-3part term.fn))
-       ((unless (and okp
-                     (eq from 'from)))
-        (no))
-       (in-type (fixtype-to-integer-type stype))
-       ((when (not in-type)) (no))
-       (out-type (fixtype-to-integer-type dtype))
-       ((when (not out-type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (first term.args))
-       (tyname (type-to-tyname out-type)))
-    (mv t tyname arg in-type out-type))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-conv-arg
-    (implies yes/no
-             (< (pseudo-term-count arg)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6860,12 +6486,11 @@
                              (valuep ptr)
                              (value-case ptr :pointer)
                              (not (value-pointer-nullp ptr))
+                             (equal (value-pointer->reftype ptr)
+                                    (type-struct (ident ,(ident->name tag))))
                              (equal struct
                                     (read-object (value-pointer->designator ptr)
                                                  compst))
-                             (value-case struct :struct)
-                             (equal (value-pointer->reftype ptr)
-                                    (type-struct (ident ,(ident->name tag))))
                              (,recognizer struct))
                         (equal (exec-memberp ptr
                                              (ident ,(ident->name memname))
@@ -7069,9 +6694,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-tag-member-write-thms ((recognizer symbolp)
+(define atc-gen-tag-member-write-thms ((tag identp)
+                                       (recognizer symbolp)
                                        (fixer-recognizer-thm symbolp)
                                        (not-error-thm symbolp)
+                                       (type-of-value-thm symbolp)
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
@@ -7089,150 +6716,355 @@
      the ones that rewrite @(tsee exec-expr-asg)
      that have @(':arrsub') left expressions
      to array writers,
-     generated in @(see atc-exec-expr-asg-arrsub-rules-generation).")
+     in @(see atc-exec-expr-asg-arrsub-rules-generation).")
    (xdoc::p
-    "For now we only generate these theorems for scalar members.
-     In this case, we rewrite calls of @(tsee exec-expr-asg)
-     on identifiers to calls of the writer.")
+    "For a scalar member (which must have integer type),
+     we generate a single theorem that
+     rewrites certain calls of @(tsee exec-expr-asg)
+     to calls of the writer.")
    (xdoc::p
-    "We will extend this to array members soon."))
+    "For an array member (which must have integer element type),
+     we generate 10 theorems, one for each integer index type.
+     The theorem rewrites certain calls of @(tsee exec-expr-asg)
+     to calls of the writers.
+     The generation of these theorems relies on the fact that
+     the order of the writers and the checkers matches the order of
+     the types in @(tsee *integer-nonbool-nonchar-types*).
+     Note that the @(tsee defstruct-member-info)
+     contains 11 writers and 11 checkers,
+     where the first writer and checker operate on ACL2 integers,
+     while the other 10 writers and 10 checkers operate on C integers.
+     We iterate through the 10 writers and checkers on C integers,
+     while using the writer and checker on ACL2 integers at each iteration."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
-       ((unless (type-integerp type))
-        (mv nil nil names-to-avoid))
        (writers (defstruct-member-info->writers meminfo))
-       ((unless (and (consp writers)
-                     (endp (cdr writers))))
-        (prog2$
-         (raise "Internal error: not one writer ~x0." writers)
-         (mv nil nil nil)))
-       (writer (car writers))
        (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
-       ((unless (and (consp writer-return-thms)
-                     (endp (cdr writer-return-thms))))
-        (prog2$
-         (raise "Internal error: not one writer theorem ~x0."
-                writer-return-thms)
-         (mv nil nil nil)))
        (writer-return-thm (car writer-return-thms))
-       (thm-name (pack 'exec-member-write-when-
-                       recognizer
-                       '-and-
-                       (ident->name memname)))
-       ((mv thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
-       (typep (atc-type-to-recognizer type wrld))
-       ((unless typep)
-        (raise "Internal error: unsupported member type ~x0." type)
-        (mv nil nil nil))
-       (formula
-        `(implies (and (syntaxp (quotep e))
-                       (equal (expr-kind e) :binary)
-                       (equal (binop-kind (expr-binary->op e)) :asg)
-                       (equal left (expr-binary->arg1 e))
-                       (equal right (expr-binary->arg2 e))
-                       (equal (expr-kind left) :memberp)
-                       (equal target (expr-memberp->target left))
-                       (equal member (expr-memberp->name left))
-                       (equal (expr-kind target) :ident)
-                       (equal member (ident ,(ident->name memname)))
-                       (not (zp limit))
-                       (equal val+compst1
-                              (exec-expr-call-or-pure right
-                                                      compst
-                                                      fenv
-                                                      (1- limit)))
-                       (equal val (mv-nth 0 val+compst1))
-                       (equal compst1 (mv-nth 1 val+compst1))
-                       (,typep val)
-                       (equal ptr (read-var (expr-ident->get target) compst1))
-                       (valuep ptr)
-                       (value-case ptr :pointer)
-                       (not (value-pointer-nullp ptr))
-                       (equal struct
-                              (read-object (value-pointer->designator ptr)
-                                           compst1))
-                       (value-case struct :struct)
-                       (equal (value-pointer->reftype ptr)
-                              (type-of-value struct))
-                       (,recognizer struct))
-                  (equal (exec-expr-asg e compst fenv limit)
-                         (write-object (value-pointer->designator ptr)
-                                       (,writer val struct)
-                                       compst1))))
-       (hints `(("Goal"
-                 :in-theory
-                 '(exec-expr-asg
-                   not-errorp-when-valuep-rewrite
-                   valuep-when-ucharp
-                   valuep-when-scharp
-                   valuep-when-ushortp
-                   valuep-when-sshortp
-                   valuep-when-uintp
-                   valuep-when-sintp
-                   valuep-when-ulongp
-                   valuep-when-slongp
-                   valuep-when-ullongp
-                   valuep-when-sllongp
-                   consp-when-ucharp
-                   consp-when-scharp
-                   consp-when-ushortp
-                   consp-when-sshortp
-                   consp-when-uintp
-                   consp-when-sintp
-                   consp-when-ulongp
-                   consp-when-slongp
-                   consp-when-ullongp
-                   consp-when-sllongp
-                   uchar-fix-when-ucharp
-                   schar-fix-when-scharp
-                   ushort-fix-when-ushortp
-                   sshort-fix-when-sshortp
-                   uint-fix-when-uintp
-                   sint-fix-when-sintp
-                   ulong-fix-when-ulongp
-                   slong-fix-when-slongp
-                   ullong-fix-when-ullongp
-                   sllong-fix-when-sllongp
-                   ,writer
-                   ,not-error-thm
-                   ,fixer-recognizer-thm)
-                 :use
-                 (:instance ,writer-return-thm
-                  (val (b* ((right (expr-binary->arg2 e))
-                            (val+compst1 (exec-expr-call-or-pure right
-                                                                 compst
-                                                                 fenv
-                                                                 (1- limit)))
-                            (val (mv-nth 0 val+compst1)))
-                         val))
-                  (struct (b* ((left (expr-binary->arg1 e))
-                               (right (expr-binary->arg2 e))
-                               (val+compst1 (exec-expr-call-or-pure right
-                                                                    compst
-                                                                    fenv
-                                                                    (1- limit)))
-                               (compst1 (mv-nth 1 val+compst1))
-                               (target (expr-memberp->target left))
-                               (ptr (read-var (c::expr-ident->get target)
-                                              compst1))
-                               (struct (read-object (value-pointer->designator
-                                                     ptr)
-                                                    compst1)))
-                            struct))))))
-       ((mv event &) (evmac-generate-defthm thm-name
-                                            :formula formula
-                                            :hints hints
-                                            :enable nil)))
-    (mv (list event) (list thm-name) names-to-avoid)))
+       (checkers (defstruct-member-info->checkers meminfo))
+       ((when (type-integerp type))
+        (b* (((unless (and (consp writers)
+                           (endp (cdr writers))))
+              (prog2$
+               (raise "Internal error: not one writer ~x0." writers)
+               (mv nil nil nil)))
+             (writer (car writers))
+             (thm-name (pack 'exec-member-write-when-
+                             recognizer
+                             '-and-
+                             (ident->name memname)))
+             ((mv thm-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix thm-name
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+             (typep (atc-type-to-recognizer type wrld))
+             ((unless typep)
+              (raise "Internal error: unsupported member type ~x0." type)
+              (mv nil nil nil))
+             (formula
+              `(implies (and (syntaxp (quotep e))
+                             (equal (expr-kind e) :binary)
+                             (equal (binop-kind (expr-binary->op e)) :asg)
+                             (equal left (expr-binary->arg1 e))
+                             (equal right (expr-binary->arg2 e))
+                             (equal (expr-kind left) :memberp)
+                             (equal target (expr-memberp->target left))
+                             (equal member (expr-memberp->name left))
+                             (equal (expr-kind target) :ident)
+                             (equal member (ident ,(ident->name memname)))
+                             (not (zp limit))
+                             (equal ptr (read-var (expr-ident->get target)
+                                                  compst))
+                             (valuep ptr)
+                             (value-case ptr :pointer)
+                             (not (value-pointer-nullp ptr))
+                             (equal (value-pointer->reftype ptr)
+                                    (type-struct (ident ,(ident->name tag))))
+                             (equal struct
+                                    (read-object (value-pointer->designator ptr)
+                                                 compst))
+                             (,recognizer struct)
+                             (equal val (exec-expr-pure right compst))
+                             (,typep val))
+                        (equal (exec-expr-asg e compst fenv limit)
+                               (write-object (value-pointer->designator ptr)
+                                             (,writer val struct)
+                                             compst))))
+             (hints `(("Goal"
+                       :in-theory
+                       '(exec-expr-asg
+                         not-errorp-when-valuep-rewrite
+                         valuep-when-ucharp
+                         valuep-when-scharp
+                         valuep-when-ushortp
+                         valuep-when-sshortp
+                         valuep-when-uintp
+                         valuep-when-sintp
+                         valuep-when-ulongp
+                         valuep-when-slongp
+                         valuep-when-ullongp
+                         valuep-when-sllongp
+                         consp-when-ucharp
+                         consp-when-scharp
+                         consp-when-ushortp
+                         consp-when-sshortp
+                         consp-when-uintp
+                         consp-when-sintp
+                         consp-when-ulongp
+                         consp-when-slongp
+                         consp-when-ullongp
+                         consp-when-sllongp
+                         uchar-fix-when-ucharp
+                         schar-fix-when-scharp
+                         ushort-fix-when-ushortp
+                         sshort-fix-when-sshortp
+                         uint-fix-when-uintp
+                         sint-fix-when-sintp
+                         ulong-fix-when-ulongp
+                         slong-fix-when-slongp
+                         ullong-fix-when-ullongp
+                         sllong-fix-when-sllongp
+                         ,writer
+                         ,not-error-thm
+                         ,recognizer
+                         ,fixer-recognizer-thm
+                         ,type-of-value-thm)
+                       :use
+                       (:instance
+                        ,writer-return-thm
+                        (val (b* ((left (expr-binary->arg1 e)))
+                               (exec-expr-pure (expr-binary->arg2 e) compst)))
+                        (struct (b* ((left (expr-binary->arg1 e))
+                                     (target (expr-memberp->target left))
+                                     (ptr (read-var (c::expr-ident->get target)
+                                                    compst))
+                                     (struct (read-object
+                                              (value-pointer->designator ptr)
+                                              compst)))
+                                  struct))))))
+             ((mv event &) (evmac-generate-defthm thm-name
+                                                  :formula formula
+                                                  :hints hints
+                                                  :enable nil)))
+          (mv (list event) (list thm-name) names-to-avoid)))
+       ((unless (type-case type :array))
+        (prog2$
+         (raise "Internal error: member type ~x0." type)
+         (mv nil nil nil)))
+       (elemtype (type-array->of type))
+       ((unless (type-integerp elemtype))
+        (prog2$
+         (raise "Internal error: array member element type ~x0." elemtype)
+         (mv nil nil nil))))
+    (atc-gen-tag-member-write-thms-aux tag
+                                       recognizer
+                                       fixer-recognizer-thm
+                                       memname
+                                       elemtype
+                                       *integer-nonbool-nonchar-types*
+                                       (car writers)
+                                       (car checkers)
+                                       (cdr writers)
+                                       (cdr checkers)
+                                       writer-return-thm
+                                       not-error-thm
+                                       type-of-value-thm
+                                       names-to-avoid
+                                       wrld))
+
+  :prepwork
+  ((define atc-gen-tag-member-write-thms-aux ((tag identp)
+                                              (recognizer symbolp)
+                                              (fixer-recognizer-thm symbolp)
+                                              (memname identp)
+                                              (elemtype typep)
+                                              (indextypes type-listp)
+                                              (writer-acl2int symbolp)
+                                              (checker-acl2int symbolp)
+                                              (writers symbol-listp)
+                                              (checkers symbol-listp)
+                                              (writer-return-thm symbolp)
+                                              (not-error-thm symbolp)
+                                              (type-of-value-thm symbolp)
+                                              (names-to-avoid symbol-listp)
+                                              (wrld plist-worldp))
+     :guard (and (type-integerp elemtype)
+                 (type-integer-listp indextypes))
+     :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+                  (member-write-thms "A @(tsee symbol-listp).")
+                  (updated-names-to-avoid "A @(tsee symbol-listp)."))
+     :mode :program
+     :parents nil
+     (b* (((when (endp indextypes)) (mv nil nil nil))
+          (indextype (car indextypes))
+          (writer (car writers))
+          (checker (car checkers))
+          (indexfixtype (integer-type-to-fixtype indextype))
+          (elemfixtype (integer-type-to-fixtype elemtype))
+          (indextypep (pack indexfixtype 'p))
+          (elemtypep (pack elemfixtype 'p))
+          (indextype-integer-value (pack indexfixtype '-integer-value))
+          (array-writer (pack elemfixtype '-array-write-alt-def))
+          (array-checker (pack elemfixtype '-array-index-okp))
+          (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
+          (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
+          (valuep-when-indextype (pack 'valuep-when- indextypep))
+          (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
+          (indextype->get (pack indexfixtype '->get))
+          (type-thm (pack indexfixtype '->get$inline))
+          (thm-name (pack 'exec-member-write-when-
+                          recognizer
+                          '-and-
+                          (ident->name memname)
+                          '-
+                          indexfixtype))
+          (arrayp-of-arrary-write
+           (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
+          ((mv thm-name names-to-avoid)
+           (fresh-logical-name-with-$s-suffix thm-name
+                                              nil
+                                              names-to-avoid
+                                              wrld))
+          (formula
+           `(implies (and (syntaxp (quotep e))
+                          (equal (expr-kind e) :binary)
+                          (equal (binop-kind (expr-binary->op e)) :asg)
+                          (equal left (expr-binary->arg1 e))
+                          (equal right (expr-binary->arg2 e))
+                          (equal (expr-kind left) :arrsub)
+                          (equal array (expr-arrsub->arr left))
+                          (equal index (expr-arrsub->sub left))
+                          (equal (expr-kind array) :memberp)
+                          (equal target (expr-memberp->target array))
+                          (equal member (expr-memberp->name array))
+                          (equal (expr-kind target) :ident)
+                          (equal member (ident ,(ident->name memname)))
+                          (not (zp limit))
+                          (equal ptr (read-var (expr-ident->get target)
+                                               compst))
+                          (valuep ptr)
+                          (value-case ptr :pointer)
+                          (not (value-pointer-nullp ptr))
+                          (equal (value-pointer->reftype ptr)
+                                 (type-struct (ident ,(ident->name tag))))
+                          (equal struct
+                                 (read-object (value-pointer->designator ptr)
+                                              compst))
+                          (,recognizer struct)
+                          (equal idx (exec-expr-pure index compst))
+                          (,indextypep idx)
+                          (,checker idx)
+                          (equal val (exec-expr-pure right compst))
+                          (,elemtypep val))
+                     (equal (exec-expr-asg e compst fenv limit)
+                            (write-object (value-pointer->designator ptr)
+                                          (,writer idx val struct)
+                                          compst))))
+          (hints `(("Goal"
+                    :in-theory
+                    '(exec-expr-asg
+                      exec-integer
+                      value-struct-read
+                      value-struct-write
+                      not-errorp-when-valuep-rewrite
+                      value-integerp
+                      value-unsigned-integerp-alt-def
+                      value-signed-integerp-alt-def
+                      value-fix-when-valuep
+                      ifix
+                      integer-range-p
+                      (:e ident)
+                      (:compound-recognizer consp-when-ucharp)
+                      ,recognizer
+                      ,fixer-recognizer-thm
+                      ,not-error-thm
+                      ,type-of-value-thm
+                      ,kind-array-thm
+                      ,indextype-integer-value
+                      ,checker
+                      ,checker-acl2int
+                      ,writer
+                      ,writer-acl2int
+                      ,not-error-array-thm
+                      ,array-writer
+                      ,array-checker
+                      ,valuep-when-elemtypep
+                      ,valuep-when-indextype
+                      ,@*integer-value-disjoint-rules*
+                      (:t ,type-thm))
+                    :use
+                    ((:instance
+                      ,writer-return-thm
+                      (index
+                       (,indextype->get
+                        (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                        compst)))
+                      (val
+                       (exec-expr-pure (expr-binary->arg2 e) compst))
+                      (struct
+                       (read-object
+                        (value-pointer->designator
+                         (read-var
+                          (expr-ident->get
+                           (expr-memberp->target
+                            (expr-arrsub->arr (expr-binary->arg1 e))))
+                          compst))
+                        compst)))
+                     (:instance
+                      ,arrayp-of-arrary-write
+                      (array
+                       (value-struct-read-aux
+                        (ident ,(ident->name memname))
+                        (value-struct->members
+                         (read-object
+                          (value-pointer->designator
+                           (read-var
+                            (expr-ident->get
+                             (expr-memberp->target
+                              (expr-arrsub->arr (expr-binary->arg1 e))))
+                            compst))
+                          compst))))
+                      (index
+                       (,indextype->get
+                        (exec-expr-pure
+                         (expr-arrsub->sub (expr-binary->arg1 e))
+                         compst)))
+                      (element
+                       (exec-expr-pure (expr-binary->arg2 e) compst)))))))
+          ((mv event &) (evmac-generate-defthm thm-name
+                                               :formula formula
+                                               :hints hints
+                                               :enable nil))
+          ((mv events thm-names names-to-avoid)
+           (atc-gen-tag-member-write-thms-aux tag
+                                              recognizer
+                                              fixer-recognizer-thm
+                                              memname
+                                              elemtype
+                                              (cdr indextypes)
+                                              writer-acl2int
+                                              checker-acl2int
+                                              (cdr writers)
+                                              (cdr checkers)
+                                              writer-return-thm
+                                              not-error-thm
+                                              type-of-value-thm
+                                              names-to-avoid
+                                              wrld)))
+       (mv (cons event events)
+           (cons thm-name thm-names)
+           names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-tag-member-write-all-thms
-  ((recognizer symbolp)
+  ((tag identp)
+   (recognizer symbolp)
    (fixer-recognizer-thm symbolp)
    (not-error-thm symbolp)
+   (type-of-value-thm symbolp)
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
@@ -7251,16 +7083,20 @@
      to be in the same order as @('members')."))
   (b* (((when (endp meminfos)) (mv nil nil names-to-avoid))
        ((mv events thms names-to-avoid)
-        (atc-gen-tag-member-write-thms recognizer
+        (atc-gen-tag-member-write-thms tag
+                                       recognizer
                                        fixer-recognizer-thm
                                        not-error-thm
+                                       type-of-value-thm
                                        (car meminfos)
                                        names-to-avoid
                                        wrld))
        ((mv more-events more-thms names-to-avoid)
-        (atc-gen-tag-member-write-all-thms recognizer
+        (atc-gen-tag-member-write-all-thms tag
+                                           recognizer
                                            fixer-recognizer-thm
                                            not-error-thm
+                                           type-of-value-thm
                                            (cdr meminfos)
                                            names-to-avoid
                                            wrld)))
@@ -7325,6 +7161,7 @@
        (recognizer (defstruct-info->recognizer info))
        (fixer-recognizer-thm (defstruct-info->fixer-recognizer-thm info))
        (not-error-thm (defstruct-info->not-error-thm info))
+       (type-of-value-thm (defstruct-info->type-of-value-thm info))
        (struct-declons (atc-gen-struct-declon-list memtypes))
        ((mv read-thm-events read-thm-names names-to-avoid)
         (if proofs
@@ -7338,9 +7175,11 @@
           (mv nil nil names-to-avoid)))
        ((mv write-thm-events write-thm-names names-to-avoid)
         (if proofs
-            (atc-gen-tag-member-write-all-thms recognizer
+            (atc-gen-tag-member-write-all-thms tag-ident
+                                               recognizer
                                                fixer-recognizer-thm
                                                not-error-thm
+                                               type-of-value-thm
                                                meminfos
                                                names-to-avoid
                                                (w state))

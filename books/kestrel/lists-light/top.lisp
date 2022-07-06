@@ -98,3 +98,5 @@
 (include-book "union-eql-tail")
 
 (include-book "replace-item")
+
+(include-book "index-of-subseq")

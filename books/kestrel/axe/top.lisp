@@ -1,6 +1,6 @@
-; Top file Axe
+; Top file for Axe
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -91,6 +91,7 @@
 (include-book "equivs")
 (include-book "evaluator-basic")
 (include-book "extract-dag-array")
+(include-book "find-probable-facts")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
@@ -161,6 +162,7 @@
 (include-book "print-constant")
 (include-book "print-levels")
 (include-book "print-dag-to-file")
+(include-book "print-dag-array-to-file")
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")

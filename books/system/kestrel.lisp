@@ -158,3 +158,4 @@
 (verify-termination new-namep) ; and guards
 
 (verify-termination chk-all-but-new-name-cmp) ; and guards
+

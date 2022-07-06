@@ -21,83 +21,72 @@ Form:  ( INCLUDE-BOOK "projects/apply/loop" ...)
 Rules: NIL
  "[books]/projects/apply/loop.lisp"
 ACL2 !>>(DEFCONST
-         *TESTS*
-         '((TRACE$ HELLO)
-           (APPLY$ 'HELLO '(JOHN))
-           (EV$ '(HELLO E) '((E . JOHN)))
-           (APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
-           (APPLY$ (CONS 'LAMBDA
-                         (CONS (CONS 'E 'NIL)
-                               (CONS (CONS 'HELLO (CONS 'E 'NIL))
-                                     'NIL)))
-                   '(JOHN))
-           (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
-           (LOOP$ FOR E IN '(JOHN MARY)
-                  COLLECT (HELLO E))
-           (LOOP$ FOR E IN '("John" "Mary")
-                  COLLECT (HELLO E))
-           (SET-GUARD-CHECKING NIL)
-           (LOOP$ FOR E IN '("John" "Mary")
-                  COLLECT (HELLO E))
-           (SET-GUARD-CHECKING T)
-           (DEFUN CALLER1 (E)
-                  (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                  (APPLY$ 'HELLO (LIST E)))
-           (VERIFY-GUARDS CALLER1)
-           (TRACE$ CALLER1)
-           (CALLER1 'JOHN)
-           (CALLER1 "Mary and Tom")
-           (SET-GUARD-CHECKING NIL)
-           (CALLER1 "Mary and Tom")
-           (SET-GUARD-CHECKING T)
-           (DEFUN CALLER2 (E)
-                  (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                  :VERIFY-GUARDS NIL))
-                  (APPLY$ (LAMBDA$ (D)
-                                   (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                   (HELLO D))
-                          (LIST E)))
-           (VERIFY-GUARDS CALLER2)
-           (TRACE$ CALLER2)
-           (CALLER2 'JOHN)
-           (CALLER2 "Mary and Tom")
-           (SET-GUARD-CHECKING NIL)
-           (CALLER2 "Mary and Tom")
-           (SET-GUARD-CHECKING T)
-           (THM (EQUAL (APPLY$ 'HELLO '(JOHN))
-                       '(HI JOHN)))
-           (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
-                       '(HI JOHN)))
-           (THM
-            (EQUAL
-             (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'HELLO
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-             '(HI JOHN)))
-           (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
-                       '(HI JOHN))
-                :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
-           (THM (IMPLIES (WARRANT HELLO)
-                         (EQUAL (APPLY$ 'HELLO '(JOHN))
-                                '(HI JOHN))))
-           (THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
-           (THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
-           (DEFUN CALLER3 (E)
-                  (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                  (APPLY$ (CAR (CONS 'HELLO NIL))
-                          (LIST E)))
-           (VERIFY-GUARDS CALLER3)
-           (CALLER3 'JOHN)
-           (CALLER3 "Mary and Tom")
-           (SET-GUARD-CHECKING NIL)
-           (CALLER3 "Mary and Tom")
-           (SET-GUARD-CHECKING T)
-           (THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))))
+             *TESTS*
+             '((TRACE$ HELLO)
+               (APPLY$ 'HELLO '(JOHN))
+               (EV$ '(HELLO E) '((E . JOHN)))
+               (APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+               (APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
+                       '(JOHN))
+               (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+               (LOOP$ FOR E IN '(JOHN MARY)
+                      COLLECT (HELLO E))
+               (LOOP$ FOR E IN '("John" "Mary")
+                      COLLECT (HELLO E))
+               (SET-GUARD-CHECKING NIL)
+               (LOOP$ FOR E IN '("John" "Mary")
+                      COLLECT (HELLO E))
+               (SET-GUARD-CHECKING T)
+               (DEFUN CALLER1 (E)
+                      (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                      (APPLY$ 'HELLO (LIST E)))
+               (VERIFY-GUARDS CALLER1)
+               (TRACE$ CALLER1)
+               (CALLER1 'JOHN)
+               (CALLER1 "Mary and Tom")
+               (SET-GUARD-CHECKING NIL)
+               (CALLER1 "Mary and Tom")
+               (SET-GUARD-CHECKING T)
+               (DEFUN CALLER2 (E)
+                      (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                      :VERIFY-GUARDS NIL))
+                      (APPLY$ (LAMBDA$ (D)
+                                       (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                       (HELLO D))
+                              (LIST E)))
+               (VERIFY-GUARDS CALLER2)
+               (TRACE$ CALLER2)
+               (CALLER2 'JOHN)
+               (CALLER2 "Mary and Tom")
+               (SET-GUARD-CHECKING NIL)
+               (CALLER2 "Mary and Tom")
+               (SET-GUARD-CHECKING T)
+               (THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                           '(HI JOHN)))
+               (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                           '(HI JOHN)))
+               (THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                                   NIL)
+                           '(HI JOHN)))
+               (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                           '(HI JOHN))
+                    :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+               (THM (IMPLIES (WARRANT HELLO)
+                             (EQUAL (APPLY$ 'HELLO '(JOHN))
+                                    '(HI JOHN))))
+               (THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+               (THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+               (DEFUN CALLER3 (E)
+                      (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                      (APPLY$ (CAR (CONS 'HELLO NIL))
+                              (LIST E)))
+               (VERIFY-GUARDS CALLER3)
+               (CALLER3 'JOHN)
+               (CALLER3 "Mary and Tom")
+               (SET-GUARD-CHECKING NIL)
+               (CALLER3 "Mary and Tom")
+               (SET-GUARD-CHECKING T)
+               (THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))))
 
 Summary
 Form:  ( DEFCONST *TESTS* ...)
@@ -136,17 +125,14 @@ ACL2 !>>(DEFMACRO
                  (CONS
                   'CONS
                   (CONS
-                    '#\1
-                    (CONS (CONS 'CDR
-                                (CONS (CONS 'ASSOC
-                                            (CONS N (CONS '*SECTIONS* 'NIL)))
-                                      'NIL))
-                          'NIL)))
+                       '#\1
+                       (CONS (CONS 'CDR
+                                   (CONS (CONS 'ASSOC (CONS N '(*SECTIONS*)))
+                                         'NIL))
+                             'NIL)))
                  'NIL)))
-              (CONS (CONS '@ (CONS 'STANDARD-CO 'NIL))
-                    (CONS 'STATE (CONS 'NIL 'NIL))))))
-           (CONS (CONS 'VALUE (CONS ':INVISIBLE 'NIL))
-                 'NIL))))
+              '((@ STANDARD-CO) STATE NIL))))
+           '((VALUE :INVISIBLE)))))
 
 Summary
 Form:  ( DEFMACRO SECTION ...)
@@ -200,10 +186,7 @@ ACL2 Error [Translate] in TOP-LEVEL:  The symbol HELLO (in package
 define it.  See :DOC near-misses.  Note:  this error occurred in the
 context (HELLO E).
 
-ACL2 !>>>(APPLY$ (CONS 'LAMBDA
-                       (CONS (CONS 'E 'NIL)
-                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
-                                   'NIL)))
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 
 
@@ -452,17 +435,9 @@ Rules: NIL
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>>(THM
-          (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'HELLO
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN)))
+ACL2 !>>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                             NIL)
+                     '(HI JOHN)))
 Goal'
 Goal''
 
@@ -719,10 +694,7 @@ that calls itself recursively from within a loop$ you must include
 the xargs :LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this
 error occurred in the context (LAMBDA$ (E) (HELLO E)).
 
-ACL2 !>>>(APPLY$ (CONS 'LAMBDA
-                       (CONS (CONS 'E 'NIL)
-                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
-                                   'NIL)))
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 
 
@@ -1029,17 +1001,9 @@ Rules: NIL
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>>(THM
-          (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'HELLO
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN)))
+ACL2 !>>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                             NIL)
+                     '(HI JOHN)))
 Goal'
 Goal''
 
@@ -1280,10 +1244,7 @@ ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 (HI JOHN)
-ACL2 !>>>(APPLY$ (CONS 'LAMBDA
-                       (CONS (CONS 'E 'NIL)
-                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
-                                   'NIL)))
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
@@ -1541,17 +1502,9 @@ Goal''
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>>(THM
-          (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'HELLO
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN)))
+ACL2 !>>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                             NIL)
+                     '(HI JOHN)))
 Goal'
 Goal''
 
@@ -1873,10 +1826,7 @@ ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
 ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
-ACL2 !>>>(APPLY$ (CONS 'LAMBDA
-                       (CONS (CONS 'E 'NIL)
-                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
-                                   'NIL)))
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 
 
@@ -2132,17 +2082,9 @@ Goal''
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>>(THM
-          (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'HELLO
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN)))
+ACL2 !>>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                             NIL)
+                     '(HI JOHN)))
 Goal'
 Goal''
 
@@ -2447,10 +2389,7 @@ ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 (HI JOHN)
-ACL2 !>>>(APPLY$ (CONS 'LAMBDA
-                       (CONS (CONS 'E 'NIL)
-                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
-                                   'NIL)))
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
@@ -2728,17 +2667,9 @@ a full proof.
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>>(THM
-          (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'HELLO
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN)))
+ACL2 !>>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                             NIL)
+                     '(HI JOHN)))
 Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
@@ -3126,10 +3057,7 @@ ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 (HI JOHN)
-ACL2 !>>>(APPLY$ (CONS 'LAMBDA
-                       (CONS (CONS 'E 'NIL)
-                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
-                                   'NIL)))
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
   2> (HELLO JOHN)
@@ -3459,17 +3387,9 @@ a full proof.
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>>(THM
-          (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'HELLO
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN)))
+ACL2 !>>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                             NIL)
+                     '(HI JOHN)))
 Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
   2> (HELLO JOHN)
@@ -3846,17 +3766,9 @@ Rules: NIL
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(THM
-         (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'UNDEFINED
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           (APPLY$ 'UNDEFINED '(JOHN))))
+ACL2 !>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (UNDEFINED 'JOHN)))
+                            NIL)
+                    (APPLY$ 'UNDEFINED '(JOHN))))
 Goal'
 Goal''
 
@@ -3893,18 +3805,10 @@ Goal''
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(THM
-         (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'UNDEFINED
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           (APPLY$ 'UNDEFINED '(JOHN)))
-         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+ACL2 !>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (UNDEFINED 'JOHN)))
+                            NIL)
+                    (APPLY$ 'UNDEFINED '(JOHN)))
+             :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
 Goal'
 
 ([ A key checkpoint:
@@ -3975,17 +3879,10 @@ Rules: NIL
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(THM
-         (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'PROGRAM-MODE-WITH-NO-BADGE
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN)))
+ACL2 !>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA
+                                  '(NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN)))
+                            NIL)
+                    '(HI JOHN)))
 Goal'
 Goal''
 
@@ -4024,18 +3921,11 @@ Goal''
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(THM
-         (EQUAL
-           (APPLY$
-                (CONS 'LAMBDA
-                      (CONS 'NIL
-                            (CONS (CONS 'PROGRAM-MODE-WITH-NO-BADGE
-                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
-                                              'NIL))
-                                  'NIL)))
-                NIL)
-           '(HI JOHN))
-         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+ACL2 !>>(THM (EQUAL (APPLY$ (CONS 'LAMBDA
+                                  '(NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN)))
+                            NIL)
+                    '(HI JOHN))
+             :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
 Goal'
 
 ([ A key checkpoint:

@@ -113,6 +113,9 @@
        ((when (eq fn 'if))
         (intersection$ (term-possible-numbers-of-results (fargn term 2) wrld)
                        (term-possible-numbers-of-results (fargn term 3) wrld)))
+       ((when (eq fn 'read-user-stobj-alist))
+; Matt K. mod 07/2022 for addition to *stobjs-out-invalid*
+        (list 1))
        ((when (eq fn 'do$))
 ; Matt K. mod 11/2021 for addition to *stobjs-out-invalid*
         (let* ((quoted-do-fn (fargn term 3))

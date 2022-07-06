@@ -1565,6 +1565,15 @@
       (declare (ignore erp)) ; should be nil
       (mv-let-for-with-local-stobj mv-let-form st creator fns w
                                    program-p)))
+   ((eq (car x) 'with-global-stobj)
+    (let ((len (length x)))
+      (case len
+        (3 `(with-global-stobj ,(cadr x)
+                               ,(oneify (caddr x) fns w program-p)))
+        (4 `(with-global-stobj ,(cadr x)
+                               ,(caddr x)
+                               ,(oneify (cadddr x) fns w program-p)))
+        (otherwise (error "Unexpected case for with-global-stobj,~|~x0" x)))))
    ((eq (car x) 'stobj-let)
 
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
@@ -7789,7 +7798,12 @@
                                       OPEN-OUTPUT-CHANNEL
                                       GET-OUTPUT-STREAM-STRING$-FN
                                       CLOSE-INPUT-CHANNEL
-                                      CLOSE-OUTPUT-CHANNEL))))
+                                      CLOSE-OUTPUT-CHANNEL
+
+; We exempt write-user-stobj-alist since it's non-executablep and has no raw
+; Lisp code.  It's fine when inside with-global-stobj.
+
+                                      WRITE-USER-STOBJ-ALIST))))
                collect (car tuple))))
     (or (loop for x in bad
               always

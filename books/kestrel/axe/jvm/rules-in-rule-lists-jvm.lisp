@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "../rules-in-rule-lists") ;todo: remove some list stuff from this?
-
+(include-book "kestrel/lists-light/member-equal" :dir :system)
 (include-book "kestrel/jvm/jvm-facts" :dir :system)
 (include-book "kestrel/jvm/jvm-rules" :dir :system)
 (include-book "kestrel/jvm/set-classes" :dir :system)
