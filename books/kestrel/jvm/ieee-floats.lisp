@@ -150,6 +150,10 @@
                 ;; point:
                 (integerp (* possible-significand (expt 2 (- p 1)))))))))
 
+(defthm not-representable-positive-normalp-of-0
+  (not (representable-positive-normalp k p 0))
+  :hints (("Goal" :in-theory (enable representable-positive-normalp))))
+
 ;; Checks whether the rational RAT is representable as a normal (i.e., not
 ;; subnormal) number in the floating-point format (K,P).  Note that 0 is not a
 ;; "normal" number (see Definitions in the standard).
@@ -462,10 +466,12 @@
                   (< 0 biased-exponent) ; not all zeros
                   (< biased-exponent (+ -1 (expt 2 (wfn k p)))) ; not all ones
                   (unsigned-byte-p (- p 1) trailing-significand))))
-  :hints (("Goal" :in-theory (enable encode-normal-number representable-normalp representable-positive-normalp
+  :hints (("Goal" :in-theory (e/d (encode-normal-number representable-normalp representable-positive-normalp
                                      wfn bias emax emin
                                      unsigned-byte-p
-                                     expt-of-+))))
+                                     expt-of-+)
+                                  (<-of-*-of-/-arg1-arg3 ; why?
+                                   )))))
 
 (defthm encode-normal-number-of-decode-normal-number
   (implies (and (bitp sign)
