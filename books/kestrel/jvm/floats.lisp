@@ -489,7 +489,7 @@
                (float< x y)
                (float> x y)))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable float< float= JAVA-FLOATP))))
+  :hints (("Goal" :in-theory (enable float< float= java-floatp))))
 
 (defthm not-equal-of-float-nan-and-make-regular-float
   (not (equal :float-nan (make-regular-float sign val))))
