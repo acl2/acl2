@@ -5495,7 +5495,7 @@
             :stack (push-operand result
                                  (pop-long (stack (thread-top-frame th s)))))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun fcmpg (value1 value2)
   (declare (xargs :guard (and (java-floatp value1)
                               (java-floatp value2))))
@@ -5505,9 +5505,10 @@
         0
       (if (float< value1 value2)
           (encode-signed -1)
-        1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        1))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun fcmpl (value1 value2)
   (declare (xargs :guard (and (java-floatp value1)
                               (java-floatp value2))))
@@ -5517,9 +5518,10 @@
         0
       (if (float< value1 value2)
           (encode-signed -1)
-        -1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        -1))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun dcmpg (value1 value2)
   (declare (xargs :guard (and (java-doublep value1)
                               (java-doublep value2))))
@@ -5529,9 +5531,10 @@
         0
       (if (double< value1 value2)
           (encode-signed -1)
-        1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        1))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun dcmpl (value1 value2)
   (declare (xargs :guard (and (java-doublep value1)
                               (java-doublep value2))))
@@ -5541,7 +5544,8 @@
         0
       (if (double< value1 value2)
           (encode-signed -1)
-        -1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        -1))))
 
 ; (FCMPG)
 (defun execute-FCMPG (th s)
