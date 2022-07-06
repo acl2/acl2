@@ -46,3 +46,9 @@
 (defun bit-types-for-vars (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (assign-type-to-vars (make-bv-type 1) vars))
+
+;; Returns an alist mapping each of the VARS to the BV type of size SIZE.
+(defun bv-types-for-vars (size vars)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (natp size))))
+  (assign-type-to-vars (make-bv-type size) vars))

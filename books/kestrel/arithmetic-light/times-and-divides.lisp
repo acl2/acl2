@@ -91,3 +91,14 @@
                   (< y (* x z))))
   :hints (("Goal" :use (:instance <-of-*-of-/-arg1-arg1)
            :in-theory (disable <-of-*-of-/-arg1-arg1))))
+
+(defthm <-of-*-of-/-arg1-arg3
+  (implies (and (< 0 x)
+                (rationalp x)
+                (rationalp y)
+                (rationalp y2)
+                (rationalp z))
+           (equal (< (* y y2 (/ x)) z)
+                  (< (* y y2) (* x z))))
+  :hints (("Goal" :use (:instance <-of-*-of-/-arg1-arg1 (y (* y y2)))
+           :in-theory (disable <-of-*-of-/-arg1-arg1))))
