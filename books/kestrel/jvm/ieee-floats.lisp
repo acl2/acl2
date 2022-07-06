@@ -722,7 +722,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund largest-positive-normal (k p)
+(defund largest-normal (k p)
   (declare (xargs :guard (and (formatp k p)
                               (< 1 (- k p)) ; must be exponent values available other than all zeros and all ones (TODO: Add to formatp?)
                               )
@@ -734,11 +734,11 @@
                         (+ -1 (expt 2 (- p 1)))   ; max trailing-significand
                         ))
 
-(defthm representable-positive-normalp-of-largest-positive-normal
+(defthm representable-positive-normalp-of-largest-normal
   (implies (and (formatp k p)
                 (< 1 (- k p)))
-           (representable-positive-normalp k p (largest-positive-normal k p)))
-  :hints (("Goal" :in-theory (enable largest-positive-normal representable-positive-normalp decode-normal-number
+           (representable-positive-normalp k p (largest-normal k p)))
+  :hints (("Goal" :in-theory (enable largest-normal representable-positive-normalp decode-normal-number
                                                            bias emin emax wfn
                                                            *-of-expt-and-expt
                                                            *-of-/-of-expt-and-expt))))
@@ -852,7 +852,7 @@
                                    <=-of-*-and-*-when-<=-and-<=)
                                   (distributivity)))))
 
-(defthm <=-of-decode-normal-number-and-largest-positive-normal
+(defthm <=-of-decode-normal-number-and-largest-normal
   (implies (and (formatp k p)
                 (bitp sign) ; todo bitp vs unsigned-byte-p
                 (unsigned-byte-p (wfn k p) biased-exponent)
@@ -863,19 +863,19 @@
                                      sign
                                      biased-exponent
                                      trailing-significand)
-               (largest-positive-normal k p)))
-  :hints (("Goal" :in-theory (enable largest-positive-normal ;decode-normal-number
+               (largest-normal k p)))
+  :hints (("Goal" :in-theory (enable largest-normal ;decode-normal-number
                                      ;;bias emin emax wfn
                                      *-of-expt-and-expt
                                      *-of-/-of-expt-and-expt))))
 
-(defthm largest-positive-normal-correct
+(defthm largest-normal-correct
   (implies (and (representable-normalp k p rat)
                 (rationalp rat)
                 (formatp k p))
-           (<= rat (largest-positive-normal k p)))
+           (<= rat (largest-normal k p)))
   :hints (("Goal" :use (decode-normal-number-of-encode-normal-number
-                        (:instance <=-of-decode-normal-number-and-largest-positive-normal
+                        (:instance <=-of-decode-normal-number-and-largest-normal
                                    (sign (mv-nth 0 (encode-normal-number k p rat)))
                                    (biased-exponent (mv-nth 1 (encode-normal-number k p rat)))
                                    (trailing-significand (mv-nth 2 (encode-normal-number k p rat))))
@@ -888,10 +888,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; TODO: Define largest subnormal, and prove properties
-
-(defund largest-positive-subnormal (k p)
+(defund largest-subnormal (k p)
   (declare (xargs :guard (and (formatp k p)
                               (< 1 p) ; ensure there is a nonzero trailing-significand
                               )
@@ -901,6 +898,16 @@
                            0                    ;positive
                            (+ -1 (expt 2 (- p 1))) ; max trailing-significand
                            ))
+
+(defthm representable-positive-subnormalp-of-largest-subnormal
+  (implies (and (formatp k p)
+                (< 1 p) ; todo: add to formatp
+                )
+           (representable-positive-subnormalp k p (largest-subnormal k p)))
+  :hints (("Goal" :in-theory (enable largest-subnormal representable-positive-subnormalp decode-subnormal-number
+                                     bias emin emax wfn
+                                     *-of-expt-and-expt
+                                     *-of-/-of-expt-and-expt))))
 
 (defthm <-of-decode-subnormal-number-and-decode-subnormal-number
   (implies (and (formatp k p)
@@ -926,25 +933,25 @@
                                    <=-of-*-and-*-when-<=-and-<=)
                                   (distributivity)))))
 
-(defthm <=-of-decode-subnormal-number-and-largest-positive-subnormal
+(defthm <=-of-decode-subnormal-number-and-largest-subnormal
   (implies (and (formatp k p)
                 (bitp sign) ; todo bitp vs unsigned-byte-p
                 (unsigned-byte-p (- p 1) trailing-significand)
                 (< 0 trailing-significand))
            (<= (decode-subnormal-number k p sign trailing-significand)
-               (largest-positive-subnormal k p)))
-  :hints (("Goal" :in-theory (enable largest-positive-subnormal ;decode-subnormal-number
+               (largest-subnormal k p)))
+  :hints (("Goal" :in-theory (enable largest-subnormal ;decode-subnormal-number
                                      ;;bias emin emax wfn
                                      *-of-expt-and-expt
                                      *-of-/-of-expt-and-expt))))
 
-(defthm largest-positive-subnormal-correct
+(defthm largest-subnormal-correct
   (implies (and (representable-subnormalp k p rat)
                 (rationalp rat)
                 (formatp k p))
-           (<= rat (largest-positive-subnormal k p)))
+           (<= rat (largest-subnormal k p)))
   :hints (("Goal" :use (decode-subnormal-number-of-encode-subnormal-number
-                        (:instance <=-of-decode-subnormal-number-and-largest-positive-subnormal
+                        (:instance <=-of-decode-subnormal-number-and-largest-subnormal
                                    (sign (mv-nth 0 (encode-subnormal-number k p rat)))
                                    (trailing-significand (mv-nth 1 (encode-subnormal-number k p rat))))
                         encode-subnormal-number-type)
@@ -954,3 +961,30 @@
                             bitp
                             encode-subnormal-number-type
                             unsigned-byte-p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund smallest-positive-subnormal (k p)
+  (declare (xargs :guard (and (formatp k p)
+                              (< 1 p)
+                              )
+                  :guard-hints (("Goal" :in-theory (enable wfn unsigned-byte-p)))
+                  ))
+  (decode-subnormal-number k p
+                           0 ; positive
+                           1 ; min trailing-significand (can't be all zeros)
+                           ))
+
+(defthm representable-positive-subnormalp-of-smallest-positive-subnormal
+  (implies (and (formatp k p)
+                (< 1 0))
+           (representable-positive-subnormalp k p (smallest-positive-subnormal k p)))
+  :hints (("Goal" :in-theory (enable smallest-positive-subnormal representable-positive-subnormalp decode-subnormal-number bias emin emax))))
+
+(defthm smallest-positive-subnormal-correct
+  (implies (and (representable-positive-subnormalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= (smallest-positive-subnormal k p) rat))
+  :hints (("Goal" :in-theory (enable representable-positive-subnormalp smallest-positive-subnormal decode-subnormal-number bias emax emin
+                                     <=-of-expt-of-2-when-<=-of-log2))))
