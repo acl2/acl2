@@ -15,47 +15,18 @@
 
 ;; Library stuff:
 
-
 (local (in-theory (disable expt)))
 
-;move
-(defthm <-of-+-cancel-3-1+
-  (equal (< (+ y y2 x) (+ x z))
-         (< (+ y y2) z)))
-
-;move
-(defthm <-of-*-of-/-arg1-arg3
-  (implies (and (< 0 x)
-                (rationalp x)
-                (rationalp y)
-                (rationalp y2)
-                (rationalp z))
-           (equal (< (* y y2 (/ x)) z)
-                  (< (* y y2) (* x z))))
-  :hints (("Goal" :use (:instance <-of-*-of-/-arg1-arg1 (y (* y y2)))
-           :in-theory (disable <-of-*-of-/-arg1-arg1))))
-
 ;; divides through by 2^low.
-(defthm <-of-+-of-expt-helper
-  (implies (and (<= low high)
-                (natp low)
-                (natp high)
-                (rationalp x))
-           (equal (< (+ (expt 2 high) (- (expt 2 low))) (* (expt 2 low) x))
-                  (< (+ (expt 2 (- high low)) (- 1)) x)))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
-;move
-(defthm *-of-expt-and-slice-same-linear
-  (implies (and (<= low high)
-                (natp low)
-                (natp high)
-                (rationalp x))
-           (<= (* (expt 2 low) (slice high low x))
-               (+ (expt 2 (+ 1 high)) (- (expt 2 low)))))
-  :rule-classes ((:linear :trigger-terms ((* (expt 2 low) (slice high low x)))))
-  :hints (("Goal" :use (:instance slice-upper-bound-linear)
-           :in-theory (enable expt-of-+))))
+;; (local
+;;  (defthmd <-of-+-of-expt-helper
+;;    (implies (and (<= low high)
+;;                  (natp low)
+;;                  (natp high)
+;;                  (rationalp x))
+;;             (equal (< (+ (expt 2 high) (- (expt 2 low))) (* (expt 2 low) x))
+;;                    (< (+ (expt 2 (- high low)) (- 1)) x)))
+;;    :hints (("Goal" :in-theory (enable expt-of-+)))))
 
 ;move
 (defthm equal-of-bvchop-and-constant-forward

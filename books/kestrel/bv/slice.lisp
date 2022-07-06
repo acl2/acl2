@@ -656,3 +656,14 @@
                   (slice high low x)))
   :hints (("Goal" :cases ((<= low high))
            :in-theory (enable slice bvchop-of-logtail))))
+
+(defthm *-of-expt-and-slice-same-linear
+  (implies (and (<= low high)
+                (natp low)
+                (natp high)
+                (rationalp x))
+           (<= (* (expt 2 low) (slice high low x))
+               (+ (expt 2 (+ 1 high)) (- (expt 2 low)))))
+  :rule-classes ((:linear :trigger-terms ((* (expt 2 low) (slice high low x)))))
+  :hints (("Goal" :use (:instance slice-upper-bound-linear)
+           :in-theory (enable expt-of-+))))
