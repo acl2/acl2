@@ -207,6 +207,21 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable log2 expt-of-+))))
 
+(defthm <=-of-expt-2-of-+-of-1-and-log2-linear-alt
+  (implies (and (rationalp x)
+                (< 0 x))
+           (< x (* 2 (expt 2 (log2 x)))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable log2 expt-of-+))))
+
+(defthm <-of-*-of-2-and-expt-of-log2-same
+  (implies (and (rationalp x)
+                (< 0 x))
+           (< x (* 2 (expt 2 (log2 x)))))
+  :hints (("Goal" :use (:instance <=-of-expt-2-of-+-of-1-and-log2-linear)
+           :in-theory (e/d (expt-of-+)
+                           (<=-of-expt-2-of-+-of-1-and-log2-linear)))))
+
 (defthm <-of-expt-2-of-log2-same
   (implies (and (rationalp x)
                 (< 0 x))

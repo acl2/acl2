@@ -4799,76 +4799,79 @@
 
 
 ; this is used for the following two instructions:
-; (LDC value)
-; (LDC_W value)
-; where value is a BV32, a java-floatp, a string, or (list :class name)
+; (LDC tagged-value)
+; (LDC_W tagged-value)
+; where the tagged-value contains a BV32, a java-floatp, a string, or class-namep
 ;wide-flag indicates whether the instruction is LDC_W or LDC.  the only difference is the amount the PC should be advanced (3 or 2 bytes, resp.).
 (defun execute-LDC (inst th s wide-flag)
   ;; (declare (xargs :guard (and (JVM-INSTRUCTIONP inst)
   ;;                             (jvm-statep s))))
-  (let* ((value (farg1 inst))
+  (let* ((tagged-value (farg1 inst))
+         (tag (car tagged-value))
+         (value (cdr tagged-value))
          (inst-length (if wide-flag 3 2)))
-    (if (stringp value) ;should always be able to decide this test, since the value comes from the class file
-        (if (not (bound-in-class-tablep '"java.lang.String" (CLASS-TABLE S)))
-            (error-state "Trying to intern a string in LDC or LDC_W, but the String class is not present in the class table." s)
-          (if (is-an-interfacep "java.lang.String" (CLASS-TABLE S))
-              (error-state "Trying to intern a string, but String is an interface (should be a class)." s)
-            (mv-let (ref new-heap new-intern-table)
-              (intern-string value s)
-              (modify th s
-                      :intern-table new-intern-table
-                            :heap new-heap
-                            :pc (+ inst-length
-                                   (pc (thread-top-frame th s)))
-                            :stack (push-operand ref (stack (thread-top-frame th s)))))))
-      (if (and (consp value)
-               (eq :class (car value))
-               (class-namep (cadr value))
-               )
-          (let* ((class-name (farg1 value))
-                 (erp (resolve-class class-name (class-table s))))
-            (if erp
-                (if (stringp erp)
-                    (obtain-and-throw-exception erp (list "ERROR IN LDC or LDC_W: Failed to resolve class." :debug-info class-name) th s)
-                  (error-state erp s))
-              (let* ((heapref-table (heapref-table s))
-                     (class-object-ref (get-class-object class-name heapref-table)))
-                (if (not class-object-ref)
-                    (push-frame-to-build-class-object class-name th s)
-;(error-state (list "No class object in heapref-table for class:" class-name) s)
-                  (modify th s :pc (+ inst-length
+    (case tag ;should always be able to decide which case applies, since the value comes from the class file
+      (:string (if (not (bound-in-class-tablep '"java.lang.String" (CLASS-TABLE S)))
+                   (error-state "Trying to intern a string in LDC or LDC_W, but the String class is not present in the class table." s)
+                 (if (is-an-interfacep "java.lang.String" (CLASS-TABLE S))
+                     (error-state "Trying to intern a string, but String is an interface (should be a class)." s)
+                   (if (not (stringp value)) ; todo: drop?
+                       (error-state "Bad :string constant." s)
+                     (mv-let (ref new-heap new-intern-table)
+                       (intern-string value s)
+                       (modify th s
+                               :intern-table new-intern-table
+                               :heap new-heap
+                               :pc (+ inst-length
                                       (pc (thread-top-frame th s)))
-                          :stack (push-operand class-object-ref (stack (thread-top-frame th s))))))))
-        (if (java-floatp value)
-            (modify th s
-                    :pc (+ inst-length
-                           (pc (thread-top-frame th s)))
-                    :stack (push-operand value
-                                         (stack (thread-top-frame th s))))
-          ;; It's a regular BV representing an integer:
-          ;; TODO: Handle the case of a method or method handle?!  does the parser handle that?
-          (modify th s
-                  :pc (+ inst-length
-                         (pc (thread-top-frame th s)))
-                  :stack (push-operand (encode-unsigned value) ;new
-                                       (stack (thread-top-frame th s)))))))))
+                               :stack (push-operand ref (stack (thread-top-frame th s)))))))))
+      (:class (let* ((class-name value))
+                (if (not (class-namep class-name)) ; todo: drop?
+                    (error-state "Bad :class constant." s)
+                  (let ((erp (resolve-class class-name (class-table s))))
+                    (if erp
+                        (if (stringp erp)
+                            (obtain-and-throw-exception erp (list "ERROR IN LDC or LDC_W: Failed to resolve class." :debug-info class-name) th s)
+                          (error-state erp s))
+                      (let* ((heapref-table (heapref-table s))
+                             (class-object-ref (get-class-object class-name heapref-table)))
+                        (if (not class-object-ref)
+                            (push-frame-to-build-class-object class-name th s)
+;(error-state (list "No class object in heapref-table for class:" class-name) s)
+                          (modify th s :pc (+ inst-length
+                                              (pc (thread-top-frame th s)))
+                                  :stack (push-operand class-object-ref (stack (thread-top-frame th s)))))))))))
+      (:float (modify th s
+                      :pc (+ inst-length
+                             (pc (thread-top-frame th s)))
+                      :stack (push-operand value
+                                           (stack (thread-top-frame th s)))))
+      (otherwise ;; It's an int
+       ;; TODO: Handle the case of a method or method handle?!  does the parser handle that?
+       (modify th s
+               :pc (+ inst-length
+                      (pc (thread-top-frame th s)))
+               :stack (push-operand (encode-unsigned value) ;new
+                                    (stack (thread-top-frame th s))))))))
 
-; (LDC2_W value), where value is a BV64 or a java-doublep
+; (LDC2_W tagged-value), where tagged-value contains a BV64 or a java-doublep
 (defun execute-LDC2_W (inst th s)
-  (let* ((value (farg1 inst)))
-    (if (java-doublep value)
-        ;; it's a double:
-        (modify th s
-                :pc (+ 3 ;(inst-length inst)
-                       (pc (thread-top-frame th s)))
-                :stack (push-long value
-                                  (stack (thread-top-frame th s))))
-      ;; it's a regular BV representing a long:
-      (modify th s
-              :pc (+ 3 ;(inst-length inst)
-                     (pc (thread-top-frame th s)))
-              :stack (push-long (encode-unsigned-long value) ;new
-                                (stack (thread-top-frame th s)))))))
+  (let* ((tagged-value (farg1 inst))
+         (tag (car tagged-value))
+         (value (cdr tagged-value)))
+    (case tag
+      (:double (modify th s
+                       :pc (+ 3 ;(inst-length inst)
+                              (pc (thread-top-frame th s)))
+                       :stack (push-long value
+                                         (stack (thread-top-frame th s)))))
+      (otherwise ;; It's a long
+       ;; it's a regular BV representing a long:
+       (modify th s
+               :pc (+ 3 ;(inst-length inst)
+                      (pc (thread-top-frame th s)))
+               :stack (push-long (encode-unsigned-long value) ;new
+                                 (stack (thread-top-frame th s))))))))
 
 ;; (LSTORE index inst-len). Store long into local variable.  We store the entire
 ;; long at the lower of the two indices (index and index+1).
@@ -5666,7 +5669,7 @@
             :stack (push-operand result
                                  (pop-long (stack (thread-top-frame th s)))))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun fcmpg (value1 value2)
   (declare (xargs :guard (and (java-floatp value1)
                               (java-floatp value2))))
@@ -5676,9 +5679,10 @@
         0
       (if (float< value1 value2)
           (encode-signed -1)
-        1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        1))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun fcmpl (value1 value2)
   (declare (xargs :guard (and (java-floatp value1)
                               (java-floatp value2))))
@@ -5688,9 +5692,10 @@
         0
       (if (float< value1 value2)
           (encode-signed -1)
-        -1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        -1))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun dcmpg (value1 value2)
   (declare (xargs :guard (and (java-doublep value1)
                               (java-doublep value2))))
@@ -5700,9 +5705,10 @@
         0
       (if (double< value1 value2)
           (encode-signed -1)
-        1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        1))))
 
-;returns an int (1, 0, or -1) to indicate the result of the comparison
+;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun dcmpl (value1 value2)
   (declare (xargs :guard (and (java-doublep value1)
                               (java-doublep value2))))
@@ -5712,7 +5718,8 @@
         0
       (if (double< value1 value2)
           (encode-signed -1)
-        -1)))) ; at least one value is NaN
+        ;; at least one value is NaN:
+        -1))))
 
 ; (FCMPG)
 (defun execute-FCMPG (th s)
@@ -5954,7 +5961,7 @@
     (:LCONST_0       (execute-LCONST_X th s 0))
     (:LCONST_1       (execute-LCONST_X th s 1))
     (:LDC            (execute-LDC inst th s nil))
-    (:LDC_W          (execute-LDC inst th s t))
+    (:LDC_W          (execute-LDC inst th s t)) ; no need for a separate function for the wide version
     (:LDC2_W         (execute-LDC2_W inst th s))
     (:LDIV           (execute-LDIV th s))
     (:LLOAD          (execute-LLOAD inst th s))
