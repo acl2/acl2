@@ -1475,6 +1475,17 @@
   (cond
    ((eq fn 'do$)
     (do$-stobjs-out arg-exprs))
+   ((eq fn 'read-user-stobj-alist)
+    (cond ((and (= (length arg-exprs) 2) ; always true?
+                (eq (cadr arg-exprs) 'state) ; always true in practice
+                (quotep (car arg-exprs))
+                (symbolp (unquote (car arg-exprs)))
+                (stobjp (unquote (car arg-exprs)) t wrld))
+           (list (unquote (car arg-exprs))))
+          (t (er hard 'actual-stobjs-out
+                 "Unable to determine stobjs-out for application of ~x0 to ~
+                  translate arguments ~x1."
+                 fn arg-exprs))))
    (t
     (let ((stobjs-out (stobjs-out fn wrld)))
       (cond ((all-nils stobjs-out) ; optimization for common case
@@ -16920,6 +16931,7 @@
                                   pargs
                                   translate-and-test
                                   with-local-stobj
+                                  with-global-stobj
                                   stobj-let
                                   swap-stobjs
 
@@ -18101,6 +18113,803 @@
    ((null (car values)) *nil*)
    (t (car values))))
 
+; Essay on the Design of With-global-stobj
+
+; This Essay records design decisions made for with-global-stobj.  Although
+; there is some overlap with user documentation, we feel that it's worthwhile
+; to keep this design record, if for no other reason than that it provides an
+; introduction to with-global-stobj for the ACL2 implementor.
+
+; TABLE OF CONTENTS
+
+; I.   INTRODUCTION
+; II.  BASIC SYNTAX
+; III. SYNTACTIC RESTRICTIONS (especially, to prevent aliasing)
+; IV.  DEFATTACH EXTENSION
+;  V.  SOUNDNESS
+; VI.  MORE THAN ONE STOBJ
+; VII. IMPLEMENTATION NOTES AND FINAL REMARKS
+
+; ====
+; I.   INTRODUCTION
+; ====
+
+; The original motivation for with-global-stobj was to have a global
+; stobj-table in state, in particular, the ability to access a stobj-table in a
+; function body without passing in any stobjs other than state.  But it was
+; frightening to imagine a new state field containing a stobj, since that stobj
+; would be handled differently from other stobjs, perhaps causing a violation
+; of some (possibly implicit) invariant.  Instead, we have implemented
+; something more general, to access any global stobj, not just a global
+; stobj-table: with-global-stobj.  This is a bit like with-local-stobj, except
+; that instead of creating a fresh stobj, it obtains the stobj from the
+; user-stobj-alist of state -- which is where stobjs are already stored anyhow
+; -- and then, if the stobj has changed, it updates that user-stobj-alist using
+; the updated stobj.  (But such an update, while necessary logically, may be
+; skipped under the hood because of destructive updating.)
+
+; In particular, that stobj could be a stobj-table -- giving us, in effect, a
+; global stobj-table.  Preliminary macros for manipulating such a table may be
+; found as read-gtbl and write-gtbl in community book file
+; /Users/kaufmann/acl2/acl2/books/system/tests//with-global-stobj-input.lsp.
+
+; The first section below presents the basic syntax, followed below by
+; restrictions to prevent aliasing problems.
+
+; ====
+; II.  BASIC SYNTAX
+; ====
+
+; The syntax is a bit different from, and perhaps more natural than, that of
+; with-local-stobj.  There are two flavors, depending on whether or not the
+; bound stobj (i.e., the first argument) is modified.  If the stobj is not
+; updated, then we have the simpler read-only case, for example as follows.
+; Here, compute-with-st returns an ordinary value.
+
+; ; Read-only with-global-stobj call:
+;     (with-global-stobj
+;      st
+;      (f1 (compute-with-st x st)))
+
+; The expansion of that example would be as follows, both logically and in raw
+; Lisp.  Note that user-stobj-alist is an untouchable function, but translate
+; would permit the with-global-stobj call.
+
+;     (let ((st (cdr (assoc 'st (user-stobj-alist state)))))
+;       (f1 (compute-with-st x st)))
+
+; The other case, as opposed to the read-only case above, is the updating case.
+; Here's an example, where f2 has output signature (mv * st), which must match
+; the signature below (the second argument of this three-argument
+; with-global-stobj).
+
+; ; Updating with-global-stobj call:
+;     (with-global-stobj
+;      st
+;      (nil st) ; signature returned by the expression below; must contain st
+;      (f2 result st))
+
+; Note that unlike with-local-stobj, the body returns the stobj, st.  But like
+; with-local-stobj, that stobj doesn't get out; let's see now how that is
+; accomplished by let-binding st at the top.
+
+; The expansion of the example above, logically, is as follows.
+
+;     (let ((st (cdr (assoc 'st (user-stobj-alist state)))))
+;       (mv-let (x1 st) ; vars, generated from the signature
+;         ;; body of the with-global-stobj above:
+;         (f2 result st)
+;         ;; update state before returning
+;         (let ((state (update-user-stobj-alist
+;                       (put-assoc-eq 'st st (user-stobj-alist state))
+;                       state)))
+;           (mv x1 state)))) ; Delete st from vars but include state
+
+; Remark 1. If state is not already among the list of variables generated from
+; the signature of an updating with-global-stobj call -- (x1 st) in the example
+; above -- then in the final mv form, it will be added at the end of that list
+; of variables after deleting the bound stobj name.
+
+; Remark 2.  The syntax for the signature could have been as in :DOC signature.
+; But we use the simple form -- above, (nil st) -- because that's what output
+; signatures look like in DO loop$ expressions and it's how they're stored in
+; the 'stobjs-out property.
+
+; So to summarize, we have two General Forms as follows.  (See Section VII for
+; how the user-stobj-alist might actually be read and written.)
+
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ;;; Read-only case (2 arguments)
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;     (with-global-stobj
+;      st
+;      body)
+
+; ;;; which expands to something like the following.
+
+;     (let ((st (cdr (assoc 'st (user-stobj-alist state)))))
+;       body)
+
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ;;; Updating case (3 arguments)
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;     (with-global-stobj
+;      st
+;      lst ; stobjs-out of body, which must contain st
+;      body)
+
+; which expands to something like the following, where vars is created
+; automatically from lst by replacing each nil with a variable, and vars' is
+; the result of first removing st from vars and then, if state is not in vars,
+; adding state to the end.
+
+;     (let ((st (cdr (assoc 'st (user-stobj-alist state)))))
+;       (mv-let vars
+;         body
+;         (let ((state (update-user-stobj-alist
+;                       (put-assoc-eq 'st st (user-stobj-alist state))
+;                       state)))
+;           vars')))
+
+; The exact translations, which of course can be found using :trans1, employ
+; new functions read-user-stobj-alist and write-user-stobj-alist, to abstract
+; away from assoc-eq and put-assoc-eq.  Those new functions are non-executable,
+; but that's OK since the raw Lisp expansion of with-global-stobj uses "-RAW"
+; versions of those functions that can be executed and *1* code keeps
+; with-global-stobj in place rather than expanding it away.
+
+; ====
+; III. SYNTACTIC RESTRICTIONS (especially, to prevent aliasing)
+; ====
+
+; Of course, there are syntactic restrictions on with-global-stobj.  An obvious
+; restriction when translating for execution is to require st to name a known
+; stobj that is user-defined (i.e., other than state) in the current ACL2
+; world.  But we also need to prevent aliasing, as illustrated by the following
+; example, explained below.
+
+; (defstobj st fld)
+
+; (defun foo (st state)
+;   (declare (xargs :stobjs (st state)))
+;   (let ((state (with-global-stobj st
+;                                   (st)
+;                                   (update-fld 3 st))))
+;     (mv (fld st) state)))
+
+; (foo st state)
+
+; This is problematic.  On the one hand, evaluation of (foo st state) would
+; presumably return (mv 3 state) since st is destructively modified by the call
+; above of update-fld.  However, applicative semantics demands that the first
+; value returned is nil, since foo logically returns st unchanged.
+
+; But consider the following (thanks to Sol Swords for pointing out the
+; relevance here of congruent stobjs).
+
+; (defstobj st2 fld2 :congruent-to st)
+;
+; (foo st2 state)
+
+; This is not problematic, because there is no aliasing between the global st2
+; and the stobj st bound by with-global-stobj.  So we do not make illegal the
+; defun of foo, above -- just the call (foo st state).
+
+; So how can we disallow the top-level call (foo st state)?  Before answering,
+; let's note that the problematic with-global-stobj call can be buried in a
+; subfunction, as follows.  The only difference between the new function foo2,
+; below, and foo, above, is that for foo2, we "hide" the with-global-stobj call
+; in a subsidiary function.
+
+; (defun foo2-sub (state)
+;   (declare (xargs :stobjs state))
+;   (with-global-stobj st
+;                      (st)
+;                      (update-fld 3 st)))
+
+; (defun foo2 (st state)
+;   (declare (xargs :stobjs (st state)))
+;   (let ((state (foo2-sub state)))
+;     (mv (fld st) state)))
+
+; So we need to track uses of with-global-stobj not only in a given function
+; symbol's body, but also in bodies of functions called in that body, and
+; recursively.
+
+; First, consider for present purposes the following notion.  A function symbol
+; is "ancestral" in f if it's called in the body or guard of f, or recursively
+; in the body or guard of any function symbol ancestral in f.
+
+; We track uses of with-global-stobj with the 'global-stobjs property on
+; function symbols.  The 'global-stobj property's value for a function symbol f
+; is nil if there is no call of with-global-stobj in the body or guard of f or
+; in any function symbol ancestral in f.  (We treat mutual-recursion nests as
+; though every function symbol defined in the nest calls every other.)
+; Otherwise its value is a cons (r . w), where r and w are disjoint lists whose
+; union include all stobjs bound by such calls: r includes those stobjs bound
+; only by read-only with-global-stobj calls, and w includes the rest, i.e.,
+; those stobjs bound by at least one updating (writing) with-global-stobj call.
+
+; We remark on why this is the "right" name for that property.  One reason is
+; that 'global-stobjs has the same symbol-name as the :global-stobjs signature
+; keyword mentioned in Section IV below.  Another is implementation
+; convenience, since the same (tags-)search can find this property name and
+; with-global-stobj, and will not find bogus matches since "global-stobj" is
+; not already in use.  Note that just prior to adding support for
+; with-global-stobj, the string "global-stobj" did not occur in the ACL2
+; sources or community books.
+
+; In the example just above, (getpropc 'foo2-sub 'global-stobjs) would evaluate
+; to (nil . (ST)), hence so would (getpropc 'foo2 'global-stobjs).  It's
+; important to include the guard, where the read-only version of
+; with-global-stobj may occur, to prevent the possibility that the global stobj
+; has already been destructively modified during evaluation but that change is
+; not yet reflected logically in (the user-stobj-alist of) state.
+
+; Let's look at examples that, unlike those above, use the read-only version of
+; with-global-stobj.  It's easy to see that the first example presents no
+; problem involving aliasing, even with the accessor being applied to two
+; different references to stobj st, because neither st occurrence is updated,
+; either directly or by way of with-global-stobj.
+
+; (defun g1 (st state)
+;   (declare (xargs :stobjs (st state)))
+;   (let ((f (with-global-stobj st (fld st))))
+;     (mv f state (fld st))))
+; (g1 st state)
+
+; The following example, however, is problematic because we are directly
+; updating the global st.  Note that st is returned this time.
+
+; (defun g2 (st state)
+;   (declare (xargs :stobjs (st state)))
+;   (let ((st (update-fld 3 st)))
+;     (let ((f (with-global-stobj st (fld st))))
+;       (mv f (fld st) st state))))
+; (g2 st state)
+
+; Here's another example where we are OK, even though we have nested calls of
+; with-global-stobj -- because both are read-only calls.
+
+; (defun g3-sub (state)
+;   (declare (xargs :stobjs state))
+;   (with-global-stobj st (fld st)))
+
+; (defun g3 (state)
+;   (declare (xargs :stobjs state))
+;   (let ((f (with-global-stobj st (fld st))))
+;     (mv f state (g3-sub state))))
+;
+; (g3 st state)
+
+; Definitions.  The following definitions support statements of the
+; restrictions that follow.
+
+; - global-stobj of a function symbol, f:
+
+;   + St is a "read-only global-stobj" of function symbol f if st is in (car
+;     (getpropc f 'global-stobjs)).
+
+;   + St is an "updating global-stobj" of f if st is in (cdr (getpropc f
+;     'global-stobjs)).
+
+;   + St is a "global-stobj of f" if it is either of those.
+
+; - Updating and read-only with-global-stobj calls, and their stobjs and
+;   bodies:
+
+;   An "updating with-global-stobj call" is of the form (with-global-stobj st
+;   lst body).  A "read-only with-global-stobj call" is of the form
+;   (with-global-stobj st body).
+
+;   + We call st and body the "stobj bound by" and "body of" each form.
+
+;   + St is a "global-stobj bound in" a form if it is the stobj bound by a
+;     with-global-stobj subterm of that form.  It is an "updating global-stobj
+;     bound in" the form if there is such an updating with-global-stobj subterm
+;     of the form.
+
+; - Global-stobjs of a term, u:
+
+;   + UGS(u), the updating global-stobjs of u, is the union of the set of
+;     updating global stobjs bound in u with the sets of updating global-stobjs
+;     of all function symbols of u.
+
+;   + GS(u), the global-stobjs of u, is the union of the set of global stobjs
+;     bound in u with the sets of global-stobjs of all function symbols of u.
+
+;   + RGS(u), the read-only global-stobjs of u, is the set difference
+;     GS(u) \ UGS(u).
+
+; Implementation Assumption.  Let f be a function symbol with definitional body
+; B and guard G.  Then the set of updating global-stobjs of f includes UGS(B),
+; and the set of read-only global-stobjs of f includes RGS(G) and RGS(B).
+
+; To avoid aliasing, then, we impose the following restrictions, which cause an
+; error when violated.  By "top-level evaluation" we mean any call of
+; trans-eval or the like, which includes direct evaluation in the ACL2
+; read-eval-print loop.  Intuitively (R2R) and (R2U) are special cases of (R1R)
+; and (R1U), respectively: think of top-level evaluation of a term u involving
+; a stobj st as really being evaluation of (with-global-stobj st u) if st is
+; not returned, else (with-global-stobj st lst u) where lst is the stobjs-out
+; of u.  This discussion suffers somewhat from its focus on untranslated terms,
+; but in the actual implementation we look for calls of read-user-stobj-alist
+; to determine stobjs bound by with-global-stobjs forms, and similarly for
+; write-user-stobj-alist and updating with-global-stobjs forms.
+
+; GLOBAL-STOBJS INVARIANTS
+
+; (R1R) In any form (with-global-stobj st u), st is not in UGS(u).
+
+; (R1U) In any form (with-global-stobj st lst u), st is not in GS(u).
+
+; (R2) Consider top-level evaluation of a term u with a free occurrence of
+;      stobj st.  (R2R) Then st is not in UGS(u).  (R2U) If moreover st is
+;      returned by u (i.e., in its stobjs-out), then st is not in GS(u).
+
+; Note that something similar to (R2) would be nice for acl2-raw-eval.
+; However, acl2-raw-eval doesn't translate or do any single-threadedness
+; checking; it's really just a convenience for raw Lisp evaluation, so we
+; ignore it here.  Section VII says a bit more about this.
+
+; Informally speaking, the point is to prevent modification of a stobj not
+; explained by applicative semantics, due to aliasing and destructive
+; modification.  Implementation detail on (R2): the function ev-for-trans-eval,
+; which evaluates a translated term on behalf of trans-eval and
+; eval-clause-processor, makes the desired check and causes a soft error if
+; that fails.  (That's bound to be a very fast test compared to the cost of
+; evaluating any but the most trivial terms.)
+
+; Here's an example showing why we need (R1R).
+
+; (defstobj st fld)
+; (defun foo3 (state)
+;   (declare (xargs :stobjs (state)))
+;   (with-global-stobj st ; st is "known" below
+;     (let ((state (with-global-stobj st ; illegal: st is "known" here
+;                    (st)
+;                    (update-fld 3 st))))
+;       (mv (fld st) state))))
+; (foo3 state)
+
+; The first value returned by the call of (foo3 state) is logically nil, but
+; would presumably be 3 when evaluating that form.  Restriction (R1R) rules out
+; this aliasing problem.
+
+; ====
+; IV.  DEFATTACH EXTENSION
+; ====
+
+; As Rob Sumners pointed out, the maintenance of 'global-stobjs has
+; implications for defattach.  Consider the following situation.
+
+; (defstobj st fld)
+; (encapsulate ( ((f st) => st) ) ...)
+; (defun g (st)
+;   (declare (xargs :stobjs st))
+;   (... (with-global-stobj st ...) ....))
+; (defattach f g)
+; (defun h (st) 
+;   (declare (xargs :stobjs st))
+;   (... (f .. st ..) ...))
+; (h st)
+
+; Clearly there is a potential aliasing problem to avoid here.  The concern is
+; that if (getpropc 'f 'global-stobjs) is nil, then we would be allowed to
+; evaluate (h st) even though that can cause the sorts of aliasing problems
+; discussed in the preceding section.
+
+; Therefore, in addition to the keywords :guard and :formals (and, for ACL2(r),
+; :classicalp), an encapsulate signature may have a keyword, :global-stobjs.
+; The value of this keyword would of course be nil by default; otherwise it is
+; has the shape (r . w) of a 'global-stobjs property, and indeed, that value
+; becomes the value of the function's 'global-stobjs property.  Then to attach
+; g to f, a check is made that every updating global-stobj of g is an updating
+; global-stobj of f and every read-only global-stobj of g is a global-stobj of
+; f.  The :global-stobjs must all be known stobjs but as in the case of defined
+; functions, they need not be formals of the function.
+
+; ====
+;  V.  SOUNDNESS
+; ====
+
+; See the Essay on Correctness of Evaluation with Stobjs.
+
+; ====
+; VI.  MORE THAN ONE STOBJ
+; ====
+
+; One might wish to compute with several stobjs in state at once.  Thus, we can
+; imagine a macro with-global-stobjs to be as follows, where k is at least 1
+; and the sti are distinct user-defined stobj names.
+
+; ; read-only case
+; (with-global-stobjs (st1 st2 ... stk) body)
+
+; ; updating case
+; (with-global-stobjs (st1 st2 ... stk) lst body)
+
+; These could be primitives, so that with-global-stobj is defined in terms of
+; them (with k = 1).  But with-global-stobj is already complicated, so we
+; prefer to leave it to the community to define with-global-stobjs in a book,
+; to expand to nested calls of with-global-stobj each having the same signature
+; -- or even allowing different signatures, if that is desired.
+
+; ====
+; VII. IMPLEMENTATION NOTES AND FINAL REMARKS
+; ====
+
+; As noted above, the logical expansion of with-global-stobj is based on
+; non-executable functions: these are (read-user-stobj-alist st state) and
+; (write-user-stobj-alist st val state).  These benefit the user because unlike
+; the function user-stobj-alist, they aren't untouchable; thus, one can prove
+; theorems about them.  They benefit the implementation because the presence of
+; their calls in translated guards and definitional bodies readily supports
+; determination of the 'global-stobjs property.  (Of course users could insert
+; those calls manually; while that is unlikely to happen in practice, if it did
+; then that would just enlarge those properties, which is sound.)
+
+; However, the expansion of with-global-stobj calls in raw Lisp and *1*
+; definitions will do something that is not only executable but also efficient.
+
+; We might give some thought on what to do when trans-eval is called in a
+; definition of function f, since that also can modify user-defined stobjs that
+; are not passed explicitly.  Perhaps this should set the 'global-stobjs
+; property of f to a special value, :all, when we can't deduce the output
+; signature of the evaluated form.
+
+; Although we could move the defstobj form for stobj-table from community book
+; books/std/stobjs/stobj-table.lisp to the ACL2 sources, this would eliminate
+; the ability of the community to make changes it deems suitable.  Imagine, for
+; example, that the community decides to make that stobj-table non-memoizable,
+; for efficiency.  The testing book for with-global-stobj in the community
+; books, books/system/tests/with-global-stobj-input.lsp, has a section
+; suggesting how a global stobj-table might be handled.
+
+; Here is an example of how little checking raw-mode does currently, which
+; justifies not worrying about with-global-stobj in the context of raw-mode.
+
+; ACL2 !>(defstobj st fld)
+
+; Summary
+; Form:  ( DEFSTOBJ ST ...)
+; Rules: NIL
+; Time:  0.04 seconds (prove: 0.00, print: 0.00, other: 0.04)
+;  ST
+; ACL2 !>(set-raw-mode-on!)
+
+; TTAG NOTE: Adding ttag :RAW-MODE-HACK from the top level loop.
+; ACL2 P>(car st)
+; [Note:  Printing non-ACL2 result.]
+; 5.0567905E-10
+; ACL2 P>(list st st)
+; [Note:  Printing non-ACL2 result.]
+; (#<SIMPLE-VECTOR 1> #<SIMPLE-VECTOR 1>)
+; ACL2 P>
+
+; End of Essay on the Design of With-global-stobj
+
+(defun parse-with-global-stobj (x)
+
+; X is the cdr of a with-global-stobj form.  We return (mv erp stobj-name sig
+; body), where erp is a msgp if there the form is recognized as illegal and
+; otherwise: if sig is nil then x is the read-only form (with-global-stobj
+; stobj-name body), else x is the updating form (with-global-stobj stobj-name
+; sig body).
+
+; Note that this is not a complete syntactic check; that is done in
+; translate11.
+
+  (declare (xargs :guard (true-listp x))) ;
+  (flet ((with-global-stobj-er
+          (x m)
+          (mv (msg "Illegal call of WITH-GLOBAL-STOBJ, ~x0: ~@1"
+                   (cons 'with-global-stobj x)
+                   m)
+              nil nil nil)))
+    (cond
+     ((not (member (len x) '(2 3)))
+      (with-global-stobj-er
+       x
+       (msg "The length must be 3 or 4, but it is ~x0."
+            (1+ (len x)))))
+     (t (mv-let
+          (stobj sig body)
+          (cond ((= (len x) 2)
+                 (mv (car x) nil (cadr x)))
+                (t ; (= (len x) 3)
+                 (mv (car x) (cadr x) (caddr x))))
+          (cond
+           ((or (null stobj)
+                (not (symbolp stobj)))
+            (with-global-stobj-er
+             x
+             (msg "The first argument must be a stobj name, but that argument ~
+                   is ~x0."
+                  stobj)))
+           ((not (symbol-listp sig))
+            (with-global-stobj-er
+             x
+             "The signature (second) argument must be nil or a list of ~
+              symbols."))
+           ((and sig
+                 (not (member-eq stobj sig)))
+            (with-global-stobj-er
+             x
+             (msg "The signature (second) argument fails to contain the bound ~
+                   stobj, which in this case is ~x0."
+                  stobj)))
+           ((and sig ; optimization
+                 (duplicates (remove nil sig)))
+            (with-global-stobj-er
+             x
+             (msg "The symbol~#0~[ ~&0 occurs~/s ~&0 occur~] more than once ~
+                   in the signature (second) argument, where only nil is ~
+                   allowed to occur more than once."
+                  (duplicates (remove nil sig)))))
+           (t (mv nil stobj sig body))))))))
+
+(defconst *with-global-stobj-prefix*
+  "{WGS}")
+(defconst *with-global-stobj-prefix-chars*
+  (coerce *with-global-stobj-prefix* 'list))
+
+(defun with-global-stobj-var-lst (sig pkg-witness prefix-chars i avoid-lst)
+  (declare (xargs :guard (and (true-listp sig)
+                              (symbol-listp avoid-lst)
+                              (natp i)
+                              (eq pkg-witness (pkg-witness "ACL2"))
+                              (equal prefix-chars
+                                     *with-global-stobj-prefix-chars*))))
+  (cond ((endp sig) nil)
+        ((null (car sig))
+         (let ((var (genvar1 pkg-witness prefix-chars avoid-lst i)))
+           (cons var
+                 (with-global-stobj-var-lst (cdr sig) pkg-witness prefix-chars
+                                            (1+ i)
+                                            (cons var avoid-lst)))))
+        (t (cons (car sig)
+                 (with-global-stobj-var-lst (cdr sig) pkg-witness prefix-chars
+                                            i avoid-lst)))))
+
+(defun with-global-stobj-adjust-signature-or-vars (st sig)
+
+; Sig may be an output signature from an updating with-global-stobj form, but
+; it may also be the result of replacing each NIL with a fresh non-stobj
+; variable.
+
+  (declare (xargs :guard (and (symbol-listp sig)
+                              (symbolp st)
+                              (not (eq st 'state)))))
+  (let ((vars (remove1 st sig :test 'eq)))
+    (if (member 'state vars :test 'eq) ; includes the case (null sig)
+        vars
+      (append vars '(state)))))
+
+(defun with-global-stobj-fn1 (st sig body rawp)
+  (declare (xargs :guard (symbol-listp sig)))
+  (cond
+   ((null sig)
+    body)
+   (t
+    (let ((wusa (if rawp 'write-user-stobj-alist-raw 'write-user-stobj-alist)))
+      (cond
+       ((null (cdr sig)) ; sig-or-form is (st)
+        `(let ((,st ,body))
+           (,wusa ',st ,st state)))
+       (t (let* ((vars0
+                  (with-global-stobj-var-lst sig
+                                             (pkg-witness "ACL2")
+                                             *with-global-stobj-prefix-chars*
+                                             0
+                                             (add-to-set-eq 'state sig)))
+                 (vars (with-global-stobj-adjust-signature-or-vars st vars0)))
+            `(mv-let ,vars0
+               ,body
+               (let ((state (,wusa ',st ,st state)))
+                 (mv? ,@vars))))))))))
+
+(defconst *see-doc-with-global-stobj*
+  "  See :DOC with-global-stobj.")
+
+(defun with-global-stobj-fn (x rawp)
+
+; Warning: Keep this in sync with handling of with-global-stobj in translate11.
+
+  (declare (xargs :guard (true-listp x)))
+  (mv-let (msg st sig body)
+    (parse-with-global-stobj x)
+    (cond
+     (msg (er hard? 'with-global-stobj "~@0~@1"
+              msg *see-doc-with-global-stobj*))
+     (t
+      `(let ((,st (,(if rawp 'read-user-stobj-alist-raw 'read-user-stobj-alist)
+                   ',st state)))
+         ,(with-global-stobj-fn1 st sig body rawp))))))
+
+(defmacro with-global-stobj (&rest args)
+  (with-global-stobj-fn args
+                        #+acl2-loop-only nil
+                        #-acl2-loop-only t))
+
+(mutual-recursion
+
+(defun collect-global-stobjs (term wrld reads writes fns-seen)
+
+; We collect the bound stobjs of translated with-global-stobj calls in term or,
+; recursively, in the body of a function symbol of term.  Those stobjs st that
+; are bound by updating with-global-stobj calls, as evidenced by at least one
+; call (write-user-stobj-alist 'st ...), are collected into writes; those that
+; are bound by arbitrary with-global-stobj calls, as evidenced by at least one
+; call (read-user-stobj-alist 'st ...), are collected into reads.
+
+  (cond ((or (variablep term)
+             (fquotep term))
+         (mv reads writes fns-seen))
+        ((flambda-applicationp term)
+         (mv-let (reads writes fns-seen)
+           (collect-global-stobjs (lambda-body (ffn-symb term))
+                                  wrld reads writes fns-seen)
+           (collect-global-stobjs-lst (fargs term)
+                                      wrld reads writes fns-seen)))
+        (t
+         (mv-let (reads writes fns-seen)
+           (let ((fn (ffn-symb term)))
+             (cond
+              ((member-eq fn fns-seen)
+               (mv reads writes fns-seen))
+              ((and (eq fn 'read-user-stobj-alist)
+                    (quotep (fargn term 1)))
+               (mv (add-to-set-eq (unquote (fargn term 1)) reads)
+                   writes
+                   (cons 'read-user-stobj-alist fns-seen)))
+              ((and (eq fn 'write-user-stobj-alist)
+                    (quotep (fargn term 1)))
+               (mv reads ; don't need to collect
+                   (add-to-set-eq (unquote (fargn term 1)) writes)
+                   (cons 'read-user-stobj-alist fns-seen)))
+              (t
+               (let ((prop (getpropc fn 'global-stobjs nil wrld)))
+                 (mv (union-eq (car prop) reads)
+                     (union-eq (cdr prop) writes)
+                     (cons fn fns-seen))))))
+           (collect-global-stobjs-lst (fargs term)
+                                      wrld reads writes fns-seen)))))
+
+(defun collect-global-stobjs-lst (terms wrld reads writes fns-seen)
+  (cond ((endp terms) (mv reads writes fns-seen))
+        (t (mv-let (reads writes fns-seen)
+             (collect-global-stobjs (car terms) wrld reads writes fns-seen)
+             (collect-global-stobjs-lst (cdr terms)
+                                        wrld reads writes fns-seen)))))
+)
+
+(defun path-to-with-global-stobj (st fns upd wrld acc seen)
+
+; Accumulate into acc a path from some function in fns down the call tree to a
+; function that contains a with-global-stobj call binding st, where if upd is
+; true then this is an updataing with-global-stobj call.  If we hit a loop,
+; which should only happen with redefinition, then we push :loop onto the the
+; path accumulated before hitting the loop.  If we fail to complete the path,
+; we push :fail onto the accumulated path to indicate that this shouldn't
+; happen.
+
+  (cond
+   ((endp fns)
+    acc)
+   (t
+    (let ((fn (car fns)))
+      (cond
+       ((member-eq fn seen) ; go on to the next function
+        (path-to-with-global-stobj st (cdr fns) upd wrld acc seen))
+       ((member-eq fn acc) ; impossible unless redef
+        (cons :loop acc))
+       (t
+        (let ((prop (getpropc fn 'global-stobjs nil wrld)))
+          (cond
+           ((and prop                       ; optimization for common case
+                 (or (member st (cdr prop)) ; writes
+                     (and (not upd)
+                          (member st (car prop))))) ; reads)
+            (let ((body (body fn nil wrld)))
+              (cond
+               ((null body) ; constrained
+                (cons fn acc))
+               (t
+                (path-to-with-global-stobj
+                 st
+                 (all-fnnames1 nil body
+                               (all-fnnames (guard fn nil wrld)))
+                 upd wrld (cons fn acc)
+                 (let ((rec (getpropc fn 'recursivep nil wrld)))
+                   (if rec
+                       (append rec seen)
+                     (cons fn seen))))))))
+           (t (path-to-with-global-stobj
+               st (cdr fns) upd wrld acc
+               (let ((rec (getpropc fn 'recursivep nil wrld)))
+                 (if rec
+                     (append rec seen)
+                   (cons fn seen)))))))))))))
+
+(defun with-global-stobj-illegal-path-msg (prefix suffix path st upd wrld)
+
+; This returns a ~@ message providing an explanation that may follow "because "
+; for a nested with-global-stobj violation, e.g.: "its body calls FOO, which
+; makes a WITH-GLOBAL-STOBJ call that binds ST0.".  It includes
+; the final period.  Prefix is a message that is printed after "because " but
+; before a space followed by the path, e.g., producing "its body calls" in the
+; example above.  This message is a reason that need not follow the word,
+; "because".  Path is actually in reverse order, e.g., if path is (f1 f2 f3),
+; then f3 calls f2, which calls f1; except, the car of path can be :loop (see
+; path-to-with-global-stobj).  St is the bound stobj at issue.  Upd is true
+; when the illegality depends on the offending inferior with-global-stobj call
+; being an updating call.
+
+  (mv-let (loop path)
+    (cond ((eq (car path) :loop)
+           (mv t (cdr path)))
+          (t
+           (mv nil path)))
+    (msg "~@0 ~*1~@2"
+         prefix
+         (list "~@0"
+               "~x*, which ~@0"
+               "~x*, which calls "
+               "~x*, which calls "
+               (reverse path)
+               (cons #\0
+                     (msg "makes ~#0~[a~/an updating~] ~x1 call~@2 that binds ~
+                           ~x3~@4."
+                          (if upd 1 0)
+                          'with-global-stobj
+                          (if (or (null path)
+                                  (body (car path) nil wrld))
+                              ""
+                            " (as specified by the signature of the ~
+                             constrained function, ~x*)")
+                          st
+                          suffix)))
+         (if loop
+             "~|~%NOTE: The path shown above indicates a loop, which should ~
+              be impossible unless redefinition was used."
+           ""))))
+
+(defun chk-global-stobj-body (form body wrld)
+
+; See also chk-global-stobjs.
+
+; Form is a call of with-global-stobj and body is the translation of the body
+; of form; let form be (with-global-stobj st {sig?} ubody), where {sig?} is
+; optional and body is the translation of ubody.  We check that st is not bound
+; by an updating with-global-stobj form that could be encountered during
+; evaluation of body: that is, either in body or in the body of any function
+; symbol ancestral in body.  If {sig?} is supplied, then we also check that st
+; is not bound by any such with-global-stobj form, updating or not.
+
+  (let ((st (cadr form)))
+    (mv-let (reads writes fns-seen)
+      (collect-global-stobjs body wrld nil nil nil)
+      (declare (ignore fns-seen))
+      (cond
+       ((or (member-eq st writes)
+            (and (= (len form) 4) ; (with-global-stobj st sig ubody)
+                 (member-eq st reads)))
+        (let* ((upd (= (len form) 3)) ; looking for updating form
+               (path (path-to-with-global-stobj st (all-fnnames body)
+                                                upd wrld nil nil)))
+          (msg "The form binding stobj ~x0,~|~%~x1,~|~%is illegal because ~
+                ~@2"
+               st
+               form
+               (with-global-stobj-illegal-path-msg
+                (msg "its body~@0" (if path " calls" ""))
+                ""
+                path st upd wrld))))
+       (t nil)))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -18129,8 +18938,8 @@
               t
             (genvar name (symbol-name name) nil (strip-cars bindings)))))
     (cond
-     ((member-eq name '(flet with-local-stobj throw-raw-ev-fncall
-                         untrace$-fn-general))
+     ((member-eq name '(flet with-local-stobj with-global-stobj
+                         throw-raw-ev-fncall untrace$-fn-general))
 
 ; This check may not be necessary, because of our other checks.  But the
 ; symbols above are not covered by our check for the 'predefined property.
@@ -18775,18 +19584,20 @@
                            "Implementation error: Unexpected form for ~x0."
                            'translate11-let*))))))
 
-(defun translate11-mv-let (x tbody0 stobjs-out bindings known-stobjs
+(defun translate11-mv-let (x tcall0 tbody0 stobjs-out bindings known-stobjs
                              local-stobj local-stobj-creator flet-alist
                              ctx wrld state-vars)
 
-; X is a cons whose car is 'MV-LET.  This function is nothing more than the
-; restriction of function translate11 to that case, with two exceptional cases:
-; if tbody0 is not nil, then it is to be used as the translation of the body of
-; the MV-LET, and we suppress the check that a stobj bound by MV-LET must be
-; returned by the MV-LET; and if local-stobj is not nil, then we are in the
-; process of translating (with-local-stobj local-stobj x local-stobj-creator),
-; where we know that local-stobj-creator is the creator function for the stobj
-; local-stobj.
+; X is of the form (mv-let bound-vars call <dcls...> body), where <dcls...>
+; represents 0 or more declare forms.  This function is nothing more than the
+; restriction of function translate11 to that case, with the following
+; exceptional cases: if tcall0 is not nil, then it is to be used as the
+; translation of tcall; if tbody0 is not nil, then it is to be used as the
+; translation of body, and we suppress the check that a stobj bound by MV-LET
+; must be returned by the MV-LET; and if local-stobj is not nil, then we are in
+; the process of translating (with-local-stobj local-stobj x
+; local-stobj-creator), where we know that local-stobj-creator is the creator
+; function for the stobj local-stobj.
 
 ; Warning: If the final form of a translated mv-let is changed, be sure to
 ; reconsider translated-acl2-unwind-protectp and the creation of mv-let
@@ -18853,12 +19664,14 @@
          (trans-er erp "~@0" edcls))
         (t
          (trans-er-let*
-          ((tcall (translate11 (caddr x)
-                               nil
-                               bound-stobjs-out
-                               bindings
-                               producer-known-stobjs
-                               flet-alist x ctx wrld state-vars))
+          ((tcall (if tcall0
+                      (trans-value tcall0)
+                    (translate11 (caddr x)
+                                 nil
+                                 bound-stobjs-out
+                                 bindings
+                                 producer-known-stobjs
+                                 flet-alist x ctx wrld state-vars)))
            (tdcls (translate11-lst (translate-dcl-lst edcls wrld)
                                    nil ; ilks = '(nil nil ...)
                                    (if (eq stobjs-out t)
@@ -20981,6 +21794,14 @@
                           slot of ilk ~x0."
                          ilk))))
    ((and (not (eq stobjs-out t))
+         (eq (car x) 'read-user-stobj-alist)) ; see *stobjs-out-invalid*
+    (trans-er ctx
+              "The function ~x0 must not be called in code (except when ~
+               generated by expanding a call of ~x1).~@2"
+              'read-user-stobj-alist
+              'with-global-stobj
+              *see-doc-with-global-stobj*))
+   ((and (not (eq stobjs-out t))
          (eq (car x) 'swap-stobjs)
 
 ; If the number of arguments is not 2, we'll get an error when we translate
@@ -21123,7 +21944,7 @@
                      (t (mv erp args bindings)))))
                  (t (trans-value (listify args))))))))))))
    ((eq (car x) 'mv-let)
-    (translate11-mv-let x nil stobjs-out bindings known-stobjs
+    (translate11-mv-let x nil nil stobjs-out bindings known-stobjs
                         nil nil ; stobj info
                         flet-alist ctx wrld state-vars))
    ((assoc-eq (car x) flet-alist)
@@ -21275,9 +22096,9 @@
                      (erp
                       (trans-er+ x ctx
                                  "The attempt to evaluate the ~
-                                       TRANSLATE-AND-TEST test, ~x0, when ~
-                                       FORM is ~x1, failed with the ~
-                                       evaluation error:~%~%``~@2''"
+                                  TRANSLATE-AND-TEST test, ~x0, when FORM is ~
+                                  ~x1, failed with the evaluation ~
+                                  error:~%~%``~@2''"
                                  (cadr x) ans msg))
                      ((or (consp msg)
                           (stringp msg))
@@ -21287,17 +22108,17 @@
 
 ; Even if stobjs-out is t, we do not let normal macroexpansion handle
 ; with-local-stobj, because we want to make sure that we are dealing with a
-; stobj.  Otherwise, the raw lisp code will bind a bogus live stobj variable;
-; although not particularly harmful, that will give rise to an inappropriate
-; compiler warning about not declaring the variable unused.
+; stobj.  At one time our rationale pertained to live stobj variables, but
+; those no longer exist, so if necessary it might be possible to revisit
+; that decision.
 
     (mv-let (erp st mv-let-form creator)
       (parse-with-local-stobj (cdr x))
       (cond
        (erp
         (trans-er ctx
-                  "Ill-formed with-local-stobj form, ~x0.  ~
-                         See :DOC with-local-stobj."
+                  "Ill-formed with-local-stobj form, ~x0.  See :DOC ~
+                   with-local-stobj."
                   x))
        ((assoc-eq :stobjs-out bindings)
 
@@ -21307,8 +22128,8 @@
 
         (trans-er ctx
                   "Calls of with-local-stobj, such as ~x0, cannot be ~
-                         evaluated directly, as in the top-level loop.  ~
-                         See :DOC with-local-stobj and see :DOC top-level."
+                   evaluated directly, as in the top-level loop.  See :DOC ~
+                   with-local-stobj and see :DOC top-level."
                   x))
        ((untouchable-fn-p creator
                           wrld
@@ -21316,8 +22137,8 @@
                                   :temp-touchable-fns))
         (trans-er ctx
                   "Illegal with-local-stobj form~@0~|~%  ~y1:~%the stobj ~
-                         creator function ~x2 is untouchable.  See :DOC ~
-                         remove-untouchable.~@3"
+                   creator function ~x2 is untouchable.  See :DOC ~
+                   remove-untouchable.~@3"
                   (if (eq creator 'create-state)
                       " (perhaps expanded from a corresponding ~
                              with-local-state form),"
@@ -21325,15 +22146,15 @@
                   x
                   creator
                   (if (eq creator 'create-state)
-                      "  Also see :DOC with-local-state, which ~
-                             describes how to get around this restriction and ~
-                             when it may be appropriate to do so."
+                      "  Also see :DOC with-local-state, which describes how ~
+                       to get around this restriction and when it may be ~
+                       appropriate to do so."
                     "")))
        ((and st
              (if (eq st 'state)
                  (eq creator 'create-state)
                (eq st (stobj-creatorp creator wrld))))
-        (translate11-mv-let mv-let-form nil stobjs-out bindings
+        (translate11-mv-let mv-let-form nil nil stobjs-out bindings
                             known-stobjs st creator flet-alist ctx wrld
                             state-vars))
        (t
@@ -21360,6 +22181,178 @@
                        argument must be the name of a stobj, but ~x1 is not.  ~
                        See :DOC with-local-stobj."
                       x st))))))))
+   ((eq (car x) 'with-global-stobj)
+    (cond
+     ((assoc-eq :stobjs-out bindings)
+
+; The macroexpansion of a with-global-stobj call is not amenable to evaluation,
+; since it contains a call of the non-executable function,
+; read-user-stobj-alist.  That said, perhaps the exemption of with-global-stobj
+; in macroexpand1*-cmp could save us in some cases -- but for now we play it
+; safe.  By contrast, oneify handles with-global-stobj for evaluation, so calls
+; inside function bodies are OK.
+
+      (trans-er ctx
+                "Calls of WITH-GLOBAL-STOBJ, such as ~x0, cannot be evaluated ~
+                 directly, as in the top-level loop.  See :DOC ~
+                 with-global-stobj and see :DOC top-level."
+                x))
+     ((or (eq stobjs-out t)   ; no stobj tracking
+          (eq known-stobjs t) ; state is a known stobj as all stobjs are known
+          (member-eq 'state known-stobjs))
+      (mv-let (erp st sig body)
+        (parse-with-global-stobj (cdr x))
+        (cond
+         (erp (trans-er ctx "~@0~@1" erp *see-doc-with-global-stobj*))
+         ((and (not (eq stobjs-out t))
+               (not (stobjp st t wrld)))
+          (trans-er ctx
+                    "The call ~x0 is illegal because ~x1 is not ~
+                     a known stobj in the current context.~@2"
+                    x st *see-doc-with-global-stobj*))
+         ((eq st 'state)
+          (trans-er ctx
+                    "The call ~x0 is illegal because it binds ~x1 instead of ~
+                     user-defined stobj.~@2"
+                    x 'state *see-doc-with-global-stobj*))
+         (t ; Warning: Keep this in sync with with-global-stobj-fn.
+          (let* ((main-body ; expansion without let-binding of st at the top
+                  (with-global-stobj-fn1 st sig body nil))
+                 (sig-adjusted
+                  (and sig
+                       (not (eq stobjs-out t))
+                       (with-global-stobj-adjust-signature-or-vars st sig)))
+                 (bindings
+                  (cond ((and sig
+                              (symbolp stobjs-out)
+                              (not (eq stobjs-out t)))
+                         (translate-bind stobjs-out sig-adjusted bindings))
+                        (t bindings)))
+                 (known-stobjs+ (if (eq known-stobjs t)
+                                    t
+                                  (add-to-set-eq st known-stobjs))))
+            (trans-er-let*
+             ((tbody
+               (if (and (consp stobjs-out)
+                        sig
+                        (not (equal stobjs-out sig-adjusted)))
+                   (trans-er ctx
+                             "The form ~x0 is illegal here because of a ~
+                              signature mismatch.  Its signature argument is ~
+                              ~X12, which indicates that it will return a ~
+                              result of shape ~X32.  However, a result of ~
+                              shape ~X42 is required.~@5"
+                             x sig nil sig-adjusted stobjs-out
+                             *see-doc-with-global-stobj*)
+                 (translate11
+                  body
+                  nil
+                  (if (or (eq stobjs-out t)
+                          (null sig))
+                      stobjs-out
+                    sig)
+                  bindings known-stobjs+ flet-alist
+                  x ctx wrld state-vars)))
+              (translated-main-body
+
+; We want to produce the equivalent of
+; (let ((st (read-user-stobj-alist 'st state))) main-body).
+; So here we translate main-body; see with-global-stobj-fn.
+
+               (cond
+                ((null sig) (trans-value tbody))
+                ((null (cdr sig))
+
+; Main-body, from with-global-stobj-fn1, should be the value of:
+; `(let ((,st ,body))
+;    (write-user-stobj-alist ',st ,st state)).
+; But we check this.
+
+                 (case-match
+                   main-body
+                   (('let ((!st !body))
+                      ('write-user-stobj-alist ('quote !st) !st 'state))
+                    (trans-er-let*
+                     ((write-call
+                       (translate11
+                        (list 'write-user-stobj-alist
+                              (kwote st)
+                              st
+                              'state)
+                        nil
+                        (if (eq stobjs-out t) t '(state))
+                        bindings known-stobjs+ flet-alist
+                        x ctx wrld state-vars)))
+                     (translate11-let
+                      main-body
+                      write-call
+                      (list tbody)
+                      (if (eq stobjs-out t) t '(state))
+                      bindings known-stobjs+ flet-alist ctx wrld state-vars)))
+                   (&
+                    (trans-er+ x ctx
+                               "Implementation error (please report to the ~
+                                ACL2 implementors): mismatch for LET ~
+                                (updating) case of WITH-GLOBAL-STOBJ."))))
+                (t ; (consp (cdr sig))
+
+; Main-body, from with-global-stobj-fn1:
+; `(mv-let ,vars0 ; where vars0 comes from sig by replacing nil elements
+;    ,body
+;    (let ((state (write-user-stobj-alist ',st ,st state)))
+; Vars comes from vars0: remove st and, if state isn't in vars0, add state.
+;      (mv? ,@vars)))
+
+                 (case-match
+                   main-body
+                   (('mv-let & !body let-expr)
+
+; We know that let-expr has the form:
+; (let ((state (write-user-stobj-alist ',st ,st state))) (mv? ,@vars))
+; We can thus safely translate let-expr without execution restrictions.
+
+                    (trans-er-let*
+                     ((translated-let-expr
+                       (translate11
+                        let-expr
+                        nil
+                        t ; stobjs-out (see comment above)
+                        bindings known-stobjs+ flet-alist
+                        x ctx wrld state-vars)))
+                     (translate11-mv-let
+                      main-body
+                      tbody
+                      translated-let-expr
+                      stobjs-out
+                      bindings known-stobjs+ nil nil flet-alist
+                      ctx wrld state-vars)))
+                   (& (trans-er+ x ctx
+                                 "Implementation error (please report to the ~
+                                  ACL2 implementors): mismatch for MV-LET ~
+                                  (updating) case of WITH-GLOBAL-STOBJ.")))))))
+             (let ((msg (chk-global-stobj-body x tbody wrld)))
+               (cond
+                (msg (trans-er ctx "~@0" msg))
+                (t
+
+; We have already translated main-body with respect to execution.  We therefore
+; are assured that the let expression below is suitable for execution.
+
+; Warning: Keep the following in sync with with-global-stobj-fn.
+
+                 (translate11-let `(let ((,st (read-user-stobj-alist ',st
+                                                                     state)))
+                                     ,main-body)
+                                  translated-main-body
+                                  nil
+                                  t ; stobjs-out
+                                  bindings known-stobjs flet-alist
+                                  ctx wrld state-vars))))))))))
+     (t ; stobjs-out is not t and state is not a known stobj
+      (trans-er ctx
+                "The call ~x0 is illegal because the ACL2 state is not a ~
+                 known single-threaded object (stobj) in its context."
+                x))))
    ((and (assoc-eq (car x) *ttag-fns*)
          (not (ttag wrld))
          (not (global-val 'boot-strap-flg wrld)))
@@ -21462,16 +22455,17 @@
                 (tbody1 (translate11-let* body1 tconsumer tupdaters stobjs-out
                                           bindings known-stobjs flet-alist ctx
                                           wrld state-vars))
-                (tbody2 (cond (letp (translate11-let body2 tbody1 nil
-                                                     stobjs-out
-                                                     bindings new-known-stobjs
-                                                     flet-alist ctx wrld
-                                                     state-vars))
-                              (t (translate11-mv-let body2 tbody1 stobjs-out
-                                                     bindings new-known-stobjs
-                                                     nil nil ; local-stobj args
-                                                     flet-alist ctx wrld
-                                                     state-vars)))))
+                (tbody2 (cond
+                         (letp (translate11-let body2 tbody1 nil
+                                                stobjs-out
+                                                bindings new-known-stobjs
+                                                flet-alist ctx wrld
+                                                state-vars))
+                         (t (translate11-mv-let body2 nil tbody1 stobjs-out
+                                                bindings new-known-stobjs
+                                                nil nil ; local-stobj args
+                                                flet-alist ctx wrld
+                                                state-vars)))))
                (let ((actual-stobjs-out
                       (translate-deref stobjs-out bindings))
                      (dups-check
@@ -22718,6 +23712,101 @@
         (t (cons (car stobjs-out)
                  (collect-user-stobjs (cdr stobjs-out))))))
 
+(defun filter-known-stobjs (vars known-stobjs wrld)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (symbol-listp known-stobjs)
+                              (plist-worldp wrld))))
+  (cond ((endp vars) nil)
+        ((stobjp (car vars) known-stobjs wrld)
+         (cons (car vars)
+               (filter-known-stobjs (cdr vars) known-stobjs wrld)))
+        (t
+         (filter-known-stobjs (cdr vars) known-stobjs wrld))))
+
+(defun chk-global-stobjs (term mvp user-stobjs-out ctx state)
+
+; See also chk-global-stobj-body.
+
+; We check that for every known stobj st in that occurs free in term, st is not
+; bound by an updating with-global-stobj form that could be encountered during
+; evaluation of term: that is, either in term or in the body of any function
+; symbol ancestral in term.  We also check that if st is in user-stobjs-out then
+; st is not bound by any such with-global-stobj form, updating or not.
+
+; Mvp ("multiple values property") is used only for displaying term in
+; untranslated form: it is true when term is intended to represent multiple
+; values.
+
+  (let ((vars (all-vars term))) ; optimization
+    (cond
+     ((not (member-eq 'state vars)) ; optimization
+
+; Then there cannot be any with-global-stobj forms in, or supporting, term.
+
+      (value nil))
+     (t
+      (let* ((wrld (w state))
+             (stobj-vars (filter-known-stobjs vars t wrld)))
+        (cond
+         ((and (null stobj-vars) (null user-stobjs-out)) ; optimization
+
+; Both intersectp-eq calls below are nil, so there is no need to call
+; collect-global-stobjs to do the checks below.
+
+          (value nil))
+         (t
+          (mv-let (reads writes fns-seen)
+            (collect-global-stobjs term wrld nil nil nil)
+            (declare (ignore fns-seen))
+            (cond
+             ((intersectp-eq stobj-vars writes)
+              (er soft ctx
+                  "Illegal top-level form, ~x0.~|The stobj~#1~[ ~&1 ~
+                   occurs~/~&1s occur~] free, yet~#1~[~/ each~] may be bound ~
+                   by an updating WITH-GLOBAL-STOBJ form, ~@2~@3"
+                  (if mvp
+                      (maybe-convert-to-mv (untranslate term nil wrld))
+                    (untranslate term nil wrld))
+                  (intersection-eq stobj-vars writes)
+                  (let* ((upd t)
+                         (st (car (intersection-eq stobj-vars writes)))
+                         (path (path-to-with-global-stobj st
+                                                          (all-fnnames term)
+                                                          upd wrld nil nil)))
+                    (with-global-stobj-illegal-path-msg
+                     "as the top-level form calls"
+                     ""
+                     path st upd wrld))
+                  *see-doc-with-global-stobj*))
+             ((or (intersectp-eq user-stobjs-out reads)
+
+; The following check is probably not necessary, since we expect that
+; user-stobjs-out is a subset of stobj-vars and we already know from the
+; preceding test that (intersectp-eq stobj-vars writes) = nil.  However, we go
+; ahead and make this inexpensive check just to be safe, in case (though this
+; seems impossible) a stobj is in user-stobjs-out that is not free in term.
+
+                  (intersectp-eq user-stobjs-out writes))
+              (er soft ctx
+                  "Illegal top-level form, ~x0.~|The stobj~#1~[ ~&1 is~/~&1s ~
+                   are~] returned by evaluation of that form, yet ~#1~[~/each ~
+                   ~]is bound by a WITH-GLOBAL-STOBJ form, ~@2~@3"
+                  (untranslate term nil wrld)
+                  (intersection-eq user-stobjs-out (append? reads writes))
+                  (let* ((upd nil)
+                         (st (car
+                              (or (intersection-eq user-stobjs-out reads)
+                                  (intersection-eq user-stobjs-out writes))))
+                         (path (path-to-with-global-stobj st
+                                                          (all-fnnames term)
+                                                          upd wrld nil nil)))
+                    (with-global-stobj-illegal-path-msg
+                     "as the top-level form calls"
+                     ""
+                     path st upd wrld))
+                  *see-doc-with-global-stobj*))
+             (t (value nil)))))))))))
+
 (defun ev-for-trans-eval (trans stobjs-out ctx state aok
                                 user-stobjs-modified-warning)
 
@@ -22736,20 +23825,23 @@
 ; trans-eval when the term to be evaluated has already been translated by
 ; translate1 with stobjs-out = :stobjs-out.
 
-  (let ((alist (cons (cons 'state
-                           (coerce-state-to-object state))
-                     (user-stobj-alist state)))
-        (user-stobjs (collect-user-stobjs stobjs-out)))
-    (mv-let
-      (erp val latches)
-      (ev trans alist state alist
+  (let* ((user-stobj-alist (user-stobj-alist state))
+         (alist (cons (cons 'state
+                            (coerce-state-to-object state))
+                      user-stobj-alist))
+         (user-stobjs (collect-user-stobjs stobjs-out)))
+    (er-progn
+     (chk-global-stobjs trans (consp (cdr stobjs-out)) user-stobjs ctx state)
+     (mv-let
+       (erp val latches)
+       (ev trans alist state alist
 
 ; The next argument is hard-error-returns-nilp.  Think hard before changing it!
 ; For example, ev-for-trans-eval is called by eval-clause-processor; hence if a
 ; clause-processor invokes sys-call, the call (er hard ...) under sys-call will
 ; be guaranteed to cause an error that the user can see (and react to).
 
-          nil aok)
+           nil aok)
 
 ; The first state binding below is the state produced by the evaluation of the
 ; form.  The second state is the first, but with the user-stobj-alist of that
@@ -22761,37 +23853,37 @@
 ; the user-stobj-alist of their results, else we risk overturning carefully
 ; computed answers by restoring old stobjs.
 
-      (pprogn
-       (coerce-object-to-state (cdr (car latches)))
-       (cond (user-stobjs
-              (pprogn
-               (update-user-stobj-alist
-                (put-assoc-eq-alist (user-stobj-alist state)
-                                    (cdr latches))
-                state)
-               (cond
-                (user-stobjs-modified-warning
-                 (warning$ ctx "User-stobjs-modified"
-                           "A call of the ACL2 evaluator on the term ~x0 has ~
+       (pprogn
+        (coerce-object-to-state (cdr (car latches)))
+        (cond (user-stobjs
+               (pprogn
+                (update-user-stobj-alist
+                 (put-assoc-eq-alist (user-stobj-alist state)
+                                     (cdr latches))
+                 state)
+                (cond
+                 (user-stobjs-modified-warning
+                  (warning$ ctx "User-stobjs-modified"
+                            "A call of the ACL2 evaluator on the term ~x0 has ~
                             modified the user stobj~#1~[~/s~] ~&1.  See :DOC ~
                             user-stobjs-modified-warnings."
-                           trans
-                           user-stobjs))
-                (t state))))
-             (t state))
-       (cond
-        (erp
+                            trans
+                            user-stobjs))
+                 (t state))))
+              (t state))
+        (cond
+         (erp
 
 ; If ev caused an error, then val is a pair (str . alist) explaining the error.
 ; We will process it here (as we have already processed the translate errors
 ; that might have arisen) so that all the errors that might be caused by this
 ; translation and evaluation are handled within this function.
 
-         (error1 ctx nil (car val) (cdr val) state))
-        (t (mv nil
-               (cons stobjs-out
-                     (replace-stobjs stobjs-out val))
-               state)))))))
+          (error1 ctx nil (car val) (cdr val) state))
+         (t (mv nil
+                (cons stobjs-out
+                      (replace-stobjs stobjs-out val))
+                state))))))))
 
 #+acl2-par
 (defun ev-w-for-trans-eval (trans stobjs-out ctx state aok

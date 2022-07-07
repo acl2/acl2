@@ -36,17 +36,6 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
-;we expect bit to be 0 or 1
-;bozo this should probably be changed to chop bit down to a one bit quantity first
-(defund repeatbit (n bit)
-  (declare (type integer n)
-           (type (integer 0 *) bit)) ;tighten to only allow 0 or 1?
-  (if (not (natp n))
-      0
-    (if (= 0 bit)
-        0
-      (+ -1 (expt 2 n)))))
-
 ;perhaps this should be called xshr (for sign-extending shift), but jvm has a function or macro with that name already (get rid of it first!)
 ;ffixme this may be wrong if we shift all the way out! consider: (acl2::bvashr 32 -1 32)
 (defun bvashr (width x shift-amount)

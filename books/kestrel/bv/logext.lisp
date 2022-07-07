@@ -343,6 +343,15 @@
            :in-theory (disable logext-of-bvchop-same expt
                                logext-of-bvchop-smaller))))
 
+(defthm logext-of-+-of-expt-gen
+  (implies (and (<= size size2)
+                (integerp x)
+                (posp size)
+                (integerp size2))
+           (equal (logext size (+ x (expt 2 size2)))
+                  (logext size x)))
+  :hints (("Goal":in-theory (enable logext))))
+
 (defthm logext-of-minint
   (implies (posp size)
            (equal (logext size (expt 2 (+ -1 size)))

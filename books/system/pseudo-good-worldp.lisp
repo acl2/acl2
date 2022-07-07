@@ -1774,6 +1774,25 @@
   (pseudo-forward-chaining-rule-listp val))
 
 ;-----------------------------------------------------------------
+; GLOBAL-STOBJS
+
+(defun stobj-listp (x known-stobjs w)
+  (declare (xargs :guard (and (plist-worldp w)
+                              (or (eq known-stobjs t)
+                                  (true-listp known-stobjs)))))
+  (cond ((atom x) (null x))
+        (t (and (stobjp (car x) known-stobjs w)
+                (stobj-listp (cdr x) known-stobjs w)))))
+
+(defun global-stobjs-p (val w)
+  (declare (xargs :guard (plist-worldp w)))
+  (or (null val)
+      (and (consp val)
+           (stobj-listp (car val) t w)
+           (stobj-listp (cdr val) t w)
+           (not (intersectp-eq (car val) (cdr val))))))
+
+;-----------------------------------------------------------------
 ; GLOBAL-VALUE
 
 (defun pseudo-global-valuep (sym val w)
@@ -2895,6 +2914,8 @@
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))
           (FORWARD-CHAINING-RULES (pseudo-forward-chaining-rulesp sym val))
+          (GLOBAL-STOBJS (or (eq val *acl2-property-unbound*)
+                             (global-stobjs-p val w)))
           (GLOBAL-VALUE
            (and (not (eq val *acl2-property-unbound*))
                 (pseudo-global-valuep sym val w)))

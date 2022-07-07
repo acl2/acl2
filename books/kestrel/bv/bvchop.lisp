@@ -503,6 +503,15 @@
                   (bvchop size x)))
   :hints (("Goal":in-theory (enable bvchop))))
 
+(defthm bvchop-of-+-of-expt-gen
+  (implies (and (<= size size2)
+                (integerp x)
+                (integerp size)
+                (integerp size2))
+           (equal (bvchop size (+ x (expt 2 size2)))
+                  (bvchop size x)))
+  :hints (("Goal":in-theory (enable bvchop))))
+
 (defthm bvchop-of-+-of-expt-alt
   (implies (integerp x)
            (equal (bvchop size (+ (expt 2 size) x))

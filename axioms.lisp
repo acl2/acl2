@@ -13541,9 +13541,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; but with the same stobjs-out as (mv st1 st2).  See translate11
 
 ; Note that since there are no duplicate live stobjs, it should be fine to call
-; this macro even if one or both inputs are locally-bound (by with-local-stobj
-; or stobj-let).  Ultimately, the user-stobj-alist is put right by the calls of
-; latch-stobjs in raw-ev-fncall.
+; this macro even if one or both inputs are locally-bound (by with-local-stobj,
+; with-global-stobj, or stobj-let).  Ultimately, the user-stobj-alist is put
+; right by the calls of latch-stobjs in raw-ev-fncall.
 
 ; Trans-eval does not itself manage the user-stobj-alist, so we disallow the
 ; use of swap-stobjs at the top level; see translate11 and macroexpand1*-cmp.
@@ -14238,6 +14238,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     loop$
     our-with-terminal-input
     trust-mfc
+    with-global-stobj
     ))
 
 (defun untouchable-marker (mac)
@@ -27932,7 +27933,7 @@ Lisp definition."
   `(not (logicp ,fn ,wrld)))
 
 (defconst *stobjs-out-invalid*
-  '(if return-last do$))
+  '(if return-last do$ read-user-stobj-alist))
 
 (defun stobjs-out (fn w)
 
@@ -27972,12 +27973,13 @@ Lisp definition."
   (and (plist-worldp wrld)
        (symbolp fn)
 
-; We avoid potential problems obtaining the stobjs-out of 'if and 'do$.  (We
-; give special handling to 'return-last in ev-fncall-w-guard1, so we don't need
-; to avoid it here.)
+; We avoid potential problems obtaining the stobjs-out of functions symbols in
+; *stobjs-out-invalid*.  (We give special handling to 'return-last in
+; ev-fncall-w-guard1, so we don't need to avoid it here.)
 
        (not (eq fn 'if))
        (not (eq fn 'do$))
+       (not (eq fn 'read-user-stobj-alist))
        (not (assoc-eq fn *ttag-fns*))
        (let* ((formals (getpropc fn 'formals t wrld))
               (stobjs-in (stobjs-in fn wrld))

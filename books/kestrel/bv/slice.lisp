@@ -299,9 +299,7 @@
            :in-theory (disable slice-too-high-helper))))
 
 (defthm slice-upper-bound-linear
-  (implies (and (syntaxp (and (quotep high)
-                              (quotep low)))
-                (integerp high)
+  (implies (and (integerp high)
                 (integerp low)
                 (<= low high))
            (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
@@ -310,6 +308,17 @@
            :cases ((integerp (expt 2 (+ 1 high (- low))))) ;yuck!
            :in-theory (e/d (unsigned-byte-p)
                            (unsigned-byte-p-of-slice-gen)))))
+
+(defthm slice-upper-bound-linear-constant-version
+  (implies (and (syntaxp (and (quotep high)
+                              (quotep low)))
+                (integerp high)
+                (integerp low)
+                (<= low high))
+           (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
+  :rule-classes (:linear))
+
+
 
 (defthm <-of-slice-and-constant
   (implies (and (syntaxp (and (quotep k)
@@ -636,3 +645,25 @@
            (< (slice high low x) k))
   :hints (("Goal" :use (:instance UNSIGNED-BYTE-P-OF-SLICE (n (+ 1 high (- low))))
            :in-theory (e/d (UNSIGNED-BYTE-P)( UNSIGNED-BYTE-P-OF-SLICE UNSIGNED-BYTE-P-OF-SLICE-GEN)))))
+
+(defthm slice-of-+-of-expt-gen
+  (implies (and (< high i)
+                (integerp x)
+                (integerp high)
+                (natp low)
+                (natp i))
+           (equal (slice high low (+ x (expt 2 i)))
+                  (slice high low x)))
+  :hints (("Goal" :cases ((<= low high))
+           :in-theory (enable slice bvchop-of-logtail))))
+
+(defthm *-of-expt-and-slice-same-linear
+  (implies (and (<= low high)
+                (natp low)
+                (natp high)
+                (rationalp x))
+           (<= (* (expt 2 low) (slice high low x))
+               (+ (expt 2 (+ 1 high)) (- (expt 2 low)))))
+  :rule-classes ((:linear :trigger-terms ((* (expt 2 low) (slice high low x)))))
+  :hints (("Goal" :use (:instance slice-upper-bound-linear)
+           :in-theory (enable expt-of-+))))

@@ -189,3 +189,10 @@
            (equal (mod (* x (expt 2 i)) (expt 2 j))
                   (* (expt 2 i)
                      (mod x (expt 2 (+ j (- i))))))))
+
+(defthm mod-of-expt-2-and-expt-2-when-<=
+  (implies (and (<= i2 i1)
+                (integerp i1)
+                (integerp i2))
+           (equal (mod (expt 2 i1) (expt 2 i2))
+                  0)))

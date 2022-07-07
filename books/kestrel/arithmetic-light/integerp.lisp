@@ -41,14 +41,7 @@
 (defthm integerp-of-+-of---and--
   (equal (integerp (+ (- x) (- y)))
          (integerp (+ x y)))
-  :hints (("Goal" :use (:instance integerp-of--
-                                  (x (+ x y)))
-           :in-theory (disable integerp-of--))))
-
-(defthm integerp-of-+-of---and--
-  (equal (integerp (+ (- x) (- y)))
-         (integerp (+ x y)))
-  :hints (("Goal" :use (:instance integerp-of-- (x (+ x y)))
+  :hints (("Goal" :use (:instance integerp-of--(x (+ x y)))
            :in-theory (disable integerp-of--))))
 
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))

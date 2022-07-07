@@ -122,14 +122,32 @@
            :use ((:instance positive (x (- x2 x1)))
                  (:instance positive (x (- x1 x2)))))))
 
-
-
 (defthm <-of-*-and-*-cancel-arg1-and-arg1
   (implies (and (< 0 y) ;move to conc
                 (rationalp x1)
                 (rationalp x2)
                 (rationalp y))
            (equal (< (* y x1) (* y x2))
+                  (< x1 x2)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+           :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <-of-*-and-*-cancel-arg1-and-arg2
+  (implies (and (< 0 y) ;move to conc
+                (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* y x1) (* x2 y))
+                  (< x1 x2)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+           :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <-of-*-and-*-cancel-arg2-and-arg1
+  (implies (and (< 0 y) ;move to conc
+                (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* x1 y) (* y x2))
                   (< x1 x2)))
   :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
            :in-theory (disable <-of-*-and-*-cancel))))
