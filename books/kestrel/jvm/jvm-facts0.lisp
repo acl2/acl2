@@ -609,91 +609,19 @@
 
 ;(in-theory (disable BAG::MEMBERP-CAR-WHEN-DISJOINT)) ;bad rule
 
-(defthm class-namep-of-first-non-member
-  (implies (and (all-class-namesp items)
-                (not (ACL2::SUBSETP-EQ items items-to-exclude))) ;ensures it finds an item
-           (class-namep (acl2::first-non-member items items-to-exclude)))
-  :hints (("Goal" :in-theory (enable ;all-class-namesp
-                              ))))
 
-(defthm all-class-namesp-of-reverse-list
-  (equal (all-class-namesp (acl2::reverse-list x))
-         (all-class-namesp x)))
 
-(defthm all-bound-in-class-tablep-of-reverse-list
-  (equal (all-bound-in-class-tablep (acl2::reverse-list x) class-table)
-         (all-bound-in-class-tablep x class-table))
-  :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
 
-(defthm bound-in-class-tablep-of-first-non-member
-  (implies (and (all-bound-in-class-tablep class-names class-table)
-                (acl2::first-non-member class-names class-names-to-exclude))
-           (bound-in-class-tablep (acl2::first-non-member class-names class-names-to-exclude) class-table))
-  :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
 
-(defthm first-non-member-iff
-  (implies (all-class-namesp items)
-           (iff (acl2::first-non-member items items-to-exclude)
-                (not (acl2::subsetp-equal items items-to-exclude))))
-  :hints (("Goal" :in-theory (enable acl2::subsetp-equal))))
 
-(defthm subsetp-equal-of-reverse-list
-  (equal (acl2::subsetp-equal (acl2::reverse-list x) y)
-         (acl2::subsetp-equal x y))
-  :hints (("Goal" :in-theory (enable acl2::subsetp-equal))))
 
-(defthm jvm-statep-of-invoke-static-initializer-for-class
-  (implies (and (class-namep class-to-initialize)
-                (jvm-statep s)
-                ;; (bound-in-class-tablep class-to-initialize (class-table s)) ; all-framep-change
-                (bound-in-alistp th (thread-table s))
-                (thread-designatorp th)
-;              (not (memberp class-name (initialized-classes s)))
-                )
-           (jvm-statep (invoke-static-initializer-for-class initialized-classes th s class-to-initialize)))
-  :hints (("Goal" :in-theory (enable invoke-static-initializer-for-class))))
 
-(defthm jvm-statep-of-invoke-static-initializer-for-next-class-helper
-  (implies (and (class-namep class-name)
-                (all-class-namesp superclass-names)
-                ;; (all-bound-in-class-tablep superclass-names (class-table s)) ; all-framep-change
-                (jvm-statep s)
-                (bound-in-class-tablep class-name (class-table s))
-                (bound-in-alistp th (thread-table s))
-                (thread-designatorp th)
-                (not (memberp class-name (initialized-classes s))))
-           (jvm-statep (invoke-static-initializer-for-next-class-helper class-name superclass-names th s)))
-  :hints (("Goal" :in-theory (enable invoke-static-initializer-for-next-class-helper))))
 
-(defthm jvm-statep-of-invoke-static-initializer-for-next-class
-  (implies (and (class-namep class-name)
-                (jvm-statep s)
-                (bound-in-class-tablep class-name (class-table s))
-                (bound-in-alistp th (thread-table s))
-                (thread-designatorp th)
-                (not (memberp class-name (initialized-classes s))))
-           (jvm-statep (invoke-static-initializer-for-next-class class-name th s)))
-  :hints (("Goal" :in-theory (enable invoke-static-initializer-for-next-class))))
 
-(defthm jvm-statep-of-execute-java.lang.object.getclass
-  (implies (and (jvm-statep s)
-                (bound-in-alistp th (thread-table s))
-                (thread-designatorp th)
-                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
-                )
-           (jvm-statep (execute-java.lang.object.getclass th s)))
-  :hints (("Goal" :in-theory (e/d (execute-java.lang.object.getclass) (acons)))))
 
-(defthm jvm-statep-of-execute-java.lang.class.getPrimitiveClass
-  (implies (and (jvm-statep s)
-                (bound-in-alistp th (thread-table s))
-                (thread-designatorp th)
-                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
-                )
-           (jvm-statep (execute-java.lang.class.getPrimitiveClass th s)))
-  :hints (("Goal" :in-theory (e/d (execute-java.lang.class.getPrimitiveClass
-                                   class-namep ;fixme breaks the abstraction
-                                   ) (acons)))))
+
+
+
 
 (defthm not-memberp-of-strip-cdrs-of-intern-table
   (implies (and (jvm-statep s)
@@ -759,19 +687,20 @@
                             ;MONITOR-TABLE
                             ;;INITIALIZED-CLASSES
                             do-inst
-                            execute-invokespecial
-                            execute-invokespecial-helper
+                            ;; execute-invokespecial
+                            ;; execute-invokespecial-helper
                             execute-invokestatic
                             execute-invokestatic-helper
                             execute-new
-                            execute-invokevirtual
-                            execute-invokevirtual-helper
+                            ;; execute-invokevirtual
+                            ;; execute-invokevirtual-helper
                             resolve-field ; so we can see what exceptions/errors it throws
-                            execute-java.lang.float.floattorawintbits
-                            execute-java.lang.float.intbitstofloat
+
                             ;is-A-CLASSP ;todo
                             ;bound-to-a-non-interfacep ;todo
-                            ;is-an-interfacep ;todo
+                            ;;is-an-interfacep ;todo
+                            execute-java.lang.float.intbitstofloat
+                            execute-java.lang.float.floattorawintbits
                             )
                            (acons
                             mv-nth

@@ -487,6 +487,9 @@
        (parameter-assumptions (assumptions-about-parameters-on-stack parameter-types first-param-slot param-slot-to-name-alist array-length-alist th state-var))
        (- (cw "(Parameter assumptions: ~x0)~%" parameter-assumptions))
        (structural-assumptions (append (standard-hyps-basic-before-invoke state-var)
+                                       ;; Needed for lookup-method-for-invokespecial:
+                                       `((jvm::bound-in-class-tablep (car (jvm::method-designator (jvm::thread-top-frame ,th ,state-var))) ; current-class-name
+                                                                     (jvm::class-table ,state-var)))
                                        ;; anything else?
                                        ))
        (poised-assumptions (make-poised-assumptions staticp method-class method-name method-descriptor parameter-types state-var))
