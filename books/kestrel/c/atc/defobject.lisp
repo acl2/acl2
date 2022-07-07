@@ -60,7 +60,7 @@
       to access the external object.
       The @(tsee defobject) table stores the name as key,
       but the name is only the @(tsee symbol-name),
-      and loses the @(tsee package-symbol-name) information.")
+      and loses the @(tsee symbol-package-name) information.")
     (xdoc::li
      "The type of the object.
       Currently this must be an array type with specified size,
