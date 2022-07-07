@@ -2051,6 +2051,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-initer ((initer initerp)
+                       (compst compustatep)
+                       (fenv fun-envp)
+                       (limit natp))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (mv (result value-resultp)
+                 (new-compst compustatep))
+    :parents (atc-execution exec)
+    :short "Execute an initializer."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we only accept single expressions.
+       The single expression must be a function call or a pure expression.
+       If it is a function call, it must return a value (not @('nil'))."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
+      (initer-case
+       initer
+       :single
+       (b* (((mv val compst) (exec-expr-call-or-pure initer.get
+                                                     compst
+                                                     fenv
+                                                     (1- limit)))
+            ((when (errorp val)) (mv val compst))
+            ((when (not val))
+             (mv (error (list :void-initializer (initer-fix initer)))
+                 compst)))
+         (mv val compst))
+       :list
+       (mv (error (list :array-initializer-not-supported (initer-fix initer)))
+           (compustate-fix compst))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-block-item ((item block-itemp)
                            (compst compustatep)
                            (fenv fun-envp)
@@ -2083,14 +2118,8 @@
        item
        :declon
        (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
-            ((mv init compst) (exec-expr-call-or-pure init
-                                                      compst
-                                                      fenv
-                                                      (1- limit)))
+            ((mv init compst) (exec-initer init compst fenv (1- limit)))
             ((when (errorp init)) (mv init compst))
-            ((when (not init))
-             (mv (error (list :void-initializer (block-item-fix item)))
-                 compst))
             (type (tyname-to-type tyname))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
@@ -2175,6 +2204,11 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt-while)
+    (defret compustate-frames-number-of-exec-initer
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-initer)
     (defret compustate-frames-number-of-exec-block-item
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -2191,6 +2225,7 @@
                              (exec-expr-call-or-asg e compst fenv limit)
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
+                             (exec-initer initer compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
 
@@ -2230,6 +2265,12 @@
              (compustate-scopes-numbers compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt-while)
+    (defret compustate-scopes-numbers-of-exec-initer
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :hyp (and (> (compustate-frames-number compst) 0)
+                (> (compustate-top-frame-scopes-number compst) 0))
+      :fn exec-initer)
     (defret compustate-scopes-numbers-of-exec-block-item
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -2249,6 +2290,7 @@
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-stmt-while test body compst fenv limit)
+                             (exec-initer initer compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
 

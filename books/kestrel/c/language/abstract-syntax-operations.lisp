@@ -365,7 +365,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define obj-declon-to-ident+tyname+init ((declon obj-declonp))
-  :returns (mv (id identp) (tyname tynamep) (init exprp))
+  :returns (mv (id identp) (tyname tynamep) (init initerp))
   :short "Decompose an object declaration into
           an identifier, a type name, and an initializer."
   (b* (((obj-declon declon) declon)
