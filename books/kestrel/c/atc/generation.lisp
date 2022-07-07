@@ -2956,7 +2956,7 @@
                                         init-type))
                    (declon (make-obj-declon :tyspec tyspec
                                             :declor declor
-                                            :init init-expr))
+                                            :init (initer-single init-expr)))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
@@ -3410,7 +3410,7 @@
                                         init-type))
                    (declon (make-obj-declon :tyspec tyspec
                                             :declor declor
-                                            :init init-expr))
+                                            :init (initer-single init-expr)))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))

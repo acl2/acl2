@@ -1,0 +1,1729 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFSTOBJ ST FLD)
+
+Summary
+Form:  ( DEFSTOBJ ST ...)
+Rules: NIL
+ ST
+ACL2 !>>(DEFSTOBJ ST2 FLD2 :CONGRUENT-TO ST)
+
+Summary
+Form:  ( DEFSTOBJ ST2 ...)
+Rules: NIL
+ ST2
+ACL2 !>>(WITH-GLOBAL-STOBJ ST (FLD ST))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  Calls of WITH-GLOBAL-STOBJ, such
+as (WITH-GLOBAL-STOBJ ST (FLD ST)), cannot be evaluated directly, as
+in the top-level loop.  See :DOC with-global-stobj and see :DOC top-
+level.
+
+ACL2 !>>(TOP-LEVEL (WITH-GLOBAL-STOBJ ST (FLD ST)))
+NIL
+ACL2 !>>(WITH-GLOBAL-STOBJ ST (ST)
+                           (UPDATE-FLD 0 ST))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  Calls of WITH-GLOBAL-STOBJ, such
+as (WITH-GLOBAL-STOBJ ST (ST) (UPDATE-FLD 0 ST)), cannot be evaluated
+directly, as in the top-level loop.  See :DOC with-global-stobj and
+see :DOC top-level.
+
+ACL2 !>>(TOP-LEVEL (WITH-GLOBAL-STOBJ ST (ST)
+                                      (UPDATE-FLD 1 ST)))
+<state>
+ACL2 !>>(TOP-LEVEL (WITH-GLOBAL-STOBJ ST (FLD ST)))
+1
+ACL2 !>>(DEFUN RD0 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ ST (FLD ST)))
+
+Since RD0 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of RD0.
+
+(RD0 STATE) => *.
+
+Computing the guard conjecture for RD0....
+
+The guard conjecture for RD0 is trivial to prove.  RD0 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN RD0 ...)
+Rules: NIL
+ RD0
+ACL2 !>>(ASSERT-EVENT (EQUAL (RD0 STATE) 1))
+ :PASSED
+ACL2 !>>(DEFUN WR0 (X STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ ST (ST)
+                                  (UPDATE-FLD X ST)))
+
+Since WR0 is non-recursive, its admission is trivial.  We observe that
+the type of WR0 is described by the theorem (CONSP (WR0 X STATE)).
+We used the :type-prescription rule WRITE-USER-STOBJ-ALIST.
+
+(WR0 * STATE) => STATE.
+
+Computing the guard conjecture for WR0....
+
+The guard conjecture for WR0 is trivial to prove.  WR0 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN WR0 ...)
+Rules: ((:TYPE-PRESCRIPTION WRITE-USER-STOBJ-ALIST))
+ WR0
+ACL2 !>>(WR0 2 STATE)
+<state>
+ACL2 !>>(ASSERT-EVENT (EQUAL (RD0 STATE) 2))
+ :PASSED
+ACL2 !>>(DEFUN BAD (X STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ ST (UPDATE-FLD X ST)))
+
+
+ACL2 Error [Translate] in ( DEFUN BAD ...):  The read-only WITH-GLOBAL-
+STOBJS call (WITH-GLOBAL-STOBJ ST (UPDATE-FLD X ST)) is illegal because
+its body returns the bound stobj, ST.  See :DOC with-global-stobj.
+
+
+Summary
+Form:  ( DEFUN BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN FOO (VAL ST STATE)
+               (DECLARE (XARGS :STOBJS (ST STATE)))
+               (LET ((STATE (WITH-GLOBAL-STOBJ ST (ST)
+                                               (UPDATE-FLD VAL ST))))
+                    (MV (FLD ST) STATE)))
+
+Since FOO is non-recursive, its admission is trivial.  We observe that
+the type of FOO is described by the theorem 
+(AND (CONSP (FOO VAL ST STATE)) (TRUE-LISTP (FOO VAL ST STATE))). 
+We used primitive type reasoning.
+
+(FOO * ST STATE) => (MV * STATE).
+
+Computing the guard conjecture for FOO....
+
+The guard conjecture for FOO is trivial to prove.  FOO is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FOO
+ACL2 !>>(FOO NIL ST STATE)
+
+
+ACL2 Error in TOP-LEVEL:  Illegal top-level form, (FOO NIL ST STATE).
+The stobj ST occurs free, yet may be bound by an updating WITH-GLOBAL-
+STOBJ form, as the top-level form calls FOO, which makes an updating
+WITH-GLOBAL-STOBJ call that binds ST.  See :DOC with-global-stobj.
+
+ACL2 !>>(FOO 3 ST2 STATE)
+(NIL <state>)
+ACL2 !>>(FLD ST)
+3
+ACL2 !>>(DEFUN FOO2-SUB (VAL STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ ST (ST)
+                                  (UPDATE-FLD VAL ST)))
+
+Since FOO2-SUB is non-recursive, its admission is trivial.  We observe
+that the type of FOO2-SUB is described by the theorem 
+(CONSP (FOO2-SUB VAL STATE)).  We used the :type-prescription rule
+WRITE-USER-STOBJ-ALIST.
+
+(FOO2-SUB * STATE) => STATE.
+
+Computing the guard conjecture for FOO2-SUB....
+
+The guard conjecture for FOO2-SUB is trivial to prove.  FOO2-SUB is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO2-SUB ...)
+Rules: ((:TYPE-PRESCRIPTION WRITE-USER-STOBJ-ALIST))
+ FOO2-SUB
+ACL2 !>>(DEFUN FOO2 (VAL ST STATE)
+               (DECLARE (XARGS :STOBJS (ST STATE)))
+               (LET ((STATE (FOO2-SUB VAL STATE)))
+                    (MV (FLD ST) STATE VAL)))
+
+Since FOO2 is non-recursive, its admission is trivial.  We observe
+that the type of FOO2 is described by the theorem 
+(AND (CONSP (FOO2 VAL ST STATE)) (TRUE-LISTP (FOO2 VAL ST STATE))).
+We used primitive type reasoning.
+
+(FOO2 * ST STATE) => (MV * STATE *).
+
+Computing the guard conjecture for FOO2....
+
+The guard conjecture for FOO2 is trivial to prove.  FOO2 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FOO2
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (GETPROPC 'FOO 'GLOBAL-STOBJS)
+                                  '(NIL ST))
+                           (EQUAL (GETPROPC 'FOO2-SUB 'GLOBAL-STOBJS)
+                                  '(NIL ST))
+                           (EQUAL (GETPROPC 'FOO2 'GLOBAL-STOBJS)
+                                  '(NIL ST))))
+ :PASSED
+ACL2 !>>(FOO2 NIL ST STATE)
+
+
+ACL2 Error in TOP-LEVEL:  Illegal top-level form, (FOO2 NIL ST STATE).
+The stobj ST occurs free, yet may be bound by an updating WITH-GLOBAL-
+STOBJ form, as the top-level form calls FOO2, which calls FOO2-SUB,
+which makes an updating WITH-GLOBAL-STOBJ call that binds ST.  See
+:DOC with-global-stobj.
+
+ACL2 !>>(DEFUN FOO2-CALLER (VAL ST STATE)
+               (DECLARE (XARGS :STOBJS (ST STATE)))
+               (FOO2 VAL ST STATE))
+
+Since FOO2-CALLER is non-recursive, its admission is trivial.  We observe
+that the type of FOO2-CALLER is described by the theorem 
+(AND (CONSP (FOO2-CALLER VAL ST STATE))
+     (TRUE-LISTP (FOO2-CALLER VAL ST STATE))).
+We used the :type-prescription rule FOO2.
+
+(FOO2-CALLER * ST STATE) => (MV * STATE *).
+
+Computing the guard conjecture for FOO2-CALLER....
+
+The guard conjecture for FOO2-CALLER is trivial to prove.  FOO2-CALLER
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO2-CALLER ...)
+Rules: ((:TYPE-PRESCRIPTION FOO2))
+ FOO2-CALLER
+ACL2 !>>(FOO2-CALLER NIL ST STATE)
+
+
+ACL2 Error in TOP-LEVEL:  Illegal top-level form, (FOO2-CALLER NIL ST STATE).
+The stobj ST occurs free, yet may be bound by an updating WITH-GLOBAL-
+STOBJ form, as the top-level form calls FOO2-CALLER, which calls FOO2,
+which calls FOO2-SUB, which makes an updating WITH-GLOBAL-STOBJ call
+that binds ST.  See :DOC with-global-stobj.
+
+ACL2 !>>(FOO2 4 ST2 STATE)
+(NIL <state> 4)
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 4)
+                           (EQUAL (FLD ST2) NIL)))
+ :PASSED
+ACL2 !>>(DEFUN G1 (ST STATE)
+               (DECLARE (XARGS :STOBJS (ST STATE)))
+               (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
+                    (MV F STATE (FLD ST))))
+
+Since G1 is non-recursive, its admission is trivial.  We observe that
+the type of G1 is described by the theorem 
+(AND (CONSP (G1 ST STATE)) (TRUE-LISTP (G1 ST STATE))).  We used primitive
+type reasoning.
+
+(G1 ST STATE) => (MV * STATE *).
+
+Computing the guard conjecture for G1....
+
+The guard conjecture for G1 is trivial to prove.  G1 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN G1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ G1
+ACL2 !>>(G1 ST STATE)
+(4 <state> 4)
+ACL2 !>>(DEFUN G2 (VAL ST STATE)
+               (DECLARE (XARGS :STOBJS (ST STATE)))
+               (LET ((ST (UPDATE-FLD VAL ST)))
+                    (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
+                         (MV F (FLD ST) ST STATE))))
+
+Since G2 is non-recursive, its admission is trivial.  We observe that
+the type of G2 is described by the theorem 
+(AND (CONSP (G2 VAL ST STATE)) (TRUE-LISTP (G2 VAL ST STATE))).  We
+used primitive type reasoning.
+
+(G2 * ST STATE) => (MV * * ST STATE).
+
+Computing the guard conjecture for G2....
+
+The guard conjecture for G2 is trivial to prove.  G2 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN G2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ G2
+ACL2 !>>(G2 NIL ST STATE)
+
+
+ACL2 Error in TOP-LEVEL:  Illegal top-level form, (G2 NIL ST STATE).
+The stobj ST is returned by evaluation of that form, yet is bound by
+a WITH-GLOBAL-STOBJ form, as the top-level form calls G2, which makes
+a WITH-GLOBAL-STOBJ call that binds ST.  See :DOC with-global-stobj.
+
+ACL2 !>>(G2 5 ST2 STATE)
+(4 5 <st2> <state>)
+ACL2 !>>(DEFUN G3-SUB (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ ST (FLD ST)))
+
+Since G3-SUB is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of G3-SUB.
+
+(G3-SUB STATE) => *.
+
+Computing the guard conjecture for G3-SUB....
+
+The guard conjecture for G3-SUB is trivial to prove.  G3-SUB is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN G3-SUB ...)
+Rules: NIL
+ G3-SUB
+ACL2 !>>(DEFUN G3 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
+                    (MV F STATE (G3-SUB STATE))))
+
+Since G3 is non-recursive, its admission is trivial.  We observe that
+the type of G3 is described by the theorem 
+(AND (CONSP (G3 STATE)) (TRUE-LISTP (G3 STATE))).  We used primitive
+type reasoning.
+
+(G3 STATE) => (MV * STATE *).
+
+Computing the guard conjecture for G3....
+
+The guard conjecture for G3 is trivial to prove.  G3 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN G3 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ G3
+ACL2 !>>(G3 STATE)
+(4 <state> 4)
+ACL2 !>>(DEFUN FOO3 (STATE)
+               (DECLARE (XARGS :STOBJS (STATE)))
+               (WITH-GLOBAL-STOBJ
+                    ST
+                    (LET ((STATE (WITH-GLOBAL-STOBJ ST (ST)
+                                                    (UPDATE-FLD 3 ST))))
+                         (MV (FLD ST) STATE))))
+
+
+ACL2 Error [Translate] in ( DEFUN FOO3 ...):  The form binding stobj
+ST,
+
+(WITH-GLOBAL-STOBJ ST
+                   (LET ((STATE (WITH-GLOBAL-STOBJ ST # #)))
+                        (MV (FLD ST) STATE))),
+
+is illegal because its body makes an updating WITH-GLOBAL-STOBJ call
+that binds ST.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( DEFUN FOO3 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN FOO3 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN FOO3 (STATE)
+               (DECLARE (XARGS :STOBJS (STATE)))
+               (WITH-GLOBAL-STOBJ ST
+                                  (LET ((STATE (FOO2-SUB VAL STATE)))
+                                       (MV (FLD ST) STATE))))
+
+
+ACL2 Error [Translate] in ( DEFUN FOO3 ...):  The form binding stobj
+ST,
+
+(WITH-GLOBAL-STOBJ ST
+                   (LET ((STATE (FOO2-SUB VAL STATE)))
+                        (MV (FLD ST) STATE))),
+
+is illegal because its body calls FOO2-SUB, which makes an updating
+WITH-GLOBAL-STOBJ call that binds ST.
+
+
+Summary
+Form:  ( DEFUN FOO3 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN FOO3 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN FOO4 (STATE)
+               (DECLARE (XARGS :STOBJS (STATE)))
+               (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
+                                  (LET ((X (WITH-GLOBAL-STOBJ ST (FLD ST))))
+                                       (MV (FLD ST) X ST))))
+
+
+ACL2 Error [Translate] in ( DEFUN FOO4 ...):  The form binding stobj
+ST,
+
+(WITH-GLOBAL-STOBJ ST (NIL NIL ST)
+                   (LET ((X (WITH-GLOBAL-STOBJ ST #)))
+                        (MV (FLD ST) X ST))),
+
+is illegal because its body makes a WITH-GLOBAL-STOBJ call that binds
+ST.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( DEFUN FOO4 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN FOO4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN FOO4 (STATE)
+               (DECLARE (XARGS :STOBJS (STATE)))
+               (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
+                                  (LET ((X (RD0 STATE)))
+                                       (MV (FLD ST) X ST))))
+
+
+ACL2 Error [Translate] in ( DEFUN FOO4 ...):  The form binding stobj
+ST,
+
+(WITH-GLOBAL-STOBJ ST (NIL NIL ST)
+                   (LET ((X (RD0 STATE)))
+                        (MV (FLD ST) X ST))),
+
+is illegal because its body calls RD0, which makes a WITH-GLOBAL-STOBJ
+call that binds ST.
+
+
+Summary
+Form:  ( DEFUN FOO4 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN FOO4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(LET ((STATE (WR0 2 STATE)))
+             (MV ST STATE))
+
+
+ACL2 Error in TOP-LEVEL:  Illegal top-level form, 
+(LET ((STATE (WR0 2 STATE))) (MV ST STATE)).
+The stobj ST occurs free, yet may be bound by an updating WITH-GLOBAL-
+STOBJ form, as the top-level form calls WR0, which makes an updating
+WITH-GLOBAL-STOBJ call that binds ST.  See :DOC with-global-stobj.
+
+ACL2 !>>(DEFUN WR1 (X STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WR0 X STATE))
+
+Since WR1 is non-recursive, its admission is trivial.  We observe that
+the type of WR1 is described by the theorem (CONSP (WR1 X STATE)).
+We used the :type-prescription rule WR0.
+
+(WR1 * STATE) => STATE.
+
+Computing the guard conjecture for WR1....
+
+The guard conjecture for WR1 is trivial to prove.  WR1 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN WR1 ...)
+Rules: ((:TYPE-PRESCRIPTION WR0))
+ WR1
+ACL2 !>>(DEFUN WR2 (X STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WR1 X STATE))
+
+Since WR2 is non-recursive, its admission is trivial.  We observe that
+the type of WR2 is described by the theorem (CONSP (WR2 X STATE)).
+We used the :type-prescription rule WR1.
+
+(WR2 * STATE) => STATE.
+
+Computing the guard conjecture for WR2....
+
+The guard conjecture for WR2 is trivial to prove.  WR2 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN WR2 ...)
+Rules: ((:TYPE-PRESCRIPTION WR1))
+ WR2
+ACL2 !>>(LET ((STATE (WR2 2 STATE)))
+             (MV ST STATE))
+
+
+ACL2 Error in TOP-LEVEL:  Illegal top-level form, 
+(LET ((STATE (WR2 2 STATE))) (MV ST STATE)).
+The stobj ST occurs free, yet may be bound by an updating WITH-GLOBAL-
+STOBJ form, as the top-level form calls WR2, which calls WR1, which
+calls WR0, which makes an updating WITH-GLOBAL-STOBJ call that binds
+ST.  See :DOC with-global-stobj.
+
+ACL2 !>>(DEFUN F0 (ST2 STATE)
+               (DECLARE (XARGS :STOBJS (ST2 STATE)))
+               (WITH-GLOBAL-STOBJ ST (ST ST2 NIL STATE)
+                                  (MV ST ST2 NIL STATE)))
+
+Since F0 is non-recursive, its admission is trivial.  We observe that
+the type of F0 is described by the theorem 
+(AND (CONSP (F0 ST2 STATE)) (TRUE-LISTP (F0 ST2 STATE))).  We used
+primitive type reasoning.
+
+(F0 ST2 STATE) => (MV ST2 * STATE).
+
+Computing the guard conjecture for F0....
+
+The guard conjecture for F0 is trivial to prove.  F0 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F0 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F0
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F0 (W STATE))
+                                  '(ST2 STATE))
+                           (EQUAL (STOBJS-OUT 'F0 (W STATE))
+                                  '(ST2 NIL STATE))))
+ :PASSED
+ACL2 !>>(DEFUN F1-BAD (ST2 STATE)
+               (DECLARE (XARGS :STOBJS (ST2 STATE)))
+               (WITH-GLOBAL-STOBJ ST (ST2 NIL STATE)
+                                  (MV ST2 NIL STATE)))
+
+
+ACL2 Error [Translate] in ( DEFUN F1-BAD ...):  Illegal call of WITH-
+GLOBAL-STOBJ, (WITH-GLOBAL-STOBJ ST (ST2 NIL STATE) (MV ST2 NIL STATE)):
+The signature (second) argument fails to contain the bound stobj, which
+in this case is ST.  See :DOC with-global-stobj.
+
+
+Summary
+Form:  ( DEFUN F1-BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F1-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F1 (ST2 STATE)
+               (DECLARE (XARGS :STOBJS (ST2 STATE)))
+               (WITH-GLOBAL-STOBJ ST (ST2 ST STATE NIL)
+                                  (MV ST2 ST STATE 17)))
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem 
+(AND (CONSP (F1 ST2 STATE)) (TRUE-LISTP (F1 ST2 STATE))).  We used
+primitive type reasoning.
+
+(F1 ST2 STATE) => (MV ST2 STATE *).
+
+Computing the guard conjecture for F1....
+
+The guard conjecture for F1 is trivial to prove.  F1 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F1
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F1 (W STATE))
+                                  '(ST2 STATE))
+                           (EQUAL (STOBJS-OUT 'F1 (W STATE))
+                                  '(ST2 STATE NIL))))
+ :PASSED
+ACL2 !>>(DEFUN F2 (ST2 STATE)
+               (DECLARE (XARGS :STOBJS (ST2 STATE)))
+               (WITH-GLOBAL-STOBJ ST (ST2 ST NIL)
+                                  (MV ST2 ST 17)))
+
+Since F2 is non-recursive, its admission is trivial.  We observe that
+the type of F2 is described by the theorem 
+(AND (CONSP (F2 ST2 STATE)) (TRUE-LISTP (F2 ST2 STATE))).  We used
+primitive type reasoning.
+
+(F2 ST2 STATE) => (MV ST2 * STATE).
+
+Computing the guard conjecture for F2....
+
+The guard conjecture for F2 is trivial to prove.  F2 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F2
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F2 (W STATE))
+                                  '(ST2 STATE))
+                           (EQUAL (STOBJS-OUT 'F2 (W STATE))
+                                  '(ST2 NIL STATE))))
+ :PASSED
+ACL2 !>>(DEFUN F3 (ST2 STATE)
+               (DECLARE (XARGS :STOBJS (ST2 STATE)))
+               (WITH-GLOBAL-STOBJ ST (ST2 ST)
+                                  (SWAP-STOBJS ST2 ST)))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem 
+(AND (CONSP (F3 ST2 STATE)) (TRUE-LISTP (F3 ST2 STATE))).  We used
+primitive type reasoning.
+
+(F3 ST2 STATE) => (MV ST2 STATE).
+
+Computing the guard conjecture for F3....
+
+The guard conjecture for F3 is trivial to prove.  F3 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F3
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F3 (W STATE))
+                                  '(ST2 STATE))
+                           (EQUAL (STOBJS-OUT 'F3 (W STATE))
+                                  '(ST2 STATE))))
+ :PASSED
+ACL2 !>>(UPDATE-FLD 1 ST)
+<st>
+ACL2 !>>(UPDATE-FLD 2 ST2)
+<st2>
+ACL2 !>>(F3 ST2 STATE)
+(<st2> <state>)
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 2)
+                           (EQUAL (FLD ST2) 1)
+                           (EQUAL (RD0 STATE) 2)))
+ :PASSED
+ACL2 !>>(DEFUN F4 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ
+                    ST (ST)
+                    (WITH-LOCAL-STOBJ ST2
+                                      (MV-LET (ST ST2)
+                                              (LET ((ST2 (UPDATE-FLD 3 ST2)))
+                                                   (SWAP-STOBJS ST ST2))
+                                              ST))))
+
+Since F4 is non-recursive, its admission is trivial.  We observe that
+the type of F4 is described by the theorem (CONSP (F4 STATE)).  We
+used the :type-prescription rule WRITE-USER-STOBJ-ALIST.
+
+(F4 STATE) => STATE.
+
+Computing the guard conjecture for F4....
+
+The guard conjecture for F4 is trivial to prove.  F4 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F4 ...)
+Rules: ((:TYPE-PRESCRIPTION WRITE-USER-STOBJ-ALIST))
+ F4
+ACL2 !>>(UPDATE-FLD 1 ST)
+<st>
+ACL2 !>>(UPDATE-FLD 2 ST2)
+<st2>
+ACL2 !>>(F4 STATE)
+<state>
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 3)
+                           (EQUAL (FLD ST2) 2)))
+ :PASSED
+ACL2 !>>(DEFUN F5 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ ST
+                                  (LIST (FLD ST)
+                                        (WITH-GLOBAL-STOBJ ST (FLD ST)))))
+
+Since F5 is non-recursive, its admission is trivial.  We observe that
+the type of F5 is described by the theorem 
+(AND (CONSP (F5 STATE)) (TRUE-LISTP (F5 STATE))).  We used primitive
+type reasoning.
+
+(F5 STATE) => *.
+
+Computing the guard conjecture for F5....
+
+The guard conjecture for F5 is trivial to prove.  F5 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F5 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F5
+ACL2 !>>(WR0 'F5 STATE)
+<state>
+ACL2 !>>(ASSERT-EVENT (EQUAL (F5 STATE) '(F5 F5)))
+ :PASSED
+ACL2 !>>(LIST (FLD ST) (F5 STATE))
+(F5 (F5 F5))
+ACL2 !>>(DEFUN
+             WRITE-GLOBAL-ST-ST2 (FLD FLD2 STATE)
+             (DECLARE (XARGS :STOBJS STATE))
+             (WITH-GLOBAL-STOBJ
+                  ST (ST)
+                  (LET ((ST (UPDATE-FLD FLD ST)))
+                       (WITH-GLOBAL-STOBJ ST2 (ST ST2)
+                                          (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
+                                               (MV ST ST2))))))
+
+
+ACL2 Error [Translate] in ( DEFUN WRITE-GLOBAL-ST-ST2 ...):  The form
+(WITH-GLOBAL-STOBJ ST2 (ST ST2)
+                   (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
+                        (MV ST ST2)))
+is illegal here because of a signature mismatch.  Its signature argument
+is (ST ST2), which indicates that it will return a result of shape
+(ST STATE).  However, a result of shape (ST) is required.  See :DOC
+with-global-stobj.
+
+
+Summary
+Form:  ( DEFUN WRITE-GLOBAL-ST-ST2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN WRITE-GLOBAL-ST-ST2 ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN
+             WRITE-GLOBAL-ST-ST2 (FLD FLD2 STATE)
+             (DECLARE (XARGS :STOBJS STATE))
+             (WITH-GLOBAL-STOBJ
+                  ST (ST STATE)
+                  (LET ((ST (UPDATE-FLD FLD ST)))
+                       (WITH-GLOBAL-STOBJ ST2 (ST ST2)
+                                          (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
+                                               (MV ST ST2))))))
+
+Since WRITE-GLOBAL-ST-ST2 is non-recursive, its admission is trivial.
+We observe that the type of WRITE-GLOBAL-ST-ST2 is described by the
+theorem (CONSP (WRITE-GLOBAL-ST-ST2 FLD FLD2 STATE)).  We used the
+:type-prescription rule WRITE-USER-STOBJ-ALIST.
+
+(WRITE-GLOBAL-ST-ST2 * * STATE) => STATE.
+
+Computing the guard conjecture for WRITE-GLOBAL-ST-ST2....
+
+The guard conjecture for WRITE-GLOBAL-ST-ST2 is trivial to prove. 
+WRITE-GLOBAL-ST-ST2 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN WRITE-GLOBAL-ST-ST2 ...)
+Rules: ((:TYPE-PRESCRIPTION WRITE-USER-STOBJ-ALIST))
+ WRITE-GLOBAL-ST-ST2
+ACL2 !>>(WRITE-GLOBAL-ST-ST2 'A 'B STATE)
+<state>
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 'A)
+                           (EQUAL (FLD ST2) 'B)))
+ :PASSED
+ACL2 !>>(WRITE-GLOBAL-ST-ST2 'C 'D STATE)
+<state>
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 'C)
+                           (EQUAL (FLD ST2) 'D)))
+ :PASSED
+ACL2 !>>(DEFUN READ-GLOBAL-ST-ST2 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ
+                    ST
+                    (WITH-GLOBAL-STOBJ ST2 (LIST (FLD ST) (FLD ST2)))))
+
+Since READ-GLOBAL-ST-ST2 is non-recursive, its admission is trivial.
+We observe that the type of READ-GLOBAL-ST-ST2 is described by the
+theorem 
+(AND (CONSP (READ-GLOBAL-ST-ST2 STATE))
+     (TRUE-LISTP (READ-GLOBAL-ST-ST2 STATE))).
+We used primitive type reasoning.
+
+(READ-GLOBAL-ST-ST2 STATE) => *.
+
+Computing the guard conjecture for READ-GLOBAL-ST-ST2....
+
+The guard conjecture for READ-GLOBAL-ST-ST2 is trivial to prove.  
+READ-GLOBAL-ST-ST2 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN READ-GLOBAL-ST-ST2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ READ-GLOBAL-ST-ST2
+ACL2 !>>(ASSERT-EVENT (EQUAL (READ-GLOBAL-ST-ST2 STATE)
+                             '(C D)))
+ :PASSED
+ACL2 !>>(DEFUN F3-ALT (ST2 STATE)
+               (DECLARE (XARGS :STOBJS (ST2 STATE)
+                               :MODE :PROGRAM))
+               (WITH-GLOBAL-STOBJ ST (ST2 ST)
+                                  (SWAP-STOBJS ST2 ST)))
+
+Summary
+Form:  ( DEFUN F3-ALT ...)
+Rules: NIL
+ F3-ALT
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F3-ALT (W STATE))
+                                  '(ST2 STATE))
+                           (EQUAL (STOBJS-OUT 'F3-ALT (W STATE))
+                                  '(ST2 STATE))))
+ :PASSED
+ACL2 !>>(UPDATE-FLD -1 ST)
+<st>
+ACL2 !>>(UPDATE-FLD -2 ST2)
+<st2>
+ACL2 !>>(F3-ALT ST2 STATE)
+(<st2> <state>)
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) -2)
+                           (EQUAL (FLD ST2) -1)
+                           (EQUAL (RD0 STATE) -2)))
+ :PASSED
+ACL2 !>>(VERIFY-TERMINATION F3-ALT
+                            (DECLARE (XARGS :VERIFY-GUARDS NIL)))
+
+Since F3-ALT is non-recursive, its admission is trivial.  We observe
+that the type of F3-ALT is described by the theorem 
+(AND (CONSP (F3-ALT ST2 STATE)) (TRUE-LISTP (F3-ALT ST2 STATE))). 
+We used primitive type reasoning.
+
+(F3-ALT ST2 STATE) => (MV ST2 STATE).
+
+Summary
+Form:  ( DEFUN F3-ALT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+
+Summary
+Form:  ( MAKE-EVENT (VERIFY-TERMINATION-FN ...))
+Rules: NIL
+ F3-ALT
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F3-ALT (W STATE))
+                                  '(ST2 STATE))
+                           (EQUAL (STOBJS-OUT 'F3-ALT (W STATE))
+                                  '(ST2 STATE))))
+ :PASSED
+ACL2 !>>(UPDATE-FLD 1 ST)
+<st>
+ACL2 !>>(UPDATE-FLD 2 ST2)
+<st2>
+ACL2 !>>(F3-ALT ST2 STATE)
+(<st2> <state>)
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 2)
+                           (EQUAL (FLD ST2) 1)
+                           (EQUAL (RD0 STATE) 2)))
+ :PASSED
+ACL2 !>>(VERIFY-GUARDS F3-ALT)
+
+Computing the guard conjecture for F3-ALT....
+
+The guard conjecture for F3-ALT is trivial to prove.  F3-ALT is compliant
+with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS F3-ALT)
+Rules: NIL
+ F3-ALT
+ACL2 !>>(UPDATE-FLD -1 ST)
+<st>
+ACL2 !>>(UPDATE-FLD -2 ST2)
+<st2>
+ACL2 !>>(F3-ALT ST2 STATE)
+(<st2> <state>)
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) -2)
+                           (EQUAL (FLD ST2) -1)
+                           (EQUAL (RD0 STATE) -2)))
+ :PASSED
+ACL2 !>>(DEFTHM ASSOC-EQUAL-PUT-ASSOC-EQUAL
+                (EQUAL (ASSOC-EQUAL KEY (PUT-ASSOC-EQUAL KEY VAL ALIST))
+                       (CONS KEY VAL)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(PUT-ASSOC-EQUAL KEY VAL ALIST).  This suggestion was produced using
+the :induction rule PUT-ASSOC-EQUAL.  If we let (:P ALIST KEY VAL)
+denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP ALIST))
+                   (NOT (EQUAL KEY (CAR (CAR ALIST))))
+                   (:P (CDR ALIST) KEY VAL))
+              (:P ALIST KEY VAL))
+     (IMPLIES (AND (NOT (ENDP ALIST))
+                   (EQUAL KEY (CAR (CAR ALIST))))
+              (:P ALIST KEY VAL))
+     (IMPLIES (ENDP ALIST)
+              (:P ALIST KEY VAL))).
+This induction is justified by the same argument used to admit 
+PUT-ASSOC-EQUAL.  When applied to the goal at hand the above induction
+scheme produces three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ASSOC-EQUAL-PUT-ASSOC-EQUAL ...)
+Rules: ((:DEFINITION ASSOC-EQUAL)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:DEFINITION PUT-ASSOC-EQUAL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION PUT-ASSOC-EQUAL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ ASSOC-EQUAL-PUT-ASSOC-EQUAL
+ACL2 !>>(DEFTHM RD0-OF-WR0
+                (EQUAL (RD0 (WR0 VAL STATE)) VAL))
+
+ACL2 Warning [Non-rec] in ( DEFTHM RD0-OF-WR0 ...):  A :REWRITE rule
+generated from RD0-OF-WR0 will be triggered only by terms containing
+the function symbols RD0 and WR0, which have non-recursive definitions.
+Unless these definitions are disabled, this rule is unlikely ever to
+be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM RD0-OF-WR0 ...):  The previously
+added rule RD0 subsumes a newly proposed :REWRITE rule generated from
+RD0-OF-WR0, in the sense that the old rule rewrites a more general
+target.  Because the new rule will be tried first, it may nonetheless
+find application.
+
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM RD0-OF-WR0 ...)
+Rules: ((:DEFINITION FLD)
+        (:DEFINITION RD0)
+        (:DEFINITION READ-USER-STOBJ-ALIST)
+        (:DEFINITION UPDATE-FLD)
+        (:DEFINITION UPDATE-NTH)
+        (:DEFINITION UPDATE-USER-STOBJ-ALIST1)
+        (:DEFINITION USER-STOBJ-ALIST1)
+        (:DEFINITION WR0)
+        (:DEFINITION WRITE-USER-STOBJ-ALIST)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NFIX)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE ASSOC-EQUAL-PUT-ASSOC-EQUAL)
+        (:REWRITE CDR-CONS)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-UPDATE-NTH))
+Warnings:  Subsume and Non-rec
+ RD0-OF-WR0
+ACL2 !>>(DEFSTOBJ GLOBAL-STOBJ-TABLE
+                  (GTBL :TYPE (STOBJ-TABLE)))
+
+Summary
+Form:  ( DEFSTOBJ GLOBAL-STOBJ-TABLE ...)
+Rules: NIL
+ GLOBAL-STOBJ-TABLE
+ACL2 !>>(DEFUN
+             READ-GTBL-ST (STATE)
+             (DECLARE (XARGS :STOBJS STATE))
+             (WITH-GLOBAL-STOBJ
+                  GLOBAL-STOBJ-TABLE
+                  (STOBJ-LET ((ST (GTBL-GET 'ST
+                                            GLOBAL-STOBJ-TABLE (CREATE-ST))))
+                             (VAL)
+                             (FLD ST)
+                             VAL)))
+
+Since READ-GTBL-ST is non-recursive, its admission is trivial.  We
+could deduce no constraints on the type of READ-GTBL-ST.
+
+(READ-GTBL-ST STATE) => *.
+
+Computing the guard conjecture for READ-GTBL-ST....
+
+The guard conjecture for READ-GTBL-ST is trivial to prove.  READ-GTBL-ST
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN READ-GTBL-ST ...)
+Rules: NIL
+ READ-GTBL-ST
+ACL2 !>>(DEFUN
+             WRITE-GTBL-ST (VAL STATE)
+             (DECLARE (XARGS :STOBJS STATE))
+             (WITH-GLOBAL-STOBJ
+                  GLOBAL-STOBJ-TABLE (GLOBAL-STOBJ-TABLE)
+                  (STOBJ-LET ((ST (GTBL-GET 'ST
+                                            GLOBAL-STOBJ-TABLE (CREATE-ST))))
+                             (ST)
+                             (UPDATE-FLD VAL ST)
+                             GLOBAL-STOBJ-TABLE)))
+
+Since WRITE-GTBL-ST is non-recursive, its admission is trivial.  We
+observe that the type of WRITE-GTBL-ST is described by the theorem
+(CONSP (WRITE-GTBL-ST VAL STATE)).  We used the :type-prescription
+rule WRITE-USER-STOBJ-ALIST.
+
+(WRITE-GTBL-ST * STATE) => STATE.
+
+Computing the guard conjecture for WRITE-GTBL-ST....
+
+The guard conjecture for WRITE-GTBL-ST is trivial to prove.  WRITE-GTBL-ST
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN WRITE-GTBL-ST ...)
+Rules: ((:TYPE-PRESCRIPTION WRITE-USER-STOBJ-ALIST))
+ WRITE-GTBL-ST
+ACL2 !>>(WRITE-GTBL-ST 10 STATE)
+<state>
+ACL2 !>>(ASSERT-EVENT (EQUAL (READ-GTBL-ST STATE) 10))
+ :PASSED
+ACL2 !>>(DEFMACRO
+         READ-GTBL (NAME FIELD &OPTIONAL CREATOR)
+         (CONS
+          'WITH-GLOBAL-STOBJ
+          (CONS
+           'GLOBAL-STOBJ-TABLE
+           (CONS
+            (CONS
+             'STOBJ-LET
+             (CONS
+              (CONS
+               (CONS
+                NAME
+                (CONS
+                 (CONS
+                   'GTBL-GET
+                   (CONS (CONS 'QUOTE (CONS NAME 'NIL))
+                         (CONS 'GLOBAL-STOBJ-TABLE
+                               (CONS (CONS (OR CREATOR
+                                               (DEFSTOBJ-FNNAME NAME :CREATOR
+                                                                :TOP NIL))
+                                           'NIL)
+                                     'NIL))))
+                 'NIL))
+               'NIL)
+              (CONS (CONS FIELD 'NIL)
+                    (CONS (CONS FIELD (CONS NAME 'NIL))
+                          (CONS FIELD 'NIL)))))
+            'NIL))))
+
+Summary
+Form:  ( DEFMACRO READ-GTBL ...)
+Rules: NIL
+ READ-GTBL
+ACL2 !>>(DEFMACRO
+         WRITE-GTBL
+         (VAL NAME UPDATER &OPTIONAL CREATOR)
+         (CONS
+          'WITH-GLOBAL-STOBJ
+          (CONS
+           'GLOBAL-STOBJ-TABLE
+           (CONS
+            '(GLOBAL-STOBJ-TABLE)
+            (CONS
+             (CONS
+              'STOBJ-LET
+              (CONS
+               (CONS
+                (CONS
+                 NAME
+                 (CONS
+                  (CONS
+                   'GTBL-GET
+                   (CONS (CONS 'QUOTE (CONS NAME 'NIL))
+                         (CONS 'GLOBAL-STOBJ-TABLE
+                               (CONS (CONS (OR CREATOR
+                                               (DEFSTOBJ-FNNAME NAME :CREATOR
+                                                                :TOP NIL))
+                                           'NIL)
+                                     'NIL))))
+                  'NIL))
+                'NIL)
+               (CONS (CONS NAME 'NIL)
+                     (CONS (CONS UPDATER (CONS VAL (CONS NAME 'NIL)))
+                           '(GLOBAL-STOBJ-TABLE)))))
+             'NIL)))))
+
+Summary
+Form:  ( DEFMACRO WRITE-GTBL ...)
+Rules: NIL
+ WRITE-GTBL
+ACL2 !>>(DEFUN READ-GTBL-ST2 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (READ-GTBL ST FLD))
+
+Since READ-GTBL-ST2 is non-recursive, its admission is trivial.  We
+could deduce no constraints on the type of READ-GTBL-ST2.
+
+(READ-GTBL-ST2 STATE) => *.
+
+Computing the guard conjecture for READ-GTBL-ST2....
+
+The guard conjecture for READ-GTBL-ST2 is trivial to prove.  READ-GTBL-ST2
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN READ-GTBL-ST2 ...)
+Rules: NIL
+ READ-GTBL-ST2
+ACL2 !>>(DEFUN WRITE-GTBL-ST2 (VAL STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WRITE-GTBL VAL ST UPDATE-FLD))
+
+Since WRITE-GTBL-ST2 is non-recursive, its admission is trivial.  We
+observe that the type of WRITE-GTBL-ST2 is described by the theorem
+(CONSP (WRITE-GTBL-ST2 VAL STATE)).  We used the :type-prescription
+rule WRITE-USER-STOBJ-ALIST.
+
+(WRITE-GTBL-ST2 * STATE) => STATE.
+
+Computing the guard conjecture for WRITE-GTBL-ST2....
+
+The guard conjecture for WRITE-GTBL-ST2 is trivial to prove.  WRITE-GTBL-ST2
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN WRITE-GTBL-ST2 ...)
+Rules: ((:TYPE-PRESCRIPTION WRITE-USER-STOBJ-ALIST))
+ WRITE-GTBL-ST2
+ACL2 !>>(WRITE-GTBL-ST 20 STATE)
+<state>
+ACL2 !>>(ASSERT-EVENT (EQUAL (READ-GTBL-ST STATE) 20))
+ :PASSED
+ACL2 !>>(ENCAPSULATE (((CRN0 STATE) => *))
+                     (LOCAL (DEFUN CRN0 (STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (STATE-P STATE))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(LOCAL (DEFUN CRN0 (STATE)
+                       (DECLARE (XARGS :STOBJS STATE))
+                       (STATE-P STATE)))
+
+Since CRN0 is non-recursive, its admission is trivial.  We observe
+that the type of CRN0 is described by the theorem 
+(OR (EQUAL (CRN0 STATE) T) (EQUAL (CRN0 STATE) NIL)).  We used the
+:type-prescription rule STATE-P.
+
+(CRN0 STATE) => *.
+
+Computing the guard conjecture for CRN0....
+
+The guard conjecture for CRN0 is trivial to prove.  CRN0 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN CRN0 ...)
+Rules: ((:TYPE-PRESCRIPTION STATE-P))
+CRN0
+
+End of Encapsulated Event.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+(CRN0 STATE) => *.
+
+Summary
+Form:  ( ENCAPSULATE (((CRN0 STATE ...) ...) ...) ...)
+Rules: NIL
+ CRN0
+ACL2 !>>(DEFATTACH CRN0 RD0)
+
+
+ACL2 Error in ( DEFATTACH CRN0 RD0):  The attachment of RD0 to CRN0
+restricts stobjs bound by WITH-GLOBAL-STOBJ under calls of RD0, according
+to the :GLOBAL-STOBJS keyword (default nil) in the signature introducing
+CRN0.  But this restriction is violated for stobj ST:  the attempt
+is to attach RD0, which makes a WITH-GLOBAL-STOBJ call that binds ST,
+yet that stobj is not specified by the :GLOBAL-STOBJS keyword of CRN0.
+See :DOC with-global-stobj.
+
+
+Summary
+Form:  ( DEFATTACH CRN0 RD0)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH CRN0 RD0):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN RD0-IN-GUARD (STATE)
+               (DECLARE (XARGS :STOBJS STATE :GUARD (RD0 STATE))
+                        (IGNORE STATE))
+               17)
+
+Since RD0-IN-GUARD is non-recursive, its admission is trivial.  We
+observe that the type of RD0-IN-GUARD is described by the theorem 
+(AND (INTEGERP (RD0-IN-GUARD STATE)) (< 1 (RD0-IN-GUARD STATE))). 
+
+(RD0-IN-GUARD STATE) => *.
+
+Computing the guard conjecture for RD0-IN-GUARD....
+
+The guard conjecture for RD0-IN-GUARD is trivial to prove.  RD0-IN-GUARD
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN RD0-IN-GUARD ...)
+Rules: NIL
+ RD0-IN-GUARD
+ACL2 !>>(DEFATTACH CRN0 RD0-IN-GUARD)
+
+
+ACL2 Error in ( DEFATTACH CRN0 RD0-IN-GUARD):  The attachment of RD0-IN-GUARD
+to CRN0 restricts stobjs bound by WITH-GLOBAL-STOBJ under calls of
+RD0-IN-GUARD, according to the :GLOBAL-STOBJS keyword (default nil)
+in the signature introducing CRN0.  But this restriction is violated
+for stobj ST:  the attempt is to attach RD0-IN-GUARD, which calls RD0,
+which makes a WITH-GLOBAL-STOBJ call that binds ST, yet that stobj
+is not specified by the :GLOBAL-STOBJS keyword of CRN0.  See :DOC with-
+global-stobj.
+
+
+Summary
+Form:  ( DEFATTACH CRN0 RD0-IN-GUARD)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH CRN0 RD0-IN-GUARD):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN1 *) => * :GLOBAL-STOBJS ((ST))))
+                     (LOCAL (DEFUN CRN1 (X) X)))
+
+
+ACL2 Error in ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...):  In the
+signature for CRN1, it is illegal to specify any stobjs with the :GLOBAL-
+STOBJS keyword because STATE is not among the formals for CRN1.  See
+:DOC with-global-stobj.
+
+
+Summary
+Form:  ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN1 *)
+                       => *
+                       :FORMALS (X)
+                       :GUARD (CONSP X)
+                       :GLOBAL-STOBJS ((ST))))
+                     (LOCAL (DEFUN CRN1 (X) X)))
+
+
+ACL2 Error in ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...):  In the
+signature for CRN1, it is illegal to specify any stobjs with the :GLOBAL-
+STOBJS keyword because STATE is not among the formals for CRN1.  See
+:DOC with-global-stobj.
+
+
+Summary
+Form:  ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN1 STATE)
+                       => *
+                       :GLOBAL-STOBJS ((ST))))
+                     (LOCAL (DEFUN CRN1 (STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (STATE-P STATE))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(LOCAL (DEFUN CRN1 (STATE)
+                       (DECLARE (XARGS :STOBJS STATE))
+                       (STATE-P STATE)))
+
+Since CRN1 is non-recursive, its admission is trivial.  We observe
+that the type of CRN1 is described by the theorem 
+(OR (EQUAL (CRN1 STATE) T) (EQUAL (CRN1 STATE) NIL)).  We used the
+:type-prescription rule STATE-P.
+
+(CRN1 STATE) => *.
+
+Computing the guard conjecture for CRN1....
+
+The guard conjecture for CRN1 is trivial to prove.  CRN1 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN CRN1 ...)
+Rules: ((:TYPE-PRESCRIPTION STATE-P))
+CRN1
+
+End of Encapsulated Event.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+(CRN1 STATE) => *.
+
+Summary
+Form:  ( ENCAPSULATE (((CRN1 STATE ...) ...) ...) ...)
+Rules: NIL
+ CRN1
+ACL2 !>>(ENCAPSULATE (((CRN2 * STATE)
+                       => *
+                       :GLOBAL-STOBJS (NIL ST)))
+                     (LOCAL (DEFUN CRN2 (X STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (CONS X (STATE-P STATE)))))
+
+
+ACL2 Error in ( ENCAPSULATE (((CRN2 * ...) ...) ...) ...):  In the
+signature for CRN2, it is illegal to specify any stobjs in the CDR
+of the value of the :GLOBAL-STOBJS keyword (that is, stobjs that are
+viewed as updated by WITH-GLOBAL-STOBJ forms) because STATE is not
+returned by CRN2.  See :DOC with-global-stobj.
+
+
+Summary
+Form:  ( ENCAPSULATE (((CRN2 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((CRN2 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN2 * STATE)
+                       => STATE
+                       :GLOBAL-STOBJS (NIL ST)))
+                     (LOCAL (DEFUN CRN2 (X STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (F-PUT-GLOBAL 'ABC X STATE))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(LOCAL (DEFUN CRN2 (X STATE)
+                       (DECLARE (XARGS :STOBJS STATE))
+                       (F-PUT-GLOBAL 'ABC X STATE)))
+
+Since CRN2 is non-recursive, its admission is trivial.  We observe
+that the type of CRN2 is described by the theorem (CONSP (CRN2 X STATE)).
+We used the :type-prescription rule PUT-GLOBAL.
+
+(CRN2 * STATE) => STATE.
+
+Computing the guard conjecture for CRN2....
+
+The guard conjecture for CRN2 is trivial to prove, given the :forward-
+chaining rule STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1 and the :type-
+prescription rule STATE-P.  CRN2 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN CRN2 ...)
+Rules: ((:FORWARD-CHAINING STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1)
+        (:TYPE-PRESCRIPTION PUT-GLOBAL)
+        (:TYPE-PRESCRIPTION STATE-P))
+CRN2
+
+End of Encapsulated Event.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+(CRN2 * STATE) => STATE.
+
+Summary
+Form:  ( ENCAPSULATE (((CRN2 * ...) ...) ...) ...)
+Rules: NIL
+ CRN2
+ACL2 !>>(DEFATTACH CRN1 RD0)
+
+The guard proof obligation is
+
+(IMPLIES (STATE-P STATE)
+         (STATE-P STATE)).
+
+Q.E.D.
+
+This concludes the guard proof.
+
+
+The attachment trivially satisfies the required constraints.
+
+
+Summary
+Form:  ( DEFATTACH CRN1 RD0)
+Rules: ((:TYPE-PRESCRIPTION STATE-P))
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(UPDATE-FLD 'E ST)
+<st>
+ACL2 !>>(ASSERT-EVENT (EQUAL (RD0 STATE) 'E))
+ :PASSED
+ACL2 !>>(DEFATTACH CRN1 WR0)
+
+
+ACL2 Error in ( DEFATTACH CRN1 WR0):  Attachments must preserve signatures,
+but the signatures differ for CRN1 and WR0.  See :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH CRN1 WR0)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH CRN1 WR0):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH CRN2 RD0)
+
+
+ACL2 Error in ( DEFATTACH CRN2 RD0):  Attachments must preserve signatures,
+but the signatures differ for CRN2 and RD0.  See :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH CRN2 RD0)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH CRN2 RD0):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH CRN2 WR0)
+
+The guard proof obligation is
+
+(IMPLIES (STATE-P STATE)
+         (STATE-P STATE)).
+
+Q.E.D.
+
+This concludes the guard proof.
+
+
+The attachment trivially satisfies the required constraints.
+
+
+Summary
+Form:  ( DEFATTACH CRN2 WR0)
+Rules: ((:TYPE-PRESCRIPTION STATE-P))
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
+                       => STATE
+                       :GLOBAL-STOBJS ((ST ST ST2 ST2))))
+                     (LOCAL (DEFUN CRN3 (X STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (F-PUT-GLOBAL 'ABC X STATE))))
+
+
+ACL2 Error in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):  Illegal
+signature for CRN3: the value of keyword :GLOBAL-STOBJS contains the
+names ST and ST2 more than once, but duplicates are not allowed.  See
+:DOC with-global-stobj.
+
+
+Summary
+Form:  ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
+                       => STATE
+                       :GLOBAL-STOBJS ((ST) ST)))
+                     (LOCAL (DEFUN CRN3 (X STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (F-PUT-GLOBAL 'ABC X STATE))))
+
+
+ACL2 Error in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):  Illegal
+signature for CRN3: the value of keyword :GLOBAL-STOBJS contains the
+name ST more than once, but duplicates are not allowed.  See :DOC with-
+global-stobj.
+
+
+Summary
+Form:  ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
+                       => STATE
+                       :GLOBAL-STOBJS ((ST))))
+                     (LOCAL (DEFUN CRN3 (X STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (F-PUT-GLOBAL 'ABC X STATE))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(LOCAL (DEFUN CRN3 (X STATE)
+                       (DECLARE (XARGS :STOBJS STATE))
+                       (F-PUT-GLOBAL 'ABC X STATE)))
+
+Since CRN3 is non-recursive, its admission is trivial.  We observe
+that the type of CRN3 is described by the theorem (CONSP (CRN3 X STATE)).
+We used the :type-prescription rule PUT-GLOBAL.
+
+(CRN3 * STATE) => STATE.
+
+Computing the guard conjecture for CRN3....
+
+The guard conjecture for CRN3 is trivial to prove, given the :forward-
+chaining rule STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1 and the :type-
+prescription rule STATE-P.  CRN3 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN CRN3 ...)
+Rules: ((:FORWARD-CHAINING STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1)
+        (:TYPE-PRESCRIPTION PUT-GLOBAL)
+        (:TYPE-PRESCRIPTION STATE-P))
+CRN3
+
+End of Encapsulated Event.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+(CRN3 * STATE) => STATE.
+
+Summary
+Form:  ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...)
+Rules: NIL
+ CRN3
+ACL2 !>>(DEFATTACH CRN3 WR0)
+
+
+ACL2 Error in ( DEFATTACH CRN3 WR0):  The attachment of WR0 to CRN3
+restricts stobjs bound by WITH-GLOBAL-STOBJ under calls of WR0, according
+to the :GLOBAL-STOBJS keyword (default nil) in the signature introducing
+CRN3.  But this restriction is violated for stobj ST:  the attempt
+is to attach WR0, which makes an updating WITH-GLOBAL-STOBJ call that
+binds ST, yet that stobj is not specified for updating by the :GLOBAL-
+STOBJS keyword of CRN3.  See :DOC with-global-stobj.
+
+
+Summary
+Form:  ( DEFATTACH CRN3 WR0)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH CRN3 WR0):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH CRN3 WR2)
+
+
+ACL2 Error in ( DEFATTACH CRN3 WR2):  The attachment of WR2 to CRN3
+restricts stobjs bound by WITH-GLOBAL-STOBJ under calls of WR2, according
+to the :GLOBAL-STOBJS keyword (default nil) in the signature introducing
+CRN3.  But this restriction is violated for stobj ST:  the attempt
+is to attach WR2, which calls WR1, which calls WR0, which makes an
+updating WITH-GLOBAL-STOBJ call that binds ST, yet that stobj is not
+specified for updating by the :GLOBAL-STOBJS keyword of CRN3.  See
+:DOC with-global-stobj.
+
+
+Summary
+Form:  ( DEFATTACH CRN3 WR2)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH CRN3 WR2):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN RD0+ (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (MV (WITH-GLOBAL-STOBJ ST (FLD ST))
+                   STATE))
+
+Since RD0+ is non-recursive, its admission is trivial.  We observe
+that the type of RD0+ is described by the theorem 
+(AND (CONSP (RD0+ STATE)) (TRUE-LISTP (RD0+ STATE))).  We used primitive
+type reasoning.
+
+(RD0+ STATE) => (MV * STATE).
+
+Computing the guard conjecture for RD0+....
+
+The guard conjecture for RD0+ is trivial to prove.  RD0+ is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN RD0+ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ RD0+
+ACL2 !>>(ENCAPSULATE (((CRN4 STATE)
+                       => (MV * STATE)
+                       :GLOBAL-STOBJS (NIL ST)))
+                     (LOCAL (DEFUN CRN4 (STATE)
+                                   (DECLARE (XARGS :STOBJS STATE))
+                                   (MV 3 STATE))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(LOCAL (DEFUN CRN4 (STATE)
+                       (DECLARE (XARGS :STOBJS STATE))
+                       (MV 3 STATE)))
+
+Since CRN4 is non-recursive, its admission is trivial.  We observe
+that the type of CRN4 is described by the theorem 
+(AND (CONSP (CRN4 STATE)) (TRUE-LISTP (CRN4 STATE))).  We used primitive
+type reasoning.
+
+(CRN4 STATE) => (MV * STATE).
+
+Computing the guard conjecture for CRN4....
+
+The guard conjecture for CRN4 is trivial to prove.  CRN4 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN CRN4 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+CRN4
+
+End of Encapsulated Event.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+(CRN4 STATE) => (MV * STATE).
+
+Summary
+Form:  ( ENCAPSULATE (((CRN4 STATE ...) ...) ...) ...)
+Rules: NIL
+ CRN4
+ACL2 !>>(DEFATTACH CRN4 RD0+)
+
+The guard proof obligation is
+
+(IMPLIES (STATE-P STATE)
+         (STATE-P STATE)).
+
+Q.E.D.
+
+This concludes the guard proof.
+
+
+The attachment trivially satisfies the required constraints.
+
+
+Summary
+Form:  ( DEFATTACH CRN4 RD0+)
+Rules: ((:TYPE-PRESCRIPTION STATE-P))
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(DEFUN H1 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (CRN1 STATE))
+
+Since H1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of H1.
+
+(H1 STATE) => *.
+
+Computing the guard conjecture for H1....
+
+The guard conjecture for H1 is trivial to prove.  H1 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN H1 ...)
+Rules: NIL
+ H1
+ACL2 !>>(DEFUN H2 (STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (H1 STATE))
+
+Since H2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of H2.
+
+(H2 STATE) => *.
+
+Computing the guard conjecture for H2....
+
+The guard conjecture for H2 is trivial to prove.  H2 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN H2 ...)
+Rules: NIL
+ H2
+ACL2 !>>(MV ST (H2 STATE))
+
+
+ACL2 Error in TOP-LEVEL:  Illegal top-level form, (LIST ST (H2 STATE)).
+The stobj ST is returned by evaluation of that form, yet is bound by
+a WITH-GLOBAL-STOBJ form, as the top-level form calls H2, which calls
+H1, which calls CRN1, which makes a WITH-GLOBAL-STOBJ call (as specified
+by the signature of the constrained function, CRN1) that binds ST.
+See :DOC with-global-stobj.
+
+ACL2 !>>Bye.

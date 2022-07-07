@@ -1072,11 +1072,26 @@
 
 (define pprint-fun-declon ((declon fun-declonp) (level natp))
   :returns (lines msg-listp)
+  :short "Pretty-print a function declaration."
   (b* (((fun-declon declon) declon))
     (list (pprint-line (msg "~@0 ~@1;"
                             (pprint-tyspecseq declon.tyspec)
                             (pprint-fun-declor declon.declor))
                        (lnfix level))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-initer ((initer initerp) (options pprint-options-p))
+  :returns (part msgp)
+  :short "Pretty-print an initializer."
+  (initer-case
+   initer
+   :single (pprint-expr initer.get (expr-grade-top) options)
+   :list (msg "{~@0}"
+              (pprint-comma-sep (pprint-expr-list initer.get
+                                                  (expr-grade-top)
+                                                  options))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1090,7 +1105,7 @@
     (list (pprint-line (msg "~@0 ~@1 = ~@2;"
                             (pprint-tyspecseq declon.tyspec)
                             (pprint-obj-declor declon.declor)
-                            (pprint-expr declon.init (expr-grade-top) options))
+                            (pprint-initer declon.init options))
                        (lnfix level))))
   :hooks (:fix))
 

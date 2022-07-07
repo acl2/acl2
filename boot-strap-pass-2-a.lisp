@@ -1372,3 +1372,62 @@
     (t *t*))))
 
 (add-macro-alias meta-extract-global-fact meta-extract-global-fact+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; {read/write}-user-stobj-alist
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; It would be more natural to define these in axioms.lisp, but the defun-nx
+; calls expand to include calls of push-inhibit-output-lst-stack, which isn't
+; defined until basis-b.lisp.
+
+(defun-nx read-user-stobj-alist (st state)
+
+; Warning: Keep this in sync with the definition of read-user-stobj-alist in
+; (defxdoc with-global-stobj ...) in community book
+; books/system/doc/acl2-doc.lisp.
+
+  (declare (xargs :guard (symbolp st)
+                  :stobjs state))
+  (cdr (assoc-eq st (user-stobj-alist1 state))))
+
+#-acl2-loop-only
+(defun read-user-stobj-alist-raw (st state)
+  (cond ((live-state-p state)
+         (cdr (assoc-eq st *user-stobj-alist*)))
+        (t ; should be impossible coming from ACL2 loop evaluation
+         (error "Illegal call of read-user-stobj-alist: State argument is not ~
+                 the `live' ACL2 state."))))
+
+(defun-nx write-user-stobj-alist (st val state)
+
+; Warning: Keep this in sync with the definition of write-user-stobj-alist in
+; (defxdoc with-global-stobj ...) in community book
+; books/system/doc/acl2-doc.lisp.
+
+; If you give this raw Lisp code, consider removing it from the list in
+; check-invariant-risk.
+
+  (declare (xargs :guard (symbolp st)
+                  :stobjs state))
+  (update-user-stobj-alist1
+   (put-assoc-eq st val (user-stobj-alist1 state))
+   state))
+
+#-acl2-loop-only
+(defun write-user-stobj-alist-raw (st val state)
+  (cond
+   (*wormholep*
+    (wormhole-er 'write-user-stobj-alist (list st val 'state)))
+   ((live-state-p state)
+    (loop for pair of-type cons in *user-stobj-alist*
+          when (eq (car pair) st)
+          do (progn (or (eq (cdr pair) val)
+                        (setf (cdr pair) val))
+                    (return state))
+          finally (error "Unknown stobj, ~s" st)))
+   (t
+    (error "Illegal call of write-user-stobj-alist: State argument is not the ~
+           `live' ACL2 state."))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

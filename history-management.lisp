@@ -1653,7 +1653,8 @@
 
 ; This property is stored by defstobj on all supporting functions.
 
-                 STOBJ-FUNCTION))
+                 STOBJ-FUNCTION
+                 GLOBAL-STOBJS))
 
 ; The properties above are stored by the defun, constrain or defstobj
 ; that introduced name and we erase them.
@@ -1667,7 +1668,8 @@
               wrld)))
    ((eq (caar old-getprops) 'lemmas)
 
-; We erase from the lemmas property just those rules stored by the introductory event.
+; We erase from the lemmas property just those rules stored by the introductory
+; event.
 
     (renew-name/overwrite
      name
@@ -2427,12 +2429,23 @@
 (defun print-failure1 (erp ctx state)
   (let ((channel (proofs-co state)))
     (pprogn
-     (error-fms-channel nil ctx "Failure" "~@0See :DOC failure."
-                        (list (cons #\0
-                                    (if (tilde-@p erp)
-                                        erp
-                                      "")))
-                        channel state 1)
+     (error-fms-channel
+      nil ctx "Failure" "~@0See :DOC failure.~@1"
+      (list (cons #\0
+                  (if (tilde-@p erp)
+                      erp
+                    ""))
+            (cons #\1
+                  (let ((useless-runes (f-get-global
+                                        'useless-runes
+                                        state)))
+                    (if (and useless-runes
+                             (not (eq (access useless-runes useless-runes :tag)
+                                      'CHANNEL)))
+                        (msg "~|*NOTE*: Useless-runes may have contributed to ~
+                              proof failure.  See :DOC useless-runes-failures.")
+                      ""))))
+      channel state 1)
      (io? summary nil state (channel)
           (fms *proof-failure-string* nil channel state nil)))))
 

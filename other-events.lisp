@@ -3645,7 +3645,7 @@
 (defconst *signature-keywords*
   '(:GUARD
     #+:non-standard-analysis :CLASSICALP
-    :STOBJS :FORMALS))
+    :STOBJS :FORMALS :GLOBAL-STOBJS))
 
 (defun duplicate-key-in-keyword-value-listp (l)
   (declare (xargs :guard (keyword-value-listp l)))
@@ -3689,6 +3689,96 @@
         (t (formals-pretty-flags-mismatch-msg
             (cdr formals) (cdr pretty-flags)
             fn formals-top pretty-flags-top))))
+
+(defun chk-global-stobjs-value (x guard fn formals val ctx wrld state)
+  (cond ((null x) (value nil))
+        ((not (and (consp x)
+                   (symbol-listp (car x))
+                   (symbol-listp (cdr x))))
+         (er soft ctx
+             "Illegal signature for ~x0: the value of keyword :GLOBAL-STOBJS ~
+              must be a cons pair of the form (x . y) where x and y are lists ~
+              of symbols (in fact, stobj names).  The :GLOBAL-STOBJS value ~
+              ~x1 is thus illegal.~@2"
+             fn x *see-doc-with-global-stobj*))
+        ((or (duplicates (car x))
+             (duplicates (cdr x))
+             (intersection-eq (car x) (cdr x)))
+         (er soft ctx
+             "Illegal signature for ~x0: the value of keyword :GLOBAL-STOBJS ~
+              contains the name~#1~[~/s~] ~&1 more than once, but duplicates ~
+              are not allowed.~@2"
+             fn
+             (or (duplicates (car x))
+                 (duplicates (cdr x))
+                 (intersection-eq (car x) (cdr x)))
+             *see-doc-with-global-stobj*))
+        ((and (not (equal x '(nil . nil)))
+              (not (member-eq 'state formals)))
+         (er soft ctx
+             "In the signature for ~x0, it is illegal to specify any stobjs ~
+              with the :GLOBAL-STOBJS keyword because ~x1 is not among the ~
+              formals for ~x0.~@2"
+             fn 'state *see-doc-with-global-stobj*))
+        ((and (cdr x)
+              (not (eq val 'state))
+              (not (and (true-listp val)
+                        (member-eq 'state val))))
+         (er soft ctx
+             "In the signature for ~x0, it is illegal to specify any stobjs ~
+              in the CDR of the value of the :GLOBAL-STOBJS keyword (that is, ~
+              stobjs that are viewed as updated by WITH-GLOBAL-STOBJ forms) ~
+              because ~x1 is not returned by ~x0.~@2"
+             fn 'state *see-doc-with-global-stobj*))
+        (t
+         (er-progn (chk-all-stobj-names (car x) :global-stobjs
+                                        (msg ":global-stobjs (~x0 . _)" (car x))
+                                        ctx wrld state)
+                   (chk-all-stobj-names (cdr x) :global-stobjs
+                                        (msg ":global-stobjs (_ . ~x0)" (cdr x))
+                                        ctx wrld state)
+                   (er-let* ((tguard ; repeated from intro-udf-guards, sigh
+                              (cond (guard (translate guard
+                                                      t   ; stobjs-out
+                                                      t   ; logic-modep
+                                                      nil ; known-stobjs
+                                                      ctx wrld state))
+                                    (t (value nil)))))
+                     (cond
+                      ((null tguard) (value nil))
+                      (t
+                       (mv-let (reads writes fns-seen)
+                         (collect-global-stobjs tguard wrld nil nil nil)
+                         (declare (ignore fns-seen))
+                         (cond
+                          ((not (subsetp-eq writes (cdr x)))
+
+; This case may be impossible, since writes is presumably nil for tguard.  But
+; we cover it anyhow, just to be safe.
+
+                           (er soft ctx
+                               "The stobj~#0~[~x0 is~/s ~&0 are each~] bound ~
+                                by an updating call of ~x1 in the :GUARD of ~
+                                the signature for ~x2 but not among the ~
+                                written stobjs in the :GLOBAL-STOBJS of that ~
+                                signature.~@3"
+                               (set-difference-eq writes (cdr x))
+                               'with-global-stobj
+                               fn
+                               *see-doc-with-global-stobj*))
+                          ((not (subsetp-eq reads
+                                            (append (car x) (cdr x))))
+                           (er soft ctx
+                               "The stobj~#0~[~x0 is~/s ~&0 are each~] bound ~
+                                by a call of ~x1 in the :GUARD of the ~
+                                signature for ~x2 but not among the stobjs in ~
+                                the :GLOBAL-STOBJS of that signature.~@3"
+                               (set-difference-eq reads
+                                                  (append (car x) (cdr x)))
+                               'with-global-stobj
+                               fn
+                               *see-doc-with-global-stobj*))
+                          (t (value nil)))))))))))
 
 (defun chk-signature (x ctx wrld state)
 
@@ -3781,8 +3871,8 @@
                (reason-for-non-keyword-value-listp kwd-value-list))
               nil nil nil nil nil))
          ((duplicate-key-in-keyword-value-listp kwd-value-list)
-          (mv (msg "The object ~x0 is not a legal signature because the keyword ~
-                    ~x1 appears more than once."
+          (mv (msg "The object ~x0 is not a legal signature because the ~
+                    keyword ~x1 appears more than once."
                    x
                    (duplicate-key-in-keyword-value-listp kwd-value-list))
               nil nil nil nil nil))
@@ -3913,6 +4003,7 @@
                      (not (member-eq 'state stobjs))
                      ctx wrld state)
         (chk-all-stobj-names stobjs
+                             :STOBJS?
                              (msg "~x0" x)
                              ctx wrld state)
         (cond ((not (or (symbolp val)
@@ -3927,6 +4018,11 @@
                     sym1 ... symn), where n>=2."
                    x val))
               (t (value nil)))
+        (chk-global-stobjs-value (cadr (assoc-keyword :GLOBAL-STOBJS
+                                                      kwd-value-list))
+                                 (cadr (assoc-keyword :GUARD
+                                                      kwd-value-list))
+                                 fn formals val ctx wrld state)
         (let* ((syms (cond ((symbolp val) (list val))
                            (t (cdr val))))
                (stobjs-in (compute-stobj-flags formals
@@ -4488,7 +4584,8 @@
           ((getpropc (car form) 'macro-body nil wrld)
            (cond
             ((member-eq (car form)
-                        '(mv mv-let translate-and-test with-local-stobj))
+                        '(mv mv-let translate-and-test with-local-stobj
+                             with-global-stobj))
              (er soft ctx er-str
                  form
                  ""
@@ -7987,6 +8084,24 @@
                            *t* wrld-acc)
            wrld ctx state)))))))
 
+(defun intro-udf-global-stobjs (insigs kwd-value-list-lst wrld-acc)
+
+; Insigs is a list of signatures, each in the internal form (list fn formals
+; stobjs-in stobjs-out); see chk-signature.  Kwd-value-list-lst corresponds
+; positionally to insigs.  We return an extension of wrld-acc in which the
+; 'global-stobjs property has been set according to insigs.
+
+  (cond
+   ((endp insigs) wrld-acc)
+   (t (intro-udf-global-stobjs
+       (cdr insigs)
+       (cdr kwd-value-list-lst)
+       (putprop-unless (caar insigs)
+                       'global-stobjs
+                       (cadr (assoc-keyword :global-stobjs
+                                            (car kwd-value-list-lst)))
+                       nil wrld-acc)))))
+
 (defun intro-udf-non-classicalp (insigs kwd-value-list-lst wrld)
   (cond ((endp insigs) wrld)
         (t (let* ((insig (car insigs))
@@ -8720,7 +8835,11 @@
                                     (er-let*
                                         ((wrld3a (intro-udf-guards
                                                   insigs
-                                                  kwd-value-list-lst wrld3
+                                                  kwd-value-list-lst
+                                                  (intro-udf-global-stobjs
+                                                   insigs
+                                                   kwd-value-list-lst
+                                                   wrld3)
                                                   wrld3 ctx state))
                                          #+:non-standard-analysis
                                          (wrld3a (value
@@ -8897,8 +9016,13 @@
                         (empty-encapsulate ctx state))
                        (t
                         (er-let*
-                            ((wrld3a (intro-udf-guards insigs kwd-value-list-lst
-                                                       wrld3 wrld3 ctx state))
+                            ((wrld3a (intro-udf-guards
+                                      insigs kwd-value-list-lst
+                                      (intro-udf-global-stobjs
+                                       insigs
+                                       kwd-value-list-lst
+                                       wrld3)
+                                      wrld3 ctx state))
                              #+:non-standard-analysis
                              (wrld3a (value (intro-udf-non-classicalp
                                              insigs kwd-value-list-lst wrld3a))))
@@ -18545,6 +18669,12 @@
          (er soft (cons 'defstobj name)
              "STATE is an illegal name for a user-declared ~
               single-threaded object."))
+        ((string-prefixp *with-global-stobj-prefix* (symbol-name name))
+         (er soft (cons 'defstobj name)
+             "The name ~x0 is not a legal stobj name because its name starts ~
+              with ~x1.  Such names are reserved for use in the expansions of ~
+              ~x2 calls."
+             name *with-global-stobj-prefix* 'with-global-stobj))
         ((legal-variablep name)
          (value nil))
         (t
@@ -19342,7 +19472,7 @@
 ;         in any evaluation.
 ;      -- The base case is covered by the binding of stobj parameters to
 ;         the global live stobj in the acl2-loop, or by the restrictions
-;         placed upon with-local-stobj and stobj-let.
+;         placed upon with-local-stobj, with-global-stobj, and stobj-let.
 ;      -- The induction step is proven by the signature requirements of
 ;         functions that access and/or update stobjs.
 
@@ -29826,6 +29956,51 @@
                           (defaxiom-supporter-msg-list (cdr symbols) wrld)))
               (t (defaxiom-supporter-msg-list (cdr symbols) wrld)))))))
 
+(defun defattach-global-stobjs-msg (attachment-alist-exec wrld state)
+  (cond ((endp attachment-alist-exec) nil)
+        (t (let* ((f (caar attachment-alist-exec))
+                  (g (cdar attachment-alist-exec))
+                  (gs-f (getpropc f 'global-stobjs nil wrld))
+                  (gs-f-reads (car gs-f))
+                  (gs-f-writes (cdr gs-f))
+                  (gs-g (getpropc g 'global-stobjs nil wrld))
+                  (gs-g-reads (car gs-g))
+                  (gs-g-writes (cdr gs-g)))
+             (cond ((and (subsetp-eq gs-g-writes gs-f-writes)
+                         (subsetp-eq gs-g-reads
+                                     (append gs-f-writes gs-f-reads)))
+                    (defattach-global-stobjs-msg
+                      (cdr attachment-alist-exec) wrld state))
+                   (t (msg
+                       "The attachment of ~x0 to ~x1 restricts stobjs bound ~
+                        by WITH-GLOBAL-STOBJ under calls of ~x0, according to ~
+                        the :GLOBAL-STOBJS keyword (default nil) in the ~
+                        signature introducing ~x1.  But this restriction is ~
+                        violated for stobj~#2~[~/s~] ~&2:  ~@3"
+                       g f
+                       (append (set-difference-eq gs-g-writes gs-f-writes)
+                               (set-difference-eq gs-g-reads
+                                                  (append gs-f-writes
+                                                          gs-f-reads)))
+                       (let* ((upd (set-difference-eq gs-g-writes gs-f-writes))
+                              (st (if upd
+                                      (car (set-difference-eq gs-g-writes
+                                                              gs-f-writes) )
+                                    (car (set-difference-eq gs-g-reads
+                                                            (append gs-f-writes
+                                                                    gs-f-reads)))))
+                              (path (path-to-with-global-stobj
+                                     st
+                                     (list g)
+                                     upd wrld nil nil)))
+                         (with-global-stobj-illegal-path-msg
+                          "the attempt is to attach"
+                          (msg ", yet that stobj is not specified~@0 by the ~
+                                :GLOBAL-STOBJS keyword of ~x1"
+                               (if upd " for updating" "")
+                               f)
+                          path st upd wrld)))))))))
+
 (defun chk-acceptable-defattach (args proved-fnl-insts-alist ctx wrld state)
 
 ; Given the arguments to defattach, args, we either return an error (mv t nil
@@ -29886,7 +30061,12 @@
 ; matter.
 
                       (strip-cars attachment-alist-sorted)
-                      wrld))))
+                      wrld)))
+             (defattach-global-stobjs-msg
+               (and (not (member-eq (ld-skip-proofsp state)
+                                    '(include-book include-book-with-locals)))
+                    (defattach-global-stobjs-msg attachment-alist-exec wrld
+                      state))))
         (cond
          (defaxiom-supporter-msg-list
            (er soft ctx
@@ -29897,6 +30077,10 @@
                  "~@*, and "
                  "~@*, "
                  ,defaxiom-supporter-msg-list)))
+         (defattach-global-stobjs-msg
+           (er soft ctx "~@0~@1"
+               defattach-global-stobjs-msg
+               *see-doc-with-global-stobj*))
          (t
           (er-let*
               ((records (cond (skip-checks (value :skipped)) ; not used
@@ -34016,3 +34200,629 @@
                                                 (list table-event))))))))
                :on-behalf-of :quiet!)
               ,@(memoize-partial-calls tuples)))))))
+
+; Essay on Correctness of Evaluation with Stobjs
+
+; This Essay provides an argument that stobjs are handled properly for
+; applicative semantics even with destructive updates.  With the July 2022
+; addition of with-global-stobj to existing stobj variants (local, nested,
+; abstract, and congruent stobjs), such an argument seemed important for
+; confidence in the soundness of ACL2 stobj updates.  Our approach is to define
+; an evaluator faithful to Lisp execution semantics and argue that it agrees
+; with a simpler, purely applicative model of evaluation.
+
+; This Essay assumes familiarity with stobjs in ACL2.  See in particular the
+; Essay on the Design of With-global-stobj.
+
+; Throughout this Essay we may say "stobj" when we mean "stobj name" or when we
+; mean "stobj value", when the context seems sufficient to disambiguate.
+
+; This Essay is long.  We keep it from being even longer in two ways, in the
+; hope and expectation that our evaluation model and our arguments suffice to
+; inspire some confidence in our treatment of stobjs.  First, although we give
+; a fairly detailed proof of the main claim, we permit ourselves to skip over
+; some details.  (As noted by Rob Sumners, we could gain more confidence if
+; someone were to mechanize the proof.)  Second, we impose the following
+; limitations on what we try to accomplish.
+
+; Limitations of Scope
+
+; (1) We ignore abstract stobjs, taking the view that evaluation takes place
+; with the following notion of underlying concrete stobj: starting with an
+; abstract stobj's foundational stobj, recur through foundational stobjs until
+; reaching a concrete stobj.
+
+; (2) We largely ignore checking of guards.  Below we discuss an "undef" value
+; that is returned by non-executable functions, and we could presumably return
+; it for guard violations as well as a step towards incorporating guards into
+; our model of evaluation.
+
+; (3) We do not fully model the cases that an error occurs during evaluation;
+; specifically, we do not argue for correct top-level update of the
+; user-stobj-alist of state in error cases.  With additional effort that seems
+; feasible; our correctness argument for evaluation focuses on appropriate
+; disjointness (non-aliasing) of stobj values being preserved by evaluation.
+
+; (4) We play a bit loose with stobjs-out.  Although we incorporate that notion
+; into our evaluator -- see cl-stobjs-out and term-stobjs-out-set below -- we
+; don't work out many details.
+
+; (5) We do not address the fact that stobjs have array-based representations.
+; For purposes of this essay, think of stobjs in terms of their logical
+; definitions as lists (though we can still conceive of destructive operations
+; on them, and we consider disjointness of stobj memories as a way of
+; preventing problems due to aliasing).
+
+; (6) We largely ignore the ACL2 implementation, referencing it (e.g., by
+; mentioning translate) only when relevant to laying out this theory, not to
+; implementing it.  For example, there needs to be a mechanism for ensuring
+; that when attaching g to f the 'global-stobjs property of g is contained in
+; that of f, hence there needs to be a mechanism for specifying a constrained
+; function's 'global-stobjs property.  We do not discuss such issues much here
+; (but see the Essay on the Design of With-global-stobj for discussion of the
+; :global-stobjs keyword for signatures).
+
+; (7) Our argument isn't complete.  Consider for example evaluation of the
+; expression (let ((var1 exp1) ... (vark expk)) body) where no vari is a known
+; stobj.  It would be good to reason that evaluation of each expi leaves all
+; stobj values unchanged, since if for example stobj s is destructively
+; modified by evaluation of exp1, then a reference to s in body will
+; erroneously be to the modified value.  Our model of evaluation does not
+; comprehend that issue.  Nevertheless, our argument does comprehend the issue
+; of potential aliasing, thus giving us confidence in the faithfulness of ACL2
+; to its applicative semantics.
+
+; End of Limitations of Scope
+
+; Our argument is based on two evaluators for ACL2 terms -- actually,
+; untranslated expressions: (acl2-eval term alist) and (cl-eval term alist gs),
+; where we explain gs ("global state") below.  Each evaluator returns a value.
+; Acl2-eval is a straightforward, usual sort of evaluator with respect to a
+; variable-binding alist; we omit its definition, other than to note that a
+; special value "undef" is returned when the input term is a call of a function
+; that is either constrained without an attachment or is non-executable.  The
+; non-executable case includes non-exec, since that macro's calls expand to
+; calls of the (in essence) non-executable function, throw-nonexec-error.
+
+; Our more realistic model of evaluation is given by (cl-eval u a gs) -- "cl"
+; referencing Common Lisp -- where u is an untranslated term, a is a
+; variable-binding alist, and gs is described later below.  We intend to show
+; that this agrees with the simpler applicative semantics given by acl2-eval.
+; While cl-eval is more complex than acl2-eval, nevertheless cl-eval is
+; reasonably straightforward -- but its accuracy depends on being able to rely
+; on gs as a model of the global state.  Imagine for example evaluation of (let
+; ((st exp)) body) where st is a stobj that is destructively modified by
+; evaluation of exp.  Our (reasonably straightforward) definition of cl-eval
+; could fail to model evaluation faithfully if st shares memory with some other
+; stobj st' occurring in body when either is writable, as cl-eval doesn't model
+; destructive modification of st'.  We address this issue by maintaining an
+; invariant on gs that prevents such sharing, called "coherence".  To show that
+; the invariant holds, we define cl-eval to return a special value, "bomb",
+; when the invariant fails -- and then we prove in the Main Claim below that
+; cl-eval never returns "bomb".
+
+; We discuss gs informally before giving a precise definition of "global state
+; representation".  Gs is a directed tree with labeled edges and named nodes.
+; Its edges represent the parent-child stobj relation.  For the initial gs used
+; at the top level of a term's evaluation, there is one node N_s for each stobj
+; name s occurring free in that term, where s is the name of N_s.  Each such
+; N_s for a user-defined stobj s is the successor of a special root node that
+; represents the user-stobj-alist of state; we therefore call that special node
+; "USA".  A key benefit of USA is that its edges contain stobj names that must
+; not be bound by with-global-stobj forms, to prevent aliasing (an exception
+; being when the stobj is only read, not written, at the top level and by
+; with-global-stobj).  For a recursive call of the evaluator, cl-eval, gs may
+; be updated in several ways, including adding or removing nodes, replacing the
+; stobj naming a node with a congruent stobj, and changing which stobj names
+; are "known" in the current context.  Edges do not change (except when
+; removed); an edge from a node with stobj name p to a node with stobj name c
+; indicates, using an accessor name and stobj (the type) and possibly other
+; information, how child stobj c fits into parent stobj p.
+
+; Here are three examples of how cl-eval proceeds.  When we enter stobj-let to
+; evaluate its producer, the bound child stobjs generate successor nodes under
+; their parent's node and are marked as "known", while the "known" marker is
+; removed from the parent's node (reflecting the syntactic requirement that the
+; parent stobj not occur free in the producer of the stobj-let).  A call of
+; with-local-stobj extends the tree with a new, "known" root node for that
+; local stobj.  A call of with-global-stobj adds a "known" node immediately
+; below USA.  For a function call, each actual parameter that is a stobj name
+; causes the "known" node with that name to be renamed to the corresponding
+; formal parameter (which is equal or congruent to the actual parameter), and
+; those are the only nodes marked as "known" when evaluating the body of the
+; called function.
+
+; Another important aspect of gs is the read-only status of each node.  The
+; read-only field of a node is set to T when the node is created by the
+; read-only version of with-global-stobj, and that T value is passed down to
+; the read-only field of any subsequent children.  A key aspect of read-only
+; nodes is that two of them may have the same value, as can happen with nested
+; read-only with-global-stobj calls that bind the same stobj.
+
+; We turn now to defining the requirements on gs.  After that we introduce
+; other key notions, up through the definition of cl-eval.  Then we state and
+; prove our Main Claim.
+
+; Definition.  A "global state representation", or "gs-rep" for short, is a
+; finite directed labeled tree, gs, with names at the nodes, which satisfies
+; the properties described below, where we also introduce related terminology.
+
+; - There are three classes of root node.
+
+;   + The "state" node has the name, state.  Its value is an ACL2 state, and it
+;     has no successor (or predecessor).
+
+;   + The "USA" root node has as its value the user-stobj-alist of the state,
+;     i.e., the user-stobj-alist of the value of the state node.  This alist
+;     has as its keys all the user-defined stobj names.  Each key st maps to a
+;     value that satisfies the recognizer for st.
+
+;   + Every other root node of gs is has a user-defined stobj as its name.
+;     (Motivation: We will see that such a node is initially introduced with
+;     name st by a form (with-local-stobj st mv-let-form), though during
+;     evaluation the name may change to a stobj congruent to st.)  The node's
+;     value satisfies the stobj recognizer for its name.
+
+; - The successor (i.e., non-root) nodes and edges to them are as follows.
+
+;   + Each edge from USA is labeled by a user-defined stobj name, st.  If there
+;     is such an edge, we may call its terminus N a "global-stobj node" and we
+;     may call st a "global-stobj name".  The name of N is st or a stobj name
+;     congruent to st.  The value at N satisfies the stobj recognizer for st.
+
+;   + Let N be a successor node that is not a global-stobj node (i.e., N is not
+;     a successor of USA).  The name of N is a user-defined stobj name, c, and
+;     the name of the parent node of N is a user-defined stobj name, p.  The
+;     edge from p to c has a label that indicates a field accessor and stobj
+;     type c' taken from a defstobj event for either p or a stobj congruent to
+;     p, where c' is c or a stobj congruent to c.  In the case of an array,
+;     hash-table, or stobj-table field, the label also includes an appropriate
+;     array index, hash key, or stobj name, respectively.  The value at N
+;     satisfies the stobj recognizer for c.
+
+; - Every node other than USA has a Boolean "knownp" field that is intended to
+;   represent whether the stobj name is "known" (in the sense of translate) in
+;   a given context.  For each stobj name st there is at most one node in gs
+;   with knownp = t whose name is st; such a node is called a "known node" and
+;   we say that it is "the known node of" st.  A "known stobj" is the name of
+;   some known node.
+
+; - Every node other than USA has a Boolean "read-only" field that is intended
+;   to represent whether the stobj value at that node may be modified.  We may
+;   say "the read-only bit is set" to indicate that this field has value T;
+;   such a node is a "read-only node".  A node whose read-only field is nil may
+;   be called a "writable node".  If a read-only node P other than USA is the
+;   parent of a node C, then C is a read-only node and the value at C satisfies
+;   the recognizer indicated by the edge from P to C.  If a read-only node C is
+;   directly under USA with label st, then the value at C equals the value of
+;   st in USA, i.e., the value of st in the user-stobj-alist of the value of
+;   the state node.  If a writable node C is directly under USA with label st,
+;   then it is the unique node under USA whose edge has label st.  If a known
+;   node N is writable, then N is a leaf node (i.e., N is not the source of an
+;   edge, or said yet another way, N is not the parent of any node).
+
+; - Each node other than the state node is associated with a set of abstract,
+;   pairwise disjoint "stable child memories", representing the memories of its
+;   child stobjs that are not indicated by labels on edges from that node.  In
+;   summary: for a leaf node, its set of stable child memories partitions the
+;   memory of the node's (stobj) value; but memories of children of a non-leaf
+;   node N (representing bindings from a stobj-let form) are not included in
+;   the set of stable child memories of N.  The idea is to remove memories of
+;   child stobjs from a parent, so that we can maintain an invariant that the
+;   resulting memories are pairwise disjoint (by avoiding overlapping memories
+;   of a parent and child).  These abstractions are informal, though
+;   formalization is surely feasible.  Intuitively, "stable" is intended to
+;   convey the exclusion of stobj fields whose memories may change during
+;   evaluation, though for simplicity we exclude memories even of read-only
+;   child nodes.  For USA, the stable child memories represent the memories of
+;   all stobjs st0 for which a pair (st . st0) is in the state's
+;   user-stobj-alist such that st does not label a successor node of USA.  For
+;   any node other than the state or USA node, the stable child memories
+;   represent the memories of each child whose field is not indicated by the
+;   label of some edge from the node.  There is also a notion of "free memory",
+;   representing the available memory for new local stobjs; this is disjoint
+;   from all stable child memories.
+
+;   Each field of stable child memories is implicit, in the sense that our
+;   discussion below does not explicitly update the stable child memories when
+;   modifying a gs-rep to create a new gs-rep.  Rather, they are implicitly
+;   updated to reflect changes in node values.
+
+; -|
+
+; Convention.  We assume that every untranslated term to be evaluated is
+; associated with a "known-stobjs context" that is a set of stobj names.  In a
+; function body, this set is determined by the :stobjs declaration (including
+; state if state is a formal parameter).  The known-stobjs context is preserved
+; at subterms, macroexpansion, and replacement of a lambda expression by a
+; corresponding let expression, except that known-stobjs contexts are extended
+; by stobj names bound by stobj-let, with-local-stobj, or with-global-stobj
+; when entering the appropriate subterm.  The known-stobjs context is intended
+; to represent what translate calls known-stobjs, with the following exception.
+; When called at the top level rather than in a function body, translate uses
+; the symbol t to indicate a list of all stobj names in the current world; but
+; for this Essay, the known-stobjs context at the top level is the set of stobj
+; names that occur free in the (translation of the) term.
+
+; Definition.  Let u be an untranslated term and let a be a variable-binding
+; alist.  We say that u is "translatable with respect to" a if the following
+; conditions are met.
+
+; (T1) U can be translated for execution with respect to the known-stobjs
+;      context of u and the current ACL2 world.
+
+; (T2) Every free variable of the translation of u is bound in a.
+
+; -|
+
+; Consider for example a function call (f e0 e1 ...) that is translatable with
+; respect to a.  Thus each ei can be translated according to the ith element of
+; the stobjs-in of f.  Thus, the arguments at non-nil stobjs-in positions must
+; be distinct stobj names each congruent to the stobjs-in value at its
+; position, and each of the other arguments must be terms that return a single
+; non-stobj value.
+
+; Definition.  The term-stobjs-out-set of an untranslated term u is the union
+; of the stobjs-out of all function symbols called in u, with nil removed and
+; with obvious exceptions: term-stobjs-out-set accounts for stobj-let (its
+; bound stobj is removed from stobjs-out of calls in its body) and
+; with-local-stobj (its producer-vars are removed from stobjs-out of calls in
+; the producer), and it is determined by the :values keyword in DO loop$
+; expressions.  Note that neither stobj-let nor with-local-stobj is allowed
+; directly in the top-level loop, which simplifies the definition in those
+; cases.  Note that calculation of term-stobjs-out-set may be awkward if apply$
+; can return a stobj, which fortunately it cannot as of July 2022 except within
+; translations of DO loop$ expressions (handled above by the :values keyword
+; instead).
+
+; Definition.  A call (cl-eval u a gs) is "coherent" if the following
+; properties hold.
+
+; (C1) Gs is a gs-rep with the following properties for each stable child
+;      memory M.
+
+;      (a) Suppose M2 is a stable child memory other than M.  If M or M2 is
+;          from a writable node, then M and M2 are disjoint.
+;
+;      (b) M is disjoint from the free memory.
+
+; (C2) Let N be a known stobj node of gs with stobj name st.  Then st is bound
+;      in a, and the value at N equals the value of st in a.
+
+; (C3) U is translatable with respect to the variable-binding alist a.
+
+; (C4) If there is an edge from USA labeled by st, then the following hold,
+;      where N is the node at the terminus of that edge.
+
+;      (a) If u contains a call of with-global-stobj that binds st, then N is
+;          read-only and that call is a read-only call.
+
+;      (b) St is not an updating global-stobj of any function symbol f of u,
+;          i.e., st is not in (cdr (getpropc f 'global-stobjs)).
+
+;      (c) If st is a global-stobj of any function symbol f of u (which is
+;          necessarily a read-only global-stobj, by (b), i.e., st is in (car
+;          (getpropc f 'global-stobjs))), then N is read-only.
+
+; (C5) The set of known stobjs of gs is equal to the known-stobjs context of u.
+
+; (C6) For every st in the term-stobjs-out-set of u (which by (C3) and (C5) is
+;      necessarily in the known-stobjs of gs), the known node of st is
+;      writable.
+
+; -|
+
+; Definition.  Let u be an untranslated term that passes translate for
+; evaluation at the top level.  The "top-level coherent call" (cl-eval u a gs)
+; is as follows.  The known-stobjs context of u is the set S of stobj names
+; occurring free in the translation of u.  The alist, a, binds state to the
+; current ACL2 state if state is in S, and for each other stobj name st in S, a
+; binds st to its value st0 in the user-stobj-alist of the state.  There are no
+; local stobj nodes in gs.  The state node of gs, N_state, is known if and only
+; if state occurs free in u, and has as its value the ACL2 state.  Each
+; successor node is a child of USA; these are the nodes N_st for st in S,
+; defined as follows: st is both the label on the edge from USA to N_st and the
+; name of N_st, N_st has value st0, and N_st is known.  For each such node N_st
+; (including the case that st is state), N_st is writable if and only if st is
+; in the term-stobjs-out-set of u.  -|
+
+; To justify coherence of the top-level coherent call, specifically property
+; (C1), we rely on suitable memory disjointness for distinct stobjs and fields
+; within a stobj, which we are happy to assume; see Limitation (3) above.
+
+; We are nearly ready to define some notions that support the definition of
+; cl-eval.  First we note that evaluation naturally produces two results: the
+; value returned and the stobjs-out for that value.  (This is similar to what
+; trans-eval returns, except that unlike trans-eval, here we don't replace
+; stobjs in the value.)  The returned stobjs-out comes up only occasionally
+; below, so for the sake of the exposition we define cl-eval to return a value
+; only and we let cl-stobjs-out be a separate function that returns the
+; stobjs-out -- which depends on cl-eval, as we can see when u is of the form
+; (if tst st1 st2) where st1 and st2 are distinct stobjs.  Note that
+; (cl-stobjs-out u a gs) is always a subset of (term-stobjs-out-set u),
+; possibly a strict subset as evidenced by the call of if just above.
+
+; Definitions.  Let gs be a gs-rep and let N be a node of gs.  (a) To "make N
+; known" is to modify gs as follows.  If a known node N' of gs has the same
+; name as does N, set the knownp flag of N' to nil.  Then set the knownp flag
+; of N to T.  (b) To "augment gs with known child node C of N via labeled edge
+; E" is to add such an edge and node to gs with value obtained from the value
+; at N, as indicated by the field in the label on E, and then to make C known
+; as defined in (a).  Note that this can result in more than one edge from N
+; both with the same label, E; but this will only happen if N is read-only
+; (this being a consequence of (C1)).  -|
+
+; Definition.  Given a coherent call (cl-eval u a gs) with value v, we define
+; the "update of gs from" the call as follows, the idea being to update
+; according to the returned stobjs.  If v is one of the special values "undef"
+; or "bomb" (as per the next Definition, where "bomb" is later proved to be
+; impossible), then the update of gs from that call is just gs.  Suppose
+; otherwise.  Let L be (cl-stobjs-out u a gs).  Then v has the same length as L
+; (see Limitation (4)) and for each position i of L with stobj sti, then sti is
+; a known stobj of gs by (C3) and (C5) and (again, see Limitation (4)) the ith
+; element sti0 of v satisfies the recognizer of sti.  Then the update of gs
+; from the call is obtained by changing the known node with name sti in gs, for
+; each i as above, replacing its value with sti0.  Note that in the special
+; case that sti is state, the stable child memories of USA automatically update
+; according to the user-stobj-alist of sti0.  -|
+
+; Definition.  We define (cl-eval u a gs) and (cl-stobjs-out u a gs).
+
+; The definition of cl-stobjs-out is reasonably straightforward, without
+; surprises; we provide only a few highlights.  If u is a call of a function
+; not in *stobjs-out-invalid*, then cl-stobjs-out is the stobjs-out of that
+; function, modified to accommodate replacement of stobj formals by congruent
+; stobjs.  The cl-stobjs-out of a let expression is the cl-stobjs-out of its
+; body.  For an updating with-global-stobj call, the cl-stobjs-out is obtained
+; by dropping the bound stobj from the supplied output signature and, if state
+; is already in that signature, then adding state to the end of it.  The
+; cl-stobjs-out of a DO loop$ expression is specified by its :values keyword
+; (default (nil)).  Note that the value of cl-stobjs-out for an if call depends
+; on the value returned by cl-eval on its test.
+
+; Let v be (cl-eval u a gs); we specify v by cases on u.
+
+; - Case: The call is not coherent.  Then v is the special value, "bomb".  (Our
+;   proof below shows that this case does not actually arise.)
+
+; Otherwise, where we know that u is translatable, by (C3):
+
+; - Case: u is a variable.  Then v is the value of u in a (which exists, by
+;   coherence).
+
+; - Case: u is a constant.  Then v is the value of u.
+
+; - Case: u is a macro call.  Then expand the call and recur (with the same a
+;   and gs).
+
+; - Case: u is a lambda application.  Then recur (with the same a and gs) after
+;   replacing u by its corresponding let expression.
+
+; - Case: u is a function symbol call, (f u1 ... uk).  For each i let vi be
+;   (cl-eval ui a gs).  If any vi is "bomb" return "bomb", and otherwise, if
+;   any vi is "undef" return "undef".  Otherwise there are sub-cases according
+;   to whether f is non-executable, a primitive, constrained, or defined.
+
+;   + If f is non-executable then v is "undef".
+
+;   + If f is a primitive, then v is the application of f to the vi.
+
+;   + If f is constrained, then v is "undef" unless f has attachment g, in
+;     which case v is (cl-eval (g u1 ... uk) a gs).
+
+;   + If f is defined as (f w1 ... wk) = body, then v is (cl-eval body a' gs'),
+;     where:
+
+;     * a' binds each wi to vi; and
+
+;     * gs' is obtained from gs by changing each known node with name wi, where
+;       wi is in a stobjs-in position of the call u, to have value vi; and by
+;       setting the knownp flag to T for those nodes and NIL for all other
+;       nodes.
+
+;     Note that this case includes stobj primitives, using their logical
+;     definitions; see Limitation (5).
+
+; - Case: u is (let ((var exp)) body) where var is in the known-stobjs context
+;   of u.  Hence by (C5), var is a known stobj of gs, and by (C6), the known
+;   node of var is writable (hence it's a leaf node).  Let e be the value of
+;   the recursive call (cl-eval exp a gs).  If e is "bomb" or "undef", then v
+;   is "bomb" or "undef", respectively.  Otherwise, let a' modify a by binding
+;   var to e and let gs' be the update of gs from the recursive call (i.e., by
+;   changing the stobj value to e at the known node with name var).  Then v is
+;   (cl-eval body a' gs').
+
+; - Case: u is a let-expression not of the form just above, say, (let ((var1
+;   exp1) ... (vark expk)) body) where no vari is in the known-stobjs context
+;   of u (hence by (C5) again, no vari is a known stobj of gs).  Let ei be
+;   (cl-eval expi a gs), returning "bomb" or "undef" if any ei is "bomb" or
+;   else any ei is "undef", respectively.  Otherwise let a' be the result of
+;   modifying a by binding each vari to ei; then v is (cl-eval body a' gs).
+
+; - Case: u is (mv-let (var0 ... vark) exp body).  Let e be the recursive call
+;   (cl-eval exp a gs).  If e is "bomb" or "undef" then v is "bomb" or "undef",
+;   respectively.  Otherwise let a' be the result of modifying a by binding
+;   each vari to (nth i e) and let gs' be the update of gs from the recursive
+;   call.  Then v is (cl-eval body a' gs').
+
+; - Case: u is (with-local-stobj st body).  Let st0 be a new instance of st
+;   (obtained from the free memory by applying the stobj creator for st).
+;   Obtain gs' from gs by adding a new writable root node N with name st and
+;   value st0, and then making N known.  Extend a to a' by binding st to st0
+;   (overriding any existing binding of st).  Then v is (cl-eval body a' gs').
+
+; - Case: u is a call of with-global-stobj that binds st.  Since u is
+;   translatable with respect to gs, state is in the known-stobjs context of u;
+;   so by (C5), state is a known stobj of gs.  Let st0 be the value of st in
+;   USA.  Change gs to gs' as follows.  First augment gs with known child node
+;   N of USA with name st via an edge labeled with st.  Make N writable if and
+;   only if the with-global-stobj call is an updating call.  Extend a to a' by
+;   binding st to st0 (overriding the existing binding of st, if any).  Let v0
+;   be (cl-eval body a' gs').  If u is a read-only call then the return value v
+;   is simply v0.  Otherwise, v is obtained from v0 by updating the returned
+;   state of v0 -- i.e., at the state position in v0 based on the output
+;   signature in the call -- so that st is bound to st1 in that state's
+;   user-stobj-alist.
+
+; - Case: u is (stobj-let bindings producer-vars producer consumer).  We
+;   consider the case that each binding in bindings is of the form (childi
+;   (fldi p)) or (childi (fldi p) updateri), as the non-scalar cases (i.e., the
+;   cases of array, hash-table, and stobj-table fields) are completely
+;   analogous.  Since u is translatable, these bindings all reference the same
+;   parent stobj, p, which is a known stobj name; say p is the name of the
+;   known stobj node, N, with value p0.  We define gs2 from gs.  First change
+;   the knownp flag of N to nil (reflecting the restriction that the parent not
+;   occur in the producer).  Then make the following additional changes to gs
+;   for each binding as above: augment with known child node Ni of N via an
+;   edge Ei whose label indicates accessor fldi and type childi, where Ni has
+;   name childi, and Ni has value ci equal to the fldi of p0.  Finally, set the
+;   read-only bit for Ni if and only if childi is not in producer-vars.  Let a2
+;   result from a by binding childi to ci.  Let v0 be the value returned by the
+;   recursive call, (cl-eval producer a2 gs2).  If v0 = "bomb" or "undef" then
+;   v is "bomb" or "undef", respectively.  Otherwise, let gs2' be the update of
+;   gs2 from that recursive call.  We modify gs2' to obtain gs3 by setting the
+;   knownp flag of N to T and doing the following for each new edge Ei as above
+;   from N to new node Ni: let fldi be the label of Ei, and if childi is in
+;   producer-vars then update the value at N by replacing its field at fldi
+;   with the value at Ni in gs2'; then (for all i, not merely when childi is in
+;   producer-vars) drop the edge Ei and the node Ni.  Let p1 be the value of N
+;   in gs3.  Finally, v is (cl-eval consumer a3 gs3), where a3 is obtained from
+;   a by binding p to p1 and binds all known-stobjs producer variables that are
+;   not bound in bindings to their respective elements in v0 (which we may
+;   assume has the appropriate shape, by Limitation (4)).
+
+; -|
+
+; It remains to state and justify the claim we want to make about cl-eval.  We
+; are really interested in (a) below: it tells us that the value computed by
+; the top-level coherent call (cl-eval u a gs) is equal to the value computed
+; by the simple applicative ACL2 semantics, (acl2-eval u a).  But we include
+; (b) to support the ensuing proof by computational induction.
+
+; Main Claim.  Assume that the call (cl-eval u a gs) is coherent.  Then
+
+; (a) (cl-eval u a gs) = (acl2-eval u a) so in particular, (cl-eval u a gs) is
+;     not "bomb" (since acl2-eval never returns "bomb"); and
+
+; (b) the update of gs from this call satisfies (C1).
+
+; Proof.  We proceed by computational induction under the given assumption that
+; the call (cl-eval u a gs) is coherent.  We proceed according to the cases in
+; the definition of cl-eval.  We first dispatch the cases that u is a variable,
+; a constant, or a call of a macro, a primitive function, a non-executable
+; function, a constrained function, or a lambda.  In these cases the result is
+; obvious, with a trivial appeal to the inductive hypothesis where necessary
+; (macro, constrained with attachment, lambda, and arguments of a function
+; call).  Let us now consider the other cases, each accompanied by a brief
+; summary of the case.
+
+; - Case: u is (f u1 ... uk), where f is defined as (f w1 ... wk) = body.  The
+;   result is thus (cl-eval body a' gs'), where: a' binds wi to vi = (cl-eval
+;   ui a gs), which we know by the inductive hypothesis is not "bomb" and we
+;   may assume is not "undef" since otherwise (a) and (b) are immediate; and
+;   gs' has the wi as its known stobjs.  The recursive calls producing the vi
+;   are clearly coherent, so by the inductive hypothesis vi = (acl2-eval ui a).
+
+;   Conclusion (a) follows from the equation (cl-eval body a' gs') = (acl2-eval
+;   body a').  This follows immediately from the inductive hypothesis once we
+;   show that this recursive call of cl-eval is coherent.  First note that no
+;   node values have changed from gs to gs', so (C1) clearly still holds.  (C2)
+;   and (C3) remain true by construction of a' and gs'.  (C4) holds by
+;   translatability of u and how the global-stobjs of f incorporate the
+;   global-stobjs of every function called in the body of f and also every
+;   stobj bound by with-global-stobj in the body of f.  (C5) and (C6) hold by
+;   construction of gs'.  This completes the proof of (a).  Finally, (b) also
+;   follows from the inductive hypothesis since the update of gs' and the
+;   update of gs have the same values at every node.
+
+;   Note that no special attention is necessary in the case that f is
+;   swap-stobjs; in particular, swapping of stobjs preserves the disjointness
+;   required by (C1).
+
+; - Case: u is (let ((var exp)) body) where var is a known stobj of gs.
+;   Coherence is clearly preserved for the call (cl-eval exp a gs), so by the
+;   inductive hypothesis this equals (acl2-eval exp a).  Let e be this common
+;   value, which we therefore know is not "bomb".  We assume that e is not
+;   "undef"; otherwise we are done.  Let a' and gs' be as in the definition,
+;   i.e., where a' is obtained from a by binding var to e and gs' is the update
+;   of gs from the call (cl-eval exp a gs).  By the inductive hypothesis, (b)
+;   gives us that gs' satisfies (C1); it is then easy to see that the call
+;   (cl-eval body a' gs') is coherent, so we are done by the inductive
+;   hypothesis, noting for (b) that the update of gs' from that call is the
+;   update of gs from the original call: both result from gs by replacing the
+;   value at the known node for var by the value of var returned from (cl-eval
+;   body a' gs').
+
+; - Case: u is a let-expression (let ((var1 exp1) ... (vark expk)) body) where
+;   no vari is in the known-stobj context of u by (C3) and hence, by (C5), no
+;   vari is a known stobj of gs.  Coherence is trivially preserved for each
+;   call (cl-eval expi a gs); let ei be the value of that call.  By the
+;   inductive hypothesis, no ei is "bomb".  If any ei is "undef", then we are
+;   done.  Otherwise, we are done by the inductive hypothesis applied to
+;   (cl-eval body a' gs) where a' is as in the definition for this case, i.e.,
+;   binding each vari to ei.
+
+; - Case: u is (mv-let (var0 ... vark) exp body).  Let e be the value returned
+;   by (cl-eval exp a gs), which is clearly coherent.  By the inductive
+;   hypothesis, e is not "bomb" and we may assume that e is not "undef" since
+;   otherwise we are done.  Otherwise the inductive hypothesis concludes this
+;   case in analogy to the proof of the case of let-binding a stobj, in
+;   particular by applying the inductive hypothesis to know that (b) holds for
+;   the evaluation of body.
+
+; - Case: u is (with-local-stobj st body).  We skip the easy check that the
+;   recursive call (cl-eval body a' gs') is coherent, where a' and gs' are as
+;   defined for this case of cl-eval, thus accommodating a new root note for
+;   local stobj st.  Then conclusion (a) follows from the inductive hypothesis,
+;   which also gives us that the update of gs' from the recursive call
+;   satisfies the disjointness specified by (C1).  Conclusion (b) also follows
+;   from the inductive hypothesis; in particular, the update of gs from the
+;   original call satisfies (C1) since it is the same the update of gs' from
+;   the recursive call with one exception: the child stobj memories of the new
+;   (local-stobj) node added to gs' disappear when finally updating gs.
+
+; - Case: u is a call of with-global-stobj that binds st.  Let body be the body
+;   of that call; so the recursive call is (cl-eval body a' gs'), where a' and
+;   gs' are as in the definition of cl-eval, accommodating the augmentation of
+;   gs to include a known stobj node for st as a successor to the USA node.
+;   Coherence of that recursive call is straightforward, the key concern being
+;   whether (C1) is preserved in the case that there is already a successor N
+;   of USA with label st.  But in that case, N must be read-only by (C4)(a), so
+;   by definition of gs-rep, N's value (and hence memory) in gs (and gs')
+;   agrees with the value of st in USA hence with the new node's value; so gs'
+;   adds only read-only stable child memories that were already present, which
+;   node imposes no new checks in (C1).  So we may apply the inductive
+;   hypothesis, which trivially yields conclusion (a).  For conclusion (b),
+;   first apply the inductive hypothesis to conclude that the update of gs'
+;   from the recursive call satisfies (C1); let's call that update gs''.  Then
+;   the update of gs from the original call satisfies (C1) because it is just
+;   the result of removing the new st node from gs'' and, only when u is an
+;   updating with-global-stobj call, updating user-stobj-alist accordingly.
+
+; - Case: u is (stobj-let bindings producer-vars producer consumer).  We follow
+;   this case in the definition of cl-eval, where as before we assume scalar
+;   bindings (childi (fldi p) ...) for a parent p, without loss of generality.
+;   The recursive call (cl-eval producer a2 gs2) produces a value v0, where --
+;   as per the definition of cl-eval -- a2 binds child stobjs of p, and gs2
+;   adds corresponding nodes to gs, which are writable only for childi in
+;   producer-vars.  To show coherence of this recursive call, the interesting
+;   case is (C1), which however is easy to see since only the new nodes for
+;   producer-vars are writable, and their memories are not shared since they're
+;   removed from the parent node's stable child memories.  By the inductive
+;   hypothesis applied to conclusion (a), v0 equals (acl2-eval producer a2),
+;   hence is not "bomb"; and if v0 is "undef" then we are done.  Otherwise we
+;   apply the inductive hypothesis again, this time for conclusion (b), to see
+;   that the gs-rep gs2' resulting from the recursive call above of cl-eval (on
+;   producer) satisfies (C1).  Let gs3 and a3 be as in the definition, i.e.,
+;   obtained from gs2' and a2 by absorbing the new child nodes into the parent.
+;   Then (C1) is clearly preserved from gs2' to gs3, which is the key
+;   observation to confirm that the call (cl-eval consumer a3 gs3) is coherent.
+;   The inductive hypothesis concludes the proof, since the update of gs from
+;   the original call (on u) is the same as the update of gs3 from the final
+;   call (on consumer): the cl-stobjs-out of u and consumer are the same, and
+;   each (known) stobj in that common list is updated the same in the two
+;   cases.
+
+; -|
+
+; End of Essay on Correctness of Evaluation with Stobjs

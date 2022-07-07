@@ -1,0 +1,8 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "with-global-stobj")
+
+; Help dependency scanner.
+#||
+(depends-on "with-global-stobj-input.lsp")
+(depends-on "with-global-stobj-log.txt")
+||#
