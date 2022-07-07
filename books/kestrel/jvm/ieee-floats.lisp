@@ -25,9 +25,12 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable mv-nth))
+
+(local (in-theory (disable bitp bitp-becomes-unsigned-byte-p)))
 
 ;; These are constants so that we don't mistype the keyword by accident.
 ;; These are the same for all formats.
@@ -48,6 +51,15 @@
        (posp p) ; if p were 0, there would be -1 bits in the trailing significand
        (< p k) ; if p were equal to k, there would be no room for a sign bit
        ))
+
+;; In case we are keeping formatp disabled
+(defthm formatp-forward
+  (implies (formatp k p)
+           (and (integerp k)
+                (posp k)
+                (< p k)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable formatp))))
 
 ;; See Table 3.5:
 
@@ -121,10 +133,19 @@
   (declare (xargs :guard (formatp k p)))
   (- k p))
 
-(defthm integerp-of-wfn
+(defthm posp-of-wfn-type
+  (implies (formatp k p)
+           (posp (wfn k p)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable wfn))))
+
+;; For when formatp is enabled
+(defthm natp-of-wfn-type
   (implies (and (integerp k)
-                (integerp p))
-           (integerp (wfn k p)))
+                (integerp p)
+                (< p k))
+           (natp (wfn k p)))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable wfn))))
 
 ;; Check the values in Table 3.5:
@@ -171,6 +192,14 @@
            (equal (representable-normalp k p (- rat))
                   (representable-normalp k p rat)))
   :hints (("Goal" :in-theory (enable representable-normalp))))
+
+(defthmd representable-positive-normalp-of-abs
+  (equal (representable-positive-normalp k p (abs rat))
+         (representable-normalp k p rat))
+  :hints (("Goal" :in-theory (enable representable-normalp))))
+
+(theory-invariant (incompatible (:rewrite representable-positive-normalp-of-abs)
+                                (:definition representable-normalp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,6 +253,12 @@
   (and (rationalp rat)
        (or (representable-normalp k p rat)
            (representable-subnormalp k p rat))))
+
+(defthm representable-nonzero-rationalp-forward
+  (implies (representable-nonzero-rationalp k p rat)
+           (rationalp rat))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable representable-nonzero-rationalp))))
 
 (defthm representable-nonzero-rationalp-of--
   (implies (rationalp rat)
@@ -309,7 +344,7 @@
                 (formatp k p))
            (representable-normalp k p (decode-normal-number k p sign biased-exponent trailing-significand)))
   :hints (("Goal" :cases ((integerp (expt 2 (+ k (- p)))))
-           :in-theory (enable decode-normal-number representable-positive-normalp emin emax bias wfn unsigned-byte-p representable-normalp))))
+           :in-theory (enable decode-normal-number representable-positive-normalp emin emax bias wfn unsigned-byte-p representable-normalp bitp unsigned-byte-p))))
 
 ;; Trivial consequence of the above
 (defthm representable-nonzero-rationalp-of-decode-normal-number
@@ -361,7 +396,7 @@
                 (< 0 trailing-significand)
                 (formatp k p))
            (representable-subnormalp k p (decode-subnormal-number k p sign trailing-significand)))
-  :hints (("Goal" :in-theory (enable decode-subnormal-number representable-positive-subnormalp emin emax bias wfn unsigned-byte-p representable-subnormalp))))
+  :hints (("Goal" :in-theory (enable decode-subnormal-number representable-positive-subnormalp emin emax bias wfn unsigned-byte-p representable-subnormalp bitp))))
 
 ;; Trivial consequence of the above
 (defthm representable-nonzero-rationalp-of-decode-subnormal-number
@@ -461,7 +496,8 @@
                 (representable-normalp k p rat))
            (mv-let (sign biased-exponent trailing-significand)
              (encode-normal-number k p rat)
-             (and (bitp sign)
+             (declare (ignore sign))
+             (and ;(bitp sign)
                   (unsigned-byte-p (wfn k p) biased-exponent)
                   (< 0 biased-exponent) ; not all zeros
                   (< biased-exponent (+ -1 (expt 2 (wfn k p)))) ; not all ones
@@ -473,6 +509,38 @@
                                   (<-of-*-of-/-arg1-arg3 ; why?
                                    )))))
 
+(defthm bitp-of-mv-nth-0-of-encode-normal-number
+  (bitp (mv-nth 0 (encode-normal-number k p rat)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (e/d (encode-normal-number representable-normalp representable-positive-normalp
+                                                        wfn bias emax emin
+                                                        unsigned-byte-p
+                                                        expt-of-+)
+                                  (<-of-*-of-/-arg1-arg3 ; why?
+                                   )))))
+
+(defthm integerp-of-mv-nth-1-of-encode-normal-number
+  (implies (formatp k p)
+           (integerp (mv-nth 1 (encode-normal-number k p rat))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable encode-normal-number))))
+
+(defthm <=-of-0-and-of-mv-nth-1-of-encode-normal-number
+  (implies (and (formatp k p)
+                (rationalp rat)
+                (representable-normalp k p rat))
+           (<= 0 (mv-nth 1 (encode-normal-number k p rat))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (encode-normal-number representable-normalp representable-positive-normalp
+                                                        wfn bias emax emin
+                                                        unsigned-byte-p
+                                                        expt-of-+)
+                                  (<-of-*-of-/-arg1-arg3 ; why?
+                                   )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Inversion
 (defthm encode-normal-number-of-decode-normal-number
   (implies (and (bitp sign)
                 (unsigned-byte-p (wfn k p) biased-exponent)
@@ -482,8 +550,9 @@
                 (formatp k p))
            (equal (encode-normal-number k p (decode-normal-number k p sign biased-exponent trailing-significand))
                   (mv sign biased-exponent trailing-significand)))
-  :hints (("Goal" :in-theory (enable decode-normal-number encode-normal-number bias wfn emax unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable decode-normal-number encode-normal-number bias wfn emax unsigned-byte-p bitp))))
 
+;; Inversion
 (defthm decode-normal-number-of-encode-normal-number
   (implies (and (rationalp rat)
                 (representable-normalp k p rat)
@@ -550,15 +619,16 @@
                                   (expt 2 (- p 1)))))
     (mv sign trailing-significand)))
 
-(defthm encode-subnormal-number-type
+(defthm bitp-of-mv-nth-0-of-encode-subnormal-number
+  (bitp (mv-nth 0 (encode-subnormal-number k p rat)))
+  :rule-classes (:type-prescription)
+  :hints (("Goal" :in-theory (enable encode-subnormal-number))))
+
+(defthm unsigned-byte-p-of-mv-nth-1-of-encode-subnormal-number
   (implies (and (formatp k p)
                 (rationalp rat)
                 (representable-subnormalp k p rat))
-           (mv-let (sign trailing-significand)
-             (encode-subnormal-number k p rat)
-             (and (bitp sign)
-                  (unsigned-byte-p (- p 1) trailing-significand)
-                  (< 0 trailing-significand))))
+           (unsigned-byte-p (- p 1) (mv-nth 1 (encode-subnormal-number k p rat))))
   :hints (("Goal" :in-theory (enable encode-subnormal-number representable-subnormalp representable-positive-subnormalp unsigned-byte-p))))
 
 (defthm <-of-0-and-mv-nth-1-of-encode-subnormal-number-linear
@@ -576,7 +646,7 @@
                 (formatp k p))
            (equal (encode-subnormal-number k p (decode-subnormal-number k p sign trailing-significand))
                   (mv sign trailing-significand)))
-  :hints (("Goal" :in-theory (enable decode-subnormal-number encode-subnormal-number bias wfn emax unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable decode-subnormal-number encode-subnormal-number bias wfn emax unsigned-byte-p bitp))))
 
 (defthm decode-subnormal-number-of-encode-subnormal-number
   (implies (and (rationalp rat)
@@ -637,28 +707,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate (((choose-bits-for-nan * * *) => (mv * *)))
-  ;; Returns (mv sign trailing-significand).
-  (local (defun choose-bits-for-nan (k p oracle)
-           (declare (ignore k p oracle))
-           (mv 0 ; choose 0 for the sign bit
-               1 ; choose a single 1 for the trailing significand (can't choose 0)
-               )))
-  ;; The sign bit is a single bit:
-  (defthm unsigned-byte-p-1-of-mv-nth-0-of-choose-bits-for-nan
-    (implies (formatp k p)
-             (bitp (mv-nth 0 (choose-bits-for-nan k p oracle)))))
-  ;; The trailing significand has p-1 bits:
-  (defthm unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan
-    (implies (and (formatp k p)
-                  (< 1 p) ; todo: build in to formatp?
-                  )
-             (unsigned-byte-p (- p 1) (mv-nth 1 (choose-bits-for-nan k p oracle)))))
-  ;; The trailing significand is not all zeros (all zeros would represent an infinity):
-  (defthm not-equal-0-of-mv-nth-1-of-choose-bits-for-nan
-    (implies (formatp k p)
-             (not (equal 0 (mv-nth 1 (choose-bits-for-nan k p oracle)))))))
-
 ;; Returns (mv sign biased-exponent trailing-significand).
 (defund encode-nonzero-rational (k p rat)
   (declare (xargs :guard (and (formatp k p)
@@ -673,6 +721,73 @@
     (mv-let (sign trailing-significand)
       (encode-subnormal-number k p rat)
       (mv sign 0 trailing-significand))))
+
+(defthm bitp-of-mv-nth-0-of-encode-nonzero-rational
+  (bitp (mv-nth 0 (encode-nonzero-rational k p rat)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable encode-nonzero-rational))))
+
+(defthm unsigned-byte-p-of-mv-nth-1-of-encode-nonzero-rational
+  (implies (and (formatp k p)
+                (< 1 (- k p)) ;todo
+                (representable-nonzero-rationalp k p rat))
+           (unsigned-byte-p (wfn k p) (mv-nth 1 (encode-nonzero-rational k p rat))))
+  :hints (("Goal" :in-theory (enable encode-nonzero-rational
+                                     representable-nonzero-rationalp
+                                     representable-normalp
+                                     representable-subnormalp))))
+
+(defthm unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational
+  (implies (and (formatp k p)
+                (< 1 (- k p)) ;todo
+                (representable-nonzero-rationalp k p rat))
+           (unsigned-byte-p (+ -1 p) (mv-nth 2 (encode-nonzero-rational k p rat))))
+  :hints (("Goal" :in-theory (enable encode-nonzero-rational
+                                     representable-nonzero-rationalp
+                                     representable-normalp
+                                     representable-subnormalp))))
+
+(defthm integerp-of-mv-nth-2-of-encode-nonzero-rational
+  (implies (and (formatp k p)
+                (< 1 (- k p)) ;todo
+                (representable-nonzero-rationalp k p rat))
+           (integerp (mv-nth 2 (encode-nonzero-rational k p rat))))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational)
+           :in-theory (disable unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate (((choose-bits-for-nan * * *) => (mv * *)))
+  ;; Returns (mv sign trailing-significand).
+  (local (defun choose-bits-for-nan (k p oracle)
+           (declare (ignore k p oracle))
+           (mv 0 ; choose 0 for the sign bit
+               1 ; choose a single 1 for the trailing significand (can't choose 0)
+               )))
+  ;; The sign bit is a single bit:
+  (defthm unsigned-byte-p-1-of-mv-nth-0-of-choose-bits-for-nan
+    (bitp (mv-nth 0 (choose-bits-for-nan k p oracle)))
+    :rule-classes (:rewrite :type-prescription))
+  ;; The trailing significand has p-1 bits:
+  (defthm unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan
+    (implies (and (formatp k p)
+                  (< 1 p) ; todo: build in to formatp?
+                  )
+             (unsigned-byte-p (- p 1) (mv-nth 1 (choose-bits-for-nan k p oracle)))))
+  ;; The trailing significand is not all zeros (all zeros would represent an infinity):
+  (defthm not-equal-0-of-mv-nth-1-of-choose-bits-for-nan
+    (implies (formatp k p)
+             (not (equal 0 (mv-nth 1 (choose-bits-for-nan k p oracle)))))))
+
+(defthm integerp-of-mv-nth-1-of-choose-bits-for-nan
+  (implies (and (formatp k p)
+                (< 1 p) ; todo: build in to formatp?
+                )
+           (integerp (mv-nth 1 (choose-bits-for-nan k p oracle))))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan)
+           :in-theory (disable unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Encodes a representable normal rational, giving the 3 fields.
 ;; Returns (mv sign biased-exponent trailing-significand).
@@ -700,6 +815,59 @@
             ;; must be a (nonzero) representable rational:
             (encode-nonzero-rational k p datum)))))))
 
+(defthm bitp-of-mv-nth-0-of-encode
+  (bitp (mv-nth 0 (encode k p datum oracle)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable encode))))
+
+(defthm unsigned-byte-p-of-mv-nth-1-of-encode
+  (implies (and (formatp k p)
+                (< 1 (- k p)) ; todo
+                (floating-point-datump k p datum))
+           (unsigned-byte-p (wfn k p) (mv-nth 1 (encode k p datum oracle))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (encode floating-point-datump) (unsigned-byte-p)))))
+
+(defthm unsigned-byte-p-of-mv-nth-1-of-encode-gen
+  (implies (and (<= (wfn k p) size)
+                (integerp size)
+                (formatp k p)
+                (< 1 (- k p)) ; todo
+                (floating-point-datump k p datum))
+           (unsigned-byte-p size (mv-nth 1 (encode k p datum oracle))))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-encode)
+           :in-theory (disable unsigned-byte-p-of-mv-nth-1-of-encode))))
+
+(defthm integerp-of-mv-nth-1-of-encode
+  (implies (and (formatp k p)
+                (< 1 (- k p)) ; todo
+                (floating-point-datump k p datum))
+           (integerp (mv-nth 1 (encode k p datum oracle))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-encode)
+           :in-theory (disable unsigned-byte-p-of-mv-nth-1-of-encode
+                               unsigned-byte-p-of-mv-nth-1-of-encode-gen))))
+
+(defthm unsigned-byte-p-of-mv-nth-2-of-encode
+  (implies (and (formatp k p)
+                (< 1 p)
+                (< 1 (- k p)) ; todo
+                (floating-point-datump k p datum))
+           (unsigned-byte-p (+ -1 p) (mv-nth 2 (encode k p datum oracle))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (encode floating-point-datump) (unsigned-byte-p)))))
+
+(defthm integerp-of-mv-nth-2-of-encode
+  (implies (and (formatp k p)
+                (< 1 p) ;todo
+                (< 1 (- k p)) ; todo
+                (floating-point-datump k p datum))
+           (integerp (mv-nth 2 (encode k p datum oracle))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (encode floating-point-datump) (unsigned-byte-p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Inversion
 ;; TODO: What to prove about the NaN case?
 (defthm encode-of-decode-when-not-nan
@@ -710,7 +878,7 @@
                 (formatp k p))
            (equal (encode k p (decode k p sign biased-exponent trailing-significand) oracle)
                   (mv sign biased-exponent trailing-significand)))
-  :hints (("Goal" :in-theory (enable decode encode encode-nonzero-rational))))
+  :hints (("Goal" :in-theory (enable decode encode encode-nonzero-rational bitp))))
 
 ;; Inversion
 (defthm decode-of-encode
@@ -853,7 +1021,7 @@
                               t
                             ;; exponents are the same:
                             (< trailing-significand2 trailing-significand1))))))))
-  :hints (("Goal" :in-theory (e/d (decode-normal-number
+  :hints (("Goal" :in-theory (e/d (decode-normal-number bitp
                                    <=-of-+-and-+-when-<=-and-<=
                                    <=-of-*-and-*-when-<=-and-<=)
                                   (distributivity)))))
@@ -873,7 +1041,8 @@
   :hints (("Goal" :in-theory (enable largest-normal ;decode-normal-number
                                      ;;bias emin emax wfn
                                      *-of-expt-and-expt
-                                     *-of-/-of-expt-and-expt))))
+                                     *-of-/-of-expt-and-expt
+                                     unsigned-byte-p))))
 
 (defthm largest-normal-correct
   (implies (and (representable-normalp k p rat)
@@ -959,13 +1128,11 @@
   :hints (("Goal" :use (decode-subnormal-number-of-encode-subnormal-number
                         (:instance <=-of-decode-subnormal-number-and-largest-subnormal
                                    (sign (mv-nth 0 (encode-subnormal-number k p rat)))
-                                   (trailing-significand (mv-nth 1 (encode-subnormal-number k p rat))))
-                        encode-subnormal-number-type)
+                                   (trailing-significand (mv-nth 1 (encode-subnormal-number k p rat)))))
            :in-theory (e/d (representable-subnormalp
                             representable-positive-subnormalp)
                            (decode-subnormal-number-of-encode-subnormal-number
                             bitp
-                            encode-subnormal-number-type
                             unsigned-byte-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -994,3 +1161,155 @@
            (<= (smallest-positive-subnormal k p) rat))
   :hints (("Goal" :in-theory (enable representable-positive-subnormalp smallest-positive-subnormal decode-subnormal-number bias emax emin
                                      <=-of-expt-of-2-when-<=-of-log2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Performs a "less than" comparison on X and Y, which should be floating point
+;; data in the format (K,P).  This does no signalling of any kind, so it is
+;; even quiter than compareQuietLess.
+(defund floating-point-datum-< (k p x y)
+  (declare (xargs :guard (and (formatp k p)
+                              (floating-point-datump k p x)
+                              (floating-point-datump k p y))
+                  :guard-hints (("Goal" :in-theory (enable floating-point-datump)))
+                  )
+           (ignore k p) ;todo: think about this.  Introduce weak-floating-point-datump where we drop the "representable" check?
+           )
+  (if (or (eq *float-NaN* x)
+          (eq *float-NaN* y))
+      ;; If either is a NaN, the comparison returns false:
+      nil
+    ;; Neither is a Nan:
+    (if (eq x *float-negative-infinity*)
+        ;; If x is negative infinity, it's less than y unless y is also negative infinity:
+        (not (eq y *float-negative-infinity*))
+      (if (eq x *float-positive-infinity*)
+          ;; Positive infinity is never less than anything:
+          nil
+        ;; x is a zero or a rational:
+        (if (eq y *float-negative-infinity*)
+            ;; Nothing is less than negative infinity:
+            nil
+          (if (eq y *float-positive-infinity*)
+              ;; Any rational is less than infinity:
+              t
+            ;; x and y are both zeros or rationals, so treat zeros as 0 and compare them:
+            (let ((x (if (member-eq x (list *float-positive-zero* *float-negative-zero*)) 0 x))
+                  (y (if (member-eq y (list *float-positive-zero* *float-negative-zero*)) 0 y)))
+              (< x y))))))))
+
+(defthm not-floating-point-datum-<-of-float-nan-arg3
+  (not (floating-point-datum-< k p *float-nan* y))
+  :hints (("Goal" :in-theory (enable floating-point-datum-<))))
+
+(defthm not-floating-point-datum-<-of-float-nan-arg4
+  (not (floating-point-datum-< k p x *float-nan*))
+  :hints (("Goal" :in-theory (enable floating-point-datum-<))))
+
+;; Negative zero is not less than positive zero (they are equal).
+(defthm not-floating-point-datum-<-of-float-negative-zero-and-float-positive-zero
+  (not (floating-point-datum-< k p *float-negative-zero* *float-positive-zero*))
+  :hints (("Goal" :in-theory (enable floating-point-datum-<))))
+
+;; Comparisons ignore the signs of zeros:
+(thm
+ (iff (floating-point-datum-< k p *float-negative-zero* y)
+      (floating-point-datum-< k p *float-positive-zero* y))
+ :hints (("Goal" :in-theory (enable floating-point-datum-<))))
+
+;; Comparisons ignore the signs of zeros:
+(thm
+ (iff (floating-point-datum-< k p x *float-negative-zero*)
+      (floating-point-datum-< k p x *float-positive-zero*))
+ :hints (("Goal" :in-theory (enable floating-point-datum-<))))
+
+(defthm floating-point-datum-<-irreflexive
+  (not (floating-point-datum-< k p x x))
+  :hints (("Goal" :in-theory (enable floating-point-datum-<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Performs an equality comparison on X and Y, which should be floating point
+;; data in the format (K,P).  This does no signalling of any kind, so it is
+;; even quiter than compareQuietEqual.
+(defund floating-point-datum-= (k p x y)
+  (declare (xargs :guard (and (formatp k p)
+                              (floating-point-datump k p x)
+                              (floating-point-datump k p y))
+                  :guard-hints (("Goal" :in-theory (enable floating-point-datump)))
+                  )
+           (ignore k p) ;todo: think about this.  Introduce weak-floating-point-datump where we drop the "representable" check?
+           )
+  (if (or (eq *float-NaN* x)
+          (eq *float-NaN* y))
+      ;; If either is a NaN, the equality comparison returns false:
+      nil
+    ;; Since any two zeros are always equal, we map both zeros to the number 0 before comparing:
+    (let ((x (if (member-eq x (list *float-positive-zero* *float-negative-zero*)) 0 x))
+          (y (if (member-eq y (list *float-positive-zero* *float-negative-zero*)) 0 y)))
+      ;; Each of x and y is now either a representable nonzero rational, or 0, or an infinity:
+      (equal x y))))
+
+(defthm not-floating-point-datum-=-of-float-nan-arg3
+  (not (floating-point-datum-= k p *float-nan* y))
+  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+(defthm not-floating-point-datum-=-of-float-nan-arg4
+  (not (floating-point-datum-= k p x *float-nan*))
+  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+(defthm floating-point-datum-=-reflexive
+  (implies (not (equal *float-nan* x))
+           (floating-point-datum-= k p x x))
+  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+(defthm floating-point-datum-=-symmetric
+  (iff (floating-point-datum-= k p x y)
+       (floating-point-datum-= k p y x))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+(defthm floating-point-datum-=-transitive
+  (implies (and (floating-point-datum-= k p x y)
+                (floating-point-datum-= k p y z))
+           (floating-point-datum-= k p x z))
+  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;; Negative zero is equal to positive zero:
+(defthm floating-point-datum-=-of-float-negative-zero-and-float-positive-zero
+  (floating-point-datum-= k p *float-negative-zero* *float-positive-zero*)
+  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;; Comparisons ignore the signs of zeros:
+(thm
+ (iff (floating-point-datum-= k p *float-negative-zero* y)
+      (floating-point-datum-= k p *float-positive-zero* y))
+ :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;; Comparisons ignore the signs of zeros:
+(thm
+ (iff (floating-point-datum-= k p x *float-negative-zero*)
+      (floating-point-datum-= k p x *float-positive-zero*))
+ :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;; An infinity is equal to itself:
+(thm
+ (floating-point-datum-= k p *float-positive-infinity* *float-positive-infinity*)
+ :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;; An infinity is equal to itself:
+(thm
+ (floating-point-datum-= k p *float-negative-infinity* *float-negative-infinity*)
+ :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;; An infinity is equal only to itself:
+(thm
+ (equal (floating-point-datum-= k p x *float-positive-infinity*)
+        (equal x *float-positive-infinity*))
+ :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;; An infinity is equal only to itself:
+(thm
+ (equal (floating-point-datum-= k p x *float-negative-infinity*)
+        (equal x *float-negative-infinity*))
+ :hints (("Goal" :in-theory (enable floating-point-datum-=))))
