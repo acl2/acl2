@@ -22216,7 +22216,9 @@
                      user-defined stobj.~@2"
                     x 'state *see-doc-with-global-stobj*))
          (t ; Warning: Keep this in sync with with-global-stobj-fn.
-          (let* ((main-body ; expansion without let-binding of st at the top
+          (let* ((stobjs-out
+                  (translate-deref stobjs-out bindings))
+                 (main-body ; expansion without let-binding of st at the top
                   (with-global-stobj-fn1 st sig body nil))
                  (sig-adjusted
                   (and sig
@@ -22230,7 +22232,11 @@
                         (t bindings)))
                  (known-stobjs+ (if (eq known-stobjs t)
                                     t
-                                  (add-to-set-eq st known-stobjs))))
+                                  (add-to-set-eq st known-stobjs)))
+                 (stobjs-out-reduced (if (and (null sig)
+                                              (consp stobjs-out))
+                                         (remove1 'st stobjs-out)
+                                       stobjs-out)))
             (trans-er-let*
              ((tbody
                (if (and (consp stobjs-out)
@@ -22249,10 +22255,37 @@
                   nil
                   (if (or (eq stobjs-out t)
                           (null sig))
-                      stobjs-out
+                      stobjs-out-reduced
                     sig)
                   bindings known-stobjs+ flet-alist
                   x ctx wrld state-vars)))
+              (ignore (if (or sig
+                              (eq stobjs-out t)
+                              (consp stobjs-out))
+                          (trans-value nil)
+                        (let ((stobjs-out ; dereference in updated bindings
+                               (translate-deref stobjs-out bindings)))
+                          (cond
+                           ((symbolp stobjs-out)
+
+; Can this case happen?  Maybe, maybe not; but we handle it just to be safe.
+
+                            (trans-er ctx
+                                      "The read-only WITH-GLOBAL-STOBJS call ~
+                                       ~x0 is illegal because, at the time we ~
+                                       process it, we are unable to determine ~
+                                       the stobjs returned by its body in ~
+                                       this environment -- so we are unable ~
+                                       to verify that the bound stobj, ~x1, ~
+                                       is not returned by its body.~@2"
+                                      x st *see-doc-with-global-stobj*))
+                           ((member-eq st stobjs-out)
+                            (trans-er ctx
+                                      "The read-only WITH-GLOBAL-STOBJS call ~
+                                       ~x0 is illegal because its body ~
+                                       returns the bound stobj, ~x1.~@2"
+                                      x st *see-doc-with-global-stobj*))
+                           (t (trans-value nil))))))
               (translated-main-body
 
 ; We want to produce the equivalent of
