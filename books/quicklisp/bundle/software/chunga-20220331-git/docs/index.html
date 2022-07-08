@@ -1,0 +1,736 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>CHUNGA - Portable chunked streams for Common Lisp</title>
+  <style type="text/css">
+  pre { padding:5px; background-color:#e0e0e0 }
+  h3, h4 { text-decoration: underline; }
+  a { text-decoration: none; padding: 1px 2px 1px 2px; }
+  a:visited { text-decoration: none; padding: 1px 2px 1px 2px; }
+  a:hover { text-decoration: none; padding: 1px 1px 1px 1px; border: 1px solid #000000; }
+  a:focus { text-decoration: none; padding: 1px 2px 1px 2px; border: none; }
+  a.none { text-decoration: none; padding: 0; }
+  a.none:visited { text-decoration: none; padding: 0; }
+  a.none:hover { text-decoration: none; border: none; padding: 0; }
+  a.none:focus { text-decoration: none; border: none; padding: 0; }
+  a.noborder { text-decoration: none; padding: 0; }
+  a.noborder:visited { text-decoration: none; padding: 0; }
+  a.noborder:hover { text-decoration: none; border: none; padding: 0; }
+  a.noborder:focus { text-decoration: none; border: none; padding: 0; }
+  </style>
+</head>
+
+<body bgcolor=white>
+
+<h2>CHUNGA - Portable chunked streams for Common Lisp</h2>
+
+<blockquote>
+<br>&nbsp;<br><h3><a name=abstract class=none>Abstract</a></h3> Chunga
+implements streams capable of chunked encoding on demand as defined in
+RFC 2616.  For an example of how these streams can be used
+see <a href="https://edicl.github.io/drakma/">Drakma</a>.
+<p>
+The library needs a Common Lisp implementation that
+supports <a
+href="http://www.nhplace.com/kent/CL/Issues/stream-definition-by-user.html"><em>Gray
+streams</em></a> and relies on David
+Lichteblau's <a
+href="http://www.cliki.net/trivial-gray-streams">trivial-gray-streams</a> to offer portability between different Lisps.
+<p>
+Chunga is currently not optimized towards performance - it is
+rather intended to be easy to use and (if possible) to behave correctly.
+<p>
+The code comes with
+a <a
+href="http://www.opensource.org/licenses/bsd-license.php">BSD-style
+license</a> so you can basically do with it whatever you want.
+
+<p>
+  <a href="https://github.com/edicl/chunga/releases/latest">Download current version</a>
+  or visit the <a href="https://github.com/edicl/chunga/">project on Github</a>.
+</blockquote>
+
+<br>&nbsp;<br><h3><a class=none name="contents">Contents</a></h3>
+<ol>
+  <li><a href="#download">Download and installation</a>
+  <li><a href="#support">Support</a>
+  <li><a href="#dictionary">The Chunga dictionary</a>
+    <ol>
+      <li><a href="#streams">Chunked streams</a>
+        <ol>
+          <li><a href="#chunked-stream"><code>chunked-stream</code></a>
+          <li><a href="#chunked-input-stream"><code>chunked-input-stream</code></a>
+          <li><a href="#chunked-output-stream"><code>chunked-output-stream</code></a>
+          <li><a href="#chunked-io-stream"><code>chunked-io-stream</code></a>
+          <li><a href="#make-chunked-stream"><code>make-chunked-stream</code></a>
+          <li><a href="#chunked-stream-stream"><code>chunked-stream-stream</code></a>
+          <li><a href="#chunked-stream-input-chunking-p"><code>chunked-stream-input-chunking-p</code></a>
+          <li><a href="#chunked-stream-output-chunking-p"><code>chunked-stream-output-chunking-p</code></a>
+          <li><a href="#chunked-input-stream-extensions"><code>chunked-input-stream-extensions</code></a>
+          <li><a href="#chunked-input-stream-trailers"><code>chunked-input-stream-trailers</code></a>
+        </ol>
+      <li><a href="#conditions">Conditions</a>
+        <ol>
+          <li><a href="#chunga-condition"><code>chunga-condition</code></a>
+          <li><a href="#chunga-error"><code>chunga-error</code></a>
+          <li><a href="#chunga-warning"><code>chunga-warning</code></a>
+          <li><a href="#syntax-error"><code>syntax-error</code></a>
+          <li><a href="#parameter-error"><code>parameter-error</code></a>
+          <li><a href="#input-chunking-body-corrupted"><code>input-chunking-body-corrupted</code></a>
+          <li><a href="#input-chunking-unexpected-end-of-file"><code>input-chunking-unexpected-end-of-file</code></a>
+        </ol>
+      <li><a href="#parse">RFC 2616 parsing</a>
+        <ol>
+          <li><a href="#with-character-stream-semantics"><code>with-character-stream-semantics</code></a>
+          <li><a href="#read-line*"><code>read-line*</code></a>
+          <li><a href="#read-http-headers"><code>read-http-headers</code></a>
+          <li><a href="#token-char-p"><code>token-char-p</code></a>
+          <li><a href="#read-token"><code>read-token</code></a>
+          <li><a href="#read-name-value-pair"><code>read-name-value-pair</code></a>
+          <li><a href="#read-name-value-pairs"><code>read-name-value-pairs</code></a>
+          <li><a href="#assert-char"><code>assert-char</code></a>
+          <li><a href="#skip-whitespace"><code>skip-whitespace</code></a>
+          <li><a href="#read-char*"><code>read-char*</code></a>
+          <li><a href="#peek-char*"><code>peek-char*</code></a>
+          <li><a href="#trim-whitespace"><code>trim-whitespace</code></a>
+          <li><a href="#*current-error-message*"><code>*current-error-message*</code></a>
+          <li><a href="#*accept-bogus-eols*"><code>*accept-bogus-eols*</code></a>
+          <li><a href="#*treat-semicolon-as-continuation*"><code>*treat-semicolon-as-continuation*</code></a>
+          <li><a href="#as-keyword"><code>as-keyword</code></a>
+          <li><a href="#as-capitalized-string"><code>as-capitalized-string</code></a>
+        </ol>
+    </ol>
+  <li><a href="#ack">Acknowledgements</a>
+</ol>
+
+<br>&nbsp;<br><h3><a class=none name="download">Download and installation</a></h3>
+
+Chunga together with this documentation can be downloaded
+from <a href="https://github.com/edicl/chunga/releases/latest">Github</a>. The
+current version is 1.1.7. Chunga will only
+work with Lisps where
+the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_c.htm#character_code">character
+codes</a> of
+all <a href="http://en.wikipedia.org/wiki/ISO_8859-1">Latin-1</a>
+characters coincide with their
+Unicode <a href="http://en.wikipedia.org/wiki/Code_point">code
+points</a> (which is the case for all current implementations I know).
+<p>
+The esieast way to install Chunga is with <a href="https://www.quicklisp.org/">Quicklisp</a>
+<p>
+The current development version of Chunga can be found
+at <a href="https://github.com/edicl/chunga">https://github.com/edicl/chunga</a>.
+
+<br>&nbsp;<br><h3><a name="support" class=none>Support</a></h3>
+
+The development version of chunga can be
+found <a href="https://github.com/edicl/chunga" target="_new">on
+github</a>.  Please use the github issue tracking system to submit bug
+reports.  Patches are welcome, please
+use <a href="https://github.com/edicl/chunga/pulls">GitHub pull
+requests</a>.
+
+<br>&nbsp;<br><h3><a class=none name="dictionary">The Chunga dictionary</a></h3>
+
+<h4><a name="streams" class=none>Chunked streams</a></h4>
+
+<em>Chunked streams</em> are the core of the <a href="http://globalia.net/donlope/fz/songs/Chunga's_Revenge.html">Chunga</a> library.  You
+create them using the
+function <a
+href="#make-chunked-stream"><code>MAKE-CHUNKED-STREAM</code></a> which
+takes an open binary stream (called the <em>underlying</em> stream) as its single argument.
+A <em>binary</em> stream in this context means that if it's an <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_i.htm#input">input
+stream</a>, you can
+apply <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_rd_seq.htm"><code>READ-SEQUENCE</code></a>
+to it where the sequence is an array of element
+type <a href="http://edicl.github.io/flexi-streams/#octet"><code>OCTET</code></a>, and similarly for <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_wr_seq.htm"><code>WRITE-SEQUENCE</code></a> and <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_o.htm#output">output streams</a>.  (Note that this specifically holds for <a href="http://www.lispworks.com/documentation/lw50/LWRM/html/lwref-91.htm"><em>bivalent</em> streams</a> like socket streams.)
+<p>
+A chunked stream behaves like an ordinary Lisp stream
+of <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_e.htm#element_type">element
+type</a> <a
+href="http://edicl.github.io/flexi-streams/#octet"><code>OCTET</code></a>
+with the addition that you can turn <em>chunking</em> on and off for
+input as well as for output.  With chunking turned on, data is read or
+written according to
+the <a href="http://www.rfc.net/rfc2616.html#s3.6.1">definition in RFC
+2616</a>.
+
+<!-- Entry for CHUNKED-STREAM -->
+
+<p><br>[Standard class]<br><a class=none name='chunked-stream'><b>chunked-stream</b></a>
+<blockquote><br>
+
+Every <a href="#stream">chunked stream</a> returned by
+<a href="#make-chunked-stream"><code>MAKE-CHUNKED-STREAM</code></a> is of this type which is a subtype of
+<a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_stream.htm"><code>STREAM</code></a>.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-STREAM -->
+
+
+<!-- Entry for CHUNKED-INPUT-STREAM -->
+
+<p><br>[Standard class]<br><a class=none name='chunked-input-stream'><b>chunked-input-stream</b></a>
+<blockquote><br>
+
+A <a href="#stream">chunked stream</a> is of this type if its
+underlying stream is an <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_i.htm#input">input
+stream</a>. This is a subtype of
+<a href="#chunked-stream"><code>CHUNKED-STREAM</code></a>.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-INPUT-STREAM -->
+
+
+
+
+<!-- Entry for CHUNKED-OUTPUT-STREAM -->
+
+<p><br>[Standard class]<br><a class=none name='chunked-output-stream'><b>chunked-output-stream</b></a>
+<blockquote><br>
+
+A <a href="#stream">chunked stream</a> is of this type if its
+underlying stream is an <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_o.htm#output">output stream</a>. This is a subtype of
+<a href="#chunked-stream"><code>CHUNKED-STREAM</code></a>.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-OUTPUT-STREAM -->
+
+
+<!-- Entry for CHUNKED-IO-STREAM -->
+
+<p><br>[Standard class]<br><a class=none name='chunked-io-stream'><b>chunked-io-stream</b></a>
+<blockquote><br>
+
+A <a href="#stream">chunked stream</a> is of this type if it is both
+a <a href="#chunked-input-stream"><code>CHUNKED-INPUT-STREAM</code></a> as well as a <a href="#chunked-output-stream"><code>CHUNKED-OUTPUT-STREAM</code></a>.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-IO-STREAM -->
+
+<!-- Entry for MAKE-CHUNKED-STREAM -->
+
+<p><br>[Function]<br><a class=none name='make-chunked-stream'><b>make-chunked-stream</b> <i>stream</i> =&gt; <i>chunked-stream</i></a>
+<blockquote><br>
+
+Creates and returns a <a href="#stream">chunked stream</a> (a stream of type
+<a href="#chunked-stream"><code>CHUNKED-STREAM</code></a>) which wraps <code><i>stream</i></code>.  <code><i>stream</i></code> must be an open
+binary stream.
+
+</blockquote>
+
+<!-- End of entry for MAKE-CHUNKED-STREAM -->
+
+
+<!-- Entry for CHUNKED-STREAM-STREAM -->
+
+<p><br>[Specialized reader]<br><a class=none name='chunked-stream-stream'><b>chunked-stream-stream</b> <i>(stream chunked-stream)</i> =&gt; <i>underlying-stream</i></a>
+<blockquote><br>
+
+Returns the <a href="#stream">underlying stream</a> of the <a href="#chunked-stream">chunked stream</a> <code><i>stream</i></code>.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-STREAM-STREAM -->
+
+
+<!-- Entry for CHUNKED-STREAM-INPUT-CHUNKING-P -->
+
+<p><br>[Generic reader]<br><a class=none name='chunked-stream-input-chunking-p'><b>chunked-stream-input-chunking-p</b> <i>object</i> =&gt; <i>generalized-boolean</i></a>
+
+<blockquote><br>
+
+Returns a true value if <code><i>object</i></code> is of type <a href="#chunked-input-stream"><code>CHUNKED-INPUT-STREAM</code></a> and if input chunking is currently enabled.
+
+</blockquote>
+
+<p><br>[Specialized writer]<br><a class=none><tt>(setf (</tt><b>chunked-stream-input-chunking-p</b> <i>(stream chunked-input-stream)</i><tt>)</tt> <i>new-value</i><tt>)</tt></a>
+
+<blockquote><br>
+
+This function is used to switch input chunking
+on <code><i>stream</i></code> on or off.  Note that input chunking will
+usally be turned off automatically when the last chunk is read.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-STREAM-INPUT-CHUNKING-P -->
+
+
+
+<!-- Entry for CHUNKED-STREAM-OUTPUT-CHUNKING-P -->
+
+<p><br>[Generic reader]<br><a class=none name='chunked-stream-output-chunking-p'><b>chunked-stream-output-chunking-p</b> <i>object</i> =&gt; <i>generalized-boolean</i></a>
+
+<blockquote><br>
+
+Returns a true value if <code><i>object</i></code> is of type <a href="#chunked-output-stream"><code>CHUNKED-OUTPUT-STREAM</code></a> and if output chunking is currently enabled.
+
+</blockquote>
+
+<p><br>[Specialized writer]<br><a class=none><tt>(setf (</tt><b>chunked-stream-output-chunking-p</b> <i>(stream chunked-output-stream)</i><tt>)</tt> <i>new-value</i><tt>)</tt></a>
+
+<blockquote><br>
+
+This function is used to switch output chunking
+on <code><i>stream</i></code> on or off.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-STREAM-OUTPUT-CHUNKING-P -->
+
+
+
+
+<!-- Entry for CHUNKED-INPUT-STREAM-EXTENSIONS -->
+
+<p><br>[Specialized reader]<br><a class=none name='chunked-input-stream-extensions'><b>chunked-input-stream-extensions</b> <i>(stream chunked-input-stream)</i> =&gt; <i>extensions</i></a>
+<blockquote><br>
+
+Returns
+an <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_a.htm#alist">alist</a>
+of <a href="http://www.rfc.net/rfc2616.html#s3.6">attribute/value pairs</a> corresponding to the optional <a href="http://www.rfc.net/rfc2616.html#s3.6.1">"chunk
+extensions"</a> which might have been encountered when reading
+from <code><i>stream</i></code>.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-INPUT-STREAM-EXTENSIONS -->
+
+
+<!-- Entry for CHUNKED-INPUT-STREAM-EXTENSIONS -->
+
+<p><br>[Specialized reader]<br><a class=none name='chunked-input-stream-trailers'><b>chunked-input-stream-trailers</b> <i>(stream chunked-input-stream)</i> =&gt; <i>trailers</i></a>
+<blockquote><br>
+
+Returns the
+optional <a href="http://www.rfc.net/rfc2616.html#s3.6.1">"trailer"
+HTTP headers</a> which might have been sent after the last chunk,
+i.e. directly before input chunking ended on <code><i>stream</i></code>.
+The format of <code><i>trailers</i></code> is identical to that returned
+by <a href="#read-http-headers"><code>READ-HTTP-HEADERS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for CHUNKED-INPUT-STREAM-EXTENSIONS -->
+
+
+
+
+<h4><a name="conditions" class=none>Conditions</a></h4>
+
+Here are conditions which might be signalled if something bad happens
+with a chunked stream.
+
+<!-- Entry for CHUNGA-CONDITION -->
+
+<p><br>[Condition]
+<br><a class=none name="chunga-condition"><b>chunga-condition</b></a>
+
+<blockquote><br>
+All conditions signalled by Chunga are of this type.  This is a subtype of <a href="http://www.lispworks.com/documentation/HyperSpec/Body/e_cnd.htm"><code>CONDITION</code></a>.
+</blockquote>
+
+<!-- End of entry for CHUNGA-CONDITION -->
+
+<!-- Entry for CHUNGA-ERROR -->
+
+<p><br>[Error]
+<br><a class=none name="chunga-error"><b>chunga-error</b></a>
+
+<blockquote><br>
+All errors signalled by Chunga are of this type.  This is a subtype of <a href="#chunga-condition"><code>CHUNGA-CONDITION</code></a> and of
+<a href="http://www.lispworks.com/documentation/HyperSpec/Body/e_stm_er.htm"><code>STREAM-ERROR</code></a>,
+so <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_stm_er.htm"><code>STREAM-ERROR-STREAM</code></a>
+can be used to access the offending stream.
+</blockquote>
+
+<!-- End of entry for CHUNGA-ERROR -->
+
+<!-- Entry for CHUNGA-WARNING -->
+
+<p><br>[Warning]
+<br><a class=none name="chunga-warning"><b>chunga-warning</b></a>
+
+<blockquote><br>
+All warnings signalled by Chunga are of this type.  This is a subtype of <a href="#chunga-condition"><code>CHUNGA-CONDITION</code></a> and of <a href="http://www.lispworks.com/documentation/HyperSpec/Body/e_warnin.htm"><code>WARNING</code></a>.
+</blockquote>
+
+<!-- End of entry for CHUNGA-WARNING -->
+
+<!-- Entry for SYNTAX-ERROR -->
+
+<p><br>[Error]
+<br><a class=none name="syntax-error"><b>syntax-error</b></a>
+
+<blockquote><br> An error of this type is signalled if Chunga
+encounters wrong or unknown syntax when reading data.  This is a
+subtype of <a href="#chunga-error"><code>CHUNGA-ERROR</code></a>.
+</blockquote>
+
+<!-- End of entry for SYNTAX-ERROR -->
+
+<!-- Entry for PARAMETER-ERROR -->
+
+<p><br>[Error]
+<br><a class=none name="parameter-error"><b>parameter-error</b></a>
+
+<blockquote><br> An error of this type is signalled if a function was
+called with inconsistent or illegal parameters.  This is a subtype
+of <a href="#chunga-error"><code>CHUNGA-ERROR</code></a>.
+</blockquote>
+
+<!-- End of entry for PARAMETER-ERROR -->
+
+<!-- Entry for INPUT-CHUNKING-BODY-CORRUPTED -->
+
+<p><br>[Condition type]<br><a class=none name='input-chunking-body-corrupted'><b>input-chunking-body-corrupted</b></a>
+<blockquote><br>
+
+A condition of this type is signaled if an
+unexpected character (octet) is read while reading from a
+<a href="#stream">chunked stream</a> with input chunking enabled. This is a subtype of
+<a href="#chunga-error"><code>CHUNGA-ERROR</code></a>.
+
+</blockquote>
+
+<!-- End of entry for INPUT-CHUNKING-BODY-CORRUPTED -->
+
+
+<!-- Entry for INPUT-CHUNKING-UNEXPECTED-END-OF-FILE -->
+
+<p><br>[Condition type]<br><a class=none name='input-chunking-unexpected-end-of-file'><b>input-chunking-unexpected-end-of-file</b></a>
+<blockquote><br>
+
+A condition of this type is signaled if we
+reach an unexpected EOF on a <a href="#stream">chunked stream</a> with input chunking
+enabled.  This is a subtype of
+<a href="#chunga-error"><code>CHUNGA-ERROR</code></a>.
+
+</blockquote>
+
+<!-- End of entry for INPUT-CHUNKING-UNEXPECTED-END-OF-FILE -->
+
+
+
+
+<h4><a name="parse" class=none>RFC 2616 parsing</a></h4>
+
+Chunga needs to know a bit
+about <a href="http://www.rfc.net/rfc2616.html">RFC 2616 syntax</a> in
+order to cope
+with <a href="#chunked-input-stream-extensions">extensions</a>
+and <a href="#chunked-input-stream-trailers">trailers</a>.  As these
+functions are in there anyway, they're exported, so they can be used
+by other code like for
+example <a href="https://edicl.github.io/drakma/">Drakma</a>.
+<p>
+Note that all of these functions are designed to work
+on <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_b.htm#binary">binary</a>
+streams, specifically on streams with element
+type <code>(UNSIGNED-BYTE&nbsp;8)</code>.  They will <em>not</em> work
+with character streams.  (But the "bivalent" streams offered by many
+Lisp implementations will do.)  They <em>must</em> be called within the context
+of <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+<p><br>[Macro]
+<br><a class=none name="with-character-stream-semantics"><b>with-character-stream-semantics</b> <i>statement*</i> =&gt; <i>result*</i></a>
+<blockquote><br>
+
+Executes the <code><i>statement*</i></code> forms in such a way that
+functions within this section can read characters from binary streams
+(treating octets as the Latin-1 characters with the corresponding code
+points).  All the functions below <em>must</em> be wrapped with this
+macro.  If your code uses several of these functions which interact on
+the same stream, all of them must be wrapped with the same macro.  See
+the source code of <a href="https://edicl.github.io/drakma/">Drakma</a>
+or <a href="https://edicl.github.io/hunchnetoot/">Hunchentoot</a> for examples
+of how to use this macro.
+
+</blockquote>
+
+<!-- Entry for READ-LINE* -->
+
+<p><br>[Function]<br><a class=none name='read-line*'><b>read-line*</b> <i>stream <tt>&amp;optional</tt> log-stream</i> =&gt; <i>line</i></a>
+<blockquote><br>
+
+Reads and assembles characters from the binary stream <code><i>stream</i></code> until a <a href="http://en.wikipedia.org/wiki/Carriage_return">carriage
+return</a>
+is read.  Makes sure that the following character is a <a href="http://en.wikipedia.org/wiki/Line_feed">linefeed</a>.  If
+<a href="#*accept-bogus-eols*"><code>*ACCEPT-BOGUS-EOLS*</code></a> is not <code>NIL</code>, then the function will also accept a
+lone carriage return or linefeed as a line break.  Returns
+the string of characters read excluding the line break.  Additionally
+logs this string to <code><i>log-stream</i></code> if it is not <code>NIL</code>.
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for READ-LINE* -->
+
+
+<!-- Entry for READ-HTTP-HEADERS -->
+
+<p><br>[Function]<br><a class=none name='read-http-headers'><b>read-http-headers</b> <i>stream <tt>&amp;optional</tt> log-stream</i> =&gt; <i>headers</i></a>
+<blockquote><br>
+
+Reads HTTP header lines from the binary stream <code><i>stream</i></code>
+(except for the initial status line which is supposed to be read
+already) and returns a
+corresponding <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_a.htm#alist">alist</a>
+of names and values where the names are keywords and the values are
+strings.  Multiple lines with the same name are combined into one
+value, the individual values separated by commas.  Header lines which
+are spread across multiple lines are recognized and treated correctly.  (But see <a href="#*treat-semicolon-as-continuation*"><code>*TREAT-SEMICOLON-AS-CONTINUATION*</code></a>.)
+Additonally logs the header lines to
+<code><i>log-stream</i></code> if it is not <code>NIL</code>.
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for READ-HTTP-HEADERS -->
+
+<!-- Entry for READ-TOKEN -->
+
+<p><br>[Function]<br><a class=none name='read-token'><b>read-token</b> <i>stream</i> =&gt; <i>token</i></a>
+<blockquote><br>
+
+Read characters from the binary stream <code><i>stream</i></code> while they
+are <em>token</em> constituents (according
+to <a href="http://www.rfc.net/rfc2616.html">RFC 2616</a>).  It is
+assumed that there's a token character at the current position.  The
+token read is returned as a string.  Doesn't signal an error (but
+simply stops reading)
+if <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/e_end_of.htm"><code>END-OF-FILE</code></a>
+is encountered after the first character.
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for READ-TOKEN -->
+
+<!-- Entry for TOKEN-CHAR-P -->
+
+<p><br>[Function]<br><a class=none name='token-char-p'><b>token-char-p</b> <i>char</i> =&gt; <i>generalized-boolean</i></a>
+<blockquote><br>
+
+Returns a true value if the Lisp character <code><i>char</i></code> is a token constituent
+according to
+<a href="http://www.rfc.net/rfc2616.html">RFC 2616</a>.
+
+</blockquote>
+
+<!-- End of entry for TOKEN-CHAR-P -->
+
+<!-- Entry for READ-NAME-VALUE-PAIR -->
+
+<p><br>[Function]<br><a class=none name='read-name-value-pair'><b>read-name-value-pair</b> <i>stream <tt>&amp;key</tt> value-required-p cookie-syntax</i> =&gt; <i>pair</i></a>
+<blockquote><br>
+
+Reads a typical (in <a href="http://www.rfc.net/rfc2616.html">RFC
+2616</a>) <a href="http://www.rfc.net/rfc2616.html#s3.6">name/value or
+attribute/value combination</a> from the
+binary stream <code><i>stream</i></code> - a <em>token</em> followed by
+a <code>#\=</code> character and another token or a <em>quoted
+string</em>.  Returns
+a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_c.htm#cons">cons</a>
+of the name and the value, both as strings.
+If <code><i>value-required-p</i></code> is <code>NIL</code> (the
+default is <code>T</code>), the <code>#\=</code> sign and the value
+are optional.  If <code><i>cookie-syntax</i></code> is true (the
+default is <code>NIL</code>), the value is read like the value of
+a <a href="https://edicl.github.io/drakma/#cookies">cookie</a> header.
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for READ-NAME-VALUE-PAIR -->
+
+
+<!-- Entry for READ-NAME-VALUE-PAIRS -->
+
+<p><br>[Function]<br><a class=none name='read-name-value-pairs'><b>read-name-value-pairs</b> <i>stream <tt>&amp;key</tt> value-required-p cookie-syntax</i> =&gt; <i>pairs</i></a>
+<blockquote><br>
+
+Uses <a href="#read-name-value-pair"><code>READ-NAME-VALUE-PAIR</code></a> to read and return an <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_a.htm#alist">alist</a> of
+name/value pairs from the binary stream <code><i>stream</i></code>.  It is assumed that the pairs are
+separated by semicolons and that the first char read (except for
+whitespace) will be a semicolon.  The parameters are used as in
+<a href="#read-name-value-pair"><code>READ-NAME-VALUE-PAIR</code></a>.
+Stops reading in case
+of <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/e_end_of.htm"><code>END-OF-FILE</code></a>
+(instead of signaling an error).
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for READ-NAME-VALUE-PAIRS -->
+
+
+
+<!-- Entry for ASSERT-CHAR -->
+
+<p><br>[Function]<br><a class=none name='assert-char'><b>assert-char</b> <i>stream expected-char</i> =&gt; <i>char</i></a>
+<blockquote><br>
+
+Reads the next character from the binary stream <code><i>stream</i></code> and checks if it is the
+character <code><i>expected-char</i></code>.  Signals an error otherwise.
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for ASSERT-CHAR -->
+
+
+<!-- Entry for SKIP-WHITESPACE -->
+
+<p><br>[Function]<br><a class=none name='skip-whitespace'><b>skip-whitespace</b> <i>stream</i> =&gt; <i>char-or-nil</i></a>
+<blockquote><br>
+
+Consume characters from the binary stream <code><i>stream</i></code> until an <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/e_end_of.htm"><code>END-OF-FILE</code></a> is
+encountered or a non-whitespace (according to <a href="http://www.rfc.net/rfc2616.html">RFC 2616</a>)
+characters is seen.  This character is returned (or <code>NIL</code> in case
+of <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/e_end_of.htm"><code>END-OF-FILE</code></a>).
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for SKIP-WHITESPACE -->
+
+
+<!-- Entry for READ-CHAR* -->
+
+<p><br>[Function]<br><a class=none name='read-char*'><b>read-char*</b> <i>stream</i> =&gt; <i>char</i></a>
+<blockquote><br>
+
+Reads and returns the next character from the binary stream <code><i>stream</i></code>.
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for READ-CHAR* -->
+
+
+<!-- Entry for PEEK-CHAR* -->
+
+<p><br>[Function]<br><a class=none name='peek-char*'><b>peek-char*</b> <i>stream <tt>&amp;optional</tt> eof-error-p eof-value</i>  =&gt; <i>boolean</i></a>
+<blockquote><br>
+
+Returns a true value if a character can be read from the binary
+stream <code><i>stream</i></code>.  If <code><i>eof-error-p</i></code>
+has a true value, an error is signalled if no character remains to be
+read.  <code><i>eof-value</i></code> specifies the value to return
+if <code><i>eof-error-p</i></code> is false and the end of the file
+has been reached.
+<p>
+See <a href="#with-character-stream-semantics"><code>WITH-CHARACTER-STREAM-SEMANTICS</code></a>.
+
+</blockquote>
+
+<!-- End of entry for PEEK-CHAR* -->
+
+
+<!-- Entry for TRIM-WHITESPACE -->
+
+<p><br>[Function]<br><a class=none name='trim-whitespace'><b>trim-whitespace</b> <i>string <tt>&amp;key</tt> start end</i> =&gt; <i>string'</i></a>
+<blockquote><br>
+
+Returns a version of the string <code><i>string</i></code> (between <code><i>start</i></code> and <code><i>end</i></code>) where spaces and tab
+characters are trimmed from the start and the end.
+
+</blockquote>
+
+<!-- End of entry for TRIM-WHITESPACE -->
+
+
+<!-- Entry for *CURRENT-ERROR-MESSAGE* -->
+
+<p><br>[Special variable]<br><a class=none name='*current-error-message*'><b>*current-error-message*</b></a>
+<blockquote><br>
+
+Used by the parsing functions in <a href="#parse">this section</a> as
+an introduction to a standardized error message.  Should be bound to a
+string or <code>NIL</code> if one of these functions is called.
+
+</blockquote>
+
+<!-- End of entry for *CURRENT-ERROR-MESSAGE* -->
+
+<!-- Entry for *ACCEPT-BOGUS-EOLS* -->
+
+<p><br>[Special variable]<br><a class=none name='*accept-bogus-eols*'><b>*accept-bogus-eols*</b></a>
+<blockquote><br>
+
+Some web servers do not respond with a correct CRLF line ending for
+HTTP headers but with a lone linefeed or carriage return instead.  If
+this variable is bound to a true
+value, <a href="#read-line*"><code>READ-LINE*</code></a> will treat a
+lone LF or CR character as an acceptable end of line.  The initial
+value is <code>NIL</code>.
+
+</blockquote>
+<!-- End of entry for *ACCEPT-BOGUS-EOLS* -->
+
+<!-- Entry for *TREAT-SEMICOLON-AS-CONTINUATION* -->
+
+<p><br>[Special variable]<br><a class=none name='*treat-semicolon-as-continuation*'><b>*treat-semicolon-as-continuation*</b></a>
+<blockquote><br>
+
+According to John Foderaro, Netscape v3 web servers bogusly split
+<code>Set-Cookie</code> headers over multiple lines which means that we'd have to
+treat <code>Set-Cookie</code> headers ending with a semicolon as incomplete and
+combine them with the next header.  This will only be done if this
+variable has a true value, though.  Its default value is <code>NIL</code>.
+</blockquote>
+
+<!-- End of entry for *TREAT-SEMICOLON-AS-CONTINUATION* -->
+
+<p><br>[Function]<br><a class=none name='as-keyword'><b>as-keyword</b> <i>string <tt>&amp;key</tt> destructivep</i> =&gt; <i>keyword</i></a>
+<blockquote><br>
+Converts the string <code><i>string</i></code> to a keyword where all characters are
+uppercase or lowercase, taking into account the current readtable
+case.  Might destructively modify <code><i>string</i></code> if <code><i>destructivep</i></code> is true which
+is the default.  "Knows" several HTTP header names and methods and
+is optimized to not call <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_intern.htm"><code>INTERN</code></a> for these.
+</blockquote>
+
+<p><br>[Function]<br><a class=none name='as-capitalized-string'><b>as-capitalized-string</b> <i>keyword</i> =&gt; <i>capitalized-string</i></a>
+<blockquote><br>
+Kind of the inverse of <a href="#as-keyword"><code>AS-KEYWORD</code></a>.  Has essentially the same effect
+as <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_stg_up.htm"><code>STRING-CAPITALIZE</code></a> but is optimized for "known" keywords like
+<code>:CONTENT-LENGTH</code> or <code>:GET</code>.
+</blockquote>
+
+
+<br>&nbsp;<br><h3><a class=none name="ack">Acknowledgements</a></h3>
+
+<p>
+Thanks to Jochen Schmidt's chunking code in <a href="http://www.cliki.net/ACL-COMPAT">ACL-COMPAT</a> for inspiration.
+This documentation was prepared with <a href="https://edicl.github.io/documentation-template/">DOCUMENTATION-TEMPLATE</a>.
+</p>
+
+</body>
+</html>

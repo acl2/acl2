@@ -1,0 +1,29 @@
+os: linux
+dist: bionic
+language: generic
+
+env:
+  jobs:
+    - LISP=sbcl
+    - LISP=ccl
+    - LISP=ecl
+    - LISP=abcl
+    - LISP=clisp
+    - LISP=allegro
+    - LISP=sbcl32
+    - LISP=ccl32
+    # - LISP=cmucl
+
+jobs:
+  allow_failures:
+    - env: LISP=sbcl32
+    - env: LISP=ccl32
+    # - env: LISP=cmucl
+
+install:
+  - curl -L https://raw.githubusercontent.com/lispci/cl-travis/master/install.sh | sh
+
+script:
+  - cl -e "(print (lisp-implementation-version))(terpri)
+           (ql:quickload :split-sequence/tests :verbose t)
+           (uiop:quit (if (5am:run! :split-sequence) 0 -1))"

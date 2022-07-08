@@ -1,0 +1,31 @@
+- Fix the CCL crash.
+- Separate project page and a Git repo for trivial-gray-streams.
+- Remove the ENSURE-INITIALIZED function from the public API.
+  It was only intoroduced to provide users access to the RAND-SEEND
+  which we decided to pass as a parameter to the ENSURE-INITIALIZED.
+  We did this because solaris users complained, as Solaris doesn't
+  have /dev/random, /dev/urnandom files which OpenSSL uses to initialize
+  it's random number generator. But now we know that on Solaris people can
+  use EGD: The Entropy Gathering Daemon: http://egd.sourceforge.net/,
+  and OpenSSL uses it if it's running on a systems without /dev/random.
+  Therefore we should get rid of the ENSURE-INITIALIZED and just
+  put an excerpt from the OpenSSL docs about what software should
+  be installed on the systems without /dev/random.
+- The stream-fd function is confusing when it's called with ssl-stream as
+  a parameter; a developer might think this function allows to retrieve a
+  socket file descriptor from an ssl-strem, but this function is implemented
+  only for "native" socket streams provided by the Lisp implementation.
+  Makes sense to implement it for ssl-stream too.
+- The ssl-error-syscall condition uses (err-get-error) in it's :report
+  function. This is not correct; (err-get-error) should be queried
+  when the error occurs. The result might be stored in a slot of
+  the ssl-error-syscall and printed by the :report function.
+- Fix LispBIO.
+- Extract the low-level SSL code into a separate library that supports
+  both OpenSSL and GnuTLS (maybe into two thin FFI libraries).
+- Implement SSL in IOLib adding an API system that only defines stubs that
+  signal an error, and adding implementation systems using the before
+  mentioned thin FFI wrapper libraries. IOLib doesn't support windows,
+  therefore with this plan we will either need to drop Windows support
+  (at tleast for the IOLib based asynch subset of features), or
+  implement Windows support in IOLib.

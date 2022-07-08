@@ -1,0 +1,150 @@
+From ...
+Path: supernews.google.com!sn-xit-02!sn-xit-03!supernews.com!news.tele.dk!193.190.198.17!newsfeeds.belnet.be!
+news.belnet.be!skynet.be!newsfeed2.news.nl.uu.net!sun4nl!not-for-mail
+From: Arthur Lemmens <lemmens@simplex.nl>
+Newsgroups: comp.lang.lisp
+Subject: Re: Q: on hashes and counting
+Date: Mon, 23 Oct 2000 00:50:02 +0200
+Organization: Kikashi Software
+Lines: 129
+Message-ID: <39F36F1A.B8F19D20@simplex.nl>
+References: <8sl58e$ivq$1@nnrp1.deja.com> <878zrlp1cr.fsf@orion.bln.pmsf.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Trace: porthos.nl.uu.net 972255051 2606 193.78.46.221 (22 Oct 2000 22:50:51 GMT)
+X-Complaints-To: abuse@nl.uu.net
+NNTP-Posting-Date: 22 Oct 2000 22:50:51 GMT
+X-Mailer: Mozilla 4.5 [en] (Win98; I)
+X-Accept-Language: en
+Xref: supernews.google.com comp.lang.lisp:2515
+
+
+Pierre R. Mai wrote:
+
+> ;;; The following functions are based on the versions by Arthur
+> ;;; Lemmens of the original code by Bernard Pfahringer posted to
+> ;;; comp.lang.lisp.  I only renamed and diddled them a bit.
+>
+> (defun partition
+
+[snip]
+
+>    ;; DO: Find a more efficient way to take care of :from-end T.
+>     (when from-end
+>       (setf seq (reverse seq))
+>       (psetf start (- len end)
+>              end   (- len start)))
+
+I've written a different version now for dealing with :FROM-END T.
+It doesn't call REVERSE anymore, which makes it more efficient.
+Also, I prefer the new semantics. Stuff like
+  (split #\space "one   two three  "  :from-end t)
+now returns
+  ("three" "two" "one")
+which I find a lot more useful than
+  ("eerht" "owt" "eno")
+If you prefer the latter, it's easy enough to use
+  (split #\space (reverse "one   two three  "))
+
+
+Here it is (feel free to use this code any way you like):
+
+(defun SPLIT (delimiter seq
+		   &key (maximum nil)
+			(keep-empty-subseqs nil)
+			(from-end nil)
+			(start 0)
+			(end nil)
+			(test nil test-supplied)
+			(test-not nil test-not-supplied)
+			(key nil key-supplied))
+
+"Return a list of subsequences in <seq> delimited by <delimiter>.
+If :keep-empty-subseqs is true, empty subsequences will be included
+in the result; otherwise they will be discarded.
+If :maximum is supplied, the result will contain no more than :maximum
+(possibly empty) subsequences. The second result value contains the
+unsplit rest of the sequence.
+All other keywords work analogously to those for CL:POSITION."
+
+;; DO: Make ":keep-delimiters t" include the delimiters in the result (?).
+
+  (let ((len (length seq))
+    (other-keys (nconc (when test-supplied
+			 (list :test test))
+		       (when test-not-supplied
+			 (list :test-not test-not))
+		       (when key-supplied
+			 (list :key key)))))
+
+(unless end (setq end len))
+(if from-end
+    (loop for right = end then left
+	  for left = (max (or (apply #'position delimiter seq
+				     :end right
+				     :from-end t
+				     other-keys)
+			      -1)
+			  (1- start))
+	  unless (and (= right (1+ left) )
+		      (not keep-empty-subseqs)) ; empty subseq we don't want
+	  if (and maximum (>= nr-elts maximum))
+	  ;; We can't take any more. Return now.
+	  return (values subseqs (subseq seq start right))
+	  else
+	  collect (subseq seq (1+ left) right) into subseqs
+	  and sum 1 into nr-elts
+	  until (<= left start)
+	  finally return (values subseqs (subseq seq start (1+ left))))
+  (loop for left = start then (+ right 1)
+	for right = (min (or (apply #'position delimiter seq
+				    :start left
+				    other-keys)
+			     len)
+			 end)
+	unless (and (= right left)
+		    (not keep-empty-subseqs)) ; empty subseq we don't want
+	if (and maximum (>= nr-elts maximum))
+	;; We can't take any more. Return now.
+	return (values subseqs (subseq seq left end))
+	else
+	collect (subseq seq left right) into subseqs
+	and sum 1 into nr-elts
+	until (= right end)
+	finally return (values subseqs (subseq seq right end))))))
+
+
+
+Here are some examples of how you can use this:
+
+
+CL-USER 2 > (split #\space "word1   word2 word3")
+("word1" "word2" "word3")
+""
+
+CL-USER 3 > (split #\space "word1   word2 word3" :from-end t)
+("word3" "word2" "word1")
+""
+
+CL-USER 4 > (split nil '(a b nil c d e nil nil nil nil f) :maximum 2)
+((A B) (C D E))
+(F)
+
+CL-USER 5 > (split #\space "Nospaceshere.")
+("Nospaceshere.")
+""
+
+CL-USER 6 > (split #\; "12;13;;14" :keep-empty-subseqs t)
+
+("12" "13" "" "14")
+""
+
+CL-USER 7 > (split #\; "12;13;;14" :keep-empty-subseqs t :from-end t)
+
+("14" "" "13" "12")
+""
+
+CL-USER 8 > (split #\space "Nospaceshere.    ")
+("Nospaceshere.")
+""

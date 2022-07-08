@@ -1,0 +1,16 @@
+pre {
+	margin-right: 0.5cm;
+	border: thin black solid;
+	background: #F3EEEE;
+	padding: 0.5em;
+}
+
+h1 {
+	font-family: sans-serif;
+	font-variant: small-caps;
+}
+
+h2 {
+	font-family: sans-serif;
+	font-size: medium;
+}
