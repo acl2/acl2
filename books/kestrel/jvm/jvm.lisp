@@ -27,7 +27,7 @@
 ;improvements on  ;SET-ELEMENT-AT? probably lots of other stuff at this level of detail
 ;now checks for some exceptions
 
-;FIXME Finish adding support for floating-point (see floats.lisp).
+;FIXME Finish adding support for floating-point (see floats.lisp and floats2.lisp).
 ;FIXME the stuff relating to threads and locks in this book may be wrong / out-of-date
 ;FIXME add real exception throwing in lots of places (check for null lots of places, etc.)
 
@@ -1583,7 +1583,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (make-regular-float :pos n) ;;TODO: If this is 0.0, should we assume a positive 0?  I think so, since the sometimes does talk about -0.0.
+          :stack (push-operand (make-regular-float :pos n) ;;TODO: If this is 0.0, should we assume a positive 0?  I think so, since the spec sometimes does talk about -0.0.
                                (stack (thread-top-frame th s)))))
 
 ;n is 0 or 1
