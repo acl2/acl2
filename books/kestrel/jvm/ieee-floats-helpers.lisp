@@ -344,3 +344,15 @@
                 (rationalp y1)
                 (rationalp y2))
            (<= (* x1 y1) (* x2 y2))))
+
+(defthm <-of-2-and-expt2
+  (implies (integerp i)
+           (equal (< 2 (expt 2 i))
+                  (< 1 i))))
+
+;could be expensive?
+(defthm <=-of-2-and-expt2-linear
+  (implies (and (< 0 i)
+                (integerp i))
+           (<= 2 (expt 2 i)))
+  :rule-classes :linear)

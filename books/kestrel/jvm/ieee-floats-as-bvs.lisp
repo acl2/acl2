@@ -60,7 +60,6 @@
 ;; The oracle determines how NaNs are encoded.
 (defund encode-bv-float (k p datum oracle)
   (declare (xargs :guard (and (formatp k p)
-                              (< 1 (- k p)) ; todo
                               (floating-point-datump k p datum))
                   :guard-hints (("Goal" :in-theory (enable formatp)))))
   (mv-let (sign biased-exponent trailing-significand)
@@ -92,8 +91,7 @@
 
 ;; Inversion
 (defthm decode-bv-float-of-encode-bv-float
-  (implies (and (< 1 (- k p)) ; todo
-                (floating-point-datump k p datum)
+  (implies (and (floating-point-datump k p datum)
                 (formatp k p))
            (equal (decode-bv-float k p (encode-bv-float k p datum oracle))
                   datum))

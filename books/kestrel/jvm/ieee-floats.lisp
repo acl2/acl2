@@ -44,7 +44,6 @@
 
 ;; K is the total number of bits, and P is the number of bits of precision.  K
 ;; and P together define a floating-point format, denoted (K,P).
-;; TODO: What is the mininum size of a format?
 (defun formatp (k p)
   (declare (xargs :guard t))
   (and (integerp k)
@@ -53,8 +52,18 @@
        ;; would prevent us from representing NaNs and subnormals, both of which
        ;; require a nonzero trailing significand:
        (< 1 p)
-       (< p k) ; if p were equal to k, there would be no room for a sign bit
-       ))
+       ;; if k were equal to p+1, there would be only a single exponent bit,
+       ;; which would prevent us from representing normal numbers, since they
+       ;; require the exponent field to be neither all zeros nor all ones:
+       (< (+ 1 p) k)))
+
+;; Check the formats in Table 3.5:
+(thm (formatp 16 11))
+(thm (formatp 32 24))
+(thm (formatp 64 53))
+(thm (formatp 128 113))
+(thm (formatp 128 113))
+;; TODO: Add the general formula for k>=128.
 
 ;; In case we are keeping formatp disabled
 (defthm formatp-forward
@@ -676,9 +685,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund smallest-positive-normal (k p)
-  (declare (xargs :guard (and (formatp k p)
-                              (< 1 (- k p)) ; must be exponent values available other than all zeros and all ones (TODO: Add to formatp?)
-                              )
+  (declare (xargs :guard (formatp k p)
                   :guard-hints (("Goal" :in-theory (enable wfn unsigned-byte-p)))
                   ))
   (decode-normal-number k p
@@ -688,8 +695,7 @@
                         ))
 
 (defthm representable-positive-normalp-of-smallest-positive-normal
-  (implies (and (formatp k p)
-                (< 1 (- k p)))
+  (implies (formatp k p)
            (representable-positive-normalp k p (smallest-positive-normal k p)))
   :hints (("Goal" :in-theory (enable smallest-positive-normal representable-positive-normalp decode-normal-number bias emin emax))))
 
@@ -714,7 +720,6 @@
 ;; Returns (mv sign biased-exponent trailing-significand).
 (defund encode-nonzero-rational (k p rat)
   (declare (xargs :guard (and (formatp k p)
-                              (< 1 (- k p)) ;todo
                               (representable-nonzero-rationalp k p rat))
                   :guard-hints (("Goal" :in-theory (enable representable-nonzero-rationalp
                                                            representable-normalp
@@ -733,7 +738,6 @@
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-encode-nonzero-rational
   (implies (and (formatp k p)
-                (< 1 (- k p)) ;todo
                 (representable-nonzero-rationalp k p rat))
            (unsigned-byte-p (wfn k p) (mv-nth 1 (encode-nonzero-rational k p rat))))
   :hints (("Goal" :in-theory (enable encode-nonzero-rational
@@ -743,7 +747,6 @@
 
 (defthm unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational
   (implies (and (formatp k p)
-                (< 1 (- k p)) ;todo
                 (representable-nonzero-rationalp k p rat))
            (unsigned-byte-p (+ -1 p) (mv-nth 2 (encode-nonzero-rational k p rat))))
   :hints (("Goal" :in-theory (enable encode-nonzero-rational
@@ -753,7 +756,6 @@
 
 (defthm integerp-of-mv-nth-2-of-encode-nonzero-rational
   (implies (and (formatp k p)
-                (< 1 (- k p)) ;todo
                 (representable-nonzero-rationalp k p rat))
            (integerp (mv-nth 2 (encode-nonzero-rational k p rat))))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational)
@@ -794,7 +796,6 @@
 ;; The oracle helps select which NaN to return.
 (defund encode (k p datum oracle)
   (declare (xargs :guard (and (formatp k p)
-                              (< 1 (- k p)) ; todo
                               (floating-point-datump k p datum))
                   :guard-hints (("Goal" :in-theory (enable floating-point-datump
                                                            representable-nonzero-rationalp)))))
@@ -822,7 +823,6 @@
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-encode
   (implies (and (formatp k p)
-                (< 1 (- k p)) ; todo
                 (floating-point-datump k p datum))
            (unsigned-byte-p (wfn k p) (mv-nth 1 (encode k p datum oracle))))
   :rule-classes (:rewrite :type-prescription)
@@ -832,7 +832,6 @@
   (implies (and (<= (wfn k p) size)
                 (integerp size)
                 (formatp k p)
-                (< 1 (- k p)) ; todo
                 (floating-point-datump k p datum))
            (unsigned-byte-p size (mv-nth 1 (encode k p datum oracle))))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-encode)
@@ -840,7 +839,6 @@
 
 (defthm integerp-of-mv-nth-1-of-encode
   (implies (and (formatp k p)
-                (< 1 (- k p)) ; todo
                 (floating-point-datump k p datum))
            (integerp (mv-nth 1 (encode k p datum oracle))))
   :rule-classes (:rewrite :type-prescription)
@@ -850,7 +848,6 @@
 
 (defthm unsigned-byte-p-of-mv-nth-2-of-encode
   (implies (and (formatp k p)
-                (< 1 (- k p)) ; todo
                 (floating-point-datump k p datum))
            (unsigned-byte-p (+ -1 p) (mv-nth 2 (encode k p datum oracle))))
   :rule-classes (:rewrite :type-prescription)
@@ -858,7 +855,6 @@
 
 (defthm integerp-of-mv-nth-2-of-encode
   (implies (and (formatp k p)
-                (< 1 (- k p)) ; todo
                 (floating-point-datump k p datum))
            (integerp (mv-nth 2 (encode k p datum oracle))))
   :rule-classes (:rewrite :type-prescription)
@@ -876,12 +872,11 @@
                 (formatp k p))
            (equal (encode k p (decode k p sign biased-exponent trailing-significand) oracle)
                   (mv sign biased-exponent trailing-significand)))
-  :hints (("Goal" :in-theory (enable decode encode encode-nonzero-rational bitp))))
+  :hints (("Goal" :in-theory (enable decode encode encode-nonzero-rational bitp unsigned-byte-p))))
 
 ;; Inversion
 (defthm decode-of-encode
-  (implies (and (< 1 (- k p)) ; todo
-                (floating-point-datump k p datum)
+  (implies (and (floating-point-datump k p datum)
                 (formatp k p))
            (mv-let (sign biased-exponent trailing-significand)
              (encode k p datum oracle)
@@ -895,9 +890,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund largest-normal (k p)
-  (declare (xargs :guard (and (formatp k p)
-                              (< 1 (- k p)) ; must be exponent values available other than all zeros and all ones (TODO: Add to formatp?)
-                              )
+  (declare (xargs :guard (formatp k p)
                   :guard-hints (("Goal" :in-theory (enable wfn unsigned-byte-p)))
                   ))
   (decode-normal-number k p
@@ -907,8 +900,7 @@
                         ))
 
 (defthm representable-positive-normalp-of-largest-normal
-  (implies (and (formatp k p)
-                (< 1 (- k p)))
+  (implies (formatp k p)
            (representable-positive-normalp k p (largest-normal k p)))
   :hints (("Goal" :in-theory (enable largest-normal representable-positive-normalp decode-normal-number
                                                            bias emin emax wfn
