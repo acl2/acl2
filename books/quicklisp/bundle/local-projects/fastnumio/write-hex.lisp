@@ -432,7 +432,7 @@
 ; Note: SBCL on Linux X86-64 represents bignums as vectors of 64-bit 'digits',
 ; with the least significant digit in place 0.
 
-#+(and sbcl x86-64)
+#+(and sbcl 64-bit)
 (progn
 
   ;; Basic sanity checking to see if we still understand the internal API.
@@ -446,7 +446,7 @@
   (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
          (digit  (sb-bignum::%bignum-ref x 0))
          (high32 (sb-bignum::%digit-logical-shift-right digit 32))
-         (low32  (sb-bignum::%logand digit #xFFFFFFFF)))
+         (low32  (logand digit #xFFFFFFFF)))
     (assert (typep high32 'fixnum))
     (assert (typep low32 'fixnum))
     (assert (typep high32 '(unsigned-byte 32)))
@@ -544,7 +544,7 @@
   (declaim (inline write-nth-hex-bignum-digit-with-leading-zeroes))
   (defun write-nth-hex-bignum-digit-with-leading-zeroes (n val stream)
     (let ((high32 (sb-bignum::%digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
-          (low32  (sb-bignum::%logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
+          (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
       (declare (type (unsigned-byte 32) high32 low32))
       (write-hex-u32-with-leading-zeroes high32 stream)
       (write-hex-u32-with-leading-zeroes low32 stream)))
@@ -554,7 +554,7 @@
     ;; If digit is nonzero, we print it and return T.
     ;; If digit is zero,    we do not print anything and return NIL.
     (let* ((high32 (sb-bignum::%digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
-           (low32  (sb-bignum::%logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
+           (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
       (declare (type (unsigned-byte 32) high32 low32))
       (if (eql high32 0)
           (if (eql low32 0)
@@ -603,7 +603,7 @@
   (declare (type unsigned-byte val))
 
   #+(and (not (and Clozure x86-64))
-         (not (and sbcl x86-64)))
+         (not (and sbcl 64-bit)))
   (write-hex val stream)
 
   #+(and Clozure x86-64)
@@ -614,7 +614,7 @@
     ;; fixnums are still 60 bits.
     (scary-unsafe-write-hex-bignum-ccl val stream))
 
-  #+(and sbcl x86-64)
+  #+(and sbcl 64-bit)
   (if (typep val 'fixnum)
       (write-hex-fixnum-without-leading-zeroes val stream)
     (scary-unsafe-write-hex-bignum-sbcl val stream))
