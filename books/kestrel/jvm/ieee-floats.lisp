@@ -48,7 +48,11 @@
 (defun formatp (k p)
   (declare (xargs :guard t))
   (and (integerp k)
-       (posp p) ; if p were 0, there would be -1 bits in the trailing significand
+       (integerp p)
+       ;; if p were 1, there would be 0 bits in the trailing significand, which
+       ;; would prevent us from representing NaNs and subnormals, both of which
+       ;; require a nonzero trailing significand:
+       (< 1 p)
        (< p k) ; if p were equal to k, there would be no room for a sign bit
        ))
 
@@ -770,9 +774,7 @@
     :rule-classes (:rewrite :type-prescription))
   ;; The trailing significand has p-1 bits:
   (defthm unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan
-    (implies (and (formatp k p)
-                  (< 1 p) ; todo: build in to formatp?
-                  )
+    (implies (formatp k p)
              (unsigned-byte-p (- p 1) (mv-nth 1 (choose-bits-for-nan k p oracle)))))
   ;; The trailing significand is not all zeros (all zeros would represent an infinity):
   (defthm not-equal-0-of-mv-nth-1-of-choose-bits-for-nan
@@ -780,9 +782,7 @@
              (not (equal 0 (mv-nth 1 (choose-bits-for-nan k p oracle)))))))
 
 (defthm integerp-of-mv-nth-1-of-choose-bits-for-nan
-  (implies (and (formatp k p)
-                (< 1 p) ; todo: build in to formatp?
-                )
+  (implies (formatp k p)
            (integerp (mv-nth 1 (choose-bits-for-nan k p oracle))))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan)
            :in-theory (disable unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan))))
@@ -850,7 +850,6 @@
 
 (defthm unsigned-byte-p-of-mv-nth-2-of-encode
   (implies (and (formatp k p)
-                (< 1 p)
                 (< 1 (- k p)) ; todo
                 (floating-point-datump k p datum))
            (unsigned-byte-p (+ -1 p) (mv-nth 2 (encode k p datum oracle))))
@@ -859,7 +858,6 @@
 
 (defthm integerp-of-mv-nth-2-of-encode
   (implies (and (formatp k p)
-                (< 1 p) ;todo
                 (< 1 (- k p)) ; todo
                 (floating-point-datump k p datum))
            (integerp (mv-nth 2 (encode k p datum oracle))))
@@ -1064,9 +1062,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund largest-subnormal (k p)
-  (declare (xargs :guard (and (formatp k p)
-                              (< 1 p) ; ensure there is a nonzero trailing-significand
-                              )
+  (declare (xargs :guard (formatp k p)
                   :guard-hints (("Goal" :in-theory (enable wfn unsigned-byte-p)))
                   ))
   (decode-subnormal-number k p
@@ -1075,9 +1071,7 @@
                            ))
 
 (defthm representable-positive-subnormalp-of-largest-subnormal
-  (implies (and (formatp k p)
-                (< 1 p) ; todo: add to formatp
-                )
+  (implies (formatp k p)
            (representable-positive-subnormalp k p (largest-subnormal k p)))
   :hints (("Goal" :in-theory (enable largest-subnormal representable-positive-subnormalp decode-subnormal-number
                                      bias emin emax wfn
@@ -1138,9 +1132,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund smallest-positive-subnormal (k p)
-  (declare (xargs :guard (and (formatp k p)
-                              (< 1 p)
-                              )
+  (declare (xargs :guard (formatp k p)
                   :guard-hints (("Goal" :in-theory (enable wfn unsigned-byte-p)))
                   ))
   (decode-subnormal-number k p

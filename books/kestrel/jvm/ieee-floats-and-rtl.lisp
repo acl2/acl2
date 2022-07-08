@@ -28,7 +28,6 @@
 (defthm representable-normalp-becomes-nrepp
   (implies (and (rationalp rat)
                 (formatp k p)
-                (< 1 p)
                 (< (+ 1 p) k))
            (equal (representable-normalp k p rat)
                   (rtl::nrepp rat (list nil ; formal doesn't store the leading bit of significand
@@ -106,7 +105,6 @@
 (defthm representable-subnormalp-becomes-drepp
   (implies (and (rationalp rat)
                 (formatp k p)
-                (< 1 p)
                 (< (+ 1 p) k))
            (equal (representable-subnormalp k p rat)
                   (rtl::drepp rat (list nil ; formal doesn't store the leading bit of significand
