@@ -1,5 +1,0 @@
-- Fix condition systems (making all implementation generate same error)
-- Add INET6 support.
-- IOlib backend
-
-For more TODO items, see http://trac.common-lisp.net/usocket/report.

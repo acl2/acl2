@@ -1,2 +1,0 @@
-shlibs clean:
-	gmake $@
