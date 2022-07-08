@@ -1133,8 +1133,7 @@
                            ))
 
 (defthm representable-positive-subnormalp-of-smallest-positive-subnormal
-  (implies (and (formatp k p)
-                (< 1 0))
+  (implies (formatp k p)
            (representable-positive-subnormalp k p (smallest-positive-subnormal k p)))
   :hints (("Goal" :in-theory (enable smallest-positive-subnormal representable-positive-subnormalp decode-subnormal-number bias emin emax))))
 
