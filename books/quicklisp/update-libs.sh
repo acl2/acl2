@@ -49,8 +49,22 @@ fi
 
 if [ -z "$LISP" ]
 then
-    echo "Defaulting LISP to ccl"
-    LISP=ccl
+    if [ ! -z "$ACL2_LISP" ]
+    then
+       echo "Defaulting LISP to $ACL2_LISP"
+       LISP=$ACL2_LISP
+    elif [ $(command -v sbcl) ]
+    then
+       echo "Defaulting LISP to sbcl"
+       LISP=sbcl
+    elif [ $(command -v ccl) ]
+    then
+       echo "Defaulting LISP to ccl"
+       LISP=sbcl
+    else
+       echo "Can't find LISP: set $LISP"
+       exit 1    
+    fi
 fi
 
 if [ -z "$STARTJOB" ]
@@ -66,8 +80,16 @@ rm -f quicklisp.lsp
 rm -rf temp-quicklisp-inst
 
 echo "Downloading Quicklisp..."
-#curl http://beta.quicklisp.org/quicklisp.lisp -o quicklisp.lsp
-wget http://beta.quicklisp.org/quicklisp.lisp -O quicklisp.lsp
+if [ $(command -v curl) ]
+then
+    curl http://beta.quicklisp.org/quicklisp.lisp -o quicklisp.lsp
+elif [ $(command -v wget) ]
+then
+    wget http://beta.quicklisp.org/quicklisp.lisp -O quicklisp.lsp
+else
+    echo "** Error: Neither curl nor wget installed"
+fi
+
 $BUILD_DIR/wait.pl quicklisp.lsp
 
 echo "Cleaning Bundle..."
