@@ -78,13 +78,11 @@
   (implies (no-duplicatesp-equal x)
            (not (MEMBERP a (REMOVE1-EQUAL a x)))))
 
-;; ;replace with assoc-equal
-;; (defun bound? (x alist)
-;;   (declare (xargs :guard (alistp alist)))
-;;   (assoc-equal x alist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;fixme used typed alists for this?
-
+;; Used in the thread-table
 ;acons might be sufficient if duplicates are okay, but maybe we do want to get rid of old bindings for a thread, to keep the values from getting huge (but will the binds just stack up when we have symbolic terms)?
 (defun bind (x y alist)
   (declare (xargs :guard (alistp alist)))
@@ -931,7 +929,7 @@
                                (jvm-statep s)
                                (bound-in-alistp th (thread-table s))
                                (call-stack-non-emptyp th s))
-                   :verify-guards nil;fixme remove
+                   :verify-guards nil ;TODO: remove
                    ))
   (let ((top-frame (thread-top-frame th s)))
     (lookup (pc top-frame) (method-program (method-info top-frame)))))
@@ -1105,7 +1103,7 @@
 (defthm jvm-statep-of-throw-exception
   (implies (and (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
-                ;(call-stack-non-emptyp th s)
+                ;; (call-stack-non-emptyp th s)
                 (thread-designatorp th))
            (jvm-statep (throw-exception objectref objectref-class th s)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -2706,6 +2704,17 @@
         (modify th s
                 :initialized-classes (cons class-to-initialize initialized-classes)))))
 
+(defthm jvm-statep-of-invoke-static-initializer-for-class
+  (implies (and (class-namep class-to-initialize)
+                (jvm-statep s)
+                ;; (bound-in-class-tablep class-to-initialize (class-table s)) ; all-framep-change
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+;              (not (memberp class-name (initialized-classes s)))
+                )
+           (jvm-statep (invoke-static-initializer-for-class initialized-classes th s class-to-initialize)))
+  :hints (("Goal" :in-theory (enable invoke-static-initializer-for-class))))
+
 ;; We leave this disabled and prove an opener for the case when the class-name and superclasses are constants.
 (defund invoke-static-initializer-for-next-class-helper (class-name superclass-names th s)
 ;  (declare (xargs :guard (and (class-namep class-name))))
@@ -2719,6 +2728,51 @@
     (declare (ignore dummy))
     (invoke-static-initializer-for-class initialized-classes th s class-to-initialize)))
 
+;move
+(defthm class-namep-of-first-non-member
+  (implies (and (all-class-namesp items)
+                (not (ACL2::SUBSETP-EQ items items-to-exclude))) ;ensures it finds an item
+           (class-namep (acl2::first-non-member items items-to-exclude)))
+  :hints (("Goal" :in-theory (enable ;all-class-namesp
+                              ))))
+(defthm all-class-namesp-of-reverse-list
+  (equal (all-class-namesp (acl2::reverse-list x))
+         (all-class-namesp x)))
+
+(defthm all-bound-in-class-tablep-of-reverse-list
+  (equal (all-bound-in-class-tablep (acl2::reverse-list x) class-table)
+         (all-bound-in-class-tablep x class-table))
+  :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
+
+(defthm bound-in-class-tablep-of-first-non-member
+  (implies (and (all-bound-in-class-tablep class-names class-table)
+                (acl2::first-non-member class-names class-names-to-exclude))
+           (bound-in-class-tablep (acl2::first-non-member class-names class-names-to-exclude) class-table))
+  :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
+
+(defthm first-non-member-iff
+  (implies (all-class-namesp items)
+           (iff (acl2::first-non-member items items-to-exclude)
+                (not (acl2::subsetp-equal items items-to-exclude))))
+  :hints (("Goal" :in-theory (enable acl2::subsetp-equal))))
+
+(defthm subsetp-equal-of-reverse-list
+  (equal (acl2::subsetp-equal (acl2::reverse-list x) y)
+         (acl2::subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable acl2::subsetp-equal))))
+
+(defthm jvm-statep-of-invoke-static-initializer-for-next-class-helper
+  (implies (and (class-namep class-name)
+                (all-class-namesp superclass-names)
+                ;; (all-bound-in-class-tablep superclass-names (class-table s)) ; all-framep-change
+                (jvm-statep s)
+                (bound-in-class-tablep class-name (class-table s))
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+                (not (memberp class-name (initialized-classes s))))
+           (jvm-statep (invoke-static-initializer-for-next-class-helper class-name superclass-names th s)))
+  :hints (("Goal" :in-theory (enable invoke-static-initializer-for-next-class-helper))))
+
 ;; Initialize at least one class, either CLASS-NAME or one of its superclasses.
 ;; We leave this disabled and prove an opener for the case when the class-name is a constant.
 (defund invoke-static-initializer-for-next-class (class-name th s)
@@ -2726,6 +2780,16 @@
                                                    (get-superclasses class-name (class-table s))
                                                    th
                                                    s))
+
+(defthm jvm-statep-of-invoke-static-initializer-for-next-class
+  (implies (and (class-namep class-name)
+                (jvm-statep s)
+                (bound-in-class-tablep class-name (class-table s))
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+                (not (memberp class-name (initialized-classes s))))
+           (jvm-statep (invoke-static-initializer-for-next-class class-name th s)))
+  :hints (("Goal" :in-theory (enable invoke-static-initializer-for-next-class))))
 
 ;; (:GETSTATIC class-name field-id long-flag)
 (defun execute-GETSTATIC (inst th s)
@@ -3043,6 +3107,13 @@
            (equal (pc-if test pc1 pc2)
                   ;; the IF should always be resolved:
                   (if test pc1 pc2)))
+  :hints (("Goal" :in-theory (enable pc-if))))
+
+(defthm pcp-of-pc-if
+  (equal (pcp (pc-if test x y))
+         (if test
+             (pcp x)
+           (pcp y)))
   :hints (("Goal" :in-theory (enable pc-if))))
 
 ;; TODO: these branch instructions now take signed offsets, not PCs to jump to,
@@ -3660,6 +3731,17 @@
       (let* ((s (move-past-invoke-instruction th s))) ;; Move past the invokestatic instruction:
         (modify th s :stack (push-operand class-object (pop-operand op-stack)))))))
 
+(defthm jvm-statep-of-execute-java.lang.class.getPrimitiveClass
+  (implies (and (jvm-statep s)
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
+                )
+           (jvm-statep (execute-java.lang.class.getPrimitiveClass th s)))
+  :hints (("Goal" :in-theory (e/d (execute-java.lang.class.getPrimitiveClass
+                                   class-namep ;fixme breaks the abstraction
+                                   ) (acons)))))
+
 ;; Our model of the native method java.lang.Object.getClass
 ;; The current instruction in S is the invoke
 ;; TODO: If the class object needs to be built, this doesn't finish the execution; it just pushes the frame.
@@ -3679,6 +3761,15 @@
           ;; The class object already exists...
           (let* ((s (move-past-invoke-instruction th s))) ;; Move past the invokevirtual instruction:
             (modify th s :stack (push-operand class-object (pop-operand op-stack)))))))))
+
+(defthm jvm-statep-of-execute-java.lang.object.getclass
+  (implies (and (jvm-statep s)
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
+                )
+           (jvm-statep (execute-java.lang.object.getclass th s)))
+  :hints (("Goal" :in-theory (e/d (execute-java.lang.object.getclass) (acons)))))
 
 (defund is-java.lang.Object.getClass (obj-class-name method-name descriptor)
   (declare (xargs :guard t))
@@ -3835,7 +3926,6 @@
       (prog2$ (cw "ERROR: Failed to look up method ~s0.~s1~%" class-name method-name)
               nil))))
 
-;returns (mv erp closest-method-info class-name)
 ;; TODO: Update this.
 ;; Returns (mv erp closest-method-info class-name) where ERP is either nil (no
 ;; error), a string (the name of an exception to throw), or a cons (an
@@ -3851,9 +3941,7 @@
                   :guard (and (class-tablep class-table)
                               (class-namep class-name)
                               (bound-in-class-tablep class-name class-table)
-                              (not (is-an-interfacep class-name class-table)))
-;                  :guard-hints (("Goal" :in-theory (enable IS-AN-INTERFACEP))) ; todo
-                  )
+                              (not (is-an-interfacep class-name class-table))))
            (type (integer 0 *) count))
   (if (zp count) ;to ensure termination
       ;;(error-looking-up-method-for-invokespecial class-name method-name method-descriptor class-table)
@@ -3881,30 +3969,48 @@
                                                    class-table
                                                    (+ -1 count)))))))))
 
+(defthm method-infop-of-mv-nth-1-of-lookup-method-for-invokespecial-aux
+  (implies (and (class-tablep class-table)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name
+                                                                 method-name
+                                                                 method-descriptor
+                                                                 class-table
+                                                                 count))))
+           (method-infop (mv-nth 1 (lookup-method-for-invokespecial-aux class-name
+                                                                     method-name
+                                                                     method-descriptor
+                                                                     class-table
+                                                                     count))))
+  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux))))
+
 (defthm class-namep-of-mv-nth-2-of-lookup-method-for-invokespecial-aux
-  (equal (class-namep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
-         (stringp (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))))
+  (implies (and (class-tablep class-table)
+                (class-namep class-name)
+                (bound-in-class-tablep class-name class-table)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))))
+           (class-namep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))))
+  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux))))
 
-(defthm class-namep-of-mv-nth-0-of-lookup-method-for-invokespecial-aux
-  (equal (class-namep (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
-         (stringp (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))))
-
-;; If an exception class is returned, it is bound.
-(defthm bound-in-class-tablep-of-mv-nth-0-of-lookup-method-for-invokespecial-aux
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
+(defthm bound-in-class-tablep-of-mv-nth-2-of-lookup-method-for-invokespecial-aux
+  (implies (and (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
                 (class-tablep class-table)
-                )
-           (bound-in-class-tablep (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
+                (class-namep class-name)
+                (bound-in-class-tablep class-name class-table))
+           (bound-in-class-tablep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
                                   class-table))
   :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux class-tablep))))
 
-(defthm bound-to-a-non-interfacep-of-mv-nth-0-of-lookup-method-for-invokespecial-aux
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
+(defthm bound-to-a-non-interfacep-of-mv-nth-2-of-lookup-method-for-invokespecial-aux
+  (implies (and (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count)))
                 (class-tablep class-table)
-                )
-           (bound-to-a-non-interfacep (mv-nth 0 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
+                (class-namep class-name)
+                (bound-in-class-tablep class-name class-table)
+                (bound-to-a-non-interfacep class-name class-table))
+           (bound-to-a-non-interfacep (mv-nth 2 (lookup-method-for-invokespecial-aux class-name method-name method-descriptor class-table count))
                                       class-table))
-  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux class-tablep))))
+  :hints (("Goal" :in-theory (e/d (lookup-method-for-invokespecial-aux) (true-listp)))))
 
 (defconst *dummy-class-name* "DUMMY-CLASS") ;todo: eventually use a keyword, but then this can't appear in a method-designator
 
@@ -3925,45 +4031,66 @@
       (if erp
           (mv erp nil nil)
         (let* ((frame (thread-top-frame th s))
-               (current-class-name (cur-class-name frame))
-               (c (if (and (not (equal current-class-name *dummy-class-name*))
-                           (not (equal "<init>" method-name)) ;todo: more checks! see the docs
-                           (bound-to-a-non-interfacep class-name class-table)
-                           (superclassp class-name current-class-name class-table)
-                           (member-eq :acc_super (class-decl-access-flags (get-class-info current-class-name class-table))) ;; assuming "the class file" refers to the current class
-                           )
-                      (get-superclass current-class-name class-table) ;fixme, what if this is java.lang.Object? getting the superclass won't work
-                    class-name)))
-          ;;fixme - do we do the right thing here?
-          (lookup-method-for-invokespecial-aux c
-                                               method-name descriptor class-table
-                                               (+ 1 (len (get-superclasses c class-table))) ;sufficient to ensure we handle all the super classes.
-                                               ))))))
+               (current-class-name (cur-class-name frame)))
+          (if (and (not (equal current-class-name *dummy-class-name*))
+                   (not (bound-in-class-tablep current-class-name class-table)))
+              (mv (list :unbound-class current-class-name) nil nil)
+            (let ((c (if (and (not (equal current-class-name *dummy-class-name*))
+                              (not (equal "<init>" method-name)) ;todo: more checks! see the docs
+                              (bound-to-a-non-interfacep class-name class-table)
+                              (superclassp class-name current-class-name class-table)
+                              (member-eq :acc_super (class-decl-access-flags (get-class-info current-class-name class-table))) ;; assuming "the class file" refers to the current class
+                              )
+                         (get-superclass current-class-name class-table) ; current-class-name can't be java.lang.Object because above we check that class-name is its superclass
+                       class-name)))
+              ;;fixme - do we do the right thing here?
+              (lookup-method-for-invokespecial-aux c
+                                                   method-name descriptor class-table
+                                                   (+ 1 (len (get-superclasses c class-table))) ;sufficient to ensure we handle all the super classes.
+                                                   ))))))))
 
+(defthm method-infop-of-mv-nth-1-of-lookup-method-for-invokespecial
+  (implies (and (jvm-statep s)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial inst th s))))
+           (method-infop (mv-nth 1 (lookup-method-for-invokespecial inst th s))))
+  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial))))
 
 (defthm class-namep-of-mv-nth-2-of-lookup-method-for-invokespecial
-  (equal (class-namep (mv-nth 2 (lookup-method-for-invokespecial inst th s)))
-         (stringp (mv-nth 2 (lookup-method-for-invokespecial inst th s)))))
-
-(defthm class-namep-of-mv-nth-0-of-lookup-method-for-invokespecial
-  (equal (class-namep (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
-         (stringp (mv-nth 0 (lookup-method-for-invokespecial inst th s)))))
+  (implies (and (jvm-statep s)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial inst th s))))
+           (class-namep (mv-nth 2 (lookup-method-for-invokespecial inst th s))))
+  :hints (("Goal" :cases ((equal '"java.lang.Object"
+                                 (cur-class-name (top-frame (binding th (thread-table s))))))
+           :in-theory (enable lookup-method-for-invokespecial))))
 
 ;; If an exception class is returned, it is bound.
-(defthm bound-in-class-tablep-of-mv-nth-0-of-lookup-method-for-invokespecial
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
-                (jvm-statep s))
-           (bound-in-class-tablep (mv-nth 0 (lookup-method-for-invokespecial inst th s))
-                                  (class-table s)))
-  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial class-tablep))))
+(defthm bound-in-class-tablep-of-mv-nth-2-of-lookup-method-for-invokespecial
+  (implies (and (jvm-statep s)
+                ;; no error:
+                (not (mv-nth 0 (lookup-method-for-invokespecial inst th s))))
+           (bound-in-class-tablep (mv-nth 2 (lookup-method-for-invokespecial inst th s)) (class-table s)))
+  :hints (("Goal" :cases ((equal '"java.lang.Object"
+                                 (cur-class-name (top-frame (binding th (thread-table s))))))
+           :in-theory (enable lookup-method-for-invokespecial))))
 
-(defthm bound-to-a-non-interfacep-of-mv-nth-0-of-lookup-method-for-invokespecial
-  (implies (and (stringp (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
-                (jvm-statep s)
-                )
-           (bound-to-a-non-interfacep (mv-nth 0 (lookup-method-for-invokespecial inst th s))
-                                      (class-table s)))
-  :hints (("Goal" :in-theory (e/d (lookup-method-for-invokespecial) (bound-to-a-non-interfacep)))))
+;; ;; If an exception class is returned (can't currently happen), it is bound.
+;; (defthm bound-in-class-tablep-of-mv-nth-0-of-lookup-method-for-invokespecial
+;;   (implies (and (class-namep (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
+;;                 (jvm-statep s))
+;;            (bound-in-class-tablep (mv-nth 0 (lookup-method-for-invokespecial inst th s))
+;;                                   (class-table s)))
+;;   :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial))))
+
+;; ;; If an exception class is returned (can't currently happen), it is bound to a class.
+;; (defthm bound-to-a-non-interfacep-of-mv-nth-0-of-lookup-method-for-invokespecial
+;;   (implies (and (class-namep (mv-nth 0 (lookup-method-for-invokespecial inst th s)))
+;;                 (jvm-statep s)
+;;                 )
+;;            (bound-to-a-non-interfacep (mv-nth 0 (lookup-method-for-invokespecial inst th s))
+;;                                       (class-table s)))
+;;   :hints (("Goal" :in-theory (e/d (lookup-method-for-invokespecial) (bound-to-a-non-interfacep)))))
 
 ; (:INVOKESPECIAL <class-name> <method-name> <method-descriptor> <param-types> <interfacep>)
 ;; This should remain closed unless we can resolve the method
@@ -4027,15 +4154,30 @@
 
 ;FIXME make sure this is right
 ;FFFIXME does this set the current class in the make-frame right?
-(defun execute-INVOKESPECIAL (inst th s)
+(defund execute-INVOKESPECIAL (inst th s)
   (mv-let
     (erp closest-method-info actual-class-name)
     (lookup-method-for-invokespecial inst th s)
     (if erp
-        (if (stringp erp)
+        (if (and (class-namep erp)
+                 (bound-to-a-non-interfacep erp (class-table s)) ; todo: what if not?
+                 )
             (obtain-and-throw-exception erp (list "ERROR IN INVOKESPECIAL: Failed to resolve method." :debug-info inst) th s)
           (error-state erp s))
       (execute-invokespecial-helper closest-method-info actual-class-name s th inst))))
+
+(defthm jvm-statep-of-execute-invokespecial
+  (implies (and (jvm-statep s)
+                ;; (call-stack-non-emptyp th s) ; all-framep-change
+                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th))
+           (jvm-statep (execute-invokespecial inst th s)))
+  :hints (("Goal" :in-theory (enable execute-invokespecial
+                                     execute-invokespecial-helper ; todo: disable less stuff here
+                                     obtain-and-throw-exception
+                                     failed-to-enter-monitor-wrapper))))
+
 
 ; (:INVOKESTATIC class-name method-name method-descriptor formal-slot-count)
 
@@ -4162,6 +4304,25 @@
                     ;; otherwise, we first need to initialize at least one class:
                     (invoke-static-initializer-for-next-class class-name th s)))))))))))
 
+(defthm jvm-statep-of-execute-invokestatic
+  (implies (and (jvm-statep s)
+                ;; (call-stack-non-emptyp th s) ; all-framep-change
+                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th))
+           (jvm-statep (execute-invokestatic inst th s)))
+  :hints (("Goal" :in-theory (enable execute-invokestatic
+                                     execute-invokestatic-helper
+                                     obtain-and-throw-exception
+                                     throw-exception
+                                     failed-to-enter-monitor-wrapper
+                                     ;;todo:
+                                     execute-java.lang.float.floattorawintbits
+                                     execute-java.lang.float.intbitstofloat
+                                     skip-invokestatic-instruction
+                                     ;;obtain-an-object
+                                     ))))
+
 ;inst is an invokevirtual instruction.
 ;inst has the form (invokeXXX class-name method-name descriptor formal-slot-count)
 ;returns (mv erp class-name dont-invoke) ;dont-invoke means the JVM model has special handling for this method
@@ -4279,7 +4440,7 @@
 ;this should stay enabled, to expose the -helper
 ;; TODO: Call resolve-method.
 ;; TODO: Don't let this open if we can't resolve the type.
-(defun execute-invokevirtual (inst th s)
+(defund execute-invokevirtual (inst th s)
   (let* ( ;(class-name (farg1 inst)) ;the actual method may come from a superclass ; fixme - So why is this even in the class file?
          (method-name (farg2 inst))
          (descriptor (farg3 inst))
@@ -4318,6 +4479,19 @@
                                               closest-method-info
                                               class-name
                                               th s)))))))))
+
+(defthm jvm-statep-of-execute-invokevirtual
+  (implies (and (jvm-statep s)
+                ;; (call-stack-non-emptyp th s) ; all-framep-change
+                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th))
+           (jvm-statep (execute-invokevirtual inst th s)))
+  :hints (("Goal" :in-theory (enable execute-invokevirtual
+                                     execute-invokevirtual-helper
+                                     obtain-and-throw-exception
+                                     throw-exception
+                                     failed-to-enter-monitor-wrapper))))
 
 ; (:INVOKEINTERFACE <class-name> <method-name> <method-descriptor> <formal-slot-count>)
 ;FFIXME recently added. check this over
@@ -5890,18 +6064,6 @@
          )
   :hints (("Goal" :in-theory (enable thread-top-frame call-stack make-state thread-table))))
 
-(defthm method-infop-of-lookup-equal-helper
-  (implies (and (all-keys-bound-to-method-infosp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal all-keys-bound-to-method-infosp assoc-equal))))
-
-(defthm method-infop-of-lookup-equal
-  (implies (and (method-info-alistp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
-  :hints (("Goal" :in-theory (enable method-info-alistp all-keys-bound-to-method-infosp))))
-
 
 ;mentioned in the macro-expansion of prog2$
 ;TODO: Just enable return-last?
@@ -5914,21 +6076,7 @@
 ;;   :hints (("Goal" :in-theory (enable return-last))))
 
 
-;move?
-(defthm method-infop-of-mv-nth-1-of-lookup-method-for-invokespecial-aux
-  (implies (and (class-tablep class-table)
-                ;; no error:
-                (not (mv-nth 0 (lookup-method-for-invokespecial-aux class-name
-                                                                 method-name
-                                                                 method-descriptor
-                                                                 class-table
-                                                                 count))))
-           (method-infop (mv-nth 1 (lookup-method-for-invokespecial-aux class-name
-                                                                     method-name
-                                                                     method-descriptor
-                                                                     class-table
-                                                                     count))))
-  :hints (("Goal" :in-theory (enable lookup-method-for-invokespecial-aux))))
+
 
 (defthm operand-stack-size-bound
   (implies (and (syntaxp (quotep k1))

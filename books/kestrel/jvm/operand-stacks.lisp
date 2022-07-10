@@ -262,7 +262,8 @@
 ;;; Popping items off the stack, given a list of types
 ;;;
 
-(defun pop-items-off-stack-aux (item-types ;; early ones correspond to shallower stack items
+;; TODO: Must there be enough items?
+(defund pop-items-off-stack-aux (item-types ;; early ones correspond to shallower stack items
                                 stack)
   (declare (xargs :guard (and (all-typep item-types)
                               (true-listp item-types)
@@ -275,12 +276,23 @@
                     (pop-operand stack))))
       (pop-items-off-stack-aux (rest item-types) stack))))
 
-(defun pop-items-off-stack (rev-item-types ;; early ones correspond to deeper stack items
+(defthm operand-stackp-of-pop-items-off-stack-aux
+  (implies (operand-stackp stack)
+           (operand-stackp (pop-items-off-stack-aux item-types stack)))
+  :hints (("Goal" :in-theory (enable pop-items-off-stack-aux))))
+
+;; TODO: Must there be enough items?
+(defund pop-items-off-stack (rev-item-types ;; early ones correspond to deeper stack items
                             stack)
   (declare (xargs :guard (and (all-typep rev-item-types)
                               (true-listp rev-item-types)
                               (operand-stackp stack))))
   (pop-items-off-stack-aux (acl2::reverse-list rev-item-types) stack))
+
+(defthm operand-stackp-of-pop-items-off-stack
+  (implies (operand-stackp stack)
+           (operand-stackp (pop-items-off-stack rev-item-types stack)))
+  :hints (("Goal" :in-theory (enable pop-items-off-stack))))
 
 ;;;
 ;;; If-lifting rules

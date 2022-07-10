@@ -450,3 +450,15 @@
   (if (acl2::string-contains-charp class-name #\.)
       (acl2::substring-before-last-occurrence class-name #\.)
     :unnamed-package))
+
+(defthm method-infop-of-lookup-equal-helper
+  (implies (and (all-keys-bound-to-method-infosp method-info-alist)
+                (acl2::lookup-equal method-id method-info-alist))
+           (method-infop (acl2::lookup-equal method-id method-info-alist)))
+  :hints (("Goal" :in-theory (enable acl2::lookup-equal all-keys-bound-to-method-infosp assoc-equal))))
+
+(defthm method-infop-of-lookup-equal
+  (implies (and (method-info-alistp method-info-alist)
+                (acl2::lookup-equal method-id method-info-alist))
+           (method-infop (acl2::lookup-equal method-id method-info-alist)))
+  :hints (("Goal" :in-theory (enable method-info-alistp all-keys-bound-to-method-infosp))))

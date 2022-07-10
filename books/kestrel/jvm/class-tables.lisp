@@ -1027,3 +1027,39 @@
 (defund global-class-alist (state)
   (declare (xargs :stobjs (state)))
   (table-alist 'acl2::global-class-table (w state)))
+
+(defthm bound-to-a-non-interfacep-of-get-superclass
+  (implies (and (not (equal "java.lang.Object" class-name))
+                (class-tablep class-table)
+                (bound-to-a-non-interfacep class-name class-table))
+           (bound-to-a-non-interfacep (get-superclass class-name class-table) class-table))
+  :hints (("Goal" :in-theory (enable class-tablep bound-to-a-non-interfacep))))
+
+(defthm get-superclasses-of-java.lang.Object
+  (implies (class-tablep class-table)
+           (equal (get-superclasses "java.lang.Object" class-table)
+                  nil))
+  :hints (("Goal" :in-theory (enable class-tablep get-superclasses))))
+
+(defthm not-superclassp-of-java.lang.Object
+  (implies (class-tablep class-table)
+           (not (superclassp class "java.lang.Object" class-table)))
+  :hints (("Goal" :in-theory (enable superclassp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more like this
+(defthm bound-to-a-non-interfacep-of-java.lang.NullPointerException
+  (implies (class-tablep class-table)
+           (bound-to-a-non-interfacep "java.lang.NullPointerException" class-table))
+  :hints (("Goal" :in-theory (enable class-tablep))))
+
+(defthm bound-to-a-non-interfacep-of-java.lang.IncompatibleClassChangeError
+  (implies (class-tablep class-table)
+           (bound-to-a-non-interfacep "java.lang.IncompatibleClassChangeError" class-table))
+  :hints (("Goal" :in-theory (enable class-tablep))))
+
+(defthm bound-to-a-non-interfacep-of-java.lang.ArrayIndexOutOfBoundsException
+  (implies (class-tablep class-table)
+           (bound-to-a-non-interfacep "java.lang.ArrayIndexOutOfBoundsException" class-table))
+  :hints (("Goal" :in-theory (enable class-tablep))))
