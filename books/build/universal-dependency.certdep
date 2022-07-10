@@ -2,6 +2,7 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-3/2022 Changed ACL2 source definitions of (defrec defstobj-template
-...) and (defrec stobj-property ...).  It seems safest to force
-recertification of all books.
+7/10/2022 Changed raw-Lisp definition of ACL2 function len, which
+no longer calls len1 (and len1 no longer exists).  This caused a
+regression failure for books/kestrel/doc, perhaps because len was
+inlined in function abnf::elementp.
