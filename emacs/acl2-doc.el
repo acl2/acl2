@@ -144,36 +144,35 @@
                                            ; buffer-local values when
                                            ; major mode is changed
 
-(defmacro acl2-doc-init-vars ()
-  '(progn
+(defmacro acl2-doc-init-vars (first-time)
+  `(progn
      (defv *acl2-doc-buffer-name*
        "acl2-doc")
      (defv *acl2-doc-index-buffer-name*
        "acl2-doc-index")
-     (defv-local *acl2-doc-index-name* nil)
-     (defv-local *acl2-doc-index-name-found-p* nil)
-     (defv-local *acl2-doc-index-position* 1)
-     (defv *acl2-doc-search-buffer-name*
-       "acl2-doc-search")
-     (defv-local *acl2-doc-search-string* nil)
-     (defv-local *acl2-doc-search-regexp-p* nil)
-     (defv-local *acl2-doc-search-position* 1)
      (defv *acl2-doc-search-separator* "###---###---###---###---###")
-     (defv-local *acl2-doc-history* nil)
-     (defv *acl2-doc-history-buffer-name*
-       "acl2-doc-history")
-     (defv-local *acl2-doc-return* nil)
+     (defv *acl2-doc-search-buffer-name* "acl2-doc-search")
+     (defv *acl2-doc-history-buffer-name* "acl2-doc-history")
      (defv *acl2-doc-all-topics-rev* nil)
      (defv *acl2-doc-state* nil)
-     (defv-local *acl2-doc-limit-topic* nil)
-     (defv-local *acl2-doc-topics-ht* nil)
      (defv *acl2-doc-children-ht* nil)
      (defv *acl2-doc-show-help-message* nil)
 ; Warning: Do not set *acl2-doc-show-extra* here (see comment in its
 ; introduction using defvar, above).
-     (defv *acl2-doc-last-tags-file-name* nil)))
+     (defv *acl2-doc-last-tags-file-name* nil)
+     ,@(and first-time
+	    '((defv-local *acl2-doc-index-name* nil)
+	      (defv-local *acl2-doc-index-name-found-p* nil)
+	      (defv-local *acl2-doc-index-position* 1)
+	      (defv-local *acl2-doc-search-string* nil)
+	      (defv-local *acl2-doc-search-regexp-p* nil)
+	      (defv-local *acl2-doc-search-position* 1)
+	      (defv-local *acl2-doc-history* nil)
+	      (defv-local *acl2-doc-return* nil)
+	      (defv-local *acl2-doc-limit-topic* nil)
+	      (defv-local *acl2-doc-topics-ht* nil)))))
 
-(acl2-doc-init-vars)
+(acl2-doc-init-vars t)
 
 ; We define the following variable outside acl2-doc-init-vars, so that it is
 ; not smashed by invoking that macro after running acl2-doc-alist-create.
@@ -488,7 +487,7 @@ then restart the ACL2-Doc browser to view that manual."
       (when (get-buffer *acl2-doc-search-buffer-name*)
         (kill-buffer *acl2-doc-search-buffer-name*))
       (acl2-doc-kill-buffers t)
-      (acl2-doc-init-vars)
+      (acl2-doc-init-vars nil)
       (setq *acl2-doc-state* new-state)
       t)))
 

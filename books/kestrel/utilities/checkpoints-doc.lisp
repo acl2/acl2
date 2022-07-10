@@ -17,7 +17,7 @@
 ; the original goal in the ACL2 gag-state structure, which would require a
 ; change to ACL2.
 
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Return prover key checkpoint clauses programmatically."
    :long "<p>Recall the key checkpoints printed at the end of a failed proof
  attempt.  Some are labeled ``Key checkpoint at the top level''; let us call
@@ -78,7 +78,7 @@
  </ul>")
 
 (defxdoc checkpoint-list-pretty
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Return prover key checkpoint goals programmatically."
    :long "<p>See @(see checkpoint-list) for relevant background and related
  utilities.  Here we explain only how @('checkpoint-list-pretty') differs from
@@ -109,7 +109,7 @@
  </ul>")
 
 (defxdoc checkpoint-info-list
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Return prover key checkpoint information programmatically."
    :long "<p>See @(see checkpoint-list) for relevant background and related
  utilities.  Here we explain only how @('checkpoint-info-list') differs from
@@ -128,7 +128,7 @@
  @('gag-info') record).</p>")
 
 (defxdoc show-checkpoint-list
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Display prover key checkpoint information."
    :long "<p>See @(see checkpoint-list) for relevant background.  Evaluation of
  the macro call @('(show-checkpoint-list)') prints checkpoint clauses (as

@@ -2154,48 +2154,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; acl2-count.
 
 #-acl2-loop-only
-(defun-one-output len2 (x acc)
-  (cond ((atom x) acc)
-        (t (len2 (cdr x) (1+ acc)))))
-
-#-acl2-loop-only
-(defun len1 (x acc)
-
-; This function is an optimized version of len2 above, which is a simple
-; tail-recursive implementation of len.
-
-   (declare (type fixnum acc))
-   (the fixnum ; to assist in ACL2's proclaiming
-        (cond ((atom x) acc)
-              ((eql (the fixnum acc) most-positive-fixnum)
-               #+(or gcl ccl allegro sbcl cmu
-                     (and lispworks lispworks-64bit))
-
-; The error below is entirely optional, and can be safely removed from the
-; code.  Here is the story.
-
-; We cause an error for the Lisps listed above in order to highlight the
-; violation of the following expectation for those Lisps: the length of a list
-; is always bounded by most-positive-fixnum.  To be safe, we omit CLISP and
-; 32-bit LispWorks (where most-positive-fixnum is only 16777215 and 8388607,
-; respectively; see the Essay on Fixnum Declarations).  But for the Lisps in
-; the above readtime conditional, we believe the above expectation because a
-; cons takes at least 8 bytes and each of the lisps below has
-; most-positive-fixnum of at least approximately 2^29.
-
-               (error "We have encountered a list whose length exceeds ~
-                       most-positive-fixnum!")
-               -1)
-              (t (len1 (cdr x) (the fixnum (+ (the fixnum acc) 1)))))))
+(declaim (ftype (function (t) fixnum) len)) 
 
 (defun len (x)
   (declare (xargs :guard t :mode :program))
   #-acl2-loop-only
-  (return-from len
-               (let ((val (len1 x 0)))
-                 (if (eql val -1)
-                     (len2 x 0)
-                   val)))
+  (loop for tail on x
+        with acc of-type fixnum = 0
+        do (if (eql (the fixnum acc) most-positive-fixnum)
+
+; We really don't expect lists of length greater than most-positive-fixnum.
+; But we do the check above, potentially (though unlikely) causing this error,
+; to be faithful to the ftype declaim form above.
+
+               (error "~s was given a a list whose length is not a fixnum!"
+                      'len)
+             (incf acc))
+        finally (return acc))
+  #+acl2-loop-only
   (if (consp x)
       (+ 1 (len (cdr x)))
       0))
