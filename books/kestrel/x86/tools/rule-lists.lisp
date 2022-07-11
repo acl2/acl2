@@ -776,8 +776,8 @@
             x86isa::canonical-address-p-between-special3
             x86isa::canonical-address-p-between-special4
 
-            acl2::hack-arith-cancel
-            acl2::<-of-+-of-1-same-alt ;pretty specific
+            acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-2-1
             acl2::integerp-of-+-when-integerp-1-cheap
             x86isa::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap

@@ -61,11 +61,6 @@
   (equal (equal (len x) 0)
          (not (consp x))))
 
-;move
-(defthm nthcdr-of-len-same-when-true-listp
-  (implies (true-listp x)
-           (equal (nthcdr (len x) x)
-                  nil)))
 
 ;TTODO: Move these rules to the appropriate libraries!
 ;TODO: Handle the things with -dag in the name
@@ -385,13 +380,13 @@
 ;;   (implies (equal x y)
 ;;            (not (< x y))))
 
-;just a special case of a cancellation rule
-(defthm <-of-+-of-1-same
-  (< x (+ 1 x)))
+;; ;just a special case of a cancellation rule
+;; (defthm <-of-+-of-1-same
+;;   (< x (+ 1 x)))
 
-;just a special case of a cancellation rule
-(defthm <-of-+-of-1-same-alt
-  (not (< (+ 1 x) x)))
+;; ;just a special case of a cancellation rule
+;; (defthm <-of-+-of-1-same-alt
+;;   (not (< (+ 1 x) x)))
 
 ;should collect the constants
 ;could then use a rule that len is not equal to an impossible constant
@@ -402,9 +397,9 @@
 
 ;BBOZO what do we currently do with free variables?
 
-(defthm hack-arith-cancel
-  (equal (< (+ a x) (+ b x))
-         (< a b)))
+;; (defthm hack-arith-cancel
+;;   (equal (< (+ a x) (+ b x))
+;;          (< a b)))
 
 ;maybe this won't happen for arrays, since they start out initialized to their final length?
 (defthmd update-nth-becomes-update-nth2-extend
@@ -437,15 +432,14 @@
   :hints (("Goal" :in-theory (enable update-nth2 ;LIST::LEN-UPDATE-NTH-BETTER
                                      equal-of-append))))
 
-
-
 ;drop? expensive?
-(DEFTHMD USBP8-IMPLIES-SBP32-2
-  (IMPLIES (UNSIGNED-BYTE-P 8 X)
-           (equal (SIGNED-BYTE-P 32 X)
+(defthmd usbp8-implies-sbp32-2
+  (implies (unsigned-byte-p 8 x)
+           (equal (signed-byte-p 32 x)
                   t)))
 
-(defthm natp-means-non-neg
+;drop?
+(defthmd natp-means-non-neg
   (implies (natp n)
            (not (< n 0))))
 
@@ -2293,8 +2287,6 @@
                       (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
   :hints (("Goal" :use (:instance cdr-of-bv-array-write-better)
            :in-theory (disable cdr-of-bv-array-write-better))))
-
-(in-theory (disable USBP8-IMPLIES-SBP32-2))
 
 (defthm equal-of-nth-and-bv-array-read
   (implies (and (<= len (len x))
