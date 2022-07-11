@@ -161,7 +161,7 @@
 ;; Initialize locals, from index current-slotnum down to 0 with values from the
 ;; stack, with the top value going at index current-slotnum (or current-slotnum
 ;; - 1 if it's a long/double).
-(defun initialize-locals-aux (current-slotnum
+(defund initialize-locals-aux (current-slotnum
                               rev-parameter-types ;last param comes first, which is the shallowest stack item
                               stack locals)
   (declare (xargs :guard (and (operand-stackp stack)
@@ -190,6 +190,12 @@
                                                  (top-operand stack)
                                                  locals))))))
 
+(defthm true-listp-of-initialize-locals-aux
+  (implies (true-listp locals)
+           (true-listp (initialize-locals-aux current-slotnum rev-parameter-types stack locals)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable initialize-locals-aux))))
+
 (acl2::defopeners initialize-locals-aux)
 
 ;The top operand on the stack comes last in the list of locals. This
@@ -210,3 +216,8 @@
                            (acl2::reverse-list parameter-types)
                            stack
                            (uninitialized-locals local-slots))))
+
+(defthm true-listp-of-initialize-locals
+  (true-listp (initialize-locals parameter-types stack))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable initialize-locals-aux))))
