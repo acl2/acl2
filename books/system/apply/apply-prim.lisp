@@ -327,7 +327,7 @@
                                       (N-CAR-CADR-CADDR-ETC 1 (CADDR TERM)))
                                 ALIST))
 
- The LHS is supposed to reduce to e.g. 
+ The LHS is supposed to reduce to e.g.
  (APPLY$-PRIM 'ACL2-NUMBERP
               (APPLY$-PRIM-META-FN-EV (CADDR TERM)
                                       ALIST))
@@ -396,3 +396,4 @@
     ))
 
 (in-theory (disable apply$-prim apply$-primp))
+
