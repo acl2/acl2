@@ -49,20 +49,16 @@ fi
 
 if [ -z "$LISP" ]
 then
-    if [ ! -z "$ACL2_LISP" ]
-    then
-       echo "Defaulting LISP to $ACL2_LISP"
-       LISP=$ACL2_LISP
-    elif [ $(command -v sbcl) ]
+    if [ $(command -v sbcl) ]
     then
        echo "Defaulting LISP to sbcl"
        LISP=sbcl
     elif [ $(command -v ccl) ]
     then
        echo "Defaulting LISP to ccl"
-       LISP=sbcl
+       LISP=ccl
     else
-       echo "Can't find LISP: set $LISP"
+       echo "Can't find LISP: set \$LISP"
        exit 1    
     fi
 fi
