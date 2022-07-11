@@ -104,6 +104,10 @@
   (equal (< (+ x y) (+ z x))
          (< y z)))
 
+(defthm <-of-+-cancel-2-2
+  (equal (< (+ y x) (+ z x))
+         (< y z)))
+
 (defthm <-of-+-cancel-2-1+
   (equal (< (+ y x) (+ x z))
          (< y z)))
