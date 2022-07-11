@@ -64,6 +64,27 @@
 ; key is an event name (currently, a function symbol or the name of a defthm
 ; event) that is associated with a list of translate-cert-data-record records.
 
+; Note added 7/2022: We have observed that for a book's portcullis commands,
+; :CERT-DATA is included for type-prescriptions but not for translations.  This
+; distinction may well have been unintentional, but it seems harmless.  We see
+; no reason why the stored type prescriptions for portcullis commands are
+; problematic, and since we do not generally expect many defun or defthm events
+; among the portcullis commands (other than those evaluated within include-book
+; commands), there is little to be lost by ignoring saved translation
+; information for these.  This distinction in what is stored as cert-data for
+; portcullis commands is a byproduct of our process: translation cert-data is
+; determined while processing events under certify-book, while
+; type-prescription cert-data is determined at the conclusion of such
+; processing; see certfor -data-for-certificate.  To see this distinction, let
+; foo.lisp be any trivial book and execute the following commands.
+
+;   (defun f1 (x) x) (local (defun f2 (x) x)) (defun g (x) x)
+;   (certify-book "foo" ?)
+;   (read-file "foo.cert" state)
+
+; We see that the :CERT-DATA in foo.cert has :TYPE-PRESCRIPTION entries for f1
+; and f3, but has no :TRANSLATE entries.
+
 ; Part 2: Type Prescriptions
 
 ; The following processes support the effective re-use of runic type

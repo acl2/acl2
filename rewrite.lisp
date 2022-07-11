@@ -8898,10 +8898,13 @@
                  state
                  evisc-tuple))
                ((eq (cadr failure-reason) 'rewrote-to)
-                (msg ":HYP ~x0 rewrote to ~X12."
+                (msg ":HYP ~x0 rewrote to ~X12.~@3"
                      n
                      (cddr failure-reason)
-                     evisc-tuple))
+                     evisc-tuple
+                     (if (equal (cddr failure-reason) *nil*)
+                         "  (See :DOC tail-biting if this surprises you.)"
+                       "")))
                ((member-eq (cadr failure-reason) '(syntaxp
                                                    syntaxp-extended
                                                    bind-free

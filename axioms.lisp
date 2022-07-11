@@ -19380,7 +19380,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (character-listp (cdr x)))
    :rule-classes :forward-chaining))
 
+(defun all-dots (x i)
+  (declare (type string x)
+           (type (integer 0 *) i)
+           (xargs :guard (<= i (length x))))
+  (cond ((zp i) t)
+        (t (let ((i (1- i)))
+             (and (eql (char x i) #\.)
+                  (all-dots x i))))))
+
 (defun may-need-slashes-fn (x print-base)
+
+; Quoting the CL HyperSpec, Section 2.3.4 Symbols as Tokens: "Any token that is
+; not a potential number, does not contain a package marker, and does not
+; consist entirely of dots will always be interpreted as a symbol."
 
 ; We determine if the string x, a symbol name or symbol-package name, should be
 ; printed using |..|.  The main ideas are to escape characters as necessary,
@@ -19583,49 +19596,52 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (type string x))
 
-  #+acl2-loop-only
-  (let* ((l (coerce x 'list))
-         (print-base
+  (or
+   (all-dots x (length x)) 
+
+   #+acl2-loop-only
+   (let* ((l (coerce x 'list))
+          (print-base
 
 ; Treat the base as 10 instead of 16 if there is a decimal point, as per the
 ; definition of potential number.
 
-          (if (and (eql print-base 16) (member #\. l))
-              10
-            print-base))
-         (numeric-chars (numeric-chars print-base))
-         (suspiciously-first-numeric-chars
-          (suspiciously-first-numeric-chars print-base)))
-    (or (null l)
+           (if (and (eql print-base 16) (member #\. l))
+               10
+             print-base))
+          (numeric-chars (numeric-chars print-base))
+          (suspiciously-first-numeric-chars
+           (suspiciously-first-numeric-chars print-base)))
+     (or (null l)
 ; Keep the following conjunction in sync with potential-numberp.
-        (and (or (member (car l) numeric-chars)
-                 (and (member (car l) suspiciously-first-numeric-chars)
-                      (intersectp (cdr l) numeric-chars)))
-             (not (member (car (last l))
-                          '(#\+ #\-)))
-             (may-need-slashes1 (cdr l) nil
-                                (cons #\/ suspiciously-first-numeric-chars)))
-        (some-slashable l)))
+         (and (or (member (car l) numeric-chars)
+                  (and (member (car l) suspiciously-first-numeric-chars)
+                       (intersectp (cdr l) numeric-chars)))
+              (not (member (car (last l))
+                           '(#\+ #\-)))
+              (may-need-slashes1 (cdr l) nil
+                                 (cons #\/ suspiciously-first-numeric-chars)))
+         (some-slashable l)))
 
-  #-acl2-loop-only
-  (let ((len (length (the string x))))
-    (declare (type fixnum len)) ; fixnum by Section 15.1.1.2 of CL Hyperspec
-    (when (eql print-base 16)
-      (do ((i 0 (1+ i))) ((= i len) nil)
-          (declare (type fixnum i))
-          (let ((ch (aref (the string x) i)))
-            (declare (type character ch))
-            (cond ((eql ch #\.)
-                   (setq print-base 10)
-                   (return))))))
-    (or (int= len 0)
-        (potential-numberp x len print-base)
-        (do ((i 0 (1+ i))) ((= i len) nil)
-            (declare (type fixnum i))
-            (let ((ch (char-code (aref (the string x) i))))
-              (declare (type fixnum ch))
-              (cond ((svref *slashable-array* ch)
-                     (return t))))))))
+   #-acl2-loop-only
+   (let ((len (length (the string x))))
+     (declare (type fixnum len)) ; fixnum by Section 15.1.1.2 of CL Hyperspec
+     (when (eql print-base 16)
+       (do ((i 0 (1+ i))) ((= i len) nil)
+           (declare (type fixnum i))
+           (let ((ch (aref (the string x) i)))
+             (declare (type character ch))
+             (cond ((eql ch #\.)
+                    (setq print-base 10)
+                    (return))))))
+     (or (int= len 0)
+         (potential-numberp x len print-base)
+         (do ((i 0 (1+ i))) ((= i len) nil)
+             (declare (type fixnum i))
+             (let ((ch (char-code (aref (the string x) i))))
+               (declare (type fixnum ch))
+               (cond ((svref *slashable-array* ch)
+                      (return t)))))))))
 
 (defmacro may-need-slashes (x &optional (print-base '10))
 
