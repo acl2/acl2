@@ -604,7 +604,19 @@
   :hints (("Goal" :in-theory (enable bvcat-associative-helper))))
 
 (defthm bvcat-of-bvchop-high-tighten
-  (implies (and (< n highsize) ;this may loop if we allow <=
+  (implies (and (syntaxp (not (equal highsize n)))
+                (< n highsize) ;this may loop if we allow <=, I've seen this not be enough to prevent loops when highsize and n are the same
+                (integerp highsize)
+                (integerp n))
+           (equal (bvcat highsize (bvchop n x) lowsize lowval)
+                  (bvcat n (bvchop n x) lowsize lowval)))
+  :hints (("Goal" :in-theory (e/d (bvcat) (logtail-logapp)))))
+
+(defthm bvcat-of-bvchop-high-tighten-axe
+  (implies (and (syntaxp (and (quotep highsize)
+                              (quotep n)))
+                ;; (syntaxp (not (equal highsize n))) ; not supported by Axe
+                (< n highsize) ;this may loop if we allow <=, I've seen this not be enough to prevent loops when highsize and n are the same
                 (integerp highsize)
                 (integerp n))
            (equal (bvcat highsize (bvchop n x) lowsize lowval)
@@ -612,7 +624,8 @@
   :hints (("Goal" :in-theory (e/d (bvcat) (logtail-logapp)))))
 
 (defthm bvcat-of-bvchop-tighten
-  (implies (and (< highsize size)
+  (implies (and (syntaxp (not (equal highsize size)))
+                (< highsize size)
                 (natp size)
                 (natp highsize)
                 (integerp x)

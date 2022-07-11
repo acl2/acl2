@@ -1108,7 +1108,7 @@
 
 ;pretty basic (needed to compare stack heights to decide whether to step?):
             fold-consts-in-+
-            hack-arith-cancel
+            <-of-+-cancel-2-2
 
             nth-append-1
             nth-append-2
@@ -1257,8 +1257,8 @@
             sbp-32-when-non-neg ;do we need still this?
             nth-of-subrange
             one-plus-len-hack
-            <-of-+-of-1-same
-            <-of-+-of-1-same-alt)))
+            <-of-+-cancel-1-2
+            <-of-+-cancel-2-1)))
 
 ;move?
 ;; TODO: Add more
