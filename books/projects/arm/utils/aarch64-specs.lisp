@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; March 2022
+;; July 2022
 
 ;; Extend Arm floating-point specs to AArch64 that includes two new control
 ;; bits FIZ and AH
@@ -13,8 +13,8 @@
 
 ;; ======================================================================
 
-(defsection-rtl |ARM AArch64 Floating-Point Instructions|
-  |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
+;; (defsection-rtl |ARM AArch64 Floating-Point Instructions|
+;;   |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
 
 ;; Extend ARM-BINARY-SPEC to AArch64
 
@@ -698,4 +698,4 @@
 	        (zencode 0 (sp)))
 	    (bf-post-comp u)))))))
 
-)
+;; )
