@@ -1,3 +1,7 @@
+NOTE: This directory is maintained for Emacs 24.  If you are using
+more recent versions of Emacs, consider using files in books/emacs/
+instead (i.e., relative to the present directory, ../books/emacs/).
+
 File emacs-acl2.el provides quite a few utilities.  Some make it easy
 to use proof-trees (see :DOC proof-tree).  This file also loads the
 ACL2-Doc Emacs browser for ACL2 documentation, and loads a file that

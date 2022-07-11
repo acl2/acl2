@@ -61,33 +61,12 @@ ACL2 !>>>(TABLE
                           (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 
-HARD ACL2 ERROR in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to
-set memoize-table:  The following event must be admitted (possibly
-with differing name or macro) before memoizing function F1 with :INVOKE
-value G1.  See :DOC memoize.
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
+table:  The following event must be admitted (possibly with differing
+name or macro) before memoizing function F1 with :INVOKE value G1.
+See :DOC memoize.
 
 (DEFTHM |F1-is-G1| (EQUAL (F1 X) (G1 X)) :RULE-CLASSES NIL)
-
-
-
-ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
-aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
-wet.
-
-
-
-ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
-:guard for MEMOIZE-TABLE on the key F1 and value 
-((:CONDITION-FN)
- (:INLINE)
- (:COMMUTATIVE)
- (:FORGET)
- (:MEMO-TABLE-INIT-SIZE . 60)
- (:AOKP)
- (:STATS)
- ...)
-could not be evaluated.
-(See :DOC set-iprint to be able to see elided values in this message.)
 
 
 Summary
@@ -281,33 +260,12 @@ ACL2 !>>>(TABLE
                           (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 
-HARD ACL2 ERROR in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to
-set memoize-table:  The following event must be admitted (possibly
-with differing name or macro) before memoizing function FIB with :INVOKE
-value FIB2.  See :DOC memoize.
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
+table:  The following event must be admitted (possibly with differing
+name or macro) before memoizing function FIB with :INVOKE value FIB2.
+See :DOC memoize.
 
 (DEFTHM |FIB-is-FIB2| (EQUAL (FIB N) (FIB2 N)) :RULE-CLASSES NIL)
-
-
-
-ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
-aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
-wet.
-
-
-
-ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
-:guard for MEMOIZE-TABLE on the key FIB and value 
-((:CONDITION-FN)
- (:INLINE)
- (:COMMUTATIVE)
- (:FORGET)
- (:MEMO-TABLE-INIT-SIZE . 60)
- (:AOKP)
- (:STATS)
- ...)
-could not be evaluated.
-(See :DOC set-iprint to be able to see elided values in this message.)
 
 
 Summary
@@ -444,33 +402,12 @@ ACL2 !>>>(TABLE
                           (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 
-HARD ACL2 ERROR in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to
-set memoize-table:  The following event must be admitted (possibly
-with differing name or macro) before memoizing function F2 with :INVOKE
-value G2.  See :DOC memoize.
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
+table:  The following event must be admitted (possibly with differing
+name or macro) before memoizing function F2 with :INVOKE value G2.
+See :DOC memoize.
 
 (VERIFY-GUARD-IMPLICATION F2 G2)
-
-
-
-ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
-aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
-wet.
-
-
-
-ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
-:guard for MEMOIZE-TABLE on the key F2 and value 
-((:CONDITION-FN)
- (:INLINE)
- (:COMMUTATIVE)
- (:FORGET)
- (:MEMO-TABLE-INIT-SIZE . 60)
- (:AOKP)
- (:STATS)
- ...)
-could not be evaluated.
-(See :DOC set-iprint to be able to see elided values in this message.)
 
 
 Summary

@@ -11463,11 +11463,13 @@
                                        (value
                                         (global-stobjs-prop names bodies guards
                                                             wrld2a)))
-                                      (wrld5 (value (putprop-x-lst1
-                                                     names
-                                                     'global-stobjs
-                                                     global-stobjs-prop
-                                                     wrld4)))
+                                      (wrld5 (value (if global-stobjs-prop
+                                                        (putprop-x-lst1
+                                                         names
+                                                         'global-stobjs
+                                                         global-stobjs-prop
+                                                         wrld4)
+                                                      wrld4)))
                                       (ignore ; see comment above
                                        (cond
                                         ((and global-stobjs-prop

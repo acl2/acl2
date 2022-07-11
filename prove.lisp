@@ -8928,7 +8928,7 @@
                            (null (base-symbol (access assumnote (car lst) :rune))))
                       " ~@0~%  by primitive type reasoning about~%  ~q2.~|")
                      ((eq (access assumnote (car lst) :rune) 'equal)
-                      " ~@0~%  by the linearization of~%  ~q2.~|")
+                      " ~@0~%  by the use of linear arithmetic on~%  ~q2.~|")
                      ((symbolp (access assumnote (car lst) :rune))
                       " ~@0~%  by assuming the guard for ~x1 in~%  ~q2.~|")
                      (t " ~@0~%  by applying ~x1 to~%  ~q2.~|")))

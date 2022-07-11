@@ -17203,7 +17203,7 @@
      (sl-let
       (new-entry new-ttree)
       (rewrite-entry (rewrite temp-entry nil 'multiply-alists2)
-                     :obj nil
+                     :obj '?
                      :geneqv nil
                      :pequiv-info nil
 
