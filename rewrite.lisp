@@ -10497,23 +10497,24 @@
 ; consider is that obj2 is not of the form (:FNCALL fn arglist).  Then we
 ; claim, without proof (but by appeal to plausibility!), that term0 is provably
 ; a member of the finite list ('THM1 'THM2 ...), where (THM1 THM2 ...)
-; enumerates the theorems of w that can be returned by rewrite-rule-term and
-; meta-extract-formula when called by meta-extract-global-fact+.  We thus need
-; to show that for each member 'THM of this list, (ev' 'THM aa) is a theorem of
-; w'.  By the (argument of the) Evaluator Elimination Lemma, (ev' 'THM aa) is
-; provably equal to the instance of THM obtained by replacing each variable x
-; by the term (cdr (assoc 'x aa)).  Since THM is a theorem of w and hence w',
-; so is this instance.  It remains to consider the other case, i.e., to show
-; that for obj2 = (:FNCALL fn arglist), (ev' term0 aa) is a theorem of w'.
-; Since we are assuming that term0 is not *t*, we know that (w st2) = (w
-; *the-live-state*), which is w, and we also know (by inspection of the
-; definition of fncall-term) that term0 = (fncall-term fn arglist st2) for a
-; logic-mode function symbol fn of w whose input arity is the length of
-; arglist.  But (fncall-term fn arglist st2) is the term (equal (fn . arglist)
-; 'val) where (magic-ev-fncall fn arglist st2 ...) = (mv nil val).  We arrange
-; that magic-ev-fncall has unknown-constraints, but we conceive of it as being
-; axiomatized using clocked, logic mode definitions that follow the definitions
-; supporting ev-fncall -- in particular, a clocked, logic-mode version of
+; enumerates the theorems of w that can be returned by rewrite-rule-term,
+; linear-lemma-term, and meta-extract-formula when called by
+; meta-extract-global-fact+.  We thus need to show that for each member 'THM of
+; this list, (ev' 'THM aa) is a theorem of w'.  By the (argument of the)
+; Evaluator Elimination Lemma, (ev' 'THM aa) is provably equal to the instance
+; of THM obtained by replacing each variable x by the term (cdr (assoc 'x aa)).
+; Since THM is a theorem of w and hence w', so is this instance.  It remains to
+; consider the other case, i.e., to show that for obj2 = (:FNCALL fn arglist),
+; (ev' term0 aa) is a theorem of w'.  Since we are assuming that term0 is not
+; *t*, we know that (w st2) = (w *the-live-state*), which is w, and we also
+; know (by inspection of the definition of fncall-term) that term0 =
+; (fncall-term fn arglist st2) for a logic-mode function symbol fn of w whose
+; input arity is the length of arglist.  But (fncall-term fn arglist st2) is
+; the term (equal (fn . arglist) 'val) where (magic-ev-fncall fn arglist st2
+; ...) = (mv nil val).  We arrange that magic-ev-fncall has
+; unknown-constraints, but we conceive of it as being axiomatized using
+; clocked, logic mode definitions that follow the definitions supporting
+; ev-fncall -- in particular, a clocked, logic-mode version of
 ; ev-fncall-rec-logical -- such that (mv t nil) is returned when the clock
 ; expires.  (All of those functions are conceptually in the ground-zero theory,
 ; but they need not be defined in the ACL2 system implementation.)  Then the

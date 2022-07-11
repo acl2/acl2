@@ -1309,6 +1309,20 @@
   (declare (xargs :guard t))
   (ec-call (rewrite-rule-term-exec x)))
 
+(defun linear-lemma-term-exec (x)
+  (declare (xargs :guard (and (weak-linear-lemma-p x)
+                              (true-listp (access linear-lemma x :hyps)))))
+  `(implies ,(conjoin (access linear-lemma x :hyps))
+            ,(access linear-lemma x :concl)))
+
+(defun linear-lemma-term (x)
+
+; This function turns a linear-lemma record into a term.  Consider using
+; linear-lemma-term-exec instead when its guard doesn't cause problems.
+
+  (declare (xargs :guard t))
+  (ec-call (linear-lemma-term-exec x)))
+
 (defmacro meta-extract-global-fact (obj state)
 ; See meta-extract-global-fact+.
    `(meta-extract-global-fact+ ,obj ,state ,state))
@@ -1365,6 +1379,17 @@
           (if (< (nfix n) (len lemmas))
               (rewrite-rule-term rule)
             *t*))) ; Fn doesn't exist or n is too big.
+       ((':linear-lemma fn n)
+        (let* ((lemmas (getpropc fn 'linear-lemmas nil (w st)))
+               (rule (nth n lemmas)))
+
+; The use of linear-lemma-term below relies on the fact that the 'LINEAR-LEMMAS
+; property of a symbol in the ACL2 world is a list of linear-lemma records that
+; reflect known facts.
+
+          (if (< (nfix n) (len lemmas))
+              (linear-lemma-term rule)
+            *t*)))
        ((':fncall fn arglist)
         (non-exec ; avoid guard check
          (fncall-term fn arglist st)))

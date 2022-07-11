@@ -2154,7 +2154,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; acl2-count.
 
 #-acl2-loop-only
-(declaim (ftype (function (t) fixnum) len)) 
+(declaim (ftype (function (t) fixnum) len))
 
 (defun len (x)
   (declare (xargs :guard t :mode :program))
@@ -3732,6 +3732,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  (ftype function
         acl2_*1*_acl2::apply$
         acl2_*1*_acl2::rewrite-rule-term-exec
+        acl2_*1*_acl2::linear-lemma-term-exec
         acl2_*1*_acl2::conjoin
         acl2_*1*_acl2::pairlis$
         acl2_*1*_acl2::close-input-channel))
@@ -19597,7 +19598,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (type string x))
 
   (or
-   (all-dots x (length x)) 
+   (all-dots x (length x))
 
    #+acl2-loop-only
    (let* ((l (coerce x 'list))
