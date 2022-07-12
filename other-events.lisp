@@ -8290,14 +8290,14 @@
 
                 (and (not (global-val 'redef-seen wrld))
 
-; We could replace translate-cert-data below by (fast-alist-fork
-; translate-cert-data nil), to accommodate the possibility that a function
-; symbol might be associated initially with one record and then later with two
-; records, thus shadowing the initial association.  Such shadowing cannot
-; happen currently unless there is redefinition, and at any rate the
-; elimination of shadowed pairs is optional, so we don't bother at this point.
+; We could use (fast-alist-fork translate-cert-data nil) below, to accommodate
+; the possibility that a function symbol might be associated initially with one
+; record and then later with two records, thus shadowing the initial
+; association.  Such shadowing cannot happen currently unless there is
+; redefinition, and at any rate the elimination of shadowed pairs is optional,
+; so we don't bother at this point.
 
-                     translate-cert-data)
+                     (make-fast-alist translate-cert-data))
                 nil)))
 
 (defun newly-defined-top-level-fns-rec (trips collect-p full-book-name acc)
@@ -8691,17 +8691,7 @@
                      (wrld1 (cddr trip)))
                 (pprogn
                  (set-w 'extension
-                        (global-set 'proof-supporters-alist nil
-
-; Ensure that when certifying a book, we avoid the possibility of stealing the
-; fast-alist stored in translate-cert-data (by extending it) during pass 1.
-; We actually guarantee that the fast-alist status of this world global is
-; maintained regardless -- see update-wrld-structures -- but we prefer not to
-; steal the fast-alist since then update-wrld-structures will need to make a
-; new one.
-
-                                    (global-set 'translate-cert-data nil
-                                                wrld1))
+                        (global-set 'proof-supporters-alist nil wrld1)
                         state)
                  (print-encapsulate-msg1 insigs ev-lst state)
                  (er-let*
@@ -8758,156 +8748,148 @@
 
                            (and (null insigs)
                                 (cert-data-pass1-saved wrld1 wrld2))))
-                     (prog2$
-                      (fast-alist-free
-
-; The function update-wrld-structures will ensure that the global-val of
-; 'translate-cert-data is a fast-alist after retracting back to wrld1, and we
-; are done with that global-val from wrld2 so we free it as a fast-alist.
-
-                       (global-val 'translate-cert-data wrld2))
-                      (fast-alist-free-cert-data-on-exit
-                       cert-data
-                       (state-global-let*
-                        ((cert-data cert-data))
-                        (pprogn
-                         (print-encapsulate-msg2 insigs ev-lst state)
-                         (er-progn
-                          (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
-                                                       wrld2 ctx state)
-                          (let* ((pass1-kpa
-                                  (global-val 'known-package-alist wrld2))
-                                 (new-ev-lst
-                                  (subst-by-position expansion-alist ev-lst 0))
-                                 (state (set-w 'retraction wrld1 state))
-                                 (new-event-form
-                                  (and expansion-alist
-                                       (list* 'encapsulate signatures
-                                              new-ev-lst))))
-                            (er-let* ((temp
+                     (fast-alist-free-cert-data-on-exit
+                      cert-data
+                      (state-global-let*
+                       ((cert-data cert-data))
+                       (pprogn
+                        (print-encapsulate-msg2 insigs ev-lst state)
+                        (er-progn
+                         (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
+                                                      wrld2 ctx state)
+                         (let* ((pass1-kpa
+                                 (global-val 'known-package-alist wrld2))
+                                (new-ev-lst
+                                 (subst-by-position expansion-alist ev-lst 0))
+                                (state (set-w 'retraction wrld1 state))
+                                (new-event-form
+                                 (and expansion-alist
+                                      (list* 'encapsulate signatures
+                                             new-ev-lst))))
+                           (er-let* ((temp
 
 ; The following encapsulate-pass-2 is protected by the revert-world-on
 ; error above.
-                                       (encapsulate-pass-2
-                                        insigs
-                                        kwd-value-list-lst
-                                        new-ev-lst
-                                        saved-acl2-defaults-table nil ctx state)))
-                              (pprogn
-                               (f-put-global 'last-make-event-expansion
-                                             new-event-form
-                                             state)
-                               (cond
-                                ((eq (car temp) :empty-encapsulate)
-                                 (empty-encapsulate ctx state))
-                                (t
-                                 (let* ((wrld3 (w state))
-                                        (constrained-fns (nth 0 temp))
-                                        (retval (nth 1 temp))
-                                        (constraints-introduced (nth 2 temp))
-                                        (exports (nth 3 temp))
-                                        (subversive-fns (nth 4 temp))
-                                        (infectious-fns (nth 5 temp))
-                                        (final-proved-fnl-inst-alist
-                                         (and
+                                      (encapsulate-pass-2
+                                       insigs
+                                       kwd-value-list-lst
+                                       new-ev-lst
+                                       saved-acl2-defaults-table nil ctx state)))
+                             (pprogn
+                              (f-put-global 'last-make-event-expansion
+                                            new-event-form
+                                            state)
+                              (cond
+                               ((eq (car temp) :empty-encapsulate)
+                                (empty-encapsulate ctx state))
+                               (t
+                                (let* ((wrld3 (w state))
+                                       (constrained-fns (nth 0 temp))
+                                       (retval (nth 1 temp))
+                                       (constraints-introduced (nth 2 temp))
+                                       (exports (nth 3 temp))
+                                       (subversive-fns (nth 4 temp))
+                                       (infectious-fns (nth 5 temp))
+                                       (final-proved-fnl-inst-alist
+                                        (and
 
 ; The following test that constrained-fns is nil is an optimization, since
 ; otherwise we won't use final-proved-fnl-inst-alist.  See the comment below
 ; where final-proved-fnl-inst-alist is used; if we change that, then this
 ; optimization might no longer be suitable.
 
-                                          (null constrained-fns)
-                                          (new-proved-functional-instances-alist
-                                           saved-proved-functional-instances-alist
-                                           post-pass-1-proved-functional-instances-alist
-                                           wrld3
-                                           nil)))
-                                        (pass2-kpa
-                                         (global-val 'known-package-alist
-                                                     wrld3))
-                                        (eq-pass12-kpa
-                                         (equal pass1-kpa pass2-kpa)))
-                                   (pprogn
-                                    (print-encapsulate-msg3
-                                     ctx insigs new-ev-lst exports
-                                     constrained-fns constraints-introduced
-                                     subversive-fns infectious-fns wrld3 state)
-                                    (er-let*
-                                        ((wrld3a (intro-udf-guards
+                                         (null constrained-fns)
+                                         (new-proved-functional-instances-alist
+                                          saved-proved-functional-instances-alist
+                                          post-pass-1-proved-functional-instances-alist
+                                          wrld3
+                                          nil)))
+                                       (pass2-kpa
+                                        (global-val 'known-package-alist
+                                                    wrld3))
+                                       (eq-pass12-kpa
+                                        (equal pass1-kpa pass2-kpa)))
+                                  (pprogn
+                                   (print-encapsulate-msg3
+                                    ctx insigs new-ev-lst exports
+                                    constrained-fns constraints-introduced
+                                    subversive-fns infectious-fns wrld3 state)
+                                   (er-let*
+                                       ((wrld3a (intro-udf-guards
+                                                 insigs
+                                                 kwd-value-list-lst
+                                                 (intro-udf-global-stobjs
                                                   insigs
                                                   kwd-value-list-lst
-                                                  (intro-udf-global-stobjs
-                                                   insigs
-                                                   kwd-value-list-lst
-                                                   wrld3)
-                                                  wrld3 ctx state))
-                                         #+:non-standard-analysis
-                                         (wrld3a (value
-                                                  (intro-udf-non-classicalp
-                                                   insigs kwd-value-list-lst
-                                                   wrld3a))))
-                                      (install-event
-                                       (cond
-                                        ((encapsulate-return-value-p retval)
-                                         (cadr retval))
-                                        ((null names) t)
-                                        ((null (cdr names)) (car names))
-                                        (t names))
-                                       (or new-event-form event-form)
-                                       'encapsulate
-                                       (or names 0)
-                                       nil nil
-                                       t
-                                       ctx
-                                       (let* ((wrld4
-                                               (if eq-pass12-kpa
-                                                   wrld3a
-                                                 (encapsulate-fix-known-package-alist
-                                                  pass1-kpa pass2-kpa wrld3a)))
-                                              (wrld5 (global-set?
-                                                      'ttags-seen
-                                                      post-pass-1-ttags-seen
-                                                      wrld4
-                                                      (global-val 'ttags-seen
-                                                                  wrld3)))
-                                              (wrld6 (install-proof-supporters-alist
-                                                      post-pass-1-proof-supporters-alist
-                                                      wrld3
-                                                      wrld5))
-                                              (wrld7 (cond
-                                                      ((or (global-val 'skip-proofs-seen
+                                                  wrld3)
+                                                 wrld3 ctx state))
+                                        #+:non-standard-analysis
+                                        (wrld3a (value
+                                                 (intro-udf-non-classicalp
+                                                  insigs kwd-value-list-lst
+                                                  wrld3a))))
+                                     (install-event
+                                      (cond
+                                       ((encapsulate-return-value-p retval)
+                                        (cadr retval))
+                                       ((null names) t)
+                                       ((null (cdr names)) (car names))
+                                       (t names))
+                                      (or new-event-form event-form)
+                                      'encapsulate
+                                      (or names 0)
+                                      nil nil
+                                      t
+                                      ctx
+                                      (let* ((wrld4
+                                              (if eq-pass12-kpa
+                                                  wrld3a
+                                                (encapsulate-fix-known-package-alist
+                                                 pass1-kpa pass2-kpa wrld3a)))
+                                             (wrld5 (global-set?
+                                                     'ttags-seen
+                                                     post-pass-1-ttags-seen
+                                                     wrld4
+                                                     (global-val 'ttags-seen
+                                                                 wrld3)))
+                                             (wrld6 (install-proof-supporters-alist
+                                                     post-pass-1-proof-supporters-alist
+                                                     wrld3
+                                                     wrld5))
+                                             (wrld7 (cond
+                                                     ((or (global-val 'skip-proofs-seen
 
 ; We prefer that an error report about skip-proofs in certification world be
 ; about a non-local event.
 
-                                                                       wrld3)
-                                                           (null
-                                                            post-pass-1-skip-proofs-seen))
-                                                       wrld6)
-                                                      (t (global-set
-                                                          'skip-proofs-seen
-                                                          post-pass-1-skip-proofs-seen
-                                                          wrld6))))
-                                              (wrld8 (global-set?
+                                                                      wrld3)
+                                                          (null
+                                                           post-pass-1-skip-proofs-seen))
+                                                      wrld6)
+                                                     (t (global-set
+                                                         'skip-proofs-seen
+                                                         post-pass-1-skip-proofs-seen
+                                                         wrld6))))
+                                             (wrld8 (global-set?
+                                                     'include-book-alist-all
+                                                     post-pass-1-include-book-alist-all
+                                                     wrld7
+                                                     (global-val
                                                       'include-book-alist-all
-                                                      post-pass-1-include-book-alist-all
-                                                      wrld7
-                                                      (global-val
-                                                       'include-book-alist-all
-                                                       wrld3)))
-                                              (wrld9 (global-set?
+                                                      wrld3)))
+                                             (wrld9 (global-set?
+                                                     'pcert-books
+                                                     post-pass-1-pcert-books
+                                                     wrld8
+                                                     (global-val
                                                       'pcert-books
-                                                      post-pass-1-pcert-books
-                                                      wrld8
-                                                      (global-val
-                                                       'pcert-books
-                                                       wrld3)))
-                                              (wrld10
-                                               (if (and post-pass-1-cert-replay
-                                                        (not eq-pass12-kpa)
-                                                        (not (global-val
-                                                              'cert-replay
-                                                              wrld3)))
+                                                      wrld3)))
+                                             (wrld10
+                                              (if (and post-pass-1-cert-replay
+                                                       (not eq-pass12-kpa)
+                                                       (not (global-val
+                                                             'cert-replay
+                                                             wrld3)))
 
 ; The 'cert-replay world global supports the possible avoidance of rolling back
 ; the world after the first pass of certify-book, before doing the local
@@ -8935,22 +8917,22 @@
 ; make-event case, but if we set cert-replay a bit too aggressively here in
 ; very rare cases, that's OK.
 
-                                                   (global-set
-                                                    'cert-replay
-                                                    (if (f-get-global
-                                                         'certify-book-info
-                                                         state)
-                                                        t
-                                                      (cons
-                                                       (cons (- (max-absolute-command-number
-                                                                 wrld3))
-                                                             nil)
-                                                       (scan-to-command
-                                                        wrld1)))
-                                                    wrld9)
-                                                 wrld9))
-                                              (wrld11
-                                               (if (null constrained-fns)
+                                                  (global-set
+                                                   'cert-replay
+                                                   (if (f-get-global
+                                                        'certify-book-info
+                                                        state)
+                                                       t
+                                                     (cons
+                                                      (cons (- (max-absolute-command-number
+                                                                wrld3))
+                                                            nil)
+                                                      (scan-to-command
+                                                       wrld1)))
+                                                   wrld9)
+                                                wrld9))
+                                             (wrld11
+                                              (if (null constrained-fns)
 
 ; If there are constrained functions, we probably can still store proved
 ; functional instances that don't depend on the newly-constrained functions, by
@@ -8961,13 +8943,13 @@
 ; final-proved-fnl-inst-alist, where there is an optimization that will likely
 ; need to be changed.
 
-                                                   (global-set
-                                                    'proved-functional-instances-alist
-                                                    final-proved-fnl-inst-alist
-                                                    wrld10)
-                                                 wrld10)))
-                                         wrld11)
-                                       state))))))))))))))))))))
+                                                  (global-set
+                                                   'proved-functional-instances-alist
+                                                   final-proved-fnl-inst-alist
+                                                   wrld10)
+                                                wrld10)))
+                                        wrld11)
+                                      state)))))))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
 ;                                         'include-book-with-locals or
@@ -13373,7 +13355,7 @@
 ; attempt to certify full-book-name, in which case it is of the form (cons E
 ; C).  In that case, this function was invoked by a call of include-book-fn
 ; invoked by certify-book-fn, and E is an expansion-alist generated from
-; make-event calls, while C is the cert-data from pass 1 of the attempted
+; make-event calls, while C is cert-data extracted from pass 1 of the attempted
 ; certification.
 
   #+acl2-loop-only (declare (ignore load-compiled-file))
@@ -14187,7 +14169,8 @@
 
 ; When this function is called by certify-book-fn, expansion-alist/cert-data is
 ; (cons E C), where E an expansion-alist generated from make-event calls and C
-; is the cert-data from pass1.  Otherwise, expansion-alist/cert-data is nil.
+; is cert-data extracted from pass1.  Otherwise, expansion-alist/cert-data is
+; nil.
 
   (with-ctx-summarized
    (make-ctx-for-event event-form (cons 'include-book user-book-name))
@@ -31637,9 +31620,7 @@
 
 ; See the comment at the call of trans-eval-default-warning, below.
 
-  (let* ((original-wrld (w state))
-         (original-translate-cert-data
-          (global-val 'translate-cert-data original-wrld)))
+  (let ((original-wrld (w state)))
     (state-global-let*
      ((in-local-flg
 
@@ -31673,50 +31654,45 @@
 ; decision for value-triple.
 
                  (trans-eval-default-warning form ctx state aok)))
-        (prog2$
-         (let ((new-translate-cert-data
-                (global-val 'translate-cert-data (w state))))
-           (or (equal original-translate-cert-data new-translate-cert-data)
-               (fast-alist-free new-translate-cert-data)))
-         (let* ((new-kpa (known-package-alist state))
-                (new-ttags-seen (global-val 'ttags-seen (w state)))
-                (stobjs-out (car result))
-                (vals (cdr result))
-                (safep (equal stobjs-out '(nil))))
-           (cond (safep (value (list* vals new-kpa new-ttags-seen)))
-                 ((or (null (cdr stobjs-out))
-                      (not (eq (caddr stobjs-out) 'state))
-                      (member-eq nil (cdddr stobjs-out)))
-                  (er soft ctx
-                      "The form ~x0 was expected either to return a result ~
-                       that is either a single ordinary value or else is a ~
-                       tuple (mv erp val state stobj1 stobj2 ... stobjk) for ~
-                       some k >= 0.  But the shape of that result was ~x1."
-                      form
-                      (prettyify-stobjs-out stobjs-out)))
-                 ((car vals)
-                  (cond
-                   ((eq on-behalf-of :quiet!)
-                    (silent-error state))
-                   ((stringp (car vals))
-                    (er soft ctx
-                        (car vals)))
-                   ((tilde-@p (car vals)) ; a message
-                    (er soft ctx
-                        "~@0"
-                        (car vals)))
-                   ((eq on-behalf-of :quiet)
-                    (silent-error state))
-                   (t (er soft ctx
-                          "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
-                          (cond (on-behalf-of
-                                 (msg "on behalf of~|  ~y0~|"
-                                      on-behalf-of))
-                                (t ""))
-                          form))))
-                 (t (pprogn
-                     (set-w! original-wrld state)
-                     (value (list* (cadr vals) new-kpa new-ttags-seen))))))))))))
+        (let* ((new-kpa (known-package-alist state))
+               (new-ttags-seen (global-val 'ttags-seen (w state)))
+               (stobjs-out (car result))
+               (vals (cdr result))
+               (safep (equal stobjs-out '(nil))))
+          (cond (safep (value (list* vals new-kpa new-ttags-seen)))
+                ((or (null (cdr stobjs-out))
+                     (not (eq (caddr stobjs-out) 'state))
+                     (member-eq nil (cdddr stobjs-out)))
+                 (er soft ctx
+                     "The form ~x0 was expected either to return a result ~
+                      that is either a single ordinary value or else is a ~
+                      tuple (mv erp val state stobj1 stobj2 ... stobjk) for ~
+                      some k >= 0.  But the shape of that result was ~x1."
+                     form
+                     (prettyify-stobjs-out stobjs-out)))
+                ((car vals)
+                 (cond
+                  ((eq on-behalf-of :quiet!)
+                   (silent-error state))
+                  ((stringp (car vals))
+                   (er soft ctx
+                       (car vals)))
+                  ((tilde-@p (car vals)) ; a message
+                   (er soft ctx
+                       "~@0"
+                       (car vals)))
+                  ((eq on-behalf-of :quiet)
+                   (silent-error state))
+                  (t (er soft ctx
+                         "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
+                         (cond (on-behalf-of
+                                (msg "on behalf of~|  ~y0~|"
+                                     on-behalf-of))
+                               (t ""))
+                         form))))
+                (t (pprogn
+                    (set-w! original-wrld state)
+                    (value (list* (cadr vals) new-kpa new-ttags-seen)))))))))))
 
 (defun make-event-debug-pre (form on-behalf-of state)
   (cond
