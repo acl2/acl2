@@ -99,7 +99,7 @@
 ;; weak-dagp
 ;;
 
-;; Checks that DAG is a true-list of bounded-dag-exprs.
+;; Checks that DAG is a true-list of pairs of the form (<nodenum> . <bounded-dag-expr>).
 (defun weak-dagp-aux (dag)
   (declare (xargs :guard t))
   (if (atom dag)
