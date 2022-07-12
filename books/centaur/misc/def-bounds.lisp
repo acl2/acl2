@@ -212,7 +212,7 @@
        (upper-bound (unquote upper-bound-term))
        (lower-bound (unquote lower-bound-term)))
     (defbounds-print-case-bounds case-conjunct simp-term nil upper-bound lower-bound state)
-    (value (cons upper-bound lower-bound))))
+    (value (cons lower-bound upper-bound))))
 
 
 
