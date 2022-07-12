@@ -36,6 +36,9 @@
 (include-book "std/util/defaggrify-defrec" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "tools/match-tree" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -459,6 +462,65 @@
   (implies (= a b)
            (equal (< a b) nil)))
 
+(define boundrw-check-bound ((x pseudo-termp)
+                             (bound-term pseudo-termp)
+                             (direction booleanp)
+                             mfc state)
+  :returns (ok)
+  ;; (b* ((contra-term (if direction
+  ;;                       ;; bound-term is upper bound
+  ;;                       `(< ,bound-term ,x)
+  ;;                     ;; bound-term is lower bound
+  ;;                     `(< ,x ,bound-term))))
+  ;;   (or (mfc-ap
+  ;;        ;; term to contradict:
+  ;;        contra-term
+  ;;        mfc state
+  ;;        :forcep nil)
+  ;;       (cw "linear failed to solve: ~x0~%" contra-term)))
+  (b* ((hyp-term (if direction
+                     ;; `(not (< ,bound-term ,x))
+                   ;; `(not (< ,x ,bound-term))
+                     '(not (< bound-term x))
+                   '(not (< x bound-term))))
+       (alist `((bound-term . ,bound-term)
+                (x . ,x))))
+    (or (mfc-relieve-hyp
+         hyp-term
+         alist
+         '(:rewrite boundrw-dummy-rewrite)
+         '(< fake term) 1 mfc state
+         :forcep nil :ttreep nil)
+        (cw "relieve-hyp failed to solve: ~x0~%" (substitute-into-term hyp-term alist))))
+  ///
+  (std::defretd <fn>-correct
+    (implies (and ok
+                  (boundrw-ev-meta-extract-contextual-facts a)
+                  (pseudo-termp x))
+             (and (implies direction
+                           (<= (boundrw-ev x a) (boundrw-ev bound-term a)))
+                  (implies (not direction)
+                           (<= (boundrw-ev bound-term a) (boundrw-ev x a))))))
+
+  (defund boundrw-check-bound-hide (x bound-term direction mfc state)
+    (declare (xargs :stobjs state
+                    :verify-guards nil))
+    (boundrw-check-bound x bound-term direction mfc state))
+  
+  (defthmd boundrw-check-bound-correct-rw
+    (implies (and (rewriting-negative-literal `(boundrw-check-bound ,x ,bound-term ,direction ,mf ,st))
+                  (bind-free '((a . a)) (a))
+                  (boundrw-ev-meta-extract-contextual-facts a :mfc mf :state st)
+                  (pseudo-termp x))
+             (iff (boundrw-check-bound x bound-term direction mf st)
+                  (and (boundrw-check-bound-hide x bound-term direction mf st)
+                       (if direction
+                           (<= (boundrw-ev x a) (boundrw-ev bound-term a))
+                         (<= (boundrw-ev bound-term a) (boundrw-ev x a))))))
+    :hints(("Goal" :in-theory (e/d (boundrw-check-bound-hide
+                                    boundrw-check-bound-correct)
+                                   (boundrw-check-bound))))))
+
 (define boundrw-apply-bound ((x pseudo-termp)
                              (direction booleanp)
                              (bound-list boundrw-substlist-p)
@@ -498,20 +560,9 @@
        ;; (res (mfc-rw+ hyp subst 't nil mfc state :forcep nil))
        ;; (- (cw "result of rewriting: ~x0~%" res))
        (new-x (substitute-into-term bound.rhs subst))
-       (bound-term (if direction
-                       ;; new-x is upper bound
-                       `(< ,new-x ,x)
-                     ;; new-x is lower bound
-                     `(< ,x ,new-x)))
-       (bound-ok (mfc-ap
-                  ;; term to contradict:
-                  bound-term
-                  mfc state
-                  :forcep nil))
-       ((when bound-ok)
+       ((when (boundrw-check-bound x new-x direction mfc state))
         (cw "~x0: ap~%" x)
-        (mv t new-x))
-       (- (cw "linear failed to solve: ~x0~%" bound-term)))
+        (mv t new-x)))
     (boundrw-apply-bound x direction (cdr bound-list) mfc state))
   ///
   (defret boundrw-apply-bound-correct
@@ -521,7 +572,233 @@
              (and (implies direction
                            (<= (boundrw-ev x a) (boundrw-ev new-x a)))
                   (implies (not direction)
+                           (<= (boundrw-ev new-x a) (boundrw-ev x a)))))
+    :hints (("goal" :induct <call> :expand (<call>)
+             :in-theory (enable boundrw-check-bound-correct-rw)))))
+
+
+;; match-free rune backchain-limit-lst concl max-term hyps nume
+(std::defaggrify-defrec linear-lemma)
+(std::defaggrify-defrec rewrite-constant)
+(std::defaggrify-defrec metafunction-context)
+
+(fty::defoption maybe-rational rationalp :pred maybe-rationalp)
+
+(defthm maybe-rationalp-compound-recognizer
+  (equal (maybe-rationalp x)
+         (or (rationalp x)
+             (not x)))
+  :rule-classes :compound-recognizer)
+
+(define boundrw-linear-relieve-hyps ((hyps pseudo-term-listp)
+                                     (alist pseudo-term-substp)
+                                     rune
+                                     (target pseudo-termp)
+                                     (bkptr natp)
+                                     mfc state)
+  :returns (ok)
+  (b* (((when (atom hyps)) t)
+       (ok (mfc-relieve-hyp (car hyps) alist rune target bkptr mfc state :forcep nil :ttreep nil)))
+    (and ok
+         (boundrw-linear-relieve-hyps
+          (cdr hyps) alist rune target (+ 1 (lnfix bkptr)) mfc state))))
+
+
+
+
+
+
+(local (in-theory (e/d (match-tree-obj-equals-subst-when-successful
+                        ;; match-tree-equals-match-tree-matchedp-when-successful
+                        match-tree-alist-opener-theory
+                        ;; match-tree-opener-theory
+                        ;; equal-of-cons-hyp-open
+                        )
+                       ;; (match-tree-rewrite)
+                       )))
+
+
+;; (local (defthm assoc-equal-of-cons
+;;          (implies (syntaxp (quotep key))
+;;                   (equal (assoc-equal key (cons a b))
+;;                          (if (equal key (car a))
+;;                              a
+;;                            (assoc-equal key b))))))
+
+(local (in-theory (e/d (assoc-equal-of-cons-when-keys-known)
+                       (assoc-equal))))
+
+
+(define boundrw-linear-concl-decomp ((concl pseudo-termp))
+  :returns (mv shape-okp negatedp
+               (lhs pseudo-termp :hyp (pseudo-termp concl))
+               (rhs pseudo-termp :hyp (pseudo-termp concl)))
+  (treematch concl
+             ((< (:? lhs) (:? rhs)) (mv t nil lhs rhs))
+             ((not (< (:? lhs) (:? rhs))) (mv t t lhs rhs))
+             ;; note not currently processing equality rules
+             (& (mv nil nil nil nil))))
+
+
+(define boundrw-try-linear-lemma (lemma
+                                  (x pseudo-termp)
+                                  (direction booleanp)
+                                  (best maybe-rationalp)
+                                  (ens enabled-structure-p)
+                                  mfc state)
+  :returns (new-best maybe-rationalp :rule-classes :type-prescription)
+  (b* ((best (maybe-rational-fix best))
+       ((unless (weak-linear-lemma-p lemma))
+        (raise "Bad linear lemma: ~x0~%" lemma)
+        best)
+       ((linear-lemma lemma))
+       ((unless (and (natp lemma.nume)
+                     (enabled-numep lemma.nume ens)))
+        best)
+       ((unless (and (pseudo-termp lemma.concl)
+                     (pseudo-term-listp lemma.hyps)))
+        (raise "Bad linear lemma (pseudo-terms): ~x0~%" lemma)
+        best)
+       ((mv shape-ok negatedp lhs rhs) ;; (< lhs rhs) or (not (< lhs rhs))
+        (boundrw-linear-concl-decomp lemma.concl))
+       ((unless shape-ok) best)
+       ;; If direction, we are looking for upper bounds, so we want to unify x with LHS if not negated and RHS when negated.
+       ((mv x-side other-side)
+        (if (xor direction negatedp)
+            (mv lhs rhs)
+          (mv rhs lhs)))
+       ((mv match alist) (simple-one-way-unify x-side x nil))
+       ((unless match)
+        ;; didn't unify
+        best)
+       (bound-term (substitute-into-term other-side alist))
+       (vars (all-vars bound-term))
+       ((when vars)
+        ;; not constant
+        best)
+       ((mv eval-err bound-value) (magic-ev bound-term nil state t nil))
+       ((when eval-err)
+        best)
+       ((when (or (not (rationalp bound-value))
+                  (and best
+                       (if direction
+                           (<= best bound-value)
+                         (<= bound-value best)))))
+        ;; already have a bound at least as good
+        best)
+       (hyps-ok (boundrw-linear-relieve-hyps lemma.hyps alist lemma.rune x 1 mfc state))
+       ((unless hyps-ok)
+        best))
+    bound-value))
+        
+       
+        
+        
+
+
+(define boundrw-try-linear-lemmas (lemmas
+                                   (x pseudo-termp)
+                                   (direction booleanp)
+                                   (best maybe-rationalp)
+                                   (ens enabled-structure-p)
+                                   mfc state)
+  :returns (new-best maybe-rationalp :rule-classes :type-prescription)
+  (b* (((when (atom lemmas)) (maybe-rational-fix best))
+       (new-best (boundrw-try-linear-lemma (car lemmas) x direction best ens mfc state)))
+    (boundrw-try-linear-lemmas (cdr lemmas) x direction new-best ens mfc state)))
+
+
+(define boundrw-apply-linear-bounds ((x pseudo-termp)
+                                     (direction booleanp)
+                                     mfc state)
+  :prepwork ((local (defthm pseudo-termp-of-quote
+                      (pseudo-termp (list 'quote x))
+                      :hints(("Goal" :in-theory (enable pseudo-termp))))))
+  :returns (mv changedp
+               (new-x pseudo-termp :hyp (pseudo-termp x)))
+  (b* (((unless (and (consp x)
+                     (symbolp (car x))
+                     (not (eq (car x) 'quote))))
+        (mv nil x))
+       (fn (car x))
+       (lemmas (fgetprop fn 'linear-lemmas nil (w state)))
+       ((unless (and (weak-metafunction-context-p mfc)
+                     (weak-rewrite-constant-p (metafunction-context->rcnst mfc))))
+        (raise "Error: bad MFC~%")
+        (mv nil x))
+       (ens (rewrite-constant->current-enabled-structure (metafunction-context->rcnst mfc)))
+       ((unless (enabled-structure-p ens))
+        (raise "Error: bad ENS~%")
+        (mv nil x))
+       (best-linear-bound
+        (boundrw-try-linear-lemmas lemmas x direction nil ens mfc state))
+       ((unless best-linear-bound)
+        ;; couldn't find any bounds
+        (mv nil x))
+       (new-x (kwote best-linear-bound))
+       ((unless (boundrw-check-bound x new-x direction mfc state))
+        ;; (raise "Couldn't verify linear bound ~x0 for ~x1~%" new-x x)
+        (mv nil x)))
+    (mv t new-x))
+  ///
+  (defret boundrw-apply-linear-bounds-correct
+    (implies (and (boundrw-ev-meta-extract-contextual-facts a)
+                  (pseudo-termp x))
+             (and (implies direction
+                           (<= (boundrw-ev x a) (boundrw-ev new-x a)))
+                  (implies (not direction)
+                           (<= (boundrw-ev new-x a) (boundrw-ev x a)))))
+    :hints (("goal" :expand (<call>)
+             :in-theory (enable boundrw-check-bound-correct-rw)))))
+       
+
+
+(define boundrw-find-bound ((x pseudo-termp)
+                            (direction booleanp)
+                            (bound-list boundrw-substlist-p)
+                            mfc state)
+  :returns (mv changedp
+               explicitp
+               (new-x pseudo-termp :hyp (and (pseudo-termp x)
+                                             (boundrw-substlist-p bound-list))))
+  (b* (((mv changedp new-x)
+        (boundrw-apply-bound x direction bound-list mfc state))
+       ((when changedp) (mv t t new-x))
+       ((mv changedp new-x)
+        (boundrw-apply-linear-bounds x direction mfc state)))
+    (mv changedp nil new-x))
+  ///
+  (defret boundrw-find-bound-correct
+    (implies (and (boundrw-ev-meta-extract-contextual-facts a)
+                  (pseudo-termp x)
+                  (boundrw-substlist-p bound-list))
+             (and (implies direction
+                           (<= (boundrw-ev x a) (boundrw-ev new-x a)))
+                  (implies (not direction)
+                           (<= (boundrw-ev new-x a) (boundrw-ev x a))))))
+
+  (defund boundrw-find-bound-changedp (x direction bound-list mfc state)
+    (Declare (Xargs :stobjs state
+                    :verify-guards nil))
+    (non-exec (mv-nth 0 (boundrw-find-bound x direction bound-list mfc state))))
+
+  (defthmd boundrw-find-bound-correct-rw
+    (b* (((mv changedp & new-x) (boundrw-find-bound x direction bound-list mf st)))
+      (implies (and (rewriting-negative-literal `(mv-nth '0 (boundrw-find-bound ,x ,direction ,bound-list ,mf ,st)))
+                    (bind-free '((a . a)) (a))
+                    (boundrw-ev-meta-extract-contextual-facts a :mfc mf :state st)
+                    (pseudo-termp x)
+                    (boundrw-substlist-p bound-list))
+               (iff changedp
+                    (and (boundrw-find-bound-changedp x direction bound-list mf st)
+                         (if direction
+                             (<= (boundrw-ev x a) (boundrw-ev new-x a))
                            (<= (boundrw-ev new-x a) (boundrw-ev x a)))))))
+    :hints(("Goal" :in-theory (e/d (boundrw-find-bound-changedp
+                                    boundrw-find-bound-correct)
+                                   (boundrw-find-bound))))))
+
+
 
 (define boundrw-apply ((fn symbolp)
                        (args pseudo-term-listp))
@@ -548,27 +825,6 @@
   (defthm bound-rw-apply-correct
     (equal (boundrw-ev (boundrw-apply fn args) a)
            (boundrw-ev (cons fn args) a))))
-
-
-(local (in-theory (e/d (match-tree-obj-equals-subst-when-successful
-                        ;; match-tree-equals-match-tree-matchedp-when-successful
-                        match-tree-alist-opener-theory
-                        ;; match-tree-opener-theory
-                        ;; equal-of-cons-hyp-open
-                        )
-                       ;; (match-tree-rewrite)
-                       )))
-
-
-;; (local (defthm assoc-equal-of-cons
-;;          (implies (syntaxp (quotep key))
-;;                   (equal (assoc-equal key (cons a b))
-;;                          (if (equal key (car a))
-;;                              a
-;;                            (assoc-equal key b))))))
-
-(local (in-theory (e/d (assoc-equal-of-cons-when-keys-known)
-                       (assoc-equal))))
 
 
 (define boundrw-rewrite-measure ((x pseudo-termp))
@@ -800,24 +1056,87 @@
   ///
   (defattach boundrw-rewrite-trace boundrw-rewrite-trace-default))
 
+(define boundrw-choose-best-bound ((bound1 pseudo-termp)
+                                   (bound2 pseudo-termp)
+                                   (original pseudo-termp)
+                                   (direction booleanp))
+  :returns (new-bound pseudo-termp :hyp (and (pseudo-termp bound1)
+                                             (pseudo-termp bound2)))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable pseudo-termp))))
+  ;; Bound1 is from boundrw-find-bound on some term x, resulting from finding a
+  ;; linear bound -- note it is NOT the result of finding a bound from the
+  ;; bound-alist, which would be selected automatically.  Bound2 is either the
+  ;; original term or the result of bounding subterms.  We choose bound1 if
+  ;; bound2 is unchanged from original, the best bound if both are constants,
+  ;; otherwise bound1 if it is constant, but bound2 otherwise -- in particular,
+  ;; if both are non-constant terms, we figure that processing subterms is
+  ;; likely to get a more specific bound.
+  (cond ((equal bound2 original) bound1)
+        ((and (quotep bound1) (rationalp (unquote bound1)))
+         (if (and (quotep bound2) (rationalp (unquote bound2)))
+             (if direction
+                 ;; best upper bound is the least
+                 (if (< (unquote bound1) (unquote bound2))
+                     bound1
+                   bound2)
+               ;; best lower bound is the greatest
+               (if (< (unquote bound1) (unquote bound2))
+                   bound2
+                 bound1))
+           bound1))
+        (t ;; Bound1 is not a quoted rational and bound2 is different from original, so choose bound2.
+         bound2))
+  ///
+  (defthm boundrw-choose-best-bound-correct
+    ;; Note: direction is actually immaterial for this theorem, but maybe
+    ;; considering it as a hyp will prevent useless attempts to apply this
+    ;; rule.
+    (b* ((new-bound (boundrw-choose-best-bound bound1 bound2 original direction)))
+      (and (implies (and direction
+                         (<= (boundrw-ev original a) (boundrw-ev bound1 a))
+                         (<= (boundrw-ev original a) (boundrw-ev bound2 a)))
+                    (<= (boundrw-ev original a) (boundrw-ev new-bound a)))
+           (implies (and (not direction)
+                         (<= (boundrw-ev bound1 a) (boundrw-ev original a))
+                         (<= (boundrw-ev bound2 a) (boundrw-ev original a)))
+                    (<= (boundrw-ev new-bound a) (boundrw-ev original a)))))
+    :rule-classes :linear))
+           
 
-(define boundrw-rewrite ((x pseudo-termp)
-                         (direction booleanp)
-                         (bound-alist boundrw-substlist-p)
-                         (negative-bound-alist boundrw-substlist-p)
-                         &key (mfc 'mfc) (state 'state))
-  :irrelevant-formals-ok t
-  :verify-guards nil
-  :measure (boundrw-rewrite-measure x)
-  :returns (new-x pseudo-termp
-                  :hyp (and (pseudo-termp x)
-                            (boundrw-substlist-p bound-alist)
-                            (boundrw-substlist-p negative-bound-alist))
-                  :hints (("goal" :induct <call>
-                           :expand ((:free (direction) <call>))
-                           :in-theory (disable (:d <fn>)))))
-  (b* (((mv changed new-x) (boundrw-apply-bound x direction bound-alist mfc state))
-       ((when changed) new-x))
+
+(defines boundrw-rewrite
+  (define boundrw-rewrite ((x pseudo-termp)
+                           (direction booleanp)
+                           (bound-alist boundrw-substlist-p)
+                           (negative-bound-alist boundrw-substlist-p)
+                           &key (mfc 'mfc) (state 'state))
+    :irrelevant-formals-ok t
+    :verify-guards nil
+    :measure (two-nats-measure (boundrw-rewrite-measure x) 1)
+    :returns (new-x pseudo-termp
+                    :hyp (and (pseudo-termp x)
+                              (boundrw-substlist-p bound-alist)
+                              (boundrw-substlist-p negative-bound-alist)))
+    :ruler-extenders (:lambdas)
+    (b* (((mv changed explicitp new-x1) (boundrw-find-bound x direction bound-alist mfc state))
+         ((when (and changed explicitp)) new-x1)
+         (new-x2 (boundrw-rewrite-operator x direction bound-alist negative-bound-alist))
+         ((unless changed) new-x2))
+      (boundrw-choose-best-bound new-x1 new-x2 x direction)))
+  
+  (define boundrw-rewrite-operator ((x pseudo-termp)
+                                    (direction booleanp)
+                                    (bound-alist boundrw-substlist-p)
+                                    (negative-bound-alist boundrw-substlist-p)
+                                    &key (mfc 'mfc) (state 'state))
+    :irrelevant-formals-ok t
+    :verify-guards nil
+    :measure (two-nats-measure (boundrw-rewrite-measure x) 0)
+    :returns (new-x pseudo-termp
+                    :hyp (and (pseudo-termp x)
+                              (boundrw-substlist-p bound-alist)
+                              (boundrw-substlist-p negative-bound-alist)))
     (cond ((atom x) x)
           ((quotep x) x)
           (t
@@ -850,97 +1169,98 @@
                  x)))
             ((binary-* (:? a) (:? a))
              ;; Special case for square.
-              (b* (((unless (ts-check-rational a mfc state)) x)
-                   ;; If we know the sign of a, then we can check just min or max, depending.
-                   (max-a (boundrw-rewrite a t
-                                           (if direction bound-alist negative-bound-alist)
-                                           (if direction negative-bound-alist bound-alist)))
-                   (min-a (boundrw-rewrite a nil
-                                           (if direction negative-bound-alist bound-alist)
-                                           (if direction bound-alist negative-bound-alist)))
-                   (max-a-sign (ts-check-sign/rational max-a mfc state))
-                   (min-a-sign (ts-check-sign/rational min-a mfc state))
-                   ((when (eq max-a-sign :nonpositive))
-                    (b* ((new-a (if direction min-a max-a))
-                         (rational (if direction min-a-sign max-a-sign))
-                         ((unless rational) x))
-                      (boundrw-apply 'binary-* (list new-a new-a))))
-                   ((when (eq min-a-sign :nonnegative))
-                    (b* ((new-a (if direction max-a min-a))
-                         (rational (if direction max-a-sign min-a-sign))
-                         ((unless rational)
-                          x))
-                      (boundrw-apply 'binary-* (list new-a new-a))))
-                   ((unless direction)
-                    ;; As far as we know, A could be positive or negative, but
-                    ;; this means its square is at least 0.
-                    ''0)
-                   ;; Trying to maximize.  Check whether (< (- min) max)
-                   ((unless (and max-a-sign min-a-sign))
-                    x)
-                   (max-abs-gte (mfc-ap
-                                 `(< ,max-a (unary-- ,min-a))
-                                 mfc state
-                                 :forcep nil))
-                   ((when max-abs-gte)
-                    (boundrw-apply 'binary-* (list max-a max-a)))
-                   (min-abs-gte (mfc-ap
-                                 `(< (unary-- ,max-a) ,min-a)
-                                 mfc state
-                                 :forcep nil))
-                   ((when min-abs-gte)
-                    (boundrw-apply 'binary-* (list min-a min-a))))
-                x))
+             (b* (((unless (ts-check-rational a mfc state)) x)
+                  ;; If we know the sign of a, then we can check just min or max, depending.
+                  (max-a (boundrw-rewrite a t
+                                          (if direction bound-alist negative-bound-alist)
+                                          (if direction negative-bound-alist bound-alist)))
+                  (min-a (boundrw-rewrite a nil
+                                          (if direction negative-bound-alist bound-alist)
+                                          (if direction bound-alist negative-bound-alist)))
+                  (max-a-sign (ts-check-sign/rational max-a mfc state))
+                  (min-a-sign (ts-check-sign/rational min-a mfc state))
+                  ((when (eq max-a-sign :nonpositive))
+                   (b* ((new-a (if direction min-a max-a))
+                        (rational (if direction min-a-sign max-a-sign))
+                        ((unless rational) x))
+                     (boundrw-apply 'binary-* (list new-a new-a))))
+                  ((when (eq min-a-sign :nonnegative))
+                   (b* ((new-a (if direction max-a min-a))
+                        (rational (if direction max-a-sign min-a-sign))
+                        ((unless rational)
+                         x))
+                     (boundrw-apply 'binary-* (list new-a new-a))))
+                  ((unless direction)
+                   ;; As far as we know, A could be positive or negative, but
+                   ;; this means its square is at least 0.
+                   ''0)
+                  ;; Trying to maximize.  Check whether (< (- min) max)
+                  ((unless (and max-a-sign min-a-sign))
+                   x)
+                  (max-abs-gte (mfc-ap
+                                `(< ,max-a (unary-- ,min-a))
+                                mfc state
+                                :forcep nil))
+                  ((when max-abs-gte)
+                   (boundrw-apply 'binary-* (list max-a max-a)))
+                  (min-abs-gte (mfc-ap
+                                `(< (unary-- ,max-a) ,min-a)
+                                mfc state
+                                :forcep nil))
+                  ((when min-abs-gte)
+                   (boundrw-apply 'binary-* (list min-a min-a))))
+               x))
             ((binary-* (:? a) (binary-* (:? a) (:? b)))
-             (boundrw-rewrite `(binary-* (binary-* ,a ,a) ,b)
-                               direction bound-alist negative-bound-alist))
+             (boundrw-rewrite ;; (pseudo-term-call 'binary-* (list (pseudo-term-call 'binary-* (list a a)) b))
+              `(binary-* (binary-* ,a ,a) ,b)
+              direction bound-alist negative-bound-alist))
 
             ((binary-* (:? a) (:? b))
              ;; First rewrite a based on b's type, then rewrite b based on a's
-              ;; type, then if necessary, go back and look at a again.
-              (b* (((unless (and (ts-check-rational a mfc state)
-                                 (ts-check-rational b mfc state)))
-                    x)
-                   (b-type (ts-check-sign b mfc state))
-                   (new-a (if b-type
-                              (b* (((mv a-dir a-bound-alist a-negative-bound-alist)
-                                    (if (eq b-type :nonnegative)
-                                        (mv direction bound-alist negative-bound-alist)
-                                      (mv (not direction) negative-bound-alist bound-alist)))
-                                   (res
-                                    (boundrw-rewrite a a-dir a-bound-alist a-negative-bound-alist)))
-                                (if (ts-check-rational res mfc state)
-                                    res
-                                  a))
-                            a))
-                   (a-type (ts-check-sign new-a mfc state))
-                   (new-b (if a-type
-                              (b* (((mv b-dir b-bound-alist b-negative-bound-alist)
-                                    (if (eq a-type :nonnegative)
-                                        (mv direction bound-alist negative-bound-alist)
-                                      (mv (not direction) negative-bound-alist bound-alist)))
-                                   (res (boundrw-rewrite b b-dir b-bound-alist b-negative-bound-alist)))
-                                (if (ts-check-rational res mfc state)
-                                    res
-                                  b))
-                            b))
-                   ((when (or b-type (not a-type)))
-                    (boundrw-apply 'binary-* (list new-a new-b)))
-                   (b-type (ts-check-sign new-b mfc state))
-                   (new-a (if b-type
-                              (b* (((mv a-dir a-bound-alist a-negative-bound-alist)
-                                    (if (eq b-type :nonnegative)
-                                        (mv direction bound-alist negative-bound-alist)
-                                      (mv (not direction) negative-bound-alist bound-alist)))
-                                   (res
-                                    (boundrw-rewrite a a-dir a-bound-alist a-negative-bound-alist)))
-                                (if (ts-check-rational res mfc state)
-                                    res
-                                  a))
-                            a)))
-                (boundrw-apply 'binary-* (list new-a new-b))))
+             ;; type, then if necessary, go back and look at a again.
+             (b* (((unless (and (ts-check-rational a mfc state)
+                                (ts-check-rational b mfc state)))
+                   x)
+                  ;; (b-type (ts-check-sign b mfc state))
+                  ((mv new-a b-type) (boundrw-rewrite-factor a b direction bound-alist negative-bound-alist))
+                  ;; (a-type (ts-check-sign new-a mfc state))
+                  ((mv new-b a-type) (boundrw-rewrite-factor b new-a direction bound-alist negative-bound-alist))
+                  ((when (or b-type (not a-type)))
+                   (boundrw-apply 'binary-* (list new-a new-b)))
+                  ;; (b-type (ts-check-sign new-b mfc state))
+                  ((mv new-a ?b-type) (boundrw-rewrite-factor a new-b direction bound-alist negative-bound-alist)))
+               (boundrw-apply 'binary-* (list new-a new-b))))
             
             (& x)))))
+
+  (define boundrw-rewrite-factor ((x pseudo-termp)
+                                  (y pseudo-termp)
+                                  (direction booleanp)
+                                  (bound-alist boundrw-substlist-p)
+                                  (negative-bound-alist boundrw-substlist-p)
+                                  &key (mfc 'mfc) (state 'state))
+    :irrelevant-formals-ok t
+    :verify-guards nil
+    :measure (two-nats-measure (boundrw-rewrite-measure x) 2)
+    :returns (mv (new-x pseudo-termp
+                        :hyp (and (pseudo-termp x)
+                                  (boundrw-substlist-p bound-alist)
+                                  (boundrw-substlist-p negative-bound-alist)))
+                 (y-type symbolp))
+    (b* ((y-type (ts-check-sign y mfc state)))
+      (mv (if y-type
+              (b* (((mv x-dir x-bound-alist x-negative-bound-alist)
+                    (if (eq y-type :nonnegative)
+                        (mv direction bound-alist negative-bound-alist)
+                      (mv (not direction) negative-bound-alist bound-alist)))
+                   (res
+                    (boundrw-rewrite x x-dir x-bound-alist x-negative-bound-alist)))
+                (if (ts-check-rational res mfc state)
+                    res
+                  x))
+            x)
+          y-type)))
+    
   ///
   (local (in-theory (disable (:d boundrw-rewrite)
                              (:t ts-check-rational)
@@ -1222,50 +1542,147 @@
   ;;                   (not (mv-nth 0 (match-tree pat x alist))))
   ;;          :hints(("Goal" :in-theory (enable match-tree-matchedp-rw)))))
 
+  (local (in-theory (disable boundrw-rewrite
+                             boundrw-rewrite-operator
+                             boundrw-rewrite-factor
+                             mv-nth-of-cons
+                             not
+                             (force)
+                             ;; commutativity-of-*
+                             (:t boundrw-apply))))
 
+  (local (defund-nx ts-check-sign-hide (x mfc state)
+           (ts-check-sign x mfc state)))
+           
   
-  (defret boundrw-rewrite-correct
-    (b* ((old (boundrw-ev x a))
-         (new (boundrw-ev new-x a)))
-      (implies (and (pseudo-termp x)
-                    (boundrw-substlist-p bound-alist)
-                    (boundrw-substlist-p negative-bound-alist)
-                    (boundrw-ev-meta-extract-contextual-facts a))
-               (and (implies direction
-                             (<= old new))
-                    (implies (not direction)
-                             (<= new old)))))
-    :hints (("goal" :induct <call>
-             :do-not-induct t
-             :expand ((:free (direction) <call>))
-             :in-theory (e/d (match-tree-open-when-successful
-                              )
-                             ((:d <fn>)
-                              COMMUTATIVITY-OF-*
-                              (force)
-                              ;; boundrw-ev-when-match-tree-matchedp
-                              ;; pseudo-termp-when-match-tree-matchedp
-                              mv-nth-of-cons
-                              not
-                              match-tree-opener-theory
-                              ;; match-tree-alist-opener-theory
-                              (:t boundrw-apply)
-                              ;; pseudo-term-listp-of-cons
-                              ;; match-tree-obj-equals-subst-when-successful
-                              ;; MATCH-TREE-EQUALS-MATCH-TREE-MATCHEDP-WHEN-SUCCESSFUL
-                              ;; match-tree-alist-opener-theory
-                              )))
-            '(:cases (direction))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (match-tree-opener-theory)
-                                   ((:d <fn>)
-                                    COMMUTATIVITY-OF-*
-                                    (force)
-                                    mv-nth-of-cons
-                                    not
-                                    (:t boundrw-apply))))))
-    :rule-classes (:rewrite :linear))
-  )
+  
+  (local (defret ts-check-sign-nonnegative-correct-rw
+           :pre-bind ((mfc mf)
+                      (state st))
+           (b* ((val (boundrw-ev x a)))
+             (implies (and (rewriting-negative-literal `(equal (ts-check-sign ,x ,mf ,st)  ':nonnegative))
+                           (boundrw-ev-meta-extract-contextual-facts a :mfc mf :state st))
+                      (equal (equal category :nonnegative)
+                             (and (equal (ts-check-sign-hide x mf st) :nonnegative)
+                                  (rationalp val)
+                                  (<= 0 val)))))
+           :hints(("Goal" :in-theory (enable ts-check-sign-hide)))
+           :fn ts-check-sign))
+
+  (local (defret ts-check-sign-nonpositive-correct-rw
+           :pre-bind ((mfc mf)
+                      (state st))
+           (b* ((val (boundrw-ev x a)))
+             (implies (and (rewriting-negative-literal `(equal (ts-check-sign ,x ,mf ,st)  ':nonpositive))
+                           (boundrw-ev-meta-extract-contextual-facts a :mfc mf :state st))
+                      (equal (equal category :nonpositive)
+                             (and (equal (ts-check-sign-hide x mf st) :nonpositive)
+                                  (rationalp val)
+                                  (<= val 0)))))
+           :hints(("Goal" :in-theory (enable ts-check-sign-hide)))
+           :fn ts-check-sign))
+
+  ;; (local (defret ts-check-sign-nil-correct-rw
+  ;;          :pre-bind ((mfc mf)
+  ;;                     (state st))
+  ;;          (b* ((val (boundrw-ev x a)))
+  ;;            (implies (and (rewriting-positive-literal `(ts-check-sign ,x ,mf ,st))
+  ;;                          (boundrw-ev-meta-extract-contextual-facts a :mfc mf :state st))
+  ;;                     (iff category
+  ;;                          (ts-check-sign-hide x mf st))))
+  ;;          :hints(("Goal" :in-theory (enable ts-check-sign-hide)))
+  ;;          :fn ts-check-sign))
+
+  ;; (defund ts-sign-is (x y)
+  ;;   (case y
+  ;;     (:nonpositive (and x (not (equal x :nonnegative))))
+  ;;     (t (equal x y))))
+
+
+  ;; (local (defthm ts-sign-is-of-ts-check-sign
+  ;;          (equal (ts-sign-is (ts-check-sign x mfc state) y)
+  ;;                 (ts-sign-is (ts-check-sign-hide x mfc state) y))
+  ;;          :hints(("Goal" :in-theory (enable ts-check-sign-hide)))))
+
+  (local (defthm times-zero-2
+                (equal (* x 0) 0)))
+
+  (local (in-theory (disable pseudo-termp-opener)))
+  (local (defthm pseudo-termp-opener2
+           (implies (and (symbolp fn)
+                         (not (equal fn 'quote)))
+                    (equal (pseudo-termp (cons fn args))
+                           (pseudo-term-listp args)))
+           :hints(("Goal" :in-theory (enable pseudo-termp-opener)))))
+  (local (in-theory (disable (:t pseudo-termp))))
+  
+  (std::defret-mutual boundrw-rewrite-correct
+    (defret <fn>-correct
+      (b* ((old (boundrw-ev x a))
+           (new (boundrw-ev new-x a)))
+        (implies (and (pseudo-termp x)
+                      (boundrw-substlist-p bound-alist)
+                      (boundrw-substlist-p negative-bound-alist)
+                      (boundrw-ev-meta-extract-contextual-facts a))
+                 (and (implies direction
+                               (<= old new))
+                      (implies (not direction)
+                               (<= new old)))))
+      :hints ('(:do-not-induct t
+                :expand ((:free (direction) <call>))))
+      :fn boundrw-rewrite
+      :rule-classes :linear)
+
+    (defret <fn>-correct
+      (b* ((old (boundrw-ev x a))
+           (new (boundrw-ev new-x a)))
+        (implies (and (pseudo-termp x)
+                      (boundrw-substlist-p bound-alist)
+                      (boundrw-substlist-p negative-bound-alist)
+                      (boundrw-ev-meta-extract-contextual-facts a))
+                 (and (implies direction
+                               (<= old new))
+                      (implies (not direction)
+                               (<= new old)))))
+      :hints ('(:do-not-induct t
+                :expand ((:free (direction) <call>))
+                :in-theory (e/d (match-tree-open-when-successful
+                                 boundrw-find-bound-correct-rw)
+                                (match-tree-opener-theory
+                                 <-*-right-cancel
+                                 )))
+              ;; '(:cases (direction))
+              (and stable-under-simplificationp
+                   '(:in-theory (e/d (match-tree-opener-theory)
+                                     (<-*-right-cancel)))))
+      :fn boundrw-rewrite-operator)
+
+    (defret <fn>-correct
+      (b* ((x-val (boundrw-ev x a))
+           (y-val (boundrw-ev y a))
+           (new-x-val (boundrw-ev new-x a)))
+        (implies (and (pseudo-termp x)
+                      (pseudo-termp y)
+                      (boundrw-substlist-p bound-alist)
+                      (boundrw-substlist-p negative-bound-alist)
+                      (boundrw-ev-meta-extract-contextual-facts a))
+                 (and (implies (rationalp x-val)
+                               (and (implies direction
+                                             (<= (* x-val y-val)
+                                                 (* new-x-val y-val)))
+                                    (implies (not direction)
+                                             (<= (* new-x-val y-val)
+                                                 (* x-val y-val)))
+                                    (rationalp new-x-val)))
+                      (implies (not y-type)
+                               (equal new-x-val x-val))
+                      )))
+      :hints ('(:do-not-induct t
+                ;; :in-theory (enable ts-sign-is)
+                :expand ((:free (direction) <call>)))
+              '(:cases (direction))
+              )
+      :fn boundrw-rewrite-factor)))
 
 
 
@@ -1277,14 +1694,22 @@
                 (boundrw-ev x a))
          :hints (("goal" :expand ((:free (x) (hide x)))))))
 
-(std::defaggrify-defrec rewrite-constant)
-(std::defaggrify-defrec metafunction-context)
 
 (local (in-theory (disable metafunction-context->ancestors
                            metafunction-context->rcnst
                            rewrite-constant->current-literal
                            weak-metafunction-context-p
                            weak-rewrite-constant-p)))
+
+
+(define bound-rewrite-check-current-literal (x curr-lit)
+  (and (consp curr-lit)
+       (equal (cdr curr-lit) x))
+  ///
+  (defthm bound-rewrite-check-current-literal-fwd
+    (implies (bound-rewrite-check-current-literal x curr-lit)
+             (Consp curr-lit))
+    :rule-classes :forward-chaining))
 
 (define bound-rewrite-metafn ((x pseudo-termp) mfc state)
   :returns (new-x)
@@ -1306,8 +1731,10 @@
         x)
        (curr-lit (rewrite-constant->current-literal
                   (metafunction-context->rcnst mfc)))
-       ((unless (and (consp curr-lit)
-                     (equal (cdr curr-lit) x)))
+       ((unless (bound-rewrite-check-current-literal x curr-lit)
+          ;; (and (consp curr-lit)
+          ;;            (equal (cdr curr-lit) x))
+          )
         ;; this is supposed to happen so don't print a warning
         x)
        (hyp-p (car curr-lit))
@@ -1330,9 +1757,9 @@
         x)
        (upper-bounds (@ boundrw-upper-bounds))
        (lower-bounds (@ boundrw-lower-bounds))
-       ((unless (or (consp upper-bounds) (consp lower-bounds)))
-        (cw "Bound-rewrite: Bounds lists are empty~%")
-        x)
+       ;; ((unless (or (consp upper-bounds) (consp lower-bounds)))
+       ;;  (cw "Bound-rewrite: Bounds lists are empty~%")
+       ;;  x)
        ((unless (and (boundrw-substlist-p upper-bounds)
                      (boundrw-substlist-p lower-bounds)))
         (cw "Bound-rewrite: Bounds lists are not both boundrw-substlist-ps.~%")
@@ -1389,6 +1816,7 @@
                   (boundrw-ev-meta-extract-contextual-facts a))
              (equal (boundrw-ev x a)
                     (boundrw-ev (bound-rewrite-metafn x mfc state) a)))
+    :hints (("Goal" :do-not-induct t))
     :rule-classes ((:meta :trigger-fns (<)))))
              
 
@@ -1459,7 +1887,7 @@
        ((when (member-equal a omit)) acc)
        (look (hons-get a acc))
        ((when (or (not look)
-                  (not (rationalp look))
+                  (not (rationalp (cdr look)))
                   (if upperp
                       (< b (cdr look))
                     (< (cdr look) b))))
@@ -1522,8 +1950,6 @@
 
 
 
-(std::defaggrify-defrec linear-lemma)
-;; match-free rune backchain-limit-lst concl max-term hyps nume
 (std::defaggrify-defrec prove-spec-var)
 ;; otf-flg orig-hints displayed-goal user-supplied-term gat-state pool
 ;; tau-completion-alist hint-settings tag-tree induction-concl-term
@@ -1745,7 +2171,7 @@
 
 
 (define rewrite-bounds-fn (substs
-                           in-theory
+                           in-theory-override
                            wait-til-stablep
                            stablep
                            auto-bounds
@@ -1773,18 +2199,21 @@
        (lower-bounds (append user-lower-bounds auto-lower-bounds))
        (state (f-put-global 'boundrw-upper-bounds upper-bounds state))
        (state (f-put-global 'boundrw-lower-bounds lower-bounds state)))
-    (value `(:in-theory (cons 'bound-rewrite ,in-theory)))))
+    (value `(:in-theory ,(or in-theory-override
+                             '(enable bound-rewrite))
+             ;; (cons 'bound-rewrite ,in-theory) -- this is much slower!
+             ))))
 
 (defmacro rewrite-bounds (substs
                         &key
-                        (in-theory '(enable))
+                        (in-theory-override 'nil)
                         (wait-til-stablep 't)
                         (stablep 'stable-under-simplificationp)
                         (auto-bounds 'nil)
                         (clause-auto-bounds 'nil)
                         (linear-auto-bounds 'nil)
                         (auto-bounds-omit 'nil))
-  `(rewrite-bounds-fn ',substs ',in-theory ,wait-til-stablep ,stablep
+  `(rewrite-bounds-fn ',substs ',in-theory-override ,wait-til-stablep ,stablep
                       ,auto-bounds
                       ,clause-auto-bounds
                       ,linear-auto-bounds
@@ -1847,6 +2276,7 @@
 
 (defxdoc rewrite-bounds
   :short "Substitute upper bounds and lower bounds for subterms in comparisons."
+  :parents (proof-automation)
   :long " <p>Replace expressions by upper and lower bounds for them inside
 inequalities.  Usage, as a computed hint:</p>
 
@@ -1868,7 +2298,14 @@ inequalities.  Usage, as a computed hint:</p>
                   :in-theory (enable foo bar)
 
                   ;; wait until stable under simplification (default t)
-                  :wait-til-stablep nil)
+                  :wait-til-stablep nil
+
+                  ;; look for constant bounds assumed in the clause
+                  :clause-auto-bounds nil
+                  ;; look for constant bounds from linear rules
+                  :linear-auto-bounds nil
+                  ;; use both of these kinds of automatic bounds
+                  :auto-bounds nil)
   })
 
 <p>Here, lower-boundable contexts are locations where decreasing the
@@ -2191,7 +2628,7 @@ dead code
                                       (hyp 't)
                                       (hint 'nil)
                                       (substs 'nil)
-                                      (auto-bounds 't)
+                                      (auto-bounds 'nil)
                                       (clause-auto-bounds 'nil)
                                       (linear-auto-bounds 'nil)
                                       (auto-bounds-omit 'nil))
@@ -2215,7 +2652,12 @@ dead code
        :rule-classes :linear)))
 
   (assert-event
-   (b* (((er bounds) (rewrite-bounds-find-bounds (loghead 32 x))))
+   (b* (((er bounds) (rewrite-bounds-find-bounds (loghead 32 x) :linear-auto-bounds t)))
+     (value (equal bounds (list (kwote 0) (kwote (expt 2 32))))))
+   :stobjs-out :auto)
+
+  (assert-event
+   (b* (((er bounds) (rewrite-bounds-find-bounds (loghead 32 x) :linear-auto-bounds nil)))
      (value (equal bounds (list (kwote 0) (kwote (expt 2 32))))))
    :stobjs-out :auto))
 
@@ -2235,7 +2677,12 @@ dead code
        :rule-classes :linear)))
 
   (assert-event
-   (b* (((er bounds) (rewrite-bounds-find-bounds (loghead 32 x))))
+   (b* (((er bounds) (rewrite-bounds-find-bounds (loghead 32 x) :linear-auto-bounds t)))
+     (value (equal bounds (list (kwote 0) (kwote (1- (expt 2 32)))))))
+   :stobjs-out :auto)
+
+  (assert-event
+   (b* (((er bounds) (rewrite-bounds-find-bounds (loghead 32 x) :linear-auto-bounds nil)))
      (value (equal bounds (list (kwote 0) (kwote (1- (expt 2 32)))))))
    :stobjs-out :auto))
 

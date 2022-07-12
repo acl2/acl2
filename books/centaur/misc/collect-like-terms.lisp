@@ -193,7 +193,8 @@
                                     (coeff acl2-numberp))
   :returns (term pseudo-termp)
   (b* ((coeff (mbe :logic (fix coeff) :exec coeff)))
-    (cond ((eql coeff 1) (pseudo-term-fix key))
+    (cond ((eql coeff 0) ''0)
+          ((eql coeff 1) (pseudo-term-fix key))
           ((eql coeff -1) (pseudo-term-fncall 'unary-- (list key)))
           (t (pseudo-term-fncall 'binary-* (list (pseudo-term-quote coeff) key)))))
   ///
@@ -349,7 +350,7 @@
        (tca (fast-alist-clean tca1))
        (tca-len (len tca))
        ((when (or (equal (len tca1) tca-len)
-                  (<= tca-len 1)))
+                  (< tca-len 1)))
         ;; !! Heuristic -- if we haven't collected any like terms, then fail by just producing x.
         x))
     (like-terms-alist-term tca t))
