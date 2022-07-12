@@ -689,7 +689,7 @@
 
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
-     bvcat-of-bvchop-high-tighten ;gen the bvchop to any bv term
+     bvcat-of-bvchop-high-tighten-axe ;gen the bvchop to any bv term
 ;            bvcat-of-bvcat-trim-high-arg ;use trim Mon Mar 14 18:54:23 2011
 ;    bvmult-27-bvcat-hack ;;trying without...
 ;            bvmult-8-27-blast-hack

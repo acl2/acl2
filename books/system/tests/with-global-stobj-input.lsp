@@ -48,6 +48,11 @@
 
 (assert-event (equal (rd0 state) 2))
 
+; error: body of read-only form returns the bound stobj
+(defun bad (x state)
+  (declare (xargs :stobjs state))
+  (with-global-stobj st (update-fld x st)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Basic aliasing tests, based somewhat on examples from the
 ;;; Essay on the Design of With-global-stobj

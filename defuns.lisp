@@ -64,6 +64,27 @@
 ; key is an event name (currently, a function symbol or the name of a defthm
 ; event) that is associated with a list of translate-cert-data-record records.
 
+; Note added 7/2022: We have observed that for a book's portcullis commands,
+; :CERT-DATA is included for type-prescriptions but not for translations.  This
+; distinction may well have been unintentional, but it seems harmless.  We see
+; no reason why the stored type prescriptions for portcullis commands are
+; problematic, and since we do not generally expect many defun or defthm events
+; among the portcullis commands (other than those evaluated within include-book
+; commands), there is little to be lost by ignoring saved translation
+; information for these.  This distinction in what is stored as cert-data for
+; portcullis commands is a byproduct of our process: translation cert-data is
+; determined while processing events under certify-book, while
+; type-prescription cert-data is determined at the conclusion of such
+; processing; see certfor -data-for-certificate.  To see this distinction, let
+; foo.lisp be any trivial book and execute the following commands.
+
+;   (defun f1 (x) x) (local (defun f2 (x) x)) (defun g (x) x)
+;   (certify-book "foo" ?)
+;   (read-file "foo.cert" state)
+
+; We see that the :CERT-DATA in foo.cert has :TYPE-PRESCRIPTION entries for f1
+; and f3, but has no :TRANSLATE entries.
+
 ; Part 2: Type Prescriptions
 
 ; The following processes support the effective re-use of runic type
@@ -6076,9 +6097,16 @@
                       (useless-runes-2 (change useless-runes useless-runes
                                                :data fal)))
                  (cond
+
+; We avoid useless-runes in ACL2(p), since proofs can go in a different
+; direction than ACL2(p).  We use a different mechanism for avoiding
+; useless-runes in ACL2(p) than in ACL2(r); see useless-runes-value and
+; useless-runes-filename.  It's not clear which is better, but it's also not
+; clear that there's much reason to change either one at this point.
+
                   #+acl2-par
                   ((f-get-global 'waterfall-parallelism state)
-                   (mv nil nil useless-runes-2))
+                   (mv 'read-but-skip nil useless-runes-2))
                   (t (mv 'read
                          (change useless-runes useless-runes
                                  :tag 'THEORY
@@ -6452,7 +6480,8 @@
        (with-useless-runes-aux wur-name state)
        (pprogn
         (case r/w
-          (read (f-put-global 'useless-runes wur-2 state))
+          ((read #+acl2-par read-but-skip)
+           (f-put-global 'useless-runes wur-2 state))
           (write (prog2$ (accumulated-persistence t) state))
           (otherwise state))
         (state-global-let*
@@ -11463,11 +11492,13 @@
                                        (value
                                         (global-stobjs-prop names bodies guards
                                                             wrld2a)))
-                                      (wrld5 (value (putprop-x-lst1
-                                                     names
-                                                     'global-stobjs
-                                                     global-stobjs-prop
-                                                     wrld4)))
+                                      (wrld5 (value (if global-stobjs-prop
+                                                        (putprop-x-lst1
+                                                         names
+                                                         'global-stobjs
+                                                         global-stobjs-prop
+                                                         wrld4)
+                                                      wrld4)))
                                       (ignore ; see comment above
                                        (cond
                                         ((and global-stobjs-prop

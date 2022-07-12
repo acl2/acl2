@@ -2063,6 +2063,7 @@
 (defun before-vs-after-lemmas (fnsr hyps fn-hyps-name
                                     formals governors-lst
                                     subterm-equalities fn-runes expand
+                                    hints
                                     index wrld)
   (cond
    ((endp governors-lst)
@@ -2077,6 +2078,7 @@
                             (cdr subterm-equalities)
                             fn-runes
                             expand
+                            hints
                             (1+ index)
                             wrld))
    (t
@@ -2139,8 +2141,20 @@
 ; (foo x nil) are clearly false but this isn't clear to s-prop.
 
                          :split))))
-             (:prove ,@(and expand
-                            `(:hints (("Goal" :expand ,expand)))))))
+             (:orelse (:prove ,@(and expand
+                                     `(:hints (("Goal" :expand ,expand)))))
+
+; We have seen a case in which none of the above was sufficient, but it
+; sufficed to apply the theory supplied to the SIMPLIFY command.  (Note that
+; hints comes from a call of theory+expand-to-hints.)  This makes sense: even
+; though :DOC apt::simplify-defun says that "simplification will be performed
+; in the theory given by EXPR", the user might reasonably expect that even if
+; that rune was not used in simplification, then it would be used to validate
+; the simplification.  Anyhow, there is probably no real harm in trying here,
+; since otherwise we fail; the only downside could be a slower failure.
+
+                      (:prove ,@(and hints
+                                     `(:hints ,hints))))))
 ;          :hints (("Goal" :in-theory ,fn-runes :expand ,expand))
            :rule-classes nil)
         (before-vs-after-lemmas fnsr hyps fn-hyps-name
@@ -2149,6 +2163,7 @@
                                 (cdr subterm-equalities)
                                 fn-runes
                                 expand
+                                hints
                                 (1+ index)
                                 wrld)))))))
 
@@ -2531,6 +2546,7 @@
              (before-vs-after-lemmas fnsr hyps (fn-hyps-name fn wrld)
                                      formals governors-lst
                                      subterm-equalities fn-runes expand
+                                     hints-from-theory+expand
                                      0 wrld))
        ,(and verify-guards-p
              `(on-failure

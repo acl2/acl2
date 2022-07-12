@@ -42,12 +42,16 @@
  })
 
  <p>The @(':ubi') command, which could be viewed as abbreviating ``Undo Back to
- Initial commands that we want to keep,'' undoes commands to keep the longest
- initial segment of commands in the list @('*keeper-cmds*'), including @(tsee
- include-book), @(tsee defpkg), and @(tsee xdoc) commands; any such command may
- be @(tsee local).  (Such commands are typically those that set things up for
- the rest of the @(see events) in a given book; an @(tsee xdoc) command may be
- laid down when printing documentation at the terminal.)</p>
+ Includes'' or``Undo Back to Initial commands that we want to keep,'' undoes
+ commands to keep the longest initial segment of commands in the list
+ @('*keeper-cmds*'), including @(tsee include-book), @(tsee defpkg), @(tsee
+ add-include-book-dir), and others; commands to be kept may be wrapped in calls
+ of @(tsee local) or @(tsee with-output).  These initial commands typically set
+ things up for the rest of the @(see events) in a given book.  They often
+ include the commands from any @(tsee acl2-customization) files, followed by
+ the @(tsee include-book) events at the start of the book. The @(':ubi')
+ command can thus be used to quickly clear out anything introduced in the book,
+ while keeping the initial @(tsee include-book)s, which may be slow to replay.</p>
 
  <p>So to continue the example above:</p>
 

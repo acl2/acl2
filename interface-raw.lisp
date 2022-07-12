@@ -2464,15 +2464,17 @@
                                      ',fn ',invariant-risk))
                                    (setq ,cont-p t))
                                   ((eq ,check-invariant-risk-sym :WARNING)
-                                   (warning$ ',fn
-                                             "Invariant-risk"
-                                             "Invariant-risk has been ~
-                                              detected for a call of function ~
-                                              ~x0 (as possibly leading to an ~
-                                              ill-guarded call of ~x1); see ~
-                                              :DOC invariant-risk."
-                                             ',fn ',invariant-risk)
-                                   (setq ,cont-p t))
+                                   (with-live-state
+                                    (warning$ ',fn
+                                              "Invariant-risk"
+                                              "Invariant-risk has been ~
+                                               detected for a call of ~
+                                               function ~x0 (as possibly ~
+                                               leading to an ill-guarded call ~
+                                               of ~x1); see :DOC ~
+                                               invariant-risk."
+                                              ',fn ',invariant-risk))
+                                    (setq ,cont-p t))
                                   (t ; 'check-invariant-risk has value t
                                    t))
 
@@ -8756,6 +8758,15 @@
                       acl2-customization):~&~s~&"
                      '(set-debugger-enable t)))
            (force-output t)
+           (let* ((x (standard-oi state))
+                  (chan (if (and (consp x)
+                                 (symbolp (cdr (last x))))
+                            (cdr (last x))
+                          (and (symbolp x)
+                               x))))
+             (when (and chan
+                        (open-input-channel-p chan :object state))
+               (clear-input (get-input-stream-from-channel chan))))
            (cond (continue-p
                   (setq *acl2-time-limit* 0)
                   (invoke-restart 'continue))

@@ -2154,48 +2154,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; acl2-count.
 
 #-acl2-loop-only
-(defun-one-output len2 (x acc)
-  (cond ((atom x) acc)
-        (t (len2 (cdr x) (1+ acc)))))
-
-#-acl2-loop-only
-(defun len1 (x acc)
-
-; This function is an optimized version of len2 above, which is a simple
-; tail-recursive implementation of len.
-
-   (declare (type fixnum acc))
-   (the fixnum ; to assist in ACL2's proclaiming
-        (cond ((atom x) acc)
-              ((eql (the fixnum acc) most-positive-fixnum)
-               #+(or gcl ccl allegro sbcl cmu
-                     (and lispworks lispworks-64bit))
-
-; The error below is entirely optional, and can be safely removed from the
-; code.  Here is the story.
-
-; We cause an error for the Lisps listed above in order to highlight the
-; violation of the following expectation for those Lisps: the length of a list
-; is always bounded by most-positive-fixnum.  To be safe, we omit CLISP and
-; 32-bit LispWorks (where most-positive-fixnum is only 16777215 and 8388607,
-; respectively; see the Essay on Fixnum Declarations).  But for the Lisps in
-; the above readtime conditional, we believe the above expectation because a
-; cons takes at least 8 bytes and each of the lisps below has
-; most-positive-fixnum of at least approximately 2^29.
-
-               (error "We have encountered a list whose length exceeds ~
-                       most-positive-fixnum!")
-               -1)
-              (t (len1 (cdr x) (the fixnum (+ (the fixnum acc) 1)))))))
+(declaim (ftype (function (t) fixnum) len))
 
 (defun len (x)
   (declare (xargs :guard t :mode :program))
   #-acl2-loop-only
-  (return-from len
-               (let ((val (len1 x 0)))
-                 (if (eql val -1)
-                     (len2 x 0)
-                   val)))
+  (loop for tail on x
+        with acc of-type fixnum = 0
+        do (if (eql (the fixnum acc) most-positive-fixnum)
+
+; We really don't expect lists of length greater than most-positive-fixnum.
+; But we do the check above, potentially (though unlikely) causing this error,
+; to be faithful to the ftype declaim form above.
+
+               (error "~s was given a a list whose length is not a fixnum!"
+                      'len)
+             (incf acc))
+        finally (return acc))
+  #+acl2-loop-only
   (if (consp x)
       (+ 1 (len (cdr x)))
       0))
@@ -3756,6 +3732,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  (ftype function
         acl2_*1*_acl2::apply$
         acl2_*1*_acl2::rewrite-rule-term-exec
+        acl2_*1*_acl2::linear-lemma-term-exec
         acl2_*1*_acl2::conjoin
         acl2_*1*_acl2::pairlis$
         acl2_*1*_acl2::close-input-channel))
@@ -19404,7 +19381,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (character-listp (cdr x)))
    :rule-classes :forward-chaining))
 
+(defun all-dots (x i)
+  (declare (type string x)
+           (type (integer 0 *) i)
+           (xargs :guard (<= i (length x))))
+  (cond ((zp i) t)
+        (t (let ((i (1- i)))
+             (and (eql (char x i) #\.)
+                  (all-dots x i))))))
+
 (defun may-need-slashes-fn (x print-base)
+
+; Quoting the CL HyperSpec, Section 2.3.4 Symbols as Tokens: "Any token that is
+; not a potential number, does not contain a package marker, and does not
+; consist entirely of dots will always be interpreted as a symbol."
 
 ; We determine if the string x, a symbol name or symbol-package name, should be
 ; printed using |..|.  The main ideas are to escape characters as necessary,
@@ -19607,49 +19597,52 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (type string x))
 
-  #+acl2-loop-only
-  (let* ((l (coerce x 'list))
-         (print-base
+  (or
+   (all-dots x (length x))
+
+   #+acl2-loop-only
+   (let* ((l (coerce x 'list))
+          (print-base
 
 ; Treat the base as 10 instead of 16 if there is a decimal point, as per the
 ; definition of potential number.
 
-          (if (and (eql print-base 16) (member #\. l))
-              10
-            print-base))
-         (numeric-chars (numeric-chars print-base))
-         (suspiciously-first-numeric-chars
-          (suspiciously-first-numeric-chars print-base)))
-    (or (null l)
+           (if (and (eql print-base 16) (member #\. l))
+               10
+             print-base))
+          (numeric-chars (numeric-chars print-base))
+          (suspiciously-first-numeric-chars
+           (suspiciously-first-numeric-chars print-base)))
+     (or (null l)
 ; Keep the following conjunction in sync with potential-numberp.
-        (and (or (member (car l) numeric-chars)
-                 (and (member (car l) suspiciously-first-numeric-chars)
-                      (intersectp (cdr l) numeric-chars)))
-             (not (member (car (last l))
-                          '(#\+ #\-)))
-             (may-need-slashes1 (cdr l) nil
-                                (cons #\/ suspiciously-first-numeric-chars)))
-        (some-slashable l)))
+         (and (or (member (car l) numeric-chars)
+                  (and (member (car l) suspiciously-first-numeric-chars)
+                       (intersectp (cdr l) numeric-chars)))
+              (not (member (car (last l))
+                           '(#\+ #\-)))
+              (may-need-slashes1 (cdr l) nil
+                                 (cons #\/ suspiciously-first-numeric-chars)))
+         (some-slashable l)))
 
-  #-acl2-loop-only
-  (let ((len (length (the string x))))
-    (declare (type fixnum len)) ; fixnum by Section 15.1.1.2 of CL Hyperspec
-    (when (eql print-base 16)
-      (do ((i 0 (1+ i))) ((= i len) nil)
-          (declare (type fixnum i))
-          (let ((ch (aref (the string x) i)))
-            (declare (type character ch))
-            (cond ((eql ch #\.)
-                   (setq print-base 10)
-                   (return))))))
-    (or (int= len 0)
-        (potential-numberp x len print-base)
-        (do ((i 0 (1+ i))) ((= i len) nil)
-            (declare (type fixnum i))
-            (let ((ch (char-code (aref (the string x) i))))
-              (declare (type fixnum ch))
-              (cond ((svref *slashable-array* ch)
-                     (return t))))))))
+   #-acl2-loop-only
+   (let ((len (length (the string x))))
+     (declare (type fixnum len)) ; fixnum by Section 15.1.1.2 of CL Hyperspec
+     (when (eql print-base 16)
+       (do ((i 0 (1+ i))) ((= i len) nil)
+           (declare (type fixnum i))
+           (let ((ch (aref (the string x) i)))
+             (declare (type character ch))
+             (cond ((eql ch #\.)
+                    (setq print-base 10)
+                    (return))))))
+     (or (int= len 0)
+         (potential-numberp x len print-base)
+         (do ((i 0 (1+ i))) ((= i len) nil)
+             (declare (type fixnum i))
+             (let ((ch (char-code (aref (the string x) i))))
+               (declare (type fixnum ch))
+               (cond ((svref *slashable-array* ch)
+                      (return t)))))))))
 
 (defmacro may-need-slashes (x &optional (print-base '10))
 

@@ -4325,7 +4325,7 @@
 
 
 (defmacro trust-mfc (&whole whole form)
-  #-acl2-loop-only (declare (ignore whole))
+  #-acl2-loop-only (declare (ignorable whole))
   #+acl2-loop-only `(prog2$ (er hard 'trust-mfc
                                 "It is illegal to run ~x0 except in raw Lisp, ~
                                  typically by way of a :program-mode function ~

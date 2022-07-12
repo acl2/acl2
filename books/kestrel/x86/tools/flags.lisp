@@ -19,6 +19,7 @@
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 
+(set-compile-fns t) ; Matt K. mod for GCL to avoid exhausting storage
 
 (defconst *flags*
   '(:cf :pf :af :zf :sf :tf :if :df :of :iopl :nt :rf :vm :ac :vif :vip :id))

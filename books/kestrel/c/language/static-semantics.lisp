@@ -1453,6 +1453,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-initer ((initer initerp)
+                      (funtab fun-tablep)
+                      (vartab var-tablep)
+                      (tagenv tag-envp))
+  :returns (type init-type-resultp)
+  :short "Check an initializer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the initializer is a single expression,
+     we ensure that it is a well-formed pure or call expression,
+     and we return the type as a single initialization type.")
+   (xdoc::p
+    "If the initializer is a list of expressions,
+     for now we require them to be pure expressions,
+     and we return their types as a list initialization type."))
+  (initer-case
+   initer
+   :single
+   (b* ((type (check-expr-call-or-pure initer.get funtab vartab tagenv))
+        ((when (errorp type)) type))
+     (init-type-single type))
+   :list
+   (b* ((types (check-expr-pure-list initer.get vartab tagenv))
+        ((when (errorp types)) types))
+     (init-type-list types)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-type-matchp ((itype init-typep) (type typep))
+  :returns (wf? wellformed-resultp)
+  :short "Check if an initializer type matches a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when comparing the type of an initializer
+     with the declared type of the object.")
+   (xdoc::p
+    "Fow now we require the initializer type to be a single one,
+     and to be equal to the declared type after array-to-pointer conversion.
+     Thus, for now we only support initialization of scalars:
+     if the declared type was an array type,
+     it would never be equal to
+     the array-to-pointer conversion of the initializer type,
+     which turns an array type into a pointer type.
+     Even though [C:6.7.9/11] allows scalars to be initialized with
+     singleton lists of expressions (i.e. single expressions between braces),
+     we are more strict here and require a single expression.")
+   (xdoc::p
+    "We will extend this to declared array types
+     and to list initializer types."))
+  (init-type-case
+   itype
+   :single (if (type-equiv type (apconvert-type itype.get))
+               :wellformed
+             (error (list :init-type-mismatch
+                          :required (type-fix type)
+                          :supplied (init-type-fix itype))))
+   :list (error (list :init-type-unsupported (init-type-fix itype))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-stmt
   :short "Check a statement."
   :long
@@ -1655,15 +1719,11 @@
           (type (tyname-to-type tyname))
           ((when (type-case type :void))
            (error (list :declon-error-type-void item.get)))
-          (init-type (check-expr-call-or-pure init funtab vartab tagenv))
+          (init-type (check-initer init funtab vartab tagenv))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
-          (init-type (apconvert-type init-type))
-          ((unless (equal init-type type))
-           (error (list
-                   :declon-mistype item.get
-                   :required type
-                   :supplied init-type)))
+          (wf? (init-type-matchp init-type type))
+          ((when (errorp wf?)) wf?)
           (vartab (var-table-add-var var type vartab))
           ((when (errorp vartab)) (error (list :declon-error vartab))))
        (make-stmt-type :return-types (set::insert (type-void) nil)

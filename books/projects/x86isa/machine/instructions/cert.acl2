@@ -44,4 +44,11 @@
 ; The book divide-spec.lisp, at least, seems to need :useless-runes nil:
 ;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg)  :useless-runes nil
 
+; Matt K. mod 7/11/2022 for GCL to avoid exhausting storage, which happened in
+; the following books before deciding simply to cover all books (including some
+; whose certifications werent' yet attempted today in GCL):
+; arith-and-logic-spec, divide-spec, multiply, multiply-spec, rotates-spec,
+; shifts-spec.
+(set-compile-fns t)
+
 ;; ======================================================================

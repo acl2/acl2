@@ -2524,6 +2524,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-exec-initer-rules
+  :short "Rules for @(tsee exec-initer)."
+
+  (defruled exec-initer-when-single
+    (implies (and (syntaxp (quotep initer))
+                  (equal (initer-kind initer) :single)
+                  (not (zp limit))
+                  (equal expr (initer-single->get initer))
+                  (equal val+compst1
+                         (exec-expr-call-or-pure expr compst fenv (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (valuep val))
+             (equal (exec-initer initer compst fenv limit)
+                    (mv val compst1)))
+    :enable exec-initer)
+
+  (defval *atc-exec-initer-rules*
+    '(exec-initer-when-single
+      (:e initer-kind)
+      (:e initer-single->get))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-block-item-rules
   :short "Rules for @(tsee exec-block-item)."
 
@@ -2538,7 +2562,7 @@
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
                   (equal val+compst1
-                         (exec-expr-call-or-pure init compst fenv (1- limit)))
+                         (exec-initer init compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)

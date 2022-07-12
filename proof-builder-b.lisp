@@ -1408,7 +1408,7 @@
   `(if (integerp ,pos)
        (mv-let (addr new-term new-iff-flg not-flg)
            ,b
-         (if (stringp addr)
+         (if (msgp addr)
              (mv addr nil nil nil)
            (mv (cons ,pos addr) new-term new-iff-flg not-flg)))
      (if (eq ,pos 'not)
@@ -1416,7 +1416,8 @@
                       (('mv 'nil x y 'nil)
                        `(mv nil ,x ,y t))
                       (&
-                       '(mv "a NOT term unexpected by the code; sorry" nil nil nil)))
+                       '(mv "a NOT term unexpected by the code; sorry"
+                            nil nil nil)))
        (mv ,pos nil nil nil))))
 
 (defun or-addr (n term iff-flg)
@@ -1429,26 +1430,26 @@
 
   (case-match term
     (('if x1 x1 x2) ; see untranslate1
-     (prog2$
-      x1 ; otherwise we get a "not used" complaint
-      (cond ((int= n 1)
-             (mv "of an ambiguity: the first argument of the OR term occurs ~
+     (declare (ignore x1))
+     (cond ((int= n 1)
+            (mv "of an ambiguity: the first argument of the OR term occurs ~
                   twice in the IF term that represents the OR term"
-                 nil nil nil))
-            ((int= n 2)
-             (addr-recur 3
-                         (or-addr (1- n) x2 iff-flg)))
-            (t
-             (mv "of an index that is out of range"
-                 nil nil nil)))))
+                nil nil nil))
+           ((int= n 2)
+            (addr-recur 3
+                        (or-addr (1- n) x2 iff-flg)))
+           (t
+            (mv "of an index that is out of range"
+                nil nil nil))))
     (('if x1 x2 *t*) ; see untranslate1
      (cond ((int= n 1)
             (cond ((ffn-symb-p x1 'not)
                    (mv '(1) x1 t t))
                   (t
-                   (mv "the first argument of the OR term is displayed as a ~
-                        call of NOT, which does not exist in the first ~
-                        argument of the IF term that represents the OR term"
+                   (mv (msg "that dive has led us to the first argument of ~
+                             the term ~x0, but we expected to reach a call of ~
+                             ~x1"
+                            term 'not)
                        nil nil nil))))
            (t
             (addr-recur 2
