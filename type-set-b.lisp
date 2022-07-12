@@ -1538,6 +1538,11 @@
 ; prevent their creation), since files in ignored directories can't be
 ; committed in git.
 
+; We use a different mechanism for avoiding useless-runes in ACL2(p) than in
+; ACL2(r); see with-useless-runes-aux.  It's not clear which is better, but
+; it's also not clear that there's much reason to change either one at this
+; point.
+
                           #-non-standard-analysis "/.sys"
                           #+non-standard-analysis "/.sysr"
                           (subseq full-book-name posn (- len 5))

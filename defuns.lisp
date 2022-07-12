@@ -6097,9 +6097,16 @@
                       (useless-runes-2 (change useless-runes useless-runes
                                                :data fal)))
                  (cond
+
+; We avoid useless-runes in ACL2(p), since proofs can go in a different
+; direction than ACL2(p).  We use a different mechanism for avoiding
+; useless-runes in ACL2(p) than in ACL2(r); see useless-runes-value and
+; useless-runes-filename.  It's not clear which is better, but it's also not
+; clear that there's much reason to change either one at this point.
+
                   #+acl2-par
                   ((f-get-global 'waterfall-parallelism state)
-                   (mv nil nil useless-runes-2))
+                   (mv 'read-but-skip nil useless-runes-2))
                   (t (mv 'read
                          (change useless-runes useless-runes
                                  :tag 'THEORY
@@ -6473,7 +6480,8 @@
        (with-useless-runes-aux wur-name state)
        (pprogn
         (case r/w
-          (read (f-put-global 'useless-runes wur-2 state))
+          ((read #+acl2-par read-but-skip)
+           (f-put-global 'useless-runes wur-2 state))
           (write (prog2$ (accumulated-persistence t) state))
           (otherwise state))
         (state-global-let*

@@ -40,14 +40,15 @@
 ; emacs-acl2.el.
 (if (and (not (boundp '*acl2-sources-dir*))
          (file-name-absolute-p load-file-name))
-    (let ((pattern (if (string-match "[\\]" load-file-name)
-		       "\\books\\emacs\\*$"
-		     "/books/emacs/*$"))
-	  (dir (file-name-directory load-file-name)))
+    (let ((pattern ; emacs/ and books/emacs/ differ here
+           (if (string-match "[\\]" load-file-name)
+               "\\books\\emacs\\*$"
+             "/books/emacs/*$"))
+          (dir (file-name-directory load-file-name)))
       (let ((posn (string-match pattern dir)))
-	(if posn
-	    (setq *acl2-sources-dir*
-		  (substring dir 0 (1+ posn)))))))
+        (if posn
+            (setq *acl2-sources-dir*
+                  (substring dir 0 (1+ posn)))))))
 
 (require 'etags) ; for "/" and "W" commands, e.g., tags-lazy-completion-table
 
@@ -425,11 +426,11 @@ then restart the ACL2-Doc browser to view that manual."
 	 (rendered-length (length rendered))
 	 (suffix "system/doc/rendered-doc-combined.lsp")
 	 (suffix-length (length suffix)))
-;;; Sanity check:
-    (or (equal (substring rendered (- rendered-length suffix-length))
-	       "system/doc/rendered-doc-combined.lsp")
-	(error "Implementation error in acl2-doc: unexpected suffix,\n%s"
-	       (substring rendered (- rendered-length suffix-length))))
+;;; Sanity check (use (setq debug-on-error t) to see backtrace):
+    (or (and (<= suffix-length rendered-length)
+	     (equal (substring rendered (- rendered-length suffix-length))
+		    "system/doc/rendered-doc-combined.lsp"))
+	(error "Implementation error in acl2-doc: unexpected suffix"))
     (concat
      (substring rendered 0 (- rendered-length suffix-length))
      "doc/manual/index.html")))
@@ -447,13 +448,15 @@ then restart the ACL2-Doc browser to view that manual."
 	       (file-newer-than-file-p pathname manual-index-pathname)
 	       (yes-or-no-p ; minibuffer display is better than y-or-n-p
 		"Use outdated manual?  (Reply no for download option.) "))))
-     ((and (file-exists-p pathname-gz)
+     ((and (and pathname-gz
+		(file-exists-p pathname-gz))
 	   (y-or-n-p
 	    (format
 	     "Run gunzip on %s%s? "
 	     pathname-gz
-	     (if (file-newer-than-file-p pathname
-					 (manual-index-pathname))
+	     (if (and manual-index-pathname
+		      (file-newer-than-file-p pathname
+					      manual-index-pathname))
 		 ""
 	       ", even though you can download a newer version"))))
       (shell-command-to-string

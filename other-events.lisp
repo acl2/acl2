@@ -16296,6 +16296,11 @@
 ; created for (standard) ACL2 because useless-runes files for ACL2(r) will be
 ; in .sysr/ rather than in .sys/; see useless-runes-filename.
 
+; We use a different mechanism for avoiding useless-runes in ACL2(p) than in
+; ACL2(r); see with-useless-runes-aux.  It's not clear which is better, but
+; it's also not clear that there's much reason to change either one at this
+; point.
+
   #+non-standard-analysis
   (declare (ignore useless-runes-r/w useless-runes-r/w-p))
   (let ((useless-runes-r/w
