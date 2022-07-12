@@ -1719,7 +1719,12 @@
         where the array is a structure pointer member expression
         where the target is a variable.")
       (xdoc::li
-       "A right-hand side consisting of a function call or a pure expression."))
+       "A right-hand side consisting of
+        a function call or a pure expression,
+        with the restriction that it must be a pure expression
+        when the left hand side is
+        an array subscripting expression;
+        in that case, the index expression must be also pure."))
      (xdoc::p
       "We ensure that if the right-hand side expression is a function call,
        it returns a value (i.e. it is not @('void')).")
@@ -1736,15 +1741,15 @@
          (left (expr-binary->arg1 e))
          (right (expr-binary->arg2 e))
          ((unless (binop-case op :asg))
-          (error (list :expr-asg-not-asg op)))
-         ((mv val? compst)
-          (exec-expr-call-or-pure right compst fenv (1- limit)))
-         ((when (errorp val?)) val?)
-         ((when (not val?)) (error (list :asg-void-expr (expr-fix e))))
-         (val val?))
+          (error (list :expr-asg-not-asg op))))
       (case (expr-kind left)
         (:ident
-         (b* ((var (expr-ident->get left)))
+         (b* ((var (expr-ident->get left))
+              ((mv val? compst)
+               (exec-expr-call-or-pure right compst fenv (1- limit)))
+              ((when (errorp val?)) val?)
+              ((when (not val?)) (error (list :asg-void-expr (expr-fix e))))
+              (val val?))
            (write-var var val compst)))
         (:arrsub
          (b* ((arr (expr-arrsub->arr left))
@@ -1780,6 +1785,8 @@
                                                         :pointer ptr
                                                         :array array
                                                         :index index)))
+                       (val (exec-expr-pure right compst))
+                       ((when (errorp val)) val)
                        (new-array (value-array-write index val array))
                        ((when (errorp new-array)) new-array))
                     (write-object objdes new-array compst)))
@@ -1824,6 +1831,8 @@
                                                         :pointer ptr
                                                         :array array
                                                         :index index)))
+                       (val (exec-expr-pure right compst))
+                       ((when (errorp val)) val)
                        (new-array (value-array-write index val array))
                        ((when (errorp new-array)) new-array)
                        (new-struct (value-struct-write mem new-array struct))
@@ -1854,6 +1863,8 @@
                (error (list :mistype-struct-read
                             :pointer reftype
                             :struct (type-of-value struct))))
+              (val (exec-expr-pure right compst))
+              ((when (errorp val)) val)
               (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-object objdes new-struct compst)))

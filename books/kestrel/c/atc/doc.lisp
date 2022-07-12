@@ -152,13 +152,7 @@
      (xdoc::p
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
-       in case proof generation is (temporarily) broken.")
-     (xdoc::p
-      "Currently this must be set to @('nil')
-       when generating code that reads or writes
-       elements of array members of structures.
-       This limitation will be lifted by extending proof generation
-       to handle those operations."))
+       in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
@@ -867,10 +861,10 @@
        happen automatically in certain circumstances in C,
        these functions always represent explicit casts;
        implict conversions are represented implicitly,
-       e.g. via the function for a unary operator that promoteds the operand.")
+       e.g. via the function for a unary operator that promotes the operand.")
      (xdoc::li
       "A call of @('<type1>-array-read-<type2>')
-       on expression terms for @('fn') returning @('U') and @('V'),
+       on pure expression terms for @('fn') returning @('U') and @('V'),
        when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
@@ -891,7 +885,7 @@
        the array access is well-defined.")
      (xdoc::li
       "A call of @('struct-<tag>-read-<member>')
-       on an expression term for @('fn') returning @('U')
+       on a pure expression term for @('fn') returning @('U')
        when @('<tag>') is a @(tsee defstruct) name,
        @('<member>') is the name of
        one of the members of that @(tsee defstruct),
@@ -902,7 +896,7 @@
        This represents an access to a structure member by pointer.")
      (xdoc::li
       "A call of @('struct-<tag>-read-<member>-<type>')
-       on expression terms for @('fn') returning @('U') and @('V')
+       on pure expression terms for @('fn') returning @('U') and @('V')
        when @('<tag>') is a @(tsee defstruct) name,
        @('<member>') is the name of
        one of the members of that @(tsee defstruct),

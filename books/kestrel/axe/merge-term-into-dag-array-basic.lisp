@@ -17,6 +17,7 @@
 
 (include-book "dag-array-builders2")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
+(include-book "kestrel/utilities/forms" :dir :system)
 (include-book "evaluator-basic")
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))
@@ -209,7 +210,7 @@
                      (b* (((mv erp val)
                            (apply-axe-evaluator-basic-to-quoted-args fn arg-nodenums-or-quoteps interpreted-function-alist))
                           ((when erp)
-                           (if (eq :unknown-function erp)
+                           (if (call-of :unknown-function erp)
                                ;;no error, but could not evaluate (todo: print a warning?)
                                (add-function-call-expr-to-dag-array-with-name fn arg-nodenums-or-quoteps
                                                                               dag-array dag-len dag-parent-array

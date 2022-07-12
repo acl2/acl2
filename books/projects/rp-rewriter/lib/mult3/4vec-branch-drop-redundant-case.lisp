@@ -279,7 +279,8 @@
                  (not (equal (rp-evlt term a) 0)))
             (equal (rp-evlt term a) 1))
    :hints (("Goal"
-            :use ((:instance pp-term-p-is-bitp))
+            :use ((:instance pp-term-p-is-bitp
+                             (strict nil)))
             :in-theory (e/d () ())))))
 
 (local

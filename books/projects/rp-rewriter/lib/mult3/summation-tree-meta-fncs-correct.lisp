@@ -1683,7 +1683,7 @@
                             is-rp is-if)
                            (and-list-instance-to-binary-and-correct
                             rp-trans
-                            (:DEFINITION PP-TERM-P)
+                            (:DEFINITION PP-TERM-P-fn)
                             (:REWRITE DEFAULT-CDR)
                             (:REWRITE RP-EQUAL-IS-SYMMETRIC)
                             (:REWRITE DEFAULT-CAR)
@@ -2589,7 +2589,7 @@
                             EX-FROM-RP
                             is-rp is-if)
                            (valid-sc
-                            (:DEFINITION PP-TERM-P)
+                            (:DEFINITION PP-TERM-P-fn)
                             (:REWRITE DEFAULT-CAR)
                             (:DEFINITION RP-TRANS)
                             (:REWRITE RP-EQUAL-IS-SYMMETRIC)
@@ -6587,8 +6587,8 @@
                             (;;(:REWRITE RP::SUM-ASSOC)
                              sum-cancel-common
                              (:DEFINITION EQ)
-                             (:TYPE-PRESCRIPTION PP-TERM-P)
-                             (:DEFINITION PP-TERM-P)
+                             (:TYPE-PRESCRIPTION PP-TERM-P-fn)
+                             (:DEFINITION PP-TERM-P-fn)
                              (:TYPE-PRESCRIPTION QUOTE-P$INLINE)
                              (:TYPE-PRESCRIPTION IS-RP$INLINE)
                              (:REWRITE SUM-OF-NEGATED-ELEMENTS)

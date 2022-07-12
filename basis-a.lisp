@@ -7965,9 +7965,10 @@
 
 (defun parse-with-local-stobj (x)
 
-; x is a with-local-stobj form.  We return (mv erp stobj-name mv-let-form
-; creator-name).
+; X is the cdr of a with-local-stobj call.  We return (mv erp stobj-name
+; mv-let-form creator-name).
 
+  (declare (xargs :guard t))
   (case-match x
     ((st
       ('mv-let . mv-let-body))

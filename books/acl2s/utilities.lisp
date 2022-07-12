@@ -22,7 +22,7 @@ This is a collection of utilities used in ACL2s, the ACL2 Sedan.
 (defxdoc acl2-pc::repeat-until-done
   :parents (acl2::proof-builder-commands acl2s-utilities)
   :short "A proof-builder command that repeats the given instructions
-  until all goals have been proved" 
+  until all goals have been proved"
   :long "<p>
 @({
  Example:
@@ -40,12 +40,12 @@ This is a collection of utilities used in ACL2s, the ACL2 Sedan.
 (define-pc-macro repeat-until-done (&rest instrs)
   (value
    `(repeat (do-all
-             ,@(append instrs 
+             ,@(append instrs
                        `((negate (when-not-proved fail))))))))
 
 (defxdoc make-n-ary-macro
   :parents (acl2s-utilities)
-  :short "A macro that 
+  :short "A macro that
 creates an arbitrary-arity macro given a binary function
 and associates the function name with the macro name using
 @(see add-macro-fn)."
@@ -60,7 +60,7 @@ and associates the function name with the macro name using
  (make-n-ary-macro new-macro-name binary-fun-name identity right-associate-p)
  })
 </p>
- 
+
 <p>where @('new-macro-name') is the name of the macro to define,
 @('binary-fun-name') is the name of an existing binary function and
 @('identity') is what the macro should return with no arguments.
@@ -81,7 +81,7 @@ the function. For example:
 
 (set-union arg1 arg2) expands to (binary-set-union arg1 arg2)
 
-(set-union arg1 arg2 arg3) expands to 
+(set-union arg1 arg2 arg3) expands to
 (binary-set-union arg1 (binary-set-union arg2 arg3))
 
 and so on.
@@ -110,7 +110,7 @@ and so on.
   :short "The ACL2s version of @('skip-proofs')."
   :long"<p>
 A macro that is similar to @('skip-proofs'), except that we first perform
-testing. The macro supports testing for @(see thm), 
+testing. The macro supports testing for @(see thm),
 @(see defthm), @(see defcong), @(see defequiv), and
 @(see defrefinement) forms. All other forms are just turned into
 @('skip-proof')s forms, without testing.
@@ -145,7 +145,17 @@ testing. The macro supports testing for @(see thm),
   (b* ((set `(with-output
               :off :all :on (error)
               (local (acl2s-defaults :set ,var ,val))))
-       (forms (collect$ '(lambda (x) `(with-output :stack :pop ,x))
+       (forms (collect$ '(lambda (x)
+
+; Matt K. mod: The June 2022 change to backquote resulted in a quoted object
+; here, which caused an error since it's not translated (see :DOC
+; gratuitous-lambda-object-restrictions).  So I'm laying down the cons that was
+; here previously, below the original commented-out form.
+
+;                         `(with-output :stack :pop ,x)
+                          (CONS 'WITH-OUTPUT
+                           (CONS ':STACK
+                            (CONS ':POP (CONS X 'NIL)))))
                         forms)))
     `(with-output
       :off :all :stack :push
@@ -269,7 +279,7 @@ A macro that locally turns off @('cgen') testing and then calls @('defthm').
          (ly (len (member-equal y p)))
          (lx (len (member-equal x p))))
     (if (< lx ly) x y)))
-    
+
 (defun best-package-symbl-list (l s)
   (declare (xargs :guard (and (good-atom-listp l) (stringp s))))
   (cond ((endp l) s)
@@ -633,7 +643,7 @@ functions over natural numbers.
     (make-event
      (let ((form ,form))
        `(with-output
-         :stack :pop 
+         :stack :pop
          (defconst ,',name ',form ,@(and ,doc '(,doc))))))))
 
 ; Utilities to stage rules.

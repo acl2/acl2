@@ -414,6 +414,9 @@
                :outmasks 
                (fast-alist-free (fast-alist-clean (svtv-collect-masks
                                                    expanded-outs)))
+               :inmap
+               (svtv-collect-inmap t expanded-overrides
+                                   (svtv-collect-inmap nil expanded-ins nil))
                :orig-ins x.inputs
                :orig-overrides x.overrides
                :orig-outs x.outputs

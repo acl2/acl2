@@ -32,10 +32,10 @@
  (defund my97-prime () (declare (xargs :guard t)) *my97-prime*)
 
  (defmacro eviscerate-my97-prime ()
-   `(table acl2::evisc-table 97 "#.*MY97-PRIME*"))
+   (list 'table 'acl2::evisc-table 97 "#.*MY97-PRIME*"))
 
  (defmacro uneviscerate-my97-prime ()
-   `(table acl2::evisc-table 97 nil))
+   (list* 'table 'acl2::evisc-table 97 '(nil)))
 
  ;; causes 97 to be printed as #.*my97-prime*:
  (eviscerate-my97-prime)
@@ -68,10 +68,10 @@
  (defund my97-prime-alias () (declare (xargs :guard t)) *my97-prime-alias*)
 
  (defmacro eviscerate-my97-prime-alias ()
-   `(table acl2::evisc-table 97 "#.*MY97-PRIME-ALIAS*"))
+   (list 'table 'acl2::evisc-table 97 "#.*MY97-PRIME-ALIAS*"))
 
  (defmacro uneviscerate-my97-prime-alias ()
-   `(table acl2::evisc-table 97 nil))
+   (list* 'table 'acl2::evisc-table 97 '(nil)))
 
  ;; causes 97 to be printed as #.*my97-prime-alias*:
  (eviscerate-my97-prime-alias)

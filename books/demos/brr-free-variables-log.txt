@@ -1196,15 +1196,12 @@ Form:  ( DEFAXIOM G-REWRITE ...)
 Rules: NIL
 Warnings:  Free
  G-REWRITE
-ACL2 !>>(DEFAXIOM
-         G-BIND-FREE
-         (IMPLIES (AND (BIND-FREE (CONS (CONS (CONS 'Y 'A) 'NIL)
-                                        (CONS (CONS (CONS 'Y 'B) 'NIL) 'NIL))
-                                  (Y))
-                       (SYNTAXP (NOT (CW "bind trying ~x0~%" Y)))
-                       (F Y)
-                       (EQUAL X Y))
-                  (EQUAL (G X) Y)))
+ACL2 !>>(DEFAXIOM G-BIND-FREE
+                  (IMPLIES (AND (BIND-FREE '(((Y . A)) ((Y . B))) (Y))
+                                (SYNTAXP (NOT (CW "bind trying ~x0~%" Y)))
+                                (F Y)
+                                (EQUAL X Y))
+                           (EQUAL (G X) Y)))
 
 Summary
 Form:  ( DEFAXIOM G-BIND-FREE ...)

@@ -52,11 +52,13 @@
 (defthmd is-rp-implies-fc
   (implies (is-rp term)
            (CASE-MATCH TERM
-             (('RP ('QUOTE TYPE) &)
-              (AND (SYMBOLP TYPE)
-                   (NOT (BOOLEANP TYPE))
-                   (NOT (EQUAL TYPE 'QUOTE))
-                   (NOT (EQUAL TYPE 'RP))))
+             (('rp ('quote type) &)
+              (and (symbolp type)
+                   (not (booleanp type))
+                   (not (equal type 'quote))
+                   (not (equal type 'rp))
+                   (not (equal type 'list))
+                   (not (equal type 'falist))))
              (& NIL)))
   :rule-classes :forward-chaining
   :hints (("Goal"

@@ -76,6 +76,8 @@
     term)
    ((eq (ffn-symb term) 'do$) ; MattK addition 11/2021
     term)
+   ((eq (ffn-symb term) 'read-user-stobj-alist) ; MattK addition 07/2022
+    term)
    ((eq (ffn-symb term) 'return-last)
 
 ; For relevant background see translate11.

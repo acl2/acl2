@@ -205,6 +205,7 @@
 
     GET-SERIALIZE-CHARACTER
     TRUST-MFC
+    WITH-GLOBAL-STOBJ
   ))
 
 (defconst *special-ops*

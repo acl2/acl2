@@ -153,9 +153,9 @@
         (prog2$ (cw "(The test is a known assumption.)")
                 (mv nil :true state))) ;a test that's in the assumptions is like a test that rewrites to t
        ;; TODO: What if the test is equal to an assumption but not identical to it (e.g., a disjunction with the disjuncts reordered?)
+       ((when (not call-stp)) (mv nil :unknown state)) ; give up if we are not allowed to call STP
+       ;; TODO: Avoid turning the DAG into a term:
        (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
-       ((when (not call-stp))
-        (mv nil :unknown state))
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first.
        (- (cw "(Attempting to prove test true with STP:~%"))
        ((mv true-result state)

@@ -26,6 +26,10 @@
            nil))
   :hints (("Goal" :in-theory (enable member-equal))))
 
+(defthm member-equal-of-nil
+  (not (member-equal a nil))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
 (defthm member-equal-when-not-consp-cheap
   (implies (not (consp x))
            (not (member-equal a x)))

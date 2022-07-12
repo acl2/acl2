@@ -34,7 +34,7 @@
   ;; Expected result:
   (must-be-redundant
    (MUTUAL-RECURSION
-    ;; Returns (mv erp result) where erp is nil (no error), :unknown-function, or :count-exceeded.
+    ;; Returns (mv erp result) where erp is nil (no error), an :unknown-function form, or :count-exceeded.
     (defund apply-axe-evaluator-for-len (fn args interpreted-function-alist count)
       (declare (type (unsigned-byte 60) count)
                (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
@@ -78,7 +78,7 @@
                 (if (not match)
                     ;; Unknown function: ~x0 applied to args ~x1.  Consider passing it as an interpreted function, or adding it to the list of built-ins for the evaluator ~x2.  (This error also occurs when a function appears with an incorrect number of arguments.)
                     (progn$ ;; ...
-                     (mv :unknown-function nil))
+                     (mv `(:unknown-function ,fn) nil))
                   (let* ((fn-info (cdr match))
                          (formals (first fn-info))
                          (body (second fn-info))
@@ -183,7 +183,7 @@
                (mv (erp-nil) val)
              (let ((match (assoc-eq fn interpreted-function-alist)))
                (if (not match)
-                   (mv :unknown-function nil)
+                   (mv `(:unknown-function ,fn) nil)
                  (let* ((fn-info (cdr match))
                         (formals (first fn-info))
                         (body (second fn-info))

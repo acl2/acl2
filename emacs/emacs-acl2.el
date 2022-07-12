@@ -892,6 +892,8 @@ beginning of the string that was processed."
 (put 'with-fast-alist      'lisp-indent-function 'defun)
 (put 'WITH-FAST-ALISTS      'lisp-indent-function 'defun)
 (put 'with-fast-alists      'lisp-indent-function 'defun)
+(put 'WITH-GLOBAL-STOBJ     'lisp-indent-function 'defun)
+(put 'with-global-stobj     'lisp-indent-function 'defun)
 (put 'WITH-LOCAL-STOBJ      'lisp-indent-function 'defun)
 (put 'with-local-stobj      'lisp-indent-function 'defun)
 (put 'WITH-OPEN-FILE 'lisp-indent-function 'defun)
