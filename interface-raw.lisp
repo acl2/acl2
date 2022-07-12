@@ -2464,15 +2464,17 @@
                                      ',fn ',invariant-risk))
                                    (setq ,cont-p t))
                                   ((eq ,check-invariant-risk-sym :WARNING)
-                                   (warning$ ',fn
-                                             "Invariant-risk"
-                                             "Invariant-risk has been ~
-                                              detected for a call of function ~
-                                              ~x0 (as possibly leading to an ~
-                                              ill-guarded call of ~x1); see ~
-                                              :DOC invariant-risk."
-                                             ',fn ',invariant-risk)
-                                   (setq ,cont-p t))
+                                   (with-live-state
+                                    (warning$ ',fn
+                                              "Invariant-risk"
+                                              "Invariant-risk has been ~
+                                               detected for a call of ~
+                                               function ~x0 (as possibly ~
+                                               leading to an ill-guarded call ~
+                                               of ~x1); see :DOC ~
+                                               invariant-risk."
+                                              ',fn ',invariant-risk))
+                                    (setq ,cont-p t))
                                   (t ; 'check-invariant-risk has value t
                                    t))
 

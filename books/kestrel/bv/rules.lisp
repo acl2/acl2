@@ -7620,7 +7620,7 @@
                       (and (equal (getbit (+ -1 size) y)
                                   (getbit (+ -1 size) x))
                            (bvlt (+ -1 size) x y)))))
-  ::hints (("Goal" :use ((:instance split-bv
+  :hints  (("Goal" :use ((:instance split-bv
                                     (n size)
                                     (y (bvchop size x))
                                     (m (+ -1 size)))

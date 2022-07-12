@@ -43,4 +43,9 @@
 (add-include-book-dir :utils "../utils")
 ;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) :skip-proofs-okp nil
 
+; Matt K. mod 7/11/2022 for GCL to avoid exhausting storage, which happened in
+; the following book before deciding simply to cover all books (including some
+; whose certifications weren't yet attempted today in GCL): physical-memory,
+(set-compile-fns t)
+
 ;; ======================================================================
