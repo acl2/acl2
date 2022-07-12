@@ -204,6 +204,9 @@
     bvminus
     bvuminus
     bvmult
+    bvshl
+    bvshr
+    bvashr
     logtail
     slice ;note that we don't get the slice from x86isa
     myif
