@@ -13277,7 +13277,6 @@
                             bvlt
                             bvchop-of-sum-cases bvcat bvplus logapp)
                            (bvplus-of-bvcat-hack6-gen-low-open ;looped
-;NATP-MEANS-NON-NEG
 
 ;UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP
                             ;;                                    EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
@@ -15096,7 +15095,6 @@
 
 ;why?
 (in-theory (disable small-int-hack ;natp-when-integerp-cheap
-                    natp-means-non-neg ;dangerous?
                     usb-plus-from-bounds
                     ;integerp-of-small
                     ;floor-bounded-by-/

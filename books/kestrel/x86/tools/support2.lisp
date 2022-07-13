@@ -1246,7 +1246,7 @@
                             ;(:e expt)
                             acl2::bvminus-becomes-bvplus-of-bvuminus)))))
 
-(in-theory (disable ACL2::INEQ-HACK2 ACL2::INEQ-HACK ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER ACL2::NATP-MEANS-NON-NEG))
+(in-theory (disable ACL2::INEQ-HACK2 ACL2::INEQ-HACK ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER))
 
 (in-theory (disable ACL2::PLUS-BVCAT-WITH-0 ACL2::PLUS-BVCAT-WITH-0-ALT))
 

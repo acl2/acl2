@@ -618,8 +618,6 @@
                ((when erp) (mv erp nil nil nil state)))
             (mv (erp-nil) one-rep-term exit-term exit-test-term state)))))))
 
-(in-theory (disable ACL2::NATP-MEANS-NON-NEG)) ;todo
-
 ;todo: this is slowing stuff down: ACL2::USE-ALL-HEAPREF-TABLE-ENTRYP-FOR-CAR
 
 ;todo: speed this up

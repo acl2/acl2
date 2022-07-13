@@ -1156,7 +1156,7 @@
 
             ;;    if-of-non-nil ;slow? wed jan 13 21:22:18 2010
 
-            ;;    natp-means-non-neg ;loops with defn natp - limit somehow? ;thu may 17 00:02:17 2012
+            ;;    not-<-of-0-when-natp ;loops with defn natp - limit somehow? ;thu may 17 00:02:17 2012
 
 ;     bvchop-list-of-logext-list
 
@@ -2424,7 +2424,7 @@
              bvlt-of-bvplus-1-cancel-alt
              consp-of-nthcdr
              posp
-;             natp ;loops with natp-means-non-neg
+;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
 
              cdr-of-nthcdr
