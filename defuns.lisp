@@ -289,14 +289,14 @@
 ; Part 3: Translate
 
 ; During the first pass of certify-book, an alist is built up as the value of
-; the world global, TRANSLATE-CERT-DATA.  (See update-translate-cert-data.)
+; the world global, 'translate-cert-data.  (See update-translate-cert-data.)
 ; This alist will ultimately be the value stored in the :translate entry of the
-; :cert-data field of the book's certificate.  When including a book, that
-; field will be the value of the cert-data given to process-embedded-events in
-; include-book-fn1.
+; :cert-data field of the book's certificate, after making it into a
+; fast-alist.  When including a book, that field will be the value of the
+; cert-data given to process-embedded-events in include-book-fn1.
 
-; That alist will be stored in state global 'cert-data during include-book.  In
-; order for it to be valid (when consulted via the calls of
+; That fast-alist will be stored in state global 'cert-data during
+; include-book.  In order for it to be valid (when consulted via the calls of
 ; get-translate-cert-data-record), we use function store-cert-data to decide
 ; when to store into the world global, 'translate-cert-data.  We must skip
 ; results of translation computed on behalf of local events, which will of
@@ -470,9 +470,7 @@
        (not ; not inside include-book
         (global-val 'include-book-path wrld))
 
-; The next conjunct is optional, as explained in the Essay on Cert-data.  Note
-; that in function encapsulate-fn, we are careful during encapsulate pass 1 to
-; avoid stealing the fast-alist stored in world global translate-cert-data.
+; The next conjunct is optional, as explained in the Essay on Cert-data.
 
        (not ; not "obviously" in encapsulate pass1
         (and (in-encapsulatep (global-val 'embedded-event-lst wrld) nil)
