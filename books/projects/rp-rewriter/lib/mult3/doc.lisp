@@ -107,7 +107,7 @@ described in @(see Multiplier-Verification-demo-3).
 <p> This library can be used to quickly generate counterexamples using an
 external SAT solver, or help finish proofs with a SAT solver when our library
 fails to finish the job. You may include the book
-projects/rp-rewriter/lib/mult/fgl, @(see FGL::FGL) book and use
+projects/rp-rewriter/lib/mult3/fgl, @(see FGL::FGL) book and use
 rp::defthmrp-then-fgl utility instead of rp::defthmrp to submit conjectures to
 ACL2. </p>
 
