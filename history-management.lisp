@@ -6650,8 +6650,12 @@
          (cond
           ((and (symbolp logical-name)
                 (not (eq logical-name :here))
-                (eql (getpropc logical-name 'absolute-event-number nil wrld)
-                     0))
+                (or (member-eq logical-name
+                               '(declare flet lambda lambda$ let loop$ quote
+                                         with-local-stobj))
+                    (eql (getpropc logical-name 'absolute-event-number nil
+                                   wrld)
+                         0)))
 
 ; This special case avoids printing something like the following, which isn't
 ; very useful.

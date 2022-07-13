@@ -38,7 +38,7 @@ obtained or explored separately</a>.
 
 <ol>
 
-<li>Connect to a directory whose full pathname contains no whitespace
+<li>Change to a directory whose full pathname contains no whitespace
 and which does not already contain a subdirectory
 named <code>acl2</code> or <code>acl2-8.4</code>.  Then use
 <font color="red">either</font> of the following two methods to obtain
@@ -53,15 +53,15 @@ the ACL2 source code and community books.
       then execute:<br/>
       <code>tar xfz acl2-8.4.tar.gz</code><br/>
     This will create a subdirectory named <code>acl2-8.4</code>.
-    Connect to <code>acl2-8.4</code>.</li>
+    Change to that directory.</li>
 
     <li>(<font color="red">Development snapshot</font>, required if
       you want
       to <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____GITHUB-COMMIT-CODE-USING-PULL-REQUESTS">update
       from GitHub</a>)<br/>Execute:<br/>
-      <code>git clone https://github.com/acl2/acl2 acl2</code><br/>
+      <code>git clone https://github.com/acl2/acl2</code><br/>
       This will create the subdirectory <code>acl2</code>.
-      Connect to <code>acl2/</code>.
+      Change to that directory.
     </li>
 
   </ul>
@@ -75,7 +75,7 @@ already have one.</li><p/>
 <pre>
 make LISP=&lt;path_to_your_lisp_executable&gt;
 </pre>
-This will create a script in your connected directory
+This will create a script in the current directory
    for running ACL2.  The script is named <code>saved_acl2</code>.<br/>
 <font color="red">Note:</font> You will need Gnu make.  We have seen
 problems on some Linux systems with Version 3.81 of that utility, so

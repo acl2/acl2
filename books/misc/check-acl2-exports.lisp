@@ -203,9 +203,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    GET-SERIALIZE-CHARACTER
-    TRUST-MFC
-    WITH-GLOBAL-STOBJ
   ))
 
 (defconst *special-ops*

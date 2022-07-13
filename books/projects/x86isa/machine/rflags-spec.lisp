@@ -256,7 +256,7 @@ otherwise.</p>"
   :rule-classes :linear)
 
 (encapsulate
-  ()  
+  ()
   (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
   (defthm unsigned-byte-p-and-integer-length

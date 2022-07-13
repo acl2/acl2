@@ -550,3 +550,27 @@
                                            type-unsigned-integerp
                                            type-signed-integerp)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum init-type
+  :short "Fixtype of initializer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce a notion of types for "
+    (xdoc::seetopic "initer" "initializers")
+    ". An initializer type has the same structure as an initializer,
+     but expressions are replaced with (their) types.")
+   (xdoc::p
+    "As our model of initializers is extended,
+     our model of initializer types will be extended accordingly."))
+  (:single ((get type)))
+  (:list ((get type-list)))
+  :pred init-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+  (local (in-theory (enable init-type-kind)))
+  (defresult init-type "initializer types"))

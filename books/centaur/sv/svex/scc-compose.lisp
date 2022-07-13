@@ -631,6 +631,7 @@
                                             acl2::logtail-identity)))
                  )
       (define svex-compose-bit-sccs
+        :parents (svex-composition)
         :long "<p>Implementation notes.</p>
 
 <p>A node is a variable/bit-index pair that is a looping bit from final-masks.

@@ -64,6 +64,27 @@
 ; key is an event name (currently, a function symbol or the name of a defthm
 ; event) that is associated with a list of translate-cert-data-record records.
 
+; Note added 7/2022: We have observed that for a book's portcullis commands,
+; :CERT-DATA is included for type-prescriptions but not for translations.  This
+; distinction may well have been unintentional, but it seems harmless.  We see
+; no reason why the stored type prescriptions for portcullis commands are
+; problematic, and since we do not generally expect many defun or defthm events
+; among the portcullis commands (other than those evaluated within include-book
+; commands), there is little to be lost by ignoring saved translation
+; information for these.  This distinction in what is stored as cert-data for
+; portcullis commands is a byproduct of our process: translation cert-data is
+; determined while processing events under certify-book, while
+; type-prescription cert-data is determined at the conclusion of such
+; processing; see cert-data-for-certificate.  To see this distinction, let
+; foo.lisp be any trivial book and execute the following commands.
+
+;   (defun f1 (x) x) (local (defun f2 (x) x)) (defun g (x) x)
+;   (certify-book "foo" ?)
+;   (read-file "foo.cert" state)
+
+; We see that the :CERT-DATA in foo.cert has :TYPE-PRESCRIPTION entries for f1
+; and f3, but has no :TRANSLATE entries.
+
 ; Part 2: Type Prescriptions
 
 ; The following processes support the effective re-use of runic type
@@ -267,41 +288,41 @@
 
 ; Part 3: Translate
 
-; During the first pass of certify-book, a fast-alist is built up as the value
-; of the world global, TRANSLATE-CERT-DATA.  (See update-translate-cert-data.)
-; This fast-alist will ultimately be the value stored in the :translate entry
-; of the :cert-data field of the book's certificate.  When including a book,
-; that field will be the value of the cert-data given to
-; process-embedded-events in include-book-fn1.
+; During the first pass of certify-book, an alist is built up as the value of
+; the world global, TRANSLATE-CERT-DATA.  (See update-translate-cert-data.)
+; This alist will ultimately be the value stored in the :translate entry of the
+; :cert-data field of the book's certificate.  When including a book, that
+; field will be the value of the cert-data given to process-embedded-events in
+; include-book-fn1.
 
-; In order for that fast-alist to be valid when consulted during include-book
-; (via the calls of get-translate-cert-data-record), we use function
-; store-cert-data to decide when to store into the world global,
-; TRANSLATE-CERT-DATA.  We must skip results of translation computed on behalf
-; of local events, which will of course be irrelevant (or even misleading) when
-; later including the book.  We also need to skip translations computed during
-; make-event expansion, but that happens automatically because we are recording
-; the results in a world global and the world is reverted after make-event
-; expansion.  We also take other measures in store-cert-data.  In particular,
-; we sometimes avoid storing results computed during the first pass of an
-; encapsulate (which is skipped during include-book), though that is not
-; necessary since the world is rolled back after that pass -- and note that we
-; don't want to use pass1 encapsulate results to avoid translating in pass2,
-; because that would avoid local incompatibility checking.  (For the same
-; reason, we don't retrieve :translate cert-data during the include-book phase
-; of certify-book.)  Also, we avoid worrying about lambda objects.  See
-; store-cert-data for details.
+; That alist will be stored in state global 'cert-data during include-book.  In
+; order for it to be valid (when consulted via the calls of
+; get-translate-cert-data-record), we use function store-cert-data to decide
+; when to store into the world global, 'translate-cert-data.  We must skip
+; results of translation computed on behalf of local events, which will of
+; course be irrelevant (or even misleading) when later including the book.  We
+; also need to skip translations computed during make-event expansion, but that
+; happens automatically because we are recording the results in a world global
+; and the world is reverted after make-event expansion.  We also take other
+; measures in store-cert-data.  In particular, we sometimes avoid storing
+; results computed during the first pass of an encapsulate (which is skipped
+; during include-book), though that is not necessary since the world is rolled
+; back after that pass -- and note that we don't want to use pass1 encapsulate
+; results to avoid translating in pass2, because that would avoid local
+; incompatibility checking.  (For the same reason, we don't retrieve :translate
+; cert-data during the include-book phase of certify-book.)  Also, we avoid
+; worrying about lambda objects.  See store-cert-data for details.
 
 ; Remarks (in no particular order).
 
 ; (1) We considered explicitly avoiding storing translation results from inside
 ; progn!, simply because of the unbounded flexibility of progn!.  But we view
 ; it unlikely that progn! would cause a problem, since the only truly obvious
-; way to build a confusing cert-data entry (fast-alist) for the :translate key
-; seems to be to use redefinition, in which case we write an empty :translate
-; entry into the certificate (see cert-data-for-certificate); and besides,
-; progn! requires a trust tag, so we are sort of off the hook as far as weird
-; end cases are concerned.
+; way to build a confusing cert-data entry (alist) for the :translate key seems
+; to be to use redefinition, in which case we write an empty :translate entry
+; into the certificate (see cert-data-for-certificate); and besides, progn!
+; requires a trust tag, so we are sort of off the hook as far as weird end
+; cases are concerned.
 
 ; (2) One can certify books in community books directory
 ; books/system/tests/cert-data/ and look at their certificates with (read-file
@@ -344,9 +365,9 @@
 
 ; (6) Because of our calls of make-fast-alist in the definition of the function
 ; fast-cert-data, it is unnecessary to store cert-data entries as fast-alists
-; in the .cert file.  But profiling suggests that it is harmless to do so.
-; Note that the relevant alists are already fast-alists anyhow; we'd have to
-; free them if we want to avoid storing them as fast-alists.
+; in the .cert file.  But profiling has suggested that it is harmless to do so.
+; The type-prescription cert-data is already a fast-alists anyhow; we'd have to
+; free it if we want to avoid storing it as a fast-alist.
 
 ; (7) As a sort of optimization, saving space in .cert files at the expense of
 ; time: we could perhaps loosen the cons-count-bounded restriction in
@@ -438,7 +459,10 @@
                (contains-lambda-object-listp (cdr x))))))
 )
 
-(defun store-cert-data (val wrld state)
+(defun store-cert-data (listp val wrld state)
+
+; Listp is true when val is a list of terms, false when val is a term.
+
   (and (let ((info (f-get-global 'certify-book-info state)))
          (and info
               (not (access certify-book-info info :include-book-phase))))
@@ -463,7 +487,9 @@
 ; quoted lambdas.  If the need arises, one can look into removing this
 ; restriction.
 
-       (not (contains-lambda-objectp val))
+       (not (if listp
+                (contains-lambda-object-listp val)
+              (contains-lambda-objectp val)))
 
 ; The following heuristic check could be reconsidered.  It is intended to keep
 ; .cert files from being too big.
@@ -488,23 +514,21 @@
   ((type . inputs) . (value . (fns . vars)))
   t)
 
-(defun update-translate-cert-data-fn (name installed-wrld wrld
-                                           type inputs value fns vars)
-  (let ((old-translate-cert-data (global-val 'translate-cert-data
-                                             installed-wrld)))
+(defun update-translate-cert-data-fn (name installed-wrld wrld type inputs
+                                      value fns vars)
+  (let* ((old-translate-cert-data (global-val 'translate-cert-data
+                                              installed-wrld))
+         (new (make translate-cert-data-record
+                    :type type
+                    :inputs inputs
+                    :value value
+                    :fns fns
+                    :vars vars))
+         (old-lst (cdr (assoc-eq name old-translate-cert-data))))
     (global-set 'translate-cert-data
-                (let ((new (make translate-cert-data-record
-                                 :type type
-                                 :inputs inputs
-                                 :value value
-                                 :fns fns
-                                 :vars vars))
-                      (old-lst (cdr (hons-get name old-translate-cert-data))))
-                  (if (member-equal new old-lst)
-                      old-translate-cert-data
-                    (hons-acons name
-                                (cons new old-lst)
-                                old-translate-cert-data)))
+                (acons name
+                       (cons new old-lst)
+                       old-translate-cert-data)
                 wrld)))
 
 (defmacro update-translate-cert-data (name installed-wrld wrld
@@ -6076,9 +6100,16 @@
                       (useless-runes-2 (change useless-runes useless-runes
                                                :data fal)))
                  (cond
+
+; We avoid useless-runes in ACL2(p), since proofs can go in a different
+; direction than ACL2(p).  We use a different mechanism for avoiding
+; useless-runes in ACL2(p) than in ACL2(r); see useless-runes-value and
+; useless-runes-filename.  It's not clear which is better, but it's also not
+; clear that there's much reason to change either one at this point.
+
                   #+acl2-par
                   ((f-get-global 'waterfall-parallelism state)
-                   (mv nil nil useless-runes-2))
+                   (mv 'read-but-skip nil useless-runes-2))
                   (t (mv 'read
                          (change useless-runes useless-runes
                                  :tag 'THEORY
@@ -6452,7 +6483,8 @@
        (with-useless-runes-aux wur-name state)
        (pprogn
         (case r/w
-          (read (f-put-global 'useless-runes wur-2 state))
+          ((read #+acl2-par read-but-skip)
+           (f-put-global 'useless-runes wur-2 state))
           (write (prog2$ (accumulated-persistence t) state))
           (otherwise state))
         (state-global-let*
@@ -10929,7 +10961,7 @@
                       (cond
                        ((f-get-global 'including-uncertified-p state)
 
-; We skip soome checks for :type-prescription xargs when including an
+; We skip some checks for :type-prescription xargs when including an
 ; uncertified book, because they are presumably intended to pass but actually
 ; might not pass.  In a certified book we expect type-prescription information
 ; to be preserved in the certificate's cert-data, from local include-book
@@ -11256,9 +11288,7 @@
                                                  nil wrld31))
                                #-:non-standard-analysis
                                wrld31)
-                        (wrld4 (if (store-cert-data (car bodies-and-bindings)
-                                                    wrld
-                                                    state)
+                        (wrld4 (if (store-cert-data t bodies wrld state)
                                    (update-translate-cert-data
                                     (car names) wrld wrld3
                                     :type :translate-bodies
@@ -11463,11 +11493,13 @@
                                        (value
                                         (global-stobjs-prop names bodies guards
                                                             wrld2a)))
-                                      (wrld5 (value (putprop-x-lst1
-                                                     names
-                                                     'global-stobjs
-                                                     global-stobjs-prop
-                                                     wrld4)))
+                                      (wrld5 (value (if global-stobjs-prop
+                                                        (putprop-x-lst1
+                                                         names
+                                                         'global-stobjs
+                                                         global-stobjs-prop
+                                                         wrld4)
+                                                      wrld4)))
                                       (ignore ; see comment above
                                        (cond
                                         ((and global-stobjs-prop

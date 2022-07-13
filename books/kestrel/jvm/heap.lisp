@@ -68,41 +68,19 @@
                (iff (default-value-for-unknown-type type)
                     t)))
 
-;TODO: remove the defattach stuff...
-
-(defun default-value-for-float-defattach ()
-  (declare (xargs :guard t))
-  '(:float 0))
-
-;; (encapsulate (((default-value-for-float) => *))
-;;              (local (defun default-value-for-float () t))
-;;              (defthm default-value-for-float-not-nil
-;;                (iff (default-value-for-float)
-;;                     t)))
-
 (defun default-value-for-float ()
   (declare (xargs :guard t))
-  (default-value-for-float-defattach))
+  (jvm::make-regular-float :pos 0))
 
-(defthm default-value-for-float-not-nil
+(defthmd default-value-for-float-not-nil
   (iff (default-value-for-float)
        t))
 
-(defun default-value-for-double-defattach ()
-  (declare (xargs :guard t))
-  '(:double 0))
-
-;; (encapsulate (((default-value-for-double) => *))
-;;              (local (defun default-value-for-double () t))
-;;              (defthm default-value-for-double-not-nil
-;;                (iff (default-value-for-double)
-;;                     t)))
-
 (defun default-value-for-double ()
   (declare (xargs :guard t))
-  (default-value-for-double-defattach))
+  (jvm::make-regular-double :pos 0))
 
-(defthm default-value-for-double-not-nil
+(defthmd default-value-for-double-not-nil
   (iff (default-value-for-double)
        t))
 

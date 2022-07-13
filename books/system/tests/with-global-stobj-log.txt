@@ -89,6 +89,23 @@ ACL2 !>>(WR0 2 STATE)
 <state>
 ACL2 !>>(ASSERT-EVENT (EQUAL (RD0 STATE) 2))
  :PASSED
+ACL2 !>>(DEFUN BAD (X STATE)
+               (DECLARE (XARGS :STOBJS STATE))
+               (WITH-GLOBAL-STOBJ ST (UPDATE-FLD X ST)))
+
+
+ACL2 Error [Translate] in ( DEFUN BAD ...):  The read-only WITH-GLOBAL-
+STOBJS call (WITH-GLOBAL-STOBJ ST (UPDATE-FLD X ST)) is illegal because
+its body returns the bound stobj, ST.  See :DOC with-global-stobj.
+
+
+Summary
+Form:  ( DEFUN BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN BAD ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(DEFUN FOO (VAL ST STATE)
                (DECLARE (XARGS :STOBJS (ST STATE)))
                (LET ((STATE (WITH-GLOBAL-STOBJ ST (ST)

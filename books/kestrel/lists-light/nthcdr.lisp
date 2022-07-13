@@ -269,3 +269,8 @@
            (equal (nthcdr n x)
                   (list (nth n x))))
   :hints (("Goal" :in-theory (enable NTHCDR))))
+
+(defthm nthcdr-of-len-same-when-true-listp
+  (implies (true-listp x)
+           (equal (nthcdr (len x) x)
+                  nil)))

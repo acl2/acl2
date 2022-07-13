@@ -11,6 +11,9 @@
 (in-package "ACL2")
 
 ;; The order of these roughly reflects the dependencies:
+(include-book "ieee-floats") ; todo: move to separate library
+(include-book "ieee-floats-as-bvs") ; todo: move to separate library
+(include-book "ieee-floats-validation") ; todo: move to separate library
 (include-book "types")
 (include-book "floats")
 (include-book "descriptors")
