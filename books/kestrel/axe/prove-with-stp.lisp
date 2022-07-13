@@ -1,4 +1,4 @@
-; Calling STP to prove things about DAGs
+; Calling STP to prove things about DAGs and terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2022 Kestrel Institute
