@@ -183,8 +183,7 @@
                             ;;;GETBIT-OF-BV-ARRAY-READ                   ;looped!
                             ;GETBIT-OF-BV-ARRAY-READ-HELPER            ;looped
                             ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                            ;NATP-WHEN-INTEGERP
-                            ;NATP-MEANS-NON-NEG
+                            ;;NATP-WHEN-INTEGERP
                             )))))
 
 ;i hope this is all we need for the actual proofs (nothing about map-map-xxx??)
