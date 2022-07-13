@@ -11376,7 +11376,7 @@
                                      (access translate-cert-data-record rec
                                              :value)))))
           (t (er-let* ((tterm (translate term t t t ctx wrld state)))
-               (value (cons (store-cert-data tterm wrld state)
+               (value (cons (store-cert-data nil tterm wrld state)
                             tterm)))))))
 
 (defun defthm-fn1 (name term state
