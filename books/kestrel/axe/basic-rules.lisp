@@ -53,6 +53,11 @@
   (equal (if (if x x t) y z)
          y))
 
+;for axe
+(defthmd if-of-if-t-nil
+  (equal (if (if test t nil) foo bar)
+         (if test foo bar)))
+
 (defthm natp-of-len
   (equal (natp (len x))
          t))

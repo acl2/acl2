@@ -52,6 +52,15 @@
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
+(defthmd even-when-power-of-2-and-at-least-2
+  (implies (and (<= 2 n)
+                (power-of-2p n))
+           (integerp (* 1/2 n)))
+  :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add)))))
+
+(defthm +-of-half
+  (equal (+ len (- (* 1/2 len)))
+         (* 1/2 len)))
 
 ;expensive?
 ;fixme which do we prefer?  depends on priorities..
@@ -61,6 +70,35 @@
   (equal (equal (len x) 0)
          (not (consp x))))
 
+(defthm true-listp-of-cdr-when-consp
+  (implies (consp x)
+           (equal (true-listp (cdr x))
+                  (true-listp x))))
+
+(defthm equal-of-true-listp-when-equal-of-cdr
+  (IMPLIES (AND (EQUAL (CDR LST) (CDR RHS))
+                (< 0 (LEN LST))
+                (< 0 (LEN RHS)))
+           (equal (equal (TRUE-LISTP RHS) (TRUE-LISTP LST))
+                  t))
+  :hints (("Goal" :induct t
+           :in-theory (enable true-listp))))
+
+(in-theory (disable TRUE-LISTP)) ; todo
+
+(defthm equal-of-len-and-len-when-equal-of-nthcdr-and-nthcdr
+  (implies (and (equal (nthcdr n x) (nthcdr n y))
+                (or (< n (len x))
+                    (< n (len y))))
+           (equal (equal (len x) (len y))
+                  t))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm equal-of-repeat-of-len-same
+  (equal (equal data (repeat (len data) item))
+         (and (true-listp data)
+              (all-equal$ item data)))
+  :hints (("Goal" :in-theory (enable true-listp))))
 
 ;TTODO: Move these rules to the appropriate libraries!
 ;TODO: Handle the things with -dag in the name
@@ -410,7 +448,7 @@
                   (update-nth2 (+ 1 (len lst))
                                key
                                val lst)))
-  :hints (("Goal" :in-theory (enable update-nth2))))
+  :hints (("Goal" :in-theory (enable update-nth2 true-listp))))
 
 ;move
 (defthm update-nth-of-take-of-+-of-1-same
@@ -438,11 +476,6 @@
            (equal (signed-byte-p 32 x)
                   t)))
 
-;drop?
-(defthmd natp-means-non-neg
-  (implies (natp n)
-           (not (< n 0))))
-
 ;; ;fixme the same as append-of-cons?
 ;; (DEFTHM LIST::xAPPEND-OF-CONS-BETTER2
 ;; ;  (IMPLIES (SYNTAXP (NOT (AND (QUOTEP X) (QUOTEP A))))
@@ -459,7 +492,7 @@
                 (natp key))
            (equal (update-nth key val lst)
                   (append lst (list val))))
-  :hints (("Goal" :in-theory (e/d (update-nth2) (update-nth-becomes-update-nth2)))))
+  :hints (("Goal" :in-theory (e/d (update-nth2 true-listp) (update-nth-becomes-update-nth2)))))
 
 ;; (DEFTHM UPDATE-NTH2-OF-CONS
 ;;   (EQUAL (UPDATE-NTH2 len N VAL (CONS A LST))
@@ -468,11 +501,6 @@
 ;;              (CONS A (UPDATE-NTH (+ -1 N) VAL LST)))))
 
 ;bozo some dups above this?
-
-;for axe
-(defthmd if-of-if-t-nil
-  (equal (if (if test t nil) foo bar)
-         (if test foo bar)))
 
 ;TODO: do we still use bvnth?
 ;move?
@@ -493,7 +521,7 @@
 ;;            (all-integerp vals))
 ;;   :hints (("Goal" :in-theory (enable all-integerp))))
 
-(defthmd nth-sum-when-nthcdr-known
+(defthmd nth-sum-when-nthcdr-known ; can loop?
   (implies (and (EQUAL vals2 (NTHCDR m VALS))
                 (natp n)
                 (natp m))
@@ -593,14 +621,9 @@
                             )
                            (gross-hack
                             nth-of-cdr
-                            ;NTH-SUM-WHEN-NTHCDR-KNOWN
                             NTH-OF-NTHCDR ;looped
-                            ;NTH-SUM-WHEN-NTHCDR-KNOWN
-;NTH-SUM-WHEN-NTHCDR-KNOWN
                             REPEATBIT-OF-1-ARG2
-;NTH-SUM-WHEN-NTHCDR-KNOWN
                             NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE
-;(:REWRITE NTH-SUM-WHEN-NTHCDR-KNOWN) ;
                             ;LIST::NTH-NTHCDR
                             NTH-OF-TAKE-GEN
 ;NTH-OF-BVNOT-LIST
@@ -625,11 +648,7 @@
                            (y (bvchop n index))
                            (vals (true-list-fix vals))))))
 
-(defthmd even-when-power-of-2-and-at-least-2
-  (implies (and (<= 2 n)
-                (power-of-2p n))
-           (integerp (* 1/2 n)))
-  :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add)))))
+
 
 (defthm equal-of-nthcdr-and-subrange-of-minus1
   (implies (and (natp n)
@@ -645,16 +664,10 @@
                                               ;;cdr-of-take-becomes-subrange-better
                                               )))))
 
-(defthm +-of-half
-  (equal (+ len (- (* 1/2 len)))
-         (* 1/2 len)))
-
 (defthm firstn-of-bvchop-list
   (equal (firstn n (bvchop-list size array))
          (bvchop-list size (firstn n array)))
   :hints (("Goal" :in-theory (enable bvchop-list firstn))))
-
-(local (in-theory (disable NTH-SUM-WHEN-NTHCDR-KNOWN))) ;looped
 
 ;we could do the (equal (bvnot-list ..) ..) check without consing:
 ;in general, if we have the equality of 2 lists built up by consing, we can build them up in parallel and stop as soon as one difference is found
@@ -708,9 +721,7 @@
                            (NTH-OF-NTHCDR
                             BV-ARRAY-READ-OF-BVCHOP-HELPER
                             BV-ARRAY-READ-OF-BVCHOP
-                            BV-ARRAY-READ-OF-TAKE
-;list::nth-nthcdr
-                            )))))
+                            BV-ARRAY-READ-OF-TAKE)))))
 
 (defthm array-reduction-when-top-bit-is-irrelevant
   (implies (and (syntaxp (quotep vals)) ;Sat Mar 20 08:56:01 2010
@@ -899,10 +910,7 @@
                   (bv-array-read n 64 (bvchop 6 x) vals)))
   :hints (("Goal" :in-theory (enable bv-array-read BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
-(defthm equal-of-repeat-of-len-same
-  (equal (equal data (repeat (len data) item))
-         (and (true-listp data)
-              (all-equal$ item data))))
+
 
 ;bozo should we restrict this to constant arrays?
 (DEFTHM ARRAY-REDUCTION-WHEN-ALL-SAME-improved
@@ -1672,25 +1680,6 @@
            :cases ((<= (bvchop indexsize index) index))
            :in-theory (enable nth2 bvnth all-integerp-when-all-natp))))
 
-
-
-
-;see BVXOR-WITH-SMALL-ARG2 for a better way to do these:
-
-
-
-
-
-;; (defthm getbit-when-arg1-is-not-a-natp
-;;   (implies (not (natp size))
-;;            (equal (getbit size val)
-;;                   0))
-;;   :hints
-;;   (("Goal" :in-theory (e/d (getbit slice logtail)
-;;                            (slice-becomes-getbit bvchop-1-becomes-getbit
-;;                                                BVCHOP-OF-LOGTAIL-BECOMES-SLICE ;add to anti-slice
-;;                                                anti-slice)))))
-
 ;bvchop analogue?
 (defthm bv-array-read-of-getbit-when-len-is-2
   (equal (bv-array-read element-size 2 (getbit 0 x) lst)
@@ -1698,16 +1687,11 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer getbit-when-val-is-not-an-integer)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
-
-
 ;; (defthm take-of-logext-list
 ;;   (implies (and (<= n (len lst)) (natp n))
 ;;            (equal (take n (logext-list size lst))
 ;;                   (logext-list size (take n lst))))
 ;;   :hints (("Goal" :in-theory (e/d (take logext-list) (take-of-cdr-becomes-subrange)))))
-
-
-;bozo add consp of bvchop-list?
 
 (theory-invariant (incompatible (:definition UPDATE-NTH2) (:rewrite UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))
 
@@ -1848,59 +1832,7 @@
 ;;           (EQUAL (LEN LST) (LEN RHS)))
 ;;  :hints (("Goal" :in-theory (e/d (len) (LEN-OF-CDR-BETTER LIST::LEN-OF-CDR)))))
 
-(defthm true-listp-of-cdr-when-consp
-  (implies (consp x)
-           (equal (true-listp (cdr x))
-                  (true-listp x))))
 
-(defthm equal-of-true-listp-when-equal-of-cdr
-  (IMPLIES (AND (EQUAL (CDR LST) (CDR RHS))
-                (< 0 (LEN LST))
-                (< 0 (LEN RHS)))
-           (equal (equal (TRUE-LISTP RHS) (TRUE-LISTP LST))
-                  t))
-  :hints (("Goal" :induct t
-           :in-theory (enable true-listp))))
-
-;; (thm
-;;  (implies (and (equal (update-nth key v lst)
-;;                       (update-nth key v rhs))
-;;                (natp key)
-;;                (< key (len lst))
-;;                (< key (len rhs))
-;;                )
-;;           (iff (true-listp rhs)
-;;                (true-listp lst)))
-;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;           :induct t
-;;           :in-theory (e/d (update-nth all-unsigned-byte-p TRUE-LISTP-OF-CDR)
-;;                           (LIST::EQUAL-APPEND-REDUCTION!-ALT
-;;                            LIST::EQUAL-APPEND-REDUCTION!
-;;                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
-
-
-;; (thm
-;;  (implies (and (equal (update-nth key v lst)
-;;                       (update-nth key v rhs))
-;;                (natp key)
-;;                (< key (len lst))
-;;                (< key (len rhs))
-;;                )
-;;           (iff (all-unsigned-byte-p esize rhs)
-;;                (all-unsigned-byte-p esize lst)))
-;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;           :induct t
-;;           :in-theory (enable update-nth all-unsigned-byte-p)))
-
-(in-theory (disable TRUE-LISTP))
-
-(defthm equal-of-len-and-len-when-equal-of-nthcdr-and-nthcdr
-  (implies (and (equal (nthcdr n x) (nthcdr n y))
-                (or (< n (len x))
-                    (< n (len y))))
-           (equal (equal (len x) (len y))
-                  t))
-  :hints (("Goal" :in-theory (enable nthcdr))))
 
 (defthm bv-array-write-equal-rewrite
   (implies (and (natp esize)
