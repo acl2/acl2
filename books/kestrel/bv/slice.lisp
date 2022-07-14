@@ -27,6 +27,8 @@
 (local (include-book "../arithmetic-light/times-and-divides"))
 (local (include-book "../arithmetic-light/divides"))
 (local (include-book "../arithmetic-light/times"))
+(local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "unsigned-byte-p"))
 
 ;move
@@ -667,3 +669,37 @@
   :rule-classes ((:linear :trigger-terms ((* (expt 2 low) (slice high low x)))))
   :hints (("Goal" :use (:instance slice-upper-bound-linear)
            :in-theory (enable expt-of-+))))
+
+;move or make local
+(defthm floor-bound-lemma100
+  (implies (and (rationalp i)
+                (posp j))
+           (not (equal (* j (floor i j))
+                       (+ i (- j)))))
+  :hints (("Goal"
+           :use (:instance my-floor-lower-bound)
+           :in-theory (e/d (posp) ( ;FLOOR-BOUNDED-BY-/
+                                   )))))
+
+
+(local
+ (defthmd equal-of-slice-helper
+   (implies (and (unsigned-byte-p (+ 1 high) x)
+                 (natp high)
+                 (natp low)
+                 (<= low high))
+            (equal (equal k (slice high low x))
+                   (and (unsigned-byte-p (+ 1 high (- low)) k)
+                        (<= (bvchop (+ 1 high) x) (+ -1 (* (+ 1 k) (expt 2 low))))
+                        (<= (* k (expt 2 low)) (bvchop (+ 1 high) x)))))
+   :hints (("Goal" :in-theory (e/d (slice logtail) (bvchop-of-logtail-becomes-slice))))))
+
+(defthmd equal-of-slice
+  (implies (and (<= low high)
+                (natp high)
+                (natp low))
+           (equal (equal k (slice high low x))
+                  (and (unsigned-byte-p (+ 1 high (- low)) k)
+                       (<= (bvchop (+ 1 high) x) (+ -1 (* (+ 1 k) (expt 2 low))))
+                       (<= (* k (expt 2 low)) (bvchop (+ 1 high) x)))))
+  :hints (("Goal" :use (:instance equal-of-slice-helper (x (bvchop (+ 1 high) x))))))

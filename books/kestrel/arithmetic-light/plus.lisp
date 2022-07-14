@@ -135,6 +135,15 @@
                   (< x (- k2 k1))))
   :hints (("Goal" :cases ((< (+ k1 x) k2)))))
 
+(defthm <-of-+-and-+-combine-constants
+  (implies (syntaxp (and (quotep k2)
+                         (quotep k1)))
+           (equal (< (+ k1 x) (+ k2 y))
+                  (if (< k1 k2) ; ensure the new constant is non-negative
+                      (< x (+ (- k2 k1) y))
+                    (< (+ (- k1 k2) x) y))))
+  :hints (("Goal" :cases ((< (+ k1 x) (+ k2 y))))))
+
 (defthm equal-of-+-combine-constants
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)))
