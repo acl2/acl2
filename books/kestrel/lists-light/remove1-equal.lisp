@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function remove1-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -106,3 +106,9 @@
   (equal (remove1-equal x (remove1-equal y l))
          (remove1-equal y (remove1-equal x l)))
   :hints (("Goal" :in-theory (enable remove1-equal))))
+
+;; Might be expensive
+(defthm remove1-equal-when-not-member-equal
+  (implies (not (member-equal x l))
+           (equal (remove1-equal x l)
+                  (true-list-fix l))))
