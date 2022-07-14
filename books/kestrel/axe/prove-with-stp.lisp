@@ -2319,7 +2319,7 @@
                                   (natp max-conflicts))
                               (booleanp counterexamplep))
                   :stobjs state
-                  :guard-hints (("Goal" :in-theory (e/d (all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp
+                  :guard-hints (("Goal" :in-theory (e/d (all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp ; for the all of build-known-nodenum-type-alist
                                                          myquotep-when-axe-disjunctionp
                                                          quotep-when-axe-disjunctionp)
                                                         (make-depth-array-for-nodes
