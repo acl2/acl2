@@ -1483,9 +1483,9 @@
 ;    myif-of-logext-list-arg1
 
     signed-byte-p-of-myif2
-    all-signed-byte-p-of-myif
-    all-signed-byte-p-of-nil
-    all-signed-byte-p-of-cons
+    ;;all-signed-byte-p-of-myif
+    ;;all-signed-byte-p-of-nil
+    ;;all-signed-byte-p-of-cons
 ;    all-signed-byte-p-of-logext-list
 
 ;    logext-list-of-logext-list
@@ -1614,7 +1614,7 @@
     len-of-myif
 
 ;    logext-list-does-nothing
-    all-signed-byte-p-when-all-unsigned-byte-p
+    ;;all-signed-byte-p-when-all-unsigned-byte-p
 ;these help us resolve questions about symbolic indices (e.g., for bvshl and bvshr)
     <-of-sums-cancel
     <-0-minus

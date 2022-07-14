@@ -18,10 +18,6 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-;; TODO: Add option to prune the DAG
-
-;; TODO: Add support for a fixed or limited number of steps, for debugging
-
 (include-book "kestrel/x86/tools/support-axe" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/tools/conditions" :dir :system)
@@ -147,6 +143,7 @@
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
+            ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
           (if (acl2::equivalent-dags dag old-dag)
