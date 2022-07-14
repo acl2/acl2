@@ -12,7 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "dag-parent-array") ;todo
+(include-book "dag-arrays")
+(include-book "bounded-dag-parent-arrayp")
+(include-book "shorter-list")
+(include-book "dag-parent-array") ;todo drop, but need to factor out first-atom, etc.
 
 ;;;
 ;;; find-shortest-parent-lst-with-name
@@ -380,7 +383,7 @@
 ;;;
 
 ;; This makes the shortest possible parent-array for dag-array, but its alen1 may not match the alen1 of the dag-array.
-;rename to make-minimal-dag-parent-array?
+;rename to make-minimal-dag-parent-array-with-name?
 (defund make-dag-parent-array-with-name (dag-len dag-array-name dag-array dag-parent-array-name)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))

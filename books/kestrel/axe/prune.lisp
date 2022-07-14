@@ -29,7 +29,7 @@
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 
-(in-theory (disable table-alist)) ;why?
+;(in-theory (disable table-alist)) ;why?
 
 (local (in-theory (disable symbol-listp
                            use-all-consp-for-car

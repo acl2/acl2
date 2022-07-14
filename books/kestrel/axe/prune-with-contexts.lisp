@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+;; This book is not used anywhere?
+
+;; FIXME: Doesn't renaming the tests to their new nodenums prevent contextual information from being used right?
+
 (include-book "dag-arrays")
 (include-book "dag-array-builders")
 (include-book "contexts")
@@ -299,7 +303,7 @@
   (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
        (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
        ;; Make the auxiliary data structures for the DAG:
-       ((mv old-dag-parent-array
+       ((mv old-dag-parent-array ; only used once below, then further below another array gets the name 'dag-parent-array
             & ;dag-constant-alist (todo: don't generate)
             & ;dag-variable-alist (todo: don't generate)
             )
@@ -310,7 +314,6 @@
        ;; ((when ...) ; could check here whether there is any context information to use
        ;;  (and print (cw ")~%"))
        ;;  (mv (erp-nil) dag limits state))
-
        (renaming-array (make-empty-array 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
        ;;todo: make a util for making an empty dag and its aux structures
        (dag-array (make-empty-array 'dag-array old-dag-len)) ;todo: leave some slack space?
