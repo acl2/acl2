@@ -1,7 +1,7 @@
 ; Computing contexts from overarching DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -825,7 +825,7 @@
 
 ;; Go top-down from NODENUM, filling in the context array.  Assumes we started at the top node and so will cover all ways a node can be reached from the top.
 ;; Returns the context-array, named 'context-array, which associates nodenums with their contextps.
-;; It might seem faster to just take the dag as a list and cdr down it, but we need the dag to be an array so we can quickly dig conjunctions out of dag nodes.
+;; It might seem faster to just take the dag as a list and cdr down it, but we need the dag to be an array so we can quickly dig conjuncts out of dag nodes.
 (defun make-full-context-array-aux (nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
   (declare (xargs :guard (and (integerp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -899,7 +899,7 @@
   :hints (("Goal" :in-theory (enable make-full-context-array-with-parents))))
 
 ;new version! deprecate the old way of doing things (already done?)?
-;returns 'context-array, which associates nodenums with their contextps
+;returns 'context-array, which associates nodenums with their contextps ("full" means all nodes have a valid entry in this array)
 ;smashes 'dag-parent-array
 ;; Use make-full-context-array-with-parents instead if you already have the parent array.
 (defun make-full-context-array (dag-array-name dag-array dag-len)
@@ -918,6 +918,16 @@
                 (posp dag-len))
            (context-arrayp 'context-array (make-full-context-array dag-array-name dag-array dag-len) dag-len))
   :hints (("Goal" :in-theory (enable make-full-context-array))))
+
+;; Can help with debugging
+(defund make-full-context-array-for-dag (dag)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (<= (len dag) 2147483646))
+                  :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))))
+  (let* ((dag-array-name 'temp-dag-array)
+         (dag-array (make-into-array 'temp-dag-array dag)))
+  (make-full-context-array dag-array-name dag-array (+ 1 (caar dag)))))
+
 
 ;returns t, nil, or :unknown, depending on whether the context tells us anything about nodenum (fixme what if nodenum is the nodenum of a booland, a not, etc.?)
 ;fixme what if the context is (false-context)?
