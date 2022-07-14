@@ -14854,41 +14854,6 @@
 ;;           :in-theory (e/d (posp) (;FLOOR-BOUNDED-BY-/
 ;;                                   )))))
 
-(defthm floor-bound-lemma100
-  (implies (and (rationalp i)
-                (posp j))
-           (not (equal (* j (floor i j))
-                       (+ i (- j)))))
-  :hints (("Goal"
-           :use (:instance my-floor-lower-bound)
-           :in-theory (e/d (posp) ( ;FLOOR-BOUNDED-BY-/
-                                   )))))
-
-
-(local
- (defthmd equal-of-slice-helper
-   (implies (and (unsigned-byte-p (+ 1 high) x)
-                 (natp high)
-                 (natp low)
-                 (<= low high))
-            (equal (equal k (slice high low x))
-                   (and (unsigned-byte-p (+ 1 high (- low)) k)
-                        (<= (bvchop (+ 1 high) x) (+ -1 (* (+ 1 k) (expt 2 low))))
-                        (<= (* k (expt 2 low)) (bvchop (+ 1 high) x)))))
-   :hints (("Goal" :in-theory (e/d (slice logtail) (bvchop-of-logtail-becomes-slice
-                                                    EQUAL-OF-FLOOR-OF-EXPT-AND-BV
-                                                    FLOOR-BECOMES-SLICE-WHEN-UNSIGNED-BYTE-P))))))
-
-(defthmd equal-of-slice
-  (implies (and (<= low high)
-                (natp high)
-                (natp low))
-           (equal (equal k (slice high low x))
-                  (and (unsigned-byte-p (+ 1 high (- low)) k)
-                       (<= (bvchop (+ 1 high) x) (+ -1 (* (+ 1 k) (expt 2 low))))
-                       (<= (* k (expt 2 low)) (bvchop (+ 1 high) x)))))
-  :hints (("Goal" :use (:instance equal-of-slice-helper (x (bvchop (+ 1 high) x))))))
-
 (local
  (defthmd <-of-slice-arg2-helper
    (implies (and (unsigned-byte-p (+ 1 high) x)
