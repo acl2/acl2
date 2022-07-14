@@ -303,11 +303,9 @@
   (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
        (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
        ;; Make the auxiliary data structures for the DAG:
-       ((mv old-dag-parent-array ; only used once below, then further below another array gets the name 'dag-parent-array
-            & ;dag-constant-alist (todo: don't generate)
-            & ;dag-variable-alist (todo: don't generate)
-            )
-        (make-dag-indices 'old-dag-array old-dag-array 'dag-parent-array old-dag-len)) ;note the old-dag-parent-array has name 'dag-parent-array (todo: generalize make-full-context-array-with-parents below?)
+       (old-dag-parent-array  ; only used once below, then further below another array gets the name 'dag-parent-array
+        (make-dag-parent-array-with-name2 old-dag-len 'old-dag-array old-dag-array 'dag-parent-array) ; note the old-dag-parent-array has name 'dag-parent-array (todo: generalize make-full-context-array-with-parents below?)
+        )
        ;; Now figure out the context we can use for each node
        ;; TODO: If this doesn't contain any information, consider skipping the prune
        (context-array (make-full-context-array-with-parents 'old-dag-array old-dag-array old-dag-len old-dag-parent-array))
