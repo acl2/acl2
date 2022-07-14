@@ -473,8 +473,7 @@
 ;drop? expensive?
 (defthmd usbp8-implies-sbp32-2
   (implies (unsigned-byte-p 8 x)
-           (equal (signed-byte-p 32 x)
-                  t)))
+           (signed-byte-p 32 x)))
 
 ;; ;fixme the same as append-of-cons?
 ;; (DEFTHM LIST::xAPPEND-OF-CONS-BETTER2
@@ -798,8 +797,7 @@
 (DEFTHM SIGNED-BYTE-P-OF-MYIF2
   (IMPLIES (AND (SIGNED-BYTE-P N A)
                 (SIGNED-BYTE-P N B))
-           (equal (SIGNED-BYTE-P N (MYIF TEST A B))
-                  t))
+           (SIGNED-BYTE-P N (MYIF TEST A B)))
   :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
 
 ;keep but move
@@ -813,8 +811,7 @@
 (DEFTHM all-signed-byte-p-OF-MYIF
   (IMPLIES (AND (all-signed-byte-p N A)
                 (all-signed-byte-p N B))
-           (equal (all-signed-byte-p N (MYIF TEST A B))
-                  t))
+           (all-signed-byte-p N (MYIF TEST A B)))
   :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
 
 (DEFTHM all-signed-byte-p-OF-MYIF-strong
@@ -855,16 +852,13 @@
 
 ;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
 
-(DEFTHM ALL-UNSIGNED-BYTE-P-OF-BVCHOP-LIST-GEN2
-  (IMPLIES (AND ;(<= ELEMENT-SIZE SIZE)
-            (ALL-UNSIGNED-BYTE-P SIZE LST)
-            (NATP SIZE)
-            (NATP ELEMENT-SIZE))
-           (EQUAL (ALL-UNSIGNED-BYTE-P SIZE (BVCHOP-LIST ELEMENT-SIZE LST))
-                  T))
-  :HINTS
-  (("Goal"
-    :IN-THEORY (ENABLE ALL-UNSIGNED-BYTE-P BVCHOP-LIST))))
+(defthm all-unsigned-byte-p-of-bvchop-list-gen2
+  (implies (and ;(<= element-size size)
+            (all-unsigned-byte-p size lst)
+            (natp size)
+            (natp element-size))
+           (all-unsigned-byte-p size (bvchop-list element-size lst)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p bvchop-list))))
 
 ;; (thm
 ;;  (IMPLIES (AND (< X K)
@@ -1940,8 +1934,7 @@
   (implies (and (<= element-size size)
                 (natp size)
                 (natp element-size))
-           (equal (all-unsigned-byte-p size (bv-array-clear element-size len key lst))
-                  t))
+           (all-unsigned-byte-p size (bv-array-clear element-size len key lst)))
   :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 
@@ -2612,8 +2605,7 @@
 
 (defthm true-listp-of-bv-array-clear-range
   (implies (true-listp lst)
-           (equal (true-listp (bv-array-clear-range elem-size len lowindex highindex lst))
-                  t)))
+           (true-listp (bv-array-clear-range elem-size len lowindex highindex lst))))
 
 (defthm nthcdr-of-bv-array-clear
   (implies (and (<= n len)
@@ -2901,8 +2893,7 @@
   (IMPLIES (AND (<= ELEMENT-SIZE SIZE)
                 (NATP SIZE)
                 (NATP ELEMENT-SIZE))
-           (EQUAL (ALL-UNSIGNED-BYTE-P SIZE (BV-ARRAY-CLEAR-range ELEMENT-SIZE LEN lowindex highindex LST))
-                  T))
+           (ALL-UNSIGNED-BYTE-P SIZE (BV-ARRAY-CLEAR-range ELEMENT-SIZE LEN lowindex highindex LST)))
   :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-CLEAR-range))))
 
 
@@ -3083,8 +3074,7 @@
                 (natp len)
                 (all-unsigned-byte-p width lst)
                 (all-unsigned-byte-p width vals))
-           (equal (unsigned-byte-p width (nth n (update-subrange2 len start end vals lst)))
-                  t))
+           (unsigned-byte-p width (nth n (update-subrange2 len start end vals lst))))
   :hints (("Goal" :in-theory (enable ;LIST::NTH-APPEND
                               ))))
 
