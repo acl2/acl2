@@ -760,7 +760,7 @@
 ;;                             QUOTE-LEMMA-FOR-BOUNDED-DARG-LISTP-GEN-ALT
 ;;                             BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX)))))
 
-(defun bool-fix-constant (x)
+(defund bool-fix-constant (x)
   (declare (xargs :guard (myquotep x)))
   (if (or (equal x *t*)
           (equal x *nil*))
@@ -769,8 +769,33 @@
         *t*
       *nil*)))
 
-(defthm booleanp-of-unquote-of-bool-fix-constant
-  (booleanp (unquote (bool-fix-constant x))))
+(defthmd booleanp-of-unquote-of-bool-fix-constant
+  (booleanp (unquote (bool-fix-constant x)))
+  :hints (("Goal" :in-theory (enable bool-fix-constant))))
+
+(defthmd quotep-of-bool-fix-constant
+  (quotep (bool-fix-constant x))
+  :hints (("Goal" :in-theory (enable bool-fix-constant))))
+
+(local
+ (defthm axe-disjunctionp-of-bool-fix-constant
+   (axe-disjunctionp (bool-fix-constant x))
+   :hints (("Goal" :in-theory (enable bool-fix-constant)))))
+
+(local
+ (defthm axe-conjunctionp-of-bool-fix-constant
+   (axe-conjunctionp (bool-fix-constant x))
+   :hints (("Goal" :in-theory (enable bool-fix-constant)))))
+
+(local
+ (defthm bounded-axe-disjunctionp-of-bool-fix-constant
+   (bounded-axe-disjunctionp (bool-fix-constant x) bound)
+   :hints (("Goal" :in-theory (enable bool-fix-constant)))))
+
+(local
+ (defthm bounded-axe-conjunctionp-of-bool-fix-constant
+   (bounded-axe-conjunctionp (bool-fix-constant x) bound)
+   :hints (("Goal" :in-theory (enable bool-fix-constant)))))
 
 ;; These only preserve boolean-equivalence (that is, equivalence under iff).
 ;; TODO: Can we avoid checking the arities?
@@ -778,10 +803,10 @@
 (mutual-recursion
  ;; Returns an axe-disjunctionp that is boolean-equivalent to NODENUM-OR-QUOTEP.
  (defun get-axe-disjunction-from-dag-item (nodenum-or-quotep dag-array-name dag-array dag-len)
-   (declare (xargs :ruler-extenders :all
-                   :verify-guards nil ;done below
-                   :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                                (dargp-less-than nodenum-or-quotep dag-len))
+                   :ruler-extenders :all
+                   :verify-guards nil ;done below
                    :measure (dag-item-measure nodenum-or-quotep)))
    (if (consp nodenum-or-quotep) ;checks for quotep
        (bool-fix-constant nodenum-or-quotep)
@@ -825,9 +850,9 @@
 
  ;; Returns an axe-conjunctionp that is boolean-equivalent to NODENUM-OR-QUOTEP.
  (defun get-axe-conjunction-from-dag-item (nodenum-or-quotep dag-array-name dag-array dag-len)
-   (declare (xargs :ruler-extenders :all
-                   :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                                (dargp-less-than nodenum-or-quotep dag-len))
+                   :ruler-extenders :all
                    :measure (dag-item-measure nodenum-or-quotep)))
    (if (consp nodenum-or-quotep) ;checks for quotep
        (bool-fix-constant nodenum-or-quotep)
@@ -870,11 +895,6 @@
                    (list nodenum-or-quotep)))))))))))
 
 (make-flag get-axe-disjunction-from-dag-item)
-
-;; (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME DAG-ARRAY
-;;                                       (NTH 3
-;;                                            (AREF1 DAG-ARRAY-NAME
-;;                                                   DAG-ARRAY NODENUM-OR-QUOTEP)))
 
 ;slow!
 (defthm-flag-get-axe-disjunction-from-dag-item
