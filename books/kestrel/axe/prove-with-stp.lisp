@@ -64,6 +64,11 @@
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
 
+(defthm <-of--1-and-maxelem
+  (implies (and (all-natp x)
+                (consp x))
+           (< -1 (MAXELEM x))))
+
 (local (in-theory (disable nth-of-cdr
                            ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
                            ;;consp-from-len-cheap
@@ -2012,15 +2017,15 @@
 ;; TODO: Can we do it all in one worklist pass (call to process-nodenums-for-translation) instead of one for each disjunct?
 ;; TODO: If the disjunct is negated, that can induce a boolean type...  Perhaps so can appearing at the top-level of the clause.  But make sure the disjunct doesn't appear in any non-boolean context..
 (defund process-disjuncts-for-translation (disjuncts ; a list of possibly-negated-nodenums
-                                          depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
-                                          depth-array
-                                          handled-node-array ; tells us whether we've already processed (decided whether to cut or translate) each node
-                                          dag-array dag-len dag-parent-array
-                                          known-nodenum-type-alist
-                                          ;;these are accumulators:
-                                          disjuncts-to-include-in-query
-                                          nodenums-to-translate
-                                          cut-nodenum-type-alist)
+                                           depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
+                                           depth-array
+                                           handled-node-array ; tells us whether we've already processed (decided whether to cut or translate) each node
+                                           dag-array dag-len dag-parent-array
+                                           known-nodenum-type-alist
+                                           ;;these are accumulators:
+                                           disjuncts-to-include-in-query
+                                           nodenums-to-translate
+                                           cut-nodenum-type-alist)
   (declare (xargs :guard (and (possibly-negated-nodenumsp disjuncts)
                               (or (natp depth-limit)
                                   (null depth-limit))
@@ -2037,7 +2042,7 @@
                               (if depth-limit (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'depth-array depth-array)) t)
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
-                              ;todo: more?
+;todo: more?
                               )
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                  :in-theory (disable POSSIBLY-NEGATED-NODENUMP)
@@ -2169,11 +2174,6 @@
                   dag-len))
   :hints (("Goal" :in-theory (enable process-disjuncts-for-translation STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS))))
 
-(defthm <-of--1-and-maxelem
-  (implies (and (all-natp x)
-                (consp x))
-           (< -1 (MAXELEM x))))
-
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; This cuts out any stuff we can't translate, or any stuff that's too deep:
 (defund prove-disjunction-with-stp-at-depth (depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
@@ -2195,8 +2195,8 @@
                               (stringp base-filename)
                               (or (natp max-conflicts) (null max-conflicts))
                               (booleanp counterexamplep))
-                  :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))
-                  :stobjs state))
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))))
   (b* ((handled-node-array (make-empty-array 'handled-node-array
                                              (+ 1
                                                 (maxelem (strip-nots-from-possibly-negated-nodenums ;todo: inefficient
@@ -2233,18 +2233,18 @@
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, or :timedout.
 ;terminates because the difference in depths decreases
 (defund prove-disjunction-with-stp-aux (min-depth
-                                       max-depth
-                                       depth-array
-                                       known-nodenum-type-alist
-                                       disjuncts ;there must be at least 1 disjunct - enforce this in the callers?! no longer necessary?
-                                       dag-array ;must be named 'dag-array
-                                       dag-len
-                                       dag-parent-array ;must be named 'dag-parent-array
-                                       base-filename    ;a string
-                                       print
-                                       max-conflicts ;a number of conflicts, or nil for no max
-                                       counterexamplep
-                                       state)
+                                        max-depth
+                                        depth-array
+                                        known-nodenum-type-alist
+                                        disjuncts ;there must be at least 1 disjunct - enforce this in the callers?! no longer necessary?
+                                        dag-array ;must be named 'dag-array
+                                        dag-len
+                                        dag-parent-array ;must be named 'dag-parent-array
+                                        base-filename    ;a string
+                                        print
+                                        max-conflicts ;a number of conflicts, or nil for no max
+                                        counterexamplep
+                                        state)
   (declare (xargs :stobjs state
                   :measure (nfix (+ 1 (- max-depth min-depth)))
                   :hints (("Goal" :in-theory (e/d (natp)
@@ -2298,19 +2298,18 @@
 
 ;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
-;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: the cutting could look at shared nodes (don't cut above the shared node frontier)?
-(defund prove-disjunction-with-stp (disjuncts ;nodenums in the DAG and/or quoteps
-                                    dag-array ;must be named 'dag-array (fixme generalize?)
+(defund prove-disjunction-with-stp (disjuncts ;nodenums in the DAG and/or quoteps (todo: add support for negated nodenums)
+                                    dag-array ;must be named 'dag-array (todo: generalize?)
                                     dag-len
-                                    dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)
+                                    dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
                                     base-filename    ;a string
                                     print
                                     max-conflicts ;a number of conflicts, or nil for no max
                                     counterexamplep ;perhaps this should always be t?
                                     state)
-  (declare (xargs :stobjs state
-                  :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-darg-listp disjuncts dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (equal (alen1 'dag-parent-array dag-parent-array)
@@ -2319,15 +2318,13 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep))
-                  :guard-hints (("Goal" :in-theory (e/d (all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (e/d (all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp ; for the all of build-known-nodenum-type-alist
                                                          myquotep-when-axe-disjunctionp
                                                          quotep-when-axe-disjunctionp)
-                                                        ( ;DISJUNCTION-IS-FALSEP
-                                                         ;;DISJUNCTION-IS-truep
-                                                         MAKE-DEPTH-ARRAY-FOR-NODES
-                                                         MYQUOTEP
-                                                         quotep
-                                                         ))))))
+                                                        (make-depth-array-for-nodes
+                                                         myquotep
+                                                         quotep))))))
   (b* (((when (not (consp disjuncts)))
         (cw "(No disjuncts, so no point in calling STP.)~%")
         (mv *invalid* state))
@@ -2395,7 +2392,7 @@
                                                     'dag-array dag-array dag-len))
                        ((mv result state)
                         (prove-disjunction-with-stp-aux 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state)))
-;todo: move printing to sub-function?
+                    ;;todo: move printing to sub-function?
                     (if (eq result *error*)
                         (mv *error* state)
                       (if (eq result *invalid*) ;TODO: is this possible?
