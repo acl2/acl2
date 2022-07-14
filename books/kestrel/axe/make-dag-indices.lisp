@@ -146,7 +146,7 @@
                           nil ;;empty dag-variable-alist
                           )))
 
-;; We reason about make-dag-parent-array-with-name instead of make-dag-indices, which is more complicated.
+;; We reason about make-dag-parent-array-with-name2 instead of make-dag-indices, which is more complicated.
 (defthm mv-nth-0-of-make-dag-indices
   (equal (mv-nth 0 (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
          (make-dag-parent-array-with-name2 dag-len dag-array-name dag-array dag-parent-array-name))

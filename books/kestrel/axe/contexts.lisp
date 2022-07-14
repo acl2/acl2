@@ -908,7 +908,7 @@
   (make-full-context-array-with-parents dag-array-name
                                         dag-array
                                         dag-len
-                                        (make-dag-parent-array-with-name dag-len ; somewhat unusual not to use (alen1 dag-array-name dag-array) here, but this array doesn't need to grow after creation
+                                        (make-minimal-dag-parent-array-with-name dag-len ; somewhat unusual not to use (alen1 dag-array-name dag-array) here, but this array doesn't need to grow after creation
                                                                          dag-array-name
                                                                          dag-array
                                                                          'dag-parent-array)))

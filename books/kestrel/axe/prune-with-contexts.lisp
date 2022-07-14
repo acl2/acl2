@@ -42,6 +42,7 @@
                     (make-empty-array 'dag-array size)
                     '0
                     'dag-parent-array
+                    ;; or rewrite this call (note the 0):
                     (make-dag-parent-array-with-name2
                      '0
                      'dag-array

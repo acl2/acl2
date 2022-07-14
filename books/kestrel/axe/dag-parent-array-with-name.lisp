@@ -321,8 +321,7 @@
 ;;;
 
 ;the parent array pairs each nodenum with a list of the nodenums of its parents
-;fixme use this more when we call make-dag-indices but then only use the parent array!
-;todo: add -with-name to the name and make a simpler version
+;todo: make a simpler version that uses the default array names
 (defund make-dag-parent-array-with-name-aux (n dag-array-name dag-array dag-parent-array-name dag-parent-array dag-len)
   (declare (xargs :measure (nfix (+ 1 (- dag-len n)))
                   :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -383,8 +382,7 @@
 ;;;
 
 ;; This makes the shortest possible parent-array for dag-array, but its alen1 may not match the alen1 of the dag-array.
-;rename to make-minimal-dag-parent-array-with-name?
-(defund make-dag-parent-array-with-name (dag-len dag-array-name dag-array dag-parent-array-name)
+(defund make-minimal-dag-parent-array-with-name (dag-len dag-array-name dag-array dag-parent-array-name)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))
   (let* ((parent-array-len (max 1 dag-len)) ;arrays must have size at least 1
@@ -392,21 +390,21 @@
          (dag-parent-array (make-empty-array dag-parent-array-name parent-array-len)))
     (make-dag-parent-array-with-name-aux 0 dag-array-name dag-array dag-parent-array-name dag-parent-array dag-len)))
 
-(defthm dag-parent-arrayp-of-make-dag-parent-array-with-name
+(defthm dag-parent-arrayp-of-make-minimal-dag-parent-array-with-name
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (symbolp dag-parent-array-name))
-           (dag-parent-arrayp dag-parent-array-name (make-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name)))
+           (dag-parent-arrayp dag-parent-array-name (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name)))
   :hints (("Goal" :cases (< dag-len 1)
-           :in-theory (enable make-dag-parent-array-with-name))))
+           :in-theory (enable make-minimal-dag-parent-array-with-name))))
 
-(defthm alen1-of-make-dag-parent-array-with-name
+(defthm alen1-of-make-minimal-dag-parent-array-with-name
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (symbolp dag-parent-array-name))
-           (equal (alen1 dag-parent-array-name (make-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name))
+           (equal (alen1 dag-parent-array-name (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name))
                   (max 1 dag-len)))
-  :hints (("Goal" :in-theory (enable make-dag-parent-array-with-name))))
+  :hints (("Goal" :in-theory (enable make-minimal-dag-parent-array-with-name))))
 
-(defthm bounded-dag-parent-entriesp-of-make-dag-parent-array-with-name
+(defthm bounded-dag-parent-entriesp-of-make-minimal-dag-parent-array-with-name
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (symbolp dag-parent-array-name)
                 (natp limit)
@@ -415,17 +413,17 @@
                 (< m dag-len))
            (bounded-dag-parent-entriesp m
                                         dag-parent-array-name
-                                        (make-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name)
+                                        (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name)
                                         limit))
   :hints (("Goal" :cases ((equal dag-len 0))
-           :in-theory (enable make-dag-parent-array-with-name))))
+           :in-theory (enable make-minimal-dag-parent-array-with-name))))
 
-(defthm bounded-dag-parent-arrayp-of-make-dag-parent-array-with-name
+(defthm bounded-dag-parent-arrayp-of-make-minimal-dag-parent-array-with-name
   (implies (and (< 0 dag-len) ;why?
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (symbolp dag-parent-array-name))
            (bounded-dag-parent-arrayp dag-parent-array-name
-                               (make-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name)
+                               (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name)
                                dag-len))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
 
@@ -434,6 +432,7 @@
 ;;;
 
 ;; This causes the alen1 of the result to match the alen1 of dag-array, which is often required.
+;todo: make a simpler version that uses the default array names
 (defund make-dag-parent-array-with-name2 (dag-len dag-array-name dag-array dag-parent-array-name)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))
