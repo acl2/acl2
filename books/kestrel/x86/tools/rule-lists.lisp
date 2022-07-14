@@ -723,6 +723,7 @@
 
             the-check
             ;; get-prefixes:
+            ;; todo: drop these if we are no longer using xw:
             x86isa::get-prefixes-does-not-modify-x86-state-in-app-view-new ;targets mv-nth-3-of-get-prefixes
             x86isa::mv-nth-0-of-get-prefixes-of-xw-of-irrel
             x86isa::mv-nth-1-of-get-prefixes-of-xw-of-irrel
