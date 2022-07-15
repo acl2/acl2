@@ -1,7 +1,7 @@
 ; Renaming nodes that occur in contexts
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,7 +18,7 @@
 ;fixme there was a bug (a context node got renamed to a constant) which prevented this from returning a contextp - prove that it does, given that the renaming-array is good
 (defun fixup-possibly-negated-nodenums (context renaming-array-name renaming-array)
   (declare (xargs :guard (and (array1p renaming-array-name renaming-array)
-                              (possibly-negated-nodenumsp-with-bound context (alen1 renaming-array-name renaming-array)))))
+                              (bounded-possibly-negated-nodenumsp context (alen1 renaming-array-name renaming-array)))))
   (if (endp context)
       nil
     (let* ((item (first context))

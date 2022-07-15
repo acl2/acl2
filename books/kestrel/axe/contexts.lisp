@@ -1,7 +1,7 @@
 ; Computing contexts from overarching DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -105,7 +105,7 @@
       (possibly-negated-nodenumsp context)))
 
 ;requires 0 <= nodenum < bound for all the nodenums in the context:
-(defun possibly-negated-nodenumsp-with-bound (lst bound)
+(defun bounded-possibly-negated-nodenumsp (lst bound)
   (declare (type rational bound))
   (if (atom lst)
       (null lst) ;new
@@ -117,19 +117,19 @@
                     (null (cddr item))
                     (natp (farg1 item))
                     (< (farg1 item) bound)))
-           (possibly-negated-nodenumsp-with-bound (rest lst) bound)))))
+           (bounded-possibly-negated-nodenumsp (rest lst) bound)))))
 
-(defthm possibly-negated-nodenumsp-when-possibly-negated-nodenumsp-with-bound
-  (implies (possibly-negated-nodenumsp-with-bound lst bound)
+(defthm possibly-negated-nodenumsp-when-bounded-possibly-negated-nodenumsp
+  (implies (bounded-possibly-negated-nodenumsp lst bound)
            (possibly-negated-nodenumsp lst))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     possibly-negated-nodenumsp-with-bound))))
+                                     bounded-possibly-negated-nodenumsp))))
 
 
 (defund contextp-with-bound (context bound)
   (declare (type rational bound))
   (or (eq (false-context) context)
-      (possibly-negated-nodenumsp-with-bound context bound)))
+      (bounded-possibly-negated-nodenumsp context bound)))
 
 (defthm contextp-with-bound-monotone
   (implies (and (contextp-with-bound context bound1)
@@ -186,13 +186,13 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
 
-(defthm <-of-max-nodenum-in-possibly-negated-nodenums-aux-when-possibly-negated-nodenumsp-with-bound
-  (implies (and (possibly-negated-nodenumsp-with-bound context bound)
+(defthm <-of-max-nodenum-in-possibly-negated-nodenums-aux-when-bounded-possibly-negated-nodenumsp
+  (implies (and (bounded-possibly-negated-nodenumsp context bound)
                 (natp bound)
                 (< acc bound))
            (< (max-nodenum-in-possibly-negated-nodenums-aux context acc) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
-                                     possibly-negated-nodenumsp-with-bound))))
+                                     bounded-possibly-negated-nodenumsp))))
 
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
@@ -216,8 +216,8 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
 
-(defthm <-of-max-nodenum-in-possibly-negated-nodenums-when-possibly-negated-nodenumsp-with-bound
-  (implies (and (possibly-negated-nodenumsp-with-bound context bound)
+(defthm <-of-max-nodenum-in-possibly-negated-nodenums-when-bounded-possibly-negated-nodenumsp
+  (implies (and (bounded-possibly-negated-nodenumsp context bound)
                 (natp bound))
            (< (max-nodenum-in-possibly-negated-nodenums context) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
@@ -245,7 +245,7 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-context))))
 
-(defthm <-of-max-nodenum-in-context-when-possibly-negated-nodenumsp-with-bound
+(defthm <-of-max-nodenum-in-context-when-bounded-possibly-negated-nodenumsp
   (implies (and (contextp-with-bound context bound)
                 (natp bound))
            (< (max-nodenum-in-context context) bound))
