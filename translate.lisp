@@ -13428,8 +13428,7 @@
 ; We defer discussion of the :values keyword to Section 12 below.
 
 ; All ACL2 function symbols in the measure m and the two bodies must be badged
-; so apply$ can handle them (and must be warranted if proofs are to be done
-; about them).
+; (and, when in :logic mode, warranted) so apply$ can handle them.
 
 ; The do- and fin- bodies look like terms composed of IF, LET, LET*, PROGN,
 ; SETQ, MV-SETQ, RETURN, and LOOP-FINISH forms, where tests, variable bindings,
