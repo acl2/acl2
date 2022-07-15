@@ -4772,7 +4772,7 @@
     ;; Returns (mv erp dag-or-quotep).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
     ;; TODO: Prove some properties
-    (defun ,simplify-dag-name (dag
+    (defund ,simplify-dag-name (dag
                                assumptions
                                interpreted-function-alist
                                limits
