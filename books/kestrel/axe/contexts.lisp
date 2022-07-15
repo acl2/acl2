@@ -53,59 +53,6 @@
                            ;;consp-when-len-equal
                            )))
 
-(defthm possibly-negated-nodenump-of-list-of-not
-  (equal (possibly-negated-nodenump (list 'not nodenum))
-         (natp nodenum))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-(defthm possibly-negated-nodenump-when-natp
-  (implies (natp nodenum)
-           (possibly-negated-nodenump nodenum))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-;we'll use consp as the normal form
-(defthmd cdr-iff-when-possibly-negated-nodenump
-  (implies (possibly-negated-nodenump item)
-           (iff (cdr item)
-                (consp item)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-;we'll use consp as the normal form
-(defthmd consp-of-cdr-when-possibly-negated-nodenump
-  (implies (possibly-negated-nodenump item)
-           (equal (consp (cdr item))
-                  (consp item)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-(defthm possibly-negated-nodenump-of-car
-  (implies (possibly-negated-nodenumsp items)
-           (equal (possibly-negated-nodenump (car items))
-                  (consp items)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;requires 0 <= nodenum < bound for all the nodenums in the context:
-(defun bounded-possibly-negated-nodenumsp (lst bound)
-  (declare (type rational bound))
-  (if (atom lst)
-      (null lst) ;new
-    (let ((item (first lst)))
-      (and (or (and (natp item)
-                    (< item bound))
-               (and (call-of 'not item)
-                    (consp (cdr item))
-                    (null (cddr item))
-                    (natp (farg1 item))
-                    (< (farg1 item) bound)))
-           (bounded-possibly-negated-nodenumsp (rest lst) bound)))))
-
-(defthm possibly-negated-nodenumsp-when-bounded-possibly-negated-nodenumsp
-  (implies (bounded-possibly-negated-nodenumsp lst bound)
-           (possibly-negated-nodenumsp lst))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     bounded-possibly-negated-nodenumsp))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;

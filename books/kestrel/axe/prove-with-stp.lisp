@@ -12,9 +12,9 @@
 
 (in-package "ACL2")
 
-(include-book "axe-clause-utilities")
+(include-book "axe-clause-utilities") ; for handle-constant-disjuncts
 (include-book "translate-dag-to-stp")
-(include-book "conjunctions-and-disjunctions") ; for possibly-negated-nodenump?
+(include-book "conjunctions-and-disjunctions") ; for get-axe-disjunction-from-dag-items
 (include-book "make-term-into-dag-array-basic") ;for make-terms-into-dag-array-basic
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
@@ -567,6 +567,7 @@
                                                                                       known-nodenum-type-alist))))
   :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 quoted-posp) (natp)))))
 
+; make a "bounded-nodenum-type-alistp"?
 (defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
   (implies (and (nodenum-type-alistp known-nodenum-type-alist)
                 (natp nodenum)
@@ -716,6 +717,7 @@
 
 ;; Strip the NOTs off the disjuncts (after looking up any bare nodenums),
 ;; dropping any disjunct that's not a NOT (after looking up any bare nodenums).
+;; todo: rename
 (defund get-nodenums-of-negations-of-disjuncts (disjuncts dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (possibly-negated-nodenumsp disjuncts)
@@ -762,15 +764,15 @@
 
 ;; Returns known-nodenum-type-alist, where the types in known-nodenum-type-alist are implied by the conjunction of the negations of disjuncts.
 ;; known-nodenum-type-alist assigns types only to nodes in the DAG without obvious types ("obvious types" are types you can tell just from looking at the nodes). fixme what if it can improve on an obvious type?!
-;;All of the types computed here are known for sure; they are different from types on a term "induced" by how the term is used (e.g., only 32-bits of x are used in (bvxor 32 x y)).
+;;All of the types computed here are known for sure; they are different from types "induced" by how a node is used (e.g., only 32-bits of x are used in (bvxor 32 x y)).
 ;fixme are shadowed pairs okay in this?
 ;does this chase chains of equalities? now it should.  test that!
  ;nodes that provide only type info get removed
 ;; TODO: Show that this cannot include the empty-type or the most-general-type?  Maybe this needs to be able to return an error?
-(defund build-known-nodenum-type-alist (disjuncts ;to be assumed false (else the whole disjunction is true)
+(defund build-known-nodenum-type-alist (disjuncts ; each can be assumed false (else the whole disjunction is true)
                                         dag-array
                                         dag-len)
-  (declare (xargs :guard (and (possibly-negated-nodenumsp disjuncts)
+  (declare (xargs :guard (and (possibly-negated-nodenumsp disjuncts) ; todo: use bounded-possibly-negated-nodenumsp ?
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len))
                   :guard-hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum rational-listp-when-all-natp)))))

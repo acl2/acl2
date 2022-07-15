@@ -159,6 +159,7 @@
 (include-book "nodenum-type-alists")
 (include-book "numeric-lists")
 (include-book "packbv-axe")
+(include-book "possibly-negated-nodenums")
 (include-book "print-constant")
 (include-book "print-levels")
 (include-book "print-dag-to-file")

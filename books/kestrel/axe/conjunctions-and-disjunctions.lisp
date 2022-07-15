@@ -12,21 +12,18 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/forms" :dir :system) ;for call-of
 (include-book "dag-arrays")
+(include-book "possibly-negated-nodenums")
 (include-book "kestrel/booleans/boolif" :dir :system) ; since we handle boolif specially
 (include-book "kestrel/booleans/booland" :dir :system) ; since we handle booland specially
 (include-book "kestrel/booleans/boolor" :dir :system) ; since we handle boolor specially
 (include-book "tools/flag" :dir :system)
-(include-book "kestrel/utilities/polarity" :dir :system) ;for want-to-weaken
 (local (include-book "kestrel/booleans/booleans" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
-
-;(local (in-theory (disable list::nth-with-large-index-2))) ;for speed
 
 (local (in-theory (enable ;NOT-CDDR-OF-NTH-WHEN-ALL-DARGP
 ;                   not-cddr-when-dag-exprp-and-quotep
@@ -79,79 +76,7 @@
                                                   )
                            (len)))))
 
-; an item of the form <nodenum> or (not <nodenum>).
-(defund possibly-negated-nodenump (item)
-  (declare (xargs :guard t))
-  (or (natp item)
-      (and (call-of 'not item)
-           (true-listp item)
-           (eql 1 (len (fargs item))) ;(consp (cdr item))
-           (natp (farg1 item)))))
-
-(defund strip-not-from-possibly-negated-nodenum (item)
-  (declare (xargs :guard (possibly-negated-nodenump item)
-                  :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenump)))))
-  (if (consp item)
-      (farg1 item)
-    item))
-
-(defthm natp-of-strip-not-from-possibly-negated-nodenum
-  (implies (possibly-negated-nodenump item)
-           (natp (strip-not-from-possibly-negated-nodenum item)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum
-                                     possibly-negated-nodenump))))
-
-(defthm rationalp-of-strip-not-from-possibly-negated-nodenum
-  (implies (possibly-negated-nodenump item)
-           (rationalp (strip-not-from-possibly-negated-nodenum item)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum))))
-
-(defthm strip-not-from-possibly-negated-nodenum-when-not-consp
-  (implies (not (consp item))
-           (equal (strip-not-from-possibly-negated-nodenum item)
-                  item))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund possibly-negated-nodenumsp (lst)
-  (declare (xargs :guard t))
-  (if (atom lst)
-      (null lst) ;new
-    (and (possibly-negated-nodenump (first lst))
-         (possibly-negated-nodenumsp (rest lst)))))
-
-(defthm possibly-negated-nodenumsp-of-cons
-  (equal (possibly-negated-nodenumsp (cons item list))
-         (and (possibly-negated-nodenump item)
-              (possibly-negated-nodenumsp list)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
-
-(defthm possibly-negated-nodenumsp-of-cdr-2
-  (implies (possibly-negated-nodenump (car predicates-or-negations))
-           (equal (possibly-negated-nodenumsp (cdr predicates-or-negations))
-                  (possibly-negated-nodenumsp predicates-or-negations))))
-
-(defthm true-listp-when-possibly-negated-nodenumsp
-  (implies (possibly-negated-nodenumsp context)
-           (true-listp context))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
-
-(defthm possibly-negated-nodenumsp-of-intersection-equal
-  (implies (and (possibly-negated-nodenumsp context1)
-                (possibly-negated-nodenumsp context2))
-           (possibly-negated-nodenumsp (intersection-equal context1 context2))))
-
-;should we use a defforall?
-(defthm possibly-negated-nodenumsp-forward-to-true-listp
-  (implies (possibly-negated-nodenumsp items)
-           (true-listp items))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
 
 ;; Shows that the representation of disjunctions/conjunctions is not ambiguous.
 (defthm possibly-negated-nodenumsp-cannot-be-quotep
@@ -159,76 +84,6 @@
             (quotep x)))
   :rule-classes nil
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
-
-(defthm possibly-negated-nodenumsp-of-add-to-set-equal
-  (implies (and (possibly-negated-nodenump item)
-                (possibly-negated-nodenumsp context))
-           (possibly-negated-nodenumsp (add-to-set-equal item context)))
-  :hints (("Goal" :in-theory (enable add-to-set-equal possibly-negated-nodenumsp))))
-
-(defthm possibly-negated-nodenumsp-of-singleton
-  (implies (natp nodenum)
-           (possibly-negated-nodenumsp (list nodenum)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     possibly-negated-nodenump))))
-
-
-(defthm possibly-negated-nodenumsp-of-cdr
-  (implies (possibly-negated-nodenumsp items)
-           (possibly-negated-nodenumsp (cdr items)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
-
-(defthm integerp-of-car-when-possibly-negated-nodenumsp-weaken-cheap
-  (implies (and (syntaxp (want-to-weaken (integerp (car items))))
-                (possibly-negated-nodenumsp items)
-                (consp items))
-           (equal (integerp (car items))
-                  (or (not (consp (car items)))
-                      (not (eq 'not (car (car items))))
-                      (not (natp (farg1 (car items))))
-                      (cdr (fargs (car items))))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     possibly-negated-nodenump))))
-
-(defthm consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap
-  (implies (and (syntaxp (want-to-weaken (consp (car items))))
-                (possibly-negated-nodenumsp items)
-                (consp items))
-           (equal (consp (car items))
-                  (not (natp (car items)))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     possibly-negated-nodenump))))
-
-;;;
-;;; strip-nots-from-possibly-negated-nodenums
-;;;
-
-(defund strip-nots-from-possibly-negated-nodenums (items)
-  (declare (xargs :guard (possibly-negated-nodenumsp items)
-                  :guard-hints (("Goal" :expand (possibly-negated-nodenumsp items)))))
-  (if (endp items)
-      nil
-    (cons (strip-not-from-possibly-negated-nodenum (first items))
-          (strip-nots-from-possibly-negated-nodenums (rest items)))))
-
-(defthm rational-listp-of-strip-nots-from-possibly-negated-nodenums
-  (implies (possibly-negated-nodenumsp items)
-           (rational-listp (strip-nots-from-possibly-negated-nodenums items)))
-  :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
-                                     possibly-negated-nodenumsp))))
-
-(defthm nat-listp-of-strip-nots-from-possibly-negated-nodenums
-  (implies (possibly-negated-nodenumsp items)
-           (nat-listp (strip-nots-from-possibly-negated-nodenums items)))
-  :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
-                                     possibly-negated-nodenumsp))))
-
-(defthm consp-of-strip-nots-from-possibly-negated-nodenums
-  (equal (consp (strip-nots-from-possibly-negated-nodenums items))
-         (consp items))
-  :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums))))
 
 ;items is a list of nodenums and negated nodenums
 ;only preserves iff?
@@ -426,6 +281,7 @@
                               (natp dag-len))))
   (if (quotep item)
       t
+    ;; todo: call bounded-possibly-negated-nodenumsp?:
     (all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)))
 
 (defthm bounded-axe-conjunctionp-of-quote-nil
@@ -461,6 +317,7 @@
                               (natp dag-len))))
   (if (quotep item)
       t
+    ;; todo: call bounded-possibly-negated-nodenumsp?:
     (all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)))
 
 (defthm bounded-axe-disjunctionp-of-quote-t
