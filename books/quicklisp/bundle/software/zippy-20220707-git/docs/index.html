@@ -1,0 +1,586 @@
+<!DOCTYPE html> <html lang="EN"> <head> <meta charset="utf-8"> <title>Zippy</title> <style>html body{margin:0 auto 0 auto;padding:20px;max-width:1024px;font-family:sans-serif;font-size:14pt;overflow-y:scroll;}html body a{text-decoration:none;}html body a[href]{color:#0055AA;}html body a[href]:hover{color:#0088EE;}html body pre{background:#FAFAFA;border:1px solid #DDDDDD;padding:0.75em;overflow-x:auto;}html body pre >code a[href]{color:#223388;}article.project h1{font-size:1.7em;}article.project h1,article.project h2,article.project h3,article.project h4,article.project h5,article.project h6{margin:0.2em 0 0.1em 0;text-indent:1em;}article.project >header{text-align:center;}article.project >header img.logo{display:block;margin:auto;max-height:170px;}article.project >header h1{display:inline-block;text-indent:0;font-size:2.5em;}article.project >header .version{vertical-align:bottom;}article.project >header .languages{margin-top:-0.5em;text-transform:capitalize;}article.project >header .description{margin:0;}article.project >header .pages{margin-top:0.5em;font-size:1.2em;text-transform:capitalize;}article.project >header .pages a{display:inline-block;padding:0 0.2em;}article.project >section{margin:1em 0 1em 0;}article.project #index >ul{list-style:none;margin:0;padding:0;}article.project .row label{display:inline-block;min-width:8em;}article.project #system .row{display:flex;}article.project #system #dependencies{display:inline;margin:0;padding:0;}article.project #system #dependencies li{display:inline;padding:0 0.2em;}article.definition{margin:1em 0 0 0;}article.definition >header h1,article.definition >header h2,article.definition >header h3,article.definition >header h4,article.definition >header h5,article.definition >header h6{text-indent:0;display:inline-block;}article.definition >header ul{display:inline-block;list-style:none;margin:0;padding:0;}article.definition >header ul li{display:inline-block;padding:0 0.2em 0 0;}article.definition >header .visibility{display:none;}article.definition >header .visibility,article.definition >header .type{text-transform:lowercase;}article.definition >header .source-link{visibility:hidden;float:right;}article.definition >header .source-link:after{visibility:visible;content:"[SRC]";}article.definition .docstring{margin:0 0 0 1em;}article.definition .docstring pre{font-size:0.8em;white-space:pre-wrap;}.definition.package >header ul.nicknames{display:inline-block;list-style:none;margin:0;padding:0 0 0 1em;}.definition.package >header ul.nicknames li{display:inline;}.definition.package >header ul.nicknames:before{content:"(";}.definition.package >header ul.nicknames:after{content:")";}.definition.package ul.definitions{margin:0;list-style:none;padding:0 0 0 0.5em;}.definition.callable >header .name:before,.definition.type >header .name:before{content:"(";font-weight:normal;}.definition.callable >header .arguments:after,.definition.type >header .arguments:after{content:")";}.definition.callable >header .arguments .arguments:before,.definition.type >header .arguments .arguments:before{content:"(";}.definition.callable >header .arguments .argument,.definition.type >header .arguments .argument{padding:0;}.definition.callable >header .arguments .argument.lambda-list-keyword,.definition.type >header .arguments .argument.lambda-list-keyword{color:#991155;}.definition li>mark{background:none;border-left:0.3em solid #0088EE;padding-left:0.3em;display:block;} </style> </head> <body> <article class="project"> <header>  <h1>zippy</h1>  <span class="version">1.0.0</span>  <nav class="languages">  </nav>  <p class="description">A fast zip archive library</p>  <nav class="pages">  </nav> </header> <section id="documentation"><article><h2 id="About Zippy">About Zippy</h2><p>Zippy is a library for the PKWARE Zip archive format. It can read and write zip files.</p><h2 id="Feature list">Feature list</h2><ul><li><p>Archive inspection without extraction</p></li><li><p>Zip64 support</p></li><li><p>Split archive support</p></li><li><p>PKWARE decryption</p></li><li><p>Fast deflate decompression thanks to 3bz</p></li><li><p>Operates on streams and vectors</p></li><li><p>Can compress stream-&gt;stream</p></li><li><p>Extensible for other encryption and compression mechanisms</p></li></ul><h2 id="How To">How To</h2><p>For this tutorial we will assume the <code>org.shirakumo.zippy</code> package has a local-nickname of <code>zippy</code>.</p><p>Extracting a zip file to disk is straight-forward:</p><code style="display:block" class="code-block"><pre>(<a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AEXTRACT-ZIP" class="xref">zippy:extract-zip</a> &quot;file.zip&quot; &quot;~/&quot;)</pre></code><p>Similarly, compressing a file or directory to a zip:</p><code style="display:block" class="code-block"><pre>(<a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESS-ZIP" class="xref">zippy:compress-zip</a> &quot;foo&quot; &quot;file.zip&quot;)</pre></code><p>You can also compress things from in memory:</p><code style="display:block" class="code-block"><pre>(<a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESS-ZIP" class="xref">zippy:compress-zip</a> #(8 0 8) &quot;file.zip&quot;)</pre></code><p>In order to simply examine a zip file's contents:</p><code style="display:block" class="code-block"><pre>(<a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWITH-ZIP-FILE" class="xref">zippy:with-zip-file</a> (zip &quot;file.zip&quot;)
+  (<a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRIES" class="xref">zippy:entries</a> zip))</pre></code><p>The source zip does not have to be a path to a file on disk, but may also be an octet vector or a file-stream.</p><p>You can look at the raw payload of a <code><a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">zip-entry</a></code> by using <code><a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-ENTRY" class="xref">decode-entry</a></code>. All of the other metadata is stored directly in the entry and does not require decoding.</p><p>For greater control when constructing a zip file, you can manually create <code><a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">zip-entry</a></code> instances yourself and pass the final <code><a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">zip-file</a></code> instance to <code><a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESS-ZIP" class="xref">compress-zip</a></code>.</p><h2 id="Split Zip Files">Split Zip Files</h2><p>When reading a split zip file from disk, Zippy will take care of accessing the other zip parts automatically. However, when decoding from an octet vector, Zippy has no way of guessing where to get the rest of the data from and will signal an error of type <code><a href="#CONDITION%20ORG.SHIRAKUMO.ZIPPY%3AARCHIVE-FILE-REQUIRED" class="xref">archive-file-required</a></code> with the requested <code><a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADISK" class="xref">disk</a></code> id. You should then invoke the <code><a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AUSE-VALUE" class="xref">use-value</a></code> restart with a suitable <code><a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">io</a></code> instance to continue the decoding.</p><h2 id="Unsupported Features">Unsupported Features</h2><p>The following features remain unsupported at the moment:</p><ul><li><p>Encrypted or compressed central directory</p></li><li><p>PKWARE-style strong encryption</p></li><li><p>Compression methods other than deflate</p></li><li><p>Handling of additional metadata in third-party extra structures</p></li></ul><p>With the exception of the central directory encryption however, the architecture is designed in such a way that additional encryption and compression algorithms can be added in a pluggable and easy way at a later point. See <code><a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-DECOMPRESSION-STATE" class="xref">make-decompression-state</a></code>, <code><a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-COMPRESSION-STATE" class="xref">make-compression-state</a></code>, <code><a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-DECRYPTION-STATE" class="xref">make-decryption-state</a></code>, <code><a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-ENCRYPTION-STATE" class="xref">make-encryption-state</a></code>.</p></article></section>   <section id="system"> <h2>System Information</h2>  <div class="row"> <label for="version">Version:</label> <a id="version">1.0.0</a> </div>   <div class="row"> <label for="dependencies">Dependencies:</label> <ul id="dependencies"><li><a class="external" href="https://Shinmera.github.io/documentation-utils/">documentation-utils</a></li><li><a class="external" href="https://shinmera.github.io/file-attributes">file-attributes</a></li><li><a class="external">alexandria</a></li><li><a class="external">nibbles</a></li><li><a class="external">babel</a></li><li><a class="external">3bz</a></li></ul> </div>   <div class="row"> <label for="author">Author:</label> <a id="author" href="mailto:shinmera@tymoon.eu">Nicolas Hafner</a> </div>   <div class="row"> <label for="license">License:</label> <a id="license" href="https://github.com/shinmera/zippy/blob/master/LICENSE">zlib</a> </div>   <div class="row"> <label for="homepage">Homepage:</label> <a id="homepage" href="https://shinmera.github.io/zippy">https://shinmera.github.io/zippy</a> </div>   <div class="row"> <label for="sources">Sources:</label> <a id="sources" href="https://github.com/Shinmera/zippy.git">https://github.com/Shinmera/zippy.git</a> </div>  </section>    <section id="index"> <h2>Definition Index</h2> <ul> <li> <article class="definition package" id="PACKAGE ORG.SHIRAKUMO.ZIPPY"> <header> <h3> <a href="#PACKAGE%20ORG.SHIRAKUMO.ZIPPY">ORG.SHIRAKUMO.ZIPPY</a> </h3> <ul class="nicknames"></ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> <ul class="definitions"> <li> <article class="definition special-variable" id="VARIABLE ORG.SHIRAKUMO.ZIPPY:*COMPATIBILITY*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20ORG.SHIRAKUMO.ZIPPY%3A%2ACOMPATIBILITY%2A">*COMPATIBILITY*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/encode.lisp#L12">Source</a>  </header> <div class="docstring"><pre>The default file attribute compatibility flag.</pre></div> </article> </li>  <li> <article class="definition special-variable" id="VARIABLE ORG.SHIRAKUMO.ZIPPY:*VERSION*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20ORG.SHIRAKUMO.ZIPPY%3A%2AVERSION%2A">*VERSION*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/encode.lisp#L9">Source</a>  </header> <div class="docstring"><pre>The max zip file version supported by this library.</pre></div> </article> </li>  <li> <article class="definition class" id="CLASS ORG.SHIRAKUMO.ZIPPY:ZIP-ENTRY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">CLASS</span> <h4 class="name"> <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY">ZIP-ENTRY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/zippy.lisp#L31">Source</a>  </header> <div class="docstring"><pre>Representation of a file entry in a zip archive.
+
+Unless you are constructing an archive, this does /not/ contain the
+actual entry data payload.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACRC-32" class="xref">CRC-32</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADISK" class="xref">DISK</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AOFFSET" class="xref">OFFSET</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ASIZE" class="xref">SIZE</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AUNCOMPRESSED-SIZE" class="xref">UNCOMPRESSED-SIZE</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AEXTRA-FIELDS" class="xref">EXTRA-FIELDS</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVERSION" class="xref">VERSION</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AATTRIBUTES" class="xref">ATTRIBUTES</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCRYPTION-METHOD" class="xref">ENCRYPTION-METHOD</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESSION-METHOD" class="xref">COMPRESSION-METHOD</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ALAST-MODIFIED" class="xref">LAST-MODIFIED</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AFILE-NAME" class="xref">FILE-NAME</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMMENT" class="xref">COMMENT</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACONTENT" class="xref">CONTENT</a></pre></div> </article> </li>  <li> <article class="definition class" id="CLASS ORG.SHIRAKUMO.ZIPPY:ZIP-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">CLASS</span> <h4 class="name"> <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE">ZIP-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/zippy.lisp#L9">Source</a>  </header> <div class="docstring"><pre>Representation of a full zip archive.
+
+In order to ensure that all potentially open streams that the zip-file
+may hold are closed, call CL:CLOSE.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRIES" class="xref">ENTRIES</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADISKS" class="xref">DISKS</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMMENT" class="xref">COMMENT</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-FILE" class="xref">DECODE-FILE</a>
+See <a href="http://l1sp.org/cl/close" class="xref">CL:CLOSE</a></pre></div> </article> </li>  <li> <article class="definition condition" id="CONDITION ORG.SHIRAKUMO.ZIPPY:ARCHIVE-FILE-REQUIRED"> <header> <span class="visibility">EXTERNAL</span> <span class="type">CONDITION</span> <h4 class="name"> <a href="#CONDITION%20ORG.SHIRAKUMO.ZIPPY%3AARCHIVE-FILE-REQUIRED">ARCHIVE-FILE-REQUIRED</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/decode.lisp#L9">Source</a>  </header> <div class="docstring"><pre>Condition signalled if data from another disk (split file) is required.
+
+When this condition is signalled, a USE-VALUE restart must be
+available. If invoked, the value must be an IO value that supplies the
+data of the requested DISK.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADISK" class="xref">DISK</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-FILE" class="xref">DECODE-FILE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-ENTRY" class="xref">DECODE-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:AES-EXTRA-DATA"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AAES-EXTRA-DATA">AES-EXTRA-DATA</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L242">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:DATA-STREAM-ALIGNMENT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3ADATA-STREAM-ALIGNMENT">DATA-STREAM-ALIGNMENT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L231">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:ENCRYPTION-HEADER"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AENCRYPTION-HEADER">ENCRYPTION-HEADER</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L159">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:INFOZIP-UNICODE-COMMENT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AINFOZIP-UNICODE-COMMENT">INFOZIP-UNICODE-COMMENT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L219">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:INFOZIP-UNICODE-PATH"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AINFOZIP-UNICODE-PATH">INFOZIP-UNICODE-PATH</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L225">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:KEY-PROVIDER-RECORD"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AKEY-PROVIDER-RECORD">KEY-PROVIDER-RECORD</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L185">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:MICROSOFT-OPEN-PACKAGING-GROWTH-HINT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AMICROSOFT-OPEN-PACKAGING-GROWTH-HINT">MICROSOFT-OPEN-PACKAGING-GROWTH-HINT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L236">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:MVS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AMVS">MVS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L176">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:NTFS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3ANTFS">NTFS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L120">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:OPENVMS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AOPENVMS">OPENVMS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L125">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:OS/2"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AOS%2F2">OS/2</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L113">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:PATCH-DESCRIPTOR"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3APATCH-DESCRIPTOR">PATCH-DESCRIPTOR</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L138">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:PKCS7-ENCRYPTION-RECIPIENT-CERTIFICATE-LIST"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3APKCS7-ENCRYPTION-RECIPIENT-CERTIFICATE-LIST">PKCS7-ENCRYPTION-RECIPIENT-CERTIFICATE-LIST</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L171">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:PKCS7-STORE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3APKCS7-STORE">PKCS7-STORE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L147">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:POLICY-DECRYPTION-KEY-RECORD"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3APOLICY-DECRYPTION-KEY-RECORD">POLICY-DECRYPTION-KEY-RECORD</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L181">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:POLICY-KEY-DATA-RECORD"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3APOLICY-KEY-DATA-RECORD">POLICY-KEY-DATA-RECORD</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L189">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:RECORD-MANAGEMENT-CONTROLS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3ARECORD-MANAGEMENT-CONTROLS">RECORD-MANAGEMENT-CONTROLS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L167">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:UNIX"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AUNIX">UNIX</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L130">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:VECTOR-INPUT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT">VECTOR-INPUT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L12">Source</a>  </header> <div class="docstring"><pre>Representation of vector input/output state.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-VECTOR" class="xref">VECTOR-INPUT-VECTOR</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-INDEX" class="xref">VECTOR-INPUT-INDEX</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-START" class="xref">VECTOR-INPUT-START</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-END" class="xref">VECTOR-INPUT-END</a></pre></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:X509-CENTRAL-DIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AX509-CENTRAL-DIRECTORY">X509-CENTRAL-DIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L155">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:X509-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AX509-FILE">X509-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L151">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:ZIP64-EXTENDED-INFORMATION"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AZIP64-EXTENDED-INFORMATION">ZIP64-EXTENDED-INFORMATION</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L106">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:ZIPIT-MACINTOSH-LONG"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AZIPIT-MACINTOSH-LONG">ZIPIT-MACINTOSH-LONG</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L198">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:ZIPIT-MACINTOSH-SHORT-DIR"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AZIPIT-MACINTOSH-SHORT-DIR">ZIPIT-MACINTOSH-SHORT-DIR</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L213">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition structure" id="STRUCTURE ORG.SHIRAKUMO.ZIPPY:ZIPIT-MACINTOSH-SHORT-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">STRUCTURE</span> <h4 class="name"> <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AZIPIT-MACINTOSH-SHORT-FILE">ZIPIT-MACINTOSH-SHORT-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/structures.lisp#L206">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition type-definition" id="TYPE ORG.SHIRAKUMO.ZIPPY:IO"> <header> <span class="visibility">EXTERNAL</span> <span class="type">TYPE-DEFINITION</span> <h4 class="name"> <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO">IO</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="file:///home/linus/Projects/c/sbcl/src/compiler/deftype.lisp#12:0">Source</a>  </header> <div class="docstring"><pre>Type for objects that Zippy can decode from or encode to.
+
+Decoding can only happen from an input with a fixed end and the
+ability to seek -- in effect file-streams and vectors.
+
+Encoding can happen to any stream and vector.
+
+See <a href="http://l1sp.org/cl/stream" class="xref">CL:STREAM</a>
+See <a href="http://l1sp.org/cl/file-stream" class="xref">CL:FILE-STREAM</a>
+See <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT" class="xref">VECTOR-INPUT</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ASEEK" class="xref">SEEK</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AHAS-MORE" class="xref">HAS-MORE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AINDEX" class="xref">INDEX</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ASTART" class="xref">START</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AEND" class="xref">END</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ASIZE" class="xref">SIZE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AUB32" class="xref">UB32</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AOUTPUT" class="xref">OUTPUT</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3APARSE-STRUCTURE%2A" class="xref">PARSE-STRUCTURE*</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWRITE-STRUCTURE%2A" class="xref">WRITE-STRUCTURE*</a>
+See <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3APARSE-STRUCTURE" class="xref">PARSE-STRUCTURE</a>
+See <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWITH-IO" class="xref">WITH-IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:COMPRESS-ZIP"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESS-ZIP">COMPRESS-ZIP</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>    <li class="argument">TARGET</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">START</li>    <li class="argument">END</li>    <li class="argument">IF-EXISTS</li>    <li class="argument">PASSWORD</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/zippy.lisp#L120">Source</a>  </header> <div class="docstring"><pre>Compresses the contents of the zip file to the given output.
+
+FILE should be a ZIP-FILE.
+TARGET should be a suitable target for WITH-IO.
+
+See <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWITH-IO" class="xref">WITH-IO</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCODE-FILE" class="xref">ENCODE-FILE</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:COMPRESSION-METHOD-ID"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESSION-METHOD-ID">COMPRESSION-METHOD-ID</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NAME</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/tables.lisp#L72">Source</a>  </header> <div class="docstring"><pre>Returns the compression method ID for the given name.
+
+If The name is not known, an error is signalled.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:COMPRESSION-METHOD-NAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESSION-METHOD-NAME">COMPRESSION-METHOD-NAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ID</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/tables.lisp#L67">Source</a>  </header> <div class="docstring"><pre>Returns the compression method name for the given ID.
+
+The name should be one of
+  NIL
+  :shrink
+  :reduce-1
+  :reduce-2
+  :reduce-3
+  :reduce-4
+  :implode
+  :tokenizing
+  :deflate
+  :deflate64
+  :pkware-implode
+  :reserved
+  :bzip2
+  :reserved
+  :lzma
+  :reserved
+  :cmpsc
+  :reserved
+  :terse
+  :lz77
+  :zstd
+  :jpeg
+  :wavpack
+  :ppmd
+  :ae-x
+
+If the ID is not known, an error is signalled.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:DECODE-ENTRY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-ENTRY">DECODE-ENTRY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FUNCTION</li>    <li class="argument">ENTRY</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">PASSWORD</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/decode.lisp#L202">Source</a>  </header> <div class="docstring"><pre>Decode the data payload of the ZIP-ENTRY
+
+FUNCTION will be called repeatedly with three arguments:
+  An octet buffer with the raw data
+  A start index to the beginning of valid data
+  An end index to the end of valid data
+
+PASSWORD should be supplied if the entry is encrypted. If the entry is
+encrypted, but no password is supplied, or the password is detectably
+incorrect, an error is signalled. The password may be a string or an
+octet-vector.
+
+If an error is detected during decoding of the payload, an error is
+signalled.
+
+If the zip file is split a condition of type ARCHIVE-FILE-REQUIRED may
+be signalled.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRY-TO-FILE" class="xref">ENTRY-TO-FILE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRY-TO-STREAM" class="xref">ENTRY-TO-STREAM</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRY-TO-VECTOR" class="xref">ENTRY-TO-VECTOR</a>
+See <a href="#CONDITION%20ORG.SHIRAKUMO.ZIPPY%3AARCHIVE-FILE-REQUIRED" class="xref">ARCHIVE-FILE-REQUIRED</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:DECODE-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-FILE">DECODE-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">INPUT</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/decode.lisp#L105">Source</a>  </header> <div class="docstring"><pre>Decode the given IO into a ZIP-FILE.
+
+If the zip file is split, will signal a condition of type
+ARCHIVE-FILE-REQUIRED for every disk that is required to read the
+central directory of the zip file.
+
+May signal warnings if data mismatch or other correctable corruption
+is detected in the zip file.
+
+May signal an error if an incorrectable corruption is detected in the
+zip file, or if the file is missing vital support structures that
+would make it a valid zip file.
+
+See <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWITH-ZIP-FILE" class="xref">WITH-ZIP-FILE</a>
+See <a href="#CONDITION%20ORG.SHIRAKUMO.ZIPPY%3AARCHIVE-FILE-REQUIRED" class="xref">ARCHIVE-FILE-REQUIRED</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:DECODE-STRUCTURE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-STRUCTURE">DECODE-STRUCTURE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VECTOR</li>    <li class="argument">INDEX</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/parser.lisp#L11">Source</a>  </header> <div class="docstring"><pre>Decodes a structure from the given vector at the given starting position.
+
+A signature is expected at the input position. If no signature
+is available, or if it is not recognised, an error is signalled.
+
+Returns the structure instance and the ending index.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:ENCODE-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCODE-FILE">ENCODE-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ZIP-FILE</li>    <li class="argument">OUTPUT</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">PASSWORD</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/encode.lisp#L176">Source</a>  </header> <div class="docstring"><pre>Encodes the given zip-file to the output IO.
+
+This currently does not support split archive creation. All the
+entries will be written to the output.
+
+This will cause the ZIP-ENTRIES in the ZIP-FILE to be modified.
+In particular, SIZE, CRC-32, and UNCOMPRESSED-SIZE will be set, and
+LAST-MODIFIED, FILE-NAME, ATTRIBUTES, and COMPRESSION-METHOD may be
+set.
+
+The created Zip file will include Zip64 metadata regardless of whether
+this is required, but it will only enforce Zip64 decoding if the
+number of entries, or the size of an entry exceeds the possible bounds
+of traditional 32-bit zip files.
+
+If an encryption-method is specified for any entry, PASSWORD must be
+passed and will be used to encrypt the file.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:ENCODE-STRUCTURE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCODE-STRUCTURE">ENCODE-STRUCTURE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">STRUCTURE</li>    <li class="argument">VECTOR</li>    <li class="argument">INDEX</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/parser.lisp#L25">Source</a>  </header> <div class="docstring"><pre>Encodes the given structure to the vector at the given starting position.
+
+This will encode it including its signature, if any.
+
+Returns the ending index.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:ENCRYPTION-METHOD-ID"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCRYPTION-METHOD-ID">ENCRYPTION-METHOD-ID</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NAME</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/tables.lisp#L94">Source</a>  </header> <div class="docstring"><pre>Returns the encryption method ID for the given name.
+
+If The name is not known, an error is signalled.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:ENCRYPTION-METHOD-NAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCRYPTION-METHOD-NAME">ENCRYPTION-METHOD-NAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ID</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/tables.lisp#L90">Source</a>  </header> <div class="docstring"><pre>Returns the encryption method name for the given ID.
+
+The name should be one of
+  :des
+  :rc2
+  :3des-168
+  :3des-112
+  :aes-128 
+  :aes-192 
+  :aes-256 
+  :rc2
+  :blowfish
+  :twofish
+  :rc4
+  :unknown
+
+If the ID is not known, an error is signalled.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:END"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AEND">END</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L50">Source</a>  </header> <div class="docstring"><pre>Returns the ending index of the IO.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:ENTRY-TO-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRY-TO-FILE">ENTRY-TO-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATH</li>    <li class="argument">ENTRY</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">IF-EXISTS</li>    <li class="argument">PASSWORD</li>    <li class="argument">RESTORE-ATTRIBUTES</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/zippy.lisp#L52">Source</a>  </header> <div class="docstring"><pre>Decodes the contents of the entry to the given path.
+
+This will attempt to restore the same file attributes as are contained
+in the entry's metadata, unless :RESTORE-ATTRIBUTES NIL is passed.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-ENTRY" class="xref">DECODE-ENTRY</a>
+See <a href="http://l1sp.org/cl/open" class="xref">CL:OPEN</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:ENTRY-TO-STREAM"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRY-TO-STREAM">ENTRY-TO-STREAM</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">STREAM</li>    <li class="argument">ENTRY</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">PASSWORD</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/zippy.lisp#L63">Source</a>  </header> <div class="docstring"><pre>Decodes the contents of the entry to the given octet input-stream.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-ENTRY" class="xref">DECODE-ENTRY</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:ENTRY-TO-VECTOR"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRY-TO-VECTOR">ENTRY-TO-VECTOR</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ENTRY</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">VECTOR</li>    <li class="argument">START</li>    <li class="argument">PASSWORD</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/zippy.lisp#L68">Source</a>  </header> <div class="docstring"><pre>Decodes the contents of the entry to an octet vector.
+
+If an octet vector is passed explicitly through :VECTOR, the vector
+must be at least START+(UNCOMPRESSED-SIZE ENTRY) big.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-ENTRY" class="xref">DECODE-ENTRY</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:EXTRACT-ZIP"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AEXTRACT-ZIP">EXTRACT-ZIP</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>    <li class="argument">PATH</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">IF-EXISTS</li>    <li class="argument">PASSWORD</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/zippy.lisp#L91">Source</a>  </header> <div class="docstring"><pre>Extracts the contents of the zip file to the given directory.
+
+FILE may either be a ZIP-FILE, or a suitable input for WITH-ZIP-FILE.
+PATH should be a directory pathname designator.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRY-TO-FILE" class="xref">ENTRY-TO-FILE</a>
+See <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWITH-ZIP-FILE" class="xref">WITH-ZIP-FILE</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:FILE-ATTRIBUTE-ID"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AFILE-ATTRIBUTE-ID">FILE-ATTRIBUTE-ID</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NAME</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/tables.lisp#L36">Source</a>  </header> <div class="docstring"><pre>Returns the file attribute ID for the given name.
+
+If The name is not known, an error is signalled.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:FILE-ATTRIBUTE-NAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AFILE-ATTRIBUTE-NAME">FILE-ATTRIBUTE-NAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ID</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/tables.lisp#L31">Source</a>  </header> <div class="docstring"><pre>Returns the file attribute name for the given ID.
+
+The name should be one of
+  :ms-dos
+  :amiga
+  :open-vms
+  :unix
+  :vm/cms
+  :atari-st
+  :os/2
+  :macintosh
+  :z-system
+  :cp/m
+  :ntfs
+  :mvs
+  :vse
+  :acorn-risc
+  :vfat
+  :alternate-mvs
+  :beos
+  :tandem
+  :os/400
+  :darwin
+
+If the ID is not known, an error is signalled.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:HAS-MORE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AHAS-MORE">HAS-MORE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L27">Source</a>  </header> <div class="docstring"><pre>Returns whether the io has input left to read, or space left to write to.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:INDEX"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AINDEX">INDEX</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L34">Source</a>  </header> <div class="docstring"><pre>Returns the current index into the IO.
+
+This should always be in the range of [START, END].
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:OUTPUT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AOUTPUT">OUTPUT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>    <li class="argument">ARRAY</li>    <li class="argument">START</li>    <li class="argument">END</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L71">Source</a>  </header> <div class="docstring"><pre>Writes the given array of octets to the IO.
+
+If the IO does not have sufficient space available, an error is
+signalled.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:PARSE-STRUCTURE*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3APARSE-STRUCTURE%2A">PARSE-STRUCTURE*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L84">Source</a>  </header> <div class="docstring"><pre>Parses a structure from the IO assuming a leading 32 bit signature.
+
+If no suitable structure can be found, an error is
+signalled. Otherwise, the parsed structure instance is returned.
+
+This advances the IO index.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:READ-STRUCTURE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AREAD-STRUCTURE">READ-STRUCTURE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">STREAM</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/parser.lisp#L18">Source</a>  </header> <div class="docstring"><pre>Decodes a structure from the given stream.
+
+A signature is expected at the input position. If no signature
+is available, or if it is not recognised, an error is signalled. 
+Returns the structure instance otherwise.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:SEEK"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ASEEK">SEEK</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>    <li class="argument">TARGET</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L18">Source</a>  </header> <div class="docstring"><pre>Seek the io to the requested index.
+
+If the index is outside the allowed ranges, an error is signalled.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:START"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ASTART">START</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L43">Source</a>  </header> <div class="docstring"><pre>Returns the starting index of the IO.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:UB32"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AUB32">UB32</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L63">Source</a>  </header> <div class="docstring"><pre>Reads a 32 bit unsigned integer from the IO and returns it.
+
+This will advance the IO index.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:VECTOR-INPUT-END"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-END">VECTOR-INPUT-END</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">INSTANCE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L12">Source</a>  </header> <div class="docstring"><pre>Returns the ending index of the vector.
+
+See <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT" class="xref">VECTOR-INPUT</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:VECTOR-INPUT-INDEX"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-INDEX">VECTOR-INPUT-INDEX</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">INSTANCE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L12">Source</a>  </header> <div class="docstring"><pre>Accesses the current index into the vector.
+
+See <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT" class="xref">VECTOR-INPUT</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF VECTOR-INPUT-INDEX)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20VECTOR-INPUT-INDEX%29">(SETF VECTOR-INPUT-INDEX)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VALUE</li>    <li class="argument">INSTANCE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L12">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:VECTOR-INPUT-START"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-START">VECTOR-INPUT-START</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">INSTANCE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L12">Source</a>  </header> <div class="docstring"><pre>Returns the starting index of the vector.
+
+See <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT" class="xref">VECTOR-INPUT</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:VECTOR-INPUT-VECTOR"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT-VECTOR">VECTOR-INPUT-VECTOR</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">INSTANCE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L12">Source</a>  </header> <div class="docstring"><pre>Returns the vector the vector-input is backing.
+
+See <a href="#STRUCTURE%20ORG.SHIRAKUMO.ZIPPY%3AVECTOR-INPUT" class="xref">VECTOR-INPUT</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:WRITE-STRUCTURE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWRITE-STRUCTURE">WRITE-STRUCTURE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">STRUCTURE</li>    <li class="argument">STREAM</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/parser.lisp#L31">Source</a>  </header> <div class="docstring"><pre>Encodes the given structure to the stream.
+
+This will encode it including its signature, if any.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.ZIPPY:WRITE-STRUCTURE*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWRITE-STRUCTURE%2A">WRITE-STRUCTURE*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">STRUCTURE</li>    <li class="argument">IO</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L94">Source</a>  </header> <div class="docstring"><pre>Writes the given structure to the IO.
+
+This advances the IO index.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:ATTRIBUTES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AATTRIBUTES">ATTRIBUTES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the file attributes.
+
+This should be a list of two entries, the file attribute compatibility
+identifier, and the actual attributes encoded as an integer.
+
+For ZIP-ENTRIES that are backed by a file, this entry is computed
+automatically when the entry is encoded.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AFILE-ATTRIBUTE-NAME" class="xref">FILE-ATTRIBUTE-NAME</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a>
+See <a href="https://shinmera.github.io/file-attributes#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3APERMISSIONS" class="xref">ORG.SHIRAKUMO.FILE-ATTRIBUTES:PERMISSIONS</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF ATTRIBUTES)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20ATTRIBUTES%29">(SETF ATTRIBUTES)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:CALL-WITH-COMPRESSED-BUFFER"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-COMPRESSED-BUFFER">CALL-WITH-COMPRESSED-BUFFER</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FUNCTION</li>    <li class="argument">VECTOR</li>    <li class="argument">START</li>    <li class="argument">END</li>    <li class="argument">STATE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/compression.lisp#L13">Source</a>  </header> <div class="docstring"><pre>Call the supplied function with a compressed buffer.
+
+The function is called with three arguments:
+  An octet buffer with the compressed data
+  A start index to the beginning of valid data
+  An end index to the end of valid data
+
+The supplied STATE must be a state obtained through
+MAKE-COMPRESSION-STATE. The VECTOR, START, and END supply the octets
+to compress.
+
+You may call this function repeatedly with new input to compress
+until the full region has been processed. The supplied function
+likewise may be called multiple times per compression run.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-COMPRESSION-STATE" class="xref">MAKE-COMPRESSION-STATE</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:CALL-WITH-DECOMPRESSED-BUFFER"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-DECOMPRESSED-BUFFER">CALL-WITH-DECOMPRESSED-BUFFER</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FUNCTION</li>    <li class="argument">VECTOR</li>    <li class="argument">START</li>    <li class="argument">END</li>    <li class="argument">STATE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/compression.lisp#L10">Source</a>  </header> <div class="docstring"><pre>Call the supplied function with a decompressed buffer.
+
+The function is called with three arguments:
+  An octet buffer with the decompressed data
+  A start index to the beginning of valid data
+  An end index to the end of valid data
+
+The supplied STATE must be a state obtained through
+MAKE-DECOMPRESSION-STATE. The VECTOR, START, and END supply the octets
+to decompress.
+
+You may call this function repeatedly with new input to decompress
+until the full region has been processed. The supplied function
+likewise may be called multiple times per decompression run.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-DECOMPRESSION-STATE" class="xref">MAKE-DECOMPRESSION-STATE</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:CALL-WITH-DECRYPTED-BUFFER"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-DECRYPTED-BUFFER">CALL-WITH-DECRYPTED-BUFFER</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FUNCTION</li>    <li class="argument">INPUT</li>    <li class="argument">LENGTH</li>    <li class="argument">STATE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/encryption.lisp#L10">Source</a>  </header> <div class="docstring"><pre>Call the supplied function with a decrypted buffer.
+
+The function is called with three arguments:
+  An octet buffer with the decrypted data
+  A start index to the beginning of valid data
+  An end index to the end of valid data
+
+The supplied STATE must be a state obtained through
+MAKE-DECRPTIION-STATE. The VECTOR, START, and END supply the octets
+to decrypt.
+
+You may call this function repeatedly with new input to decrypt
+until the full region has been processed. The supplied function
+likewise may be called multiple times per decryption run.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-DECRYPTION-STATE" class="xref">MAKE-DECRYPTION-STATE</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:CALL-WITH-ENCRYPTED-BUFFER"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-ENCRYPTED-BUFFER">CALL-WITH-ENCRYPTED-BUFFER</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FUNCTION</li>    <li class="argument">VECTOR</li>    <li class="argument">START</li>    <li class="argument">END</li>    <li class="argument">STATE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/encryption.lisp#L13">Source</a>  </header> <div class="docstring"><pre>Call the supplied function with an encrypted buffer.
+
+The function is called with three arguments:
+  An octet buffer with the encrypted data
+  A start index to the beginning of valid data
+  An end index to the end of valid data
+
+The supplied STATE must be a state obtained through
+MAKE-ENCRYPTION-STATE. The VECTOR, START, and END supply the octets
+to encrypt.
+
+You may call this function repeatedly with new input to encrypt
+until the full region has been processed. The supplied function
+likewise may be called multiple times per encryption run.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-ENCRYPTION-STATE" class="xref">MAKE-ENCRYPTION-STATE</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:COMMENT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMMENT">COMMENT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accessor to the comment of the zip-file or entry.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF COMMENT)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20COMMENT%29">(SETF COMMENT)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:COMPRESSION-METHOD"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESSION-METHOD">COMPRESSION-METHOD</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the compression method used to compress the file
+    contents.
+
+This should either be NIL or a keyword naming the compression method.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACOMPRESSION-METHOD-NAME" class="xref">COMPRESSION-METHOD-NAME</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF COMPRESSION-METHOD)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20COMPRESSION-METHOD%29">(SETF COMPRESSION-METHOD)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:CONTENT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACONTENT">CONTENT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the backing content of the file.
+
+This slot must be set by the user to a suitable source for the file's
+contents. It may be either a string or pathname to designate a file
+from disk, an octet input-stream, an octet vector, or an IO instance.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF CONTENT)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20CONTENT%29">(SETF CONTENT)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:CRC-32"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACRC-32">CRC-32</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the CRC-32 checksum of the file contents.
+
+This is computed and set automatically when the entry is encoded.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF CRC-32)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20CRC-32%29">(SETF CRC-32)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:DISK"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADISK">DISK</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the disk ID on which the contents of this file start.
+
+This slot should not be set by the user.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AOFFSET" class="xref">OFFSET</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF DISK)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20DISK%29">(SETF DISK)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:DISKS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADISKS">DISKS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accessor to the vector of IO instances representing the zip-file's disks.
+
+This vector is managed automatically.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a>
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF DISKS)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20DISKS%29">(SETF DISKS)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:ENCRYPTION-METHOD"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCRYPTION-METHOD">ENCRYPTION-METHOD</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the encryption method used to encrypt the file contents.
+
+This should either be NIL, a keyword, or a list of a keyword and extra
+parameters. The keyword identifies the name of the encryption method.
+Additionally to the names listed in ENCRYPTION-METHOD-NAME, the names
+:AE-1 and :AE-2 are allowed.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCRYPTION-METHOD-NAME" class="xref">ENCRYPTION-METHOD-NAME</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF ENCRYPTION-METHOD)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20ENCRYPTION-METHOD%29">(SETF ENCRYPTION-METHOD)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:ENTRIES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENTRIES">ENTRIES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accessor to the vector of zip-entry instances for the zip-file.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF ENTRIES)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20ENTRIES%29">(SETF ENTRIES)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:EXTRA-FIELDS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AEXTRA-FIELDS">EXTRA-FIELDS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the list of extra data structures for the entry.
+
+This slot should not be set by the user.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF EXTRA-FIELDS)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20EXTRA-FIELDS%29">(SETF EXTRA-FIELDS)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:FILE-NAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AFILE-NAME">FILE-NAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the relative path designating where the file belongs on a hirearchical file system.
+
+When the entry is encoded and this slot is unset, it may be computed
+automatically if the entry is backed by a file. Otherwise, an error is
+signalled.
+
+The path must be relative, and must use forward slashes as the
+directory separator.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF FILE-NAME)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20FILE-NAME%29">(SETF FILE-NAME)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:LAST-MODIFIED"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ALAST-MODIFIED">LAST-MODIFIED</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the universal time designating the last time the entry's contents were modified.
+
+If unset, and the entry is backed by a file, this slot is
+automatically computed when the entry is encoded.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF LAST-MODIFIED)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20LAST-MODIFIED%29">(SETF LAST-MODIFIED)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:MAKE-COMPRESSION-STATE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-COMPRESSION-STATE">MAKE-COMPRESSION-STATE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FORMAT</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">BUFFER</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/compression.lisp#L12">Source</a>  </header> <div class="docstring"><pre>Create the state necessary to compress given the requested compression format.
+
+If required, the supplied buffer spec should be used to create the
+output buffer for the compression. The buffer spec may be either NIL
+for a default buffer, an octet vector, or an integer for an octet
+vector of the given size.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-COMPRESSED-BUFFER" class="xref">CALL-WITH-COMPRESSED-BUFFER</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:MAKE-DECOMPRESSION-STATE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-DECOMPRESSION-STATE">MAKE-DECOMPRESSION-STATE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FORMAT</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">BUFFER</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/compression.lisp#L9">Source</a>  </header> <div class="docstring"><pre>Create the state necessary to decompress given the requested compression format.
+
+If required, the supplied buffer spec should be used to create the
+output buffer for the decompression. The buffer spec may be either NIL
+for a default buffer, an octet vector, or an integer for an octet
+vector of the given size.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-DECOMPRESSED-BUFFER" class="xref">CALL-WITH-DECOMPRESSED-BUFFER</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:MAKE-DECRYPTION-STATE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-DECRYPTION-STATE">MAKE-DECRYPTION-STATE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FORMAT</li>    <li class="argument">INPUT</li>    <li class="argument">PASSWORD</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">BUFFER</li>    <li class="argument lambda-list-keyword">&amp;ALLOW-OTHER-KEYS</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/encryption.lisp#L9">Source</a>  </header> <div class="docstring"><pre>Create the state necessary to decrypt given the requested encryption format.
+
+If required, the supplied buffer spec should be used to create the
+output buffer for the decryption. The buffer spec may be either NIL
+for a default buffer, an octet vector, or an integer for an octet
+vector of the given size.
+
+The given password may be a string or octet vector supplying the
+password for decryption.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-DECRYPTED-BUFFER" class="xref">CALL-WITH-DECRYPTED-BUFFER</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:MAKE-ENCRYPTION-STATE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AMAKE-ENCRYPTION-STATE">MAKE-ENCRYPTION-STATE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FORMAT</li>    <li class="argument">PASSWORD</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">BUFFER</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/encryption.lisp#L12">Source</a>  </header> <div class="docstring"><pre>Create the state necessary to encrypt given the requested encryption format.
+
+If required, the supplied buffer spec should be used to create the
+output buffer for the encryption. The buffer spec may be either NIL
+for a default buffer, an octet vector, or an integer for an octet
+vector of the given size.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ACALL-WITH-ENCRYPTED-BUFFER" class="xref">CALL-WITH-ENCRYPTED-BUFFER</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:OFFSET"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AOFFSET">OFFSET</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the octet index at which the contents of this file start
+    on its disk.
+
+This slot should not be set by the user.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADISK" class="xref">DISK</a>
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF OFFSET)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20OFFSET%29">(SETF OFFSET)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:SIZE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ASIZE">SIZE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">IO</li>  </ul>  </header> <div class="docstring"><pre>Returns the size of the object in octets.
+
+For zip-entries this is the number of octets in compressed format as
+they are in the archive.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a>
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF SIZE)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20SIZE%29">(SETF SIZE)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:UNCOMPRESSED-SIZE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AUNCOMPRESSED-SIZE">UNCOMPRESSED-SIZE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Accesses the octet size of the entry's uncompressed data payload.
+
+If unset, this slot is automatically computed when the entry is
+encoded.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF UNCOMPRESSED-SIZE)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20UNCOMPRESSED-SIZE%29">(SETF UNCOMPRESSED-SIZE)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:VERSION"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AVERSION">VERSION</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Returns the Zip file version needed to extract this entry.
+
+The version is a list of two integers.
+
+This slot should not be set by the user.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF VERSION)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20VERSION%29">(SETF VERSION)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:ZIP-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE">ZIP-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><pre>Returns the zip-file instance this entry is a part of.
+
+See <a href="#CLASS%20ORG.SHIRAKUMO.ZIPPY%3AZIP-ENTRY" class="xref">ZIP-ENTRY</a>
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION ORG.SHIRAKUMO.ZIPPY:(SETF ZIP-FILE)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3A%28SETF%20ZIP-FILE%29">(SETF ZIP-FILE)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW-VALUE</li>    <li class="argument">OBJECT</li>  </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition macro callable" id="MACRO-FUNCTION ORG.SHIRAKUMO.ZIPPY:DEFINE-BYTE-STRUCTURE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">MACRO</span> <h4 class="name"> <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADEFINE-BYTE-STRUCTURE">DEFINE-BYTE-STRUCTURE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NAME</li>    <li class="argument lambda-list-keyword">&amp;BODY</li>    <li class="argument">RECORDS</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/parser.lisp#L159">Source</a>  </header> <div class="docstring"><pre>Define a new byte-coded structure.
+
+NAME can either be the name of the structure, or a list of the name
+and the signature that identifies the record uniquely. If a signature
+is given, the structure is registered and can be used with the
+standard functions DECODE/READ/ENCODE/WRITE-STRUCTURE.
+
+Each RECORD must be a list matching
+
+  (NAME TYPE &amp;optional COUNT)
+
+Where NAME identifies the field, TYPE identifies the name field's bit
+type, and COUNT the number of expected entries for a variable sized
+record. If COUNT is specified, it may be an arbitrary expression that
+can reference earlier record values by name, and the resulting slot
+value will be an octet vector of that length.
+
+The special record name SIZE may be used to identify a field that
+identifies the maximal size of the remaining structure payload. Any
+structure fields that would come after the dynamically read size has
+run out will be initialised to NIL.
+
+TYPE may be one of ub8 ub16 ub32 ub64
+
+This will generate a structure of NAME with the given records as
+slots, as well as four functions to encode and decode the
+structure, and one function to construct it. These functions are
+constructed according to the following schema:
+
+  (MAKE/DECODE/READ/ENCODE/WRITE)-NAME
+
+The given function names are interned in the current package.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-STRUCTURE" class="xref">DECODE-STRUCTURE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AREAD-STRUCTURE" class="xref">READ-STRUCTURE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AENCODE-STRUCTURE" class="xref">ENCODE-STRUCTURE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWRITE-STRUCTURE" class="xref">WRITE-STRUCTURE</a></pre></div> </article> </li>  <li> <article class="definition macro callable" id="MACRO-FUNCTION ORG.SHIRAKUMO.ZIPPY:PARSE-STRUCTURE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">MACRO</span> <h4 class="name"> <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3APARSE-STRUCTURE">PARSE-STRUCTURE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">STRUCTURE-TYPE</li>    <li class="argument">IO-VAR</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L103">Source</a>  </header> <div class="docstring"><pre>Parse the given structure type from the IO.
+
+This advances the IO index.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition macro callable" id="MACRO-FUNCTION ORG.SHIRAKUMO.ZIPPY:WITH-IO"> <header> <span class="visibility">EXTERNAL</span> <span class="type">MACRO</span> <h4 class="name"> <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWITH-IO">WITH-IO</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <ul class="arguments"> <li class="argument">IO</li>  <li class="argument">TARGET</li>  <li class="argument lambda-list-keyword">&amp;REST</li>  <li class="argument">ARGS</li> </ul>    <li class="argument lambda-list-keyword">&amp;BODY</li>    <li class="argument">BODY</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/io.lisp#L128">Source</a>  </header> <div class="docstring"><pre>Wraps TARGET in an appropriate IO context.
+
+TARGET may be a string or pathname, a stream, or a vector. In the case
+of a pathname or string, IF-EXISTS and DIRECTION can be passed as
+arguments for OPEN. In the case off a vector, START and END may be
+passed to designate a sub-range of the vector.
+
+See <a href="#TYPE%20ORG.SHIRAKUMO.ZIPPY%3AIO" class="xref">IO</a></pre></div> </article> </li>  <li> <article class="definition macro callable" id="MACRO-FUNCTION ORG.SHIRAKUMO.ZIPPY:WITH-ZIP-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">MACRO</span> <h4 class="name"> <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AWITH-ZIP-FILE">WITH-ZIP-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <ul class="arguments"> <li class="argument">FILE</li>  <li class="argument">INPUT</li>  <li class="argument lambda-list-keyword">&amp;KEY</li>  <li class="argument">START</li>  <li class="argument">END</li> </ul>    <li class="argument lambda-list-keyword">&amp;BODY</li>    <li class="argument">BODY</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/zippy/blob/master/decode.lisp#L199">Source</a>  </header> <div class="docstring"><pre>Open a zip file.
+
+INPUT may be a pathname or string to designate a local file, a
+seekable stream to read from, or an octet-vector to decode.
+
+If decoding is successful, FILE will be bound to the resulting
+ZIP-FILE instance. This instance is only valid within BODY. After
+leaving the BODY, you may still access metadata and zip entries, but
+you may not use DECODE-ENTRY to extract an entry's payload.
+
+If the zip file is split and the supplied INPUT is a pathname
+designator, other split disks will be determined automatically by
+using the same pathname, but substituting the pathname-type by the
+scheme z{DISK} . If INPUT is not a pathname designator, a condition of
+type ARCHIVE-FILE-REQUIRED is signalled for every split disk that is
+required.
+
+See <a href="#GENERIC-FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3AZIP-FILE" class="xref">ZIP-FILE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-FILE" class="xref">DECODE-FILE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.ZIPPY%3ADECODE-ENTRY" class="xref">DECODE-ENTRY</a>
+See <a href="#CONDITION%20ORG.SHIRAKUMO.ZIPPY%3AARCHIVE-FILE-REQUIRED" class="xref">ARCHIVE-FILE-REQUIRED</a></pre></div> </article> </li> </ul> </article> </li> </ul> </section>  </article> <script>window.addEventListener("DOMContentLoaded", function(){
+    var unmarkElement = function(el){
+        if(el.tagName === "mark" || el.tagName === "MARK"){
+            [].forEach.call(el.childNodes, function(child){
+                el.parentNode.insertBefore(child, el);
+            });
+            el.parentNode.removeChild(el);
+        }else if(el.parentNode.tagName === "mark"){
+            return unmarkElement(el.parentNode);
+        }
+        return null;
+    }
+
+    var unmarkAll = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("mark"), unmarkElement);
+    }
+    
+    var markElement = function(el){
+        if(el.parentNode.tagName === "mark" || el.parentNode.tagName === "MARK"){
+            return el.parentNode;
+        } else {
+            unmarkAll();
+            var marked = document.createElement("mark");
+            el.parentNode.insertBefore(marked, el);
+            marked.appendChild(el);
+            return marked;
+        }
+    }
+
+    var markFragmented = function(){
+        if(window.location.hash){
+            var el = document.getElementById(decodeURIComponent(window.location.hash.substr(1)));
+            if(el) markElement(el);
+        }
+    }
+
+    var registerXrefLink = function(link){
+        var el = document.getElementById(decodeURIComponent(link.getAttribute("href").substr(1)));
+        if(el){
+            link.addEventListener("click", function(){
+                markElement(el);
+            });
+        }
+    }
+
+    var registerXrefLinks = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("a.xref"), registerXrefLink);
+    }
+
+    markFragmented();
+    registerXrefLinks();
+}); </script> </body> </html> 
