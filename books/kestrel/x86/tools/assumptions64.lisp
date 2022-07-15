@@ -15,10 +15,10 @@
 (include-book "read-and-write")
 (include-book "../parsers/parsed-executable-tools")
 
-(defun bytes-loaded-in-text-section-64 (text-section-bytes text-offset x86)
-  (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 text-section-bytes)
-                              (true-listp text-section-bytes)
-                              (consp text-section-bytes))
+(defun bytes-loaded-in-text-section-64 (bytes addr x86)
+  (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 bytes)
+                              (true-listp bytes)
+                              (consp bytes))
                   :stobjs x86))
   (and ;; We'll base all addresses on the address of the text section
    ;; (we can calculate the relative offset of other things by
@@ -27,14 +27,14 @@
    ;; text section (also a number stored in the executable).
    ;; The addresses where the program is located are canonical:
    ;; TODO: Or should these be guards (then we could just use program-at)?
-   (canonical-address-p text-offset)
-   (canonical-address-p (+ text-offset
-                           (- (len text-section-bytes) 1)))
+   (canonical-address-p addr)
+   (canonical-address-p (+ addr
+                           (- (len bytes) 1)))
    ;; We assume the program (and eventually all data from the
    ;; executable) is loaded into memory.
    ;; (TODO: What about more than 1 section?):
-   (program-at text-offset
-               text-section-bytes
+   (program-at addr
+               bytes
                x86)))
 
 (defun addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
