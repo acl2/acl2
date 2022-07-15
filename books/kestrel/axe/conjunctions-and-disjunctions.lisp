@@ -115,6 +115,8 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund possibly-negated-nodenumsp (lst)
   (declare (xargs :guard t))
   (if (atom lst)
@@ -138,6 +140,11 @@
            (true-listp context))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
+
+(defthm possibly-negated-nodenumsp-of-intersection-equal
+  (implies (and (possibly-negated-nodenumsp context1)
+                (possibly-negated-nodenumsp context2))
+           (possibly-negated-nodenumsp (intersection-equal context1 context2))))
 
 ;should we use a defforall?
 (defthm possibly-negated-nodenumsp-forward-to-true-listp
