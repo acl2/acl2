@@ -88,7 +88,8 @@
   (and (true-listp prob)
        (eql 2 (len prob))
        (pseudo-dag-or-quotep (first prob)) ; TODO: or don't even create a problem if it's a constant
-       (pseudo-term-listp (second prob))))
+       (pseudo-term-listp (second prob)) ;; todo: disallow constant assumptions?
+       ))
 
 (defthm proof-problemp-forward-to-true-listp
   (implies (proof-problemp prob)
@@ -513,7 +514,7 @@
        (dag-parent-array-name 'dag-parent-array)
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
-       ;; Add the assumptions to the DAG:
+       ;; Add the assumptions to the DAG (todo: negating these may not be necessary once prove-disjunction-with-stp can take negated nodenums):
        ((mv erp negated-assumption-nodenum-or-quoteps dag-array dag-len dag-parent-array & &)
         (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?  or call merge-trees-into-dag-array-basic?
          (negate-terms assumptions)
@@ -527,7 +528,7 @@
        ;; TODO: What if a negated assumption is disjunction (e.g., a negated conjuntion)?
        (disjuncts (cons top-nodenum negated-assumption-nodenum-or-quoteps))
        ((mv result state)
-        (prove-disjunction-with-stp disjuncts
+        (prove-disjunction-with-stp disjuncts ; Disjuncts that are disjunctions are flattened
                                     dag-array ;must be named 'dag-array (fixme generalize?)
                                     dag-len
                                     dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)

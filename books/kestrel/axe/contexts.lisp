@@ -520,16 +520,17 @@
 ;;                                      not-<-of-0-and-nth-when-all-dargp
 ;;                                      dag-exprp))))
 
-(defthm contextp-of-get-axe-disjunction-from-dag-item
-  (implies (and (not (equal 'quote (car (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len))))
-                (natp nodenum-or-quotep)
-                (< nodenum-or-quotep dag-len)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (contextp (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
-  :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-item)
-           :in-theory (e/d (axe-disjunctionp)
-                           (axe-disjunctionp-of-get-axe-disjunction-from-dag-item
-                            possibly-negated-nodenumsp-when-axe-disjunctionp)))))
+;; while true, this seems bad, because a contextp is a conjunction, not a disjunction
+;; (defthm contextp-of-get-axe-disjunction-from-dag-item
+;;   (implies (and (not (equal 'quote (car (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len))))
+;;                 (natp nodenum-or-quotep)
+;;                 (< nodenum-or-quotep dag-len)
+;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
+;;            (contextp (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
+;;   :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-item)
+;;            :in-theory (e/d (axe-disjunctionp)
+;;                            (axe-disjunctionp-of-get-axe-disjunction-from-dag-item
+;;                             possibly-negated-nodenumsp-when-axe-disjunctionp)))))
 
 (defthm contextp-of-get-axe-conjunction-from-dag-item
   (implies (and (not (equal 'quote (car (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len))))
