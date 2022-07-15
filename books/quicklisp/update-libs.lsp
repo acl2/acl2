@@ -72,7 +72,8 @@
 ; maually include Babel.  After some amount of time passes, this is likely to
 ; get fixed.
                          "babel"
-                         
+                         "zippy"
+                         "dexador"
                          )
                    :to "./bundle")
 

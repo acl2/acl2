@@ -1,0 +1,39 @@
+os: linux
+dist: bionic
+language: generic
+
+env:
+  jobs:
+    - LISP=sbcl
+    - LISP=ccl
+    - LISP=ecl
+    - LISP=clisp
+    - LISP=allegro
+    - LISP=sbcl32
+    - LISP=ccl32
+    # - LISP=cmucl
+
+jobs:
+  allow_failures:
+    - env: LISP=clisp
+    - env: LISP=ccl32
+    # - env: LISP=cmucl
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+  irc:
+    channels:
+      - "chat.freenode.net#iolib"
+    on_success: change
+    on_failure: always
+    use_notice: true
+    skip_join: true
+
+install:
+  - curl -L https://raw.githubusercontent.com/lispci/cl-travis/master/install.sh | sh
+
+script:
+  - cl -e "(ql:quickload :static-vectors/test :verbose t)
+           (uiop:quit (if (5am:run! :static-vectors) 0 -1))"
