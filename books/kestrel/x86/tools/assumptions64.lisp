@@ -15,7 +15,7 @@
 (include-book "read-and-write")
 (include-book "../parsers/parsed-executable-tools")
 
-(defun bytes-loaded-in-text-section-64 (bytes addr x86)
+(defun bytes-loaded-at-address-64 (bytes addr x86)
   (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 bytes)
                               (true-listp bytes)
                               (consp bytes))
@@ -33,6 +33,7 @@
    ;; We assume the program (and eventually all data from the
    ;; executable) is loaded into memory.
    ;; (TODO: What about more than 1 section?):
+   ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
    (program-at addr
                bytes
                x86)))
@@ -108,7 +109,7 @@
                   :verify-guards nil ;todo
                   ))
   (and (standard-state-assumption-64 x86)
-       (bytes-loaded-in-text-section-64 text-section-bytes text-offset x86)
+       (bytes-loaded-at-address-64 text-section-bytes text-offset x86)
        ;; The program counter is at the start of the routine to lift:
        (equal (rip x86) (+ text-offset offset-to-subroutine))
 
