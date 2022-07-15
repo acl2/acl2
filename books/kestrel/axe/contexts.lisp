@@ -501,58 +501,6 @@
 
 ;todo: always go from car/cadr of dargs to nth?
 
-;; ;;move
-;; (DEFTHM AXE-CONJUNCTIONP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                       (AND (NATP NODENUM-OR-QUOTEP)
-;;                            (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                               DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (AXE-CONJUNCTIONP (GET-AXE-CONJUNCTION-FROM-DAG-ITEM
-;;                               NODENUM-OR-QUOTEP
-;;                               DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance AXE-CONJUNCTIONP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable AXE-CONJUNCTIONP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM))))
-
-;; ;;move
-;; (DEFTHM AXE-DISJUNCTIONP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                       (AND (NATP NODENUM-OR-QUOTEP)
-;;                            (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                               DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (AXE-DISJUNCTIONP (GET-AXE-DISJUNCTION-FROM-DAG-ITEM
-;;                               NODENUM-OR-QUOTEP
-;;                               DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance AXE-DISJUNCTIONP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable AXE-DISJUNCTIONP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM))))
-
-;; ;;move
-;; (DEFTHM CONSP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR
-;;                    (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                    (AND
-;;                     (NATP NODENUM-OR-QUOTEP)
-;;                     (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                        DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (CONSP (GET-AXE-DISJUNCTION-FROM-DAG-ITEM
-;;                    NODENUM-OR-QUOTEP
-;;                    DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance CONSP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable CONSP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM))))
-
-;; ;;move
-;; (DEFTHM CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR
-;;                    (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                    (AND
-;;                     (NATP NODENUM-OR-QUOTEP)
-;;                     (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                        DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (CONSP (GET-AXE-CONJUNCTION-FROM-DAG-ITEM
-;;                    NODENUM-OR-QUOTEP
-;;                    DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM))))
-
 ;; (defthmd not-complex-rationalp-of-nth-when-all-dargp
 ;;   (implies (and (all-dargp args)
 ;;                 ;(natp n)
