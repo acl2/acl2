@@ -123,7 +123,10 @@
                     (evmeta-ev (subst-tree pat alist) a))))
   :hints(("Goal" :in-theory (enable match-tree-is-subst-tree))))
 
-(local (in-theory (enable evmeta-ev-of-match-tree)))
+;; (local (in-theory (enable evmeta-ev-of-match-tree)))
+
+(local (in-theory (enable match-tree-obj-equals-subst-when-successful
+                          match-tree-alist-opener-theory)))
 
 ;; Constraint 0.
 (define check-ev-of-fncall-args ((evfn symbolp)

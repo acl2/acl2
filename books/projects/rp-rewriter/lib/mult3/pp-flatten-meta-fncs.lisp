@@ -114,7 +114,7 @@
                               :hyp (rp-term-listp lst))
   (if (and (consp lst)
            (atom (cdr lst))
-           (or (bit-of-p (car lst))
+           (or (bit-of-p (ex-from-rp (car lst)))
                (has-bitp-rp (car lst))))
       (car lst)
     `(and-list ',(and-list-hash lst) (list . ,lst))))
@@ -264,7 +264,7 @@
 (local
  (in-theory (disable lexorder)))
 
-(define pp-term-p (term)
+(define pp-term-p (term &key (strict 'nil))
   :enabled t
   :measure (cons-count term)
   :hints (("goal"
@@ -274,20 +274,25 @@
     (cond ((or (binary-and-p term)
                (binary-or-p term)
                (binary-xor-p term))
-           (and (pp-term-p (cadr term))
-                (pp-term-p (caddr term))))
+           (and (pp-term-p (cadr term) :strict strict)
+                (pp-term-p (caddr term) :strict strict)))
           ((binary-?-p term)
-           (and (pp-term-p (cadr term))
-                (pp-term-p (caddr term))
-                (pp-term-p (cadddr term))))
+           (and (pp-term-p (cadr term) :strict strict)
+                (pp-term-p (caddr term) :strict strict)
+                (pp-term-p (cadddr term) :strict strict)))
           ((or (binary-not-p term)
                (pp-p term))
-           (and (pp-term-p (cadr term))))
+           (and (pp-term-p (cadr term) :strict strict)))
           ((or (bit-of-p term)
                (equal term ''1)
                (equal term ''0))
            t)
-          (t (and (has-bitp-rp orig))))))
+          (t (and (has-bitp-rp orig)
+                  (or (not strict)
+                      (atom term)
+                      (single-s-p term)
+                      (single-c-p term)
+                      (single-s-c-res-p term)))))))
 
       ;; (('binary-and x y)
       ;;  (and (pp-term-p x)
@@ -320,11 +325,11 @@
       ;;         (not (include-fnc term 'c))
       ;;         (not (include-fnc term 's)))))))
 
-(define pp-term-list-p (lst)
+(define pp-term-list-p (lst &key (strict 'nil))
   (if (atom lst)
       (equal lst nil)
-    (and (pp-term-p (car lst))
-         (pp-term-list-p (cdr lst)))))
+    (and (pp-term-p (car lst) :strict strict)
+         (pp-term-list-p (cdr lst) :strict strict))))
 
 (define cut-list-by-half ((lst true-listp)
                           (size natp))
@@ -769,82 +774,123 @@
             (cdar lst)
             (apply-sign-to-pp-lists (cdr lst) sign)))))
 
+(encapsulate
+  (((pp-lists-limit) => *))
+  (local
+   (defun pp-lists-limit ()
+     2047))
+  (defthm integerp-of-pp-lists-limit
+    (integerp (pp-lists-limit))))
+
+(define return-16000 ()
+  16000)
+
+(defattach pp-lists-limit return-16000)
+
 (define pp-term-to-pp-lists ((term pp-term-p)
                              (sign booleanp))
   :measure (cons-count term)
   :hints (("goal"
            :in-theory (e/d (measure-lemmas) ())))
-  :returns (result pp-lists-p
-                   :hyp (booleanp sign)
-                   :rule-classes :type-prescription)
+  :returns (mv (result pp-lists-p
+                       :hyp (booleanp sign)
+                       :rule-classes :type-prescription)
+               (too-large-p booleanp))
   :verify-guards nil
+  ;;:ret-patbinder t
   (b* ((orig term)
        (term (ex-from-rp term)))
 
     (cond ((binary-and-p term)
            (b* ((x (cadr term))
                 (y (caddr term))
-                (lst1 (pp-term-to-pp-lists x nil))
-                (lst2 (pp-term-to-pp-lists y nil))
+                ((mv lst1 too-large1) (pp-term-to-pp-lists x nil))
+                ((mv lst2 too-large2) (pp-term-to-pp-lists y nil))
+                ((when (or too-large1 too-large2)) (mv `((,sign ,term)) t))
+
                 (anded (and$-pp-lists lst1 lst2 nil sign))
-                (anded (sort-pp-lists anded (len anded))))
-             anded))
+                (len-added (len anded))
+                ((when (> len-added (pp-lists-limit))) (mv `((,sign ,term)) t))
+                (anded (sort-pp-lists anded len-added)))
+             (mv anded nil)))
           ((binary-or-p term)
            (b* ((x (cadr term))
                 (y (caddr term))
-                (lst1 (pp-term-to-pp-lists x sign))
-                (lst2 (pp-term-to-pp-lists y sign))
-                (x (merge-sorted-pp-lists lst1  lst2 ))
-                (y (and$-pp-lists lst1 lst2 nil (not sign)))
-                (y (sort-pp-lists y (len y))))
-             (merge-sorted-pp-lists x  y )))
+                ((mv lst1 too-large1) (pp-term-to-pp-lists x sign))
+                ((mv lst2 too-large2) (pp-term-to-pp-lists y sign))
+                ((when (or too-large1 too-large2)) (mv `((,sign ,term)) t))
+
+                (lst1+lst2 (merge-sorted-pp-lists lst1 lst2))
+
+                (lst1&lst2 (and$-pp-lists lst1 lst2 nil (not sign)))
+                (len-lst1&lst2 (len lst1&lst2))
+                ((when (> len-lst1&lst2 (pp-lists-limit))) (mv `((,sign ,term)) t))
+                (lst1&lst2 (sort-pp-lists lst1&lst2 len-lst1&lst2))
+
+                (merged (merge-sorted-pp-lists lst1+lst2 lst1&lst2))
+                ((when (> (len merged) (pp-lists-limit))) (mv `((,sign ,term)) t)))
+             (mv merged nil)))
           ((binary-xor-p term)
            (b* ((x (cadr term))
                 (y (caddr term))
-                (lst1 (pp-term-to-pp-lists x sign))
-                (lst2 (pp-term-to-pp-lists y sign))
+                ((mv lst1 too-large1) (pp-term-to-pp-lists x sign))
+                ((mv lst2 too-large2) (pp-term-to-pp-lists y sign))
+                ((when (or too-large1 too-large2)) (mv `((,sign ,term)) t))
+
                 (acc (merge-sorted-pp-lists lst1  lst2 ))
                 (minus-x-and-y (and$-pp-lists lst1 lst2 nil (not sign)))
-                (minus-x-and-y (sort-pp-lists minus-x-and-y (len minus-x-and-y))))
-             (merge-sorted-pp-lists
-              acc
-              (merge-sorted-pp-lists  minus-x-and-y  minus-x-and-y ))))
+                (len-minus-x-and-y (len minus-x-and-y))
+                (minus-x-and-y (sort-pp-lists minus-x-and-y len-minus-x-and-y))
+                (merged (merge-sorted-pp-lists
+                         acc
+                         (merge-sorted-pp-lists minus-x-and-y minus-x-and-y)))
+                ((when (> (len merged) (pp-lists-limit))) (mv `((,sign ,term)) t)))
+             (mv merged nil)))
           ((binary-?-p term)
            (b* ((test (cadr term))
                 (x (caddr term))
                 (y (cadddr term))
-                (test-lst (pp-term-to-pp-lists test sign))
-
-                (x-lst (pp-term-to-pp-lists x sign))
+                ((mv test-lst too-large1) (pp-term-to-pp-lists test sign))
+                ((mv x-lst too-large2) (pp-term-to-pp-lists x sign))
+                ((mv y-lst too-large3) (pp-term-to-pp-lists y sign))
+                ((when (or too-large1 too-large2 too-large3)) (mv `((,sign ,term)) t))
+                
                 (x-and-test (and$-pp-lists test-lst x-lst nil sign))
+                (len-x-and-test (len x-and-test))
+                ((when (> len-x-and-test (pp-lists-limit))) (mv `((,sign ,term)) t))
                 (x-and-test (sort-pp-lists x-and-test (len x-and-test)))
-
-                (y-lst (pp-term-to-pp-lists y sign))
+                
                 (--y-and-test (and$-pp-lists test-lst y-lst nil (not sign)))
-                (--y-and-test (sort-pp-lists --y-and-test (len --y-and-test))))
-             (merge-sorted-pp-lists x-and-test
-                                    (merge-sorted-pp-lists --y-and-test
-                                                           y-lst))))
+                (len--y-and-test (len --y-and-test))
+                (--y-and-test (sort-pp-lists --y-and-test len--y-and-test))
+                ((when (> len-x-and-test (pp-lists-limit))) (mv `((,sign ,term)) t))
+                (merged 
+                 (merge-sorted-pp-lists x-and-test
+                                        (merge-sorted-pp-lists --y-and-test
+                                                               y-lst)))
+                ((when (> (len merged) (pp-lists-limit))) (mv `((,sign ,term)) t)))
+             (mv merged nil)))
           ((binary-not-p term)
            (b* ((x (cadr term))
-                (lst1 (pp-term-to-pp-lists x (not sign))))
-             (merge-sorted-pp-lists (list (cons sign (list ''1)))
-                                    lst1)))
+                ((mv lst1 too-large1) (pp-term-to-pp-lists x (not sign)))
+                (merged (merge-sorted-pp-lists (list (cons sign (list ''1))) lst1)))
+             (mv merged too-large1)))
           ((pp-p term)
            (pp-term-to-pp-lists (cadr term) sign))
           ((bit-of-p term)
-           (list (cons sign (list term))))
+           (mv (list (cons sign (list term))) nil))
           ((equal term ''1)
-           (list (cons sign (list term))))
+           (mv (list (cons sign (list term))) nil))
           ((equal term ''0)
-           nil)
+           (mv nil nil))
           (t (if (has-bitp-rp orig)
-                 (list (cons sign (list orig)))
+                 (mv (list (cons sign (list orig))) nil)
                (progn$
                 (cw "unexpected term ~p0 ~%" orig)
                 (hard-error 'pp-term-to-pp-lists
                             "unexpected term ~p0 ~%"
-                            (list (cons #\0 orig))))))))
+                            (list (cons #\0 orig)))
+                (mv `((,sign ,term)) nil))))))
 
   ///
 
@@ -1003,7 +1049,11 @@
                        `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
                      (create-and-list-instance (list (caddr term) (cadr term)))))))
              (list cur-single)))
-          (t (b* ((pp-lists (pp-term-to-pp-lists term sign))
+          (t (b* (((mv pp-lists too-large) (pp-term-to-pp-lists term sign))
+                  ((when too-large)
+                   (progn$ (cwe "Warning: pp-flatten got a term that grows too large: ~p0 ~%"
+                                term)
+                           (list (if sign `(-- ,term) term))))  
                   (pp-lst (pp-lists-to-term-pp-lst pp-lists))
                   #|(result (If pp-lists (cons 'list result) ''nil))||#
                   )
@@ -1234,15 +1284,26 @@
         (('binary-sum cur rest)
          (b* (((unless (pp-term-p cur))
                (mv nil nil))
-              (pp-lists1 (pp-term-to-pp-lists cur nil))
+              ((mv pp-lists1 too-large) (pp-term-to-pp-lists cur nil))
+              ((when too-large)
+               (progn$
+                (cwe "Warning: sort-sum-meta-aux2 got a term that grows too large: ~p0 ~%"
+                     cur)
+                (mv nil nil)))
               ((mv rest-valid pp-lists2)
                (sort-sum-meta-aux2 rest))
               ((unless rest-valid)
                (mv nil nil)))
            (mv t (merge-sorted-pp-lists pp-lists1 pp-lists2))))
-        (& (if (pp-term-p term-orig)
-               (mv t (pp-term-to-pp-lists term-orig nil))
-             (mv nil nil)))))
+        (& (b* (((unless (pp-term-p term-orig))
+                 (mv nil nil))
+                ((mv res too-large) (pp-term-to-pp-lists term-orig nil))
+                ((when too-large)
+                 (progn$
+                  (cwe "Warning: sort-sum-meta-aux2 got a term that grows too large: ~p0 ~%"
+                       term-orig)
+                  (mv nil nil))))
+             (mv t res)))))
     ///
     (acl2::defret pp-lists-p-of-<fn>
                   (implies valid
@@ -1396,9 +1457,11 @@
             :in-theory (e/d (and$-pp-lists) ())))))
 
 (Local
- (defthm rp-term-list-listp-pp-term-to-pp-lists
-   (implies (rp-termp term)
-            (rp-term-list-listp (strip-cdrs (pp-term-to-pp-lists term sign))))
+ (defret rp-term-list-listp-pp-term-to-pp-lists
+   (implies (and (rp-termp term)
+                 (not too-large-p))
+            (rp-term-list-listp (strip-cdrs result)))
+   :fn pp-term-to-pp-lists
    :hints (("Goal"
             :in-theory (e/d (pp-term-to-pp-lists) ())))))
 

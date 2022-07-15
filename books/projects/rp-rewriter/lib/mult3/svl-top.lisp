@@ -267,11 +267,12 @@
 
 (progn
   (def-rp-rule 4vec-symwildeq-with-constant
-    (implies (and (integerp x)
-                  (posp y)
-                  (syntaxp (or (integerp y)
+    (implies (and (syntaxp (or (integerp y)
                                (and (quotep y)
-                                    (integerp (unquote y))))))
+                                    (integerp (unquote y)))))
+                  (integerp x)
+                  (posp y)
+                  (svl::ignore-and-return-t (sv::4vec-rsh 500 x)))
              (equal (sv::4vec-symwildeq x y)
                     (-- (sv::4vec-bitand
                          (if (equal (acl2::logcar y) 1)
@@ -362,11 +363,12 @@
 ;; 4vec-== lemmas
 (progn
   (def-rp-rule 4vec-==-with-constant
-    (implies (and (integerp x)
-                  (posp y)
-                  (syntaxp (or (integerp y)
+    (implies (and (syntaxp (or (integerp y)
                                (and (quotep y)
-                                    (integerp (unquote y))))))
+                                    (integerp (unquote y)))))
+                  (integerp x)
+                  (posp y)
+                  (svl::ignore-and-return-t (sv::4vec-rsh 500 x)))
              (equal (sv::4vec-== x y)
                     (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
                                              (acl2::logcar x)
@@ -1386,12 +1388,14 @@
 
   (def-rp-rule :disabled-for-acl2 t
     unsigned-byte-p-redefined-with-loghead
-    (implies (natp size)
+    (implies (and (natp size)
+                  (syntaxp :rewriting-main-term))
              (equal (unsigned-byte-p size x)
-                    (and (integerp x)
+                    (and (hide (unsigned-byte-p size x))
+                         (integerp x)
                          (equal x (loghead size x)))
                     #|(and (hide (unsigned-byte-p size x))
-                    (integerp x) ; ; ; ;
+                    (integerp x) ; ; ; ; ;
                     (equal (ash x (- size)) 0))|#))
     :hints (("Goal"
              :expand ((hide (unsigned-byte-p size x)))
@@ -1410,9 +1414,10 @@
                   (syntaxp (atom x)))
              (equal (unsigned-byte-p size x)
                     (and (integerp x)
+                         (hide (unsigned-byte-p size x))
                          (equal x (loghead size x)))
                     #|(and (hide (unsigned-byte-p size x))
-                    (integerp x) ; ; ;
+                    (integerp x) ; ; ; ;
                     (equal (ash x (- size)) 0))|#))
     :hints (("Goal"
              :expand ((hide (unsigned-byte-p size x)))
@@ -1621,7 +1626,7 @@
                             2vec-adder-is-4vec-adder
                             )))))
 
-(rp::add-rp-rule rp::4vec-plus-chain-1 :outside-in :both)
+(rp::add-rp-rule rp::4vec-plus-chain-1 :rw-direction :both)
 
 (progn
   ;; Find Full and Half adder patterns from SVEX when defined with the + sign
@@ -1742,7 +1747,7 @@
     :hints (("Goal"
 	     :in-theory (e/d (bitp) ()))))
 
-  (add-rp-rule HA-patterned-4vec-plus :outside-in :both)
+  (add-rp-rule HA-patterned-4vec-plus :rw-direction :both)
 
   (def-rp-rule FA-patterned-4vec-plus
     (implies (and (bitp x)
@@ -1755,7 +1760,7 @@
     :hints (("Goal"
 	     :in-theory (e/d (bitp) ()))))
 
-  (add-rp-rule FA-patterned-4vec-plus :outside-in :both))|#
+  (add-rp-rule FA-patterned-4vec-plus :rw-direction :both))|#
 
 
 (progn
@@ -1785,7 +1790,7 @@
                               SV::4VEC->lower)
                              (RP::4VEC-PLUS++-IS-4VEC-ADDER)))))
   (add-rp-rule pull-out-dumb-twos-complement
-               :outside-in :both))
+               :rw-direction :both))
 
 (def-rp-rule 4vec-reduction-and-of---bitp
   (implies (bitp x)

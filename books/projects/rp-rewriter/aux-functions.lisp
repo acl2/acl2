@@ -302,7 +302,6 @@
 
   (define falist-consistent (falist-term)
     :parents (rp-utilities)
-    :enabled t
     :short "Given a falist term \(falist \* \*\), checks consistence of arguments."
     (case-match falist-term
       (('falist ('quote falist) term)
@@ -368,6 +367,7 @@
   (local
    (in-theory (enable is-rp
                       is-lambda
+                      falist-consistent
                       is-lambda-strict
                       is-rp-soft)))
 
@@ -465,7 +465,7 @@
            :Expand ((RP-TERMP TERM)
                     (RP-TERM-LISTP (CDR TERM))
                     (RP-TERM-LISTP (CdDR TERM)))
-           :in-theory (e/d (is-rp) ()))))
+           :in-theory (e/d (is-rp falist-consistent) ()))))
 
 (encapsulate
   nil

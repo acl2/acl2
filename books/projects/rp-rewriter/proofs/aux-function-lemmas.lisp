@@ -57,6 +57,10 @@
  (make-flag get-lambda-free-vars :defthm-macro-name
             defthm-get-lambda-free-vars))
 
+(local
+ (in-theory (enable falist-consistent)))
+ 
+
 (make-event
  `(defthm is-lambda-implies
     (implies (is-lambda term)
@@ -153,7 +157,9 @@
              (pseudo-term-listp lst))
     :flag rp-term-listp)
   :hints (("Goal"
-           :in-theory (e/d (is-rp) ()))))
+           :in-theory (e/d (is-rp
+                            falist-consistent)
+                           ()))))
 
 (defthm strip-cdrs-pseudo-termlistp2
   (implies
@@ -436,7 +442,7 @@
                      (get-lambda-free-vars-lst lst)))
     :flag rp-term-listp)
   :hints (("Goal"
-           :in-theory (e/d (is-rp) ()))))
+           :in-theory (e/d (is-rp falist-consistent) ()))))
 
 (defthm get-lambda-free-vars-of-bindings
   (implies (and (rp-term-listp (strip-cdrs bindings))
@@ -530,7 +536,8 @@
                   (rp-term-listp subterms))
              (rp-termp (cons (car term) subterms)))
     :hints (("Goal"
-             :in-theory (e/d (is-rp) ())))
+             :in-theory (e/d (is-rp
+                              falist-consistent) ())))
     ))
 
 (defthm rp-term-listp-append
@@ -754,7 +761,9 @@
               (AND (SYMBOLP TYPE)
                    (NOT (BOOLEANP TYPE))
                    (NOT (EQUAL TYPE 'QUOTE))
-                   (NOT (EQUAL TYPE 'RP))))
+                   (NOT (EQUAL TYPE 'RP))
+                   (NOT (EQUAL TYPE 'LIST))
+                   (NOT (EQUAL TYPE 'FALIST))))
              (& NIL)))
   :rule-classes :forward-chaining
   :hints (("Goal"

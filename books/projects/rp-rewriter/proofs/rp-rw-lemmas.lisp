@@ -320,7 +320,8 @@
   (implies (and (context-syntaxp context)
                 (rp-termp term))
            (RP-TERMP (mv-nth 0 (rp-check-context term dont-rw context
-                                                 :rw-context-flg rw-context-flg))))
+                                                 :rw-context-flg rw-context-flg
+                                                 :attach-sc attach-sc))))
   :hints (("Goal" :in-theory (e/d
                               (context-syntaxp
                                rp-termp
@@ -590,7 +591,9 @@
          iff-flg
          (eval-and-all context a))
    (iff (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context
-                                             :RW-CONTEXT-FLG RW-CONTEXT-FLG)) a)
+                                             :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                             :attach-sc attach-sc))
+                 a)
         (rp-evlt term a)))
   :hints (("Subgoal *1/3"
            :use ((:instance rp-evlt-of-rp-equal
@@ -614,10 +617,12 @@
           ("goal"
            :do-not-induct t
            :induct (rp-check-context term dont-rw context
-                                     :RW-CONTEXT-FLG RW-CONTEXT-FLG)
+                                     :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                     :attach-sc attach-sc)
            :expand ((EVAL-AND-ALL CONTEXT A)
                     (rp-check-context term dont-rw context
-                                      :RW-CONTEXT-FLG RW-CONTEXT-FLG) ;
+                                      :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                      :attach-sc attach-sc) ;
                     (:free (x y) (IS-RP (LIST 'RP (cons 'QUOTE x) y))))
            :in-theory (e/d (rp-check-context
                             ;;RP-EVLT-OF-RP-EQUAL-2
@@ -661,7 +666,10 @@
     (context-syntaxp context)
     (eval-and-all context a)
     (not iff-flg))
-   (equal (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG)) a)
+   (equal (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context
+                                               :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                               :attach-sc attach-sc))
+                   a)
           (rp-evlt term a)))
   :hints (("Goal"
            :in-theory (e/d (rp-check-context
@@ -2053,11 +2061,16 @@ a)
     (implies (and (valid-sc term a)
                   (eval-and-all context a)
                   (valid-sc-subterms context a))
-             (valid-sc (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG)) a))
+             (valid-sc (mv-nth 0 (rp-check-context term dont-rw context
+                                                   :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                                   :attach-sc attach-sc))
+                       a))
     :hints (("goal"
              :expand ((EVAL-AND-ALL CONTEXT A))
              :do-not-induct t
-             :induct (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG)
+             :induct (rp-check-context term dont-rw context
+                                       :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                       :attach-sc attach-sc)
              :in-theory (e/d (rp-check-context
                               is-falist
                               is-rp
@@ -2722,8 +2735,13 @@ a)
     (context-syntaxp context)
     (eval-and-all context a)
     (not iff-flg)
-    (is-rp (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))))
-   (equal (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))) a)
+    (is-rp (mv-nth 0 (rp-check-context term dont-rw context
+                                       :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                       :attach-sc attach-sc))))
+   (equal (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context
+                                                      :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                                      :attach-sc attach-sc)))
+                   a)
           (rp-evlt term a)))
   :hints (("Goal"
            :use ((:instance rp-check-context-is-correct))
@@ -2741,8 +2759,12 @@ a)
     (context-syntaxp context)
     (eval-and-all context a)
     iff-flg
-    (is-rp (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))))
-   (iff (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))) a)
+    (is-rp (mv-nth 0 (rp-check-context term dont-rw context
+                                       :RW-CONTEXT-FLG RW-CONTEXT-FLG :attach-sc attach-sc))))
+   (iff (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context
+                                                    :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                                    :attach-sc attach-sc)))
+                 a)
         (rp-evlt term a)))
   :hints (("Goal"
            :use ((:instance rp-check-context-is-correct-iff))

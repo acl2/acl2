@@ -322,19 +322,6 @@ trigger on any of the following:</p>
     :hints(("Goal" :in-theory (enable svdecomp-ev-symenv)))))
 
 
-(local (defthm match-tree-is-subst-tree-for-pseudo-termp
-         (b* (((mv ok alist) (acl2::match-tree pat x alist)))
-           (implies ok
-                    (equal (pseudo-termp x)
-                           (pseudo-termp (acl2::subst-tree pat alist)))))
-         :hints(("Goal" :in-theory (enable acl2::match-tree-is-subst-tree)))))
-
-(local (defthm match-tree-is-subst-tree-for-svdecomp-ev
-         (b* (((mv ok alist) (acl2::match-tree pat x alist)))
-           (implies ok
-                    (equal (svdecomp-ev x a)
-                           (svdecomp-ev (acl2::subst-tree pat alist) a))))
-         :hints(("Goal" :in-theory (enable acl2::match-tree-is-subst-tree)))))
 
 
 (define svex-alist-evaluation-to-symenv ((x svex-alist-p) (env pseudo-termp))
@@ -391,6 +378,35 @@ trigger on any of the following:</p>
                  (svdecomp-ev-symenv b env)))
   :hints(("Goal" :in-theory (enable svdecomp-ev-symenv))))
 
+
+
+(local (defthmd match-tree-is-subst-tree-for-pseudo-termp
+         (b* (((mv ok alist) (acl2::match-tree pat x alist)))
+           (implies ok
+                    (equal (pseudo-termp x)
+                           (pseudo-termp (acl2::subst-tree pat alist)))))
+         :hints(("Goal" :in-theory (enable acl2::match-tree-is-subst-tree)))))
+
+(local (defthmd match-tree-is-subst-tree-for-svdecomp-ev
+         (b* (((mv ok alist) (acl2::match-tree pat x alist)))
+           (implies ok
+                    (equal (svdecomp-ev x a)
+                           (svdecomp-ev (acl2::subst-tree pat alist) a))))
+         :hints(("Goal" :in-theory (enable acl2::match-tree-is-subst-tree)))))
+
+(local (in-theory (enable acl2::match-tree-obj-equals-subst-when-successful
+                          acl2::match-tree-alist-opener-theory)))
+
+
+(local (defthm assoc-equal-lookup
+         (implies (and (equal key1 (car pair))
+                       (syntaxp (and (quotep key)
+                                     (quotep key1))))
+                  (equal (assoc-equal key (cons pair rest))
+                         (if (equal key key1)
+                             pair
+                           (assoc-equal key rest))))))
+
 (define map-alist-term-keys-to-val-terms ((x pseudo-termp))
   ;; '(list (cons 'a (foo a c))
   ;;        (cons 'b b)
@@ -406,13 +422,13 @@ trigger on any of the following:</p>
              ;; (local (acl2::def-match-tree-rewrites
              ;;          (svex-alist-eval (quote (:? svalist)) (:? env))
              ;;          :prefix svaev-))
-             (local (defthm match-tree-is-subst-tree-for-svar-lookup
+             (local (defthmd match-tree-is-subst-tree-for-svar-lookup
                       (b* (((mv ok alist) (acl2::match-tree pat x alist)))
                         (implies ok
                                  (equal (svar-lookup k x)
                                         (svar-lookup k (acl2::subst-tree pat alist)))))
                       :hints(("Goal" :in-theory (enable acl2::match-tree-is-subst-tree)))))
-             (local (defthm match-tree-is-subst-tree-for-acl2-count
+             (local (defthmd match-tree-is-subst-tree-for-acl2-count
                       (b* (((mv ok alist) (acl2::match-tree pat x alist)))
                         (implies ok
                                  (equal (acl2-count x)
@@ -457,6 +473,9 @@ trigger on any of the following:</p>
     (mv (msg "Failed to parse ~x0 as an alist term~%" x)
         nil))
   ///
+  (local (defthm true-listp-when-svdecomp-symenv-p-rw
+           (implies (svdecomp-symenv-p x) (true-listp x))
+           :hints(("Goal" :in-theory (enable svdecomp-symenv-p)))))
   (verify-guards map-alist-term-keys-to-val-terms)
 
   (local (in-theory (disable (:d map-alist-term-keys-to-val-terms))))
@@ -1039,15 +1058,15 @@ trigger on any of the following:</p>
                                           (envmap envmap-p "maps env terms to svex alists"))
     :progn t
     :parents nil
-    :prepwork ((local (acl2::def-match-tree-rewrites
-                        (svex-eval (quote (:? svex)) (:? env))
-                        :prefix sveval-))
-               (local (defthm match-tree-is-subst-tree-for-svar-lookup
-                        (b* (((mv ok alist) (acl2::match-tree pat x alist)))
-                          (implies ok
-                                   (equal (svar-lookup k x)
-                                          (svar-lookup k (acl2::subst-tree pat alist)))))
-                        :hints(("Goal" :in-theory (enable acl2::match-tree-is-subst-tree)))))
+    :prepwork (;; (local (acl2::def-match-tree-rewrites
+               ;;          (svex-eval (quote (:? svex)) (:? env))
+               ;;          :prefix sveval-))
+               ;; (local (defthm match-tree-is-subst-tree-for-svar-lookup
+               ;;          (b* (((mv ok alist) (acl2::match-tree pat x alist)))
+               ;;            (implies ok
+               ;;                     (equal (svar-lookup k x)
+               ;;                            (svar-lookup k (acl2::subst-tree pat alist)))))
+               ;;          :hints(("Goal" :in-theory (enable acl2::match-tree-is-subst-tree)))))
                (local (in-theory (enable svar-alist-fix
                                          svar-alist-p
                                          svex-alist-alist-fix))))
@@ -1090,7 +1109,8 @@ trigger on any of the following:</p>
     ///
     (local (in-theory (disable svar-alist-p fast-alist-clean
                                ;acl2::consp-under-iff-when-true-listp
-                               (:d alist-collect-compositions-aux))))
+                               (:d alist-collect-compositions-aux)
+                               acl2::intersectp-equal-commute)))
     (local
      (progn
        (defthm alists-collect-compositions-aux-preserves-no-duplicate-keys

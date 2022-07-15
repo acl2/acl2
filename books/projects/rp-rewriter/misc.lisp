@@ -157,7 +157,9 @@
           (pull-keys-from-rest-args args '(:disabled-for-rp
                                            :disabled
                                            :disabled-for-ACL2
-                                           :from-add-rp-rule)))
+                                           :from-add-rp-rule
+                                           :beta-reduce
+                                           :rw-direction)))
          (from-add-rp-rule (cdr (hons-assoc-equal :from-add-rp-rule
                                                   pulled-args)))
          (disabled (cdr (hons-assoc-equal :disabled
@@ -168,6 +170,10 @@
          (disabled-for-acl2 (or disabled
                                 (cdr (hons-assoc-equal :disabled-for-acl2
                                                        pulled-args))))
+         (rw-direction (cdr (hons-assoc-equal :rw-direction pulled-args)))
+         (beta-reduce (if (hons-assoc-equal :beta-reduce pulled-args)
+                          (cdr (hons-assoc-equal :beta-reduce pulled-args))
+                        t))
          
          ((mv hyp lhs rhs iff)
           (case-match rule
@@ -196,13 +202,17 @@
 
          (rule-name-for-rp (intern$ (str::cat (symbol-name rule-name)
                                               "-FOR-RP")
+                                    (symbol-package-name rule-name)))
+         (rule-name-for-rp-openers (intern$ (str::cat (symbol-name rule-name)
+                                              "-FOR-RP-OPENERS")
                                     (symbol-package-name rule-name))))
-      (if (or (and sigs fncs openers)
-              (and (or sigs fncs openers)
-                   (hard-error
-                    'lambdas-to-other-rules
-                    "something unexpected happened.... contact Mertcan Temel<temelmertcan@gmail.com>~%"
-                    nil)))
+      (if (and beta-reduce
+               (or (and sigs fncs openers)
+                   (and (or sigs fncs openers)
+                        (hard-error
+                         'lambdas-to-other-rules
+                         "something unexpected happened.... contact Mertcan Temel<temelmertcan@gmail.com>~%"
+                         nil))))
           `(encapsulate
                ,sigs
                ,@fncs
@@ -220,10 +230,10 @@
                                                        fmt-to-comment-window
                                                        return-last)
                                                      ))
-                        (AND STABLE-UNDER-SIMPLIFICATIONP
-                             '(:IN-THEORY (e/d () ()))))))
+                        (AND Stable-under-simplificationp
+                             '(:in-theory (e/d () ()))))))
              (local
-              (rp::add-rp-rule opener-lemmas :outside-in t))
+              (rp::add-rp-rule opener-lemmas :rw-direction :outside-in))
 
              (with-output
                :stack :pop
@@ -234,8 +244,27 @@
                                (,(if iff `iff `equal)
                                 ,lhs-body
                                 ,rhs-body))
-                      ,@openers)
+                      ,@(if (or (equal rw-direction :outside-in)
+                                (equal rw-direction :both))
+                            nil
+                          openers))
                  ,@args))
+
+             ;; if outside-in is selected, then opener lemmas should be separate
+             
+             ,@(and (or (equal rw-direction :outside-in)
+                        (equal rw-direction :both))
+                    `((with-output
+                        :stack :pop
+                        :on (acl2::summary acl2::event)
+                        :summary-off (:other-than acl2::time acl2::rules)
+                        (def-rp-rule :disabled-for-acl2 t
+                          ,rule-name-for-rp-openers
+                          (and ,@openers)
+                          :beta-reduce nil
+                          :hints (("Goal"
+                                   :use ((:instance opener-lemmas))
+                                   :in-theory nil))))))
              
              
              ,@(if from-add-rp-rule
@@ -249,6 +278,7 @@
 
              (add-rp-rule ,rule-name
                           :beta-reduce nil
+                          :rw-direction ,rw-direction
                           :disabled ,disabled-for-rp)
              (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
              #|(acl2::extend-pe-table ,rule-name-for-rp
@@ -266,6 +296,7 @@
                ,@args))
            (add-rp-rule ,rule-name
                         :beta-reduce nil
+                        :rw-direction ,rw-direction
                         :disabled ,disabled-for-rp)))))
 
   ;; (case-match rule
@@ -446,20 +477,22 @@ nothing to bump!" nil)))
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
                                    (hints 'nil)
-                                   (outside-in 'nil)
+                                   (rw-direction ':inside-out)
                                    (ruleset 'rp-rules))
 
     (b* ((rw-direction
-          (cond ((or (equal outside-in ':inside-out)
-                     (equal outside-in ':both))
+          (cond ((equal rw-direction ':both)
                  :both)
-                ((equal outside-in t)
+                ((equal rw-direction :outside-in)
                  :outside-in)
-                ((equal outside-in nil)
+                ((or (equal rw-direction :inside-out)
+                     (equal rw-direction nil))
                  :inside-out)
-                (t (hard-error 'add-rp-rule
-                               ":outside-in can only be :inside-out, t, or nil but we are given: ~p0 ~%"
-                               (list (cons #\0 outside-in)))))))
+                (t (hard-error
+                    'add-rp-rule
+                    ":rw-direction can only be :both, :outside-in, :inside-out,~
+ or nil (meaning :inside-out) but it is given: ~p0 ~%"
+                    (list (cons #\0 rw-direction)))))))
       `(make-event
         (b* ((body (and ,beta-reduce
                         (meta-extract-formula ',rule-name state)))
@@ -489,6 +522,7 @@ nothing to bump!" nil)))
                  (defthm-lambda ,rule-name
                    ,body
                    :from-add-rp-rule t
+                   :rw-direction ,',rw-direction
                    :hints ,',hints)
                  (with-output :off :all :gag-mode nil :on error
                    (progn

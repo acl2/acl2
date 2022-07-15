@@ -63,6 +63,9 @@
  (in-theory (enable pp)))
 
 (local
+ (set-induction-depth-limit 1))
+
+(local
  (in-theory (e/d (sum-comm-1-loop-stopper
                   sum-comm-2-loop-stopper)
                  (sum-comm-1
@@ -209,7 +212,8 @@
     :hints (("Goal"
              ;;:induct (sort-pp-lists lst1 len)
              ;;:do-not-induct t
-             :in-theory (e/d (sort-pp-lists) ())))))
+             :in-theory (e/d (sort-pp-lists)
+                             (+-IS-SUM))))))
 
 (local
  (defthm valid-sc-subterms-lst-and$-pp-lists-aux
@@ -232,10 +236,11 @@
   :hints (("Goal"
            :in-theory (e/d (and$-pp-lists) ()))))
 
-(defthm valid-sc-subterms-lst-pp-term-to-pp-lists
+(defret valid-sc-subterms-lst-pp-term-to-pp-lists
   (implies (valid-sc term a)
-           (valid-sc-subterms-lst (strip-cdrs (pp-term-to-pp-lists term sign))
+           (valid-sc-subterms-lst (strip-cdrs result)
                                   a))
+  :fn pp-term-to-pp-lists
   :hints (("Goal"
            :in-theory (e/d (pp-term-to-pp-lists) ()))))
 
@@ -721,25 +726,47 @@
 
 (create-regular-eval-lemma pp 1 mult-formula-checks)
 
-(defthm pp-term-p-is-bitp
-  (implies (and (pp-term-p term)
-                (mult-formula-checks state)
-                (rp-evl-meta-extract-global-facts)
-                (valid-sc term a))
-           (bitp (rp-evlt term a)))
-  :hints (("goal"
-           :do-not-induct t
-           :induct (pp-term-p term)
-           :in-theory (e/d* (;;rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
-                             (:REWRITE
-                              REGULAR-RP-EVL-OF_PP_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP))
-                            (valid-sc
-                             bitp
-                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                             rp-trans
-                             ;;rp-evlt-of-ex-from-rp
-                             sum
-                             not$-to-pp-sum)))))
+(encapsulate
+  nil
+
+  (local
+   (defthmd bitp-implies-integerp
+     (implies (bitp x)
+              (integerp x))))
+
+  (defthm pp-term-p-is-bitp
+    (implies (and (pp-term-p term :strict strict)
+                  (mult-formula-checks state)
+                  (rp-evl-meta-extract-global-facts)
+                  (valid-sc term a))
+             (and (bitp (rp-evlt term a))
+                  (integerp (rp-evlt term a))))
+    :hints (("goal"
+             :do-not-induct t
+             :induct (pp-term-p term :strict strict)
+             :in-theory (e/d* (;;rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
+                               bitp-implies-integerp
+                               (:REWRITE
+                                REGULAR-RP-EVL-OF_PP_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP))
+                              (valid-sc
+                               bitp
+                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                               rp-trans
+                               ;;rp-evlt-of-ex-from-rp
+                               sum
+                               not$-to-pp-sum)))))
+
+  (defthm pp-term-p-is-bitp-strict=nil
+    (implies (and (pp-term-p term :strict nil)
+                  (mult-formula-checks state)
+                  (rp-evl-meta-extract-global-facts)
+                  (valid-sc term a))
+             (and (bitp (rp-evlt term a))
+                  (integerp (rp-evlt term a))))
+    :hints (("goal"
+             :use ((:instance pp-term-p-is-bitp
+                              (strict nil)))
+             ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ARITH LEMMAS
@@ -1245,6 +1272,11 @@
      :hints (("goal"
               :in-theory (e/d (pp-lists-to-term-and$) ())))))
 
+  (local
+   (defthm bit-listp-implies-integer-listp
+     (implies (bit-listp x)
+              (integer-listp x))))
+  
   (local
    (defthm integerp-of-eval-of-pp-lists-to-term
      (implies (and (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a))
@@ -2033,7 +2065,7 @@
                                           (apply-sign-to-pp-lists lst2 sign))))
    :hints (("Goal"
             :do-not-induct t
-            :in-theory (e/d () ())))))
+            :in-theory (e/d (merge-sorted-pp-lists-simple-of-apply-sign) ())))))
 
 (local
  (defthm merge-sorted-pp-lists-simple-of-apply-sign-2
@@ -2177,11 +2209,30 @@
                                floor
 ;xor
                                floor2-if-f2
-                               merge-sorted-pp-lists-simple-of-apply-sign-2)))))))
+                               merge-sorted-pp-lists-simple-of-apply-sign-2)))))
+
+   (defthmd sort-pp-lists-of-apply-sign-reverse
+     (implies (and (pp-lists-p lst))
+              (equal (apply-sign-to-pp-lists (sort-pp-lists lst size)
+                                             sign)
+                     (sort-pp-lists (apply-sign-to-pp-lists lst sign) size)))
+     :otf-flg t
+     :hints (("Goal"
+              :do-not-induct t
+              :in-theory (e/d (sort-pp-lists-of-apply-sign)
+                              ()))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FLATTEN LEMMAS
 
+(local
+ (defthm PP-LISTS-P-AND$-PP-LISTS
+   (implies (and (pp-lists-p lst1)
+                 (pp-lists-p lst2)
+                 (pp-lists-p acc)
+                 (booleanp sign))
+            (PP-LISTS-P (AND$-PP-LISTS lst1 lst2 acc sign)))))
+            
 (local
  (progn
    (defthm and$-pp-lists-aux-returns-bit-list-listp
@@ -2221,21 +2272,25 @@
                                pp-term-to-pp-lists
                                bit-list-listp) ()))))
 
-   (defthm pp-term-to-pp-lists-returns-bit-list-listp
+   
+   (defret pp-term-to-pp-lists-returns-bit-list-listp
      (implies (and (mult-formula-checks state)
                    (pp-term-p term)
                    (booleanp sign)
                    (valid-sc term a)
                    (rp-evl-meta-extract-global-facts))
               (bit-list-listp
-               (rp-evlt-lst-lst (strip-cdrs (pp-term-to-pp-lists term sign))
+               (rp-evlt-lst-lst (strip-cdrs result)
                                 a)))
+     :fn pp-term-to-pp-lists
      :hints (("goal"
               :do-not-induct t
               :induct (pp-term-to-pp-lists term sign)
               :in-theory (e/d (rp-evlt-lst-lst
+                               pp-term-p
                                pp-term-to-pp-lists
-                               bit-list-listp) ()))))))
+                               bit-list-listp)
+                              ()))))))
 
 (progn
   (local
@@ -2347,9 +2402,345 @@
                                      acc main-sign)
               :in-theory (e/d (and$-pp-lists
                                APPLY-SIGN-TO-PP-LISTS)
-                              ())))))
+                              ()))))))
 
-  (local
+
+
+
+(defret PP-LISTS-P-of-PP-TERM-TO-PP-LISTS
+  (implies (booleanp sign)
+           (pp-lists-p result))
+  :fn PP-TERM-TO-PP-LISTS
+  :hints (("Goal"
+           :in-theory (e/d (PP-TERM-TO-PP-LISTS) ()))))
+
+
+(local
+ (defthmd equiv-of-merged-sorted-pp-lists-with-apply-sign-to-pp-lists
+   (implies (and (PP-LISTS-P LST1)
+                 (PP-LISTS-P LST2)
+                 (PP-LISTS-P LST1-2)
+                 (PP-LISTS-P LST2-2)
+                 (equal lst1 (apply-sign-to-pp-lists lst1-2 sign))
+                 (equal lst2 (apply-sign-to-pp-lists lst2-2 sign)))
+            (and  #|(equal (len (merge-soted-pp-lists lst1 lst2))
+                        (len (merge-sorted-pp-lists lst1-2 lst2-2)))
+                 (equal (strip-cdrs (merge-sorted-pp-lists lst1 lst2))
+                        (strip-cdrs (merge-sorted-pp-lists lst1-2 lst2-2)))|#
+                 (equal (apply-sign-to-pp-lists (merge-sorted-pp-lists lst1 lst2) sign)
+                        (merge-sorted-pp-lists lst1-2 lst2-2))))
+   :otf-flg t
+   :hints (("Goal"
+            :do-not-induct t
+            :induct (MERGE-SORTED-PP-LISTS LST1-2 LST2-2)
+            :in-theory (e/d
+                        (;;APPLY-SIGN-TO-PP-LISTS
+                         MERGE-SORTED-PP-LISTS
+                         MERGE-SORTED-PP-LISTS-SIMPLE-OF-APPLY-SIGN-REVERSE)
+                        (+-IS-SUM
+                         ATOM-MERGE-SORTED-PP-LISTS
+                         merge-sorted-pp-lists-simple-of-apply-sign-2
+                         MERGE-SORTED-PP-LISTS-SIMPLE-OF-APPLY-SIGN))))))
+
+(local
+ (defthm strip-cdrs-of-apply-sign-to-pp-lists
+   (equal (strip-cdrs (apply-sign-to-pp-lists lst sign))
+          (strip-cdrs lst))
+   :hints (("Goal"
+            :in-theory (e/d (apply-sign-to-pp-lists) ())))))
+
+(local
+ (defthmd len-equiv-of-merged-sorted-pp-lists-with-apply-sign-to-pp-lists
+   (implies (and (PP-LISTS-P LST1)
+                 (PP-LISTS-P LST2)
+                 (PP-LISTS-P LST1-2)
+                 (PP-LISTS-P LST2-2)
+                 (equal lst1 (apply-sign-to-pp-lists lst1-2 t))
+                 (equal lst2 (apply-sign-to-pp-lists lst2-2 t)))
+            (and  (equal (len (merge-sorted-pp-lists lst1 lst2))
+                         (len (merge-sorted-pp-lists lst1-2 lst2-2)))
+                  (equal (equal (len (merge-sorted-pp-lists lst1 lst2))
+                                (len (merge-sorted-pp-lists lst1-2 lst2-2)))
+                         t)
+                  (equal (strip-cdrs (merge-sorted-pp-lists lst1 lst2))
+                         (strip-cdrs (merge-sorted-pp-lists lst1-2 lst2-2)))
+                  #|(equal (apply-sign-to-pp-lists (merge-sorted-pp-lists lst1 lst2) sign)
+                  (merge-sorted-pp-lists lst1-2 lst2-2))|#))
+   :otf-flg t
+   :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance
+                   equiv-of-merged-sorted-pp-lists-with-apply-sign-to-pp-lists
+                   (sign t)))
+            ;;:induct (MERGE-SORTED-PP-LISTS LST1-2 LST2-2)
+            :in-theory (e/d
+                        (;;APPLY-SIGN-TO-PP-LISTS
+                         ;;MERGE-SORTED-PP-LISTS
+                         ;;MERGE-SORTED-PP-LISTS-SIMPLE-OF-APPLY-SIGN-REVERSE
+                         )
+                        (+-IS-SUM
+                         ATOM-MERGE-SORTED-PP-LISTS
+                         merge-sorted-pp-lists-simple-of-apply-sign-2
+                         MERGE-SORTED-PP-LISTS-SIMPLE-OF-APPLY-SIGN))))))
+
+(local
+ (defthmd len-of-AND$-PP-LISTS-with-apply-sign-to-pp-lists
+   (implies (and (PP-LISTS-P LST1)
+                 (PP-LISTS-P LST2)
+                 (PP-LISTS-P LST1-2)
+                 (PP-LISTS-P LST2-2)
+                 (booleanp sign)
+                 (booleanp sign2)
+                 (equal lst1 (apply-sign-to-pp-lists lst1-2 sign2))
+                 (equal lst2 (apply-sign-to-pp-lists lst2-2 sign2)))
+            (and  
+                 (equal (len (AND$-PP-LISTS lst1 lst2 acc sign))
+                        (len (AND$-PP-LISTS lst1-2 lst2-2 acc sign)))))
+   :otf-flg t
+   :hints (("Goal"
+            :do-not-induct t
+            
+            ;;:induct (AND$-PP-LISTS LST1-2 LST2-2 acc sign)
+            :in-theory (e/d
+                        (;;APPLY-SIGN-TO-PP-LISTS
+                         )
+                        (and$-pp-lists-aux-extract-sign-and-acc
+                         ;;AND$-PP-LISTS-OF-APPLIED-WITH-SAME-SIGN
+                         ;;APPLY-SIGN-TO-PP-LISTS-OF-APPEND
+                         ))))))
+                 
+                        
+(local
+ (defthm APPLY-SIGN-TO-PP-LISTS-move-to-other-side
+   (implies (and (equal lst1 (apply-sign-to-pp-lists lst2 sign))
+                 #|(syntaxp (case-match lst1
+                 (('mv-nth & ('PP-TERM-TO-PP-LISTS & ''nil)) ;
+                 t)))|#
+                 (pp-lists-p lst1)
+                 (pp-lists-p lst2))
+            (and (equal (apply-sign-to-pp-lists lst1 sign) lst2)
+                 (equal lst1 (apply-sign-to-pp-lists lst2 sign))))
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d () ())))))
+
+
+(local
+ (defthmd and$-pp-lists-insert-sign
+   (implies (syntaxp (and (case-match lst1
+                            (('MV-NTH & ('PP-TERM-TO-PP-LISTS & ''T)) t))
+                          (case-match lst2
+                            (('MV-NTH & ('PP-TERM-TO-PP-LISTS & ''T)) t))))
+            (equal (and$-pp-lists lst1
+                                  lst2
+                                  acc
+                                  main-sign)
+                   (and$-pp-lists (apply-sign-to-pp-lists lst1 t)
+                                  (apply-sign-to-pp-lists lst2 t)
+                                  acc main-sign)))))
+
+(local
+ (defthm
+   merge-sorted-pp-lists-simple-of-apply-sign-3
+   (implies
+    (and (pp-lists-p lst1)
+         (pp-lists-p lst2)
+         (syntaxp (quotep lst1)))
+    (equal
+     (merge-sorted-pp-lists  lst1
+                             (apply-sign-to-pp-lists lst2 sign))
+     (apply-sign-to-pp-lists
+      (merge-sorted-pp-lists
+       (apply-sign-to-pp-lists lst1 sign) lst2)
+      sign)))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory
+     (e/d (merge-sorted-pp-lists-simple-of-apply-sign-reverse)
+          (merge-sorted-pp-lists-simple-of-apply-sign
+           MERGE-SORTED-PP-LISTS-SIMPLE-OF-APPLY-SIGN-2))))))
+
+(Local
+ (encapsulate nil
+
+   (local
+    (define pp-term-to-pp-lists-two-sign-induct (term sign1 sign2)
+      :measure (cons-count term)
+      :hints
+      (("goal" :in-theory (e/d (measure-lemmas) nil)))
+      (declare (ignorable term sign1 sign2))
+  
+      :verify-guards nil
+      (b* ((term (ex-from-rp term)))
+        (cond
+         ((or (binary-and-p term)
+              (binary-or-p term)
+              (binary-xor-p term))
+          (b* ((x (cadr term))
+               (y (caddr term)))
+            (list*
+             (pp-term-to-pp-lists-two-sign-induct x nil nil)
+             (pp-term-to-pp-lists-two-sign-induct x sign1 sign2)
+             (pp-term-to-pp-lists-two-sign-induct y nil nil)
+             (pp-term-to-pp-lists-two-sign-induct y sign1 sign2))))
+         ((binary-?-p term)
+          (b* ((test (cadr term))
+               (x (caddr term))
+               (y (cadddr term)))
+            (list*
+             (pp-term-to-pp-lists-two-sign-induct test sign1 sign2)
+             (pp-term-to-pp-lists-two-sign-induct x sign1 sign2)
+             (pp-term-to-pp-lists-two-sign-induct y sign1 sign2))))
+         ((binary-not-p term)
+          (list* (pp-term-to-pp-lists-two-sign-induct
+                  (cadr term) (not sign1) (not sign2))
+                 (pp-term-to-pp-lists-two-sign-induct
+                  (cadr term) (not sign1) sign2)
+                 (pp-term-to-pp-lists-two-sign-induct
+                  (cadr term) sign1 (not sign2))
+                 (pp-term-to-pp-lists-two-sign-induct
+                  (cadr term) sign1 sign2)))
+         ((pp-p term)
+          (pp-term-to-pp-lists-two-sign-induct (cadr term) sign1 sign2))
+         (t nil)))))
+
+   
+   (local
+    (define hidden-pp-term-to-pp-lists (lst sign)
+      :verify-guards nil
+      :returns (mv res too-large-p)
+      (pp-term-to-pp-lists lst sign)
+      ///
+      (defret pp-lists-p-of<fn>
+        (implies (booleanp sign)
+                 (pp-lists-p res)))))
+
+   (local
+    (defthmd pp-term-to-pp-lists-extract-sign-lemma
+      (and (implies (and (syntaxp (not (atom lst1)))
+                         (equal (apply-sign-to-pp-lists (mv-nth 0 (pp-term-to-pp-lists lst1 t))
+                                                        t)
+                                (mv-nth 0 (pp-term-to-pp-lists lst1 nil))))
+                    (and (equal (mv-nth 0 (pp-term-to-pp-lists lst1 t))
+                                (apply-sign-to-pp-lists
+                                 (mv-nth 0 (hidden-pp-term-to-pp-lists lst1 nil))
+                                 t))
+                         (equal (pp-term-to-pp-lists lst1 nil)
+                                (hidden-pp-term-to-pp-lists lst1 nil))))
+           #|(implies (syntaxp (not (atom lst1)))
+           (equal (pp-term-to-pp-lists lst1 nil) ; ;
+           (hidden-pp-term-to-pp-lists lst1 nil)))|#)
+      :hints (("Goal"
+             
+               :in-theory (e/d (hidden-pp-term-to-pp-lists) ())))))
+
+
+   (defret pp-term-to-pp-lists-extract-sign-1
+     (implies (and (syntaxp (not (and (equal sign ''nil))))
+                   (booleanp sign)
+                   (booleanp sign2))
+              ;;(test term sign sign2)
+            
+              (and (equal (mv-nth 1 (pp-term-to-pp-lists term (xor sign sign2)))
+                          (mv-nth 1 (pp-term-to-pp-lists term sign2)))
+                   (equal (len (mv-nth 0 (pp-term-to-pp-lists term (xor sign sign2))))
+                          (len (mv-nth 0 (pp-term-to-pp-lists term sign2))))
+                   (equal (mv-nth 0 (pp-term-to-pp-lists term (xor sign sign2)))
+                          (apply-sign-to-pp-lists
+                           (mv-nth 0 (pp-term-to-pp-lists term sign2))
+                           sign))))
+     :otf-flg t
+     :fn pp-term-to-pp-lists
+     :hints (
+             #|("Subgoal *1/2"
+             :use ((:instance ; ;
+             APPLY-SIGN-TO-PP-LISTS-move-to-other-side ; ;
+             (lst1 (MV-NTH 0 ; ;
+             (PP-TERM-TO-PP-LISTS (CADDDR (EX-FROM-RP TERM)) ; ;
+             NIL))) ; ;
+             (lst2 (MV-NTH 0 ; ;
+             (PP-TERM-TO-PP-LISTS (CADDDR (EX-FROM-RP TERM)) ; ;
+             T))) ; ;
+             (sign t)) ; ;
+             (:instance ; ;
+             len-of-AND$-PP-LISTS-with-apply-sign-to-pp-lists ; ;
+             (sign nil) ; ;
+             (sign2 sign2) ; ;
+             (lst1 (MV-NTH 0 ; ;
+             (PP-TERM-TO-PP-LISTS (CADR (EX-FROM-RP TERM)) ; ;
+             nil))) ; ;
+             (lst2 (MV-NTH 0 ; ;
+             (PP-TERM-TO-PP-LISTS (CADDR (EX-FROM-RP TERM)) ; ;
+             nil))) ; ;
+             (lst1-2 (MV-NTH 0 ; ;
+             (PP-TERM-TO-PP-LISTS (CADR (EX-FROM-RP TERM)) ; ;
+             sign2))) ; ;
+             (lst2-2 (MV-NTH 0 ; ;
+             (PP-TERM-TO-PP-LISTS (CADdR (EX-FROM-RP TERM)) ; ;
+             sign2))))) ; ;
+             )|#
+
+             ("goal"
+              :do-not '(generalize fertilize)
+              :expand ((booleanp sign)
+                       (HIDDEN-PP-TERM-TO-PP-LISTS TERM NIL)
+                       (pp-term-to-pp-lists term sign)
+                       (pp-term-to-pp-lists term nil)
+                       (pp-term-to-pp-lists term t)
+                       (pp-term-to-pp-lists term sign2))
+              :do-not-induct t
+              :induct (pp-term-to-pp-lists-two-sign-induct term sign sign2)
+              :in-theory (e/d
+                          (pp-term-to-pp-lists-extract-sign-lemma
+
+                           merge-sorted-pp-lists-simple-of-apply-sign-3
+                         
+                           ;;and$-pp-lists-insert-sign
+                           len-of-AND$-PP-LISTS-with-apply-sign-to-pp-lists
+                           equiv-of-merged-sorted-pp-lists-with-apply-sign-to-pp-lists
+                           len-equiv-of-merged-sorted-pp-lists-with-apply-sign-to-pp-lists
+                           pp-term-to-pp-lists-two-sign-induct
+                           ;;merge-sorted-pp-lists-simple-of-apply-sign-reverse
+                           apply-sign-to-pp-lists
+                           )
+                          (sum
+
+                           ;;APPLY-SIGN-TO-PP-LISTS-MOVE-TO-OTHER-SIDE
+                         
+                           ;;AND$-PP-LISTS-OF-APPLIED-WITH-SAME-SIGN
+                           ;;merge-sorted-pp-lists-simple-of-apply-sign-2
+                           ;;MERGE-SORTED-PP-LISTS-SIMPLE-OF-APPLY-SIGN
+                           ATOM-MERGE-SORTED-PP-LISTS
+                           --
+                           ifix))
+              )))
+
+   (defthm pp-term-to-pp-lists-extract-sign
+     (implies (and (syntaxp (not (and (equal sign ''nil))))
+                   (booleanp sign))
+              (and (equal (mv-nth 0 (pp-term-to-pp-lists term sign))
+                          (apply-sign-to-pp-lists
+                           (mv-nth 0 (pp-term-to-pp-lists term nil))
+                           sign))
+                   (equal (mv-nth 1 (pp-term-to-pp-lists term sign))
+                          (mv-nth 1 (pp-term-to-pp-lists term nil)))))
+     :otf-flg t
+     :hints (("goal"
+              :do-not-induct t
+              :use ((:instance pp-term-to-pp-lists-extract-sign-1
+                               (sign2 t)))
+              :in-theory (e/d
+                          (booleanp
+                           APPLY-SIGN-TO-PP-LISTS)
+                          ()))))))
+
+
+
+
+
+#|(progn
+ #| #|(local
    (defthm pp-term-to-pp-lists-extract-sign-lemma-dummy-lemma
      (implies (and (EQUAL (APPLY-SIGN-TO-PP-LISTS x T) z)
                    (EQUAL (APPLY-SIGN-TO-PP-LISTS k T) m))
@@ -2362,21 +2753,21 @@
               :in-theory (e/d (APPLY-SIGN-TO-PP-LISTS)
                               (and$-pp-lists
                                apply-sign-to-pp-lists
-                               AND$-PP-LISTS-EXTRACT-SIGN-AND-ACC))))))
+                               AND$-PP-LISTS-EXTRACT-SIGN-AND-ACC))))))|#
 
-  (local
+  #|(local
    (defthm pp-term-to-pp-lists-extract-sign-lemma-dummy-lemma-2
-     (implies (and (EQUAL (PP-TERM-TO-PP-LISTS (cadr x) T)
+     (implies (and (EQUAL (mv-nth 0 (PP-TERM-TO-PP-LISTS (cadr x) T))
                           (APPLY-SIGN-TO-PP-LISTS a T))
-                   (EQUAL (PP-TERM-TO-PP-LISTS (caddr z) T)
+                   (EQUAL (mv-nth 0 (PP-TERM-TO-PP-LISTS (caddr z) T))
                           (APPLY-SIGN-TO-PP-LISTS b T))
                    (pp-lists-p a)
                    (pp-lists-p b)
                    (pp-lists-p lst-x))
               (EQUAL
                (merge-sorted-pp-lists
-                (merge-sorted-pp-lists (PP-TERM-TO-PP-LISTS (cadr x) T)
-                                       (PP-TERM-TO-PP-LISTS (caddr z) T))
+                (merge-sorted-pp-lists (mv-nth 0 (PP-TERM-TO-PP-LISTS (cadr x) T))
+                                       (mv-nth 0 (PP-TERM-TO-PP-LISTS (caddr z) T)))
                 lst-x)
                (APPLY-SIGN-TO-PP-LISTS
                 (merge-sorted-pp-lists
@@ -2389,17 +2780,17 @@
               :in-theory (e/d ()
                               (and$-pp-lists
                                apply-sign-to-pp-lists
-                               AND$-PP-LISTS-EXTRACT-SIGN-AND-ACC))))))
+                               AND$-PP-LISTS-EXTRACT-SIGN-AND-ACC))))))|#
 
-  (local
+  #|(local
    (defthm pp-term-to-pp-lists-extract-sign-lemma-dummy-lemma-3
-     (implies (and (EQUAL (PP-TERM-TO-PP-LISTS (cadr x) T)
+     (implies (and (EQUAL (mv-nth 0 (PP-TERM-TO-PP-LISTS (cadr x) T))
                           (APPLY-SIGN-TO-PP-LISTS a T))
                    (pp-lists-p a)
                    (booleanp sign))
               (EQUAL
                (merge-sorted-pp-lists `((,sign '1))
-                                      (PP-TERM-TO-PP-LISTS (CADR x) T))
+                                      (mv-nth 0 (PP-TERM-TO-PP-LISTS (CADR x) T)))
                (APPLY-SIGN-TO-PP-LISTS (merge-sorted-pp-lists
                                         `((,(not sign) '1))
                                         a)
@@ -2410,16 +2801,16 @@
                               (and$-pp-lists
                                merge-sorted-pp-lists-simple-of-apply-sign
                                apply-sign-to-pp-lists
-                               AND$-PP-LISTS-EXTRACT-SIGN-AND-ACC))))))
+                               AND$-PP-LISTS-EXTRACT-SIGN-AND-ACC))))))|#
 
   (local
    (defthm pp-term-to-pp-lists-extract-sign-lemma-dummy-lemma-4
-     (implies (and (EQUAL (PP-TERM-TO-PP-LISTS (cadr x) nil)
+     (implies (and (EQUAL (mv-nth 0 (PP-TERM-TO-PP-LISTS (cadr x) nil))
                           (APPLY-SIGN-TO-PP-LISTS a T))
                    (pp-lists-p a))
               (EQUAL
                (merge-sorted-pp-lists `((t '1))
-                                      (PP-TERM-TO-PP-LISTS (CADR x) nil))
+                                      (mv-nth 0 (PP-TERM-TO-PP-LISTS (CADR x) nil)))
                (APPLY-SIGN-TO-PP-LISTS (merge-sorted-pp-lists
                                         `((nil '1))
                                         a)
@@ -2433,14 +2824,15 @@
                                AND$-PP-LISTS-EXTRACT-SIGN-AND-ACC))))))
 
   (local
-   (defthmd pp-term-to-pp-lists-extract-sign-lemma
+   (acl2::defret pp-term-to-pp-lists-extract-sign-lemma
      (implies (and (booleanp sign)
                    (booleanp s2))
-              (equal (pp-term-to-pp-lists term sign)
+              (equal result
                      (apply-sign-to-pp-lists
-                      (pp-term-to-pp-lists term (xor s2 sign))
+                      (mv-nth 0 (pp-term-to-pp-lists term (xor s2 sign)))
                       s2)))
      :otf-flg t
+     :fn pp-term-to-pp-lists
      :hints (("goal"
               :do-not-induct t
               :induct (pp-term-to-pp-lists term sign)
@@ -2456,16 +2848,18 @@
                                --
                                ifix))
               :use ((:instance and$-pp-lists-of-applied-with-same-sign
-                               (lst1 (pp-term-to-pp-lists (cadr (ex-from-rp term))
-                                                          t))
-                               (lst2 (pp-term-to-pp-lists (caddr (ex-from-rp term))
-                                                          t))
+                               (lst1 (mv-nth 0 (pp-term-to-pp-lists (cadr (ex-from-rp term))
+                                                                    t)))
+                               (lst2 (mv-nth 0 (pp-term-to-pp-lists (caddr (ex-from-rp term))
+                                                                    t)))
                                (sign t)
                                (acc nil)
                                (main-sign nil)))))))
+  (local
+   (in-theory (disable pp-term-to-pp-lists-extract-sign-lemma)))|#
 
   (local
-   (defthm pp-term-to-pp-lists-extract-sign
+   (defthm pp-term-to-pp-lists-extract-sign-2
      (implies (and (syntaxp (not (and (equal sign ''nil))))
                    (booleanp sign))
               (equal (pp-term-to-pp-lists term sign)
@@ -2480,7 +2874,7 @@
               :in-theory (e/d (APPLY-SIGN-TO-PP-LISTS)
                               (sum
                                --
-                               ifix)))))))
+                               ifix)))))))|#
 
 (local
  (defthm and$-pp-lists-aux-is-correct-lemma-2
@@ -2555,19 +2949,35 @@
 
 (value-triple (hons-clear t))
 
+(defthm bitp-pattern-for-binary-?-in-summation
+  (implies (and (bitp test) (bitp then) (bitp else))
+           (bitp (sum else
+                      (and$ test then)
+                      (-- (and$ test else))))))
+
+(defthm bitp-pattern-for-binary-xor-in-summation
+  (implies (and (bitp x) (bitp y) )
+           (bitp (sum x y (-- (and$ x y)) (-- (and$ x y))))))
+
+(defthm bitp-pattern-for-binary-or-in-summation
+  (implies (and (bitp x) (bitp y) )
+           (bitp (sum x y (-- (and$ x y))))))
+
+
 ;; MAIN LEMMA1.
-(defthm rp-evlt_of_pp-lists-to-term_of_pp-term-to-pp-lists
+(defret rp-evlt_of_pp-lists-to-term_of_pp-term-to-pp-lists
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
                 (booleanp sign)
                 (valid-sc term a)
-                (rp-evl-meta-extract-global-facts))
-           (equal (rp-evlt (pp-lists-to-term-p+
-                            (pp-term-to-pp-lists term sign))
-                           a)
+                (rp-evl-meta-extract-global-facts)
+                ;;(not too-large-p)
+                )
+           (equal (rp-evlt (pp-lists-to-term-p+ result) a)
                   (if sign
                       (-- (rp-evlt term a))
                     (rp-evlt term a))))
+  :fn pp-term-to-pp-lists
   :hints (("goal"
            :do-not-induct t
            :induct (pp-term-to-pp-lists term sign)
@@ -2583,6 +2993,31 @@
                              regular-eval-lemmas
                              len)
                             (--
+                             (:DEFINITION PP-LISTS-P)
+                             (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                             (:DEFINITION TRUE-LISTP)
+                             (:DEFINITION RP-TERM-LISTP)
+                             rp-termp
+
+                             (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                             (:DEFINITION ACL2::APPLY$-BADGEP)
+                             (:DEFINITION SUBSETP-EQUAL)
+                             (:DEFINITION MEMBER-EQUAL)
+                             (:REWRITE
+                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                             (:DEFINITION LEN)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:REWRITE PP-LISTS-P-AND$-PP-LISTS)
+                             (:REWRITE +-IS-SUM)
+                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION EX-FROM-RP)
+                             (:DEFINITION APPLY-SIGN-TO-PP-LISTS)
+                             (:REWRITE ATOM-MERGE-SORTED-PP-LISTS)
+                             (:DEFINITION TWO-PP-LIST-CANCEL-EACH-OTHER)
+
+                             
                              sum
                              valid-sc
                              and$
@@ -2694,6 +3129,9 @@
                              apply-sign-to-pp-lists)
                             (valid-sc-subterms))))))
 
+
+
+
 (local
  (defthm pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists
    (implies (and (mult-formula-checks state)
@@ -2702,7 +3140,7 @@
                  (valid-sc term a)
                  (rp-evl-meta-extract-global-facts))
             (equal (sum-list (rp-evlt-lst (pp-lists-to-term-pp-lst
-                                           (pp-term-to-pp-lists term sign))
+                                           (mv-nth 0 (pp-term-to-pp-lists term sign)))
                                           a))
                    (if sign
                        (-- (rp-evlt term a))

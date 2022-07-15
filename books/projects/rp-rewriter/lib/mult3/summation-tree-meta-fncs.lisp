@@ -1723,7 +1723,7 @@
                                  (:TYPE-PRESCRIPTION EX-FROM-SYNP)
                                  (:REWRITE DEFAULT-+-1)
 
-                                 (:TYPE-PRESCRIPTION PP-TERM-P)
+                                 (:TYPE-PRESCRIPTION PP-TERM-P-fn)
 
 ;;                                 (:REWRITE ACL2::O-INFP->NEQ-0)
 
@@ -1732,7 +1732,7 @@
                                  (:TYPE-PRESCRIPTION O-FINP)
 
                                  (:TYPE-PRESCRIPTION RP-TERM-LISTP)
-                                 (:DEFINITION PP-TERM-P)
+                                 (:DEFINITION PP-TERM-P-fn)
                                  (:REWRITE DEFAULT-CDR)
                                  (:REWRITE DEFAULT-CAR)
                                  (:REWRITE DEFAULT-+-2)
@@ -3792,6 +3792,13 @@
                     (not rest-s/c-found)
                     has-bitp)
                t)))
+        (('s-c-res & & &)
+         (b* (((mv rest-valid rest-s/c-found)
+               (pp-radix8+-fix-pattern-check-aux (cdr ppe-lst))))
+           (mv (and rest-valid
+                    (not rest-s/c-found)
+                    has-bitp)
+               t)))
         (& (mv nil nil))))))
 
 (define pp-radix8+-fix-pattern-check ((single-pp rp-termp))
@@ -3888,6 +3895,10 @@
              (mv cur-orig (cdr e-lst) t)
            (mv ''1 nil nil)))
         (('c & & & &)
+         (if (equal rest-single-s/c ''1)
+             (mv cur-orig (cdr e-lst) has-bitp)
+           (mv ''1 nil nil)))
+        (('s-c-res & & &)
          (if (equal rest-single-s/c ''1)
              (mv cur-orig (cdr e-lst) has-bitp)
            (mv ''1 nil nil)))
@@ -4356,8 +4367,10 @@
         (cond ((natp x) (append (repeat x ''1) acc))
               (t (append (repeat (- x) '(-- '1)) acc)))))
      ((or (pp-term-p abs-term)
+          (binary-fnc-p abs-term)
           (has-bitp-rp term-orig))
       (cons term-orig acc))
+     
      (t
       (progn$
        (hard-error 'extract-new-sum-element
@@ -4519,6 +4532,9 @@
            ((mv pp-lst2 recollected-c-lst) (recollect-pp-lst-to-sc-main pp-lst2))
            (c-lst (s-sum-merge-aux recollected-c-lst c-lst))
            (pp-lst (pp-sum-merge-aux pp-lst pp-lst2)))
+        (mv s pp-lst c-lst to-be-coughed-c-lst)))
+     ((binary-fnc-p abs-term)
+      (b* ((pp-lst (pp-sum-merge-aux (list term-orig)  pp-lst)))
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      (t
       (progn$ (hard-error 'new-sum-merge-aux
