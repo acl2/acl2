@@ -43,18 +43,18 @@
 ;; ;; have to know that nothing gets mapped to a quotep
 ;; (thm
 ;;  (implies (and (renaming-arrayp renaming-array-name renaming-array renaming-array-len)
-;;                (contextp-with-bound context (alen1 renaming-array-name renaming-array)))
+;;                (bounded-contextp context (alen1 renaming-array-name renaming-array)))
 ;;           (contextp (fixup-possibly-negated-nodenums context renaming-array-name renaming-array)))
 ;;  :hints (("Goal" :in-theory (e/d (fixup-possibly-negated-nodenums
-;;                                     CONTEXTP-WITH-BOUND
+;;                                     BOUNDED-CONTEXTP
 ;;                                     CONTEXTP)
 ;;                                  (natp
 ;;                                   myquotep)))))
 
 (defund fixup-context (context renaming-array-name renaming-array)
   (declare (xargs :guard (and (array1p renaming-array-name renaming-array)
-                              (contextp-with-bound context (alen1 renaming-array-name renaming-array)))
-                  :guard-hints (("Goal" :in-theory (enable contextp-with-bound)))))
+                              (bounded-contextp context (alen1 renaming-array-name renaming-array)))
+                  :guard-hints (("Goal" :in-theory (enable bounded-contextp)))))
   (if (false-contextp context) ;may be impossible for some calls of fixup-context?
       context
     (fixup-possibly-negated-nodenums context renaming-array-name renaming-array)))
@@ -62,6 +62,6 @@
 ;; ;; have to know that nothing gets mapped to a quotep, or have to handle that (drop or return a false context, depending on the constant)
 ;; (thm
 ;;  (implies (and (renaming-arrayp renaming-array-name renaming-array renaming-array-len)
-;;                (contextp-with-bound context (alen1 renaming-array-name renaming-array)))
+;;                (bounded-contextp context (alen1 renaming-array-name renaming-array)))
 ;;           (contextp (fixup-context context renaming-array-name renaming-array)))
 ;;  :hints (("Goal" :in-theory (enable FIXUP-CONTEXT))))

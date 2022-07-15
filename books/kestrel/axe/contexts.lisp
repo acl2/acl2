@@ -126,29 +126,29 @@
                                      bounded-possibly-negated-nodenumsp))))
 
 
-(defund contextp-with-bound (context bound)
+(defund bounded-contextp (context bound)
   (declare (type rational bound))
   (or (eq (false-context) context)
       (bounded-possibly-negated-nodenumsp context bound)))
 
-(defthm contextp-with-bound-monotone
-  (implies (and (contextp-with-bound context bound1)
+(defthm bounded-contextp-monotone
+  (implies (and (bounded-contextp context bound1)
                 (<= bound1 bound)
                 (natp bound1)
                 (natp bound))
-           (contextp-with-bound context bound))
-  :hints (("Goal" :in-theory (enable contextp-with-bound))))
+           (bounded-contextp context bound))
+  :hints (("Goal" :in-theory (enable bounded-contextp))))
 
-(defthm contextp-when-contextp-with-bound
-  (implies (contextp-with-bound context bound)
+(defthm contextp-when-bounded-contextp
+  (implies (bounded-contextp context bound)
            (contextp context))
-  :hints (("Goal" :in-theory (enable contextp-with-bound contextp))))
+  :hints (("Goal" :in-theory (enable bounded-contextp contextp))))
 
-(defthm contextp-with-bound-forward-to-context
-  (implies (contextp-with-bound context bound)
+(defthm bounded-contextp-forward-to-context
+  (implies (bounded-contextp context bound)
            (contextp context))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable contextp-with-bound contextp))))
+  :hints (("Goal" :in-theory (enable bounded-contextp contextp))))
 
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums-aux
@@ -246,12 +246,12 @@
   :hints (("Goal" :in-theory (enable max-nodenum-in-context))))
 
 (defthm <-of-max-nodenum-in-context-when-bounded-possibly-negated-nodenumsp
-  (implies (and (contextp-with-bound context bound)
+  (implies (and (bounded-contextp context bound)
                 (natp bound))
            (< (max-nodenum-in-context context) bound))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable max-nodenum-in-context
-                                     contextp-with-bound))))
+                                     bounded-contextp))))
 
 ;; (thm
 ;;  (implies (contextp context)
