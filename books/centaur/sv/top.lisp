@@ -44,12 +44,6 @@ generally replaces @(see esim) as a backend for @(see vl)."
 
   :long "
 
-<box><p><b><color rgb='#ff0000'>ALPHA VERSION</color></b>.  SV is not yet ready
-for public use and may change in drastic ways without any warning.  Users who
-want to be on the bleeding edge should follow the github project to try to keep
-up to date.</p></box>
-
-
 <p><b>SV</b> is an ACL2 library for hardware verification, developed at Centaur
 Technology, primarily by Sol Swords.  It is the latest in a long line of
 hardware description languages that are deeply embedded within ACL2: it
@@ -67,7 +61,8 @@ symbolic @(see expressions) that represent functions over infinite-width
 vectors of four-valued ``bits.''  We define a sensible semantics for these
 expressions (@(see svex-eval)) and implement tools like @(see rewriting) for
 simplifying these expressions in provably sound ways.  We also provide special
-support for bit-blasting SV expressions with @(see gl), which allows you to
+support for bit-blasting SV expressions with @(see gl) and @(see fgl::fgl),
+which allows you to
 process them with efficient @(see acl2::boolean-reasoning) tools like @(see
 acl2::aignet), @(see acl2::satlink), @(see acl2::ubdds), etc.</li>
 

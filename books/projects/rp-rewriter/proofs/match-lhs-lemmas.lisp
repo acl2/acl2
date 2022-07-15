@@ -46,9 +46,13 @@
 (include-book "apply-bindings-lemmas")
 (include-book "aux-function-lemmas")
 
-(in-theory (disable default-car
-                    (:DEFINITION NOT)
-                    default-cdr))
+(local
+ (in-theory (disable default-car
+                     (:DEFINITION NOT)
+                     default-cdr)))
+
+(local
+ (in-theory (enable falist-consistent)))
 
 (make-flag rp-match-lhs :defthm-macro-name defthm-rp-match-lhs)
 

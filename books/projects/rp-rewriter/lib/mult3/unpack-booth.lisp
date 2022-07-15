@@ -55,6 +55,9 @@
                       acl2::member-equal-newvar-components-1)
                      include-fnc)))
 
+(local
+ (set-induction-depth-limit 1))
+
 (define unpack-booth-for-pp-lst ((pp-lst rp-term-listp))
   :returns (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
   :verify-guards :after-returns
@@ -67,6 +70,8 @@
                             ((or (and-list-p (car pp-lst))
                                  (--.p (car pp-lst))
                                  (bit-of-p (car pp-lst)))
+                             (list (car pp-lst)))
+                            ((binary-fnc-p (ex-from-rp (car pp-lst)))
                              (list (car pp-lst)))
                             (t
                              (progn$ (hard-error 'unpack-booth-for-pp-lst
@@ -405,7 +410,6 @@
                   (& (cw "Unpack-booth-meta: s hash ~p0 ~%" hash))
 
 
-
                   ;; first lest unpack these pp args
                   ((mv s-arg-lst0 pp-arg-lst c-arg-lst0)
                    (unpack-booth-process-pp-arg pp-arg))
@@ -731,7 +735,6 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
   (unpack-booth-for-c-lst* unpack-booth-for-c-lst-fn))
  :condition nil)
 
-
 #|(define good-s-chain ((term))
   :measure (cons-count term)
   :hints (("Goal"
@@ -755,98 +758,250 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
            :expand (good-hons-copy term)
            :in-theory (e/d (good-hons-copy) ()))))
 
+(local
+ (defthm binary-fnc-p-implies
+   (implies (BINARY-FNC-P x)
+            (and (not (equal (car x) 'c))
+                 (not (equal (car x) 's))
+                 (not (equal (car x) 's-c-res))))
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d (binary-fnc-p) ())))))
+
+(local
+ (defthm rp-termp-list-lemma
+   (iff (RP-TERMP (LIST 'LIST x))
+          (RP-TERMP x))
+   :hints (("Goal"
+            :in-theory (e/d (rp-termp) ())))))
+
 (define unpack-booth-meta ((term rp-termp))
   :returns (mv (res rp-termp
                     :hyp (rp-termp term)
                     :hints (("Goal"
                              :expand ((:free (x)
                                              (rp-termp (cons '-- x))))
-                             :in-theory (e/d () ()))))
+                             :in-theory (e/d ()
+                                             (nfix)))))
                (dont-rw))
+  :guard-hints (("Goal"
+                 :in-theory (e/d () (nfix))))
 
-  (case-match term
-    (('unpack-booth subterm)
-     (b* (((unless (or (binary-fnc-p (ex-from-rp subterm))
-                       (unpack-booth-later-enabled)))
-           (mv term nil))
+  (b* ((subterm (case-match term (('unpack-booth subterm) subterm) (& term)))
+       ((unless (or (binary-fnc-p (ex-from-rp subterm))
+                    (unpack-booth-later-enabled)))
+        (mv term nil))
 
-          ;;(- (hard-error 'stop-hre "" nil))
-          ((mv subterm signed)
-           (case-match subterm
-             (('-- subterm) (mv subterm t))
-             (& (mv subterm nil))))
-          (has-bitp (has-bitp-rp subterm))
-          (subterm-orig subterm)
-          (subterm (ex-from-rp subterm))
-          ((when (binary-fnc-p subterm))
-           (mv term nil))
-          ((when (or (bit-of-p subterm)
-                     (and (has-bitp-rp subterm-orig)
-                          (atom subterm))))
-           (b* ((res (create-and-list-instance (list subterm-orig))))
-             (mv (if signed `(-- ,res) res) t)))
-          (subterm-orig (hons-copy subterm-orig))
-          ;;(subterm-orig (good-hons-copy subterm-orig))
+       ;;(- (hard-error 'stop-hre "" nil))
+       ((mv subterm signed)
+        (case-match subterm
+          (('-- subterm) (mv subterm t))
+          (& (mv subterm nil))))
 
-          #|(- (or (good-s-chain subterm)
-          (hard-error 'unpack-booth-meta
-          "Not a good s chain ~p0~%"
-          (list (cons #\0 subterm)))))|#
-          ((mv s-res-lst pp-res-lst c-res-lst)
-           (case-match subterm
-             (('s & & &)
-              (unpack-booth-for-s* subterm-orig))
-             (('c & & & &)
-              (unpack-booth-for-c* subterm-orig))
-             (('s-c-res s-arg pp-arg c-arg)
-              (b* (((mv s-res-lst0 pp-res-lst0 c-res-lst0)
-                    (unpack-booth-process-pp-arg* pp-arg))
-                   ((mv s-res-lst1 pp-res-lst1 c-res-lst1)
-                    (unpack-booth-for-s-lst* (list-to-lst s-arg)))
-                   ((mv s-res-lst2 pp-res-lst2 c-res-lst2)
-                    (unpack-booth-for-c-lst* (list-to-lst c-arg)))
-                   ;; merge  the results
+       (subterm-orig subterm)
+       (subterm (ex-from-rp subterm))
+       
+       (has-bitp (or* (has-bitp-rp subterm-orig)
+                      (binary-fnc-p subterm)
+                      (single-s-p subterm)))
+       
+       #|((when (binary-fnc-p subterm))
+        (mv term nil))|#
+       ((when (or (bit-of-p subterm)
+                  (and (has-bitp-rp subterm-orig)
+                       (atom subterm))))
+        (b* ((res (create-and-list-instance (list subterm-orig))))
+          (mv (if signed `(-- ,res) res) t)))
+       (subterm-orig (hons-copy subterm-orig))
+       ;;(subterm-orig (good-hons-copy subterm-orig))
 
-                   (pp-res-lst (pp-sum-merge-aux pp-res-lst0
-                                                 (pp-sum-merge-aux pp-res-lst1
-                                                                   pp-res-lst2)))
-                   (s-res-lst (s-sum-merge-aux s-res-lst0 (s-sum-merge-aux s-res-lst1 s-res-lst2)))
-                   (c-res-lst (s-sum-merge-aux c-res-lst0 (s-sum-merge-aux c-res-lst1 c-res-lst2))))
-                (mv s-res-lst pp-res-lst c-res-lst)))
-             (& (progn$ (hard-error 'unpack-booth-meta
-                                    "Unrecognized term ~p0 ~%"
-                                    (list (cons #\0 subterm-orig)))
-                        (mv (list subterm-orig) nil nil)))))
-          ;; (& (or (ordered-s/c-p-lst c-res-lst)
-          ;;                  (hard-error 'unpack-booth-meta
-          ;;                              "unordered c-res-lst
-          ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-          ;;                                (cons #\1 c-res-lst)))))
-          ;;           (& (or (ordered-s/c-p-lst s-res-lst)
-          ;;                  (hard-error 'unpack-booth-meta
-          ;;                              "unordered s-res-lst
-          ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-          ;;                                (cons #\1 s-res-lst)))))
-          ;;           (& (or (pp-lst-orderedp pp-res-lst)
-          ;;                  (hard-error 'unpack-booth-meta
-          ;;                              "unordered pp-res-lst
-          ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-          ;;                                (cons #\1 pp-res-lst)))))
-          (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst
-                                        has-bitp))
+       #|(- (or (good-s-chain subterm)
+       (hard-error 'unpack-booth-meta ; ;
+       "Not a good s chain ~p0~%" ; ;
+       (list (cons #\0 subterm)))))|#
 
-          #|(- (and (not (ordered-s/c-p res))
-          (not (cwe "res has unordered things in it in unpack-booth-meta ~%"))
-          (not (cwe "input term: ~p0 ~%" term))
-          (hard-error nil "" nil)))|#
+       ((mv s-res-lst pp-res-lst c-res-lst)
+        (cond
+         ((single-s-p subterm)
+          (unpack-booth-for-s* subterm-orig))
+         ((single-c-p subterm)
+          (unpack-booth-for-c* subterm-orig))
+         ((single-s-c-res-p subterm) 
+          (b* (((mv s-arg pp-arg c-arg)
+                (mv (cadr subterm) (caddr subterm) (cadddr subterm)))
+               ((mv s-res-lst0 pp-res-lst0 c-res-lst0)
+                (unpack-booth-process-pp-arg* pp-arg))
+               ((mv s-res-lst1 pp-res-lst1 c-res-lst1)
+                (unpack-booth-for-s-lst* (list-to-lst s-arg)))
+               ((mv s-res-lst2 pp-res-lst2 c-res-lst2)
+                (unpack-booth-for-c-lst* (list-to-lst c-arg)))
+               ;; merge  the results
 
-          ;; (& (or (ordered-s/c-p res)
-          ;;                  (hard-error 'unpack-booth-meta
-          ;;                              "unordered c-res-lst
-          ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-          ;;                                (cons #\1 res)))))
+               (pp-res-lst (pp-sum-merge-aux pp-res-lst0
+                                             (pp-sum-merge-aux pp-res-lst1
+                                                               pp-res-lst2)))
+               (s-res-lst (s-sum-merge-aux s-res-lst0 (s-sum-merge-aux s-res-lst1 s-res-lst2)))
+               (c-res-lst (s-sum-merge-aux c-res-lst0 (s-sum-merge-aux c-res-lst1 c-res-lst2))))
+            (mv s-res-lst pp-res-lst c-res-lst)))
+         ((binary-fnc-p subterm)
+          (unpack-booth-process-pp-arg* `(list ,subterm)))
+         (t 
+          (progn$ (hard-error 'unpack-booth-meta
+                              "Unrecognized term ~p0 ~%"
+                              (list (cons #\0 subterm-orig)))
+                  (mv nil nil nil)))))
 
-          (res (if signed `(-- ,res) res)))
-       (mv res t)))
-    (&
-     (mv term nil))))
+       ((unless (or* (single-s-p subterm)
+                     (single-c-p subterm)
+                     (single-s-c-res-p subterm)
+                     (binary-fnc-p subterm)))
+        ;; same conditions as above the case statement.
+        (mv term nil))
+       
+
+       ;; (& (or (ordered-s/c-p-lst c-res-lst)
+       ;;                  (hard-error 'unpack-booth-meta
+       ;;                              "unordered c-res-lst
+       ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+       ;;                                (cons #\1 c-res-lst)))))
+       ;;           (& (or (ordered-s/c-p-lst s-res-lst)
+       ;;                  (hard-error 'unpack-booth-meta
+       ;;                              "unordered s-res-lst
+       ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+       ;;                                (cons #\1 s-res-lst)))))
+       ;;           (& (or (pp-lst-orderedp pp-res-lst)
+       ;;                  (hard-error 'unpack-booth-meta
+       ;;                              "unordered pp-res-lst
+       ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+       ;;                                (cons #\1 pp-res-lst)))))
+
+
+       (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst
+                                     has-bitp))
+
+       #|(- (and (not (ordered-s/c-p res))
+       (not (cwe "res has unordered things in it in unpack-booth-meta ~%")) ; ;
+       (not (cwe "input term: ~p0 ~%" term)) ; ;
+       (hard-error nil "" nil)))|#
+
+       ;; (& (or (ordered-s/c-p res)
+       ;;                  (hard-error 'unpack-booth-meta
+       ;;                              "unordered c-res-lst
+       ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+       ;;                                (cons #\1 res)))))
+
+       (res (if signed `(-- ,res) res)))
+    (mv res t)))
+
+#|(local
+ (defthm is-rp-lemma
+   (implies (and (rp-termp term)
+                 (equal (car term) 'rp))
+            (and (quotep (cadr term))
+                 (consp (cdr term))
+                 (implies (and (equal (car other) (cadr term))
+                               (CONSP (CDR OTHER))
+                               (NOT (CDDR OTHER)))
+                          (is-rp (cons 'rp other)))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-termp is-rp) ())))))|#
+
+(acl2::defines unpack-booth-general-meta
+  :flag-local nil
+  :guard-hints (("Goal"
+                 :in-theory (e/d (is-rp-implies-fc) ())))
+  (define unpack-booth-general-meta ((term rp-termp))
+    :returns (mv (result)
+                 (dont-rw)
+                 (changed))
+    (b* (((when (or (atom term)
+                    (quotep term)))
+          (mv term t nil))
+         ((when (eq (car term) 'falist))
+          (mv term t nil))
+         ((when (or (single-s-p term)
+                    (single-c-p term)
+                    (single-s-c-res-p term)
+                    (and (binary-fnc-p term)
+                         (pp-term-p term :strict t))))
+          (b* (((mv res dont-rw) (unpack-booth-meta term)))
+            (mv res dont-rw (not (rp-equal-cnt res term 3)))))
+
+         ((when (equal (car term) 'if))
+          (b* (((unless (is-if term))
+                (mv term t nil))
+               ((mv test test-dont-rw test-changed)
+                (unpack-booth-general-meta (cadr term)))
+               ((mv then then-dont-rw then-changed)
+                (unpack-booth-general-meta (caddr term)))
+               ((mv else else-dont-rw else-changed)
+                (unpack-booth-general-meta (cadddr term))))
+            (if (or test-changed then-changed else-changed)
+                (mv `(if ,test ,then ,else)
+                    `(nil ,test-dont-rw ,then-dont-rw ,else-dont-rw)
+                    t)
+              (mv term t nil))))
+         ((when (equal (car term) 'rp))
+          (b* (((unless (is-rp term))
+                (mv term t nil))
+               ((mv res dont-rw changed)
+                (unpack-booth-general-meta (caddr term))))
+            (if changed
+                (mv `(rp ,(cadr term) ,res) `(nil t ,dont-rw) t)
+              (mv term t nil))))
+         
+         ((mv args args-dont-rw changed)
+          (unpack-booth-general-meta-lst (cdr term)))
+         ((unless changed)
+          (mv term t nil)))
+      (mv (cons-with-hint (car term) args term)
+          `(nil . ,args-dont-rw)
+          changed)))
+
+  (define unpack-booth-general-meta-lst ((lst rp-term-listp))
+    :returns (mv (result-lst )
+                 (dont-rw-lst)
+                 (changed))
+    (if (atom lst)
+        (mv nil nil nil)
+      (b* (((mv this-term this-dont-tw this-changed)
+            (unpack-booth-general-meta (car lst)))
+           ((mv rest-lst rest-dont-tw rest-changed)
+            (unpack-booth-general-meta-lst (cdr lst))))
+        (if (or this-changed
+                rest-changed)
+            (mv (cons-with-hint this-term rest-lst lst)
+                (cons this-dont-tw rest-dont-tw)
+                t)
+          (mv lst nil nil)))))
+
+  ///
+
+  (local
+   (defthm is-rp-lemma
+     (implies (is-rp term)
+              (is-rp (list 'rp (cadr term) other)))
+     :hints (("goal"
+              :in-theory (e/d (is-rp) ())))))
+  
+  (defret-mutual rp-termp-of<fn>
+    (defret rp-termp-<fn>
+      (implies (rp-termp term)
+               (rp-termp result))
+      :fn unpack-booth-general-meta)
+    (defret rp-term-listp-<fn>
+      (implies (rp-term-listp lst)
+               (rp-term-listp result-lst))
+      :fn unpack-booth-general-meta-lst)
+    :hints (("Goal"
+             :expand ((:free (x) (rp-termp (cons 'if x)))
+                      (:free (x) (rp-termp (cons 'rp x))))
+             :in-theory (e/d ()
+                             (FALIST-CONSISTENT
+                              rp-termp))))))
+
+(define unpack-booth-general-meta$ ((term rp-termp))
+  :enabled t
+  (b* (((mv term dont-rw &)
+        (unpack-booth-general-meta term)))
+    (mv term dont-rw)))

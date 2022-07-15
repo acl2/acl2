@@ -485,6 +485,28 @@
             (pairlis$ overrideconds (replicate (len overrideconds) mask))
             (svtv-collect-masks (cdr x)))))
 
+
+(define svtv-collect-inmap ((overridesp booleanp)
+                            (x svtv-lines-p)
+                            (acc svtv-inputmap-p))
+  :prepwork ((local (defthm svtv-inputmap-p-of-pairlis$-repeat
+                      (implies (and (svarlist-p vars)
+                                    (svtv-inputtype-p elem)
+                                    (equal len (len vars)))
+                               (svtv-inputmap-p (pairlis$ vars (repeat len elem))))
+                      :hints(("Goal" :in-theory (enable pairlis$ repeat))))))
+  :returns (new-acc svtv-inputmap-p)
+  (b* (((when (Atom x)) (svtv-inputmap-fix acc))
+       ((svtv-line xf) (car x))
+       (vars (svtv-entries->vars xf.entries))
+       (overrideconds (and overridesp
+                           (svtv-entries->overrideconds xf.entries))))
+    (svtv-collect-inmap
+     overridesp (cdr x)
+     (append (pairlis$ vars (replicate (len vars) (if overridesp :override-val :input)))
+             (pairlis$ overrideconds (replicate (len overrideconds) :override-test))
+             acc))))
+
 (fty::deffixcong true-list-list-equiv true-list-list-equiv (append a b) a
   :hints(("Goal" :in-theory (enable true-list-list-fix))))
 (fty::deffixcong true-list-list-equiv true-list-list-equiv (append a b) b
@@ -694,7 +716,11 @@
        ;; Compute the masks for the input/output varaiables.
        (inmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks ins))))
        (override-inmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks overrides))))
-       (outmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks outs)))))
+       (outmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks outs))))
+       (inmap (svtv-collect-inmap nil ;; inputs
+                                  ins nil))
+       (inmap (svtv-collect-inmap t ;; overrides
+                                   overrides inmap)))
     (fast-alist-free updates-for-outs)
     (mv (make-svtv :name           name
                    :outexprs       outexprs
@@ -702,6 +728,7 @@
                    :states         all-states
                    :inmasks        (append inmasks override-inmasks)
                    :outmasks       outmasks
+                   :inmap          inmap
                    :orig-ins       orig-ins
                    :orig-overrides orig-overrides
                    :orig-outs      orig-outs
@@ -830,49 +857,83 @@
 
 
 
-(define svtv-autohyps-aux ((x svar-boolmasks-p))
+
+
+
+
+
+(define svtv-autohyps-aux ((x svar-boolmasks-p)
+                           (map svtv-inputmap-p))
   :hooks nil
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x)))) (svtv-autohyps-aux (cdr x)))
-       ((cons var mask) (car x)))
+       ((unless (mbt (consp (car x)))) (svtv-autohyps-aux (cdr x) map))
+       ((cons var mask) (car x))
+       ((when (eq (cdr (hons-get var (svtv-inputmap-fix map))) :override-test))
+        (svtv-autohyps-aux (cdr x) map)))
     (cons `(unsigned-byte-p ,(integer-length mask) ,var)
-          (svtv-autohyps-aux (cdr x)))))
+          (svtv-autohyps-aux (cdr x) map))))
 
 (define svtv-autohyps ((x svtv-p))
   :hooks nil
-  `(and . ,(svtv-autohyps-aux (svtv->inmasks x))))
+  `(and . ,(b* ((inmap (svtv->inmap x)))
+             (with-fast-alist inmap
+               (svtv-autohyps-aux (svtv->inmasks x)
+                                  inmap)))))
 
-(define svtv-autoins-aux ((x svar-boolmasks-p))
+(define svtv-autoins-aux ((x svar-boolmasks-p)
+                          (map svtv-inputmap-p))
   :hooks nil
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x)))) (svtv-autoins-aux (cdr x)))
-       (var (caar x)))
+       ((unless (mbt (consp (car x)))) (svtv-autoins-aux (cdr x) map))
+       (var (caar x))
+       ((when (eq (cdr (hons-get var (svtv-inputmap-fix map))) :override-test))
+        (svtv-autoins-aux (cdr x) map)))
     (cons `(cons ',var ,var)
-          (svtv-autoins-aux (cdr x)))))
+          (svtv-autoins-aux (cdr x) map))))
 
 (define svtv-autoins ((x svtv-p))
   :hooks nil
-  `(list . ,(reverse (svtv-autoins-aux (svtv->inmasks x)))))
+  `(list . ,(reverse (b* ((inmap (svtv->inmap x)))
+                       (with-fast-alist inmap
+                         (svtv-autoins-aux (svtv->inmasks x)
+                                           inmap))))))
 
-(define svtv-autobinds-aux ((x svar-boolmasks-p))
+(define svtv-autobinds-aux ((x svar-boolmasks-p)
+                            (map svtv-inputmap-p))
   :hooks nil
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x)))) (svtv-autobinds-aux (cdr x)))
-       ((cons var mask) (car x)))
+       ((unless (mbt (consp (car x)))) (svtv-autobinds-aux (cdr x) map))
+       ((cons var mask) (car x))
+       ((when (eq (cdr (hons-get var (svtv-inputmap-fix map))) :override-test))
+        (svtv-autobinds-aux (cdr x) map)))
     (cons `(:nat ,var ,(integer-length mask))
-          (svtv-autobinds-aux (cdr x)))))
+          (svtv-autobinds-aux (cdr x) map))))
 
 (define svtv-autobinds ((x svtv-p))
   :hooks nil
-  `(gl::auto-bindings . ,(svtv-autobinds-aux (svtv->inmasks x))))
+  `(gl::auto-bindings . ,(b* ((inmap (svtv->inmap x)))
+                           (with-fast-alist inmap
+                             (svtv-autobinds-aux (svtv->inmasks x)
+                                                 inmap)))))
 
+
+(define svtv-non-override-test-input-vars ((x svarlist-p)
+                                           (map svtv-inputmap-p))
+  :returns (new-x svarlist-p)
+  (if (atom x)
+      nil
+    (if (eq (cdr (hons-get (svar-fix (car x)) (svtv-inputmap-fix map))) :override-test)
+        (svtv-non-override-test-input-vars (cdr x) map)
+      (cons (svar-fix (car x)) (svtv-non-override-test-input-vars (cdr x) map))))
+  ///
+  (local (in-theory (enable svarlist-fix))))
 
 (define defsvtv-default-names (vars)
   (if (atom vars)
       nil
     (cons `(,(car vars) ',(car vars))
           (defsvtv-default-names (cdr vars)))))
-
+  
 ;; bozo this is duplicated in ../decomp.lisp
 (defthmd assoc-of-acons
   (equal (assoc key (cons (cons k v) a))
@@ -916,7 +977,8 @@
 (std::defredundant :names (svex-env-lookup-of-cons
                            svex-env-boundp-of-cons))
 
-
+(local (fty::deflist svarlist :elt-type svar :true-listp t :elementp-of-nil nil))
+         
 
 (define defsvtv-events ((svtv svtv-p)
                         (design-const symbolp)
@@ -1004,7 +1066,11 @@ defined with @(see sv::defsvtv).</p>"
                               (str::cat (symbol-name name) "-AUTOBINDS")
                               name))
        (invars (mergesort (alist-keys (svtv->inmasks svtv))))
-       (invar-defaults (defsvtv-default-names invars))
+       (inmap (svtv->inmap svtv))
+       ((acl2::with-fast inmap))
+       (non-override-test-invars (svtv-non-override-test-input-vars invars inmap))
+       (non-override-test-invars-unsorted (svtv-non-override-test-input-vars (alist-keys (svtv->inmasks svtv)) inmap))
+       (invar-defaults (defsvtv-default-names non-override-test-invars))
        (cmds `((defconst ,stvconst ',svtv)
 
                ,@(and define-mod
@@ -1055,7 +1121,7 @@ defined with @(see sv::defsvtv).</p>"
                                    (eqlablep)
                                    acl2::assoc-eql-exec-is-assoc-equal))))
                          (declare (ignorable x)) ;; incase there are no input vars
-                         (b* (((acl2::assocs . ,invars) x))
+                         (b* (((acl2::assocs . ,non-override-test-invars) x))
                            (,name-autohyps)))
 
                        (add-to-ruleset! gl::shape-spec-obj-in-range-backchain
@@ -1066,7 +1132,7 @@ defined with @(see sv::defsvtv).</p>"
 
                        (define ,name-env-autohyps ((x svex-env-p))
                          (declare (ignorable x)) ;; incase there are no input vars
-                         (b* (((svassocs . ,invars) x))
+                         (b* (((svassocs . ,non-override-test-invars) x))
                            (,name-autohyps)))
 
                        (add-to-ruleset! svtv-autohyps ,name-autohyps-fn)
@@ -1082,15 +1148,15 @@ defined with @(see sv::defsvtv).</p>"
                          (implies (syntaxp (quotep k))
                                   (equal (assoc k (,name-autoins))
                                          (case k
-                                           . ,(autoins-lookup-cases invars))))
+                                           . ,(autoins-lookup-cases non-override-test-invars))))
                          :hints (("goal" :in-theory (e/d** (,name-autoins-fn
                                                             assoc-of-acons
                                                             assoc-of-nil
                                                             car-cons cdr-cons
                                                             member-equal
                                                             (member-equal)))
-                                  ,@(if (consp invars)
-                                        `(:cases ,(autoins-lookup-casesplit invars 'k))
+                                  ,@(if (consp non-override-test-invars)
+                                        `(:cases ,(autoins-lookup-casesplit non-override-test-invars 'k))
                                       nil))))
 
                        (defthm ,(intern-in-package-of-symbol
@@ -1099,14 +1165,14 @@ defined with @(see sv::defsvtv).</p>"
                          (implies (syntaxp (quotep k))
                                   (equal (svex-env-lookup k (,name-autoins))
                                          (case (svar-fix k)
-                                           . ,(autoins-svex-env-lookup-cases invars))))
+                                           . ,(autoins-svex-env-lookup-cases non-override-test-invars))))
                          :hints (("goal" :in-theory (e/d** (,name-autoins-fn
                                                             svex-env-lookup-of-cons
                                                             svex-env-lookup-in-empty
                                                             car-cons cdr-cons
                                                             (svar-p)))
-                                  ,@(if (consp invars)
-                                        `(:cases ,(autoins-lookup-casesplit invars '(svar-fix k)))
+                                  ,@(if (consp non-override-test-invars)
+                                        `(:cases ,(autoins-lookup-casesplit non-override-test-invars '(svar-fix k)))
                                       nil))))
 
                        (defthm ,(intern-in-package-of-symbol
@@ -1114,7 +1180,7 @@ defined with @(see sv::defsvtv).</p>"
                                  name)
                          (implies (syntaxp (quotep k))
                                   (iff (svex-env-boundp k (,name-autoins))
-                                       (member-equal (svar-fix k) ',invars)))
+                                       (member-equal (svar-fix k) ',non-override-test-invars)))
                          :hints (("goal" :in-theory (e/d** (,name-autoins-fn
                                                             svex-env-boundp-of-cons
                                                             svex-env-boundp-of-nil
@@ -1122,8 +1188,8 @@ defined with @(see sv::defsvtv).</p>"
                                                             (svar-p)
                                                             member-equal
                                                             (member-equal)))
-                                  ,@(if (consp invars)
-                                        `(:cases ,(autoins-lookup-casesplit invars '(svar-fix k)))
+                                  ,@(if (consp non-override-test-invars)
+                                        `(:cases ,(autoins-lookup-casesplit non-override-test-invars '(svar-fix k)))
                                       nil))))
 
 
@@ -1137,18 +1203,18 @@ defined with @(see sv::defsvtv).</p>"
                                    (eqlablep)
                                    acl2::assoc-eql-exec-is-assoc-equal))))
                          (declare (ignorable x)) ;; in case there are no input vars
-                         (b* (((acl2::assocs . ,invars) x))
+                         (b* (((acl2::assocs . ,non-override-test-invars) x))
                            (,name-autoins)))
 
                        (define ,name-env-autoins ((x svex-env-p))
                          (declare (ignorable x)) ;; in case there are no input vars
                          :returns (env svex-env-p :hints(("Goal" :in-theory (enable ,name-autoins))))
-                         (b* (((svassocs . ,invars) x))
+                         (b* (((svassocs . ,non-override-test-invars) x))
                            (,name-autoins))
                          ///
                          (defret ,name-env-autoins-in-terms-of-svex-env-extract
                            (equal env
-                                  (svex-env-extract ',(rev (alist-keys (svtv->inmasks svtv))) x))
+                                  (svex-env-extract ',(rev non-override-test-invars-unsorted) x))
                            :hints(("Goal" :in-theory (enable svex-env-extract ,name-autoins)))))
 
                        (add-to-ruleset! svtv-autoins ,name-autoins-fn)
@@ -1173,6 +1239,7 @@ defined with @(see sv::defsvtv).</p>"
                                  name)
                          (equal (assoc k (,name-alist-autoins x))
                                 (and (member k (svtv->ins ,stvconst))
+                                     (not (equal (cdr (assoc k (svtv->inmap ,stvconst))) :override-test))
                                      (cons k (cdr (assoc k x)))))
                          :hints (("goal" :in-theory (e/d** (,name-alist-autoins
                                                             ,name-autoins-fn
@@ -1180,7 +1247,8 @@ defined with @(see sv::defsvtv).</p>"
                                                             assoc-of-nil
                                                             car-cons cdr-cons
                                                             member-equal
-                                                            (svtv->ins))))))
+                                                            (svtv->ins)
+                                                            (svtv->inmap))))))
 
 
                        (defthm ,(intern-in-package-of-symbol

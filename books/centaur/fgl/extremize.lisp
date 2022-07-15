@@ -62,7 +62,7 @@
     `(b* (((acl2::assocs . ,(prefix-qmark-to-syms (strip-cars *incremental-extremize-config-fields*))) . ,acl2::forms))
        ,acl2::rest-expr)))
 
-(fgl::def-fgl-program incr-extrem-counterexample (config)
+(fgl::def-fgl-program get-counterexample (config)
   (fgl::syntax-interp (fgl::show-counterexample-bind config fgl::interp-st state)))
 
 
@@ -104,7 +104,7 @@
         (b* ((?ign (fgl-interp-obj unsat-term)))
           (incremental-extremize-iter known-exceedable (if direction (1- middle) (1+ middle))
                                       sat-config last-obj config)))
-       ((list (list error bindings ?vars) &) (incr-extrem-counterexample next-sat-config))
+       ((list (list error bindings ?vars) &) (get-counterexample next-sat-config))
        ;; (syntax-interp (show-counterexample-bind first-sat-config interp-st state)))
        ((when error)
         (b* ((?ign (fgl-interp-obj error-term)))
@@ -163,6 +163,23 @@
     (mv alist state)))
 
 
+(fgl::def-fgl-program find-evaluation (obj sat-config)
+  ;; important for this that fgl::fgl-sat-check's execution is disabled
+  (b* ((sat-res (fgl::fgl-sat-check sat-config t))
+       (unsat (syntax-interp (not sat-res)))
+       ((when unsat)
+        (syntax-interp (cw "Path condition is unsatisfiable!~%")))
+       ((list (list error bindings ?vars) &) (get-counterexample sat-config))
+       ;; (syntax-interp (show-counterexample-bind first-sat-config interp-st state)))
+       ((when error)
+        (syntax-interp (cw
+                        "Failed to find satisfying assignment for path condition: ~x0~%" error)))
+       (obj-val (cdr (assoc 'obj bindings)))
+       (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val))))
+    obj-val))
+    
+
+
                                
 
 (fgl::def-fgl-program incremental-maximize
@@ -199,12 +216,10 @@
       is picked -- between 1/8 and 1/2 is reasonable")
     '1/4))
 
-  (b* ((lower (or lower
-                  (syntax-interp (mv-let (err val)
-                                   (interp-st-fgl-object-eval x (make-fgl-env) 'interp-st 'state)
-                                   (if err
-                                       (cw "Eval error: ~x0~%" err)
-                                     val)))))
+  (b* (((list lower first-obj)
+        (if lower
+            (list x nil)
+          (find-evaluation (list x obj) first-sat-config)))
        (upper (or upper
                   (ash 1 (integer-length-bound x-length x))))
        ((unless (syntax-interp (and (integerp lower)
@@ -224,7 +239,7 @@
                 :error-term error-term
                 :bad-ctrex-term bad-ctrex-term
                 :interpolate-factor interpolate-factor)))
-    (incremental-extremize-iter lower upper first-sat-config nil config)))
+    (incremental-extremize-iter lower upper first-sat-config first-obj config)))
 
 
 
@@ -305,12 +320,10 @@
       is picked -- between 1/8 and 1/2 is reasonable")
     '1/4))
 
-  (b* ((upper (or upper
-                  (syntax-interp (mv-let (err val)
-                                   (interp-st-fgl-object-eval x (make-fgl-env) 'interp-st 'state)
-                                   (if err
-                                       (cw "Eval error: ~x0~%" err)
-                                     val)))))
+  (b* (((list upper first-obj)
+        (if upper
+            (list upper nil)
+          (find-evaluation (list x obj) first-sat-config)))
        (lower (or lower
                   (1- (ash -1 (integer-length-bound x-length x)))))
        ((unless (syntax-interp (and (integerp lower)
@@ -330,7 +343,7 @@
                 :error-term error-term
                 :bad-ctrex-term bad-ctrex-term
                 :interpolate-factor interpolate-factor)))
-    (incremental-extremize-iter upper lower first-sat-config nil config)))
+    (incremental-extremize-iter upper lower first-sat-config first-obj config)))
 
 
 

@@ -2950,6 +2950,20 @@ compute a value for @('x').</p>
 (fty::deflist bvar-db-consistency-errorlist :elt-type bvar-db-consistency-error :true-listp t)
 
 
+(define summarize-bvar-db-consistency-errorlist ((x bvar-db-consistency-errorlist-p))
+  (if (atom x)
+      nil
+    (cons (b* ((x1 (car x)))
+            (bvar-db-consistency-error-case x1
+              :eval-error
+              (list :eval-error (summarize-fgl-object x1.obj) x1.msg)
+              :inconsistency
+              (list :inconsistency (summarize-fgl-object x1.obj)
+                    :var-val x1.var-val
+                    :obj-val x1.obj-val)))
+          (summarize-bvar-db-consistency-errorlist (cdr x)))))
+
+
 (define bvar-db-check-ctrex-consistency ((n natp)
                                          bvar-db logicman env$ state
                                          (acc bvar-db-consistency-errorlist-p))

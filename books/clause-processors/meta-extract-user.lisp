@@ -525,7 +525,9 @@
              (equal (mextract-ev (cons fn args) a)
                     (mextract-ev body (pairlis$ formals
                                            (mextract-ev-lst args a))))))
-  :hints(("Goal" :in-theory (e/d (mextract-ev-of-fncall-args)
+  :hints(("Goal" :in-theory (e/d (mextract-ev-of-fncall-args
+                                  acl2::match-tree-opener-theory
+                                  acl2::match-tree-alist-opener-theory)
                                  (mextract-formula
                                   meta-extract-global-fact+
                                   meta-extract-formula

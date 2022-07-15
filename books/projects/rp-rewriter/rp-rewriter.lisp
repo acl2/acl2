@@ -299,7 +299,8 @@
 (define rp-check-context (term dont-rw context
                                &key
                                (iff-flg 'iff-flg)
-                               (rw-context-flg 'nil))
+                               (rw-context-flg 'nil)
+                               (attach-sc 'nil))
   (declare (ignorable rw-context-flg)
            (xargs :mode :logic
                   :guard (and #|(context-syntaxp context)||#
@@ -316,8 +317,9 @@
     (let* ((c (car context))
            ;;(rw-context-flg nil)
            )
-      (cond ((and (case-match c ((& m) (rp-equal-cnt m term 1)) (& nil))
-                  (not rw-context-flg))
+      (cond ((and attach-sc
+                  (not rw-context-flg)
+                  (case-match c ((& m) (rp-equal-cnt m term 1)) (& nil)))
              (b* ((new-term `(rp ',(car c) ,term))
                   ((mv new-term dont-rw)
                    (if (is-rp new-term)
@@ -1406,7 +1408,8 @@ relieving the hypothesis for ~x1! You can disable this error by running:
          (atom term)
          (acl2::fquotep term))
      (b* (((mv new-term dont-rw) (rp-check-context term dont-rw context
-                                                   :rw-context-flg (rw-context-disabled rp-state)))
+                                                   :rw-context-flg (rw-context-disabled rp-state)
+                                                   :attach-sc (not outside-in-flg)))
           ;;(dont-rw (if (not (equal new-term term)) t dont-rw))
           )
        (mv nil new-term dont-rw rp-state))) ;))
@@ -2024,9 +2027,11 @@ relieving the hypothesis for ~x1! You can disable this error by running:
    (cond
     ((atom term)
      (mv
-      (if (should-not-rw dont-rw) term
+      (if (should-not-rw dont-rw)
+          term
         (b* (((mv term &)
               (rp-check-context term dont-rw context
+                                :attach-sc t
                                 :rw-context-flg (rw-context-disabled rp-state))))
           term))
       rp-state))
@@ -2190,16 +2195,18 @@ relieving the hypothesis for ~x1! You can disable this error by running:
        `(if ,(attach-sc (cadr term) sc-type sc-term)
             ,(attach-sc (caddr term) sc-type sc-term)
           ,(attach-sc (cadddr term) sc-type sc-term)))
-      (t (cons (car term)
-               (attach-sc-lst (cdr term) sc-type sc-term)))))
+      (t (cons-with-hint (car term)
+                         (attach-sc-lst (cdr term) sc-type sc-term)
+                         term))))
 
    (defun attach-sc-lst (lst sc-type sc-term)
      (declare (xargs :guard t
                      :measure (cons-count lst)))
      (if (atom lst)
          lst
-       (cons (attach-sc (car lst) sc-type sc-term)
-             (attach-sc-lst (cdr lst) sc-type sc-term))))))
+       (cons-with-hint (attach-sc (car lst) sc-type sc-term)
+                       (attach-sc-lst (cdr lst) sc-type sc-term)
+                       lst)))))
 
 (define attach-sc-from-context (context term)
   :returns res-term

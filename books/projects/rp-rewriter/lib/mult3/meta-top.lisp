@@ -251,6 +251,13 @@
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw))
 
+(rp::add-meta-rule
+ :meta-fnc unpack-booth-general-meta$
+ :trig-fnc equal
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
 (add-postprocessor
  :processor-fnc medw-compress-any
  :valid-syntaxp t

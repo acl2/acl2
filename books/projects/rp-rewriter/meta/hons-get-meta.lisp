@@ -53,6 +53,9 @@
 (local
  (include-book "../proofs/measure-lemmas"))
 
+(local
+ (in-theory (enable falist-consistent)))
+
 (encapsulate
   nil
 

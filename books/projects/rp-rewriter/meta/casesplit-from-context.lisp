@@ -65,7 +65,7 @@
                            ()))))
 
 (add-rp-rule casesplit-from-context-trig-expand
-             :outside-in :both)
+             :rw-direction :both)
 
 (local
  (in-theory (disable rp-equal-cnt
@@ -2388,14 +2388,14 @@
                            ()))))
 
 (add-rp-rule implies-redef-with-casesplit-from-context-trig
-             :outside-in t)
+             :rw-direction :outside-in)
 
 
 (rp::add-meta-rule
  :meta-fnc casesplit-from-context
  :trig-fnc casesplit-from-context-trig
  :valid-syntaxp t
- :outside-in t
+ :rw-direction :outside-in
  :disabledp t
  :returns (mv term dont-rw)
  :hints (("Goal"

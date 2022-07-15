@@ -57,7 +57,8 @@
 	    acl2::logtail
 	    
 	    
-            
+            acl2::Defines
+	    acl2::patbind-ret
             acl2::in
             acl2::for
             acl2::collect

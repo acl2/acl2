@@ -925,7 +925,7 @@ was ~st seconds."))
                  (rp::falist-consistent-aux (cadr (cadr (rp::ex-from-rp term)))
                                             (caddr (rp::ex-from-rp term))))
       :hints (("goal"
-               :in-theory (e/d (rp::is-rp) ())))))
+               :in-theory (e/d (rp::is-rp rp::falist-consistent) ())))))
 
    (local
     (DEFTHMd
@@ -1065,7 +1065,7 @@ was ~st seconds."))
                  (rp::falist-consistent-aux (cadr (cadr (rp::ex-from-rp term)))
                                             (caddr (rp::ex-from-rp term))))
       :hints (("goal"
-               :in-theory (e/d (rp::is-rp) ())))))
+               :in-theory (e/d (rp::is-rp rp::falist-consistent) ())))))
 
    (local
     (DEFTHMd
@@ -1308,7 +1308,9 @@ was ~st seconds."))
                       (not (cdddr term))
                       (quotep (cadr term)))
                  (rp::falist-consistent-aux (cadr (cadr term))
-                                            (caddr term)))))
+                                            (caddr term)))
+        :hints (("Goal"
+                 :in-theory (e/d (rp::falist-consistent) ())))))
 
    (defthm rp-termp-svex-eval-wog-meta-main
        (implies (and (rp::rp-termp term))
@@ -1543,7 +1545,9 @@ was ~st seconds."))
                       (not (cdddr term))
                       (quotep (cadr term)))
                  (rp::falist-consistent-aux (cadr (cadr term))
-                                            (caddr term)))))
+                                            (caddr term)))
+        :hints (("Goal"
+                 :in-theory (e/d (rp::falist-consistent) ())))))
 
    (defthm valid-sc-svex-eval-wog-meta-main
        (implies (and (rp::valid-sc term a)
@@ -1672,7 +1676,9 @@ was ~st seconds."))
                      (not (cdddr term))
                      (quotep (cadr term)))
                 (rp::falist-consistent-aux (cadr (cadr term))
-                                           (caddr term)))))
+                                           (caddr term)))
+       :hints (("Goal"
+                :in-theory (e/d (rp::falist-consistent) ())))))
 
 
   (local

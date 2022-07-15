@@ -46,6 +46,10 @@
 
 (local (include-book "aux-function-lemmas"))
 
+(local
+ (in-theory (enable falist-consistent)))
+
+
 (defthm eval-and-all-append
   (equal (eval-and-all (append x y) a)
          (and (eval-and-all x a)

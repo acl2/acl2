@@ -116,7 +116,7 @@
 (include-book "centaur/getopt/demo" :dir :system)
 (include-book "centaur/getopt/demo2" :dir :system)
 (include-book "centaur/bed/top" :dir :system)
-
+(include-book "centaur/misc/def-bounds" :dir :system)
 
 (include-book "centaur/satlink/top" :dir :system) ; see July 2021 comment above
 (include-book "centaur/satlink/check-config" :dir :system)
