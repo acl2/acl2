@@ -203,6 +203,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    DISABLE-UBT
   ))
 
 (defconst *special-ops*

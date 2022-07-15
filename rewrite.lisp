@@ -7628,9 +7628,18 @@
                                  (cond
                                   (erp (exit-brr-wormhole state))
                                   (val
-                                   (er-progn (set-ld-error-action :continue state)
-; The aliases had better ensure that every exit  is via exit-brr-wormhole.
-                                             (value :invisible)))
+                                   (er-progn
+                                    (set-ld-error-action :continue state)
+                                    (with-output
+                                      :off :all
+                                      (disable-ubt
+                                       (msg "Note that ~x0 was executed when ~
+                                             an interactive break occurred ~
+                                             due to a monitored rule; see ~
+                                             :DOC break-rewrite."
+                                            'disable-ubt)))
+; The aliases had better ensure that every exit is via exit-brr-wormhole.
+                                    (value :invisible)))
                                   (t (exit-brr-wormhole state))))))
                :ld-prompt  nil
                :ld-missing-input-ok nil

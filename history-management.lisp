@@ -5207,6 +5207,17 @@
 ; to the user.
 
 (defrec command-number-baseline-info
+
+; Although permanent-p comes from the pflg argument of reset-prehistory, the
+; two may have different shapes.  The reset-prehistory pflg argument is t, nil,
+; :disable-ubt, or a msgp.  The corresponding value of permanent-p stored in
+; this record is t, nil, or -- for both :disable-ubt and a msgp -- a cons of
+; the form (absolute-command-number . x), where x is nil if the argument was
+; :disable-ubt and otherwise is the msgp argument.  See reset-prehistory-fn.
+
+; So even using ubt-prehistory: if permanent-p is t then we can't undo through
+; :current, and if permanent-p is a cons then we can't undo through its car.
+
   (current permanent-p . original)
   nil)
 

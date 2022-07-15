@@ -2299,38 +2299,44 @@
 ; Kwd is :ubt or :ubu.
 
   (let* ((wrld (w state))
-         (command-number-baseline
-          (access command-number-baseline-info
-                  (global-val 'command-number-baseline-info wrld)
-                  :current)))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld kwd state)))
-             (cond ((if (eq kwd :ubt)
-                        (<= (access-command-tuple-number (cddar cmd-wrld))
-                            command-number-baseline)
-                      (< (access-command-tuple-number (cddar cmd-wrld))
-                         command-number-baseline))
-                    (cond
-                     ((let ((command-number-baseline-original
-                             (access command-number-baseline-info
-                                     (global-val 'command-number-baseline-info wrld)
-                                     :original)))
-                        (if (eq kwd :ubt)
-                            (<= (access-command-tuple-number (cddar cmd-wrld))
-                                command-number-baseline-original)
-                          (< (access-command-tuple-number (cddar cmd-wrld))
-                             command-number-baseline-original)))
-                      (er soft kwd "Can't undo into system initialization."))
-                     (t (er soft kwd
-                            "Can't undo into prehistory.  See :DOC ~
-                             reset-prehistory."))))
-                   ((and (eq kwd :ubu) (equal wrld cmd-wrld))
-                    (er soft kwd
-                        "Can't undo back to where we already are!"))
-                   (t
-                    (let ((pred-wrld (if (eq kwd :ubt)
-                                         (scan-to-command (cdr cmd-wrld))
-                                       cmd-wrld)))
-                      (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
+         (info (global-val 'command-number-baseline-info wrld))
+         (permanent-p (access command-number-baseline-info info :permanent-p))
+         (current (access command-number-baseline-info info :current)))
+    (er-let* ((cmd-wrld (er-decode-cd cd wrld kwd state))
+              (command-tuple-number (value (access-command-tuple-number
+                                            (cddar cmd-wrld)))))
+      (cond ((if (eq kwd :ubt)
+                 (<= command-tuple-number current)
+               (< command-tuple-number current))
+             (cond
+              ((let ((original (access command-number-baseline-info info
+                                       :original)))
+                 (if (eq kwd :ubt)
+                     (<= command-tuple-number original)
+                   (< command-tuple-number original)))
+               (er soft kwd "Can't undo into system initialization."))
+              (t (er soft kwd
+                     "Can't undo into prehistory.  See :DOC ~
+                      reset-prehistory."))))
+            ((and (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                  (if (eq kwd :ubt)
+                      (<= command-tuple-number (car permanent-p))
+                    (< command-tuple-number (car permanent-p))))
+             (er soft kwd
+                 "Can't undo a :disable-ubt event (at command ~x0).~@1  See ~
+                  :DOC disable-ubt."
+                 (absolute-to-relative-command-number (car permanent-p) wrld)
+                 (if (cdr permanent-p)
+                     (msg "  ~@0" (cdr permanent-p))
+                   "")))
+            ((and (eq kwd :ubu) (equal wrld cmd-wrld))
+             (er soft kwd
+                 "Can't undo back to where we already are!"))
+            (t
+             (let ((pred-wrld (if (eq kwd :ubt)
+                                  (scan-to-command (cdr cmd-wrld))
+                                cmd-wrld)))
+               (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
 
 (defun ubt-ubu-fn (kwd cd state)
 
@@ -2374,19 +2380,28 @@
          (command-number-baseline
           (access command-number-baseline-info
                   command-number-baseline-info
-                  :current)))
+                  :current))
+         (permanent-p (access command-number-baseline-info
+                              command-number-baseline-info
+                              :permanent-p)))
     (cond ((eql command-number-baseline
                 (access command-number-baseline-info
                         command-number-baseline-info
                         :original))
            (er soft ctx
                "There is no reset-prehistory event to undo."))
-          ((access command-number-baseline-info
-                   command-number-baseline-info
-                   :permanent-p)
+          ((eq permanent-p t)
            (er soft ctx
-               "It is illegal to undo a reset-prehistory event that had its ~
-                permanent-p flag set to t.  See :DOC reset-prehistory."))
+               "It is illegal to undo a (reset-prehistory t) event.  See :DOC ~
+                reset-prehistory."))
+          (permanent-p ; (cons cmd-no msg-or-nil)
+           (er soft ctx
+               "It is illegal to undo a reset-prehistory event with a non-nil ~
+                pflg argument.  See :DOC reset-prehistory.~@0"
+               (if (and (consp permanent-p)
+                        (cdr permanent-p))
+                   (msg "  ~@0" (cdr permanent-p))
+                 "")))
           (t (er-let* ((val (ubt-ubu-fn1
                              :ubt-prehistory
                              wrld
@@ -3673,29 +3688,44 @@
 ; that requires a trust tag, so it's not our problem!
 
       t))
-    (let ((wrld (w state)))
-      (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state)))
-        (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                   (access command-number-baseline-info
-                           (global-val 'command-number-baseline-info wrld)
-                           :current))
-
-; See the similar comment in ubt?-ubu?-fn.
-
+    (let* ((wrld (w state))
+           (info (global-val 'command-number-baseline-info wrld))
+           (permanent-p (access command-number-baseline-info info
+                                :permanent-p))
+           (current (access command-number-baseline-info info :current))
+           (barrier (if (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                        (max (car permanent-p) current)
+                      current)))
+      (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state))
+                (command-tuple-number (value (access-command-tuple-number
+                                              (cddar cmd-wrld)))))
+        (cond ((<= command-tuple-number barrier)
                (cond
-                ((<= (access-command-tuple-number (cddar cmd-wrld))
-                     (access command-number-baseline-info
-                             (global-val 'command-number-baseline-info wrld)
-                             :original))
+                ((<= command-tuple-number
+                     (access command-number-baseline-info info :original))
                  (er soft ctx
                      "Can't puff a command within the system initialization."))
-                (t
+                ((<= command-tuple-number current)
                  (er soft ctx
                      "Can't puff a command within prehistory.  See :DOC ~
-                     reset-prehistory."))))
+                      reset-prehistory."))
+                (t
+
+; Since (<= command-tuple-number barrier) but not (<= command-tuple-number
+; current), then barrier and current are distinct, so we know (consp
+; permanent-p) and current < command-tuple-number <= (car permanent-p).
+
+                 (er soft ctx
+                     "Can't puff a command executed at or before the ~
+                      reset-prehistory event (at command ~x0) that disabled ~
+                      undoing.~@1  See :DOC disable-ubt."
+                     (absolute-to-relative-command-number (car permanent-p)
+                                                          wrld)
+                     (if (cdr permanent-p)
+                         (msg "  ~@0" (cdr permanent-p))
+                       "")))))
               (t
-               (er-let*
-                   ((cmds (puffed-command-sequence cd ctx wrld state)))
+               (er-let* ((cmds (puffed-command-sequence cd ctx wrld state)))
                  (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
                         (i (absolute-to-relative-command-number
                             (max-absolute-command-number cmd-wrld)
@@ -3793,37 +3823,50 @@
               state))
 
 (defun puff*-fn (cd state)
-  (let ((wrld (w state)))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff* state)))
-             (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                        (access command-number-baseline-info
-                                (global-val 'command-number-baseline-info wrld)
-                                :current))
+  (let* ((wrld (w state))
+         (info (global-val 'command-number-baseline-info wrld))
+         (permanent-p (access command-number-baseline-info info :permanent-p))
+         (current (access command-number-baseline-info info :current))
+         (barrier (if (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                      (max (car permanent-p) current)
+                    current)))
+    (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff* state))
+              (command-tuple-number (value (access-command-tuple-number
+                                            (cddar cmd-wrld)))))
+      (cond ((<= command-tuple-number barrier)
+             (cond
+              ((<= command-tuple-number
+                   (access command-number-baseline-info info :original))
+               (er soft :puff*
+                   "Can't puff* a command within the system initialization."))
+              ((<= command-tuple-number current)
+               (er soft :puff*
+                   "Can't puff* a command within prehistory.  See :DOC ~
+                    reset-prehistory."))
+              (t
 
-; See the similar comment in ubt?-ubu?-fn.
+; Since (<= command-tuple-number barrier) but not (<= command-tuple-number
+; current), then barrier and current are distinct, so we know (consp
+; permanent-p) and current < command-tuple-number <= (car permanent-p).
 
-                    (cond
-                     ((<= (access-command-tuple-number (cddar cmd-wrld))
-                          (access command-number-baseline-info
-                                  (global-val 'command-number-baseline-info wrld)
-                                  :original))
-                      (er soft :puff*
-                          "Can't puff* a command within the system ~
-                           initialization."))
-                     (t
-                      (er soft :puff*
-                          "Can't puff* a command within prehistory.  See :DOC ~
-                           reset-prehistory."))))
-                   (t
-                    (let* ((mx (absolute-to-relative-command-number
-                                (max-absolute-command-number wrld)
-                                wrld))
-                           (ptr (absolute-to-relative-command-number
-                                 (max-absolute-command-number cmd-wrld)
-                                 wrld))
-                           (k (- mx ptr)))
-                      (er-let*
-                       ((pair (puff*-fn1 ptr k state)))
+               (er soft :puff*
+                   "Can't puff* a command executed at or before :disable-ubt ~
+                    (at command ~x0).~@1  See :DOC disable-ubt."
+                   (absolute-to-relative-command-number (car permanent-p)
+                                                        wrld)
+                   (if (cdr permanent-p)
+                       (msg "  ~@0" (cdr permanent-p))
+                     "")))))
+            (t
+             (let* ((mx (absolute-to-relative-command-number
+                         (max-absolute-command-number wrld)
+                         wrld))
+                    (ptr (absolute-to-relative-command-number
+                          (max-absolute-command-number cmd-wrld)
+                          wrld))
+                    (k (- mx ptr)))
+               (er-let*
+                   ((pair (puff*-fn1 ptr k state)))
 
 ; The difference between puff and puff* is that puff* iterates puff across the
 ; region generated by the first puff until there are no more commands that are
@@ -3857,8 +3900,8 @@
 ; current maximum relative command number, inclusive.  Initially this region
 ; contains just one command, the one we are to puff first.  ;
 
-                      (puff-report :puff* (car pair) (cdr pair) cd
-                                   state))))))))
+                 (puff-report :puff* (car pair) (cdr pair) cd
+                              state))))))))
 
 (defmacro puff (cd)
   `(puff-fn ,cd state))

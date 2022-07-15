@@ -21467,6 +21467,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-fncall ev ev-lst ev-fncall!
     ev-fncall-rec ev-rec ev-rec-lst ev-rec-acl2-unwind-protect
     ev-fncall-w ev-fncall-w-body ev-w ev-w-lst
+    ev-for-trans-eval
 
     set-w set-w! cloaked-set-w!
 

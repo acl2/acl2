@@ -1101,11 +1101,6 @@
             (list 'quote fn-p)
             'state
             (list 'quote event-form)))
-    (defmacro reset-prehistory (&whole event-form &optional permanent-p)
-      (list 'reset-prehistory-fn
-            (list 'quote permanent-p)
-            'state
-            (list 'quote event-form)))
     (defmacro set-body (&whole event-form fn name-or-rune)
       (list 'set-body-fn
             (list 'quote fn)
@@ -26548,17 +26543,21 @@
   nil)
 
 #+acl2-loop-only
-(defmacro reset-prehistory (&whole event-form &optional permanent-p)
-
-; Warning: See the Important Boot-Strapping Invariants before modifying!
+(defmacro reset-prehistory (&whole event-form &optional pflg)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
 ; skip-proofs".
 
-  (declare (xargs :guard (member-eq permanent-p '(t nil))))
+  (declare (xargs :guard (member-eq pflg '(t nil))))
   (list 'reset-prehistory-fn
-        (list 'quote permanent-p)
+        (list 'quote pflg)
+        'state
+        (list 'quote event-form)))
+
+(defmacro disable-ubt (&whole event-form &optional (arg ':disable-ubt))
+  (list 'reset-prehistory-fn
+        (or arg :disable-ubt)
         'state
         (list 'quote event-form)))
 
@@ -26572,7 +26571,7 @@
                 (value :invisible))
       (value (f-get-global 'undone-worlds-kill-ring state)))))
 
-(defun reset-prehistory-fn (permanent-p state event-form)
+(defun reset-prehistory-fn (pflg state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -26580,15 +26579,35 @@
 
   (with-ctx-summarized
    (make-ctx-for-event event-form
-                       (msg "( RESET-PREHISTORY ~x0 ...)" permanent-p))
-   (cond ((and (not permanent-p)
+                       (if (and (consp event-form)
+                                (eq (car event-form) 'disable-ubt))
+                           (if (cdr event-form)
+                               (msg "( DISABLE-UBT ...)")
+                             (msg "( DISABLE-UBT)"))
+                         (msg "( RESET-PREHISTORY ~x0 ...)" pflg)))
+   (cond ((not (or (member-eq pflg '(t nil :disable-ubt))
+                   (msgp pflg)))
+
+; The guard on reset-prehistory guarantees that pflg is t or nil.  So we must
+; be executing reset-prehistory-fn on behalf of disable-ubt, unless the call
+; is made directly rather than by way of a macro -- in which case one is
+; breaking the interface and doesn't deserve the very best error message!
+
+          (er soft ctx
+              "The optional argument of ~x0 must be the default, which is ~
+               ~x1, or an expression whose evaluation result satisfies ~x2 ~
+               (see :DOC msgp).  But that argument has evaluated to ~x3."
+              'disable-ubt :disable-ubt 'msgp pflg))
+         ((and (not (eq pflg t))
                (or (f-get-global 'certify-book-info state)
                    (eq (f-get-global 'ld-skip-proofsp state) 'include-book)
                    (f-get-global 'skip-reset-prehistory state)))
           (pprogn (observation ctx
-                               "~x0 events with permanent-p=nil are skipped ~
-                                when ~@1.  See :DOC reset-prehistory."
+                               "~x0 events with pflg not equal to ~x1 ~
+                                are skipped when ~@2.  See :DOC ~
+                                reset-prehistory."
                                'reset-prehistory
+                               t
                                (cond
                                 ((f-get-global 'certify-book-info state)
                                  "certifying books")
@@ -26602,12 +26621,29 @@
          (t
           (let* ((wrld (w state))
                  (event-form (or event-form
-                                 (list 'reset-prehistory permanent-p)))
+                                 (list 'reset-prehistory pflg)))
                  (next-absolute-command-number
-                  (next-absolute-command-number wrld)))
+                  (next-absolute-command-number wrld))
+                 (old-info (global-val 'command-number-baseline-info wrld))
+                 (new-info
+                  (if (or (eq pflg :disable-ubt)
+                          (msgp pflg))
+                      (change command-number-baseline-info old-info
+                              :permanent-p
+                              (cons next-absolute-command-number
+                                    (if (eq pflg :disable-ubt)
+                                        nil
+                                      pflg)))
+                    (change command-number-baseline-info
+                            old-info
+                            :permanent-p pflg
+                            :current next-absolute-command-number))))
             (er-let*
              ((val
-               (install-event :new-prehistory-set
+               (install-event (if (or (eq pflg :disable-ubt)
+                                      (msgp pflg))
+                                  :disable-ubt
+                                :new-prehistory-set)
                               event-form
                               'reset-prehistory
                               0
@@ -26615,15 +26651,9 @@
                               nil
                               nil
                               ctx
-                              (global-set
-                               'command-number-baseline-info
-                               (change command-number-baseline-info
-                                       (global-val
-                                        'command-number-baseline-info
-                                        wrld)
-                                       :permanent-p permanent-p
-                                       :current next-absolute-command-number)
-                               wrld)
+                              (global-set 'command-number-baseline-info
+                                          new-info
+                                          wrld)
                               state)))
              (er-progn (reset-kill-ring t state)
                        (value val))))))))

@@ -4888,6 +4888,7 @@
      push-untouchable
      remove-untouchable
      reset-prehistory
+     disable-ubt
      set-body
      table
      encapsulate
