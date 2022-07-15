@@ -452,9 +452,16 @@
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
 (defun apply-tactic-stp (problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts state)
-  (declare (xargs :guard (proof-problemp problem)
-                  :stobjs (state)
-                  :verify-guards nil ;todo: first verify guards for PROVE-DISJUNCTION-WITH-STP
+  (declare (xargs :guard (and (proof-problemp problem)
+                              (rule-alistp rule-alist)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (symbol-listp monitor)
+                              (booleanp normalize-xors)
+                              ;; print
+                              (or (null max-conflicts)
+                                   (natp max-conflicts)))
+                  :stobjs state
+                  :verify-guards nil ;todo
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
@@ -508,7 +515,7 @@
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
        ;; Add the assumptions to the DAG:
        ((mv erp negated-assumption-nodenum-or-quoteps dag-array dag-len dag-parent-array & &)
-        (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?
+        (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?  or call merge-trees-into-dag-array-basic?
          (negate-terms assumptions)
          nil
          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
