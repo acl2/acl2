@@ -521,10 +521,10 @@
 ;;                                      dag-exprp))))
 
 (defthm contextp-of-get-axe-disjunction-from-dag-item
-  (implies (and (natp nodenum-or-quotep)
+  (implies (and (not (equal 'quote (car (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len))))
+                (natp nodenum-or-quotep)
                 (< nodenum-or-quotep dag-len)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (not (equal 'quote (car (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))))
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (contextp (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
   :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-item)
            :in-theory (e/d (axe-disjunctionp)
@@ -532,10 +532,10 @@
                             possibly-negated-nodenumsp-when-axe-disjunctionp)))))
 
 (defthm contextp-of-get-axe-conjunction-from-dag-item
-  (implies (and (natp nodenum-or-quotep)
+  (implies (and (not (equal 'quote (car (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len))))
+                (natp nodenum-or-quotep)
                 (< nodenum-or-quotep dag-len)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (not (equal 'quote (car (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))))
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (contextp (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
   :hints (("Goal" :use (:instance axe-conjunctionp-of-get-axe-conjunction-from-dag-item)
            :in-theory (e/d (axe-conjunctionp)
