@@ -482,3 +482,9 @@
                                       (make-dag-parent-array-with-name2 dag-len dag-array-name dag-array dag-parent-array-name)
                                       dag-len))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
+
+(defthm make-dag-parent-array-with-name2-of-0
+  (equal (make-dag-parent-array-with-name2 0 dag-array-name dag-array dag-parent-array-name)
+         (make-empty-array dag-parent-array-name (alen1 dag-array-name dag-array)))
+  :hints (("Goal" :in-theory (enable make-dag-parent-array-with-name2
+                                     make-dag-parent-array-with-name-aux))))
