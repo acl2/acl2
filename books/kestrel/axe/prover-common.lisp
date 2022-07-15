@@ -355,7 +355,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable all-natp all-integerp))))
 
-;; ;get the nodenums of all predicates that are the tests of an IF (or MYIF or BOOLIF or BVIF) - fffffixme what about booland and boolor?
+;; ;get the nodenums of all predicates that are the tests of an IF (or MYIF or BOOLIF or BVIF) - todo: what about booland and boolor?
 ;; ;now only counts predicates that are not probably equal to a constant or lower node
 ;; (defun get-tested-predicate-nodenums (nodenum dag-array-name dag-array acc tag-array2)
 ;;   (declare (xargs :measure (nfix (+ 1 nodenum))
