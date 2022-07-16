@@ -14,6 +14,7 @@
 
 (include-book "kestrel/utilities/forms" :dir :system) ;for call-of
 (include-book "kestrel/utilities/polarity" :dir :system) ;for want-to-weaken
+(include-book "kestrel/typed-lists-light/all-less" :dir :system)
 
 ;; Recognizes an item of the form <nodenum> or (not <nodenum>).
 (defund possibly-negated-nodenump (item)
@@ -47,6 +48,14 @@
            (equal (consp (cdr item))
                   (consp item)))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
+
+(defthmd natp-of-cadr-when-possibly-negated-nodenump
+  (implies (possibly-negated-nodenump item)
+           (equal (natp (cadr item))
+                  (consp item)))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,7 +162,16 @@
 (defthm rationalp-of-strip-not-from-possibly-negated-nodenum
   (implies (possibly-negated-nodenump item)
            (rationalp (strip-not-from-possibly-negated-nodenum item)))
-  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum))))
+
+(defthm integerp-of-strip-not-from-possibly-negated-nodenum
+  (implies (possibly-negated-nodenump item)
+           (integerp (strip-not-from-possibly-negated-nodenum item)))
+  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum))))
+
+(defthm <=-of-0-and-strip-not-from-possibly-negated-nodenum
+  (implies (possibly-negated-nodenump item)
+           (<= 0 (strip-not-from-possibly-negated-nodenum item)))
   :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum))))
 
 (defthm strip-not-from-possibly-negated-nodenum-when-not-consp
@@ -193,23 +211,106 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bounded-possibly-negated-nodenump (item bound)
+  (declare (xargs :guard (rationalp bound))) ; say integerp?
+  (or (and (natp item)
+           (< item bound))
+      (and (call-of 'not item)
+           (consp (cdr item))
+           (null (cddr item))
+           (natp (farg1 item))
+           (< (farg1 item) bound))))
+
+(defthm possibly-negated-nodenump-when-bounded-possibly-negated-nodenump
+  (implies (bounded-possibly-negated-nodenump item bound)
+           (possibly-negated-nodenump item))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump possibly-negated-nodenump))))
+
+(defthm bounded-possibly-negated-nodenump-when-not-consp
+  (implies (not (consp item))
+           (equal (bounded-possibly-negated-nodenump item bound)
+                  (and (natp item)
+                       (< item bound))))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))
+
+(defthm <-of-strip-not-from-possibly-negated-nodenum
+  (implies (bounded-possibly-negated-nodenump item bound)
+           (< (strip-not-from-possibly-negated-nodenum item) bound))
+  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum
+                                     bounded-possibly-negated-nodenump))))
+
+(defthmd <-of-cadr-when-bounded-possibly-negated-nodenump
+  (implies (and (bounded-possibly-negated-nodenump item bound)
+                (consp item))
+           (< (cadr item) bound))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))
+
+(defthmd <-when-bounded-possibly-negated-nodenump
+  (implies (bounded-possibly-negated-nodenump item bound)
+           (< item bound))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;requires 0 <= nodenum < bound for all the nodenums in the context:
-(defun bounded-possibly-negated-nodenumsp (lst bound)
+(defund bounded-possibly-negated-nodenumsp (items bound)
   (declare (type rational bound))
-  (if (atom lst)
-      (null lst) ;new
-    (let ((item (first lst)))
-      (and (or (and (natp item)
-                    (< item bound))
-               (and (call-of 'not item)
-                    (consp (cdr item))
-                    (null (cddr item))
-                    (natp (farg1 item))
-                    (< (farg1 item) bound)))
-           (bounded-possibly-negated-nodenumsp (rest lst) bound)))))
+  (if (atom items)
+      (null items) ;new
+    (let ((item (first items)))
+      (and (bounded-possibly-negated-nodenump item bound)
+           (bounded-possibly-negated-nodenumsp (rest items) bound)))))
+
+(defthm bounded-possibly-negated-nodenumsp-forward-to-true-listp
+  (implies (bounded-possibly-negated-nodenumsp items bound)
+           (true-listp items))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-possibly-negated-nodenumsp-forward-to-possibly-negated-nodenumsp
+  (implies (bounded-possibly-negated-nodenumsp items bound)
+           (possibly-negated-nodenumsp items))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                     possibly-negated-nodenumsp))))
 
 (defthm possibly-negated-nodenumsp-when-bounded-possibly-negated-nodenumsp
-  (implies (bounded-possibly-negated-nodenumsp lst bound)
-           (possibly-negated-nodenumsp lst))
+  (implies (bounded-possibly-negated-nodenumsp items bound)
+           (possibly-negated-nodenumsp items))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-possibly-negated-nodenumsp-of-nil
+  (bounded-possibly-negated-nodenumsp nil dag-len)
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-possibly-negated-nodenumsp-of-cons
+  (equal (bounded-possibly-negated-nodenumsp (cons item items) dag-len)
+         (and (bounded-possibly-negated-nodenump item dag-len)
+              (bounded-possibly-negated-nodenumsp items dag-len)))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-possibly-negated-nodenumsp-of-cdr
+  (implies (bounded-possibly-negated-nodenumsp items dag-len)
+           (bounded-possibly-negated-nodenumsp (cdr items) dag-len))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-possibly-negated-nodenums-of-car
+  (implies (and (bounded-possibly-negated-nodenumsp items dag-len)
+                (consp items))
+         (bounded-possibly-negated-nodenump (car items) dag-len))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-possibly-negated-nodenumsp-monotone
+  (implies (and (bounded-possibly-negated-nodenumsp context bound1)
+                (<= bound1 bound)
+                (natp bound1)
+                (natp bound))
+           (bounded-possibly-negated-nodenumsp context bound))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp bounded-possibly-negated-nodenump))))
+
+(defthm all-<-of-strip-nots-from-possibly-negated-nodenums
+  (implies (bounded-possibly-negated-nodenumsp items bound)
+           (all-< (strip-nots-from-possibly-negated-nodenums items) bound))
+  :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
                                      bounded-possibly-negated-nodenumsp))))

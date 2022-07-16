@@ -126,6 +126,15 @@
                                      possibly-negated-nodenumsp
                                      possibly-negated-nodenump))))
 
+(defthm <=-of-0-and-max-nodenum-in-possibly-negated-nodenums-aux
+  (implies (and (possibly-negated-nodenumsp items)
+                (consp items)
+                )
+           (<= 0 (max-nodenum-in-possibly-negated-nodenums-aux items acc)))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
+
 (defthm <=-of-max-nodenum-in-possibly-negated-nodenums-aux-linear
   (implies (and (possibly-negated-nodenumsp items)
                 (integerp acc))
@@ -142,7 +151,8 @@
                 (< acc bound))
            (< (max-nodenum-in-possibly-negated-nodenums-aux context acc) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
-                                     bounded-possibly-negated-nodenumsp))))
+                                     bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump))))
 
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
@@ -160,6 +170,13 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
 
+(defthm natp-of-max-nodenum-in-possibly-negated-nodenums
+  (implies (and (possibly-negated-nodenumsp items)
+                (consp items))
+           (natp (max-nodenum-in-possibly-negated-nodenums items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+
 (defthm <=-of-max-nodenum-in-possibly-negated-nodenums-linear
   (implies (possibly-negated-nodenumsp items)
            (<= -1 (max-nodenum-in-possibly-negated-nodenums items)))
@@ -171,6 +188,22 @@
                 (natp bound))
            (< (max-nodenum-in-possibly-negated-nodenums context) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+
+(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums-aux
+  (implies (and (possibly-negated-nodenumsp items)
+                (integerp acc)
+                )
+           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums-aux items acc))))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+                                     strip-not-from-possibly-negated-nodenum
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
+
+(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums
+  (implies (possibly-negated-nodenumsp items)
+           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums items))))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+                                     strip-not-from-possibly-negated-nodenum))))
 
 ;;;
 ;;; max-nodenum-in-context

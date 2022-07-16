@@ -22,14 +22,13 @@
 ;fixme make tail rec (could just print each one instead of consing up the list..)
 (defund expressions-for-this-case (items dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (possibly-negated-nodenumsp items)
-                              (all-< (strip-nots-from-possibly-negated-nodenums items)
-                                     dag-len))
+                              (bounded-possibly-negated-nodenumsp items dag-len))
                   :guard-hints (("Goal" :expand ((possibly-negated-nodenumsp items))
                                  :in-theory (enable strip-not-from-possibly-negated-nodenum
                                                     strip-nots-from-possibly-negated-nodenums
                                                     dag-function-call-exprp-redef
-                                                    possibly-negated-nodenump)))))
+                                                    possibly-negated-nodenump
+                                                    bounded-possibly-negated-nodenump)))))
   (if (endp items)
       nil
     (let* ((item (first items)))

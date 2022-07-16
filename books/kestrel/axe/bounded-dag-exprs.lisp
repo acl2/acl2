@@ -44,8 +44,7 @@
 ;; TODO: Put the bound second, to match dargp-less-than?
 (defund bounded-dag-exprp (nodenum expr)
   (declare (xargs :guard (natp nodenum)
-                  :split-types t
-                  :guard-debug t)
+                  :split-types t)
            (type (integer 0 *) nodenum))
   (mbe :logic (and (dag-exprp expr)
                    (if (and (consp expr)

@@ -107,6 +107,12 @@
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
                                      possibly-negated-nodenump))))
 
+(defthm bounded-possibly-negated-nodenumsp-of-negate-possibly-negated-nodenums
+  (implies (bounded-possibly-negated-nodenumsp items bound)
+           (bounded-possibly-negated-nodenumsp (negate-possibly-negated-nodenums items) bound))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump))))
+
 (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-negate-possibly-negated-nodenums
   (implies (and (possibly-negated-nodenumsp items)
                 (all-< (strip-nots-from-possibly-negated-nodenums items) dag-len)
@@ -281,8 +287,9 @@
                               (natp dag-len))))
   (if (quotep item)
       t
-    ;; todo: call bounded-possibly-negated-nodenumsp?:
-    (all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)))
+    (bounded-possibly-negated-nodenumsp item dag-len)
+    ;;    (all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)
+    ))
 
 (defthm bounded-axe-conjunctionp-of-quote-nil
   (bounded-axe-conjunctionp ''nil dag-len)
@@ -303,12 +310,19 @@
   :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp
                                      strip-nots-from-possibly-negated-nodenums))))
 
-(defthmd all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-conjunctionp
-  (implies (and (axe-conjunctionp d)
-                (bounded-axe-conjunctionp d dag-len)
-                (not (quotep d)))
-           (all-< (strip-nots-from-possibly-negated-nodenums d) dag-len))
-  :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp axe-conjunctionp))))
+(defthm bounded-possibly-negated-nodenumsp-when-bounded-axe-conjunctionp
+  (implies (bounded-axe-conjunctionp x bound)
+           (iff (bounded-possibly-negated-nodenumsp x bound)
+                (not (quotep x))))
+  :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp
+                                     bounded-possibly-negated-nodenumsp))))
+
+;; (defthmd all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-conjunctionp
+;;   (implies (and (axe-conjunctionp d)
+;;                 (bounded-axe-conjunctionp d dag-len)
+;;                 (not (quotep d)))
+;;            (all-< (strip-nots-from-possibly-negated-nodenums d) dag-len))
+;;   :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp axe-conjunctionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -317,8 +331,9 @@
                               (natp dag-len))))
   (if (quotep item)
       t
-    ;; todo: call bounded-possibly-negated-nodenumsp?:
-    (all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)))
+    (bounded-possibly-negated-nodenumsp item dag-len)
+    ;;(all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)
+    ))
 
 (defthm bounded-axe-disjunctionp-of-quote-t
   (bounded-axe-disjunctionp ''t dag-len)
@@ -355,13 +370,20 @@
                                      bounded-axe-disjunctionp
                                      bounded-axe-conjunctionp))))
 
-(defthmd all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp
-  (implies (and (axe-disjunctionp d)
-                (bounded-axe-disjunctionp d dag-len)
-                (not (disjunction-is-truep d))
-                (not (disjunction-is-falsep d)))
-           (all-< (strip-nots-from-possibly-negated-nodenums d) dag-len))
-  :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp axe-disjunctionp))))
+(defthm bounded-possibly-negated-nodenumsp-when-bounded-axe-disjunctionp
+  (implies (bounded-axe-disjunctionp x bound)
+           (iff (bounded-possibly-negated-nodenumsp x bound)
+                (not (quotep x))))
+  :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp
+                                     bounded-possibly-negated-nodenumsp))))
+
+;; (defthmd all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp
+;;   (implies (and (axe-disjunctionp d)
+;;                 (bounded-axe-disjunctionp d dag-len)
+;;                 (not (disjunction-is-truep d))
+;;                 (not (disjunction-is-falsep d)))
+;;            (all-< (strip-nots-from-possibly-negated-nodenums d) dag-len))
+;;   :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp axe-disjunctionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -898,27 +920,51 @@
   :hints (("Goal" :use (:instance axe-conjunctionp-of-get-axe-conjunction-from-dag-item)
            :in-theory (disable axe-conjunctionp-of-get-axe-conjunction-from-dag-item))))
 
-(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-get-axe-conjunction-from-dag-item
+;; (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-get-axe-conjunction-from-dag-item
+;;   (implies (and (not (equal (car (get-axe-conjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
+;;                             'quote))
+;;                 (< nodenum dag-len)
+;;                 (natp nodenum)
+;;                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+;;            (all-< (strip-nots-from-possibly-negated-nodenums (get-axe-conjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
+;;                   dag-len))
+;;   :hints (("goal" :use (:instance bounded-axe-conjunctionp-of-get-axe-conjunction-from-dag-item
+;;                                   (nodenum-or-quotep nodenum)
+;;                                   (dag-array-name 'dag-array))
+;;            :in-theory (e/d (bounded-axe-conjunctionp) (bounded-axe-conjunctionp-of-get-axe-conjunction-from-dag-item)))))
+
+(defthm bounded-possibly-negated-nodenumsp-of-get-axe-conjunction-from-dag-item
   (implies (and (not (equal (car (get-axe-conjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
                             'quote))
                 (< nodenum dag-len)
                 (natp nodenum)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (all-< (strip-nots-from-possibly-negated-nodenums (get-axe-conjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
-                  dag-len))
+           (bounded-possibly-negated-nodenumsp (get-axe-conjunction-from-dag-item nodenum 'dag-array dag-array dag-len) dag-len))
   :hints (("goal" :use (:instance bounded-axe-conjunctionp-of-get-axe-conjunction-from-dag-item
                                   (nodenum-or-quotep nodenum)
                                   (dag-array-name 'dag-array))
            :in-theory (e/d (bounded-axe-conjunctionp) (bounded-axe-conjunctionp-of-get-axe-conjunction-from-dag-item)))))
 
-(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-get-axe-disjunction-from-dag-item
+;; (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-get-axe-disjunction-from-dag-item
+;;   (implies (and (not (equal (car (get-axe-disjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
+;;                             'quote))
+;;                 (< nodenum dag-len)
+;;                 (natp nodenum)
+;;                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+;;            (all-< (strip-nots-from-possibly-negated-nodenums (get-axe-disjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
+;;                   dag-len))
+;;   :hints (("goal" :use (:instance bounded-axe-disjunctionp-of-get-axe-disjunction-from-dag-item
+;;                                   (nodenum-or-quotep nodenum)
+;;                                   (dag-array-name 'dag-array))
+;;            :in-theory (e/d (bounded-axe-disjunctionp) (bounded-axe-disjunctionp-of-get-axe-disjunction-from-dag-item)))))
+
+(defthm bounded-possibly-negated-nodenumsp-of-get-axe-disjunction-from-dag-item
   (implies (and (not (equal (car (get-axe-disjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
                             'quote))
                 (< nodenum dag-len)
                 (natp nodenum)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (all-< (strip-nots-from-possibly-negated-nodenums (get-axe-disjunction-from-dag-item nodenum 'dag-array dag-array dag-len))
-                  dag-len))
+           (bounded-possibly-negated-nodenumsp (get-axe-disjunction-from-dag-item nodenum 'dag-array dag-array dag-len) dag-len))
   :hints (("goal" :use (:instance bounded-axe-disjunctionp-of-get-axe-disjunction-from-dag-item
                                   (nodenum-or-quotep nodenum)
                                   (dag-array-name 'dag-array))

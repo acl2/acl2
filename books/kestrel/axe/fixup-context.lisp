@@ -18,7 +18,10 @@
 ;fixme there was a bug (a context node got renamed to a constant) which prevented this from returning a contextp - prove that it does, given that the renaming-array is good
 (defun fixup-possibly-negated-nodenums (context renaming-array-name renaming-array)
   (declare (xargs :guard (and (array1p renaming-array-name renaming-array)
-                              (bounded-possibly-negated-nodenumsp context (alen1 renaming-array-name renaming-array)))))
+                              (bounded-possibly-negated-nodenumsp context (alen1 renaming-array-name renaming-array)))
+                  :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                                           bounded-possibly-negated-nodenump)))
+                  ))
   (if (endp context)
       nil
     (let* ((item (first context))
