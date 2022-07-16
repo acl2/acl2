@@ -1,7 +1,7 @@
 ; Axe rules about BV arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,18 +18,20 @@
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
-(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
-(include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
-(include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
+;(include-book "kestrel/bv/bvplus" :dir :system)
+;(include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
 (include-book "known-booleans")
-(local (include-book "kestrel/bv/bvlt" :dir :system))
+;(local (include-book "kestrel/bv/bvlt" :dir :system))
+(local (include-book "list-rules")) ; for equal-of-update-nth
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
 (add-known-boolean bv-arrayp)
 
@@ -118,7 +120,11 @@
                                   (bv-array-write esize (+ 1 len)
                                                   (+ 1 index)
                                                   b (cons a lst)))))
-  :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write bvchop-of-sum-cases ceiling-of-lg bvplus unsigned-byte-p-forced)
+  :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write bvchop-of-sum-cases ceiling-of-lg
+                                               ;;bvplus
+                                               unsigned-byte-p-forced
+                                               unsigned-byte-p
+                                               equal-of-update-nth)
                                   (;bvplus-recollapse ;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                    )))))
 

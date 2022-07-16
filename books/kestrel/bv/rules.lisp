@@ -953,7 +953,7 @@
 
 (local (in-theory (enable bvchop-of-logtail)))
 
-(DEFTHMd logatil-OF-LOGEXT-GEN
+(defthmd logtail-of-logext-gen
   (IMPLIES (AND (< N M) ;not true if =?
                 ;;(INTEGERP X)
                 (NATP N)
@@ -967,6 +967,22 @@
                                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                                   LOGBITP-IFF-GETBIT
                                                   )))))
+
+(theory-invariant (incompatible (:rewrite logtail-of-logext-gen) (:rewrite logext-of-logtail)))
+
+;; introduces slice
+(defthm logtail-of-logext
+  (implies (and (natp size)
+                (natp size2)
+                (< size2 size))
+           (equal (logtail size2 (logext size x))
+                  (logext (- size size2) (slice (+ -1 size) size2 x))))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (e/d (logext bvchop-of-logtail slice)
+                           ( ;anti-slice
+;LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+;                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE ;bozo add to anit-slice?
+                            bvchop-of-logtail-becomes-slice)))))
 
 ;use trim
 (defthm bvmult-of-bvand-tighten-2
@@ -2316,18 +2332,7 @@
                   (bitand y (getbit low x))))
   :hints (("Goal" :in-theory (enable bitand bvand))))
 
-(defthm logtail-of-logext
-  (implies (and (natp size)
-                (natp size2)
-                (< size2 size))
-           (equal (logtail size2 (logext size x))
-                  (logext (- size size2) (slice (+ -1 size) size2 x))))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (logext bvchop-of-logtail slice)
-                           (;anti-slice
-;LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
-;                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE ;bozo add to anit-slice?
-                            bvchop-of-logtail-becomes-slice)))))
+
 
 (defthm bitxor-commutative-alt
   (implies (syntaxp (smaller-bvxor-arg b a))

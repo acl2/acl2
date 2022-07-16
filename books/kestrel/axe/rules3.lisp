@@ -15131,7 +15131,8 @@
                                    bv-array-clear
                                    bv-array-write-opener
                                    update-nth2
-                                   ) (bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
+                                   equal-of-update-nth)
+                                  (bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
                                    update-nth-becomes-update-nth2-extend-gen)))))
 
 (defthm equal-of-repeat-and-bv-array-write-hack

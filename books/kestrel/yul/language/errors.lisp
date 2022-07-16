@@ -91,8 +91,7 @@
                                     (info (cadr fun-info))
                                     ((unless (consp info)) nil))
                                  (eq (car info) :limit)))
-           (t (resulterr-limitp-aux (cdr stack))))
-     :guard-debug t)))
+           (t (resulterr-limitp-aux (cdr stack)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
