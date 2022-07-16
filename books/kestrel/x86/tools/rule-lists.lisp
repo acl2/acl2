@@ -1071,7 +1071,7 @@
      standard-state-assumption-32
      standard-assumptions-mach-o-64
      standard-assumptions-pe-64
-     bytes-loaded-in-text-section-64
+     bytes-loaded-at-address-64
      ;; Mach-O stuff:
      acl2::get-mach-o-code
      acl2::subroutine-address-mach-o
