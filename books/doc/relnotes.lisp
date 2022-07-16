@@ -541,6 +541,19 @@
 
    (xdoc::h3 "Miscellaneous")
 
+   (xdoc::p
+    "The following warning is now printed when broken @(see xdoc) links are
+     encountered: ``Please note the following broken topic link name[s]: ...''.
+     This warning is printed to the terminal after the topic is printed by
+     @(':')@(tsee doc), unless of course the warning is inhibited (see @(see
+     set-inhibit-warnings) and @(see set-inhibit-output-lst)).")
+
+   (xdoc::p
+    "For the utility @(tsee make-flag), the previous release (see @(see
+     note-8-4-books)) deprecated the use of a list of cons pairs @('(old .
+     new)') for the value of the keyword argument, @(':flag-mapping').  That
+     list must now be a list of doublets, @('(old new)').")
+
    ))
 
 (defxdoc note-8-4-books

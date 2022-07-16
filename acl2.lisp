@@ -689,6 +689,10 @@
   #-static-conses-should-work-with-egc-in-ccl
   nil)
 
+; Avoid error from e.g.: (defun foo (x) (member x 'a :test 'eq)).
+#+ccl
+(declaim (notinline memq))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
