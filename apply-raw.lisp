@@ -88,9 +88,9 @@
 
 ; We determine whether fn is badged and whether it is warranted.  We return (mv
 ; bad-fn-msg badge warrantp) where bad-fn-msg is either nil or a message that
-; explains that fn is not a known function or else has not been badged.  If
-; bad-fn-msg is nil, then badge is the badge and warrantp indicates whether fn
-; has a warrant.
+; explains that fn is not a known function or else does not have the necessary
+; badge or warrant for calling apply$ and badge on fn.  If badge is non-nil,
+; then badge is the badge and warrantp indicates whether fn has a warrant.
 
 ; This function is a gatekeeper for the execution of badge-userfn and
 ; apply$-userfn (q.v.).
@@ -116,11 +116,26 @@
    (t
     (mv-let (badge warrantp)
       (get-badge-and-warrantp fn wrld)
-      (cond
-       ((null badge) ; fn is a function symbol with no badge assigned
-        (mv (msg "~x0 has not been badged" fn)
-            nil nil))
-       (t (mv nil badge warrantp)))))))
+      (let ((needs-warrant
+
+; Fn has no warrant and either
+; (a) we're in the prover, or any setting where attachments are not allowed; or
+; (b) attachments are allowed (as in the top-level loop), but fn is in logic
+;     mode.
+
+             (and (not warrantp)
+                  (or (null *aokp*)      ; (a)
+                      (logicp fn wrld))) ; (b)
+             ))
+        (cond
+         ((null badge) ; fn is a function symbol with no badge assigned
+          (mv (msg "~x0 has not been ~s1"
+                   fn
+                   (if needs-warrant "warranted" "badged"))
+              nil nil))
+         (needs-warrant ; hence warrantp = nil
+          (mv (msg "~x0 has not been warranted" fn) badge warrantp))
+         (t (mv nil badge warrantp))))))))
 
 ; The (extensible) attachments for badge-userfn and apply$-userfn are
 ; doppelganger-badge-userfn and doppelganger-apply$-userfn.  They will be
@@ -196,8 +211,7 @@
 ; Note:  If bad-fn-msg is nil then we know fn has a badge and badge is it.
 
         (cond
-         ((and (null bad-fn-msg)    ; there is a badge and either we're in the
-               (or *aokp* warrantp)); evaluation theory or fn has a warrant
+         ((null bad-fn-msg)
           (or (not warrantp)
               (maybe-extend-warrant-reqs fn nil 'badge-userfn))
           badge)
@@ -396,18 +410,7 @@
    (t (mv-let (bad-fn-msg badge warrantp)
         (query-badge-userfn-structure fn (w *the-live-state*))
         (cond
-         ((or bad-fn-msg ; no badge for fn, or
-
-; there's a badge, but either
-; (a) we're in the prover, or any setting where attachments are not allowed,
-;     and there's no warrant; or
-; (b) attachments are allowed (as in the top-level loop), but fn is in logic
-;     mode yet fn has no warrant.
-
-              (if (null *aokp*)
-                  (not warrantp)                        ; (a)
-                (and (logicp fn (w *the-live-state*))   ; (b)
-                     (not warrantp))))
+         (bad-fn-msg
           (throw-raw-ev-fncall
            (list* 'ev-fncall-null-body-er
                   nil

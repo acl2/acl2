@@ -35,6 +35,12 @@
 (include-book "pseudo-command-landmarkp")
 (include-book "pseudo-tests-and-calls-listp")
 
+; The following was added to support the devel-check target (see comments
+; the system definition of constant *system-verify-guards-alist*).
+; Specifically, the definition of stobj-listp below requires stobjp to be in
+; logic mode, which is taken care of by this book.
+(include-book "verified-termination-and-guards")
+
 ; -----------------------------------------------------------------
 
 ; This book is used by the book worldp-check.lisp to check the concept of a
