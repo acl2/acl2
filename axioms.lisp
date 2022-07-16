@@ -2491,10 +2491,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (and (symbolp (car lst))
                 (symbol-listp (cdr lst))))))
 
-(defthm symbol-listp-forward-to-true-listp
-  (implies (symbol-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
+; The rule symbol-listp-forward-to-true-listp was formerly here, but it's
+; subsumed by a combination of the following strengthening together with
+; eqlable-listp-forward-to-atom-listp, and atom-listp-forward-to-true-listp.
+(defthm symbol-listp-forward-to-eqlable-listp
+       (implies (symbol-listp x)
+                (eqlable-listp x))
+       :rule-classes :forward-chaining)
 
 (defun symbol-doublet-listp (lst)
 
