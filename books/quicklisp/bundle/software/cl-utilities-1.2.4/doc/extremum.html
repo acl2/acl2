@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<HTML>
+<HEAD>
+  <TITLE>Function EXTREMUM, EXTREMA, N-MOST-EXTREME</TITLE>
+  <LINK  REL="stylesheet" HREF="style.css" type="text/css">
+</HEAD>
+<BODY>
+
+<p><p><i>Function</i> <b>EXTREMUM, EXTREMA, N-MOST-EXTREME</b></a></a> <p>
+<p><b>Syntax:</b><p>
+
+<p>
+
+<p><b>extremum</b> <i>sequence predicate <tt>&key</tt> key (start 0) end</i> => <i>morally-smallest-element</i><p>
+<p><b>extrema</b> <i>sequence predicate <tt>&key</tt> key (start 0) end</i> => <i>morally-smallest-elements</i><p>
+<p><b>n-most-extreme</b> <i>n sequence predicate <tt>&key</tt> key (start 0) end</i> => <i>n-smallest-elements</i><p>
+<p>
+<p><b>Arguments and Values:</b><p>
+<p>
+<i>sequence</i>---a <i>proper sequence</i></a>. <p>
+
+<i>predicate</i>---a <i>designator</i> for a <i>function</i> of two
+arguments that returns a <i>generalized boolean</i>. <p>
+
+<i>key</i>---a <i>designator</i> for a <i>function</i> of one
+argument, or <b>nil</b>. <p>
+
+<i>start, end</i>---bounding index designators of <i>sequence</i>. The
+defaults for start and end are 0 and <b>nil</b>, respectively.<p>
+
+<i>morally-smallest-element</i>---the element of <i>sequence</i> that
+would appear first if the sequence were ordered according to <a
+class="hyperspec" href ="
+http://www.lispworks.com/documentation/HyperSpec/Body/fun_sortcm_stable-sort.html"><b>sort</b></a>
+using <i>predicate</i> and <i>key</i>
+
+<p><i>morally-smallest-elements</i>---the identical elements of
+<i>sequence</i> that would appear first if the sequence were ordered
+according to <a class="hyperspec" href ="
+http://www.lispworks.com/documentation/HyperSpec/Body/fun_sortcm_stable-sort.html"><b>sort</b></a>
+using <i>predicate</i> and <i>key</i>. If <i>predicate</i> states that
+neither of two objects is before the other, they are considered
+identical.
+
+<i>n</i>---a positive integer<p>
+
+<i>n-smallest-elements</i>---the <i>n</i> elements of <i>sequence</i> that
+would appear first if the sequence were ordered according to <a
+class="hyperspec" href ="
+http://www.lispworks.com/documentation/HyperSpec/Body/fun_sortcm_stable-sort.html"><b>sort</b></a>
+using <i>predicate</i> and <i>key</i>
+
+<p>
+<p><b>Description:</b><p>
+<p>
+<b>extremum</b> returns the element of <i>sequence</i> that would
+appear first if the subsequence of <i>sequence</i> specified by
+<i>start</i> and <i>end</i> were ordered according to <a
+class="hyperspec" href ="
+http://www.lispworks.com/documentation/HyperSpec/Body/fun_sortcm_stable-sort.html"><b>sort</b></a>
+using <i>predicate</i> and <i>key</i>.
+
+
+<p><p><b>extremum</b> determines the relationship between two elements
+by giving keys extracted from the elements to the
+<i>predicate</i>. The first argument to the <i>predicate</i> function
+is the part of one element of <i>sequence</i> extracted by the
+<i>key</i> function (if supplied); the second argument is the part of
+another element of <i>sequence</i> extracted by the <i>key</i>
+function (if supplied). <i>Predicate</i> should return <i>true</i> if
+and only if the first argument is strictly less than the second (in
+some appropriate sense). If the first argument is greater than or
+equal to the second (in the appropriate sense), then the
+<i>predicate</i> should return <i>false</i>. <p>
+
+<p>The argument to the <i>key</i> function is the <i>sequence</i>
+element. The return value of the <i>key</i> function becomes an
+argument to <i>predicate</i>. If <i>key</i> is not supplied or
+<b>nil</b>, the <i>sequence</i> element itself is used. There is no
+guarantee on the number of times the <i>key</i> will be called. <p>
+
+<p>If the <i>key</i> and <i>predicate</i> always return, then the
+operation will always terminate.  This is guaranteed even if the
+<i>predicate</i> does not really consistently represent a total order
+(in which case the answer may be wrong). If the <i>key</i>
+consistently returns meaningful keys, and the <i>predicate</i> does
+reflect some total ordering criterion on those keys, then the answer
+will be right <p>
+
+<p>The <i>predicate</i> is assumed to consider two elements <tt>x</tt>
+and <tt>y</tt> to be equal if <tt>(funcall </tt><i>predicate</i><tt>
+</tt><i>x</i><tt> </tt><i>y</i><tt>)</tt> and <tt>(funcall
+</tt><i>predicate</i><tt> </tt><i>y</i><tt> </tt><i>x</i><tt>)</tt>
+are both <i>false</i>.
+
+
+<p>The return value of <tt>(extremum predicate sequence :key key)</tt>
+can be defined as <tt>(elt (<a class="hyperspec" href ="
+http://www.lispworks.com/documentation/HyperSpec/Body/fun_sortcm_stable-sort.html"><b>sort</b></a>
+predicate (subseq sequence start end) :key key) 0)</tt> except when
+<i>sequence</i> is empty (see Exceptional Situations), but may use
+faster (less asymptotically complex) algorithms to find this answer.
+
+<p><b>extrema</b> is similar to <b>extremum</b>, but it returns a list
+of values. There can be more than one extremum, as determined by
+<i>predicate</i>, and with <b>extremum</b> the choice of which
+extremum to return is arbitrary. <b>extrema</b> returns all the
+possible values which <i>predicate</i> determines to be equal.
+
+<p><b>n-most-extreme</b> returns a list of <i>n</i> values without
+testing for equality. It orders <i>sequence</i> in the same way as
+<b>extremum</b> and <b>extrema</b>, then returns the first <i>n</i>
+elements of the sorted sequence.
+
+<p>
+<p><b>Exceptional situations:</b><p>
+<p>
+
+<p>If <i>sequence</i> is empty, then the error <i>no-extremum</i> is
+signalled. Invoking the <b>continue</b> restart will cause
+<b>extremum</b> to return <b>nil</b>.
+
+
+<p>Should be prepared to signal an error of type <b>type-error</b> if
+<i>sequence</i> is not a proper sequence.
+
+<p>If there are fewer than <i>n</i> values in the part of
+<i>sequence</i> that <b>n-most-extreme</b> may operate on, it returns
+all the values it can in sorted order and signals the warning
+<b>n-most-extreme-not-enough-elements</b>. This warning stores the
+given values for <i>n</i> and the relevant subsequence, and they may
+be accessed with <b>n-most-extreme-not-enough-elements-n</b> and
+<b>n-most-extreme-not-enough-elements-subsequence</b>, respectively.
+
+<p><p><b>Implementation notes:</b></p>
+
+<p>There are two implementations of this function included in
+cl-utilities, which should only concern you if you want to squeeze out
+more efficiency, since the versions perform differently on different
+inputs.
+
+<p>The function <b>extremum-fastkey</b> is used exactly like
+<b>extremum</b>, but it calls <i>key</i> fewer times. If <i>key</i> is
+fast, <b>extremum-fastkey</b> is slower than regular <b>extremum</b>,
+but if <i>key</i> is hard to compute you can get significant gains in
+speed. The <b>extremum-fastkey</b> function is more complicated than
+<b>extremum</b>, and therefore may be more likely to contain
+bugs. That said, it doesn't seem buggy.</p>
+
+<p>Don't worry about the performance of passing <tt>#'identity</tt> as
+<i>key</i>. This is optimized by a compiler macro.</p>
+
+<p class="footer"><hr><a href="index.html">Manual Index</a></p>
+
+</body></html>
