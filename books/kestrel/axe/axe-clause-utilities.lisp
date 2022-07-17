@@ -70,11 +70,10 @@
                 (expressions-for-this-case (cdr items) dag-array dag-len)))))))
 
 ;any non-nil constant proves the clause (we are proving a disjunction), any nil is dropped (because (or nil x) = x)
-;;returns (mv provedp remaining-disjunct-nodenums)
+;; Returns (mv provedp nodenum-disjuncts).
 ;is there another version of this?  See get-axe-disjunction-from-dag-items.
-;todo: give this a better name
+;todo: give this a better name?
 ;; TODO: Should we remove duplicate disjuncts too?
-;; TODO: Deprecate! (Why?)
 ;; Also used in prover.lisp
 (defund handle-constant-disjuncts (disjuncts acc)
   (declare (xargs :guard (and (true-listp disjuncts)
@@ -90,7 +89,7 @@
               (mv t nil) ;second RV is irrelevant
             ;; Drop the nil disjunct:
             (handle-constant-disjuncts (rest disjuncts) acc))
-        ;; it's a nodenum:
+        ;; it's a nodenum, so keep it:
         (handle-constant-disjuncts (rest disjuncts) (cons disjunct acc))))))
 
 (defthm all-<-of-mv-nth-1-of-handle-constant-disjuncts
