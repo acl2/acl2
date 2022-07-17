@@ -4536,7 +4536,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4607,7 +4606,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4649,7 +4647,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4693,7 +4690,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4738,7 +4734,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
