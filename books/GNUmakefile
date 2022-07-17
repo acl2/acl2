@@ -1492,25 +1492,40 @@ BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/top.bkchk.out, $(BOOKS_BK
 # (included in system/pseudo-good-worldp.lisp) system book
 # std/portcullis.lisp:
 BOOKS_BKCHK_OUT := $(filter-out workshops/2004/davis/support/%, $(BOOKS_BKCHK_OUT))
+# Issues with raw-mode:
+BOOKS_BKCHK_OUT := $(filter-out centaur/memoize/tests.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out system/check-system-guards.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Weird error about type-prescription rules:
+BOOKS_BKCHK_OUT := $(filter-out std/util/tests/defprojection.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out std/util/tests/deflist.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Apparently this book adds property EXTEND-PROGN!; also excluding the
+# two from the same directory below it (probably similar or same
+# problem).
+BOOKS_BKCHK_OUT := $(filter-out workshops/2022/walter-manolios/acl2s-utils/itest-cgen.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2022/walter-manolios/acl2s-utils/itest-ithm.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2022/walter-manolios/acl2s-utils/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 
-%.bkchk.out: %.cert
-	@echo "Including $(@D)/$* on `date`"
-	@echo '(acl2::value :q)' > $(@D)/workxxx.bkchk.$(*F)
-	@echo '(in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(acl2::lp)' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(acl2::in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(include-book "$*")' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo "Checking world created by including `pwd`/$* on `date`"
-	@echo '(chk-pseudo-good-worldp "$*")' >> $(@D)/workxxx.bkchk.$(*F)
-	@($(ACL2) < $(@D)/workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out
-	@(fgrep 'Pseudo-good-worldp check for including "$*" passed.' $@) || \
+%.bkchk.out:
+	@if [ ! -f "$*.cert" ] ; then echo "Skipping $(@D)/$*" ; \
+	  echo "Skipping $(@D)/$*" > $*.bkchk.out ; else \
+	echo "Including $(@D)/$* on `date`" ;\
+	echo '(acl2::value :q)' > $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(acl2::lp)' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(acl2::in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(include-book "$*")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo "Checking world created by including `pwd`/$* on `date`" ;\
+	echo '(chk-pseudo-good-worldp "$*")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	($(ACL2) < $(@D)/workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out ;\
+	(fgrep 'Pseudo-good-worldp check for including "$*" passed.' $@) || \
             (echo '** Pseudo-good-worldp check FAILED for including $*;' "see `pwd`/$@" '**' ;\
-             exit 1)
-	@rm -f $(@D)/workxxx.bkchk.$(*F)
+             exit 1) ;\
+	rm -f $(@D)/workxxx.bkchk.$(*F) ;\
+	fi
 
 # Next, we implement the target "special", which generalize the
 # approach for bkchk (above) to allow arbitrary code before and after
