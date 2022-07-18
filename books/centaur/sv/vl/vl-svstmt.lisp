@@ -2354,7 +2354,12 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                                 :args (list (sv::svex-quote (sv::2vec (sparseint-val mask)))
                                             (svex-x)
                                             (svex-var var))))
-          (svarlist-masked-x-subst (cdr vars) masks))))
+          (svarlist-masked-x-subst (cdr vars) masks)))
+  ///
+  (defret vars-of-<fn>
+    (implies (not (member-equal v (svarlist-fix vars)))
+             (not (member-equal v (svex-alist-vars subst))))
+    :hints(("Goal" :in-theory (enable svex-alist-vars)))))
     
 
 

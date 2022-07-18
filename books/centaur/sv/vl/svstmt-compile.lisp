@@ -175,23 +175,28 @@
   :parents (svex-composition)
   :short "Compose an svex with a substitution alist.  Variables not in the
 substitution are left in place."
+  :prepwork ((local (defthm cdr-hons-assoc-under-iff-when-svex-alist-p
+                      (implies (svex-alist-p x)
+                               (iff (cdr (hons-assoc-equal k x))
+                                    (hons-assoc-equal k x)))
+                      :hints(("Goal" :in-theory (enable svex-alist-p))))))
   (define svex-compose-svstack ((x svex-p) (a svstack-p))
     :verify-guards nil
     :measure (svex-count x)
-    :returns (xa (equal xa (svex-compose x (svstack-to-svex-alist a)))
-                 :hints ('(:expand ((svex-compose x (svstack-to-svex-alist a))))))
+    :returns (xa (equal xa (svex-compose-rw x (make-svex-substconfig :alist (svstack-to-svex-alist a) :simp 5)))
+                 :hints ('(:expand ((:free (conf) (svex-compose-rw x conf))
+                                    (:free (conf) (svex-compose-rw-memo x conf)))
+                           :in-theory (enable svex-lookup))))
     (svex-case x
       :var (or (svstack-lookup x.name a)
                (mbe :logic (svex-fix x) :exec x))
       :quote (mbe :logic (svex-fix x) :exec x)
       ;; TODO: pass along a simpconfig object as in svex-compose-rw instead of hardcoding this behavior
-      :call (svex-rewrite-fncall 5 -1 x.fn
-                                 (svexlist-compose-svstack x.args a)
-                                 t t)))
+      :call (svex-call-simp x.fn (svexlist-compose-svstack x.args a) 5)))
   (define svexlist-compose-svstack ((x svexlist-p) (a svstack-p))
     :measure (svexlist-count x)
-    :returns (xa (equal xa (svexlist-compose x (svstack-to-svex-alist a)))
-                 :hints ('(:expand ((svexlist-compose x (svstack-to-svex-alist a))))))
+    :returns (xa (equal xa (svexlist-compose-rw x (make-svex-substconfig :alist (svstack-to-svex-alist a) :simp 5)))
+                 :hints ('(:expand ((:free (conf) (svexlist-compose-rw x conf))))))
     (if (atom x)
         nil
       (cons (svex-compose-svstack (car x) a)
@@ -1049,6 +1054,32 @@ exists there.</p>"
 ;; Crunch the dynamic part with the RHS to produce the final expression to be
 ;; assigned to the static select.
 
+
+(local
+ (defsection vars-of-svex-compose-rw
+   (local (defthm svex-vars-of-lookup
+            (implies (and (not (member-equal v (svex-alist-vars a)))
+                          (svar-p k))
+                     (not (member-equal v (svex-vars (cdr (hons-assoc-equal k a))))))
+            :hints(("Goal" :in-theory (enable svex-alist-vars
+                                              hons-assoc-equal)))))
+   ;; TODO put this in svex/rewrite with the definition of svex-compose-rw
+   (defthm-svex-compose-flag
+     (defthm vars-of-svex-compose-rw
+       (implies (and (not (member v (svex-vars x)))
+                     (not (member v (svex-alist-vars (svex-substconfig->alist conf)))))
+                (not (member v (svex-vars (svex-compose-rw x conf)))))
+       :hints ('(:expand ((svex-compose-rw x conf)
+                          (svex-compose-rw-memo x conf))))
+       :flag svex-compose)
+     (defthm vars-of-svexlist-compose-rw
+       (implies (and (not (member v (svexlist-vars x)))
+                     (not (member v (svex-alist-vars (svex-substconfig->alist conf)))))
+                (not (member v (svexlist-vars (svexlist-compose-rw x conf)))))
+       :hints('(:in-theory (enable svexlist-vars)
+                :expand ((svexlist-compose-rw x conf))))
+       :flag svexlist-compose))))
+
 (define svstmt-process-write ((write svstmt-write-p)
                               (blockingp)
                               (nb-delayp)
@@ -1056,6 +1087,11 @@ exists there.</p>"
                               (st svstate-p))
   :returns (mv (new-st svstate-p)
                (lhs lhs-p))
+  :prepwork ((local (defthm len-of-svexlist-compose-rw
+                      (Equal (len (svexlist-compose-rw x a))
+                             (len x))
+                      :hints(("Goal" :induct (len x)
+                              :expand ((svexlist-compose-rw x a)))))))
   (b* (((svstmt-write write))
        ((svstate st))
        (svstack (if blockingp
@@ -2407,13 +2443,22 @@ exists there.</p>"
 
 (define constraintlist-compose-svstack ((x constraintlist-p)
                                         (a svstack-p))
-  :returns (new-x (equal new-x (constraintlist-compose x (svstack-to-svex-alist a)))
-                  :hints(("Goal" :in-theory (enable constraintlist-compose))))
+  :returns (new-x ;; (equal new-x (constraintlist-compose x (svstack-to-svex-alist a)))
+                  ;; :hints
+                  ;; (("Goal" :in-theory (enable constraintlist-compose)))
+            constraintlist-p)
   (if (atom x)
       nil
     (cons (change-constraint (car x)
                              :cond (svex-compose-svstack (constraint->cond (car x)) a))
-          (constraintlist-compose-svstack (cdr x) a))))
+          (constraintlist-compose-svstack (cdr x) a)))
+  ///
+  
+  (defret vars-of-<fn>
+    (implies (and (not (member v (constraintlist-vars x)))
+                  (not (member v (svex-alist-vars (svstack-to-svex-alist a)))))
+             (not (member v (constraintlist-vars new-x))))
+    :hints(("Goal" :in-theory (enable constraintlist-vars)))))
 
 
 
