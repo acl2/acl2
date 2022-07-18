@@ -2335,6 +2335,29 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                   (svex-alist-keys b)))
    :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
+#!sv
+(define svarlist-masked-x-subst ((vars svarlist-p) (masks 4vmask-alist-p))
+  :prepwork ((local (defthm sparseint-p-when-4vmask-p
+                      (implies (4vmask-p x)
+                               (sparseint-p x))
+                      :hints(("Goal" :in-theory (enable 4vmask-p))))))
+  :returns (subst svex-alist-p)
+  (b* (((when (atom vars)) nil)
+       (var (svar-fix (car vars)))
+       (mask (cdr (hons-get var (4vmask-alist-fix masks))))
+       ((when (or (not mask)
+                  (sparseint-equal mask 0)))
+        ;; leave it out of the substitution
+        (svarlist-masked-x-subst (cdr vars) masks)))
+    (cons (cons var
+                (make-svex-call :fn 'bit?
+                                :args (list (sv::svex-quote (sv::2vec (sparseint-val mask)))
+                                            (svex-x)
+                                            (svex-var var))))
+          (svarlist-masked-x-subst (cdr vars) masks))))
+    
+
+
 (define vl-always->svex ((x vl-always-p)
                          (ss vl-scopestack-p)
                          (scopes vl-elabscopes-p)
@@ -2416,13 +2439,6 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
             nil nil))
 
        (written-vars (append blk-written-vars nb-written-vars))
-       ;; Set initial values of the registers in the expressions.  We'll
-       ;; set these to Xes for always_comb and to their delay-1 values for
-       ;; other types.
-       (subst
-        (if (eq x.type :vl-always-comb)
-            (sv::svarlist-x-subst written-vars)
-          (sv::svarlist-delay-subst written-vars)))
 
        (nb-read-vars (sv::svex-alist-vars st.nonblkst))
 
@@ -2465,6 +2481,15 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        (write-masks (fast-alist-clean
                      (combine-mask-alists blkst-write-masks nbst-write-masks)))
+
+       
+       ;; Set initial values of the registers in the expressions.  We'll
+       ;; set these to Xes for always_comb and to their delay-1 values for
+       ;; other types.
+       (subst
+        (if (eq x.type :vl-always-comb)
+            (sv::svarlist-masked-x-subst written-vars write-masks)
+          (sv::svarlist-delay-subst written-vars)))
 
        ((wmv warnings :ctx x)
         (if (eq x.type :vl-always-comb)

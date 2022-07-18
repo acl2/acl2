@@ -184,8 +184,10 @@ substitution are left in place."
       :var (or (svstack-lookup x.name a)
                (mbe :logic (svex-fix x) :exec x))
       :quote (mbe :logic (svex-fix x) :exec x)
-      :call (svex-call x.fn
-                       (svexlist-compose-svstack x.args a))))
+      ;; TODO: pass along a simpconfig object as in svex-compose-rw instead of hardcoding this behavior
+      :call (svex-rewrite-fncall 5 -1 x.fn
+                                 (svexlist-compose-svstack x.args a)
+                                 t t)))
   (define svexlist-compose-svstack ((x svexlist-p) (a svstack-p))
     :measure (svexlist-count x)
     :returns (xa (equal xa (svexlist-compose x (svstack-to-svex-alist a)))
@@ -2494,6 +2496,13 @@ exists there.</p>"
              (cond-compose (if xcond
                                (svex-quote (svex-xeval x.cond))
                              (svex-compose-svstack x.cond st.blkst)))
+             (testval (svex-case cond-compose
+                        :quote (4vec-reduction-or cond-compose.val)
+                        :otherwise nil))
+             ((when (eql testval -1))
+              (svstmtlist-compile x.then st sclimit nb-delayp blk-masks nonblk-masks xcond))
+             ((when (eql testval 0))
+              (svstmtlist-compile x.else st sclimit nb-delayp blk-masks nonblk-masks xcond))
              (st2 (svstate-fork st))
              ((vl::wmv ok warnings then-st then-jst blk-masks nonblk-masks)
               (svstmtlist-compile x.then st sclimit nb-delayp blk-masks nonblk-masks xcond))
