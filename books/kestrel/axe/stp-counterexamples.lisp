@@ -16,16 +16,20 @@
 ;(include-book "std/strings/binary" :dir :system) ; todo: reduce, for STR::PARSE-BITS-FROM-CHARLIST and str::skip-leading-bit-digits
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/read-chars" :dir :system)
+(include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/strings-light/parse-binary-digits" :dir :system)
 (include-book "kestrel/strings-light/parse-decimal-digits" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "nodenum-type-alists")
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 
 (defthm alistp-of-reverse-list
   (equal (alistp (reverse-list x))
@@ -33,6 +37,12 @@
   :hints (("Goal" :in-theory (enable alistp reverse-list))))
 
 (local (in-theory (disable natp mv-nth)))
+
+(local
+ (defthm strip-cars-of-reverse-list
+   (equal (strip-cars (reverse-list acc))
+          (reverse-list (strip-cars acc)))
+   :hints (("Goal" :in-theory (enable strip-cars reverse-list)))))
 
 ;;
 ;; counterexample parsing
@@ -60,6 +70,11 @@
                       (booleanp val))
                   (raw-counterexamplep (rest cex))))))))
 
+(defthmd alistp-when-raw-counterexamplep
+  (implies (raw-counterexamplep raw-counterexample)
+           (alistp raw-counterexample))
+  :hints (("Goal" :in-theory (enable raw-counterexamplep alistp))))
+
 (defthm raw-counterexamplep-of-append
   (implies (and (raw-counterexamplep x)
                 (raw-counterexamplep y))
@@ -68,6 +83,12 @@
 (defthm raw-counterexamplep-of-rev
   (implies (raw-counterexamplep x)
            (raw-counterexamplep (reverse-list x))))
+
+(defthmd natp-of-lookup-equal-when-raw-counterexamplep
+  (implies (and (raw-counterexamplep raw-counterexample)
+                (not (booleanp (lookup-equal nodenum raw-counterexample))))
+           (natp (lookup-equal nodenum raw-counterexample)))
+  :hints (("Goal" :in-theory (enable raw-counterexamplep lookup-equal))))
 
 (defconst *assert-chars* (coerce "ASSERT( " 'list))
 
@@ -374,6 +395,12 @@
            (alistp cex))
   :hints (("Goal" :in-theory (enable counterexamplep alistp))))
 
+;; Since we use an accumulator below.
+(defthm counterexamplep-of-reverse-list
+  (implies (counterexamplep acc)
+           (counterexamplep (reverse-list acc)))
+  :hints (("Goal" :in-theory (enable counterexamplep))))
+
 (defthm natp-of-maxelem-of-strip-cars-when-counterexamplep
   (implies (and (counterexamplep cex)
                 (consp cex))
@@ -410,7 +437,7 @@
            (all-integerp (strip-cars alist)))
   :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
 
-(defun set-array-vals-from-counterexample (raw-counterexample nodenum array-val)
+(defund set-array-vals-from-counterexample (raw-counterexample nodenum array-val)
   (declare (xargs :guard (and (raw-counterexamplep raw-counterexample)
 ;                              (natp nodenum)
                               (true-listp array-val))))
@@ -428,83 +455,109 @@
                                                                                  array-val))
         (set-array-vals-from-counterexample (rest raw-counterexample) nodenum array-val)))))
 
-(defthmd alistp-when-raw-counterexamplep
-  (implies (raw-counterexamplep raw-counterexample)
-           (alistp raw-counterexample))
-  :hints (("Goal" :in-theory (enable raw-counterexamplep alistp))))
-
-;(local (in-theory (disable LIST-TYPEP BV-ARRAY-TYPEP)))
-
-;(local (in-theory (disable bv-array-typep bv-typep boolean-typep BV-ARRAY-TYPE-LEN MOST-GENERAL-TYPEP)))
-
-;; Build an alist that assigns a value to each nodenum in
-;; cut-nodenum-type-alist.  For arrays, harvest values of their individual
-;; elements from the raw counterexample. Put in a default value for anything
-;; not assigned a value.
-(defund fixup-counterexample (cut-nodenum-type-alist raw-counterexample)
-  (declare (xargs :guard (and (raw-counterexamplep raw-counterexample)
-                              (nodenum-type-alistp cut-nodenum-type-alist))
-                  :guard-hints (("Goal" :in-theory (enable alistp-when-raw-counterexamplep)))
-                  :verify-guards nil ;done below
-                  ))
-  (if (endp cut-nodenum-type-alist)
-      nil
-    (let* ((entry (first cut-nodenum-type-alist))
-           (nodenum (car entry))
-           (type (cdr entry)))
-      (if (or (boolean-typep type)
-              (bv-typep type))
-          (acons nodenum
-                 (or (lookup-equal nodenum raw-counterexample)
-                     (prog2$ (cw "(NOTE: No value in counterexample for node ~x0.)~%" nodenum)
-                             ;; go ahead and pick a value so the counterexample is complete:
-                             (if (boolean-typep type)
-                                 nil
-                               0)))
-                 (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample))
-        (if (and (bv-array-typep type)
-                 ;;(quoted-posp (bv-array-type-len type))
-                 )
-            (acons nodenum
-                   (set-array-vals-from-counterexample raw-counterexample nodenum (repeat (bv-array-type-len type) 0))
-                   (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample))
-          (acons nodenum
-                 (er hard? 'fixup-counterexample "Unexpected type: ~x0." type)
-                 (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample)))))))
-
-(defthm alistp-of-fixup-counterexample
-  (alistp (fixup-counterexample cut-nodenum-type-alist raw-counterexample))
-  :hints (("Goal" :in-theory (enable fixup-counterexample))))
-
-(verify-guards fixup-counterexample :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
-
-(defthm strip-cars-of-fixup-counterexample
-  (equal (strip-cars (fixup-counterexample cut-nodenum-type-alist raw-counterexample))
-         (strip-cars cut-nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable fixup-counterexample))))
-
-(defthm consp-of-fixup-counterexample
-  (equal (consp (fixup-counterexample cut-nodenum-type-alist raw-counterexample))
-         (consp cut-nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable fixup-counterexample))))
-
 (defthm true-listp-of-set-array-vals-from-counterexample
   (implies (true-listp array-val)
            (true-listp (set-array-vals-from-counterexample raw-counterexample nodenum array-val)))
   :hints (("Goal" :in-theory (enable set-array-vals-from-counterexample))))
 
-(defthmd natp-of-lookup-equal-when-raw-counterexamplep
-  (implies (and (raw-counterexamplep raw-counterexample)
-                (not (booleanp (lookup-equal nodenum raw-counterexample))))
-           (natp (lookup-equal nodenum raw-counterexample)))
-  :hints (("Goal" :in-theory (enable raw-counterexamplep lookup-equal))))
 
-(defthm counterexamplep-of-fixup-counterexample
-  (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
-                (raw-counterexamplep raw-counterexample))
-           (counterexamplep (fixup-counterexample cut-nodenum-type-alist raw-counterexample)))
+
+;(local (in-theory (disable LIST-TYPEP BV-ARRAY-TYPEP)))
+
+;(local (in-theory (disable bv-array-typep bv-typep boolean-typep BV-ARRAY-TYPE-LEN MOST-GENERAL-TYPEP)))
+
+;; Returns (mv erp counterexample).  Builds an alist that assigns a value to
+;; each nodenum in cut-nodenum-type-alist.  For arrays, harvests values of
+;; their individual elements from the raw counterexample.  Puts in a default
+;; value for anything not assigned a value.
+(defund fixup-counterexample (cut-nodenum-type-alist raw-counterexample acc)
+  (declare (xargs :guard (and (raw-counterexamplep raw-counterexample)
+                              (nodenum-type-alistp cut-nodenum-type-alist)
+                              (alistp acc))
+                  :guard-hints (("Goal" :in-theory (enable alistp-when-raw-counterexamplep
+                                                           nodenum-type-alistp)))))
+  (if (endp cut-nodenum-type-alist)
+      (mv (erp-nil) (reverse-list acc))
+    (let* ((entry (first cut-nodenum-type-alist))
+           (nodenum (car entry))
+           (type (cdr entry)))
+      (if (boolean-typep type)
+          (let ((res (assoc-equal nodenum raw-counterexample)))
+            (if (not res)
+                (prog2$ (cw "(NOTE: No value in counterexample for node ~x0.)~%" nodenum)
+                        ;; go ahead and pick a value (nil) so the counterexample is complete:
+                        (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample (acons nodenum nil acc)))
+              (let ((val (cdr res)))
+                (if (not (booleanp val))
+                    (prog2$ (er hard? 'fixup-counterexample "Bad value, ~x0, in countexample.  Expected a boolean." val)
+                            (mv :bad-val-in-counterexample nil))
+                  (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample (acons nodenum val acc))))))
+        (if (bv-typep type)
+            (let ((res (assoc-equal nodenum raw-counterexample)))
+              (if (not res)
+                  (prog2$ (cw "(NOTE: No value in counterexample for node ~x0.)~%" nodenum)
+                          ;; go ahead and pick a value (0) so the counterexample is complete:
+                          (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample (acons nodenum 0 acc)))
+                (let ((val (cdr res))
+                      (width (bv-type-width type)))
+                  (if (not (unsigned-byte-p width val))
+                      (prog2$ (er hard? 'fixup-counterexample "Bad value, ~x0, in countexample.  Expected a BV of size ~x1." val width)
+                              (mv :bad-val-in-counterexample nil))
+                    (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample (acons nodenum val acc))))))
+          (if (and (bv-array-typep type)
+                   ;;(quoted-posp (bv-array-type-len type))
+                   )
+              (fixup-counterexample (rest cut-nodenum-type-alist)
+                                    raw-counterexample
+                                    (acons nodenum
+                                           (set-array-vals-from-counterexample raw-counterexample nodenum (repeat (bv-array-type-len type) 0))
+                                           acc))
+            (prog2$ (er hard? 'fixup-counterexample "Unexpected type: ~x0." type)
+                    (mv :unexpected-type nil))))))))
+
+(defthm alistp-of-mv-nth-1-of-fixup-counterexample
+  (implies (alistp acc)
+           (alistp (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc))))
+  :hints (("Goal" :in-theory (enable fixup-counterexample))))
+
+;(verify-guards fixup-counterexample :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+
+(defthm strip-cars-of-mv-nth-1-of-fixup-counterexample
+  (implies (not (mv-nth 0 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
+           (equal (strip-cars (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
+                  (append (reverse (strip-cars acc))
+                          (strip-cars cut-nodenum-type-alist))))
+  :hints (("Goal" :in-theory (enable fixup-counterexample))))
+
+(defthm consp-of-mv-nth-1-of-fixup-counterexample
+  (implies (not (mv-nth 0 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
+           (equal (consp (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
+                  (or (consp cut-nodenum-type-alist)
+                      (consp acc))))
+  :hints (("Goal" :in-theory (enable fixup-counterexample))))
+
+(defthm counterexamplep-of-mv-nth-1-of-fixup-counterexample
+  (implies (and ;(not (mv-nth 0 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
+            (nodenum-type-alistp cut-nodenum-type-alist)
+            (counterexamplep acc)
+            (raw-counterexamplep raw-counterexample))
+           (counterexamplep (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc))))
   :hints (("Goal" :in-theory (e/d (fixup-counterexample
                                    counterexamplep acons
                                    nodenum-type-alistp
                                    natp-of-lookup-equal-when-raw-counterexamplep)
                                   (BOOLEAN-TYPEP bv-typep BV-ARRAY-TYPEP BV-ARRAY-TYPE-LEN)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bounded-counterexamplep (cex bound)
+  (declare (xargs :guard (integerp bound)))
+  (and (counterexamplep cex)
+       (all-< (strip-cars cex) bound)))
+
+(defthm bounded-counterexamplep-of-mv-nth-1-of-fixup-counterexample
+  (implies (and (all-< (strip-cars cut-nodenum-type-alist) bound)
+                (nodenum-type-alistp cut-nodenum-type-alist)
+                (bounded-counterexamplep acc bound))
+           (bounded-counterexamplep (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)) bound))
+  :hints (("Goal" :in-theory (enable fixup-counterexample bounded-counterexamplep nodenum-type-alistp))))
