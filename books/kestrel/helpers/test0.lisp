@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+; Matt K. mod: Avoid ACL2(p) proof failure.
+(set-waterfall-parallelism nil)
 (include-book "helper")
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
