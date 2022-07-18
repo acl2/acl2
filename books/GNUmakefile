@@ -1023,6 +1023,7 @@ BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EX
 # Has (include-raw "timer.lsp"):
 BOOKS_SKIP_COMP += centaur/memoize/top.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += $(patsubst %-raw.lsp, %.$(ACL2_COMP_EXT), $(shell find . -name '*-raw.lsp' -print))
+BOOKS_SKIP_COMP += system/doc/render-doc.$(ACL2_COMP_EXT)
 
 # Has readtime conditionals #+ccl and #-ccl ("not supported for this
 # host Lisp").
