@@ -43,10 +43,14 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
+
+(local (in-theory (enable rationalp-when-natp)))
 
 ;(local (in-theory (enable member-equal-becomes-memberp))) ;todo
 
-(local (in-theory (disable symbol-listp)))
+(local (in-theory (disable symbol-listp w)))
 
 ;; (defthm pseudo-termp-when-memberp
 ;;   (implies (and (memberp a y)
@@ -448,6 +452,14 @@
    (type-rules)
    (unsigned-byte-p-forced-rules)))
 
+(in-theory (disable (:e pre-stp-rules))) ; avoid big goals
+
+(defthmd symbol-listp-of-pre-stp-rules
+  (symbol-listp (pre-stp-rules))
+  :hints (("Goal" :in-theory (enable (:e pre-stp-rules)))))
+
+(local (in-theory (enable symbol-listp-of-pre-stp-rules)))
+
 (ensure-rules-known (pre-stp-rules))
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
@@ -460,7 +472,11 @@
                               (booleanp normalize-xors)
                               ;; print
                               (or (null max-conflicts)
-                                   (natp max-conflicts)))
+                                  (natp max-conflicts))
+                              (ilks-plist-worldp (w state)))
+                  :guard-hints (("Goal" :in-theory (e/d (quotep-compound-recognizer)
+                                                        (myquotep quotep))
+                                 :do-not '(generalize eliminate-destructors)))
                   :stobjs state
                   :verify-guards nil ;todo
                   ))
@@ -475,12 +491,15 @@
           (prog2$
            (cw "Note: The DAG is the constant NIL.~%")
            (mv *invalid* nil state))))
+       ((when (not (< (car (car (first problem))) 2147483646)))
+        (er hard? 'apply-tactic-stp "DAG too big.")
+        (mv *error* nil state))
        ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
        ((mv erp rule-alist) (add-to-rule-alist (pre-stp-rules) rule-alist (w state)))
        ((when erp)
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
-       ((mv erp dag)
+       ((mv erp dag) ; todo: call dag dag-or-quotep
         (simplify-dag-basic dag
                             assumptions
                             interpreted-function-alist
@@ -508,8 +527,8 @@
        (- (and print (cw " Calling STP to prove: ~x0.~%" (if (< dag-size 100) (dag-to-term dag) dag))))
        ;; todo: pull out some of this machinery (given a dag and assumptions, set up a disjunction in a dag-array):
        (dag-array-name 'dag-array)
-       (dag-array (make-into-array dag-array-name dag))
-       (top-nodenum (top-nodenum dag))
+       (dag-array (make-dag-into-array dag-array-name dag 0))
+       (top-nodenum (top-nodenum-of-dag dag))
        (dag-len (+ 1 top-nodenum))
        (dag-parent-array-name 'dag-parent-array)
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
@@ -523,12 +542,16 @@
          nil ;fixme ifns
          ))
        ((when erp) (mv *error* nil state))
-       ;; We'll prove that either the conclusion is true or one of the assumptions is false:
-       ;; TODO: What if the top-nodenum is a disjunction?
-       ;; TODO: What if a negated assumption is disjunction (e.g., a negated conjuntion)?
-       (disjuncts (cons top-nodenum negated-assumption-nodenum-or-quoteps))
+       ;; Handle any disjuncts that are constants:
+       ((mv provedp negated-assumption-nodenums) ; todo: can there really be constants in negated-assumption-nodenum-or-quoteps?
+        (handle-constant-disjuncts negated-assumption-nodenum-or-quoteps nil))
+       ((when provedp)
+        (cw "NOTE: Proved due to a assumption of false.~%")
+        (mv *valid* nil state))
+       ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
+       (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
        ((mv result state)
-        (prove-disjunction-with-stp disjuncts ; Disjuncts that are disjunctions are flattened
+        (prove-disjunction-with-stp disjunct-nodenums ; Disjuncts that represent disjunctions are flattened
                                     dag-array ;must be named 'dag-array (fixme generalize?)
                                     dag-len
                                     dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)
@@ -539,7 +562,7 @@
                                     state)))
     ;; this tactic has to prove the whole problem (it can't return a residual DAG)
     (if (eq *error* result)
-        (prog2$ (er hard 'apply-tactic-stp "Error applying STP tactic.)~%")
+        (prog2$ (er hard? 'apply-tactic-stp "Error applying STP tactic.)~%")
                 (mv *error* nil state))
       (if (eq *valid* result)
           (prog2$ (and print (cw "STP proved the goal.)~%"))
@@ -560,7 +583,7 @@
                           (mv *no-change*
                               result ;; return the counterexample in the info
                               state))
-                (prog2$ (er hard 'apply-tactic-stp "Bad result: ~x0." result)
+                (prog2$ (er hard? 'apply-tactic-stp "Bad result: ~x0." result)
                         (mv *error* nil state))))))))))
 
 ;;

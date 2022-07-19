@@ -2322,7 +2322,7 @@
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: the cutting could look at shared nodes (don't cut above the shared node frontier)?
-(defund prove-disjunction-with-stp (disjuncts ;nodenums in the DAG and/or quoteps (todo: add support for negated nodenums)
+(defund prove-disjunction-with-stp (disjuncts ;nodenums in the DAG (todo: add support for negated nodenums)
                                     dag-array ;must be named 'dag-array (todo: generalize?)
                                     dag-len
                                     dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
@@ -2332,7 +2332,9 @@
                                     counterexamplep ;perhaps this should always be t?
                                     state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (bounded-darg-listp disjuncts dag-len)
+                              ;;(bounded-darg-listp disjuncts dag-len)
+                              (nat-listp disjuncts)
+                              (all-< disjuncts dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
@@ -2453,7 +2455,7 @@
        ((mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array & &)
         (make-terms-into-dag-array-basic clause 'dag-array 'dag-parent-array nil))
        ((when erp) (mv *error* state)) ;todo: consider passing back the erp in the standard way
-       ;; Handle any disjuncts that are constants: TODO: remove
+       ;; Handle any disjuncts that are constants:
        ((mv provedp nodenums)
         (handle-constant-disjuncts nodenums-or-quoteps nil)))
     (if provedp
