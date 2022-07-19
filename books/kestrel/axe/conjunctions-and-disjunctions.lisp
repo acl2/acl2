@@ -1004,6 +1004,13 @@
            (axe-disjunctionp (get-axe-disjunction-from-dag-items nodenum-or-quoteps dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable get-axe-disjunction-from-dag-items))))
 
+(defthm consp-of-get-axe-disjunction-from-dag-items
+  (implies (and (bounded-darg-listp nodenum-or-quoteps dag-len)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len))
+           (consp (get-axe-disjunction-from-dag-items nodenum-or-quoteps dag-array-name dag-array dag-len)))
+  :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-items)
+           :in-theory (disable axe-disjunctionp-of-get-axe-disjunction-from-dag-items))))
+
 (defthmd consp-of-cdr-when-axe-disjunctionp-lemma
   (implies (and (axe-disjunctionp d)
                 (equal (car d) 'quote))

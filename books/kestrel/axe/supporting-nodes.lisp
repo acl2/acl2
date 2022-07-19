@@ -886,6 +886,13 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable DROP-NON-SUPPORTERS-ARRAY-WITH-NAME))))
 
+(defthm <-of-len-of-drop-non-supporters-array-with-name
+  (implies (and (< (+ 1 top-nodenum) bound)
+                (natp top-nodenum))
+           (< (len (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print)) bound))
+  :hints (("Goal" :use (:instance <=-of-len-of-drop-non-supporters-array-with-name)
+           :in-theory (disable <=-of-len-of-drop-non-supporters-array-with-name))))
+
 (defthm pseudo-dagp-of-drop-non-supporters-array-with-name
   (implies (and (natp top-nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum)))
