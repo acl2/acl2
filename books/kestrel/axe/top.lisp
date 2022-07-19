@@ -168,6 +168,7 @@
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
 (include-book "prune")
+(include-book "prune-dag")
 (include-book "rational-lists")
 (include-book "rebuild-literals")
 (include-book "rebuild-nodes2")
