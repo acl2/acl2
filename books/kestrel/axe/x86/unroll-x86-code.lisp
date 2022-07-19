@@ -186,7 +186,6 @@
                              extra-rules
                              remove-rules
                              extra-assumption-rules
-
                              step-limit
                              step-increment
                              memoizep
@@ -196,7 +195,7 @@
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions
+                              ;; assumptions ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (output-indicatorp output)
@@ -345,7 +344,7 @@
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions
+                              ;; assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (output-indicatorp output)
