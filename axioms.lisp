@@ -2159,8 +2159,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun len (x)
   (declare (xargs :guard t :mode :program))
   #-acl2-loop-only
-  (loop for tail on x
-        with acc of-type fixnum = 0
+  (loop with acc of-type fixnum = 0
+        for nil on x
         do (if (eql (the fixnum acc) most-positive-fixnum)
 
 ; We really don't expect lists of length greater than most-positive-fixnum.
