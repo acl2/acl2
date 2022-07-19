@@ -856,7 +856,7 @@ apply a substitution to a term while evaluating ground terms.")
      now available for @(tsee prove$).")
 
    (xdoc::p
-    "Evaluation of @('prover-steps-counted state)') returns the prover steps
+    "Evaluation of @('(prover-steps-counted state)') returns the prover steps
      counted for the most recently completed event.")
 
    (xdoc::p
