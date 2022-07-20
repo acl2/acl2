@@ -334,16 +334,6 @@
            (equal (* x y)
                   (* y x))))
 
-;move to plus.lisp
-(defthm cancel-1-2
-  (equal (equal (+ x y) (+ z x w))
-         (equal (fix y) (+ z w))))
-
-;move to plus.lisp
-(defthm cancel-2-2
-  (equal (equal (+ v x y) (+ z x w))
-         (equal (+ v y) (+ z w))))
-
 (defthmd rationalp-*2
   (implies (and (rationalp x) (rationalp y))
            (rationalp (* x y))))

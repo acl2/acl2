@@ -116,6 +116,30 @@
   (equal (equal (+ y1 x) (+ y2 x))
          (equal (fix y1) (fix y2))))
 
+(defthm equal-of-+-and-+-cancel-1+-2+
+  (equal (equal (+ x y1) (+ y2 x y3))
+         (equal (fix y1) (+ y2 y3))))
+
+(defthm equal-of-+-and-+-cancel-2+-2+
+  (equal (equal (+ y1 x y2) (+ y3 x y4))
+         (equal (+ y1 y2) (+ y3 y4))))
+
+(defthm equal-of-+-and-+-cancel-3-3
+  (equal (equal (+ y1 y2 x) (+ y3 y4 x))
+         (equal (+ y1 y2) (+ y3 y4))))
+
+(defthm equal-of-+-and-+-cancel-3-1+
+  (equal (equal (+ y1 y2 x) (+ x y3))
+         (equal (+ y1 y2) (fix y3))))
+
+(defthm equal-of-+-and-+-cancel-2-3
+  (equal (equal (+ y1 x) (+ y2 y3 x))
+         (equal (fix y1) (+ y2 y3))))
+
+(defthm equal-of-+-and-+-cancel-2-4
+  (equal (equal (+ y1 x) (+ y2 y3 y4 x))
+         (equal (fix y1) (+ y2 y3 y4))))
+
 ;; TODO: Consider adding more like this, but we need a meta rule to handle all
 ;; the cases.
 
