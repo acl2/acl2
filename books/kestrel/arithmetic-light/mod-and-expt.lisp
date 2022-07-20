@@ -196,3 +196,11 @@
                 (integerp i2))
            (equal (mod (expt 2 i1) (expt 2 i2))
                   0)))
+
+(defthm unsigned-byte-p-of-mod-of-expt
+  (implies (and (<= i size)
+                (integerp x)
+                (natp size)
+                (integerp i))
+           (unsigned-byte-p size (mod x (expt 2 i))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
