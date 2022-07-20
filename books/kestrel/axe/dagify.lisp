@@ -938,7 +938,37 @@
                                    car-becomes-nth-of-0
                                    merge-tree-into-dag-array
                                    merge-trees-into-dag-array)
-                                  (natp)))))
+                           (natp)))))
+
+(defthm merge-trees-into-dag-array-return-type-corollary
+  (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                ;; no error:
+                (not (mv-nth 0 (merge-trees-into-dag-array
+                                trees
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                interpreted-function-alist)))
+                (bounded-axe-tree-listp trees dag-len)
+                (symbol-alistp var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+;                  (interpreted-function-alistp interpreted-function-alist)
+                (<= bound (mv-nth 3
+                                  (merge-trees-into-dag-array
+                                   trees
+                                   var-replacement-alist
+                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                   interpreted-function-alist)))
+                (natp bound)
+                )
+           (pseudo-dag-arrayp dag-array-name
+                              (mv-nth 2 (merge-trees-into-dag-array
+                                         trees
+                                         var-replacement-alist
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                         interpreted-function-alist))
+                              bound))
+  :hints (("Goal" :use (:instance merge-trees-into-dag-array-return-type)
+           :in-theory (e/d (wf-dagp) (merge-trees-into-dag-array-return-type)))))
 
 (defthm merge-tree-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)

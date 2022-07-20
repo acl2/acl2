@@ -133,6 +133,7 @@
 ;; Handles the bottommost DAG-LEN nodes in DAG-ARRAY.
 ;; The alen1 of the parent-array returned always matches the alen1 of
 ;; DAG-ARRAY, as is often required.
+;; TODO: Add "-with-name" to this.
 (defund make-dag-indices (dag-array-name dag-array dag-parent-array-name dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))
@@ -145,7 +146,7 @@
                           nil ;;empty dag-variable-alist
                           )))
 
-;; We reason about make-dag-parent-array-with-name instead of make-dag-indices, which is more complicated.
+;; We reason about make-dag-parent-array-with-name2 instead of make-dag-indices, which is more complicated.
 (defthm mv-nth-0-of-make-dag-indices
   (equal (mv-nth 0 (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
          (make-dag-parent-array-with-name2 dag-len dag-array-name dag-array dag-parent-array-name))

@@ -260,3 +260,12 @@
   (implies (and (natp x)
                 (natp y))
            (natp (+ x y))))
+
+(defthm equal-of-+-and-+-cancel-constants
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)))
+           (equal (equal (+ k1 x) (+ k2 y))
+                  ;; computations with k1 and k2 here get computed:
+                  (if (< k1 k2)
+                      (equal (fix x) (+ (- k2 k1) y))
+                    (equal (+ (- k1 k2) x) (fix y))))))

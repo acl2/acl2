@@ -345,6 +345,14 @@
       (mv (erp-nil)
           (extend-rule-alist axe-rules t priorities rule-alist)))))
 
+(defthm rule-alistp-of-mv-nth-1-of-add-to-rule-alist
+  (implies (and (symbol-listp rule-names)
+                (true-listp rule-names)
+                (rule-alistp rule-alist)
+                (ilks-plist-worldp wrld))
+           (rule-alistp (mv-nth 1 (add-to-rule-alist rule-names rule-alist wrld))))
+  :hints (("Goal" :in-theory (enable add-to-rule-alist))))
+
 ;; Returns the rule-alist.  Does not return erp.
 (defund add-to-rule-alist! (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)

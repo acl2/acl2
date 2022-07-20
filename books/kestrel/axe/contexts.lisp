@@ -33,7 +33,7 @@
            (acl2-numberp (maxelem items)))
   :hints (("Goal" :in-theory (enable maxelem))))
 
-(defthm natp-of-maxelem-forced
+(defthm natp-of-maxelem-forced ; todo: rename
   (implies (and (consp items)
                 (all-natp items))
            (natp (maxelem items)))
@@ -53,35 +53,7 @@
                            ;;consp-when-len-equal
                            )))
 
-(defthm possibly-negated-nodenump-of-list-of-not
-  (equal (possibly-negated-nodenump (list 'not nodenum))
-         (natp nodenum))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-(defthm possibly-negated-nodenump-when-natp
-  (implies (natp nodenum)
-           (possibly-negated-nodenump nodenum))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-;we'll use consp as the normal form
-(defthmd cdr-iff-when-possibly-negated-nodenump
-  (implies (possibly-negated-nodenump item)
-           (iff (cdr item)
-                (consp item)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-;we'll use consp as the normal form
-(defthmd consp-of-cdr-when-possibly-negated-nodenump
-  (implies (possibly-negated-nodenump item)
-           (equal (consp (cdr item))
-                  (consp item)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
-
-(defthm possibly-negated-nodenump-of-car
-  (implies (possibly-negated-nodenumsp items)
-           (equal (possibly-negated-nodenump (car items))
-                  (consp items)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
 ;; contexts
@@ -104,55 +76,33 @@
       ;; TODO: Consider requiring no dups, consider requiring no obvious contradictions (x and (not x) both present):
       (possibly-negated-nodenumsp context)))
 
-;requires 0 <= nodenum < bound for all the nodenums in the context:
-(defun possibly-negated-nodenumsp-with-bound (lst bound)
-  (declare (type rational bound))
-  (if (atom lst)
-      (null lst) ;new
-    (let ((item (first lst)))
-      (and (or (and (natp item)
-                    (< item bound))
-               (and (call-of 'not item)
-                    (consp (cdr item))
-                    (null (cddr item))
-                    (natp (farg1 item))
-                    (< (farg1 item) bound)))
-           (possibly-negated-nodenumsp-with-bound (rest lst) bound)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm possibly-negated-nodenumsp-when-possibly-negated-nodenumsp-with-bound
-  (implies (possibly-negated-nodenumsp-with-bound lst bound)
-           (possibly-negated-nodenumsp lst))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     possibly-negated-nodenumsp-with-bound))))
-
-
-(defund contextp-with-bound (context bound)
+(defund bounded-contextp (context bound)
   (declare (type rational bound))
   (or (eq (false-context) context)
-      (possibly-negated-nodenumsp-with-bound context bound)))
+      (bounded-possibly-negated-nodenumsp context bound)))
 
-(defthm contextp-with-bound-monotone
-  (implies (and (contextp-with-bound context bound1)
+(defthm contextp-when-bounded-contextp
+  (implies (bounded-contextp context bound)
+           (contextp context))
+  :hints (("Goal" :in-theory (enable bounded-contextp contextp))))
+
+(defthm bounded-contextp-forward-to-context
+  (implies (bounded-contextp context bound)
+           (contextp context))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable bounded-contextp contextp))))
+
+(defthm bounded-contextp-monotone
+  (implies (and (bounded-contextp context bound1)
                 (<= bound1 bound)
                 (natp bound1)
                 (natp bound))
-           (contextp-with-bound context bound))
-  :hints (("Goal" :in-theory (enable contextp-with-bound))))
+           (bounded-contextp context bound))
+  :hints (("Goal" :in-theory (enable bounded-contextp))))
 
-(defthm contextp-when-contextp-with-bound
-  (implies (contextp-with-bound context bound)
-           (contextp context))
-  :hints (("Goal" :in-theory (enable contextp-with-bound contextp))))
-
-(defthm contextp-with-bound-forward-to-context
-  (implies (contextp-with-bound context bound)
-           (contextp context))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable contextp-with-bound contextp))))
-
-;;;
-;;; max-nodenum-in-possibly-negated-nodenums-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund max-nodenum-in-possibly-negated-nodenums-aux (items acc)
   (declare (xargs :guard (and (rationalp acc)
@@ -176,6 +126,15 @@
                                      possibly-negated-nodenumsp
                                      possibly-negated-nodenump))))
 
+(defthm <=-of-0-and-max-nodenum-in-possibly-negated-nodenums-aux
+  (implies (and (possibly-negated-nodenumsp items)
+                (consp items)
+                )
+           (<= 0 (max-nodenum-in-possibly-negated-nodenums-aux items acc)))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
+
 (defthm <=-of-max-nodenum-in-possibly-negated-nodenums-aux-linear
   (implies (and (possibly-negated-nodenumsp items)
                 (integerp acc))
@@ -186,13 +145,14 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
 
-(defthm <-of-max-nodenum-in-possibly-negated-nodenums-aux-when-possibly-negated-nodenumsp-with-bound
-  (implies (and (possibly-negated-nodenumsp-with-bound context bound)
+(defthm <-of-max-nodenum-in-possibly-negated-nodenums-aux-when-bounded-possibly-negated-nodenumsp
+  (implies (and (bounded-possibly-negated-nodenumsp context bound)
                 (natp bound)
                 (< acc bound))
            (< (max-nodenum-in-possibly-negated-nodenums-aux context acc) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
-                                     possibly-negated-nodenumsp-with-bound))))
+                                     bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump))))
 
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
@@ -210,17 +170,40 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
 
+(defthm natp-of-max-nodenum-in-possibly-negated-nodenums
+  (implies (and (possibly-negated-nodenumsp items)
+                (consp items))
+           (natp (max-nodenum-in-possibly-negated-nodenums items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+
 (defthm <=-of-max-nodenum-in-possibly-negated-nodenums-linear
   (implies (possibly-negated-nodenumsp items)
            (<= -1 (max-nodenum-in-possibly-negated-nodenums items)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
 
-(defthm <-of-max-nodenum-in-possibly-negated-nodenums-when-possibly-negated-nodenumsp-with-bound
-  (implies (and (possibly-negated-nodenumsp-with-bound context bound)
+(defthm <-of-max-nodenum-in-possibly-negated-nodenums-when-bounded-possibly-negated-nodenumsp
+  (implies (and (bounded-possibly-negated-nodenumsp context bound)
                 (natp bound))
            (< (max-nodenum-in-possibly-negated-nodenums context) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+
+(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums-aux
+  (implies (and (possibly-negated-nodenumsp items)
+                (integerp acc)
+                )
+           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums-aux items acc))))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+                                     strip-not-from-possibly-negated-nodenum
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
+
+(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums
+  (implies (possibly-negated-nodenumsp items)
+           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums items))))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+                                     strip-not-from-possibly-negated-nodenum))))
 
 ;;;
 ;;; max-nodenum-in-context
@@ -245,13 +228,13 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-context))))
 
-(defthm <-of-max-nodenum-in-context-when-possibly-negated-nodenumsp-with-bound
-  (implies (and (contextp-with-bound context bound)
+(defthm <-of-max-nodenum-in-context-when-bounded-contextp
+  (implies (and (bounded-contextp context bound)
                 (natp bound))
            (< (max-nodenum-in-context context) bound))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable max-nodenum-in-context
-                                     contextp-with-bound))))
+                                     bounded-contextp))))
 
 ;; (thm
 ;;  (implies (contextp context)
@@ -260,25 +243,26 @@
 ;;  :hints (("Goal" :in-theory (enable MAX-NODENUM-IN-CONTEXT))))
 
 ;strips off the nots
-;each element of CONTEXT is <integer> or (not <integer>)
 ;could make tail rec
-(defun get-nodenums-mentioned-in-possibly-negated-nodenums (context)
-  (declare (xargs :guard (and ;(true-listp context)
-                          (possibly-negated-nodenumsp context))
+;todo: just use strip-nots-from-possibly-negated-nodenums?
+(defun get-nodenums-mentioned-in-possibly-negated-nodenums (items)
+  (declare (xargs :guard (possibly-negated-nodenumsp items)
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
                                                            possibly-negated-nodenump)))))
-  (if (endp context)
+  (if (endp items)
       nil
-    (cons (let ((item (first context)))
+    (cons (let ((item (first items)))
             (if (consp item) ;checks for a call of not
                 (farg1 item)
               item))
-          (get-nodenums-mentioned-in-possibly-negated-nodenums (rest context)))))
+          (get-nodenums-mentioned-in-possibly-negated-nodenums (rest items)))))
 
 (defun get-nodenums-mentioned-in-context (context)
   (if (false-contextp context)
       nil
     (get-nodenums-mentioned-in-possibly-negated-nodenums context)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;checks for contradictions:
 ;; TODO: Avoid comparing later items in CONTEXT1 to earlier items already copied from CONTEXT1 to CONTEXT2?
@@ -324,6 +308,8 @@
            (contextp (conjoin-contexts context1 context2)))
   :hints (("Goal" :in-theory (enable conjoin-contexts))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Computes a context implied by the disjunction of CONTEXT1 and CONTEXT2.
 ;this is inexact in two ways (doesn't look inside the nodenums in the context, also can't express the disjunction of two conjunctions as a single conjunction)
 ;the second type of loss of information has the flavor of the convex hull operations done when generating polyhedral invariants using the abstract interpretation framework.
@@ -337,17 +323,11 @@
       ;; Keep only facts known in both contexts (giving true-context if there is nothing in common):
       (intersection-equal context1 context2))))
 
-(defthm possibly-negated-nodenumsp-of-intersection-equal
-  (implies (and (possibly-negated-nodenumsp context1)
-                (possibly-negated-nodenumsp context2))
-           (possibly-negated-nodenumsp (intersection-equal context1 context2))))
-
 (defthm contextp-of-disjoin-contexts
   (implies (and (contextp context1)
                 (contextp context2))
            (contextp (disjoin-contexts context1 context2)))
   :hints (("Goal" :in-theory (enable disjoin-contexts CONTEXTP))))
-
 
 ;; ;allow us to pass in a quotep?
 ;; ;fixme what if the expr at nodenum-to-negate is a not?  should have a rule to just reverse the if (but will rules have been applied? what if substitution put in the not?)
@@ -501,58 +481,6 @@
 
 ;todo: always go from car/cadr of dargs to nth?
 
-;; ;;move
-;; (DEFTHM AXE-CONJUNCTIONP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                       (AND (NATP NODENUM-OR-QUOTEP)
-;;                            (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                               DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (AXE-CONJUNCTIONP (GET-AXE-CONJUNCTION-FROM-DAG-ITEM
-;;                               NODENUM-OR-QUOTEP
-;;                               DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance AXE-CONJUNCTIONP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable AXE-CONJUNCTIONP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM))))
-
-;; ;;move
-;; (DEFTHM AXE-DISJUNCTIONP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                       (AND (NATP NODENUM-OR-QUOTEP)
-;;                            (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                               DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (AXE-DISJUNCTIONP (GET-AXE-DISJUNCTION-FROM-DAG-ITEM
-;;                               NODENUM-OR-QUOTEP
-;;                               DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance AXE-DISJUNCTIONP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable AXE-DISJUNCTIONP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM))))
-
-;; ;;move
-;; (DEFTHM CONSP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR
-;;                    (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                    (AND
-;;                     (NATP NODENUM-OR-QUOTEP)
-;;                     (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                        DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (CONSP (GET-AXE-DISJUNCTION-FROM-DAG-ITEM
-;;                    NODENUM-OR-QUOTEP
-;;                    DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance CONSP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable CONSP-OF-GET-AXE-DISJUNCTION-FROM-DAG-ITEM))))
-
-;; ;;move
-;; (DEFTHM CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM-forced
-;;   (IMPLIES (force (OR
-;;                    (MYQUOTEP NODENUM-OR-QUOTEP)
-;;                    (AND
-;;                     (NATP NODENUM-OR-QUOTEP)
-;;                     (PSEUDO-DAG-ARRAYP DAG-ARRAY-NAME
-;;                                        DAG-ARRAY (+ 1 NODENUM-OR-QUOTEP)))))
-;;            (CONSP (GET-AXE-CONJUNCTION-FROM-DAG-ITEM
-;;                    NODENUM-OR-QUOTEP
-;;                    DAG-ARRAY-NAME DAG-ARRAY)))
-;;   :hints (("Goal" :use (:instance CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
-;;            :in-theory (disable CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM))))
-
 ;; (defthmd not-complex-rationalp-of-nth-when-all-dargp
 ;;   (implies (and (all-dargp args)
 ;;                 ;(natp n)
@@ -572,45 +500,28 @@
 ;;                                      not-<-of-0-and-nth-when-all-dargp
 ;;                                      dag-exprp))))
 
-(defthm contextp-of-get-axe-disjunction-from-dag-item
-  (implies (and (natp nodenum-or-quotep)
-                (< nodenum-or-quotep dag-len)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (not (equal 'quote (car (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))))
-           (contextp (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
-  :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-item)
-           :in-theory (e/d (axe-disjunctionp)
-                           (axe-disjunctionp-of-get-axe-disjunction-from-dag-item
-                            possibly-negated-nodenumsp-when-axe-disjunctionp)))))
+;; while true, this seems bad, because a contextp is a conjunction, not a disjunction
+;; (defthm contextp-of-get-axe-disjunction-from-dag-item
+;;   (implies (and (not (equal 'quote (car (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len))))
+;;                 (natp nodenum-or-quotep)
+;;                 (< nodenum-or-quotep dag-len)
+;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
+;;            (contextp (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
+;;   :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-item)
+;;            :in-theory (e/d (axe-disjunctionp)
+;;                            (axe-disjunctionp-of-get-axe-disjunction-from-dag-item
+;;                             possibly-negated-nodenumsp-when-axe-disjunctionp)))))
 
 (defthm contextp-of-get-axe-conjunction-from-dag-item
-  (implies (and (natp nodenum-or-quotep)
+  (implies (and (not (equal 'quote (car (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len))))
+                (natp nodenum-or-quotep)
                 (< nodenum-or-quotep dag-len)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (not (equal 'quote (car (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))))
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (contextp (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
   :hints (("Goal" :use (:instance axe-conjunctionp-of-get-axe-conjunction-from-dag-item)
            :in-theory (e/d (axe-conjunctionp)
                            (axe-conjunctionp-of-get-axe-conjunction-from-dag-item
                             possibly-negated-nodenumsp-when-axe-conjunctionp)))))
-
-;; ;;slow
-;; (defthm-flag-get-axe-disjunction-from-dag-item
-;;   (defthm true-listp-of-get-axe-disjunction-from-dag-item
-;;     (implies (and (natp nodenum-or-quotep)
-;;                   (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
-;;                   (not (equal 'quote (car (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array)))))
-;;              (true-listp (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array)))
-;;     :flag get-axe-disjunction-from-dag-item)
-;;   (defthm true-listp-of-get-axe-conjunction-from-dag-item
-;;     (implies (and (natp nodenum-or-quotep)
-;;                   (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
-;;                   (not (equal 'quote (car (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array)))))
-;;              (true-listp (get-axe-conjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array)))
-;;     :flag get-axe-conjunction-from-dag-item)
-;;   :hints (("Goal" :in-theory (e/d (cadr-becomes-nth-of-1 car-becomes-nth-of-0) (alistp
-;;                                                                                 ;;pseudo-dag-arrayp ;todo?
-;;                                                                                 )))))
 
 ;returns a contextp that is boolean-equivalent to NODENUM
 (defund context-representing-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
@@ -621,10 +532,8 @@
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len))
                   :guard-hints (("Goal" :use (:instance axe-conjunctionp-of-get-axe-conjunction-from-dag-item (nodenum-or-quotep nodenum))
-                                 :in-theory (e/d (axe-conjunctionp GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
-                                                 (axe-conjunctionp-of-get-axe-conjunction-from-dag-item
-;axe-conjunctionp-of-get-axe-conjunction-from-dag-item-forced
-                                                  ))))))
+                                 :in-theory (e/d (axe-conjunctionp get-axe-conjunction-from-dag-item)
+                                                 (axe-conjunctionp-of-get-axe-conjunction-from-dag-item))))))
   (let ((conjunction (get-axe-conjunction-from-dag-item nodenum dag-array-name dag-array dag-len)))
     (if (quotep conjunction)
         (if (unquote conjunction)
@@ -649,9 +558,7 @@
                               (< nodenum dag-len))
                   :guard-hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-item (nodenum-or-quotep nodenum))
                                  :in-theory (e/d (axe-disjunctionp)
-                                                 (axe-disjunctionp-of-get-axe-disjunction-from-dag-item
-;axe-disjunctionp-of-get-axe-disjunction-from-dag-item-forced
-                                                  ))))))
+                                                 (axe-disjunctionp-of-get-axe-disjunction-from-dag-item))))))
   (let ((disjunction (get-axe-disjunction-from-dag-item nodenum dag-array-name dag-array dag-len)))
     (if (quotep disjunction) ;negate it:
         (if (unquote disjunction)
@@ -908,7 +815,7 @@
   (make-full-context-array-with-parents dag-array-name
                                         dag-array
                                         dag-len
-                                        (make-dag-parent-array-with-name dag-len ; somewhat unusual not to use (alen1 dag-array-name dag-array) here, but this array doesn't need to grow after creation
+                                        (make-minimal-dag-parent-array-with-name dag-len ; somewhat unusual not to use (alen1 dag-array-name dag-array) here, but this array doesn't need to grow after creation
                                                                          dag-array-name
                                                                          dag-array
                                                                          'dag-parent-array)))
