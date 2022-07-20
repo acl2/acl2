@@ -37,7 +37,6 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "kestrel/bv/bvcat" :dir :system)) ;reduce, for unsigned-byte-p-of-mod-of-expt
 
 ;; Returns a list of 8 32-bit words (same shape as the IV).  Not a "block" in
 ;; the sense of blockp.

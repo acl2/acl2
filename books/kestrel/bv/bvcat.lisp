@@ -1233,12 +1233,6 @@
                          m (bvchop m y))))
   :rule-classes nil)
 
-(defthm unsigned-byte-p-of-mod-of-expt
-  (implies (and (natp n)
-                (integerp x))
-           (unsigned-byte-p n (mod x (expt 2 n))))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
 (defthmd equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop
   (implies (and (unsigned-byte-p size2 (bvchop size1 x))
                 (<= size2 size1)
