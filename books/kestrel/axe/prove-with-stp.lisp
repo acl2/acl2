@@ -2485,7 +2485,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (stringp base-filename))))
-  (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - also could remove double negation?
+  (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - TODO: remove double negation?
        (clause (cons conc negated-hyps)))
     (prove-clause-with-stp clause
                            counterexamplep

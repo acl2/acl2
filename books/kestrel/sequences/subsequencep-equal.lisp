@@ -140,12 +140,6 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable member-equal))))
 
-;move (this must already exist)
-(defthm +-cancel-lemma
-  (equal (EQUAL (+ a x)
-                (+ a y))
-         (equal (fix x) (fix y))))
-
 (defthm equal-of-len-and-member-equal
   (equal (equal (len x) (len (member-equal a x)))
          (or (not (consp x))
