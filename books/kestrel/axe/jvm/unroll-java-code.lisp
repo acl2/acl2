@@ -363,6 +363,7 @@
                                            state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
+       ;; todo: check for a quotep returned
        ;; Check whether symbolic execution failed:
        (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp (w state))))
     (mv (if (and (not dag-okp)
