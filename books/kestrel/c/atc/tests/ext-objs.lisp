@@ -11,11 +11,13 @@
 
 (in-package "ACL2")
 
-(include-book "../defobject")
+(include-book "kestrel/c/atc/atc" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Some tests of DEFOBJECT.
+; Some tests for external objects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::defobject |arr|
   :type (c::sint 5)
@@ -30,3 +32,26 @@
     :init ((c::uchar-from-sint (c::sint-hex-const 17))
            (c::uchar-from-sint (c::sint-hex-const 2))
            (c::uchar-from-sint (c::sint-oct-const 22))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |f| (|x| |arr|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (object-|arr|-p |arr|)
+                              (c::sint-array-sint-index-okp |arr| |x|))
+                  :guard-hints (("Goal" :in-theory (enable object-|arr|-p)))))
+  (c::sint-array-read-sint |arr| |x|))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |g| (|x| |arr|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (object-|arr|-p |arr|)
+                              (c::sint-array-sint-index-okp |arr| |x|))
+                  :guard-hints (("Goal" :in-theory (enable object-|arr|-p)))))
+  (let ((|arr| (c::sint-array-write-sint |arr| |x| (c::sint-dec-const 1))))
+    |arr|))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(c::atc |arr| |f| |g| |perm| :output-file "ext-objs.c" :proofs nil)
