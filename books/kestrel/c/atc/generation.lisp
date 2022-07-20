@@ -7284,14 +7284,6 @@
   :mode :program
   :short "Generate a list of C external declarations from the targets,
           including generating C loops from recursive ACL2 functions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "After we process the first function @('fn') in @('fns'),
-     we use the extended @('prec-fns') for the subsequent functions.")
-   (xdoc::p
-    "We treat @(tsee defstruct) tags differently.
-     We treat recursive and non-recursive functions differently."))
   (b* (((when (endp targets)) (acl2::value (list nil nil nil names-to-avoid)))
        (target (car targets))
        ((er (list exts
