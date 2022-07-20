@@ -155,15 +155,6 @@
          0)
   :hints (("Goal" :in-theory (enable bvmod))))
 
-;move
-;rename?
-(defthm unsigned-byte-p-of-mod2
-  (implies (and (unsigned-byte-p size y)
-                (unsigned-byte-p size x))
-           (unsigned-byte-p size (mod x y)))
-  :hints (("Goal" :cases ((equal 0 y))
-           :in-theory (enable unsigned-byte-p))))
-
 (defthmd mod-becomes-bvmod-core
   (implies (and (unsigned-byte-p size y)
                 (unsigned-byte-p size x))
