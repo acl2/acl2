@@ -247,7 +247,7 @@
        ((when obj-info)
         (b* (((when (member-eq target previous-objs))
               (er-soft+ ctx t irrelevant
-                        "The target DEFOBJECT ~x0 appears more thatn once ~
+                        "The target DEFOBJECT ~x0 appears more than once ~
                          in the list of targets."
                         target))
              (found (member-equal (symbol-name target)

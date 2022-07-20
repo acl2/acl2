@@ -5060,40 +5060,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-new-function-name ((fn-name stringp)
-                                     (prec-fns atc-symbol-fninfo-alistp))
-  :returns (mv (okp booleanp)
-               (conflicting-fn symbolp))
-  :short "Check that a C function name is new."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, ensure that the symbol name of @('fn')
-     differs from the ones in @('prec-fns').
-     It is not enough that the symbols are different:
-     the symbol names must be different,
-     because package names are ignored when translating to C.
-     We return a boolean saying whether the check succeeds or not.
-     If it does not, we return the function that causes the conflict,
-     i.e. that has the same symbol name as @('fn')."))
-  (atc-check-new-function-name-aux
-   fn-name
-   (strip-cars (atc-symbol-fninfo-alist-fix prec-fns)))
-
-  :prepwork
-  ((define atc-check-new-function-name-aux ((fn-name stringp)
-                                            (fns symbol-listp))
-     :returns (mv (okp booleanp)
-                  (conflicting-fn symbolp))
-     :parents nil
-     (cond ((endp fns) (mv t nil))
-           ((equal (symbol-fix fn-name)
-                   (symbol-name (symbol-fix (car fns))))
-            (mv nil (car fns)))
-           (t (atc-check-new-function-name-aux fn-name (cdr fns)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-formal-pointerp ((formal symbolp)
                              (typed-formals atc-symbol-type-alistp))
   :returns (yes/no booleanp)
@@ -5295,14 +5261,6 @@
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
-       ((mv okp conflicting-fn) (atc-check-new-function-name name prec-fns))
-       ((when (not okp))
-        (er-soft+ ctx t nil
-                  "The symbol name ~s0 of the function ~x1 ~
-                   must be distinct from the symbol names of ~
-                   the oher ACL2 functions translated to C functions, ~
-                   but the function ~x2 has the same symbol name."
-                  name fn conflicting-fn))
        (wrld (w state))
        ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
        ((er params) (atc-gen-param-declon-list
