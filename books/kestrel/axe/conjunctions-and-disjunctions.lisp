@@ -194,6 +194,11 @@
                   (booleanp (unquote x))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
 
+(defthmd consp-of-cdr-when-axe-disjunctionp-lemma
+  (implies (and (axe-disjunctionp d)
+                (equal (car d) 'quote))
+           (consp (cdr d)))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp possibly-negated-nodenumsp))))
 
 ;;TODO: Add 'axe' to some of these names:
 
@@ -972,58 +977,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns an axe-disjunctionp that is boolean-equivalent to the disjunction of NODENUMS-OR-QUOTEPS.
-;; todo: use this instead of handle-constant-disjuncts?
-(defund get-axe-disjunction-from-dag-items (nodenums-or-quoteps dag-array-name dag-array dag-len)
-  (declare (xargs :guard (and (true-listp nodenums-or-quoteps)
-                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (bounded-darg-listp nodenums-or-quoteps dag-len))
+;; Returns an axe-disjunctionp that is boolean-equivalent to the disjunction of NODENUMS.
+(defund get-axe-disjunction-from-dag-items (nodenums dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (nat-listp nodenums)
+                              (all-< nodenums dag-len))
                   :verify-guards nil ;done below
                   ))
-  (if (endp nodenums-or-quoteps)
+  (if (endp nodenums)
       (false-disjunction) ;; the disjunction of no things is false
-    (let ((nodenum-or-quotep (first nodenums-or-quoteps)))
-      (if (consp nodenum-or-quotep)
-          ;; it's a quotep:
-          (if (unquote nodenum-or-quotep)
-              (true-disjunction) ;; "true or something" is true
-            ;;skip the nil: "false or x" is equivalent to x
-            (get-axe-disjunction-from-dag-items (rest nodenums-or-quoteps) dag-array-name dag-array dag-len))
-        ;; it's a nodenum:
-        (let ((disjunction (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
-          (if (and (quotep disjunction)
-                   (unquote disjunction))
-              (true-disjunction)
-            (combine-axe-disjunctions disjunction ;might be 'nil
-                                      (get-axe-disjunction-from-dag-items (rest nodenums-or-quoteps)
-                                                                          dag-array-name dag-array dag-len))))))))
+    (let ((nodenum (first nodenums)))
+      ;; it's a nodenum:
+      (let ((disjunction (get-axe-disjunction-from-dag-item nodenum dag-array-name dag-array dag-len)))
+        (if (and (quotep disjunction)
+                 (unquote disjunction))
+            (true-disjunction) ; true or x = true
+          (combine-axe-disjunctions disjunction ; might be 'nil
+                                    (get-axe-disjunction-from-dag-items (rest nodenums)
+                                                                        dag-array-name dag-array dag-len)))))))
 
 (defthm axe-disjunctionp-of-get-axe-disjunction-from-dag-items
-  (implies (and (bounded-darg-listp nodenum-or-quoteps dag-len)
+  (implies (and (nat-listp nodenums)
+                (all-< nodenums dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (axe-disjunctionp (get-axe-disjunction-from-dag-items nodenum-or-quoteps dag-array-name dag-array dag-len)))
+           (axe-disjunctionp (get-axe-disjunction-from-dag-items nodenums dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable get-axe-disjunction-from-dag-items))))
 
+;; Since an axe-disjunction is always a cons
 (defthm consp-of-get-axe-disjunction-from-dag-items
-  (implies (and (bounded-darg-listp nodenum-or-quoteps dag-len)
+  (implies (and (nat-listp nodenums)
+                (all-< nodenums dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (consp (get-axe-disjunction-from-dag-items nodenum-or-quoteps dag-array-name dag-array dag-len)))
+           (consp (get-axe-disjunction-from-dag-items nodenums dag-array-name dag-array dag-len)))
   :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-items)
            :in-theory (disable axe-disjunctionp-of-get-axe-disjunction-from-dag-items))))
-
-(defthmd consp-of-cdr-when-axe-disjunctionp-lemma
-  (implies (and (axe-disjunctionp d)
-                (equal (car d) 'quote))
-           (consp (cdr d)))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp POSSIBLY-NEGATED-NODENUMSP))))
 
 (verify-guards get-axe-disjunction-from-dag-items
   :hints (("Goal" :in-theory (enable consp-of-cdr-when-axe-disjunctionp-lemma))))
 
 (defthm bounded-axe-disjunctionp-of-get-axe-disjunction-from-dag-items
-  (implies (and (bounded-darg-listp disjuncts dag-len)
+  (implies (and (nat-listp nodenums)
+                (all-< nodenums dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (bounded-axe-disjunctionp (get-axe-disjunction-from-dag-items disjuncts dag-array-name dag-array dag-len)
+           (bounded-axe-disjunctionp (get-axe-disjunction-from-dag-items nodenums dag-array-name dag-array dag-len)
                                      dag-len))
   :hints (("Goal" :in-theory (e/d (get-axe-disjunction-from-dag-items)
                                   (disjunction-is-falsep

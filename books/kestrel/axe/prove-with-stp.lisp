@@ -2352,7 +2352,7 @@
   (b* (((when (not (consp disjuncts)))
         (cw "(No disjuncts, so no point in calling STP.)~%")
         (mv *invalid* state))
-       ;; Handle constant disjuncts and dig out individual disjuncts (this only preserves IFF):
+       ;; Dig out individual disjuncts (this only preserves IFF):
        (disjunction (get-axe-disjunction-from-dag-items disjuncts 'dag-array dag-array dag-len))
        ((when (disjunction-is-truep disjunction))
         (prog2$ (cw "(Note: Disjunction is obviously true.) Proved it.)~%")
