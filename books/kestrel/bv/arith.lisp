@@ -243,11 +243,6 @@
   (equal (< z (+ x (- y)))
          (< (+ y z) x)))
 
-(defthm equal-of-sum-cancel-3
-  (implies (acl2-numberp x)
-           (equal (equal x (+ y z x))
-                  (equal 0  (+ y z)))))
-
 (defthm equal-when-<-of-+
   (implies (and (< (+ free y) x)
                 (syntaxp (quotep free))
@@ -265,7 +260,7 @@
   (equal (+ x x rest)
          (+ (* 2 x) rest)))
 
-;rename this series:
+;todo: deprecate this series (but these are mentioned in the lifters):
 (defthm equal-of-same-cancel-1
   (EQUAL (EQUAL (+ X Y) X)
          (AND (ACL2-NUMBERP X)
@@ -339,10 +334,12 @@
            (equal (* x y)
                   (* y x))))
 
+;move to plus.lisp
 (defthm cancel-1-2
   (equal (equal (+ x y) (+ z x w))
          (equal (fix y) (+ z w))))
 
+;move to plus.lisp
 (defthm cancel-2-2
   (equal (equal (+ v x y) (+ z x w))
          (equal (+ v y) (+ z w))))
@@ -355,13 +352,6 @@
   (implies (and (rationalp i) (rationalp j))
            (equal (equal 0 (+ i (- j)))
                   (equal i j))))
-
-(defthm equal-of-+-and-+-cancel-cross
-  (implies (and ;(acl2-numberp x)
-                (acl2-numberp y)
-                (acl2-numberp k))
-           (equal (equal (+ k x) (+ x y))
-                  (equal k y))))
 
 ;should be cheap
 ;complete set of these?!
