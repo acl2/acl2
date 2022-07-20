@@ -5037,7 +5037,7 @@
 ;;                                               (< (len dag) 2147483647)))
 ;;                                      (pseudo-term-listp assumptions)
 ;;                                      (pseudo-dag-arrayp context-array-name context-array context-array-len)
-;;                                      (contextp-with-bound context context-array-len)
+;;                                      (bounded-contextp context context-array-len)
 ;;                                      ;;todo: add more
 ;;                                      (all-rule-alistp rule-alists)
 ;;                                      (true-listp rule-alists)

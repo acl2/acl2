@@ -77,6 +77,18 @@
            :in-theory (e/d (maybe-dargp)
                            (maybe-dargp-of-renumberingi)))))
 
+;; We use consp as the normal form for dargs.
+(defthm myquotep-of-renumberingi
+  (implies (and (renumbering-stobjp renumbering-stobj)
+                ;;(natp i)
+                ;;(< i (renumbering-length renumbering-stobj))
+                )
+           (equal (myquotep (renumberingi i renumbering-stobj))
+                  (consp (renumberingi i renumbering-stobj))))
+  :hints (("Goal" :use maybe-dargp-of-renumberingi
+           :in-theory (e/d (maybe-dargp dargp)
+                           (maybe-dargp-of-renumberingi)))))
+
 ;;;
 ;;; good-renumbering-stobj-aux
 ;;;

@@ -101,7 +101,7 @@
                               )
                   :verify-guards nil ;perhaps not true, due to the use of default
                   ))
-  (let* ((dag-parent-array (make-dag-parent-array-with-name dag-len dag-array-name dag-array 'dag-parent-array-for-context)) ;ffixme only compute parents for nodes above nodenum?
+  (let* ((dag-parent-array (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array 'dag-parent-array-for-context)) ;ffixme only compute parents for nodes above nodenum?
          (context-array (make-empty-array-with-default 'context-array dag-len :default)) ;todo: using :default here makes it not a valid context-array!
          (context-array (make-context-array-for-ancestors 1000000000
                                                           (list nodenum) ;initial worklist

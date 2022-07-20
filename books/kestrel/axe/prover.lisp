@@ -1907,7 +1907,7 @@
                                   (myquotep dag))
                               (pseudo-term-listp assumptions)
                               (array1p context-array-name context-array)
-                              (contextp-with-bound context (alen1 context-array-name context-array))
+                              (bounded-contextp context (alen1 context-array-name context-array))
                               ;;todo: add more
                               (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
