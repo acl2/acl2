@@ -398,3 +398,8 @@
            (<= (bvand size x y) y))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable bvand))))
+
+(defthmd bvchop-of-logand-becomes-bvand
+  (equal (bvchop size (logand x y))
+         (bvand size x y))
+  :hints (("Goal" :in-theory (enable bvand))))
