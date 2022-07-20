@@ -3056,6 +3056,12 @@
              ((when (eq wrapper? 'assign))
               (b* ((var var?)
                    ((mv type? innermostp &) (atc-check-var var inscope))
+                   ((unless type?)
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               an attempt is being made ~
+                               to modify a variable ~x1 not in scope."
+                              fn var))
                    ((unless (atc-var-assignablep var innermostp affect))
                     (er-soft+ ctx t irr
                               "When generating C code for the function ~x0, ~
