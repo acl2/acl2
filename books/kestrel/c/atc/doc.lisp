@@ -69,9 +69,7 @@
        exactly one of the following conditions:")
      (xdoc::ul
       (xdoc::li
-       "It is the symbol of an ACL2 function
-        that satisfies the conditions discussed in
-        the section `Representation of C Code in ACL2'.")
+       "It is the symbol of an ACL2 function.")
       (xdoc::li
        "Its @(tsee symbol-name) is the name of
         a C structure type shallowly embedded in ACL2,
@@ -97,7 +95,10 @@
      (xdoc::p
       "Each recursive target function must be called by
        at least one recursive or non-recursive target function
-       that follows it in the list @('(t1 ... tp)')."))
+       that follows it in the list @('(t1 ... tp)').")
+     (xdoc::p
+      "Each target function must satisfy the conditions discussed in
+       the section `Representation of C Code in ACL2'."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"

@@ -104,11 +104,6 @@
      @('fn') is already known to be a function name.
      See @(tsee atc-process-target)."))
   (b* ((irrelevant (list nil nil))
-       ((when (member-eq fn previous-fns))
-        (er-soft+ ctx t irrelevant
-                  "The target function ~x0 appears more than once ~
-                   in the list of targets."
-                  fn))
        (previous-fns (cons fn previous-fns))
        (desc (msg "The target function ~x0" fn))
        ((er &) (ensure-function-is-logic-mode$ fn desc t irrelevant))
@@ -198,13 +193,12 @@
      it lists all the @(tsee defstruct) and @('defobject') targets
      that precede @('target')
      in the list of targets @('(t1 ... tp)').
-     This is used to detect duplicate @(tsee defstruct) targets
-     and @(tsee defobject) targets that conflict with function targets.")
+     This is used to detect duplicate symbol names.")
    (xdoc::p
     "If the target is a function name,
      its processing is delegated to @(tsee atc-process-function),
-     except for ensuring that it is distinct from
-     the preceding @(tsee defobject) targets.
+     except for ensuring that its symbol name is distinct from
+     the symbol names of the preceding targets.
      Otherwise, the target must be
      a @(tsee defstruct) or @(tsee defobject) name,
      and it is processed here:
@@ -216,47 +210,107 @@
         (er-soft+ ctx t irrelevant
                   "The target ~x0 is not a symbol."
                   target))
-       ((when (function-symbolp target (w state)))
-        (b* (((mv erp (list previous-fns uncalled-fns) state)
-              (atc-process-function target previous-fns uncalled-fns ctx state))
-             ((when erp) (mv erp irrelevant state))
+       (functionp (function-symbolp target (w state)))
+       (struct-info (defstruct-table-lookup (symbol-name target) (w state)))
+       (obj-info (defobject-table-lookup (symbol-name target) (w state)))
+       ((when (and functionp struct-info obj-info))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 ambiguously denotes ~
+                   a function, a DEFSTRUCT, and a DEFOBJECT."
+                  target))
+       ((when (and functionp struct-info))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 ambiguously denotes ~
+                   a function and a DEFSTRUCT."
+                  target))
+       ((when (and functionp obj-info))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 ambiguously denotes ~
+                   a function and a DEFOBJECT"
+                  target))
+       ((when (and struct-info obj-info))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 ambiguously denotes ~
+                   a DEFSTRUCT and a DEFOBJECT."
+                  target))
+       ((when functionp)
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target function ~x0 has the same name as ~
+                         the target function ~x1 that precedes it."
+                        target (car previous-fns)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target function ~x0 has the same name as ~
+                         the target DEFSTRUCT ~x1 that precedes it."
+                        target (car previous-structs)))
              (found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-objs)))
              ((when found)
               (er-soft+ ctx t irrelevant
                         "The target function ~x0 has the same name as ~
-                         the target object ~x1 that precedes it."
-                        target (car previous-objs))))
+                         the target DEFOBJECT ~x1 that precedes it."
+                        target (car previous-objs)))
+             ((mv erp (list previous-fns uncalled-fns) state)
+              (atc-process-function target previous-fns uncalled-fns ctx state))
+             ((when erp) (mv erp irrelevant state)))
           (acl2::value (list previous-structs
                              previous-objs
                              previous-fns
                              uncalled-fns))))
-       (struct-info (defstruct-table-lookup (symbol-name target) (w state)))
        ((when struct-info)
-        (b* (((when (member-eq target previous-structs))
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
               (er-soft+ ctx t irrelevant
-                        "The target DEFSTRUCT ~x0 appears more than once ~
-                         in the list of targets."
-                        target))
+                        "The target DEFSTRUCT ~x0 has the same name as ~
+                         the target function ~x1 that precedes it."
+                        target (car previous-fns)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFSTRUCT ~x0 has the same name as ~
+                         the target DEFSTRUCT ~x1 that precedes it."
+                        target (car previous-structs)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFSTRUCT ~x0 has the same name as ~
+                         the target DEFOBJECT ~x1 that precedes it."
+                        target (car previous-objs)))
              (previous-structs (cons target previous-structs)))
           (acl2::value (list previous-structs
                              previous-objs
                              previous-fns
                              uncalled-fns))))
-       (obj-info (defobject-table-lookup (symbol-name target) (w state)))
        ((when obj-info)
-        (b* (((when (member-eq target previous-objs))
-              (er-soft+ ctx t irrelevant
-                        "The target DEFOBJECT ~x0 appears more than once ~
-                         in the list of targets."
-                        target))
-             (found (member-equal (symbol-name target)
+        (b* ((found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-fns)))
              ((when found)
               (er-soft+ ctx t irrelevant
                         "The target DEFOBJECT ~x0 has the same name as ~
                          the target function ~x1 that precedes it."
-                        target (car found)))
+                        target (car previous-fns)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFOBJECT ~x0 has the same name as ~
+                         the target DEFSTRUCT ~x1 that precedes it."
+                        target (car previous-structs)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFOBJECT ~x0 has the same name as ~
+                         the target DEFOBJECT ~x1 that precedes it."
+                        target (car previous-objs)))
              (previous-objs (cons target previous-objs)))
           (acl2::value (list previous-structs
                              previous-objs
