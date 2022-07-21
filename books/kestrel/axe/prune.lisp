@@ -199,8 +199,7 @@
  ;; to TERM. Tries to rewrite each if/myif test using context from all overarching
  ;; tests (and any given assumptions).
 ;TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
- ;; TODO: Handle the case of an IF with the same branches after pruning them.
- ;; TODO: Consider filtering out assumptions unusable by STP once instead of time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
+ ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :guard (and (pseudo-termp term)
                                (pseudo-term-listp assumptions)
@@ -214,13 +213,13 @@
                    :verify-guards nil ; done below
                    ))
    (if (variablep term)
-       (mv (erp-nil) term state)
+       (mv (erp-nil) term state) ; can't prune a var
      (let ((fn (ffn-symb term)))
        (case fn
-         (quote (mv (erp-nil) term state)) ;constant
+         (quote (mv (erp-nil) term state)) ; can't prune a constant
          ((if myif) ;; (if/myif test then-branch else-branch)
           (b* ((test (farg1 term))
-               ;; First prune any IFs in the test:
+               ;; First prune the test:
                ((mv erp test state)
                 (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state))
@@ -228,6 +227,7 @@
                ;; Now try to resolve the pruned test:
                ((mv erp result ; :true, :false, or :unknown
                     state)
+                ;; TODO: Consider having try-to-resolve-test return the simplified test, for use below
                 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state)))
             (if (eq :true result)
@@ -238,11 +238,10 @@
                   ;; Throw away the then-branch:
                   (prog2$ (cw "Resolved the test to false.)~%")
                           (prune-term-aux (farg3 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ;we could add the negated condition as an assumption here
-                ;;todo: if it simplifies to something other than t/nil, use that here?
                 (b* ((- (cw "Did not resolve test.)~%"))
                      ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
-                     ((mv erp then-part state)
+                     ((mv erp then-branch state)
                       (prune-term-aux (farg2 term)
                                       (union-equal (fixup-assumptions test-conjuncts) assumptions)
                                       (union-equal (get-equalities test-conjuncts) equality-assumptions)
@@ -251,15 +250,15 @@
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                      (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
-                     ((mv erp else-part state)
+                     ((mv erp else-branch state)
                       (prune-term-aux (farg3 term)
                                       (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
                                       (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
-                     (new-term (if (equal then-part else-part)
-                                   then-part ; special case when both branches are the same
-                                 `(,fn ,test ,then-part ,else-part))))
+                     (new-term (if (equal then-branch else-branch)
+                                   then-branch ; special case when both branches are the same
+                                 `(,fn ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (boolif ;; (boolif test then-branch else-branch)
           (b* ((test (farg1 term))
@@ -301,7 +300,7 @@
                 (b* ((- (cw "Did not resolve test.)~%"))
                      ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
-                     ((mv erp then-part state)
+                     ((mv erp then-branch state)
                       (prune-term-aux then-branch
                                       (union-equal (fixup-assumptions test-conjuncts) assumptions)
                                       (union-equal (get-equalities test-conjuncts) equality-assumptions)
@@ -310,18 +309,18 @@
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                      (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
-                     ((mv erp else-part state)
+                     ((mv erp else-branch state)
                       (prune-term-aux else-branch
                                       (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
                                       (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
-                     (new-term (if (equal then-part else-part)
-                                   `(bool-fix$inline ,then-part) ; special case when both branches are the same
-                                 `(boolif ,test ,then-part ,else-part))))
+                     (new-term (if (equal then-branch else-branch)
+                                   `(bool-fix$inline ,then-branch) ; special case when both branches are the same
+                                 `(boolif ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (bvif ;; (bvif size test then-branch else-branch)
-          (b* ((size (farg1 term)) ;todo: prune this (it will usually be a constant, so that will be quick)
+          (b* ((size (farg1 term)) ;todo: prune this (it will usually be a constant, so that will be quick)?
                (test (farg2 term))
                (then-branch (farg3 term))
                (else-branch (farg4 term))
@@ -359,7 +358,7 @@
                 (b* ((- (cw "Did not resolve test.)~%"))
                      ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
-                     ((mv erp then-part state)
+                     ((mv erp then-branch state)
                       (prune-term-aux then-branch
                                       (union-equal (fixup-assumptions test-conjuncts) assumptions)
                                       (union-equal (get-equalities test-conjuncts) equality-assumptions)
@@ -368,15 +367,15 @@
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                      (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
-                     ((mv erp else-part state)
+                     ((mv erp else-branch state)
                       (prune-term-aux else-branch
                                       (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
                                       (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
-                     (new-term (if (equal then-part else-part)
-                                   `(bvchop ,size ,then-part) ; special case when both branches are the same
-                                 `(bvif ,size ,test ,then-part ,else-part))))
+                     (new-term (if (equal then-branch else-branch)
+                                   `(bvchop ,size ,then-branch) ; special case when both branches are the same
+                                 `(bvif ,size ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (t ;; Anything other than if/myif/bvif/boolif:
           ;; TODO: Handle bv-array-if?
