@@ -4348,14 +4348,6 @@
                   (BVCHOP size (+ x y))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
-(defthm equal-of-plus-and-plus-cancel
-  (implies (and (rationalp z)
-                (rationalp x)
-                (rationalp y)
-                (rationalp w))
-           (equal (EQUAL (+ z y X) (+ X w))
-                  (equal (+ z y) w))))
-
 (defthm bvplus-minus-15-tighten-6
   (implies (and (unsigned-byte-p 5 x) ;use bind-free
                 (bvle 5 15 x))
@@ -14678,21 +14670,6 @@
   (implies (posp size) ;gen?
            (equal (bitxor (- (expt 2 size)) y)
                   (getbit 0 y))))
-
-;move
-(defthm equal-of-+-and-+-cancel-3-3
-  (equal (equal (+ x y z) (+ w v z))
-         (equal (+ x y) (+ w v))))
-
-;move
-(defthm equal-of-+-and-+-cancel-2-3
-  (equal (equal (+ x z) (+ w v z))
-         (equal (fix x) (+ w v))))
-
-;move
-(defthm equal-of-+-and-+-cancel-2-4
-  (equal (equal (+ x z) (+ w v u z))
-         (equal (fix x) (+ w v u))))
 
 (defthm bvplus-of-constant-and-bvcat-of-0
   (implies (and (syntaxp (quotep k))
