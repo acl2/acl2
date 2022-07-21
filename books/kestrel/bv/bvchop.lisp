@@ -374,7 +374,7 @@
                       (+ -1 (expt 2 size1))
                     (+ -1 (expt 2 size2))))))
 
-;gen to any bv...
+
 (defthm bvchop-impossible-value
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p size k))
