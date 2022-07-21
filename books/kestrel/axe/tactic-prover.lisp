@@ -449,6 +449,8 @@
      <-lemma-for-known-operators    ; rename with axe in the name
      <-lemma-for-known-operators-alt ; rename with axe in the name
      eql ; introduced by case
+     not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
+     not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
      )
    (type-rules)
    (unsigned-byte-p-forced-rules)))
