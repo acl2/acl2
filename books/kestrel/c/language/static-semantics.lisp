@@ -283,6 +283,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-constp ((e exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This concept is described in [C:6.6],
+     which does not provide a detailed definition,
+     but here we define a notion that should be
+     at least as strict as that (possibly stricter),
+     for our current C subset."))
+  (expr-case
+   e
+   :ident nil
+   :const t
+   :arrsub nil
+   :call nil
+   :member nil
+   :memberp nil
+   :postinc nil
+   :postdec nil
+   :preinc nil
+   :predec nil
+   :unary (and (member-eq (unop-kind e.op)
+                          '(:plus
+                            :minus
+                            :bitnot
+                            :lognot))
+               (expr-constp e.arg))
+   :cast (expr-constp e.arg)
+   :binary (and (member-eq (binop-kind e.op)
+                           '(:mul
+                             :div
+                             :rem
+                             :add
+                             :sub
+                             :shl
+                             :shr
+                             :lt
+                             :gt
+                             :le
+                             :ge
+                             :eq
+                             :ne
+                             :bitand
+                             :bitxor
+                             :bitior
+                             :logand
+                             :logor))
+                (expr-constp e.arg1)
+                (expr-constp e.arg2))
+   :cond (and (expr-constp e.test)
+              (expr-constp e.then)
+              (expr-constp e.else)))
+  :measure (expr-count e)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-constp (x)
+  :guard (expr-listp x)
+  :short "Lift @(tsee expr-constp) to lists."
+  (expr-constp x)
+  :true-listp nil
+  :elementp-of-nil nil
+  ///
+
+  (fty::deffixequiv expr-list-constp
+    :args ((x expr-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defunit wellformed
   :short "Fixtype of the well-formedness indicator."
   :long
@@ -1456,7 +1528,8 @@
 (define check-initer ((initer initerp)
                       (funtab fun-tablep)
                       (vartab var-tablep)
-                      (tagenv tag-envp))
+                      (tagenv tag-envp)
+                      (constp booleanp))
   :returns (type init-type-resultp)
   :short "Check an initializer."
   :long
@@ -1468,16 +1541,25 @@
    (xdoc::p
     "If the initializer is a list of expressions,
      for now we require them to be pure expressions,
-     and we return their types as a list initialization type."))
+     and we return their types as a list initialization type.")
+   (xdoc::p
+    "The parameter @('constp') passed to this ACL2 function
+     is a flag indicating whether the initializer must be constant or not."))
   (initer-case
    initer
    :single
    (b* ((type (check-expr-call-or-pure initer.get funtab vartab tagenv))
-        ((when (errorp type)) type))
+        ((when (errorp type)) type)
+        ((when (and constp
+                    (not (expr-constp initer.get))))
+         (error (list :not-constant :single initer.get))))
      (init-type-single type))
    :list
    (b* ((types (check-expr-pure-list initer.get vartab tagenv))
-        ((when (errorp types)) types))
+        ((when (errorp types)) types)
+        ((when (and constp
+                    (not (expr-list-constp initer.get))))
+         (error (list :not-constant :multi initer.get))))
      (init-type-list types)))
   :hooks (:fix))
 
@@ -1719,7 +1801,7 @@
           (type (tyname-to-type tyname))
           ((when (type-case type :void))
            (error (list :declon-error-type-void item.get)))
-          (init-type (check-initer init funtab vartab tagenv))
+          (init-type (check-initer init funtab vartab tagenv nil))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
           (wf? (init-type-matchp init-type type))
