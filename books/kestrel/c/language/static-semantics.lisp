@@ -46,14 +46,15 @@
    (xdoc::p
     "A variable table is a symbol table for variables.
      The table (see @(tsee var-table)) is organized as
-     a sequence with one element for each nested block scope [C:6.2.1].
+     a sequence with one element for each nested scope [C:6.2.1].
      This @('var-table-scope') fixtype
-     contains information about such a block scope.
+     contains information about such a scope.
      The information is organized as a finite map
      from identifiers (variable names) to types.
      Using a map is adequate because
-     all the variables declared in a block must have different names
-     [C:6.2.1/2]."))
+     all the variables declared in a scope must have different names
+     [C:6.2.1/2].
+     The scope may be a file scope or a block scope [C:6.2.1/4]."))
   :key-type ident
   :val-type type
   :pred var-table-scopep)
@@ -66,19 +67,17 @@
   (xdoc::topstring
    (xdoc::p
     "This keeps track of all the variables in scope [C:6.2.1],
-     organized according to block scopes.
-     The list has one element for each nested block,
+     organized according to file and block scopes.
+     The list has one element for the file scope
+     and one element for each nested block scope,
      where the first element (the @(tsee car))
-     corresponds to the innermost block:
+     corresponds to the innermost scope:
      this order is natural, as blocks are added via @(tsee cons).
-     The list is never empty:
-     we always initialize the variable table one (empty) block.")
-   (xdoc::p
-    "Currently we do not support variables with file scope.
-     Thus, all the scopes here are block scopes.")
+     The list is never empty: we always have at least the file scope.")
    (xdoc::p
     "It is possible for two scopes in the list to have overlapping keys,
-     when a variable in an inner block hides one in an outer block
+     when a variable in an inner block scope hides
+     one in an outer block or scope in the file scope
      [C:6.2.1/4]."))
   :elt-type var-table-scope
   :true-listp t
@@ -110,7 +109,7 @@
      otherwise, we return @('nil').
      We search for the variable in the sequence of scopes in order,
      i.e. from innermost to outermost block."))
-  (b* (((unless (mbt (not (endp vartab)))) nil)
+  (b* (((unless (mbt (consp vartab))) nil)
        (varscope (var-table-scope-fix (car vartab)))
        (pair (omap::in (ident-fix var) varscope))
        ((when (consp pair)) (cdr pair))
@@ -127,7 +126,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains a single block with no variables."))
+    "This contains a single scope with no variables."))
   (list nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,7 +139,12 @@
    (xdoc::p
     "We add the empty set (of variables)
      to the front of the sequence.
-     This is used when a block is entered."))
+     This is used when a block is entered.")
+   (xdoc::p
+    "Since a variable table is never empty,
+     as enforced by its invariant,
+     any scope added to it must be a block scope,
+     because the file scope is always in the table."))
   (cons nil (var-table-fix vartab))
   :hooks (:fix))
 
@@ -149,11 +153,11 @@
 (define var-table-add-var ((var identp) (type typep) (vartab var-tablep))
   :returns (new-vartab var-table-resultp
                        :hints (("Goal" :in-theory (enable var-table-resultp))))
-  :short "Add a variable to (the innermost block of) a variable table."
+  :short "Add a variable to (the innermost scope of) a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the block already has a variable with that name, it is an error.
+    "If the scope already has a variable with that name, it is an error.
      Otherwise, we add the variable and return the variable table."))
   (b* ((var (ident-fix var))
        (type (type-fix type))
@@ -174,7 +178,7 @@
     "Function types are described in [C:6.2.5/20].
      Eventually these may be integrated into
      a broader formalized notion of C types,
-     but for now we introduce this fixtype here,
+     but for now we introduce this fixtype here separately,
      in order to use it in function tables.
      A function type consists of zero or more input types and an output type."))
   ((inputs type-list)
@@ -1877,7 +1881,7 @@
     "The variable table passed as input is the one
      engendered by the parameter declarations that precede this one.
      We check the components of the parameter declaration
-     and that the parameter can be added to the variable table;
+     and we check that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
      If all checks succeed, we return the variable table
      updated with the parameter.")
@@ -1925,14 +1929,19 @@
    (xdoc::p
     "We go through all the pointers, if any.
      We check the identifier and the list of parameter declarations.
-     We start with the empty variable table,
-     and we return the final variable table that contains the parameters.
+     We start with the a variable table consisting of two empty scopes,
+     namely the file scope and the block scope for the function;
+     this will be generalized at some point,
+     by having this ACL2 function take the variable table
+     with the file scope at the point where the C function declarator occurs.
+     We return the final variable table that includes the parameters.
      This table is used when checking function definitions."))
   (fun-declor-case
    declor
    :base (b* ((wf (check-ident declor.name))
-              ((when (errorp wf)) wf))
-           (check-param-declon-list declor.params (var-table-init) tagenv))
+              ((when (errorp wf)) wf)
+              (vartab (var-table-add-block (var-table-init))))
+           (check-param-declon-list declor.params vartab tagenv))
    :pointer (check-fun-declor declor.decl tagenv))
   :measure (fun-declor-count declor)
   :hooks (:fix))
@@ -1966,8 +1975,8 @@
   (xdoc::topstring
    (xdoc::p
     "We check type specifier sequence and declarator,
-     obtaining the variable table that contains the parameters.
-     Importantly, the block items are checked in the initial variable table,
+     obtaining the variable table that includes the parameters.
+     Importantly, the block items are checked in this variable table,
      which has the types for the function parameters,
      without creating a new scope for the block (i.e. the compound statement):
      the reason is that the scope of function parameters
@@ -2026,9 +2035,7 @@
      (see @(tsee struct-declon)).
      We go through the declarations
      and turn each of them into member types (see @(tsee member-type)).
-     We ensure that each member name is well-formed;
-     we will also need to check that each member type is well-formed,
-     but we need to extend our static semantics for that.
+     We ensure that each member name is well-formed.
      By using @(tsee member-type-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
