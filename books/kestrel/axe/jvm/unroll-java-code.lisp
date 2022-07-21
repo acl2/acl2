@@ -348,12 +348,14 @@
                         memoizep
                         0
                         state))
-       ;;todo: check for a quotep returned
        ((when erp)
         (er hard? 'unroll-java-code-fn "Error in unrolling.")
         (mv erp nil nil nil nil nil state))
+       ((when (quotep dag)) ; todo: test this case
+        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
+       ;;; Prune irrelevant branches, if instructed:
        ((mv erp dag state)
-        (if prune-branches
+        (if prune-branches ; todo: allow this to be a size threshold
             (prune-dag-precisely-with-rule-alist dag
                                                  all-assumptions ;are they all needed?
                                                  (first rule-alists) ;what should we use here?
@@ -363,7 +365,8 @@
                                                  state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
-       ;; todo: check for a quotep returned
+       ((when (quotep dag)) ; todo: test this case
+        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
        ;; Check whether symbolic execution failed:
        (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp (w state))))
     (mv (if (and (not dag-okp)
@@ -442,7 +445,9 @@
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
-        (unroll-java-code-fn-aux method-designator-string maybe-nice-output-indicator array-length-alist
+        (unroll-java-code-fn-aux method-designator-string
+                                 maybe-nice-output-indicator
+                                 array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
                                  rule-alists

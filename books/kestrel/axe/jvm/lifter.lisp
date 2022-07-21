@@ -5995,6 +5995,7 @@
           :check-inputs nil
           ))
         ((when erp) (mv erp nil nil nil nil nil nil state))
+        ;; TODO: Handle a state-dag that is a quotep?
         ;; Prune unreachable branches:
         ;; TODO: May need to repeatedly prune branches and rewrite?
         ((mv erp state-dag state)
@@ -6523,6 +6524,7 @@
        ;; ((when (not (pseudo-term-listp assumptions)))
        ;;   (er hard? 'lift-java-code-fn "Hyps are not pseudo-terms: ~X01" assumptions nil)
        ;;   (mv t nil state))
+       ;; TODO: Handle an output-dag that is a quotep?
        ((mv erp output-dag state)
         (maybe-prune-dag-precisely (g :prune-branches options)
                                    output-dag

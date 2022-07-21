@@ -565,6 +565,7 @@
         (er hard? 'unroll-java-code-fn "Error in unrolling.")
         (mv erp nil state))
        (- (cw "  Done simplifying term.)~%"))
+       ;; TODO: Handle a result-dag that is a quotep.
        ;; todo: make optional and avoid this on huge terms by default
        ((mv erp result-dag state)
         (if prune-branches

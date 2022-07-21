@@ -502,9 +502,7 @@
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp dag-or-quotep state).
 (defund prune-dag-precisely-with-rule-alist (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-  (declare (xargs :guard (and (or (pseudo-dagp dag)
-                                  ;; (QUOTEP dag) ; possible?
-                                  )
+  (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -527,9 +525,7 @@
 (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely-with-rule-alist
   (implies (and (not (mv-nth 0 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)));; no error
                 (not (myquotep (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
-                (or (pseudo-dagp dag)
-                    ;; (QUOTEP dag) ; possible?
-                    )
+                (pseudo-dagp dag)
                 (pseudo-term-listp assumptions)
                 (rule-alistp rule-alist)
                 (interpreted-function-alistp interpreted-function-alist)
