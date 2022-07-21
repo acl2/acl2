@@ -354,13 +354,13 @@
         (mv erp nil nil nil nil nil state))
        ((mv erp dag state)
         (if prune-branches
-            (prune-dag-with-rule-alist-new dag
-                                           all-assumptions ;are they all needed?
-                                           (first rule-alists) ;what should we use here?
-                                           nil ; interpreted-function-alist
-                                           monitored-rules
-                                           call-stp
-                                           state)
+            (prune-dag-precisely-with-rule-alist dag
+                                                 all-assumptions ;are they all needed?
+                                                 (first rule-alists) ;what should we use here?
+                                                 nil ; interpreted-function-alist
+                                                 monitored-rules
+                                                 call-stp
+                                                 state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
        ;; todo: check for a quotep returned

@@ -131,7 +131,7 @@
          (dag dag-or-quote)
          ;; Prune the DAG:
          ((mv erp dag state)
-          (acl2::maybe-prune-dag-new prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
+          (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
                                      dag assumptions rules
                                      nil ; interpreted-fns
                                      rules-to-monitor
