@@ -1531,12 +1531,12 @@
                   (+ -1 (len dag))))
   :hints (("Goal" :in-theory (enable top-nodenum-of-dag pseudo-dagp))))
 
-;temporary
-(defthmd top-nodenum-of-dag-becomes-top-nodenum
-  (implies (pseudo-dagp dag)
-           (equal (top-nodenum-of-dag dag)
-                  (top-nodenum dag)))
-  :hints (("Goal" :in-theory (enable top-nodenum top-nodenum-of-dag))))
+;; ;temporary
+;; (defthmd top-nodenum-of-dag-becomes-top-nodenum
+;;   (implies (pseudo-dagp dag)
+;;            (equal (top-nodenum-of-dag dag)
+;;                   (top-nodenum dag)))
+;;   :hints (("Goal" :in-theory (enable top-nodenum top-nodenum-of-dag))))
 
 (defthm natp-of-top-nodenum-of-dag
   (implies (pseudo-dagp dag)
