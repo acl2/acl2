@@ -2071,7 +2071,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only allow function definitions and tag declarations.")
+    "For object declarations, we require the initializers to be constant
+     [C:6.7.9/4].")
    (xdoc::p
     "If successful, we return updated
      function table, variable table, and tag environment."))
@@ -2082,8 +2083,12 @@
              (make-funtab+vartab+tagenv :funs funtab
                                         :vars (var-table-fix vartab)
                                         :tags (tag-env-fix tagenv)))
-   :obj-declon (error
-                (list :file-level-object-declaraion-not-supported ext.get))
+   :obj-declon (b* ((vartab
+                     (check-obj-declon ext.get funtab vartab tagenv t))
+                    ((when (errorp vartab)) vartab))
+                 (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
+                                            :vars vartab
+                                            :tags (tag-env-fix tagenv)))
    :tag-declon (b* ((tagenv (check-tag-declon ext.get tagenv))
                     ((when (errorp tagenv)) tagenv))
                  (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
