@@ -203,7 +203,7 @@
        (assumptions (second problem))
        (- (and print (cw "(Applying the Axe rewriter~%")))
        ((mv erp new-dag state)
-        (simp-dag dag
+        (simp-dag dag ; TODO: Use the basic rewriter (but it will need to support rewriting nodes assuming their [approximate] contexts)
                   :rule-alist rule-alist
                   :interpreted-function-alist interpreted-function-alist
                   :monitor monitor

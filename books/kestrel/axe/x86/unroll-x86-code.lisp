@@ -115,8 +115,8 @@
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
          ((mv erp dag-or-quote state)
-          (acl2::simp-dag dag
-                          :rules rules
+          (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                          :rules rules ; todo: don't make the rule-alist each time
                           :assumptions assumptions
                           :monitor rules-to-monitor
                           :use-internal-contextsp use-internal-contextsp

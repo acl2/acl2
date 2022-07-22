@@ -4773,17 +4773,18 @@
 
     ;; Returns (mv erp dag-or-quotep).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
+    ;; TODO: Add support for rewriting nodes in their (approximate) contexts.
     (defund ,simplify-dag-name (dag
-                               assumptions
-                               interpreted-function-alist
-                               limits
-                               rule-alist
-                               count-hits
-                               print
-                               known-booleans
-                               monitored-symbols
-                               normalize-xors
-                               memoize)
+                                assumptions
+                                interpreted-function-alist
+                                limits
+                                rule-alist
+                                count-hits
+                                print
+                                known-booleans
+                                monitored-symbols
+                                normalize-xors
+                                memoize)
       (declare (xargs :guard (and (pseudo-dagp dag)
                                   (< (top-nodenum dag) 2147483646)
                                   (pseudo-term-listp assumptions)
