@@ -113,14 +113,14 @@
   :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
                                      bounded-possibly-negated-nodenump))))
 
-(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-negate-possibly-negated-nodenums
-  (implies (and (possibly-negated-nodenumsp items)
-                (all-< (strip-nots-from-possibly-negated-nodenums items) dag-len)
-                )
-           (all-< (strip-nots-from-possibly-negated-nodenums (negate-possibly-negated-nodenums items)) dag-len))
-  :hints (("Goal" :in-theory (enable negate-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums
-                                     strip-not-from-possibly-negated-nodenum
-                                     possibly-negated-nodenump))))
+;; (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-negate-possibly-negated-nodenums
+;;   (implies (and (possibly-negated-nodenumsp items)
+;;                 (all-< (strip-nots-from-possibly-negated-nodenums items) dag-len)
+;;                 )
+;;            (all-< (strip-nots-from-possibly-negated-nodenums (negate-possibly-negated-nodenums items)) dag-len))
+;;   :hints (("Goal" :in-theory (enable negate-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums
+;;                                      strip-not-from-possibly-negated-nodenum
+;;                                      possibly-negated-nodenump))))
 
 ;;;
 ;;; axe-conjunctionp
@@ -287,9 +287,7 @@
                               (natp dag-len))))
   (if (quotep item)
       t
-    (bounded-possibly-negated-nodenumsp item dag-len)
-    ;;    (all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)
-    ))
+    (bounded-possibly-negated-nodenumsp item dag-len)))
 
 (defthm bounded-axe-conjunctionp-of-quote-nil
   (bounded-axe-conjunctionp ''nil dag-len)
@@ -307,8 +305,7 @@
   (implies (natp item)
            (equal (bounded-axe-conjunctionp (list item) dag-len)
                   (< item dag-len)))
-  :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp
-                                     strip-nots-from-possibly-negated-nodenums))))
+  :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp))))
 
 (defthm bounded-possibly-negated-nodenumsp-when-bounded-axe-conjunctionp
   (implies (bounded-axe-conjunctionp x bound)
@@ -331,9 +328,7 @@
                               (natp dag-len))))
   (if (quotep item)
       t
-    (bounded-possibly-negated-nodenumsp item dag-len)
-    ;;(all-< (strip-nots-from-possibly-negated-nodenums item) dag-len)
-    ))
+    (bounded-possibly-negated-nodenumsp item dag-len)))
 
 (defthm bounded-axe-disjunctionp-of-quote-t
   (bounded-axe-disjunctionp ''t dag-len)
@@ -347,8 +342,7 @@
   (implies (natp item)
            (equal (bounded-axe-disjunctionp (list item) dag-len)
                   (< item dag-len)))
-  :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp
-                                     strip-nots-from-possibly-negated-nodenums))))
+  :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp))))
 
 (defthm bounded-axe-conjunctionp-of-negate-axe-disjunction
   (implies (and (axe-disjunctionp item)
@@ -423,7 +417,7 @@
                 (bounded-axe-disjunctionp x dag-len)
                 (bounded-axe-disjunctionp y dag-len))
            (bounded-axe-disjunctionp (combine-axe-disjunctions-aux x y) dag-len))
-  :hints (("Goal" :in-theory (enable combine-axe-disjunctions-aux strip-nots-from-possibly-negated-nodenums bounded-axe-disjunctionp))))
+  :hints (("Goal" :in-theory (enable combine-axe-disjunctions-aux bounded-axe-disjunctionp))))
 
 ;x is a quotep or a list of nodenums and negated nodenums
 ;y is a quotep or a list of nodenums and negated nodenums
@@ -506,7 +500,7 @@
                 (bounded-axe-conjunctionp y dag-len))
            (bounded-axe-conjunctionp (combine-axe-conjunctions-aux x y)
                                      dag-len))
-  :hints (("Goal" :in-theory (enable combine-axe-conjunctions-aux strip-nots-from-possibly-negated-nodenums bounded-axe-conjunctionp))))
+  :hints (("Goal" :in-theory (enable combine-axe-conjunctions-aux bounded-axe-conjunctionp))))
 
 
 ;x is a quotep or a list of nodenums and negated nodenums
@@ -902,8 +896,7 @@
     :flag get-axe-conjunction-from-dag-item)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (car-becomes-nth-of-0
-                            NATP-OF-+-OF-1
-                            STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
+                            NATP-OF-+-OF-1)
                            (myquotep quotep DARGP-LESS-THAN)))))
 
 (defthm consp-of-get-axe-disjunction-from-dag-item
