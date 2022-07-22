@@ -1865,7 +1865,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fun-declor ((declor fun-declorp) (tagenv tag-envp))
+(define check-fun-declor ((declor fun-declorp)
+                          (vartab var-tablep)
+                          (tagenv tag-envp))
   :returns (vartab var-table-resultp)
   :short "Check a function declarator."
   :long
@@ -1873,26 +1875,31 @@
    (xdoc::p
     "We go through all the pointers, if any.
      We check the identifier and the list of parameter declarations.
-     We start with the a variable table consisting of two empty scopes,
-     namely the file scope and the block scope for the function;
-     this will be generalized at some point,
-     by having this ACL2 function take the variable table
-     with the file scope at the point where the C function declarator occurs.
-     We return the final variable table that includes the parameters.
-     This table is used when checking function definitions."))
+     We add a new block scope to the variable table,
+     for the block associated to the function definition
+     of which this declarator is part;
+     in fact, this is also adequate for checking a function declarator
+     that is part of a function declaration that is not a function definition,
+     as in that case we just need to ensure that the parameters are distinct.
+     We check the parameters starting with this variable table,
+     which (if successful) produces a variable table
+     that includes the parameters;
+     this table is used when checking the function definition."))
   (fun-declor-case
    declor
    :base (b* ((wf (check-ident declor.name))
               ((when (errorp wf)) wf)
-              (vartab (var-table-add-block (var-table-init))))
+              (vartab (var-table-add-block vartab)))
            (check-param-declon-list declor.params vartab tagenv))
-   :pointer (check-fun-declor declor.decl tagenv))
+   :pointer (check-fun-declor declor.decl vartab tagenv))
   :measure (fun-declor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fun-declon ((declon fun-declonp) (tagenv tag-envp))
+(define check-fun-declon ((declon fun-declonp)
+                          (vartab var-tablep)
+                          (tagenv tag-envp))
   :returns (wf wellformed-resultp)
   :short "Check a function declaration."
   :long
@@ -1905,14 +1912,17 @@
   (b* (((fun-declon declon) declon)
        (wf (check-tyspecseq declon.tyspec tagenv))
        ((when (errorp wf)) wf)
-       (vartab (check-fun-declor declon.declor tagenv))
+       (vartab (check-fun-declor declon.declor vartab tagenv))
        ((when (errorp vartab)) vartab))
     :wellformed)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fundef ((fundef fundefp) (funtab fun-tablep) (tagenv tag-envp))
+(define check-fundef ((fundef fundefp)
+                      (funtab fun-tablep)
+                      (vartab var-tablep)
+                      (tagenv tag-envp))
   :returns (new-funtab fun-table-resultp)
   :short "Check a function definition."
   :long
@@ -1925,6 +1935,11 @@
      without creating a new scope for the block (i.e. the compound statement):
      the reason is that the scope of function parameters
      terminates at the end of the associated block [C:6.2.1/4].")
+   (xdoc::p
+    "The variable table passed as parameter to this ACL2 function
+     always consists of just the current file scope,
+     i.e. the file-scope variables that precede the function definition
+     in the translation unit.")
    (xdoc::p
     "We ensure that the return types of the body
      match the return types of the function.
@@ -1949,7 +1964,7 @@
        ((when (errorp wf))
         (error (list :bad-fun-out-type name wf)))
        (out-type (tyname-to-type out-tyname))
-       (vartab (check-fun-declor fundef.declor tagenv))
+       (vartab (check-fun-declor fundef.declor vartab tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
        ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
        (in-types (type-name-list-to-type-list in-tynames))
@@ -2046,7 +2061,7 @@
      function table, variable table, and tag environment."))
   (ext-declon-case
    ext
-   :fundef (b* ((funtab (check-fundef ext.get funtab tagenv))
+   :fundef (b* ((funtab (check-fundef ext.get funtab vartab tagenv))
                 ((when (errorp funtab)) funtab))
              (make-funtab+vartab+tagenv :funs funtab
                                         :vars (var-table-fix vartab)
