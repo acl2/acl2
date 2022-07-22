@@ -799,8 +799,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-integer-value-rules
-  :short "Rules about the composition of @(tsee sint-integer-value)
+(defsection atc-sint-get-rules
+  :short "Rules about the composition of @(tsee sint->get)
           with @('sint-from-<type>') functions."
   :long
   (xdoc::topstring
@@ -808,47 +808,39 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
-  (defruled sint-integer-value-of-sint-from-schar
+  (defruled sint->get-of-sint-from-schar
     (implies (scharp x)
-             (equal (sint-integer-value (sint-from-schar x))
-                    (schar-integer-value x)))
-    :enable (sint-integer-value
-             schar-integer-value
-             sint-from-schar
+             (equal (sint->get (sint-from-schar x))
+                    (schar->get x)))
+    :enable (sint-from-schar
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-uchar
+  (defruled sint->get-of-sint-from-uchar
     (implies (ucharp x)
-             (equal (sint-integer-value (sint-from-uchar x))
-                    (uchar-integer-value x)))
-    :enable (sint-integer-value
-             uchar-integer-value
-             sint-from-uchar
+             (equal (sint->get (sint-from-uchar x))
+                    (uchar->get x)))
+    :enable (sint-from-uchar
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-sshort
+  (defruled sint->get-of-sint-from-sshort
     (implies (sshortp x)
-             (equal (sint-integer-value (sint-from-sshort x))
-                    (sshort-integer-value x)))
-    :enable (sint-integer-value
-             sshort-integer-value
-             sint-from-sshort
+             (equal (sint->get (sint-from-sshort x))
+                    (sshort->get x)))
+    :enable (sint-from-sshort
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-ushort
+  (defruled sint->get-of-sint-from-ushort
     (implies (ushortp x)
-             (equal (sint-integer-value (sint-from-ushort x))
-                    (ushort-integer-value x)))
-    :enable (sint-integer-value
-             ushort-integer-value
-             sint-from-ushort
+             (equal (sint->get (sint-from-ushort x))
+                    (ushort->get x)))
+    :enable (sint-from-ushort
              sint-integerp-alt-def))
 
-  (defval *atc-integer-value-rules*
-    '(sint-integer-value-of-sint-from-schar
-      sint-integer-value-of-sint-from-uchar
-      sint-integer-value-of-sint-from-sshort
-      sint-integer-value-of-sint-from-ushort)))
+  (defval *atc-sint-get-rules*
+    '(sint->get-of-sint-from-schar
+      sint->get-of-sint-from-uchar
+      sint->get-of-sint-from-sshort
+      sint->get-of-sint-from-ushort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1573,7 +1565,7 @@
                                     (pack op-kind '- lfixtype '-okp)))
                             ,@(and (member-eq op-kind '(:shl :shr))
                                    (cons 'exec-integer
-                                         *atc-integer-value-rules*))
+                                         *atc-sint-get-rules*))
                             ,@*atc-uaconvert-values-rules*
                             ,@*atc-promote-value-rules*))))
       (mv name event))
