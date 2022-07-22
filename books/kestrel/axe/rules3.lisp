@@ -2839,11 +2839,11 @@
          (BVLT 29 w (BVPLUS 29 x y)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) (<-becomes-bvlt <-becomes-bvlt-alt)))))
 
-(DEFTHM bvuminus-IMPOSSIBLE-VALUE
-  (IMPLIES (AND (SYNTAXP (QUOTEP K))
-                (NOT (UNSIGNED-BYTE-P SIZE K))
-                (NATP SIZE))
-           (EQUAL (EQUAL K (bvuminus SIZE X)) NIL)))
+(defthm bvuminus-impossible-value
+  (implies (and (syntaxp (quotep k))
+                (not (unsigned-byte-p size k))
+                (natp size))
+           (not (equal k (bvuminus size x)))))
 
 (defthm bvplus-32-1-bvumiuns
   (equal (BVPLUS 32 1 (BVUMINUS 2 x))
@@ -3346,7 +3346,7 @@
 (defthm getbit-impossible-value
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p 1 k)))
-           (equal (equal k (getbit n x)) nil)))
+           (not (equal k (getbit n x)))))
 
 (defthm slice-tighten-when-top-bit-0
   (implies (and (equal 0 (getbit high x))
@@ -4517,9 +4517,8 @@
 (defthm bvplus-impossible-value
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p size k))
-                (Natp size))
-           (equal (equal k (bvplus size x y))
-                  nil)))
+                (natp size))
+           (not (equal k (bvplus size x y)))))
 
 ;just use BVUMINUS-WHEN-SMALLER or a variant of that?
 (defthm bvuminus-of-bvplus-32-20
@@ -6481,8 +6480,7 @@
   (implies (and (syntaxp (quotep k))
                 (not (equal 0 (getbit 0 k)))
                 (natp n))
-           (equal (equal k (bvmult n 2 x))
-                  nil))
+           (not (equal k (bvmult n 2 x))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
 (in-theory (disable SBVDIV)) ;move up!

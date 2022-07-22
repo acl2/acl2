@@ -3256,14 +3256,12 @@
 (defthm impossible-value-1
   (implies (and (<= free x)
                 (< k free))
-           (equal (equal k x)
-                  nil)))
+           (not (equal k x))))
 
 (defthm impossible-value-2
   (implies (and (<= free x)
                 (< k free))
-           (equal (equal x k)
-                  nil)))
+           (not (equal x k))))
 
 ;bozo this seemed necessary to get rid of some logext32's. - where did they come from?
 ;trying disabled...

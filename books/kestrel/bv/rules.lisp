@@ -7722,3 +7722,23 @@
                    (bvsx highsize lowsize x)))
   :hints (("Goal" :in-theory (disable acl2::bvcat-tighten-upper-size ;todo: forcing of usbp of repeatbit
                                       ))))
+
+;; TODO: Will this match bth ways? No!
+;; TODO: Disable less general rules, like bvchop-impossible-value.
+(defthm not-equal-of-constant-and-bv-term
+  (implies (and (syntaxp (quotep k))
+                (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (syntaxp (quotep xsize))
+                (not (unsigned-byte-p xsize k)) ; gets computed
+                (unsigned-byte-p-forced xsize x))
+           (not (equal k x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm not-equal-of-constant-and-bv-term-alt
+  (implies (and (syntaxp (quotep k))
+                (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (syntaxp (quotep xsize))
+                (not (unsigned-byte-p xsize k)) ; gets computed
+                (unsigned-byte-p-forced xsize x))
+           (not (equal x k)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
