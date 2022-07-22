@@ -1578,19 +1578,23 @@
     "This is used when comparing the type of an initializer
      with the declared type of the object.")
    (xdoc::p
-    "Fow now we require the initializer type to be a single one,
-     and to be equal to the declared type after array-to-pointer conversion.
-     Thus, for now we only support initialization of scalars:
-     if the declared type was an array type,
-     it would never be equal to
-     the array-to-pointer conversion of the initializer type,
-     which turns an array type into a pointer type.
-     Even though [C:6.7.9/11] allows scalars to be initialized with
-     singleton lists of expressions (i.e. single expressions between braces),
-     we are more strict here and require a single expression.")
+    "If the initializer type is a single one,
+     we require its type to match the declared type.
+     We perform an array-to-pointer type conversion,
+     consistently with assignments for scalars [C:6.7.9/11];
+     for structure types initialized via single expressions [C:6.7.9/13].")
    (xdoc::p
-    "We will extend this to declared array types
-     and to list initializer types."))
+    "If the initializer type is a list,
+     we require the declared type to be an array type
+     such that all the types in the initializer list
+     match the array element type.
+     If the array type has a size,
+     the length of the initializer list must match the array size.")
+   (xdoc::p
+    "Here we are a bit more restrictive than in [C:6.7.9].
+     In particular, [C:6.7.9/11] allows scalars to be initialized with
+     singleton lists of expressions (i.e. single expressions between braces);
+     but here we insist on scalars being initialized by single expressions."))
   (init-type-case
    itype
    :single (if (type-equiv type (apconvert-type itype.get))
@@ -1598,7 +1602,17 @@
              (error (list :init-type-mismatch
                           :required (type-fix type)
                           :supplied (init-type-fix itype))))
-   :list (error (list :init-type-unsupported (init-type-fix itype))))
+   :list (if (and (type-case type :array)
+                  (equal itype.get
+                         (repeat (len itype.get)
+                                 (type-array->of type)))
+                  (or (not (type-array->size type))
+                      (equal (type-array->size type)
+                             (len itype.get))))
+             :wellformed
+           (error (list :init-type-mismatch
+                        :required (type-fix type)
+                        :supplied (init-type-fix itype)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
