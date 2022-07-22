@@ -45,17 +45,6 @@
      These are used to represent shallowly embedded tests.
      We introduce a function for each integer type.")
    (xdoc::p
-    "We introduce functions @('<type>-integer-value')
-     to turn C integers into ACL2 integers.
-     These are used as operands of certain C operations
-     whose result does not depend on the C type of the operand,
-     but rather just on its (mathematical) integer value.
-     We define one function for each integer type.
-     Even though these functions are essentially synonyms of
-     the deconstructors of the fixtypes of the integer values,
-     having a separate function provides more abstraction,
-     should the fixtype representation be changed in the future.")
-   (xdoc::p
     "We introduce a single function @(tsee sint-from-boolean)
      to turn ACL2 booleans into the @('int') 0 or 1 (for false and true).
      This function is used in the ACL2 representation of
@@ -259,7 +248,6 @@
        (<type1>-oct-const (pack <type1> '-oct-const))
        (<type1>-hex-const (pack <type1> '-hex-const))
        (boolean-from-<type1> (pack 'boolean-from- <type1>))
-       (<type1>-integer-value (pack <type1> '-integer-value))
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-min (pack <type> '-min))
@@ -340,17 +328,6 @@
         :res-type booleanp
         :short ,(str::cat "Check if a value of " type1-string " is not 0.")
         :body (/= (,<type1>->get x) 0))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (atc-defun-integer
-        ,<type1>-integer-value
-        :arg-type ,<type1>p
-        :res-type integerp
-        :short ,(str::cat "Turn a value of "
-                          type1-string
-                          " into an ACL2 integer value.")
-        :body (,<type1>->get x))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -595,7 +572,6 @@
        (<type1>->get (pack <type1> '->get))
        (<type2>->get (pack <type2> '->get))
        (<type>-mod (pack <type> '-mod))
-       (<type2>-integer-value (pack <type2> '-integer-value))
        (<type>-integerp (pack <type> '-integerp))
        (<type>-from-<type1> (pack <type> '-from- <type1>))
        (<type>-from-<type2> (pack <type> '-from- <type2>))
@@ -893,7 +869,7 @@
                           " by a value of "
                           type2-string
                           " is well-defined.")
-        :body (,shl-<type1>-okp x (,<type2>-integer-value y)))
+        :body (,shl-<type1>-okp x (,<type2>->get y)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -908,7 +884,7 @@
                           " and a value of "
                           type2-string
                           " [C:6.5.7].")
-        :body (,shl-<type1> x (,<type2>-integer-value y))
+        :body (,shl-<type1> x (,<type2>->get y))
         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -923,7 +899,7 @@
                           " by a value of "
                           type2-string
                           " is well-defined.")
-        :body (,shr-<type1>-okp x (,<type2>-integer-value y)))
+        :body (,shr-<type1>-okp x (,<type2>->get y)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -938,7 +914,7 @@
                           " and a value of "
                           type2-string
                           " [C:6.5.7].")
-        :body (,shr-<type1> x (,<type2>-integer-value y))
+        :body (,shr-<type1> x (,<type2>->get y))
         :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
