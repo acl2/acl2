@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "execution")
+(include-book "arrays")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
