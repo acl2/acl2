@@ -95,7 +95,6 @@
                                          c::add-sint-sint
                                          c::add-sint-sint-okp
                                          c::sint-integerp-alt-def
-                                         c::sint-integer-value
                                          c::assign)))
                   :measure (nfix (- (c::sint->get |len|)
                                     (c::sint->get |i|)))

@@ -6630,7 +6630,6 @@
           (indexfixtype (integer-type-to-fixtype indextype))
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
-          (indextype-integer-value (pack indexfixtype '-integer-value))
           (array-reader (pack elemfixtype '-array-read-alt-def))
           (array-checker (pack elemfixtype '-array-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
@@ -6693,7 +6692,6 @@
                       ,checker-acl2int
                       ,reader
                       ,reader-acl2int
-                      ,indextype-integer-value
                       ,array-reader
                       ,array-checker
                       ,not-error-array-thm
@@ -6975,14 +6973,13 @@
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
           (elemtypep (pack elemfixtype 'p))
-          (indextype-integer-value (pack indexfixtype '-integer-value))
+          (indextype->get (pack indexfixtype '->get))
           (array-writer (pack elemfixtype '-array-write-alt-def))
           (array-checker (pack elemfixtype '-array-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
           (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
-          (indextype->get (pack indexfixtype '->get))
           (type-thm (pack indexfixtype '->get$inline))
           (thm-name (pack 'exec-member-write-when-
                           recognizer
@@ -7052,7 +7049,6 @@
                       ,not-error-thm
                       ,type-of-value-thm
                       ,kind-array-thm
-                      ,indextype-integer-value
                       ,checker
                       ,checker-acl2int
                       ,writer

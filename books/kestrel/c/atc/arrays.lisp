@@ -410,7 +410,7 @@
        (<etype>-array-index-okp (pack <etype> '-array-index-okp))
        (<etype>-array-read (pack <etype>-array '-read))
        (<etype>-array-write (pack <etype>-array '-write))
-       (<itype>-integer-value (pack <itype> '-integer-value))
+       (<itype>->get (pack <itype> '->get))
        (<etype>-array-<itype>-index-okp (pack
                                          <etype> '-array- <itype> '-index-okp))
        (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
@@ -439,7 +439,7 @@
                            " is valid for an array of type "
                            etype-string
                            ".")
-         (,<etype>-array-index-okp array (,<itype>-integer-value index))
+         (,<etype>-array-index-okp array (,<itype>->get index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -453,7 +453,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-read array (,<itype>-integer-value index))
+         (,<etype>-array-read array (,<itype>->get index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix))
@@ -470,7 +470,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-write array (,<itype>-integer-value index) element)
+         (,<etype>-array-write array (,<itype>->get index) element)
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix)
