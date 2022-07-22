@@ -384,16 +384,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod funtab+tagenv
-  :short "Fixtype of pairs consisting of
-          a function table and a tag environment."
+(fty::defprod funtab+vartab+tagenv
+  :short "Fixtype of triples consisting of
+          a function table, a variable table, and a tag environment."
   ((funs fun-tablep)
+   (vars var-tablep)
    (tags tag-envp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult funtab+tagenv
-  "pairs consisting of a function table and a tag environment")
+(defresult funtab+vartab+tagenv
+  "triples consisting of
+   a function table, a variable table, and a tag environment")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2031,49 +2033,57 @@
 
 (define check-ext-declon ((ext ext-declonp)
                           (funtab fun-tablep)
+                          (vartab var-tablep)
                           (tagenv tag-envp))
-  :returns (new-funtab+tagenv funtab+tagenv-resultp)
+  :returns (new-funtab+vartab+tagenv funtab+vartab+tagenv-resultp)
   :short "Check an external declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow function definitions and tag declarations.")
    (xdoc::p
-    "If successful, we return updated function table and tag environment."))
+    "If successful, we return updated
+     function table, variable table, and tag environment."))
   (ext-declon-case
    ext
    :fundef (b* ((funtab (check-fundef ext.get funtab tagenv))
                 ((when (errorp funtab)) funtab))
-             (make-funtab+tagenv :funs funtab
-                                 :tags (tag-env-fix tagenv)))
+             (make-funtab+vartab+tagenv :funs funtab
+                                        :vars (var-table-fix vartab)
+                                        :tags (tag-env-fix tagenv)))
    :obj-declon (error
                 (list :file-level-object-declaraion-not-supported ext.get))
    :tag-declon (b* ((tagenv (check-tag-declon ext.get tagenv))
                     ((when (errorp tagenv)) tagenv))
-                 (make-funtab+tagenv :funs (fun-table-fix funtab)
-                                     :tags tagenv)))
+                 (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
+                                            :vars (var-table-fix vartab)
+                                            :tags tagenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-ext-declon-list ((exts ext-declon-listp)
                                (funtab fun-tablep)
+                               (vartab var-tablep)
                                (tagenv tag-envp))
-  :returns (new-funtab+tagenv funtab+tagenv-resultp)
+  :returns (new-funtab+vartab+tagenv funtab+vartab+tagenv-resultp)
   :short "Check a list of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread the function table and tag environment through."))
+    "We thread through
+     the function table, variable table, and tag environment."))
   (b* (((when (endp exts))
-        (make-funtab+tagenv :funs (fun-table-fix funtab)
-                            :tags (tag-env-fix tagenv)))
-       (funtab+tagenv (check-ext-declon (car exts) funtab tagenv))
-       ((when (errorp funtab+tagenv))
-        (error (list :ext-declon-error funtab+tagenv))))
+        (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
+                                   :vars (var-table-fix vartab)
+                                   :tags (tag-env-fix tagenv)))
+       (funtab+vartab+tagenv (check-ext-declon (car exts) funtab vartab tagenv))
+       ((when (errorp funtab+vartab+tagenv))
+        (error (list :ext-declon-error funtab+vartab+tagenv))))
     (check-ext-declon-list (cdr exts)
-                           (funtab+tagenv->funs funtab+tagenv)
-                           (funtab+tagenv->tags funtab+tagenv)))
+                           (funtab+vartab+tagenv->funs funtab+vartab+tagenv)
+                           (funtab+vartab+tagenv->vars funtab+vartab+tagenv)
+                           (funtab+vartab+tagenv->tags funtab+vartab+tagenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2090,9 +2100,11 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
+       (vartab (var-table-init))
        (tagenv (tag-env-init))
-       (funtab+tagenv (check-ext-declon-list tunit.declons funtab tagenv))
-       ((when (errorp funtab+tagenv))
-        (error (list :transunit-error funtab+tagenv))))
+       (funtab+vartab+tagenv
+        (check-ext-declon-list tunit.declons funtab vartab tagenv))
+       ((when (errorp funtab+vartab+tagenv))
+        (error (list :transunit-error funtab+vartab+tagenv))))
     :wellformed)
   :hooks (:fix))
