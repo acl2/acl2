@@ -261,6 +261,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum init-value
+  :short "Fixtype of initializer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce a notion of values for "
+    (xdoc::seetopic "initer" "initializers")
+    ". An initializer value has the same structure as an initializer,
+     but expressions are replaced with (their) values.")
+   (xdoc::p
+    "As our model of initializers is extended,
+     out model of initializer values will be extended accordingly."))
+  (:single ((get value)))
+  (:list ((get value-list)))
+  :pred init-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a signed integer [C:6.2.5/4]."
@@ -446,4 +464,19 @@
   (value-option-case val?
                      :some (type-of-value val?.val)
                      :none (type-void))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-type-of-init-value ((ival init-valuep))
+  :returns (itype init-typep)
+  :short "Initialization type of an initialization value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @(tsee init-type) is the static counterpart of
+     an @(tsee init-value)."))
+  (init-value-case ival
+                   :single (init-type-single (type-of-value ival.get))
+                   :list (init-type-list (type-list-of-value-list ival.get)))
   :hooks (:fix))
