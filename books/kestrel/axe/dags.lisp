@@ -1525,7 +1525,8 @@
          (nodenum (car entry)))
     nodenum))
 
-(defthmd top-nodenum-of-dag-when-pseudo-dagp
+;; for reasoning (for execution, len would be much slower)
+(defthm top-nodenum-of-dag-when-pseudo-dagp
   (implies (pseudo-dagp dag)
            (equal (top-nodenum-of-dag dag)
                   (+ -1 (len dag))))
@@ -1544,14 +1545,8 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable top-nodenum-of-dag))))
 
-;; for reasoning (for execution, len would be much slower)
-(defthm top-nodenum-of-dag-becomes-len-minus-1
-  (implies (pseudo-dagp dag)
-           (equal (top-nodenum-of-dag dag)
-                  (+ -1 (len dag))))
-  :hints (("Goal" :in-theory (enable top-nodenum
-                                     top-nodenum-of-dag
-                                     len-when-pseudo-dagp))))
+
+
 
 ;may subsume stuff above
 (defthmd car-of-nth-when-pseudo-dagp
