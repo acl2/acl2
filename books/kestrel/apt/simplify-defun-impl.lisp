@@ -2087,6 +2087,16 @@
                     (:s :repeat 3 ; somewhat arbitrary
                         :backchain-limit 500 ; somewhat arbitrary
                         :expand ,expand
+
+; We have seen an example where forcing made the proof fall apart.  That isn't
+; surprising: there may well not be enough context to avoid forcing something
+; that is false, e.g., in the case where we have (if tst1 (if tst2 ...) ...),
+; and truth or falsity of tst2 settles where a forced hyp is true when
+; rewriting tst1.  The various prove calls below should clean things up if we
+; need forcing.
+
+                        :in-theory (remove1-equal acl2::*force-xrune*
+                                                  ,fn-runes)
                         :normalize nil))
                    (:prove ,@(and expand
                                   `(:hints (("Goal" :expand ,expand)))))))
