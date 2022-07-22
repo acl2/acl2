@@ -1547,6 +1547,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-obj-declon ((declon obj-declonp)
+                          (funtab fun-tablep)
+                          (vartab var-tablep)
+                          (tagenv tag-envp)
+                          (constp booleanp))
+  :returns (new-vartab var-table-resultp)
+  :short "Check an object declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We ensure that the type is not @('void'),
+     because the type must be complete [C:6.7/7],
+     and @('void') is incomplete [C:6.2.5/19].
+     We also ensure that the initializer type matches the declared type.
+     The @('constp') flag controls whether
+     we also require the initializer to be constant or not.
+     We return the updated variable table."))
+  (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init declon))
+       (wf (check-tyname tyname tagenv))
+       ((when (errorp wf)) (error (list :declon-error-type wf)))
+       (wf (check-ident var))
+       ((when (errorp wf)) (error (list :declon-error-var wf)))
+       (type (tyname-to-type tyname))
+       ((when (type-case type :void))
+        (error (list :declon-error-type-void (obj-declon-fix declon))))
+       (init-type (check-initer init funtab vartab tagenv constp))
+       ((when (errorp init-type))
+        (error (list :declon-error-init init-type)))
+       (wf? (init-type-matchp init-type type))
+       ((when (errorp wf?)) wf?))
+    (var-table-add-var var type vartab))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-stmt
   :short "Check a statement."
   :long
@@ -1603,17 +1638,11 @@
      The type must not be @('void') [C:6.3.2.2].")
    (xdoc::p
     "For a block item that is a declaration,
-     we ensure that it is a variable (not a structure type) declaration.
-     We ensure that the type is not @('void'),
-     because the type must be complete [C:6.7/7],
-     and @('void') is incomplete [C:6.2.5/19].
-     We also ensure that the initializer has the same type as the variable
-     (which is more restrictive than [C:6.7.9]),
-     and we extend and return the variable table with the variable.
+     we check the (object) declaration,
+     without requiring the initializer to be constant.
      We return the singleton set with @('void'),
      because a declaration never returns a value
-     and proceeds with the next block item;
-     note that we do not return the empty set of return types.")
+     and proceeds with the next block item.")
    (xdoc::p
     "For a block item that is a statement, we check the statement.")
    (xdoc::p
@@ -1741,20 +1770,7 @@
     (block-item-case
      item
      :declon
-     (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
-          (wf (check-tyname tyname tagenv))
-          ((when (errorp wf)) (error (list :declon-error-type wf)))
-          (wf (check-ident var))
-          ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (tyname-to-type tyname))
-          ((when (type-case type :void))
-           (error (list :declon-error-type-void item.get)))
-          (init-type (check-initer init funtab vartab tagenv nil))
-          ((when (errorp init-type))
-           (error (list :declon-error-init init-type)))
-          (wf? (init-type-matchp init-type type))
-          ((when (errorp wf?)) wf?)
-          (vartab (var-table-add-var var type vartab))
+     (b* ((vartab (check-obj-declon item.get funtab vartab tagenv nil))
           ((when (errorp vartab)) (error (list :declon-error vartab))))
        (make-stmt-type :return-types (set::insert (type-void) nil)
                        :variables vartab))
