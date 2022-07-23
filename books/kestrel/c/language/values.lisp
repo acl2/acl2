@@ -480,3 +480,18 @@
                    :single (init-type-single (type-of-value ival.get))
                    :list (init-type-list (type-list-of-value-list ival.get)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult init-value "initialization values"
+  :enable (errorp init-valuep))
+
+(defsection init-value-result-theorems
+  :extension init-value-result
+
+  (defrule not-errorp-when-init-valuep
+    (implies (init-valuep x)
+             (not (errorp x)))
+    :rule-classes :tau-system
+    :enable (init-valuep
+             errorp)))
