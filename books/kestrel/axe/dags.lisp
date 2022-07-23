@@ -80,9 +80,11 @@
            (natp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
-;; See also top-nodenum-of-dag below
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Deprecate in favor of top-nodenum-of-dag?
 (defun top-nodenum (dag)
-  (declare (xargs :GUARD (ALISTP dag) ;or require weak-dagp?  at least require non-empty?
+  (declare (xargs :guard (alistp dag) ;or require weak-dagp?  at least require non-empty?
                   :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
                   ))
   (if (endp dag)
@@ -735,93 +737,6 @@
 (defun dag-constants (dag)
   (declare (xargs :guard (alistp dag)))
   (dag-constants-aux dag nil))
-
-
-;; ;; good-dag-at-nodenump is what we need to justify processing a dag by
-;; ;; repeatedly looking up child nodes.  Does check that children are less than
-;; ;; their parents. not enforce that there are no gaps in the numbering.
-
-;; (mutual-recursion
-;;  (defun good-dag-at-nodenump (dag nodenum-or-quotep)
-;;    (declare (xargs :guard (and (or (myquotep nodenum-or-quotep)
-;;                                    (natp nodenum-or-quotep))
-;;                                (alistp dag) ;not needed if it's a quotep
-;;                                )
-;;                    :measure (dag-walker-measure-for-item nodenum-or-quotep)))
-;;    (if (not (natp nodenum-or-quotep)) ;must be a constant
-;;        t
-;;      (let* ((nodenum nodenum-or-quotep)
-;;             (res (assoc nodenum dag)))
-;;        (and res ;node must be present in the dag
-;;             (let ((expr (cdr res)))
-;;               (and (bounded-dag-exprp nodenum expr)
-;;                    (if (and (consp expr)
-;;                             (not (eq 'quote (car expr))))
-;;                        (good-dag-at-nodenumsp dag (dargs expr))
-;;                      t)))))))
-
-;;  (defun good-dag-at-nodenumsp (dag nodenums-and-quoteps)
-;;    (declare (xargs :guard (and (all-dargp nodenums-and-quoteps)
-;;                                (true-listp nodenums-and-quoteps)
-;;                                (alistp dag) ;not needed if they are all quoteps
-;;                                )
-;;                    :measure (dag-walker-measure-for-items nodenums-and-quoteps)))
-;;    (if (endp nodenums-and-quoteps)
-;;        t
-;;      (and (good-dag-at-nodenump dag (first nodenums-and-quoteps))
-;;           (good-dag-at-nodenumsp dag (rest nodenums-and-quoteps))))))
-
-;; (defthm symbolp-of-lookup-equal
-;;   (implies (and (syntaxp (want-to-weaken (symbolp (lookup-equal nodenum-or-quotep dag))))
-;;                 (good-dag-at-nodenump dag nodenum-or-quotep)
-;;                 (natp nodenum-or-quotep)
-;;                 )
-;;            (equal (symbolp (lookup-equal nodenum-or-quotep dag))
-;;                   (not (consp (lookup-equal nodenum-or-quotep dag)))))
-;;   :hints (("Goal" :in-theory (enable LOOKUP-EQUAL))))
-
-;; (defthm symbolp-of-car-of-lookup-equal-when-good-dag-at-nodenump
-;;   (implies (and (natp nodenum-or-quotep)
-;;                 (good-dag-at-nodenump dag nodenum-or-quotep))
-;;            (symbolp (car (lookup-equal nodenum-or-quotep dag))))
-;;   :hints (("Goal" :expand ((good-dag-at-nodenump dag nodenum-or-quotep))
-;;            :in-theory (enable lookup-equal))))
-
-;; ;; todo: use a custom function instead of lookup to lookup a node in a dag?
-;; (defthm true-listp-of-dargs-of-lookup-equal-when-good-dag-at-nodenump
-;;   (implies (and (natp nodenum-or-quotep)
-;;                 (good-dag-at-nodenump dag nodenum-or-quotep))
-;;            (true-listp (dargs (lookup-equal nodenum-or-quotep dag))))
-;;   :hints (("Goal" :expand ((good-dag-at-nodenump dag nodenum-or-quotep))
-;;            :in-theory (enable lookup-equal
-;;                               dargs ;this theorem happens to work for quoteps
-;;                               ))))
-
-;; (defthm all-dargp-of-dargs-of-lookup-equal-when-good-dag-at-nodenump
-;;   (implies (and (natp nodenum-or-quotep)
-;;                 (good-dag-at-nodenump dag nodenum-or-quotep)
-;;                 (not (eq 'quote (car (lookup-equal nodenum-or-quotep dag))))
-;;                 )
-;;            (all-dargp (dargs (lookup-equal nodenum-or-quotep dag))))
-;;   :hints (("Goal" :expand ((good-dag-at-nodenump dag nodenum-or-quotep))
-;;            :in-theory (enable lookup-equal))))
-
-;; (defthm good-dag-at-nodenumsp-of-dargs-of-lookup-equal-when-good-dag-at-nodenump
-;;   (implies (and (natp nodenum-or-quotep)
-;;                 (good-dag-at-nodenump dag nodenum-or-quotep)
-;;                 (not (eq 'quote (car (lookup-equal nodenum-or-quotep dag))))
-;;                 )
-;;            (good-dag-at-nodenumsp dag (dargs (lookup-equal nodenum-or-quotep dag))))
-;;   :hints (("Goal" :expand ((good-dag-at-nodenump dag nodenum-or-quotep))
-;;            :in-theory (enable lookup-equal))))
-
-;; (defun good-dagp (dag)
-;;   (declare (xargs :guard t))
-;;   (and (alistp dag) ;drop?
-;;        (consp dag)
-;;        (let ((top-nodenum (top-nodenum dag)))
-;;          (and (natp top-nodenum)
-;;               (good-dag-at-nodenump dag top-nodenum)))))
 
 ;; test: (dag-equal-term-at-node '((2 foo 1 0) (1 quote 3) (0 . x)) '(foo '3 x) 2)
 ;; test: (not (dag-equal-term-at-node '((2 foo 1 0) (1 quote 3) (0 . x)) '(foo '3 y) 2))
@@ -1511,13 +1426,21 @@
   :hints (("Goal" :in-theory (e/d (bounded-darg-listp lookup-equal strip-cdrs)
                                   (myquotep)))))
 
+;may subsume stuff above
+(defthmd car-of-nth-when-pseudo-dagp
+  (implies (and (pseudo-dagp dag)
+;                (natp n)
+                (natp curr))
+           (equal (car (nth n dag))
+                  (if (< (nfix n) (+ 1 (car (car dag))))
+                      (+ -1 (len dag) (- (nfix n)))
+                    nil)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp
+                                     CAR-OF-NTH-WHEN-PSEUDO-DAGP-AUX))))
 
-;;;
-;;; top-nodenum-of-dag
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;this one has a better guard
-;deprecate the other one?
+;this one has a better guard than top-nodenum
 (defund top-nodenum-of-dag (dag)
   (declare (xargs :guard (pseudo-dagp dag)
                   :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))))
@@ -1532,30 +1455,8 @@
                   (+ -1 (len dag))))
   :hints (("Goal" :in-theory (enable top-nodenum-of-dag pseudo-dagp))))
 
-;; ;temporary
-;; (defthmd top-nodenum-of-dag-becomes-top-nodenum
-;;   (implies (pseudo-dagp dag)
-;;            (equal (top-nodenum-of-dag dag)
-;;                   (top-nodenum dag)))
-;;   :hints (("Goal" :in-theory (enable top-nodenum top-nodenum-of-dag))))
-
 (defthm natp-of-top-nodenum-of-dag
   (implies (pseudo-dagp dag)
            (natp (top-nodenum-of-dag dag)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable top-nodenum-of-dag))))
-
-
-
-
-;may subsume stuff above
-(defthmd car-of-nth-when-pseudo-dagp
-  (implies (and (pseudo-dagp dag)
-;                (natp n)
-                (natp curr))
-           (equal (car (nth n dag))
-                  (if (< (nfix n) (+ 1 (car (car dag))))
-                      (+ -1 (len dag) (- (nfix n)))
-                    nil)))
-  :hints (("Goal" :in-theory (enable pseudo-dagp
-                                     CAR-OF-NTH-WHEN-PSEUDO-DAGP-AUX))))
