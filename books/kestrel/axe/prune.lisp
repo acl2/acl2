@@ -116,8 +116,9 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (or (booleanp call-stp)
                                   (natp call-stp)))
-                  :stobjs (state)))
-  (b* ( ;; First apply the Axe Rewriter to the test:
+                  :stobjs state))
+  (b* ((- (cw "(Attempting to resolve test using ~x0 assumptions and ~x1 equality assumptons.~%" (len assumptions) (len equality-assumptions)))
+       ;; First apply the Axe Rewriter to the test:
        (- (cw "(Simplifying test.~%"))
        ;; TODO: Consider first doing something faster than a DAG-producing
        ;; rewrite, such as evaluating ground terms, using assumptions, and
@@ -133,24 +134,28 @@
                              nil ; print
                              nil ; normalize-xors
                              (w state)))
-       ((when erp) (mv erp nil state))
+       ((when erp)
+        (cw "ERROR simplifying test.))~%")
+        (mv erp nil state))
        ((when (quotep simplified-dag-or-quotep))
         ;; Resolved the test via rewriting:
-        (cw "Simplified to the constant ~x0.)~%" simplified-dag-or-quotep)
+        (cw "Simplified to the constant ~x0.))~%" simplified-dag-or-quotep)
         (if (unquote simplified-dag-or-quotep)
             (mv nil :true state)
           (mv nil :false state)))
        ;; Test did not rewrite to a constant, so try other things:
        ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag-or-quotep nil))
-       (- (cw "Did not simplify to a constant.)~%"))
+       (- (cw "Test did not simplify to a constant.)~%"))
        ;; Is this needed, given that we simplified the test above using the assumptions?
        ;; TODO: Also look for an equality in the other order?:
        ((when (or (member-equal test assumptions)
                   (member-equal test equality-assumptions))) ;; In case the test is not a known boolean (so rewriting can't rewrite it to t). ;todo: use simplified-test-term here?
-        (prog2$ (cw "(The test is a known assumption.)")
-                (mv nil :true state))) ;a test that's in the assumptions is like a test that rewrites to t
+        (cw "(The test is a known assumption.))") ; todo: look for negated assumptions too
+        (mv nil :true state)) ;a test that's in the assumptions is like a test that rewrites to t
        ;; TODO: What if the test is equal to an assumption but not identical to it (e.g., a disjunction with the disjuncts reordered?)
-       ((when (not call-stp)) (mv nil :unknown state)) ; give up if we are not allowed to call STP
+       ((when (not call-stp))
+        (cw "Failed to resolve test by rewriting and we have been told not to call STP.)")
+        (mv nil :unknown state)) ; give up if we are not allowed to call STP
        ;; TODO: Avoid turning the DAG into a term:
        (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first.
@@ -167,7 +172,7 @@
         (prog2$ (er hard? 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* true-result)) ;; STP proved the test
-        (prog2$ (cw "STP proved the test true.)~%")
+        (prog2$ (cw "STP proved the test true.))~%")
                 (mv nil :true state)))
        (- (cw "STP failed to prove the test true.)~%"))
        (- (cw "(Attempting to prove test false with STP:~%"))
@@ -183,10 +188,12 @@
         (prog2$ (er hard? 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
-        (prog2$ (cw "STP proved the test false.)~%")
+        (prog2$ (cw "STP proved the test false.))~%")
                 (mv nil :false state))))
-    (prog2$ (cw "STP did not resolve the test.)~%")
+    (prog2$ (cw "STP did not resolve the test.))~%")
             (mv nil :unknown state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Thread through a print option
 (mutual-recursion
@@ -194,11 +201,9 @@
  ;; to TERM. Tries to rewrite each if/myif test using context from all overarching
  ;; tests (and any given assumptions).
 ;TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
- ;; TODO: Handle the case of an IF with the same branches after pruning them.
- ;; TODO: Consider filtering out assumptions unusable by STP once instead of time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
+ ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-   (declare (xargs :stobjs (state)
-                   :guard (and (pseudo-termp term)
+   (declare (xargs :guard (and (pseudo-termp term)
                                (pseudo-term-listp assumptions)
                                (pseudo-term-listp equality-assumptions) ;used only for looking up conditions
                                (symbol-listp monitored-rules)
@@ -206,38 +211,35 @@
                                (interpreted-function-alistp interpreted-function-alist)
                                (or (booleanp call-stp)
                                    (natp call-stp)))
+                   :stobjs state
                    :verify-guards nil ; done below
                    ))
    (if (variablep term)
-       (mv (erp-nil) term state)
+       (mv (erp-nil) term state) ; can't prune a var
      (let ((fn (ffn-symb term)))
        (case fn
-         (quote (mv (erp-nil) term state)) ;constant
+         (quote (mv (erp-nil) term state)) ; can't prune a constant
          ((if myif) ;; (if/myif test then-branch else-branch)
           (b* ((test (farg1 term))
-               ;; First prune any IFs in the test:
+               ;; First prune the test:
                ((mv erp test state)
                 (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state))
-               (- (cw "(Attempting to resolve test using ~x0 assumptions and ~x1 equality assumptons.~%" (len assumptions) (len equality-assumptions)))
                ;; Now try to resolve the pruned test:
                ((mv erp result ; :true, :false, or :unknown
                     state)
+                ;; TODO: Consider having try-to-resolve-test return the simplified test, for use below
                 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state)))
             (if (eq :true result)
-                (prog2$ (cw "Resolved the test to true.)~%")
-                        ;; Throw away the else-branch:
-                        (prune-term-aux (farg2 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ;we could add the condition as an assumption here
+                ;; Throw away the else-branch:
+                (prune-term-aux (farg2 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state) ;we could add the condition as an assumption here
               (if (eq :false result)
                   ;; Throw away the then-branch:
-                  (prog2$ (cw "Resolved the test to false.)~%")
-                          (prune-term-aux (farg3 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ;we could add the negated condition as an assumption here
-                ;;todo: if it simplifies to something other than t/nil, use that here?
-                (b* ((- (cw "Did not resolve test.)~%"))
-                     ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
+                  (prune-term-aux (farg3 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state) ;we could add the negated condition as an assumption here
+                (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
-                     ((mv erp then-part state)
+                     ((mv erp then-branch state)
                       (prune-term-aux (farg2 term)
                                       (union-equal (fixup-assumptions test-conjuncts) assumptions)
                                       (union-equal (get-equalities test-conjuncts) equality-assumptions)
@@ -246,15 +248,15 @@
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                      (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
-                     ((mv erp else-part state)
+                     ((mv erp else-branch state)
                       (prune-term-aux (farg3 term)
                                       (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
                                       (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
-                     (new-term (if (equal then-part else-part)
-                                   then-part ; special case when both branches are the same
-                                 `(,fn ,test ,then-part ,else-part))))
+                     (new-term (if (equal then-branch else-branch)
+                                   then-branch ; special case when both branches are the same
+                                 `(,fn ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (boolif ;; (boolif test then-branch else-branch)
           (b* ((test (farg1 term))
@@ -264,39 +266,35 @@
                ((mv erp test state)
                 (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state))
-               (- (cw "(Attempting to resolve test using ~x0 assumptions and ~x1 equality assumptons.~%" (len assumptions) (len equality-assumptions)))
                ;; Now try to resolve the pruned test:
                ((mv erp result ;:true, :false, or :unknown
                     state)
                 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state)))
             (if (eq :true result)
-                (prog2$ (cw "Resolved the test to true.)~%")
-                        ;; Throw away the else-branch:
-                        (mv-let (erp then-branch state)
-                          ;; we could add the condition as an assumption here:
-                          (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-                          (if erp
-                              (mv erp nil state)
-                            (mv (erp-nil)
-                                ;; todo: skip the bool-fix if known-boolean:
-                                `(bool-fix$inline ,then-branch) state))))
+                ;; Throw away the else-branch:
+                (mv-let (erp then-branch state)
+                  ;; we could add the condition as an assumption here:
+                  (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+                  (if erp
+                      (mv erp nil state)
+                    (mv (erp-nil)
+                        ;; todo: skip the bool-fix if known-boolean:
+                        `(bool-fix$inline ,then-branch) state)))
               (if (eq :false result)
                   ;; Throw away the then-branch:
-                  (prog2$ (cw "Resolved the test to false.)~%")
-                          (mv-let (erp else-branch state)
-                            ;; we could add the negated condition as an assumption here:
-                            (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-                            (if erp
-                                (mv erp nil state)
-                              (mv (erp-nil)
-                                  ;; todo: skip the bool-fix if known-boolean:
-                                  `(bool-fix$inline ,else-branch) state))))
+                  (mv-let (erp else-branch state)
+                    ;; we could add the negated condition as an assumption here:
+                    (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+                    (if erp
+                        (mv erp nil state)
+                      (mv (erp-nil)
+                          ;; todo: skip the bool-fix if known-boolean:
+                          `(bool-fix$inline ,else-branch) state)))
                 ;; todo: if it simplifies to something other than t/nil, use that here?
-                (b* ((- (cw "Did not resolve test.)~%"))
-                     ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
+                (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
-                     ((mv erp then-part state)
+                     ((mv erp then-branch state)
                       (prune-term-aux then-branch
                                       (union-equal (fixup-assumptions test-conjuncts) assumptions)
                                       (union-equal (get-equalities test-conjuncts) equality-assumptions)
@@ -305,18 +303,18 @@
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                      (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
-                     ((mv erp else-part state)
+                     ((mv erp else-branch state)
                       (prune-term-aux else-branch
                                       (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
                                       (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
-                     (new-term (if (equal then-part else-part)
-                                   `(bool-fix$inline ,then-part) ; special case when both branches are the same
-                                 `(boolif ,test ,then-part ,else-part))))
+                     (new-term (if (equal then-branch else-branch)
+                                   `(bool-fix$inline ,then-branch) ; special case when both branches are the same
+                                 `(boolif ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (bvif ;; (bvif size test then-branch else-branch)
-          (b* ((size (farg1 term)) ;todo: prune this (it will usually be a constant, so that will be quick)
+          (b* ((size (farg1 term)) ;todo: prune this (it will usually be a constant, so that will be quick)?
                (test (farg2 term))
                (then-branch (farg3 term))
                (else-branch (farg4 term))
@@ -324,54 +322,50 @@
                ((mv erp test state)
                 (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state))
-               (- (cw "(Attempting to resolve test using ~x0 assumptions and ~x1 equality assumptons.~%" (len assumptions) (len equality-assumptions)))
                ;; Now try to resolve the pruned test:
                ((mv erp result ;:true, :false, or :unknown
                     state)
                 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                ((when erp) (mv erp nil state)))
             (if (eq :true result)
-                (prog2$ (cw "Resolved the test to true.)~%")
-                        ;; Throw away the else-branch:
-                        (mv-let (erp then-branch state)
-                          ;; we could add the condition as an assumption here:
-                          (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-                          (if erp
-                              (mv erp nil state)
-                            (mv (erp-nil)
-                                `(bvchop ,size ,then-branch) state))))
+                ;; Throw away the else-branch:
+                (mv-let (erp then-branch state)
+                  ;; we could add the condition as an assumption here:
+                  (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+                  (if erp
+                      (mv erp nil state)
+                    (mv (erp-nil)
+                        `(bvchop ,size ,then-branch) state)))
               (if (eq :false result)
                   ;; Throw away the then-branch:
-                  (prog2$ (cw "Resolved the test to false.)~%")
-                          (mv-let (erp else-branch state)
-                            ;; we could add the negated condition as an assumption here:
-                            (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-                            (if erp
-                                (mv erp nil state)
-                              (mv (erp-nil)
-                                  `(bvchop ,size ,else-branch) state))))
+                  (mv-let (erp else-branch state)
+                    ;; we could add the negated condition as an assumption here:
+                    (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+                    (if erp
+                        (mv erp nil state)
+                      (mv (erp-nil)
+                          `(bvchop ,size ,else-branch) state)))
                 ;; todo: if it simplifies to something other than t/nil, use that here?
-                (b* ((- (cw "Did not resolve test.)~%"))
-                     ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
+                (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
-                     ((mv erp then-part state)
+                     ((mv erp then-branch state)
                       (prune-term-aux then-branch
-                                  (union-equal (fixup-assumptions test-conjuncts) assumptions)
-                                  (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                  rule-alist interpreted-function-alist monitored-rules call-stp state))
+                                      (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                      (union-equal (get-equalities test-conjuncts) equality-assumptions)
+                                      rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                      (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
-                     ((mv erp else-part state)
+                     ((mv erp else-branch state)
                       (prune-term-aux else-branch
-                                  (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
-                                  (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                  rule-alist interpreted-function-alist monitored-rules call-stp state))
+                                      (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                      (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
+                                      rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
-                     (new-term (if (equal then-part else-part)
-                                   `(bvchop ,size ,then-part) ; special case when both branches are the same
-                                 `(bvif ,size ,test ,then-part ,else-part))))
+                     (new-term (if (equal then-branch else-branch)
+                                   `(bvchop ,size ,then-branch) ; special case when both branches are the same
+                                 `(bvif ,size ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (t ;; Anything other than if/myif/bvif/boolif:
           ;; TODO: Handle bv-array-if?
@@ -395,15 +389,15 @@
  ;; RESULT-TERMS are equal to their corresponding TERMS, given the ASSUMPTIONS
  ;; and EQUALITY-ASSUMPTIONS.
  (defund prune-terms-aux (terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-   (declare (xargs :stobjs (state)
-                   :guard (and (pseudo-term-listp terms)
+   (declare (xargs :guard (and (pseudo-term-listp terms)
                                (pseudo-term-listp assumptions)
                                (pseudo-term-listp equality-assumptions)
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-rules)
                                (or (booleanp call-stp)
-                                   (natp call-stp)))))
+                                   (natp call-stp)))
+                   :stobjs state))
    (if (endp terms)
        (mv (erp-nil) nil state)
      (b* (((mv erp pruned-first state) (prune-term-aux (first terms) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
@@ -415,14 +409,12 @@
 (make-flag prune-term-aux)
 
 (defthm-flag-prune-term-aux
-  (defthm len-of-mv-nth-1-of-prune-terms-aux-skip
-    :flag prune-term-aux
-    :skip t)
   (defthm len-of-mv-nth-1-of-prune-terms-aux
     (implies (not (mv-nth 0 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)))
              (equal (len (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)))
                     (len terms)))
     :flag prune-terms-aux)
+  :skip-others t
   :hints (("Goal" :in-theory (enable prune-terms-aux))))
 
 (defthm-flag-prune-term-aux
@@ -452,10 +444,12 @@
 
 (verify-guards prune-term-aux)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp result-term state).
-;todo: rename to prune-term
 ;; TODO: Print some stats about the pruning process?
-(defund prune-term-new (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+;; TODO: Allow rewriting to be suppressed (just call STP)?
+(defund prune-term (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp assumptions)
                               (rule-alistp rule-alist)
@@ -478,10 +472,10 @@
        ((when erp) (mv erp nil state))
        (- (and (equal term new-term)
                (cw "No change!~%")))
-       (- (cw "Done pruning.)~%")))
+       (- (cw "Done pruning term.)~%")))
     (mv (erp-nil) new-term state)))
 
-(defthm pseudo-termp-of-mv-nth-1-of-prune-term-new
+(defthm pseudo-termp-of-mv-nth-1-of-prune-term
   (implies (and (pseudo-termp term)
                 (pseudo-term-listp assumptions)
                 (rule-alistp rule-alist)
@@ -489,70 +483,15 @@
                 (symbol-listp monitored-rules)
                 (or (booleanp call-stp)
                     (natp call-stp)))
-           (pseudo-termp (mv-nth 1 (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
-  :hints (("Goal" :in-theory (enable prune-term-new))))
+           (pseudo-termp (mv-nth 1 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
+  :hints (("Goal" :in-theory (enable prune-term))))
 
-
-;; ;; Returns (mv erp result-term state).
-;; ;; TODO: Deprecate?  Why does this not translate the term too?
-;; ;todo: rename
-;; (defun prune-term-with-rule-alist (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-;;   (declare (xargs :stobjs (state)
-;;                   :guard (and (pseudo-termp term)
-;;                               ;;(pseudo-term-listp assumptions)
-;;                               (rule-alistp rule-alist)
-;;                               (interpreted-function-alistp interpreted-function-alist)
-;;                               (symbol-listp monitored-rules)
-;;                               (or (booleanp call-stp)
-;;                                   (natp call-stp)))
-;;                   :mode :program ; because we call translate-terms
-;;                   ))
-;;   (prune-term-new term
-;;                   (translate-terms assumptions 'prune-term-with-rule-alist (w state))
-;;                   rule-alist
-;;                   interpreted-function-alist
-;;                   monitored-rules
-;;                   call-stp
-;;                   state))
-
-;; ;; Returns (mv result-term state)
-;; ;; This one takes rules = a list of rule names
-;; (defun prune-term (term assumptions rules monitored-rules call-stp state)
-;;   (declare (xargs :stobjs (state)
-;;                   :guard (and (pseudo-termp term)
-;;                               ;;(pseudo-term-listp assumptions)
-;;                               (symbol-listp rules)
-;;                               (symbol-listp monitored-rules)
-;;                               (or (booleanp call-stp)
-;;                                   (natp call-stp)))
-;;                   :mode :program))
-;;   (prune-term-with-rule-alist term assumptions (make-rule-alist rules (w state)) monitored-rules call-stp state))
-
-;; ;; Prune unreachable branches using full contexts.  Warning: can explode the
-;; ;; term size. Returns (mv erp result-dag state).
-;; ;; TODO: This internally translates assumptions - deprecate?
-;; (defun prune-dag-with-rule-alist (dag-lst assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-;;   (declare (xargs :guard (and (rule-alistp rule-alist)
-;;                               (interpreted-function-alistp interpreted-function-alist)
-;;                               (symbol-listp monitored-rules)
-;;                               (or (booleanp call-stp)
-;;                                   (natp call-stp)))
-;;                   :mode :program
-;;                   :stobjs state))
-;;   (b* ((term (dag-to-term dag-lst)) ; can explode!
-;;        ((mv erp term state)
-;;         (prune-term-with-rule-alist term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
-;;        ((when erp) (mv erp nil state))
-;;        ((mv erp dag) (dagify-term term)) ; todo: try make-term-into-dag-simple here
-;;        ((when erp) (mv erp nil state)))
-;;     (mv (erp-nil) dag state)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
-;; term size. Returns (mv erp result-dag state).
-(defund prune-dag-with-rule-alist-new (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-  (declare (xargs :guard (and (or (pseudo-dagp dag)
-                                  ;; (QUOTEP dag) ; possible?
-                                  )
+;; term size. Returns (mv erp dag-or-quotep state).
+(defund prune-dag-precisely-with-rule-alist (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+  (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -563,36 +502,34 @@
   (if (not (dag-fns-include-any dag '(if myif boolif bvif)))
       ;; No IFs, so no point in pruning:
       (mv (erp-nil) dag state)
-    (b* (;; TODO: Consider first doing a simplification as a DAG, using only approximate contexts.
+    (b* ( ;; TODO: Consider first doing a simplification as a DAG, using only approximate contexts.
          (term (dag-to-term dag)) ; can explode!
          ((mv erp term state)
-          (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
+          (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
          ((when erp) (mv erp nil state))
          ((mv erp dag) (make-term-into-dag-simple term))
          ((when erp) (mv erp nil state)))
       (mv (erp-nil) dag state))))
 
-;; ;; Prune unreachable branches using full contexts.  Warning: can explode the
-;; ;; term size. Returns (mv erp result-dag state).
-;; ;todo: deprecate?
-;; (defun prune-dag (dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
-;;   (declare (xargs :stobjs (state)
-;;                   :guard (and (symbol-listp rules)
-;;                               (symbol-listp interpreted-fns)
-;;                               (symbol-listp monitored-rules)
-;;                               (or (booleanp call-stp)
-;;                                   (natp call-stp)))
-;;                   :mode :program))
-;;   (b* (((mv erp rule-alist) (make-rule-alist rules (w state)))
-;;        ((when erp) (mv erp nil state)))
-;;     (prune-dag-with-rule-alist dag-lst assumptions rule-alist
-;;                                (make-interpreted-function-alist interpreted-fns (w state))
-;;                                monitored-rules call-stp state)))
+(defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely-with-rule-alist
+  (implies (and (not (mv-nth 0 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)));; no error
+                (not (myquotep (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
+                (pseudo-dagp dag)
+                (pseudo-term-listp assumptions)
+                (rule-alistp rule-alist)
+                (interpreted-function-alistp interpreted-function-alist)
+                (symbol-listp monitored-rules)
+                (or (booleanp call-stp)
+                    (natp call-stp)))
+           (pseudo-dagp (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
+  :hints (("Goal" :in-theory (enable prune-dag-precisely-with-rule-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
-;; term size. Returns (mv erp result-dag state).
+;; term size. Returns (mv erp dag-or-quotep state).
 ;; TODO: This makes the rule-alist each time it is called.
-(defund prune-dag-new (dag assumptions rules interpreted-fns monitored-rules call-stp state)
+(defund prune-dag-precisely (dag assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules)
@@ -604,50 +541,33 @@
                   :stobjs state))
   (b* (((mv erp rule-alist) (make-rule-alist rules (w state))) ; todo: avoid this if the dag-fns-include-any check will fail
        ((when erp) (mv erp nil state)))
-    (prune-dag-with-rule-alist-new dag assumptions rule-alist
-                                   (make-interpreted-function-alist interpreted-fns (w state))
-                                   monitored-rules call-stp state)))
+    (prune-dag-precisely-with-rule-alist dag assumptions rule-alist
+                                         (make-interpreted-function-alist interpreted-fns (w state))
+                                         monitored-rules call-stp state)))
 
-;; ;;Returns (mv erp result-dag state).  Pruning turns the DAG into a term and
-;; ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
-;; ;deprecate?
-;; (defun maybe-prune-dag (prune-branches ; t, nil, or a limit on the size
-;;                         dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
-;;   (declare (xargs :stobjs (state)
-;;                   :guard (and (symbol-listp rules)
-;;                               (symbol-listp interpreted-fns)
-;;                               (symbol-listp monitored-rules)
-;;                               (or (booleanp call-stp)
-;;                                   (natp call-stp)))
-;;                   :mode :program))
-;;   (let ((prune-branchesp (if (eq t prune-branches)
-;;                              t
-;;                            (if (eq nil prune-branches)
-;;                                nil
-;;                              (if (not (natp prune-branches))
-;;                                  (er hard 'maybe-prune-dag "Bad prune-branches option (~x0)." prune-branches)
-;;                                ;; todo: allow this to fail fast:
-;;                                (dag-or-quotep-size-less-thanp dag-lst
-;;                                                               prune-branches))))))
-;;     (if prune-branchesp
-;;         (b* ((size (dag-or-quotep-size-fast dag-lst)) ;todo: also perhaps done above
-;;              (- (cw "(Pruning branches in DAG (~x0 nodes, ~x1 unique)~%" size (len dag-lst)))
-;;              ;; (- (progn$ (cw "(DAG:~%")
-;;              ;;            (print-list dag-lst)
-;;              ;;            (cw ")~%")))
-;;              (- (progn$ (cw "(Assumptions: ~X01)~%" assumptions nil)))
-;;              ((mv erp result-dag state)
-;;               (prune-dag dag-lst assumptions rules interpreted-fns monitored-rules call-stp state))
-;;              ((when erp) (mv erp nil state))
-;;              (- (cw "Done pruning branches in DAG)~%")))
-;;           (mv nil result-dag state))
-;;       (mv nil dag-lst state))))
+(local (in-theory (disable mv-nth myquotep)))
+
+(defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely
+  (implies (and (not (mv-nth 0 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))) ;; no error
+                (not (myquotep (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))))
+                (pseudo-dagp dag)
+                (pseudo-term-listp assumptions)
+                (symbol-listp rules)
+                (symbol-listp interpreted-fns)
+                (symbol-listp monitored-rules)
+                (or (booleanp call-stp)
+                    (natp call-stp))
+                (ilks-plist-worldp (w state)))
+           (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))))
+  :hints (("Goal" :in-theory (enable prune-dag-precisely))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Returns (mv erp result-dag state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
 ;; TODO: This can make the rule-alist each time it is called.
-(defund maybe-prune-dag-new (prune-branches ; t, nil, or a limit on the size
-                             dag assumptions rules interpreted-fns monitored-rules call-stp state)
+(defund maybe-prune-dag-precisely (prune-branches ; t, nil, or a limit on the size
+                                   dag assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
@@ -674,10 +594,24 @@
              ;;            (cw ")~%")))
              (- (progn$ (cw "(Assumptions: ~X01)~%" assumptions nil)))
              ((mv erp result-dag state)
-              (prune-dag-new dag assumptions rules interpreted-fns monitored-rules call-stp state))
+              (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))
              ((when erp) (mv erp nil state))
-             (- (cw "Done pruning branches in DAG)~%")))
+             (- (cw "Done pruning DAG.)~%")))
           (mv nil result-dag state))
       (prog2$ (and (natp prune-branches)
                    (cw "Note: Not pruning DAG because its size is over the limit of ~x0.~%" prune-branches))
               (mv nil dag state)))))
+
+(defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp state))) ;; no error
+                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp state))))
+                (pseudo-dagp dag)
+                (pseudo-term-listp assumptions)
+                (symbol-listp rules)
+                (symbol-listp interpreted-fns)
+                (symbol-listp monitored-rules)
+                (or (booleanp call-stp)
+                    (natp call-stp))
+                (ilks-plist-worldp (w state)))
+           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp state))))
+  :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))

@@ -194,6 +194,11 @@
                   (booleanp (unquote x))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
 
+(defthmd consp-of-cdr-when-axe-disjunctionp-lemma
+  (implies (and (axe-disjunctionp d)
+                (equal (car d) 'quote))
+           (consp (cdr d)))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp possibly-negated-nodenumsp))))
 
 ;;TODO: Add 'axe' to some of these names:
 
@@ -281,6 +286,13 @@
                                      axe-disjunctionp
                                      negate-axe-conjunction
                                      possibly-negated-nodenump))))
+
+;; Since it's an axe-disjunction
+(defthm consp-of-negate-axe-conjunction
+  (implies (axe-conjunctionp conj)
+           (consp (negate-axe-conjunction conj)))
+  :hints (("Goal" :use (:instance axe-disjunctionp)
+           :in-theory (disable axe-disjunctionp))))
 
 (defund bounded-axe-conjunctionp (item dag-len)
   (declare (xargs :guard (and (axe-conjunctionp item)
@@ -965,60 +977,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns an axe-disjunctionp that is boolean-equivalent to the disjunction of NODENUMS-OR-QUOTEPS.
-;; todo: use this instead of handle-constant-disjuncts?
-(defund get-axe-disjunction-from-dag-items (nodenums-or-quoteps dag-array-name dag-array dag-len)
-  (declare (xargs :guard (and (true-listp nodenums-or-quoteps)
-                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (bounded-darg-listp nodenums-or-quoteps dag-len))
+;move
+(defthmd dargp-less-than-of-cadr-of-car-when-bounded-possibly-negated-nodenumsp
+  (implies (bounded-possibly-negated-nodenumsp items dag-len)
+           (equal (dargp-less-than (car (cdr (car items))) dag-len)
+                  (consp (car items))))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump))))
+
+;; Returns an axe-disjunction that is boolean-equivalent to the disjunction of the ITEMS.
+(defund get-axe-disjunction-from-dag-items (items dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-possibly-negated-nodenumsp items dag-len))
                   :verify-guards nil ;done below
                   ))
-  (if (endp nodenums-or-quoteps)
+  (if (endp items)
       (false-disjunction) ;; the disjunction of no things is false
-    (let ((nodenum-or-quotep (first nodenums-or-quoteps)))
-      (if (consp nodenum-or-quotep)
-          ;; it's a quotep:
-          (if (unquote nodenum-or-quotep)
-              (true-disjunction) ;; "true or something" is true
-            ;;skip the nil: "false or x" is equivalent to x
-            (get-axe-disjunction-from-dag-items (rest nodenums-or-quoteps) dag-array-name dag-array dag-len))
-        ;; it's a nodenum:
-        (let ((disjunction (get-axe-disjunction-from-dag-item nodenum-or-quotep dag-array-name dag-array dag-len)))
-          (if (and (quotep disjunction)
-                   (unquote disjunction))
-              (true-disjunction)
-            (combine-axe-disjunctions disjunction ;might be 'nil
-                                      (get-axe-disjunction-from-dag-items (rest nodenums-or-quoteps)
-                                                                          dag-array-name dag-array dag-len))))))))
+    (let* ((item (first items))
+           (disjunction (if (consp item) ; item is (not <nodenum>):
+                            (negate-axe-conjunction (get-axe-conjunction-from-dag-item (farg1 item) dag-array-name dag-array dag-len))
+                          ;; item is a nodenum:
+                          (get-axe-disjunction-from-dag-item item dag-array-name dag-array dag-len))))
+      (if (and (quotep disjunction)
+               (unquote disjunction))
+          (true-disjunction)                  ; true or x = true
+        (combine-axe-disjunctions disjunction ; might be 'nil
+                                  (get-axe-disjunction-from-dag-items (rest items)
+                                                                      dag-array-name dag-array dag-len))))))
 
 (defthm axe-disjunctionp-of-get-axe-disjunction-from-dag-items
-  (implies (and (bounded-darg-listp nodenum-or-quoteps dag-len)
+  (implies (and (bounded-possibly-negated-nodenumsp items dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (axe-disjunctionp (get-axe-disjunction-from-dag-items nodenum-or-quoteps dag-array-name dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable get-axe-disjunction-from-dag-items))))
+           (axe-disjunctionp (get-axe-disjunction-from-dag-items items dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable get-axe-disjunction-from-dag-items
+                                     dargp-less-than-of-cadr-of-car-when-bounded-possibly-negated-nodenumsp))))
 
+;; Since an axe-disjunction is always a cons
 (defthm consp-of-get-axe-disjunction-from-dag-items
-  (implies (and (bounded-darg-listp nodenum-or-quoteps dag-len)
+  (implies (and (bounded-possibly-negated-nodenumsp items dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (consp (get-axe-disjunction-from-dag-items nodenum-or-quoteps dag-array-name dag-array dag-len)))
+           (consp (get-axe-disjunction-from-dag-items items dag-array-name dag-array dag-len)))
   :hints (("Goal" :use (:instance axe-disjunctionp-of-get-axe-disjunction-from-dag-items)
            :in-theory (disable axe-disjunctionp-of-get-axe-disjunction-from-dag-items))))
 
-(defthmd consp-of-cdr-when-axe-disjunctionp-lemma
-  (implies (and (axe-disjunctionp d)
-                (equal (car d) 'quote))
-           (consp (cdr d)))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp POSSIBLY-NEGATED-NODENUMSP))))
-
 (verify-guards get-axe-disjunction-from-dag-items
-  :hints (("Goal" :in-theory (enable consp-of-cdr-when-axe-disjunctionp-lemma))))
+  :hints (("Goal" :in-theory (enable consp-of-cdr-when-axe-disjunctionp-lemma
+                                     dargp-less-than-of-cadr-of-car-when-bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump))))
 
 (defthm bounded-axe-disjunctionp-of-get-axe-disjunction-from-dag-items
-  (implies (and (bounded-darg-listp disjuncts dag-len)
+  (implies (and (bounded-possibly-negated-nodenumsp items dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (bounded-axe-disjunctionp (get-axe-disjunction-from-dag-items disjuncts dag-array-name dag-array dag-len)
+           (bounded-axe-disjunctionp (get-axe-disjunction-from-dag-items items dag-array-name dag-array dag-len)
                                      dag-len))
-  :hints (("Goal" :in-theory (e/d (get-axe-disjunction-from-dag-items)
+  :hints (("Goal" :in-theory (e/d (get-axe-disjunction-from-dag-items
+                                   dargp-less-than-of-cadr-of-car-when-bounded-possibly-negated-nodenumsp)
                                   (disjunction-is-falsep
                                    disjunction-is-truep
                                    dargp-less-than)))))
