@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-4/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v8-5/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-8-4                            ;;; g   ; current release notes
+    note-8-5                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -277,7 +277,7 @@ alt=\"FTP icon\" border=0></a>
 <a href=\"~sg\"><img src=\"HTML/note02.gif\" alt=\"paper note icon\" border=0></a>
 </td>
 <td>
-<a href=\"~sg\">Differences from Version 8.3</a><a href=\"~sq\"> <img
+<a href=\"~sg\">Differences from Version 8.4</a><a href=\"~sq\"> <img
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
 <td align=center valign=MIDDLE>
@@ -355,24 +355,8 @@ well as counterexample generation.
 <hr>
 
 <br>
-We gratefully acknowledge substantial support from the following.  (These are
-included in a much more complete <a href=\"~sk\">acknowledgments page</a>.)
-<ul>
-<li>DARPA</li>
-<li>National Science Foundation
-  <ul>
-  <li>This material is based upon work supported by the National Science
-      Foundation under Grant Nos. CCF-1526760, CNS-1525472, CCF-1153558,
-      EIA-0303609, CNS-0429591, ISS-0417413, CCF-0945316, and CNS-0910913.</li>
-  <li>Any opinions, findings and conclusions or recomendations expressed in
-      this material are those of the authors and do not necessarily reflect the
-      views of the National Science Foundation.</li>
-  </ul></li>
-<li>Advanced Micro Devices, Inc.</li>
-<li>ForrestHunt, Inc.</li>
-<li>Rockwell Collins, Inc.</li>
-<li>Sun Microsystems, Inc.</li>
-</ul>
+We gratefully acknowledge substantial support from the sources listed in
+the <a href=\"~sk\">ACL2 acknowledgments page</a>.
 
 <hr>
 
@@ -404,12 +388,12 @@ href=\"~ss\">DOCUMENTATION</a></CODE>.
 
 <ul>
 
-<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.4)</li>
+<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.5)</li>
 
 <li><a href=\"~s3\">ACL2+Books Manual</a> (for
 <a href=\"HTML/installation/obtaining-and-installing.html#GitHub\">GitHub</a> distributions)</li>
 
-<li><a href=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</a> (Version 8.4)</li>
+<li><a href=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</a> (Version 8.5)</li>
 
 </ul>
 
@@ -450,7 +434,7 @@ developed by many users over the years.  These books contain definitions and
 theorems that you might find useful in your models and proofs.  In addition,
 some books contain ACL2 tools built by users to help with reasoning,
 programming, interfaces, debugging, and testing; see <a
-href='http://www.cs.utexas.edu/users/moore/acl2/v8-4/combined-manual/index.html'>
+href='http://www.cs.utexas.edu/users/moore/acl2/v8-5/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
 the pages on <a
 href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>

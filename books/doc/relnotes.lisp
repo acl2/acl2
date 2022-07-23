@@ -728,6 +728,12 @@ to be a keeper command.")
      versions.  Perhaps this will be fixed by someone in the ACL2 community;
      see GitHub Issue #1332.")
 
+   (xdoc::p
+    "The quicklisp libraries have been updated to recent versions (as of
+     7/7/2022; previous versions were as of 2020).  This fixes library version
+     errors with Mac OS X on M1 machines and with recent versions of
+     Ubuntu (e.g., 22.04).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Random Library @('[books]/kestrel/random/')")

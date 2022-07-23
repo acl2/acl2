@@ -1,0 +1,8 @@
+(|OBJECT-arr-P|)
+(|BOOLEANP-OF-OBJECT-arr-P|)
+(|OBJECT-arr-INIT|)
+(|OBJECT-arr-P-OF-OBJECT-arr-INIT|)
+(|OBJECT-perm-P|)
+(|BOOLEANP-OF-OBJECT-perm-P|)
+(|OBJECT-perm-INIT|)
+(|OBJECT-perm-P-OF-OBJECT-perm-INIT|)
