@@ -1645,10 +1645,15 @@
      which determines a value for the object being initialized,
      as formalized by this ACL2 function.")
    (xdoc::p
-    "We start by handling only the case of a single initializer value,
-     which is just turned into the underlying value,
-     provided that it has the right type.
-     We will extend this to other initializer values."))
+    "If the initialization value consists of a single value,
+     we require the value's type to match the given type,
+     and we just return the underlying value.
+     In our current C subset,
+     it is always the case that the value is scalar, never aggregate.
+     So, if the check on the type succeeds,
+     it means that the given type is scalar too.")
+   (xdoc::p
+    "We will handle other initialization values soon."))
   (init-value-case
    ival
    :single (if (type-equiv (type-of-value ival.get) type)
