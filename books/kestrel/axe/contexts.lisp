@@ -76,6 +76,21 @@
       ;; TODO: Consider requiring no dups, consider requiring no obvious contradictions (x and (not x) both present):
       (possibly-negated-nodenumsp context)))
 
+(defthm contextp-of-cons-of-nil
+  (implies (natp nodenum)
+           (contextp (list nodenum)))
+  :hints (("Goal" :in-theory (enable contextp))))
+
+(defthm contextp-of-cons-of-cons
+  (implies (natp nodenum)
+           (contextp (list (list 'not nodenum))))
+  :hints (("Goal" :in-theory (enable contextp))))
+
+(defthm contextp-singleton
+  (equal (contextp (list item))
+         (possibly-negated-nodenump item))
+  :hints (("Goal" :in-theory (enable contextp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bounded-contextp (context bound)
@@ -298,9 +313,7 @@
           (eq (false-context) context2))
       (false-context)
     ;;both are lists of nodenums and negated nodenums:
-    (conjoin-contexts-aux context1 context2)
-    ;;    (union-equal context1 context2)
-    ))
+    (conjoin-contexts-aux context1 context2)))
 
 (defthm contextp-of-conjoin-contexts
   (implies (and (contextp context1)
@@ -356,30 +369,6 @@
 ;;                 (contextp context))
 ;;            (contextp (negate-and-conjoin-to-context nodenum-to-negate context dag-array-name dag-array)))
 ;;   :hints (("Goal" :in-theory (enable negate-and-conjoin-to-context))))
-
-
-
-;; ;combine the functions using a flag argument before proving this?
-;; (thm
-;;  (and (conjunction-or-disjunctionp (get-conjunction nodenum-or-quotep dag-array-name dag-array))
-;;       (conjunction-or-disjunctionp (get-disjunction nodenum-or-quotep2 dag-array-name2 dag-array2)))
-;;  :hints (("Goal" :induct t)))
-
-
-(defthm contextp-of-cons-of-nil
-  (implies (natp nodenum)
-           (contextp (list nodenum)))
-  :hints (("Goal" :in-theory (enable contextp))))
-
-(defthm contextp-of-cons-of-cons
-  (implies (natp nodenum)
-           (contextp (list (list 'not nodenum))))
-  :hints (("Goal" :in-theory (enable contextp))))
-
-(defthm contextp-singleton
-  (equal (contextp (list item))
-         (possibly-negated-nodenump item))
-  :hints (("Goal" :in-theory (enable contextp))))
 
 (defthm contextp-of-combine-axe-conjunctions-aux
   (implies (and (not (equal 'quote (car (combine-axe-conjunctions-aux x y))))
@@ -645,7 +634,7 @@
                                      cadr-becomes-nth-of-1 car-becomes-nth-of-0))))
 
 ;;todo: pull out lemmas proved by induction (about all-> ?)
-(defun disjoin-contexts-of-parents (parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far)
+(defund disjoin-contexts-of-parents (parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far)
   (declare (xargs :guard (and (natp nodenum)
                               (all-natp parent-nodenums)
                               (true-listp parent-nodenums)
@@ -673,6 +662,8 @@
            (contextp (disjoin-contexts-of-parents parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far)))
   :hints (("Goal" :in-theory (e/d (disjoin-contexts-of-parents) (pseudo-dag-arrayp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;move the aset out of this function?
 ;;todo: pull out lemmas proved by induction
 (defund set-context-of-nodenum (nodenum parent-nodenums dag-array-name dag-array dag-len context-array)
@@ -692,10 +683,10 @@
            (context (disjoin-contexts-of-parents (rest parent-nodenums) nodenum dag-array-name dag-array dag-len context-array context-via-first-parent)))
       (aset1 'context-array context-array nodenum context))))
 
-(defthmd <-of-car-when-all->
-  (implies (and (all-> parent-nodenums nodenum)
-                (consp parent-nodenums))
-           (< nodenum (car parent-nodenums))))
+;; (defthmd <-of-car-when-all->
+;;   (implies (and (all-> parent-nodenums nodenum)
+;;                 (consp parent-nodenums))
+;;            (< nodenum (car parent-nodenums))))
 
 (defthm context-arrayp-of-set-context-of-nodenum
   (implies (and (context-arrayp 'context-array context-array len)
@@ -726,14 +717,12 @@
                   (alen1 'context-array context-array)))
   :hints (("Goal" :in-theory (enable set-context-of-nodenum))))
 
-;;;
-;;; make-full-context-array-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Go top-down from NODENUM, filling in the context array.  Assumes we started at the top node and so will cover all ways a node can be reached from the top.
 ;; Returns the context-array, named 'context-array, which associates nodenums with their contextps.
 ;; It might seem faster to just take the dag as a list and cdr down it, but we need the dag to be an array so we can quickly dig conjuncts out of dag nodes.
-(defun make-full-context-array-aux (nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
+(defund make-full-context-array-aux (nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
   (declare (xargs :guard (and (integerp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
@@ -753,13 +742,15 @@
 (defthm array1p-of-make-full-context-array-aux
   (implies (and (array1p 'context-array context-array)
                 (< nodenum (alen1 'context-array context-array)))
-           (array1p 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array))))
+           (array1p 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array)))
+  :hints (("Goal" :in-theory (enable make-full-context-array-aux))))
 
 (defthm alen1-of-make-full-context-array-aux
   (implies (and (array1p 'context-array context-array)
                 (< nodenum (alen1 'context-array context-array)))
            (equal (alen1 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array))
-                  (alen1 'context-array context-array))))
+                  (alen1 'context-array context-array)))
+    :hints (("Goal" :in-theory (enable make-full-context-array-aux))))
 
 (defthm context-arrayp-of-make-full-context-array-aux
   (implies (and (integerp nodenum)
@@ -805,6 +796,8 @@
            (context-arrayp 'context-array (make-full-context-array-with-parents dag-array-name dag-array dag-len dag-parent-array) dag-len))
   :hints (("Goal" :in-theory (enable make-full-context-array-with-parents))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;new version! deprecate the old way of doing things (already done?)?
 ;returns 'context-array, which associates nodenums with their contextps ("full" means all nodes have a valid entry in this array)
 ;smashes 'dag-parent-array
@@ -826,15 +819,27 @@
            (context-arrayp 'context-array (make-full-context-array dag-array-name dag-array dag-len) dag-len))
   :hints (("Goal" :in-theory (enable make-full-context-array))))
 
-;; Can help with debugging
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an array named 'context-array which associates nodenums with their
+;; contexts ("full" means all nodes have a valid entry in this array).  Can
+;; help with debugging.
 (defund make-full-context-array-for-dag (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) 2147483646))
                   :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))))
   (let* ((dag-array-name 'temp-dag-array)
          (dag-array (make-into-array 'temp-dag-array dag)))
-  (make-full-context-array dag-array-name dag-array (+ 1 (caar dag)))))
+    (make-full-context-array dag-array-name dag-array (+ 1 (top-nodenum-of-dag dag)))))
 
+;; TODO: Improve to match better
+(defthm context-arrayp-of-make-full-context-array-for-dag
+  (implies (and (pseudo-dagp dag)
+                (<= (len dag) 2147483646))
+           (context-arrayp 'context-array (make-full-context-array-for-dag dag) (+ 1 (top-nodenum-of-dag dag))))
+  :hints (("Goal" :in-theory (enable make-full-context-array-for-dag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns t, nil, or :unknown, depending on whether the context tells us anything about nodenum (fixme what if nodenum is the nodenum of a booland, a not, etc.?)
 ;fixme what if the context is (false-context)?
@@ -872,7 +877,11 @@
 ;returns a function call expression whose args are nodenums/quoteps, or nil to
 ;indicate that this item should be skipped.  The function call will often be
 ;NOT.
-(defun context-item-to-maybe-expr (context-item dag-array)
+(defund context-item-to-maybe-expr (context-item dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (bounded-possibly-negated-nodenump context-item dag-len)))
+           (ignore dag-len) ; only use in the guard
+           )
   (if (atom context-item)
       ;; it's a nodenum, so look it up:
       (let ((expr (aref1 'dag-array dag-array context-item)))
@@ -884,16 +893,19 @@
     context-item))
 
 ;;Turns a context into exprs that are function calls applied to nodenums /
-;;quoteps.  Items in the context that map to variables or constants are dropped.
-(defun context-to-exprs (context ; a possibly-negated-nodenumsp
-                         dag-array)
+;;quoteps.  Items in the context that map to variables or constants are dropped (todo: so rename this).
+(defund context-to-exprs (context ; a possibly-negated-nodenumsp
+                         dag-array
+                         dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (bounded-possibly-negated-nodenumsp context dag-len))))
   (if (endp context)
       nil
     (let* ((context-item (first context))
-           (maybe-expr (context-item-to-maybe-expr context-item dag-array)))
+           (maybe-expr (context-item-to-maybe-expr context-item dag-array dag-len)))
       (if maybe-expr
-          (cons maybe-expr (context-to-exprs (rest context) dag-array))
-        (context-to-exprs (rest context) dag-array)))))
+          (cons maybe-expr (context-to-exprs (rest context) dag-array dag-len))
+        (context-to-exprs (rest context) dag-array dag-len)))))
 
 ;; ;; Returns nil but prints.
 ;; (defun print-contexts (dag-lst)

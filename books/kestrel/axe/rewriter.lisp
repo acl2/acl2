@@ -1148,7 +1148,7 @@
                        monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state))
             (b* ((node-replacement-alist-for-this-node (node-replacement-alist-for-context full-context dag-array known-booleans print)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  ;; This is an attempt to include the context information in the assumptions used for free var matching:
-                 (context-exprs-for-this-node (context-to-exprs full-context dag-array)) ;fffixme this gets redone over and over for context-for-all-nodes?
+                 (context-exprs-for-this-node (context-to-exprs full-context dag-array dag-len)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  (refined-assumption-alist-for-this-node (extend-refined-assumption-alist context-exprs-for-this-node refined-assumption-alist))
                  ;;(context-assumptions (get-extra-assumptions full-context predicate-nodenum-term-alist))
                  ;;(dummy (and context-assumptions (cw "Using ~x0 context assumption(s) for node ~x1.~%" (len context-assumptions) nodenum)))
