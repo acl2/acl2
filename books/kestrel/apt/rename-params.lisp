@@ -101,9 +101,9 @@
                            :use (:instance (:termination-theorem ,fn) :extra-bindings-ok ,@(alist-to-doublets renaming))))
                         declares)
                      declares))
-         (declares ; cheap way to deal with previous ignorable decls
+         (declares ; cheap way to deal with previous ignorable decls (TODO: Instead, put in the right ignore declares)
           (cons `(declare (ignorable ,@formals))
-                (remove-declares 'ignorable declares)))
+                (remove-declares 'ignorable (remove-declares 'ignore declares))))
          (new-body (rename-vars-in-term renaming body renaming))
          (new-body (rename-fns new-body function-renaming))
          (num-values (num-return-values-of-fn fn wrld))
