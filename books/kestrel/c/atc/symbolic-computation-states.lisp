@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "computation-states")
+(include-book "../language/computation-states")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
