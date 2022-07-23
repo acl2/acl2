@@ -1635,6 +1635,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-value-to-value ((type typep) (ival init-valuep))
+  :returns (val value-resultp)
+  :short "Turn an initialization value into a value of a given type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Executing an initializer yields an initialization value,
+     which determines a value for the object being initialized,
+     as formalized by this ACL2 function.")
+   (xdoc::p
+    "We start by handling only the case of a single initializer value,
+     which is just turned into the underlying value,
+     provided that it has the right type.
+     We will extend this to other initializer values."))
+  (init-value-case
+   ival
+   :single (if (type-equiv (type-of-value ival.get) type)
+               ival.get
+             (error (list :init-value-mismatch
+                          :required (type-fix type)
+                          :supplied (init-value-fix ival))))
+   :list (error :todo))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines exec
   :short "Mutually recursive functions for execution."
   :flag-local nil
@@ -2056,7 +2082,7 @@
                        (fenv fun-envp)
                        (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result value-resultp)
+    :returns (mv (result init-value-resultp)
                  (new-compst compustatep))
     :parents (atc-execution exec)
     :short "Execute an initializer."
@@ -2077,8 +2103,9 @@
             ((when (errorp val)) (mv val compst))
             ((when (not val))
              (mv (error (list :void-initializer (initer-fix initer)))
-                 compst)))
-         (mv val compst))
+                 compst))
+            (ival (init-value-single val)))
+         (mv ival compst))
        :list
        (mv (error (list :array-initializer-not-supported (initer-fix initer)))
            (compustate-fix compst))))
@@ -2118,15 +2145,12 @@
        item
        :declon
        (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
-            ((mv init compst) (exec-initer init compst fenv (1- limit)))
-            ((when (errorp init)) (mv init compst))
+            ((mv ival compst) (exec-initer init compst fenv (1- limit)))
+            ((when (errorp ival)) (mv ival compst))
             (type (tyname-to-type tyname))
-            ((unless (equal type (type-of-value init)))
-             (mv (error (list :decl-var-mistype var
-                              :required type
-                              :supplied (type-of-value init)))
-                 compst))
-            (new-compst (create-var var init compst))
+            (val (init-value-to-value type ival))
+            ((when (errorp val)) (mv val compst))
+            (new-compst (create-var var val compst))
             ((when (errorp new-compst)) (mv new-compst compst)))
          (mv nil new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
