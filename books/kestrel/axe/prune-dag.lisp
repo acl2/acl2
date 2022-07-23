@@ -16,9 +16,13 @@
 
 ;(include-book "prove-with-stp")
 
-;; (defund prune-dag-with-contexts (dag assumptions rules interpreted-fns monitored-rules state)
+;; (defund prune-dag-with-contexts (dag
+;;                                  ;; assumptions
+;;                                  rules interpreted-fns monitored-rules
+;;                                  call-stp
+;;                                  state)
 ;;   (declare (xargs :guard (and (pseudo-dagp dag)
-;;                               (pseudo-term-listp assumptions)
+;;                               ;; (pseudo-term-listp assumptions)
 ;;                               (symbol-listp rules)
 ;;                               (symbol-listp interpreted-fns)
 ;;                               (symbol-listp monitored-rules)
@@ -26,3 +30,4 @@
 ;;                                   (natp call-stp))
 ;;                               (ilks-plist-worldp (w state)))
 ;;                   :stobjs state))
+;;   (let ((context-array (make-full-context-array-for-dag dag)))

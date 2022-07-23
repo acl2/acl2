@@ -64,6 +64,15 @@
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
 
+;move
+(defthmd bounded-possibly-negated-nodenumsp-when-nat-listp
+  (implies (nat-listp items)
+           (equal (bounded-possibly-negated-nodenumsp items bound)
+                  (all-< items bound)))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump
+                                     all-<))))
+
 (defthm <-of--1-and-maxelem
   (implies (and (all-natp x)
                 (consp x))
@@ -2322,7 +2331,7 @@
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: the cutting could look at shared nodes (don't cut above the shared node frontier)?
-(defund prove-disjunction-with-stp (disjuncts ;nodenums in the DAG (todo: add support for negated nodenums)
+(defund prove-disjunction-with-stp (disjuncts
                                     dag-array ;must be named 'dag-array (todo: generalize?)
                                     dag-len
                                     dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
@@ -2332,9 +2341,7 @@
                                     counterexamplep ;perhaps this should always be t?
                                     state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              ;;(bounded-darg-listp disjuncts dag-len)
-                              (nat-listp disjuncts)
-                              (all-< disjuncts dag-len)
+                              (bounded-possibly-negated-nodenumsp disjuncts dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
@@ -2352,7 +2359,7 @@
   (b* (((when (not (consp disjuncts)))
         (cw "(No disjuncts, so no point in calling STP.)~%")
         (mv *invalid* state))
-       ;; Handle constant disjuncts and dig out individual disjuncts (this only preserves IFF):
+       ;; Dig out individual disjuncts (this only preserves IFF):
        (disjunction (get-axe-disjunction-from-dag-items disjuncts 'dag-array dag-array dag-len))
        ((when (disjunction-is-truep disjunction))
         (prog2$ (cw "(Note: Disjunction is obviously true.) Proved it.)~%")
@@ -2443,7 +2450,8 @@
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (stringp base-filename))))
+                              (stringp base-filename))
+                  :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp-when-nat-listp)))))
   (b* ( ;; Check for bad input (todo: drop this check?):
        ((when (not (pseudo-term-listp clause)))
         (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
@@ -2559,8 +2567,9 @@
   `(translate-and-prove-term-with-stp ,term ',counterexample ,max-conflicts ',print
                                       "USER-QUERY"
                                       state))
+
 ;;
-;; Testing Utilities
+;; Testing / Assert Utilities
 ;;
 
 ;; Ensures that STP can prove the TERM.

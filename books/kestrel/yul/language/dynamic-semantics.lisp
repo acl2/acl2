@@ -598,7 +598,7 @@
    (xdoc::p
     "This is used at the beginning of the execution of a function call.
      The local state is set to consist of
-     the input and output variables of the fucntion,
+     the input and output variables of the function,
      which are passed as the @('in-vars') and @('out-vars') parameters.
      The input variables are initialized with the input values,
      passed as the @('in-vals') parameters;
