@@ -21,9 +21,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-function-environments
-  :parents (atc-dynamic-semantics)
-  :short "C function environments for ATC."
+(defxdoc+ function-environments
+  :parents (language)
+  :short "C function environments."
   :long
   (xdoc::topstring
    (xdoc::p

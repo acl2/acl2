@@ -18,9 +18,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-computation-states
-  :parents (atc-dynamic-semantics)
-  :short "A model of C computation states for ATC."
+(defxdoc+ computation-states
+  :parents (language)
+  :short "A model of C computation states."
   :long
   (xdoc::topstring
    (xdoc::p
