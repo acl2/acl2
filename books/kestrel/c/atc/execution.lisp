@@ -1653,7 +1653,13 @@
      So, if the check on the type succeeds,
      it means that the given type is scalar too.")
    (xdoc::p
-    "We will handle other initialization values soon."))
+    "If the initialization value consists of a list of values,
+     we require the given type to be an array type
+     with either no size or size equal to the length of the list of values.
+     We require all the values to have the array element type.
+     We require that there is at least one value,
+     since arrays cannot be empty in C.
+     We create an array value from the values and return it."))
   (init-value-case
    ival
    :single (if (type-equiv (type-of-value ival.get) type)
@@ -1661,7 +1667,25 @@
              (error (list :init-value-mismatch
                           :required (type-fix type)
                           :supplied (init-value-fix ival))))
-   :list (error :todo))
+   :list (b* (((unless (type-case type :array))
+               (error (list :init-value-type-mismatch
+                            :required :array-type
+                            :supplied (init-value-fix ival))))
+              (elemtype (type-array->of type))
+              ((unless (equal (type-list-of-value-list ival.get)
+                              (repeat (len ival.get) elemtype)))
+               (error (list :init-value-element-type-mismatch
+                            :required elemtype
+                            :supplied ival.get)))
+              (size (type-array->size type))
+              ((when (and size
+                          (not (equal size (len ival.get)))))
+               (error (list :init-value-size-mismatch
+                            :required size
+                            :supplied (len ival.get))))
+              ((unless (consp ival.get))
+               (error (list :init-value-empty-mismatch))))
+           (make-value-array :elemtype elemtype :elements ival.get)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
