@@ -2089,9 +2089,13 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only accept single expressions.
-       The single expression must be a function call or a pure expression.
-       If it is a function call, it must return a value (not @('nil'))."))
+      "If the initializer consists of a single expression,
+       the expression must be a function call or a pure expression.
+       If it is a function call, it must return a value (not @('nil')).")
+     (xdoc::p
+      "If the initializer consists of a list of expressions,
+       the expressions must be pure,
+       to avoid ambiguities with the order of evaluation."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (initer-case
        initer
@@ -2107,8 +2111,10 @@
             (ival (init-value-single val)))
          (mv ival compst))
        :list
-       (mv (error (list :array-initializer-not-supported (initer-fix initer)))
-           (compustate-fix compst))))
+       (b* ((vals (exec-expr-pure-list initer.get compst))
+            ((when (errorp vals)) (mv vals (compustate-fix compst)))
+            (ival (init-value-list vals)))
+         (mv ival (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
