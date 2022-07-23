@@ -11,12 +11,12 @@
 
 (in-package "C")
 
-(include-book "function-environments")
 (include-book "integer-operations")
 (include-book "values")
 
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/computation-states")
+(include-book "../language/function-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
