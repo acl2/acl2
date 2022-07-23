@@ -14,6 +14,7 @@
 (include-book "function-environments")
 (include-book "computation-states")
 (include-book "integer-operations")
+(include-book "values")
 
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/structure-operations")

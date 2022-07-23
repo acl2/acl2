@@ -11,7 +11,8 @@
 
 (in-package "C")
 
-(include-book "values")
+(include-book "../language/array-operations")
+(include-book "../language/structure-operations")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
