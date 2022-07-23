@@ -3661,7 +3661,7 @@
             (er-soft+ ctx t irr
                       "A loop body must end with ~
                        a recursive call on every path, ~
-                       but in the fucntion ~x0 it ends with ~x1 instead."
+                       but in the function ~x0 it ends with ~x1 instead."
                       fn term)
           (acl2::value (list nil (type-void) (pseudo-term-quote 1)))))
        ((mv okp terms) (fty-check-list-call term))
@@ -3673,7 +3673,7 @@
               (er-soft+ ctx t irr
                         "A loop body must end with ~
                          a recursive call on every path, ~
-                         but in the fucntion ~x0 ~
+                         but in the function ~x0 ~
                          it ends with ~x1 instead."
                         fn term)))
           (cond
@@ -3825,7 +3825,7 @@
         (er-soft+ ctx t irr
                   "A loop body must end with ~
                    a recursive call on every path, ~
-                   but in the fucntion ~x0 it ends with ~x1 instead."
+                   but in the function ~x0 it ends with ~x1 instead."
                   fn term))
        ((unless (equal affect eaffect))
         (er-soft+ ctx t irr

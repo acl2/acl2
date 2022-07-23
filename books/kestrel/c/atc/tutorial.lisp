@@ -1154,7 +1154,7 @@
 
   (xdoc::p
    "The term @('(init-fun-env <constant>)') constructs the "
-   (xdoc::seetopic "atc-function-environments" "C function environment")
+   (xdoc::seetopic "function-environments" "C function environment")
    " of the generated translation unit.")
 
   (xdoc::p

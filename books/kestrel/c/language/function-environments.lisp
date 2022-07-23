@@ -11,8 +11,8 @@
 
 (in-package "C")
 
-(include-book "../language/abstract-syntax-operations")
-(include-book "../language/errors")
+(include-book "abstract-syntax-operations")
+(include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
@@ -21,9 +21,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-function-environments
-  :parents (atc-dynamic-semantics)
-  :short "C function environments for ATC."
+(defxdoc+ function-environments
+  :parents (language)
+  :short "C function environments."
   :long
   (xdoc::topstring
    (xdoc::p

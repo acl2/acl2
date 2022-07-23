@@ -313,12 +313,13 @@
        (- (and print (cw "(Pruning branches without rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
        ((mv erp term state)
-        (prune-term-new term assumptions
-                        (empty-rule-alist) ;no rules (but see :prune-with-rules below)
-                        nil                ;no interpreted-fns (todo)
-                        nil                ;no point in monitoring anything
-                        call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
-                        state))
+        (prune-term term
+                    assumptions
+                    (empty-rule-alist) ;no rules (but see :prune-with-rules below)
+                    nil                ;no interpreted-fns (todo)
+                    nil                ;no point in monitoring anything
+                    call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                    state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
        ((mv erp new-dag) (make-term-into-dag-basic term nil))
        ((when erp) (mv *error* nil state))
@@ -357,10 +358,10 @@
        (- (and print (cw "(Pruning branches with rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
        ((mv erp term state)
-        (prune-term-new term assumptions rule-alist interpreted-function-alist
-                        monitor
-                        call-stp-when-pruning
-                        state))
+        (prune-term term assumptions rule-alist interpreted-function-alist
+                    monitor
+                    call-stp-when-pruning
+                    state))
        ((when erp) (mv *error* nil state))
        ((mv erp new-dag) (make-term-into-dag-basic term nil))
        ((when erp) (mv *error* nil state))
