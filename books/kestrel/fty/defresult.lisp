@@ -306,7 +306,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption resulterr-option
+(defoption resulterr-option
   resulterr
   :parents (defresult)
   :short "Fixtype of optional error results."
