@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-renamevar ((old identifierp) (new identifierp) (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two variables are related by variable renaming."
   :long
   (xdoc::topstring
@@ -68,7 +68,7 @@
 (define var-list-renamevar ((old identifier-listp)
                             (new identifier-listp)
                             (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two lists of variables are related by variable renaming."
   :long
   (xdoc::topstring
@@ -88,7 +88,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define path-renamevar ((old pathp) (new pathp) (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two paths are related by variable renaming."
   :long
   (xdoc::topstring
@@ -111,7 +111,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define path-list-renamevar ((old path-listp) (new path-listp) (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two lists of paths are
           related by variable renaming."
   :long
@@ -131,7 +131,7 @@
   ///
 
   (defruled same-len-when-path-list-renamevar
-    (implies (not (resulterrp (path-list-renamevar old new ren)))
+    (implies (not (reserrp (path-list-renamevar old new ren)))
              (equal (len new) (len old)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,7 +143,7 @@
   (define expression-renamevar ((old expressionp)
                                 (new expressionp)
                                 (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two expressions are
             related by variable renaming."
     :long
@@ -176,7 +176,7 @@
   (define expression-list-renamevar ((old expression-listp)
                                      (new expression-listp)
                                      (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two lists of expressions are
             related by variable renaming."
     :long
@@ -197,7 +197,7 @@
   (define funcall-renamevar ((old funcallp)
                              (new funcallp)
                              (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two function calls are
             related by variable renaming."
     :long
@@ -223,7 +223,7 @@
 (define expression-option-renamevar ((old expression-optionp)
                                      (new expression-optionp)
                                      (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two optional expressions are
           related by variable renaming."
   :long
@@ -253,7 +253,7 @@
 (define funcall-option-renamevar ((old funcall-optionp)
                                   (new funcall-optionp)
                                   (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two optional function calls are
           related by variable renaming."
   :long
@@ -309,7 +309,7 @@
 
   (defrule subsetp-equal-of-add-var-to-var-renaming
     (b* ((ren1 (add-var-to-var-renaming old new ren)))
-      (implies (not (resulterrp ren1))
+      (implies (not (reserrp ren1))
                (subsetp-equal (renaming->list ren)
                               (renaming->list ren1)))))
 
@@ -317,7 +317,7 @@
     (implies (and (identifierp old-var)
                   (identifierp new-var))
              (b* ((ren1 (add-var-to-var-renaming old-var new-var ren)))
-               (implies (not (resulterrp ren1))
+               (implies (not (reserrp ren1))
                         (and (equal (renaming-old ren1)
                                     (set::insert old-var (renaming-old ren)))
                              (equal (renaming-new ren1)
@@ -328,15 +328,15 @@
 
   (defruled var-renamevar-when-add-var-to-var-renaming
     (b* ((ren1 (add-var-to-var-renaming old new ren)))
-      (implies (not (resulterrp ren1))
-               (not (resulterrp (var-renamevar old new ren1)))))
+      (implies (not (reserrp ren1))
+               (not (reserrp (var-renamevar old new ren1)))))
     :enable var-renamevar)
 
   (defruled var-renamevar-of-add-var-to-var-renaming-when-var-renamevar
     (b* ((ren1 (add-var-to-var-renaming old1 new1 ren)))
-      (implies (and (not (resulterrp ren1))
-                    (not (resulterrp (var-renamevar old new ren))))
-               (not (resulterrp (var-renamevar old new ren1)))))
+      (implies (and (not (reserrp ren1))
+                    (not (reserrp (var-renamevar old new ren))))
+               (not (reserrp (var-renamevar old new ren1)))))
     :enable var-renamevar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -358,26 +358,26 @@
   ///
 
   (defruled same-len-when-add-vars-to-var-renaming
-    (implies (not (resulterrp (add-vars-to-var-renaming old new ren)))
+    (implies (not (reserrp (add-vars-to-var-renaming old new ren)))
              (equal (len new) (len old))))
 
   (defrule subsetp-equal-of-add-vars-to-var-renaming
     (b* ((ren1 (add-vars-to-var-renaming old new ren)))
-      (implies (not (resulterrp ren1))
+      (implies (not (reserrp ren1))
                (subsetp-equal (renaming->list ren)
                               (renaming->list ren1)))))
 
   (defruled var-renamevar-of-add-vars-to-var-renaming-when-var-renamevar
     (b* ((ren1 (add-vars-to-var-renaming old1 new1 ren)))
-      (implies (and (not (resulterrp ren1))
-                    (not (resulterrp (var-renamevar old new ren))))
-               (not (resulterrp (var-renamevar old new ren1)))))
+      (implies (and (not (reserrp ren1))
+                    (not (reserrp (var-renamevar old new ren))))
+               (not (reserrp (var-renamevar old new ren1)))))
     :enable var-renamevar-of-add-var-to-var-renaming-when-var-renamevar)
 
   (defruled var-list-renamevar-when-add-vars-to-var-renaming
     (b* ((ren1 (add-vars-to-var-renaming old new ren)))
-      (implies (not (resulterrp ren1))
-               (not (resulterrp (var-list-renamevar old new ren1)))))
+      (implies (not (reserrp ren1))
+               (not (reserrp (var-list-renamevar old new ren1)))))
     :enable (var-list-renamevar
              var-renamevar-of-add-vars-to-var-renaming-when-var-renamevar
              var-renamevar-when-add-var-to-var-renaming)))
@@ -559,7 +559,7 @@
   (define block-renamevar ((old blockp)
                            (new blockp)
                            (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two blocks are
             related by variable renaming."
     :long
@@ -577,7 +577,7 @@
   (define block-option-renamevar ((old block-optionp)
                                   (new block-optionp)
                                   (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two optional blocks are
             related by variable renaming."
     (block-option-case
@@ -600,7 +600,7 @@
   (define swcase-renamevar ((old swcasep)
                             (new swcasep)
                             (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two switch cases are
             related by variable renaming."
     :long
@@ -620,7 +620,7 @@
   (define swcase-list-renamevar ((old swcase-listp)
                                  (new swcase-listp)
                                  (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two lists of switch cases are
             related by variable renaming."
     :long
@@ -639,7 +639,7 @@
     :measure (swcase-list-count old))
 
   (define fundef-renamevar ((old fundefp) (new fundefp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two function definitions are
             related by variable renaming."
     :long
@@ -672,59 +672,59 @@
   (local (include-book "std/basic/inductions" :dir :system))
 
   (defruled same-len-when-expression-list-renamevar
-    (implies (not (resulterrp (expression-list-renamevar old new ren)))
+    (implies (not (reserrp (expression-list-renamevar old new ren)))
              (equal (len old) (len new)))
     :enable expression-list-renamevar
     :induct (acl2::cdr-cdr-induct old new))
 
   (defruled expression-list-renamevar-of-append-error
     (implies (equal (len old) (len new))
-             (equal (resulterrp (expression-list-renamevar (append old old1)
+             (equal (reserrp (expression-list-renamevar (append old old1)
                                                            (append new new1)
                                                            ren))
-                    (or (resulterrp (expression-list-renamevar old new ren))
-                        (resulterrp (expression-list-renamevar old1 new1 ren)))))
+                    (or (reserrp (expression-list-renamevar old new ren))
+                        (reserrp (expression-list-renamevar old1 new1 ren)))))
     :enable expression-list-renamevar
     :induct (acl2::cdr-cdr-induct old new))
 
   (defruled expression-list-renamevar-of-rev-error
     (implies (equal (len old) (len new))
-             (equal (resulterrp (expression-list-renamevar (rev old)
+             (equal (reserrp (expression-list-renamevar (rev old)
                                                            (rev new)
                                                            ren))
-                    (resulterrp (expression-list-renamevar old new ren))))
+                    (reserrp (expression-list-renamevar old new ren))))
     :induct (acl2::cdr-cdr-induct old new)
     :enable (rev
              expression-list-renamevar
              expression-list-renamevar-of-append-error))
 
   (defruled expression-list-renamevar-of-rev-not-error
-    (implies (not (resulterrp (expression-list-renamevar old new ren)))
-             (not (resulterrp (expression-list-renamevar (rev old)
+    (implies (not (reserrp (expression-list-renamevar old new ren)))
+             (not (reserrp (expression-list-renamevar (rev old)
                                                          (rev new)
                                                          ren))))
     :enable (expression-list-renamevar-of-rev-error
              same-len-when-expression-list-renamevar))
 
   (defruled same-statement-kind-when-statement-renamevar
-    (implies (not (resulterrp (statement-renamevar old new ren)))
+    (implies (not (reserrp (statement-renamevar old new ren)))
              (equal (statement-kind new)
                     (statement-kind old)))
     :expand (statement-renamevar old new ren))
 
   (defruled block-option-renamevar-of-nil-1-forward
-    (implies (not (resulterrp (block-option-renamevar nil block ren)))
+    (implies (not (reserrp (block-option-renamevar nil block ren)))
              (equal block nil))
     :rule-classes ((:forward-chaining
                     :trigger-terms
-                    ((resulterrp (block-option-renamevar nil block ren))))))
+                    ((reserrp (block-option-renamevar nil block ren))))))
 
   (defruled block-option-renamevar-of-nil-2-forward
-    (implies (not (resulterrp (block-option-renamevar block nil ren)))
+    (implies (not (reserrp (block-option-renamevar block nil ren)))
              (equal block nil))
     :rule-classes ((:forward-chaining
                     :trigger-terms
-                    ((resulterrp (block-option-renamevar block nil ren))))))
+                    ((reserrp (block-option-renamevar block nil ren))))))
 
   (defruled block-option-renamevar-when-nonnil
     (implies (and x y)
@@ -734,28 +734,28 @@
     :enable block-option-some->val)
 
   (defruled same-swcase->value-when-swcase-renamevar
-    (implies (not (resulterrp (swcase-renamevar old new ren)))
+    (implies (not (reserrp (swcase-renamevar old new ren)))
              (equal (swcase->value new)
                     (swcase->value old)))
     :expand (swcase-renamevar old new ren))
 
-  (defruled resulterrp-of-swcase-renamevar
-    (equal (resulterrp (swcase-renamevar x y ren))
+  (defruled reserrp-of-swcase-renamevar
+    (equal (reserrp (swcase-renamevar x y ren))
            (or (not (equal (swcase->value x)
                            (swcase->value y)))
-               (resulterrp (block-renamevar (swcase->body x)
+               (reserrp (block-renamevar (swcase->body x)
                                             (swcase->body y)
                                             ren)))))
 
   (defruled same-swcase-list->value-list-when-swcase-list-renamevar
-    (implies (not (resulterrp (swcase-list-renamevar old new ren)))
+    (implies (not (reserrp (swcase-list-renamevar old new ren)))
              (equal (swcase-list->value-list new)
                     (swcase-list->value-list old)))
     :induct (acl2::cdr-cdr-induct old new)
     :enable same-swcase->value-when-swcase-renamevar)
 
   (defruled same-fundef->name-when-fundef-renamevar
-    (implies (not (resulterrp (fundef-renamevar old new)))
+    (implies (not (reserrp (fundef-renamevar old new)))
              (equal (fundef->name new)
                     (fundef->name old)))
     :expand (fundef-renamevar old new))
@@ -764,14 +764,14 @@
 
     (defthm subsetp-equal-of-statement-renamevar
       (b* ((ren1 (statement-renamevar old new ren)))
-        (implies (not (resulterrp ren1))
+        (implies (not (reserrp ren1))
                  (subsetp-equal (renaming->list ren)
                                 (renaming->list ren1))))
       :flag statement-renamevar)
 
     (defthm subsetp-equal-of-statement-list-renamevar
       (b* ((ren1 (statement-list-renamevar old new ren)))
-        (implies (not (resulterrp ren1))
+        (implies (not (reserrp ren1))
                  (subsetp-equal (renaming->list ren)
                                 (renaming->list ren1))))
       :flag statement-list-renamevar)
@@ -807,7 +807,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fundef-list-renamevar ((old fundef-listp) (new fundef-listp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two lists of function definitions are
           related by variable renaming."
   :long
@@ -836,8 +836,8 @@
   ///
 
   (defrule fundef-list-renamevar-of-statement-to-fundefs
-    (implies (not (resulterrp (statement-list-renamevar old new ren)))
-             (not (resulterrp
+    (implies (not (reserrp (statement-list-renamevar old new ren)))
+             (not (reserrp
                    (fundef-list-renamevar (statements-to-fundefs old)
                                           (statements-to-fundefs new)))))
     :induct (ind old new ren)
@@ -852,5 +852,5 @@
        (b* (((when (endp old)) nil)
             ((when (endp new)) nil)
             (ren (statement-renamevar (car old) (car new) ren))
-            ((when (resulterrp ren)) nil))
+            ((when (reserrp ren)) nil))
          (ind (cdr old) (cdr new) ren))))))

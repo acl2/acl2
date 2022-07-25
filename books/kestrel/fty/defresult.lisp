@@ -89,7 +89,8 @@
      "The @('defresult') macro provides support for the second approach above.
       Given a fixtype of good results,
       it introduces a fixtype of good and error results,
-      where the fixtype of error results is @(tsee resulterr),
+      where the fixtype of error results is @(tsee reserr)
+      (from the first three letters of the two words of `result error'),
       which is provided along with @('defresult').
       This macro also generates rules
       to reason about the disjunction of good and error results.
@@ -109,7 +110,7 @@
       providing a call stack trace.")
 
     (xdoc::p
-     "The fact that the same error result type, namely @(tsee resulterr),
+     "The fact that the same error result type, namely @(tsee reserr),
       is used in all the result types introduced by @('defresult')
       is crucial to supporting the kind of error propagation explained above:
       the same type of error result may be returned
@@ -126,7 +127,7 @@
       However, while the Rust type is parameterized over
       both the good and error result types,
       in @('defresult') errors always have the same type.
-      Nonetheless, @(tsee resulterr) is defined to
+      Nonetheless, @(tsee reserr) is defined to
       allow any ACL2 value to be contained in an error result,
       so the lack of parameterization over the type of errors
       does not limit expressivity."))
@@ -206,7 +207,7 @@
 
     (xdoc::p
      "The fixtype specified by @(':ok')
-      must be disjoint from @(tsee resulterr).
+      must be disjoint from @(tsee reserr).
       Currently this is not quite explicated
       as an applicability condition as in other event macros,
       but the macro will fail if the disjointness cannot be proved.
@@ -249,13 +250,13 @@
       "         (pred x))"))
 
     (xdoc::desc
-     "@('pred-when-resulterrp')"
+     "@('pred-when-reserrp')"
      (xdoc::p
       "A theorem asserting that
-       a value in the fixtype @(tsee resulterrp)
+       a value in the fixtype @(tsee reserrp)
        is also in the fixtype @('type'):")
      (xdoc::codeblock
-      "(implies (resulterrp x)"
+      "(implies (reserrp x)"
       "         (pred x))"))
 
     (xdoc::desc
@@ -263,11 +264,11 @@
      (xdoc::p
       "A theorem asserting that
        a value in the fixtype @('type')
-       that is not in the fixtype @('resulterr')
+       that is not in the fixtype @('reserr')
        is in the fixtype specified by @(':ok'):")
      (xdoc::codeblock
       "(implies (and (pred x)"
-      "              (not (resulterrp x)))"
+      "              (not (reserrp x)))"
       "         (ok x))")
      (xdoc::p
       "This theorem is disabled by default,
@@ -287,7 +288,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defprod resulterr
+(defprod reserr
   :parents (defresult)
   :short "Fixtype of error results."
   :long
@@ -302,12 +303,12 @@
      a condition that seems reasonably easy to satisfy)."))
   ((info acl2::any))
   :tag :error
-  :pred resulterrp)
+  :pred reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defoption resulterr-option
-  resulterr
+(defoption reserr-option
+  reserr
   :parents (defresult)
   :short "Fixtype of optional error results."
   :long
@@ -316,7 +317,7 @@
     "This can be used for results that
      either are errors or carry no information otherwise.
      That is, @('nil') is the (only) good result."))
-  :pred resulterr-optionp)
+  :pred reserr-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,7 +328,7 @@
  :long
  (xdoc::topstring
   (xdoc::p
-   "This macro constructs an error result of fixtype @(tsee resulterr)
+   "This macro constructs an error result of fixtype @(tsee reserr)
     with the specified information @('info'),
     accompanied by the name of the current function @('fn'),
     as a doublet @('(fn info)').
@@ -338,7 +339,7 @@
   (xdoc::p
    "This assumes that @('__function__') is bound to the function name,
     which happens automatically with @(tsee define)."))
- `(make-resulterr :info (list (list __function__ ,info))))
+ `(make-reserr :info (list (list __function__ ,info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,15 +362,15 @@
   (xdoc::p
    "This assumes that @('__function__') is bound to the current function name,
     which is automatically the case when using @(tsee define)."))
- `(b* ((stack (resulterr->info ,error)))
-    (resulterr (cons (list __function__ ,info) stack))))
+ `(b* ((stack (reserr->info ,error)))
+    (reserr (cons (list __function__ ,info) stack))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-b*-binder ok
   :parents (defresult)
   :short "@(tsee b*) binder for checking and propagating
-          error results of fixtype @(tsee resulterr)."
+          error results of fixtype @(tsee reserr)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -408,7 +409,7 @@
   ((declare (xargs :guard (acl2::destructure-guard ok args acl2::forms 1))))
   :body
   `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
-        ((when (resulterrp patbinder-ok-fresh-variable-for-result))
+        ((when (reserrp patbinder-ok-fresh-variable-for-result))
          (err-push patbinder-ok-fresh-variable-for-result))
         (,(car args) patbinder-ok-fresh-variable-for-result))
      ,acl2::rest-expr))
@@ -462,8 +463,8 @@
          (type-pred (or pred (add-suffix type "-P")))
          (type-fix (or fix (add-suffix type "-FIX")))
          (type-equiv (or equiv (add-suffix type "-EQUIV")))
-         (ok-pred-when-type-pred-and-not-resulterr
-          (acl2::packn-pos (list ok-pred '-when- type-pred '-and-not-resulterrp)
+         (ok-pred-when-type-pred-and-not-reserr
+          (acl2::packn-pos (list ok-pred '-when- type-pred '-and-not-reserrp)
                            type)))
       `(encapsulate ()
          ,@prepwork
@@ -472,12 +473,12 @@
            ,@(and short (list :short short))
            ,@(and long (list :long long))
            (:ok ,ok)
-           (:err resulterr)
+           (:err reserr)
            :pred ,type-pred
            :fix ,type-fix
            :equiv ,type-equiv)
-         (defruled ,ok-pred-when-type-pred-and-not-resulterr
+         (defruled ,ok-pred-when-type-pred-and-not-reserr
            (implies (and (,type-pred x)
-                         (not (resulterrp x)))
+                         (not (reserrp x)))
                     (,ok-pred x))
            :enable ,type-pred)))))

@@ -36,7 +36,7 @@
         (mv t nil state))
        ;; Parse the bytes read:
        (yul-or-err (parse-yul-bytes bytes)))
-    (if (resulterrp yul-or-err)
+    (if (reserrp yul-or-err)
         (mv `(:parse-error ,filename) yul-or-err state)
       (mv nil yul-or-err state))))
 
@@ -58,7 +58,7 @@
         (mv (err `(:bytes-in-file-are-not-nats ,filename)) state))
        ;; Parse the bytes read:
        (yul-or-err (parse-yul-bytes bytes)))
-    (if (resulterrp yul-or-err)
+    (if (reserrp yul-or-err)
         (mv (err `(:parse-error ,filename yul-or-err)) state)
       (mv yul-or-err state))))
 

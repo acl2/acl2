@@ -648,7 +648,7 @@
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-resulterrp))))
+               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
       (rest-input nat-listp))
   :short "Lex exactly 2 hexadecimal digits."
   :long
@@ -656,11 +656,11 @@
    (xdoc::p
     "This is used to lex an 8-bit number expressed in hex."))
   (b* (((mv tree-digit1 input-after-digit1) (lex-hex-digit input))
-       ((when (resulterrp tree-digit1))
+       ((when (reserrp tree-digit1))
         (mv tree-digit1
             (acl2::nat-list-fix input)))
        ((mv tree-digit2 input-after-digit2) (lex-hex-digit input-after-digit1))
-       ((when (resulterrp tree-digit2))
+       ((when (reserrp tree-digit2))
         (mv tree-digit2
             ;; Note, this error result does not mention the successful
             ;; first hex digit, but that is fine, because rules fail
@@ -671,7 +671,7 @@
   :hooks (:fix)
   ///
   (defret len-of-lex-repetition-2-hex-digits-<
-    (implies (not (resulterrp trees))
+    (implies (not (reserrp trees))
              (< (len rest-input)
                 (len input)))
     :rule-classes :linear))
@@ -721,7 +721,7 @@
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-resulterrp))))
+               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
       (rest-input nat-listp))
   :short "Lex exactly 4 hexadecimal digits."
   :long
@@ -729,19 +729,19 @@
    (xdoc::p
     "This is used to lex a 16-bit number expressed in hex."))
   (b* (((mv tree-digit1 input-after-digit1) (lex-hex-digit input))
-       ((when (resulterrp tree-digit1))
+       ((when (reserrp tree-digit1))
         (mv tree-digit1
             (acl2::nat-list-fix input)))
        ((mv tree-digit2 input-after-digit2) (lex-hex-digit input-after-digit1))
-       ((when (resulterrp tree-digit2))
+       ((when (reserrp tree-digit2))
         (mv tree-digit2
             (acl2::nat-list-fix input)))
        ((mv tree-digit3 input-after-digit3) (lex-hex-digit input-after-digit2))
-       ((when (resulterrp tree-digit3))
+       ((when (reserrp tree-digit3))
         (mv tree-digit3
             (acl2::nat-list-fix input)))
        ((mv tree-digit4 input-after-digit4) (lex-hex-digit input-after-digit3))
-       ((when (resulterrp tree-digit4))
+       ((when (reserrp tree-digit4))
         (mv tree-digit4
             (acl2::nat-list-fix input)))
        )
@@ -750,7 +750,7 @@
   :hooks (:fix)
   ///
   (defret len-of-lex-repetition-4-hex-digits-<
-    (implies (not (resulterrp trees))
+    (implies (not (reserrp trees))
              (< (len rest-input)
                 (len input)))
     :rule-classes :linear))
@@ -818,14 +818,14 @@
   :short "Lex rule @('whitespace = 1*whitespace-char')."
   (b* (((mv tree-1char input-after-1char)
         (lex-whitespace-char input))
-       ((when (resulterrp tree-1char))
+       ((when (reserrp tree-1char))
         (mv (err "whitespace problem")
             (acl2::nat-list-fix input)))
        ((mv trees-restchars input-after-restchars)
         (lex-repetition-*-whitespace-char input-after-1char))
        ;; Can an error even happen?  Wouldn't it just return NIL (zero trees)?
        ;; Check error just in case.
-       ((when (resulterrp trees-restchars))
+       ((when (reserrp trees-restchars))
         (mv (err "whitespace problem")
             (acl2::nat-list-fix input))))
     (mv (abnf::make-tree-nonleaf
@@ -835,7 +835,7 @@
   :hooks (:fix)
   ///
   (defret len-of-lex-whitespace-<
-    (implies (not (resulterrp tree))
+    (implies (not (reserrp tree))
              (< (len rest-input)
                 (len input)))
     :rule-classes :linear))
@@ -859,17 +859,17 @@
                ((mv tree-star+rest input-after-star+rest)
                 (b* (((mv tree-star input-after-star)
                       (abnf::parse-ichars "*" input))
-                     ((when (resulterrp tree-star))
+                     ((when (reserrp tree-star))
                       (mv (err "problem lexing \"*\"") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment-after-star
                        input-after-star))
-                     ((when (resulterrp tree-rest))
+                     ((when (reserrp tree-rest))
                       (mv (err "problem lexing rest-of-block-comment-after-star") input)))
                   ;; combine the two trees into tree-star+rest
                   (mv (list (list tree-star) (list tree-rest))
                       input-after-rest)))
-               ((unless (resulterrp tree-star+rest))
+               ((unless (reserrp tree-star+rest))
                 (mv tree-star+rest input-after-star+rest))
                ;; otherwise, try the second alternative:
                ;; ( not-star rest-of-block-comment )
@@ -877,11 +877,11 @@
                     input-after-not-star+rest)
                 (b* (((mv tree-not-star input-after-not-star)
                       (lex-not-star input))
-                     ((when (resulterrp tree-not-star))
+                     ((when (reserrp tree-not-star))
                       (mv (err "problem lexing not-star") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment input-after-not-star))
-                     ((when (resulterrp tree-rest))
+                     ((when (reserrp tree-rest))
                       (mv (err "problem lexing rest-of-block-comment") input)))
                   ;; combine the two trees into
                   ;; tree-not-star+rest
@@ -890,7 +890,7 @@
                       input-after-rest))))
             (mv tree-not-star+rest
                 input-after-not-star+rest)))
-         ((when (resulterrp trees))
+         ((when (reserrp trees))
           (mv trees (acl2::nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "rest-of-block-comment")
@@ -907,24 +907,24 @@
                ;; First alternative: "/"
                ((mv tree-slash input-after-slash)
                 (abnf::parse-ichars "/" input))
-               ((unless (resulterrp tree-slash))
+               ((unless (reserrp tree-slash))
                 (mv (list (list tree-slash)) input-after-slash))
                ;; second alternative: ( "*" rest-of-block-comment-after-star )
                ((mv tree-star+rest input-after-star+rest)
                 (b* (((mv tree-star input-after-star)
                       (abnf::parse-ichars "*" input))
-                     ((when (resulterrp tree-star))
+                     ((when (reserrp tree-star))
                       (mv (err "problem lexing \"*\"") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment-after-star
                        input-after-star))
-                     ((when (resulterrp tree-rest))
+                     ((when (reserrp tree-rest))
                       (mv (err "problem lexing rest-of-block-comment-after-star") input)))
                   ;; combine the two trees into tree-star+rest
                   (mv (list (list tree-star)
                             (list tree-rest))
                       input-after-rest)))
-               ((unless (resulterrp tree-star+rest))
+               ((unless (reserrp tree-star+rest))
                 (mv tree-star+rest input-after-star+rest))
                ;; otherwise, try the third alternative:
                ;; not-star-or-slash rest-of-block-comment
@@ -932,11 +932,11 @@
                     input-after-not-star-or-slash+rest)
                 (b* (((mv tree-not-star-or-slash input-after-not-star-or-slash)
                       (lex-not-star-or-slash input))
-                     ((when (resulterrp tree-not-star-or-slash))
+                     ((when (reserrp tree-not-star-or-slash))
                       (mv (err "problem lexing not-star-or-slash") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment input-after-not-star-or-slash))
-                     ((when (resulterrp tree-rest))
+                     ((when (reserrp tree-rest))
                       (mv (err "problem lexing rest-of-block-comment") input)))
                   ;; combine the two trees into
                   ;; tree-not-star-or-slash+rest
@@ -945,7 +945,7 @@
                       input-after-rest))))
             (mv tree-not-star-or-slash+rest
                 input-after-not-star-or-slash+rest)))
-         ((when (resulterrp trees))
+         ((when (reserrp trees))
           (mv trees (acl2::nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "rest-of-block-comment-after-star")
@@ -977,13 +977,13 @@
 
   (std::defret-mutual len-of-input-after-lex-block-comment-fns-<
     (defret len-of-input-after-rest-of-block-comment-<
-      (implies (not (resulterrp tree))
+      (implies (not (reserrp tree))
                (< (len rest-input)
                   (len input)))
       :rule-classes :linear
       :fn lex-rest-of-block-comment)
     (defret len-of-input-after-rest-of-block-comment-after-star-<
-      (implies (not (resulterrp tree))
+      (implies (not (reserrp tree))
                (< (len rest-input)
                   (len input)))
       :rule-classes :linear
@@ -1035,11 +1035,11 @@
      symbol.  Recombining these lexemes is done in the @(see parser)."))
   (b* (((mv trees rest-input)
         (lex-repetition-*-lexeme (acl2::string=>nats yul-string)))
-       ;; It is probably impossible for trees to be resulterrp, since
+       ;; It is probably impossible for trees to be reserrp, since
        ;; this call would instead just return the input that was not lexed.
        ;; However, check error trees for completeness.
-       ((when (resulterrp trees))
-        (prog2$ (cw "tokenize-yul: resulterrp should not happen here")
+       ((when (reserrp trees))
+        (prog2$ (cw "tokenize-yul: reserrp should not happen here")
                 (mv t nil)))
        ;; If the input ends in the middle of a token,
        ;; e.g., in a string without a closing quote,
@@ -1061,11 +1061,11 @@
 convert the string to bytes first."
   (b* (((mv trees rest-input)
         (lex-repetition-*-lexeme yul-bytes))
-       ;; It is probably impossible for trees to be resulterrp, since
+       ;; It is probably impossible for trees to be reserrp, since
        ;; this call would instead just return the input that was not lexed.
        ;; However, check error trees for completeness.
-       ((when (resulterrp trees))
-        (prog2$ (cw "tokenize-yul: resulterrp should not happen here")
+       ((when (reserrp trees))
+        (prog2$ (cw "tokenize-yul: reserrp should not happen here")
                 (mv t nil)))
        ;; If the input ends in the middle of a token,
        ;; e.g., in a string without a closing quote,
