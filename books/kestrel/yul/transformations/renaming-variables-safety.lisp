@@ -99,7 +99,7 @@
 
   (defrule varset-old-of-add-var-to-var-renaming
     (b* ((ren1 (add-var-to-var-renaming old new ren)))
-      (implies (not (resulterrp ren1))
+      (implies (not (reserrp ren1))
                (equal (varset-old ren1)
                       (set::insert (identifier-fix old)
                                    (varset-old ren)))))
@@ -109,7 +109,7 @@
 
   (defrule varset-old-of-add-vars-to-var-renaming
     (b* ((ren1 (add-vars-to-var-renaming old new ren)))
-      (implies (and (not (resulterrp ren1))
+      (implies (and (not (reserrp ren1))
                     (identifier-listp old))
                (equal (varset-old ren1)
                       (set::list-insert old (varset-old ren)))))
@@ -118,7 +118,7 @@
 
   (defrule varset-new-of-add-var-to-var-renaming
     (b* ((ren1 (add-var-to-var-renaming old new ren)))
-      (implies (not (resulterrp ren1))
+      (implies (not (reserrp ren1))
                (equal (varset-new ren1)
                       (set::insert (identifier-fix new)
                                    (varset-new ren)))))
@@ -128,7 +128,7 @@
 
   (defrule varset-new-of-add-vars-to-var-renaming
     (b* ((ren1 (add-vars-to-var-renaming old new ren)))
-      (implies (and (not (resulterrp ren1))
+      (implies (and (not (reserrp ren1))
                     (identifier-listp new))
                (equal (varset-new ren1)
                       (set::list-insert new (varset-new ren)))))
@@ -140,7 +140,7 @@
 (defruled check-var-when-var-renamevar
   :short "If a variable is in scope for the old code,
           its renamed counterpart is in scope for the new code."
-  (implies (and (not (resulterrp (var-renamevar old new ren)))
+  (implies (and (not (reserrp (var-renamevar old new ren)))
                 (check-var old (varset-old ren)))
            (check-var new (varset-new ren)))
   :enable (var-renamevar
@@ -159,21 +159,21 @@
           the safety of the old one implies the safety of the new one."
 
   (defruled check-safe-path-when-path-renamevar
-    (implies (not (resulterrp (path-renamevar old new ren)))
+    (implies (not (reserrp (path-renamevar old new ren)))
              (b* ((ok-old (check-safe-path old (varset-old ren)))
                   (ok-new (check-safe-path new (varset-new ren))))
-               (implies (not (resulterrp ok-old))
-                        (not (resulterrp ok-new)))))
+               (implies (not (reserrp ok-old))
+                        (not (reserrp ok-new)))))
     :enable (path-renamevar
              check-safe-path
              check-var-when-var-renamevar))
 
   (defruled check-safe-path-list-when-path-list-renamevar
-    (implies (not (resulterrp (path-list-renamevar old new ren)))
+    (implies (not (reserrp (path-list-renamevar old new ren)))
              (b* ((ok-old (check-safe-path-list old (varset-old ren)))
                   (ok-new (check-safe-path-list new (varset-new ren))))
-               (implies (not (resulterrp ok-old))
-                        (not (resulterrp ok-new)))))
+               (implies (not (reserrp ok-old))
+                        (not (reserrp ok-new)))))
     :enable (path-list-renamevar
              check-safe-path-list
              check-safe-path-when-path-renamevar)))
@@ -185,21 +185,21 @@
           then the new variables can be added to the ones in the new scope."
 
   (defruled add-var-new-not-error-when-add-var-to-var-renaming
-    (implies (not (resulterrp (add-var-to-var-renaming old new ren)))
-             (not (resulterrp (add-var new (varset-new ren)))))
+    (implies (not (reserrp (add-var-to-var-renaming old new ren)))
+             (not (reserrp (add-var new (varset-new ren)))))
     :enable (add-var-to-var-renaming
              add-var
              varset-new
              identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
-             not-resulterrp-when-identifier-setp))
+             not-reserrp-when-identifier-setp))
 
   (defruled add-vars-new-not-error-when-add-vars-to-var-renaming
-    (implies (not (resulterrp (add-vars-to-var-renaming old new ren)))
-             (not (resulterrp (add-vars new (varset-new ren)))))
+    (implies (not (reserrp (add-vars-to-var-renaming old new ren)))
+             (not (reserrp (add-vars new (varset-new ren)))))
     :enable (add-vars-to-var-renaming
              add-vars
              add-var-to-set-insert
-             not-resulterrp-when-identifier-setp
+             not-reserrp-when-identifier-setp
              add-var-new-not-error-when-add-var-to-var-renaming)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -225,37 +225,37 @@
    (defthm-expressions-induction2-flag
 
      (defthm theorem-for-expression-induct2
-       (implies (not (resulterrp (expression-renamevar old new ren)))
+       (implies (not (reserrp (expression-renamevar old new ren)))
                 (b* ((n-old (check-safe-expression old
                                                    (varset-old ren)
                                                    funtab))
                      (n-new (check-safe-expression new
                                                    (varset-new ren)
                                                    funtab)))
-                  (implies (not (resulterrp n-old))
-                           (and (not (resulterrp n-new))
+                  (implies (not (reserrp n-old))
+                           (and (not (reserrp n-new))
                                 (equal n-new n-old)))))
        :flag expression-induct2)
 
      (defthm theorem-for-expression-list-induct2
-       (implies (not (resulterrp (expression-list-renamevar old new ren)))
+       (implies (not (reserrp (expression-list-renamevar old new ren)))
                 (b* ((n-old (check-safe-expression-list old
                                                         (varset-old ren)
                                                         funtab))
                      (n-new (check-safe-expression-list new
                                                         (varset-new ren)
                                                         funtab)))
-                  (implies (not (resulterrp n-old))
-                           (and (not (resulterrp n-new))
+                  (implies (not (reserrp n-old))
+                           (and (not (reserrp n-new))
                                 (equal n-new n-old)))))
        :flag expression-list-induct2)
 
      (defthm theorem-for-funcall-induct2
-       (implies (not (resulterrp (funcall-renamevar old new ren)))
+       (implies (not (reserrp (funcall-renamevar old new ren)))
                 (b* ((n-old (check-safe-funcall old (varset-old ren) funtab))
                      (n-new (check-safe-funcall new (varset-new ren) funtab)))
-                  (implies (not (resulterrp n-old))
-                           (and (not (resulterrp n-new))
+                  (implies (not (reserrp n-old))
+                           (and (not (reserrp n-new))
                                 (equal n-new n-old)))))
        :flag funcall-induct2)
 
@@ -269,35 +269,35 @@
                                  check-safe-path-when-path-renamevar)))))
 
   (defrule check-safe-expression-when-renamevar
-    (implies (not (resulterrp (expression-renamevar old new ren)))
+    (implies (not (reserrp (expression-renamevar old new ren)))
              (b* ((n-old (check-safe-expression old
                                                 (varset-old ren)
                                                 funtab))
                   (n-new (check-safe-expression new
                                                 (varset-new ren)
                                                 funtab)))
-               (implies (not (resulterrp n-old))
-                        (and (not (resulterrp n-new))
+               (implies (not (reserrp n-old))
+                        (and (not (reserrp n-new))
                              (equal n-new n-old))))))
 
   (defrule check-safe-expression-list-when-renamevar
-    (implies (not (resulterrp (expression-list-renamevar old new ren)))
+    (implies (not (reserrp (expression-list-renamevar old new ren)))
              (b* ((n-old (check-safe-expression-list old
                                                      (varset-old ren)
                                                      funtab))
                   (n-new (check-safe-expression-list new
                                                      (varset-new ren)
                                                      funtab)))
-               (implies (not (resulterrp n-old))
-                        (and (not (resulterrp n-new))
+               (implies (not (reserrp n-old))
+                        (and (not (reserrp n-new))
                              (equal n-new n-old))))))
 
   (defrule check-safe-funcall-when-renamevar
-    (implies (not (resulterrp (funcall-renamevar old new ren)))
+    (implies (not (reserrp (funcall-renamevar old new ren)))
              (b* ((n-old (check-safe-funcall old (varset-old ren) funtab))
                   (n-new (check-safe-funcall new (varset-new ren) funtab)))
-               (implies (not (resulterrp n-old))
-                        (and (not (resulterrp n-new))
+               (implies (not (reserrp n-old))
+                        (and (not (reserrp n-new))
                              (equal n-new n-old)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -321,7 +321,7 @@
      for lists of function definitions related by variable renaming."))
 
   (defruled same-funtype-for-fundef-when-fundef-renamevar
-    (implies (not (resulterrp (fundef-renamevar old new)))
+    (implies (not (reserrp (fundef-renamevar old new)))
              (equal (funtype-for-fundef new)
                     (funtype-for-fundef old)))
     :expand (fundef-renamevar old new)
@@ -330,8 +330,8 @@
              same-len-when-add-vars-to-var-renaming))
 
   (defruled same-funtable-for-fundefs-when-fundef-list-renamevar
-    (implies (and (not (resulterrp (fundef-list-renamevar old new)))
-                  (not (resulterrp (funtable-for-fundefs old))))
+    (implies (and (not (reserrp (fundef-list-renamevar old new)))
+                  (not (reserrp (funtable-for-fundefs old))))
              (equal (funtable-for-fundefs new)
                     (funtable-for-fundefs old)))
     :enable (fundef-list-renamevar
@@ -340,8 +340,8 @@
              same-fundef->name-when-fundef-renamevar))
 
   (defruled same-add-funtypes-when-fundef-list-renamevar
-    (implies (and (not (resulterrp (fundef-list-renamevar old new)))
-                  (not (resulterrp (add-funtypes old funtab))))
+    (implies (and (not (reserrp (fundef-list-renamevar old new)))
+                  (not (reserrp (add-funtypes old funtab))))
              (equal (add-funtypes new funtab)
                     (add-funtypes old funtab)))
     :enable (add-funtypes
@@ -487,8 +487,8 @@
      :flag-local nil))
 
   (defrulel block-lemma
-    (implies (and (not (resulterrp (statement-list-renamevar old new ren)))
-                  (not (resulterrp
+    (implies (and (not (reserrp (statement-list-renamevar old new ren)))
+                  (not (reserrp
                         (add-funtypes (statements-to-fundefs old) funtab))))
              (equal (add-funtypes (statements-to-fundefs new) funtab)
                     (add-funtypes (statements-to-fundefs old) funtab)))
@@ -497,10 +497,10 @@
           (new (statements-to-fundefs new))))
 
   (defrulel fun-inputs-lemma
-    (implies (not (resulterrp (add-vars-to-var-renaming old-inputs
+    (implies (not (reserrp (add-vars-to-var-renaming old-inputs
                                                         new-inputs
                                                         '((list)))))
-             (not (resulterrp (add-vars new-inputs nil))))
+             (not (reserrp (add-vars new-inputs nil))))
     :use (:instance add-vars-new-not-error-when-add-vars-to-var-renaming
           (old old-inputs)
           (new new-inputs)
@@ -510,17 +510,17 @@
     (implies
      (and
       (identifier-listp new-inputs)
-      (not (resulterrp (add-vars-to-var-renaming old-inputs
+      (not (reserrp (add-vars-to-var-renaming old-inputs
                                                  new-inputs
                                                  '((list)))))
       (not
-       (resulterrp
+       (reserrp
         (add-vars-to-var-renaming old-outputs
                                   new-outputs
                                   (add-vars-to-var-renaming old-inputs
                                                             new-inputs
                                                             '((list)))))))
-     (not (resulterrp (add-vars new-outputs
+     (not (reserrp (add-vars new-outputs
                                 (set::list-insert new-inputs
                                                   nil)))))
     :use (:instance add-vars-new-not-error-when-add-vars-to-var-renaming
@@ -537,9 +537,9 @@
        (b* ((ren1 (statement-renamevar old new ren))
             (varsmodes-old (check-safe-statement old (varset-old ren) funtab))
             (varsmodes-new (check-safe-statement new (varset-new ren) funtab)))
-         (implies (and (not (resulterrp ren1))
-                       (not (resulterrp varsmodes-old)))
-                  (and (not (resulterrp varsmodes-new))
+         (implies (and (not (reserrp ren1))
+                       (not (reserrp varsmodes-old)))
+                  (and (not (reserrp varsmodes-new))
                        (equal (vars+modes->vars varsmodes-old)
                               (varset-old ren1))
                        (equal (vars+modes->vars varsmodes-new)
@@ -556,9 +556,9 @@
             (varsmodes-new (check-safe-statement-list new
                                                       (varset-new ren)
                                                       funtab)))
-         (implies (and (not (resulterrp ren1))
-                       (not (resulterrp varsmodes-old)))
-                  (and (not (resulterrp varsmodes-new))
+         (implies (and (not (reserrp ren1))
+                       (not (reserrp varsmodes-old)))
+                  (and (not (reserrp varsmodes-new))
                        (equal (vars+modes->vars varsmodes-old)
                               (varset-old ren1))
                        (equal (vars+modes->vars varsmodes-new)
@@ -571,9 +571,9 @@
        (b* ((ok (block-renamevar old new ren))
             (modes-old (check-safe-block old (varset-old ren) funtab))
             (modes-new (check-safe-block new (varset-new ren) funtab)))
-         (implies (and (not (resulterrp ok))
-                       (not (resulterrp modes-old)))
-                  (and (not (resulterrp modes-new))
+         (implies (and (not (reserrp ok))
+                       (not (reserrp modes-old)))
+                  (and (not (reserrp modes-new))
                        (equal modes-new modes-old))))
        :flag block-induct)
 
@@ -581,9 +581,9 @@
        (b* ((ok (block-option-renamevar old new ren))
             (modes-old (check-safe-block-option old (varset-old ren) funtab))
             (modes-new (check-safe-block-option new (varset-new ren) funtab)))
-         (implies (and (not (resulterrp ok))
-                       (not (resulterrp modes-old)))
-                  (and (not (resulterrp modes-new))
+         (implies (and (not (reserrp ok))
+                       (not (reserrp modes-old)))
+                  (and (not (reserrp modes-new))
                        (equal modes-new modes-old))))
        :flag block-option-induct)
 
@@ -591,9 +591,9 @@
        (b* ((ok (swcase-renamevar old new ren))
             (modes-old (check-safe-swcase old (varset-old ren) funtab))
             (modes-new (check-safe-swcase new (varset-new ren) funtab)))
-         (implies (and (not (resulterrp ok))
-                       (not (resulterrp modes-old)))
-                  (and (not (resulterrp modes-new))
+         (implies (and (not (reserrp ok))
+                       (not (reserrp modes-old)))
+                  (and (not (reserrp modes-new))
                        (equal modes-new modes-old))))
        :flag swcase-induct)
 
@@ -601,9 +601,9 @@
        (b* ((ok (swcase-list-renamevar old new ren))
             (modes-old (check-safe-swcase-list old (varset-old ren) funtab))
             (modes-new (check-safe-swcase-list new (varset-new ren) funtab)))
-         (implies (and (not (resulterrp ok))
-                       (not (resulterrp modes-old)))
-                  (and (not (resulterrp modes-new))
+         (implies (and (not (reserrp ok))
+                       (not (reserrp modes-old)))
+                  (and (not (reserrp modes-new))
                        (equal modes-new modes-old))))
        :flag swcase-list-induct)
 
@@ -611,9 +611,9 @@
        (b* ((ok (fundef-renamevar old new))
             (ok-old (check-safe-fundef old funtab))
             (ok-new (check-safe-fundef new funtab)))
-         (implies (and (not (resulterrp ok))
-                       (not (resulterrp ok-old)))
-                  (not (resulterrp ok-new))))
+         (implies (and (not (reserrp ok))
+                       (not (reserrp ok-old)))
+                  (not (reserrp ok-new))))
        :flag fundef-induct)
 
      :hints
@@ -654,16 +654,16 @@
         same-len-when-path-list-renamevar
         same-len-when-add-vars-to-var-renaming
         same-swcase-list->value-list-when-swcase-list-renamevar
-        not-resulterrp-when-identifier-setp
-        identifier-setp-when-identifier-set-resultp-and-not-resulterrp)))))
+        not-reserrp-when-identifier-setp
+        identifier-setp-when-identifier-set-resultp-and-not-reserrp)))))
 
   (defrule check-safe-statement-when-renamevar
     (b* ((ren1 (statement-renamevar old new ren))
          (varsmodes-old (check-safe-statement old (varset-old ren) funtab))
          (varsmodes-new (check-safe-statement new (varset-new ren) funtab)))
-      (implies (and (not (resulterrp ren1))
-                    (not (resulterrp varsmodes-old)))
-               (and (not (resulterrp varsmodes-new))
+      (implies (and (not (reserrp ren1))
+                    (not (reserrp varsmodes-old)))
+               (and (not (reserrp varsmodes-new))
                     (equal (vars+modes->vars varsmodes-old)
                            (varset-old ren1))
                     (equal (vars+modes->vars varsmodes-new)
@@ -679,9 +679,9 @@
          (varsmodes-new (check-safe-statement-list new
                                                    (varset-new ren)
                                                    funtab)))
-      (implies (and (not (resulterrp ren1))
-                    (not (resulterrp varsmodes-old)))
-               (and (not (resulterrp varsmodes-new))
+      (implies (and (not (reserrp ren1))
+                    (not (reserrp varsmodes-old)))
+               (and (not (reserrp varsmodes-new))
                     (equal (vars+modes->vars varsmodes-old)
                            (varset-old ren1))
                     (equal (vars+modes->vars varsmodes-new)
@@ -693,42 +693,42 @@
     (b* ((ok (block-renamevar old new ren))
          (modes-old (check-safe-block old (varset-old ren) funtab))
          (modes-new (check-safe-block new (varset-new ren) funtab)))
-      (implies (and (not (resulterrp ok))
-                    (not (resulterrp modes-old)))
-               (and (not (resulterrp modes-new))
+      (implies (and (not (reserrp ok))
+                    (not (reserrp modes-old)))
+               (and (not (reserrp modes-new))
                     (equal modes-new modes-old)))))
 
   (defrule check-safe-block-option-when-renamevar
     (b* ((ok (block-option-renamevar old new ren))
          (modes-old (check-safe-block-option old (varset-old ren) funtab))
          (modes-new (check-safe-block-option new (varset-new ren) funtab)))
-      (implies (and (not (resulterrp ok))
-                    (not (resulterrp modes-old)))
-               (and (not (resulterrp modes-new))
+      (implies (and (not (reserrp ok))
+                    (not (reserrp modes-old)))
+               (and (not (reserrp modes-new))
                     (equal modes-new modes-old)))))
 
   (defrule check-safe-swcase-when-renamevar
     (b* ((ok (swcase-renamevar old new ren))
          (modes-old (check-safe-swcase old (varset-old ren) funtab))
          (modes-new (check-safe-swcase new (varset-new ren) funtab)))
-      (implies (and (not (resulterrp ok))
-                    (not (resulterrp modes-old)))
-               (and (not (resulterrp modes-new))
+      (implies (and (not (reserrp ok))
+                    (not (reserrp modes-old)))
+               (and (not (reserrp modes-new))
                     (equal modes-new modes-old)))))
 
   (defrule check-swcase-list-when-renamevar
     (b* ((ok (swcase-list-renamevar old new ren))
          (modes-old (check-safe-swcase-list old (varset-old ren) funtab))
          (modes-new (check-safe-swcase-list new (varset-new ren) funtab)))
-      (implies (and (not (resulterrp ok))
-                    (not (resulterrp modes-old)))
-               (and (not (resulterrp modes-new))
+      (implies (and (not (reserrp ok))
+                    (not (reserrp modes-old)))
+               (and (not (reserrp modes-new))
                     (equal modes-new modes-old)))))
 
   (defrule check-safe-fundef-when-renamevar
     (b* ((ok (fundef-renamevar old new))
          (ok-old (check-safe-fundef old funtab))
          (ok-new (check-safe-fundef new funtab)))
-      (implies (and (not (resulterrp ok))
-                    (not (resulterrp ok-old)))
-               (not (resulterrp ok-new))))))
+      (implies (and (not (reserrp ok))
+                    (not (reserrp ok-old)))
+               (not (reserrp ok-new))))))

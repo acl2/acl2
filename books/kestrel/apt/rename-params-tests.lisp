@@ -413,3 +413,9 @@
                    (:E EQLABLEP)
                    (:E EQLABLE-LISTP))))
     :GUARD-SIMPLIFY :LIMITED)))
+
+;; A test with an ignored param (ensures the old name doesn't still appear in
+;; an IGNORE declare);
+(deftest
+  (defun foo (x y) (declare (ignore y)) x)
+  (rename-params foo ((x x2) (y y2))))

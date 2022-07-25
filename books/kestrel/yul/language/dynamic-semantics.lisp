@@ -81,10 +81,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funinfop
+(defruled not-reserrp-when-funinfop
   (implies (funinfop x)
-           (not (resulterrp x)))
-  :enable (resulterrp funinfop))
+           (not (reserrp x)))
+  :enable (reserrp funinfop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,10 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funscopep
+(defruled not-reserrp-when-funscopep
   (implies (funscopep x)
-           (not (resulterrp x)))
-  :enable resulterrp)
+           (not (reserrp x)))
+  :enable reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,7 +150,7 @@
   ///
 
   (defret error-info-wfp-of-funscope-for-fundefs
-    (implies (resulterrp funscope)
+    (implies (reserrp funscope)
              (error-info-wfp funscope))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,10 +190,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funenvp
+(defruled not-reserrp-when-funenvp
   (implies (funenvp x)
-           (not (resulterrp x)))
-  :enable (resulterrp funenvp))
+           (not (reserrp x)))
+  :enable (reserrp funenvp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,10 +219,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funinfo+funenv-p
+(defruled not-reserrp-when-funinfo+funenv-p
   (implies (funinfo+funenv-p x)
-           (not (resulterrp x)))
-  :enable (resulterrp funinfo+funenv-p))
+           (not (reserrp x)))
+  :enable (reserrp funinfo+funenv-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,13 +268,13 @@
   ///
 
   (defret error-info-wfp-of-find-fun
-    (implies (resulterrp info)
+    (implies (reserrp info)
              (error-info-wfp info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ensure-funscope-disjoint ((funscope funscopep) (funenv funenvp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Ensure that a function scope is disjoint from a function environment."
   :long
   (xdoc::topstring
@@ -293,10 +293,10 @@
   ///
 
   (defrule ensure-funscope-disjoint-of-empty-funscope-not-error
-    (not (resulterrp (ensure-funscope-disjoint nil funenv))))
+    (not (reserrp (ensure-funscope-disjoint nil funenv))))
 
   (defret error-info-wfp-of-ensure-funscope-disjoint
-    (implies (resulterrp _)
+    (implies (reserrp _)
              (error-info-wfp _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -320,7 +320,7 @@
   :prepwork
   ((local
     (in-theory
-     (enable funscopep-when-funscope-resultp-and-not-resulterrp))))
+     (enable funscopep-when-funscope-resultp-and-not-reserrp))))
   ///
 
   (defrule add-funs-of-no-fundefs
@@ -328,15 +328,15 @@
            (cons nil (funenv-fix funenv))))
 
   (defret error-info-wfp-of-add-funs
-    (implies (resulterrp new-funenv)
+    (implies (reserrp new-funenv)
              (error-info-wfp new-funenv))
     :hints
     (("Goal"
       :in-theory
       (enable
-       not-resulterrp-when-funenvp
-       funscopep-when-funscope-resultp-and-not-resulterrp
-       funenvp-when-funenv-resultp-and-not-resulterrp)))))
+       not-reserrp-when-funenvp
+       funscopep-when-funscope-resultp-and-not-reserrp
+       funenvp-when-funenv-resultp-and-not-reserrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,10 +391,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-cstatep
+(defruled not-reserrp-when-cstatep
   (implies (cstatep x)
-           (not (resulterrp x)))
-  :enable (resulterrp cstatep))
+           (not (reserrp x)))
+  :enable (reserrp cstatep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -414,9 +414,9 @@
   ///
 
   (defret error-info-wfp-of-read-var-value
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-valuep)))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-valuep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -427,8 +427,8 @@
             (("Goal"
               :in-theory
               (enable
-               valuep-when-value-resultp-and-not-resulterrp
-               value-listp-when-value-list-resultp-and-not-resulterrp))))
+               valuep-when-value-resultp-and-not-reserrp
+               value-listp-when-value-list-resultp-and-not-reserrp))))
   :short "Lift @(tsee read-var-value) to lists."
   (b* (((when (endp vars)) nil)
        ((ok val) (read-var-value (car vars) cstate))
@@ -438,18 +438,18 @@
   ///
 
   (defret len-of-read-vars-values
-    (implies (not (resulterrp vals))
+    (implies (not (reserrp vals))
              (equal (len vals)
                     (len vars))))
 
   (defret error-info-wfp-of-read-vars-values
-    (implies (resulterrp vals)
+    (implies (reserrp vals)
              (error-info-wfp vals))
     :hints (("Goal"
              :in-theory
-             (enable not-resulterrp-when-value-listp
-                     valuep-when-value-resultp-and-not-resulterrp
-                     value-listp-when-value-list-resultp-and-not-resulterrp)))))
+             (enable not-reserrp-when-value-listp
+                     valuep-when-value-resultp-and-not-reserrp
+                     value-listp-when-value-list-resultp-and-not-reserrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -473,7 +473,7 @@
   ///
 
   (defret error-info-wfp-of-write-var-value
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -503,7 +503,7 @@
   ///
 
   (defret error-info-wfp-of-write-vars-values
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -528,7 +528,7 @@
   ///
 
   (defret error-info-wfp-of-add-var-value
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -558,7 +558,7 @@
   ///
 
   (defret error-info-wfp-of-add-vars-values
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -582,7 +582,7 @@
   ///
 
   (defret error-info-wfp-of-restrict-vars
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,7 +598,7 @@
    (xdoc::p
     "This is used at the beginning of the execution of a function call.
      The local state is set to consist of
-     the input and output variables of the fucntion,
+     the input and output variables of the function,
      which are passed as the @('in-vars') and @('out-vars') parameters.
      The input variables are initialized with the input values,
      passed as the @('in-vals') parameters;
@@ -616,7 +616,7 @@
   ///
 
   (defret error-info-wfp-of-init-local
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -649,10 +649,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-eoutcomep
+(defruled not-reserrp-when-eoutcomep
   (implies (eoutcomep x)
-           (not (resulterrp x)))
-  :enable (resulterrp eoutcomep))
+           (not (reserrp x)))
+  :enable (reserrp eoutcomep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -684,10 +684,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-soutcomep
+(defruled not-reserrp-when-soutcomep
   (implies (soutcomep x)
-           (not (resulterrp x)))
-  :enable (resulterrp soutcomep))
+           (not (reserrp x)))
+  :enable (reserrp soutcomep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -712,9 +712,9 @@
   ///
 
   (defret error-info-wfp-of-path-to-var
-    (implies (resulterrp var)
+    (implies (reserrp var)
              (error-info-wfp var))
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-identifierp)))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-identifierp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,8 +726,8 @@
    (("Goal"
      :in-theory
      (enable
-      identifierp-when-identifier-resultp-and-not-resulterrp
-      identifier-listp-when-identifier-list-resultp-and-not-resulterrp))))
+      identifierp-when-identifier-resultp-and-not-reserrp
+      identifier-listp-when-identifier-list-resultp-and-not-reserrp))))
   :short "Extract variables from paths."
   :long
   (xdoc::topstring
@@ -741,20 +741,20 @@
   ///
 
   (defret len-of-paths-to-vars
-    (implies (not (resulterrp vars))
+    (implies (not (reserrp vars))
              (equal (len vars)
                     (len paths))))
 
   (defret error-info-wfp-of-paths-to-vars
-    (implies (resulterrp vars)
+    (implies (reserrp vars)
              (error-info-wfp vars))
     :hints
     (("Goal"
       :in-theory
       (enable
-       not-resulterrp-when-identifier-listp
-       identifierp-when-identifier-resultp-and-not-resulterrp
-       identifier-listp-when-identifier-list-resultp-and-not-resulterrp)))))
+       not-reserrp-when-identifier-listp
+       identifierp-when-identifier-resultp-and-not-reserrp
+       identifier-listp-when-identifier-list-resultp-and-not-reserrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -774,7 +774,7 @@
   ///
 
   (defret error-info-wfp-of-exec-path
-    (implies (resulterrp outcome)
+    (implies (reserrp outcome)
              (error-info-wfp outcome))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -794,7 +794,7 @@
   ///
 
   (defret error-info-wfp-of-exec-literal
-    (implies (resulterrp outcome)
+    (implies (reserrp outcome)
              (error-info-wfp outcome))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1270,43 +1270,43 @@
 
   (std::defret-mutual error-info-wfp-of-exec
     (defret error-info-wfp-of-exec-expression
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-expression)
     (defret error-info-wfp-of-exec-expression-list
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-expression-list)
     (defret error-info-wfp-of-exec-funcall
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-funcall)
     (defret error-info-wfp-of-exec-function
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-function)
     (defret error-info-wfp-of-exec-statement
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-statement)
     (defret error-info-wfp-of-exec-statement-list
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-statement-list)
     (defret error-info-wfp-of-exec-block
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-block)
     (defret error-info-wfp-of-exec-for-iterations
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-for-iterations)
     (defret error-info-wfp-of-exec-switch-rest
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-switch-rest)
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-soutcomep
-                                       not-resulterrp-when-eoutcomep
+    :hints (("Goal" :in-theory (enable not-reserrp-when-soutcomep
+                                       not-reserrp-when-eoutcomep
                                        exec-expression
                                        exec-expression-list
                                        exec-funcall
@@ -1352,5 +1352,5 @@
   ///
 
   (defret error-info-wfp-of-exec-top-block
-    (implies (resulterrp cstate)
+    (implies (reserrp cstate)
              (error-info-wfp cstate))))

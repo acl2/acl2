@@ -33,9 +33,9 @@
                         fty::err
                         fty::info
                         fty::ok
-                        fty::resulterr
-                        fty::resulterrp
-                        fty::resulterr-optionp
+                        fty::reserr
+                        fty::reserrp
+                        fty::reserr-optionp
                         fty::stack
                         std::define-sk
                         str::hex-digit-char

@@ -2839,11 +2839,11 @@
          (BVLT 29 w (BVPLUS 29 x y)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) (<-becomes-bvlt <-becomes-bvlt-alt)))))
 
-(DEFTHM bvuminus-IMPOSSIBLE-VALUE
-  (IMPLIES (AND (SYNTAXP (QUOTEP K))
-                (NOT (UNSIGNED-BYTE-P SIZE K))
-                (NATP SIZE))
-           (EQUAL (EQUAL K (bvuminus SIZE X)) NIL)))
+(defthm bvuminus-impossible-value
+  (implies (and (syntaxp (quotep k))
+                (not (unsigned-byte-p size k))
+                (natp size))
+           (not (equal k (bvuminus size x)))))
 
 (defthm bvplus-32-1-bvumiuns
   (equal (BVPLUS 32 1 (BVUMINUS 2 x))
@@ -3346,7 +3346,7 @@
 (defthm getbit-impossible-value
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p 1 k)))
-           (equal (equal k (getbit n x)) nil)))
+           (not (equal k (getbit n x)))))
 
 (defthm slice-tighten-when-top-bit-0
   (implies (and (equal 0 (getbit high x))
@@ -4348,14 +4348,6 @@
                   (BVCHOP size (+ x y))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
-(defthm equal-of-plus-and-plus-cancel
-  (implies (and (rationalp z)
-                (rationalp x)
-                (rationalp y)
-                (rationalp w))
-           (equal (EQUAL (+ z y X) (+ X w))
-                  (equal (+ z y) w))))
-
 (defthm bvplus-minus-15-tighten-6
   (implies (and (unsigned-byte-p 5 x) ;use bind-free
                 (bvle 5 15 x))
@@ -4525,9 +4517,8 @@
 (defthm bvplus-impossible-value
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p size k))
-                (Natp size))
-           (equal (equal k (bvplus size x y))
-                  nil)))
+                (natp size))
+           (not (equal k (bvplus size x y)))))
 
 ;just use BVUMINUS-WHEN-SMALLER or a variant of that?
 (defthm bvuminus-of-bvplus-32-20
@@ -6489,8 +6480,7 @@
   (implies (and (syntaxp (quotep k))
                 (not (equal 0 (getbit 0 k)))
                 (natp n))
-           (equal (equal k (bvmult n 2 x))
-                  nil))
+           (not (equal k (bvmult n 2 x))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
 (in-theory (disable SBVDIV)) ;move up!
@@ -14679,21 +14669,6 @@
            (equal (bitxor (- (expt 2 size)) y)
                   (getbit 0 y))))
 
-;move
-(defthm equal-of-+-and-+-cancel-3-3
-  (equal (equal (+ x y z) (+ w v z))
-         (equal (+ x y) (+ w v))))
-
-;move
-(defthm equal-of-+-and-+-cancel-2-3
-  (equal (equal (+ x z) (+ w v z))
-         (equal (fix x) (+ w v))))
-
-;move
-(defthm equal-of-+-and-+-cancel-2-4
-  (equal (equal (+ x z) (+ w v u z))
-         (equal (fix x) (+ w v u))))
-
 (defthm bvplus-of-constant-and-bvcat-of-0
   (implies (and (syntaxp (quotep k))
                 (integerp k)
@@ -15131,7 +15106,8 @@
                                    bv-array-clear
                                    bv-array-write-opener
                                    update-nth2
-                                   ) (bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
+                                   equal-of-update-nth)
+                                  (bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
                                    update-nth-becomes-update-nth2-extend-gen)))))
 
 (defthm equal-of-repeat-and-bv-array-write-hack

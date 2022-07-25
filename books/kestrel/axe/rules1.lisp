@@ -1826,8 +1826,6 @@
 ;;           (EQUAL (LEN LST) (LEN RHS)))
 ;;  :hints (("Goal" :in-theory (e/d (len) (LEN-OF-CDR-BETTER LIST::LEN-OF-CDR)))))
 
-
-
 (defthm bv-array-write-equal-rewrite
   (implies (and (natp esize)
                 (natp key)
@@ -1850,14 +1848,10 @@
                               (bv-array-clear esize len key rhs)))))
   :hints (("Goal" :cases ((equal (+ 1 KEY) (len rhs)))
            :in-theory (e/d (BV-ARRAY-CLEAR bv-array-write BV-ARRAY-READ update-nth2
-                                                  ;LIST::UPDATE-NTH-EQUAL-REWRITE ;loops with list::clear-nth?
-                                           ;;list::clear-nth
-                                                  UPDATE-NTH-WHEN-EQUAL-OF-NTH
-                                                  )
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                                   ;LIST::CLEAR-NTH-EQUAL-CLEAR-NTH-REWRITE
-                                   )))))
+                                           UPDATE-NTH-WHEN-EQUAL-OF-NTH
+                                           equal-of-update-nth)
+                           (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
 ;; (defthm bv-array-write-equal-rewrite
 ;;   (implies (and (natp esize)

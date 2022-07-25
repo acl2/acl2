@@ -131,7 +131,7 @@
          (dag dag-or-quote)
          ;; Prune the DAG:
          ((mv erp dag state)
-          (acl2::maybe-prune-dag-new prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
+          (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
                                      dag assumptions rules
                                      nil ; interpreted-fns
                                      rules-to-monitor
@@ -186,7 +186,6 @@
                              extra-rules
                              remove-rules
                              extra-assumption-rules
-
                              step-limit
                              step-increment
                              memoizep
@@ -196,7 +195,7 @@
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions
+                              ;; assumptions ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (output-indicatorp output)
@@ -216,7 +215,7 @@
                               (member print-base '(10 16)))
                   :stobjs (state)
                   :mode :program))
-  (b* ((- (cw "Lifting ~s0." target)) ;todo: print the executable name
+  (b* ((- (cw "Lifting ~s0.~%" target)) ;todo: print the executable name
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (cw "(Executable type: ~x0.)~%" executable-type))
        ;;todo: finish adding support for :entry-point!
@@ -312,7 +311,7 @@
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
        (- (if (quotep result-dag)
-              (cw "Result is ~x0.~%" result-dag)
+              (cw "Unrolled DAG is ~x0.~%" result-dag)
             (acl2::print-dag-info result-dag 'result t))))
     (mv (erp-nil) result-dag rules assumption-rules state)))
 
@@ -345,7 +344,7 @@
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions
+                              ;; assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (output-indicatorp output)

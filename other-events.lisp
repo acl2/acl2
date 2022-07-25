@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -17945,11 +17945,13 @@
            (raw-bound-vars (cadr def))
            (valid-keywords '(:strengthen))
            (ka (nthcdr 4 def)) ; def is the argument list of a defchoose call
-           (strengthen (cadr (assoc-keyword :strengthen def))))
+           (kap (keyword-value-listp ka))
+           (strengthen (and kap
+                            (cadr (assoc-keyword :strengthen ka)))))
       (er-progn
        (chk-all-but-new-name (car def) ctx 'constrained-function wrld state)
        (cond
-        ((not (and (keyword-value-listp ka)
+        ((not (and kap
                    (null (strip-keyword-list valid-keywords ka))))
          (er soft ctx
              "Defchoose forms must have the form (defchoose fn bound-vars ~

@@ -46,14 +46,15 @@
    (xdoc::p
     "A variable table is a symbol table for variables.
      The table (see @(tsee var-table)) is organized as
-     a sequence with one element for each nested block scope [C:6.2.1].
+     a sequence with one element for each nested scope [C:6.2.1].
      This @('var-table-scope') fixtype
-     contains information about such a block scope.
+     contains information about such a scope.
      The information is organized as a finite map
      from identifiers (variable names) to types.
      Using a map is adequate because
-     all the variables declared in a block must have different names
-     [C:6.2.1/2]."))
+     all the variables declared in a scope must have different names
+     [C:6.2.1/2].
+     The scope may be a file scope or a block scope [C:6.2.1/4]."))
   :key-type ident
   :val-type type
   :pred var-table-scopep)
@@ -66,19 +67,17 @@
   (xdoc::topstring
    (xdoc::p
     "This keeps track of all the variables in scope [C:6.2.1],
-     organized according to block scopes.
-     The list has one element for each nested block,
+     organized according to file and block scopes.
+     The list has one element for the file scope
+     and one element for each nested block scope,
      where the first element (the @(tsee car))
-     corresponds to the innermost block:
+     corresponds to the innermost scope:
      this order is natural, as blocks are added via @(tsee cons).
-     The list is never empty:
-     we always initialize the variable table one (empty) block.")
-   (xdoc::p
-    "Currently we do not support variables with file scope.
-     Thus, all the scopes here are block scopes.")
+     The list is never empty: we always have at least the file scope.")
    (xdoc::p
     "It is possible for two scopes in the list to have overlapping keys,
-     when a variable in an inner block hides one in an outer block
+     when a variable in an inner block scope hides
+     one in an outer block or scope in the file scope
      [C:6.2.1/4]."))
   :elt-type var-table-scope
   :true-listp t
@@ -110,7 +109,7 @@
      otherwise, we return @('nil').
      We search for the variable in the sequence of scopes in order,
      i.e. from innermost to outermost block."))
-  (b* (((unless (mbt (not (endp vartab)))) nil)
+  (b* (((unless (mbt (consp vartab))) nil)
        (varscope (var-table-scope-fix (car vartab)))
        (pair (omap::in (ident-fix var) varscope))
        ((when (consp pair)) (cdr pair))
@@ -127,7 +126,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains a single block with no variables."))
+    "This contains a single scope with no variables."))
   (list nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,7 +139,12 @@
    (xdoc::p
     "We add the empty set (of variables)
      to the front of the sequence.
-     This is used when a block is entered."))
+     This is used when a block is entered.")
+   (xdoc::p
+    "Since a variable table is never empty,
+     as enforced by its invariant,
+     any scope added to it must be a block scope,
+     because the file scope is always in the table."))
   (cons nil (var-table-fix vartab))
   :hooks (:fix))
 
@@ -149,11 +153,11 @@
 (define var-table-add-var ((var identp) (type typep) (vartab var-tablep))
   :returns (new-vartab var-table-resultp
                        :hints (("Goal" :in-theory (enable var-table-resultp))))
-  :short "Add a variable to (the innermost block of) a variable table."
+  :short "Add a variable to (the innermost scope of) a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the block already has a variable with that name, it is an error.
+    "If the scope already has a variable with that name, it is an error.
      Otherwise, we add the variable and return the variable table."))
   (b* ((var (ident-fix var))
        (type (type-fix type))
@@ -174,7 +178,7 @@
     "Function types are described in [C:6.2.5/20].
      Eventually these may be integrated into
      a broader formalized notion of C types,
-     but for now we introduce this fixtype here,
+     but for now we introduce this fixtype here separately,
      in order to use it in function tables.
      A function type consists of zero or more input types and an output type."))
   ((inputs type-list)
@@ -380,16 +384,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod funtab+tagenv
-  :short "Fixtype of pairs consisting of
-          a function table and a tag environment."
+(fty::defprod funtab+vartab+tagenv
+  :short "Fixtype of triples consisting of
+          a function table, a variable table, and a tag environment."
   ((funs fun-tablep)
+   (vars var-tablep)
    (tags tag-envp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult funtab+tagenv
-  "pairs consisting of a function table and a tag environment")
+(defresult funtab+vartab+tagenv
+  "triples consisting of
+   a function table, a variable table, and a tag environment")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1456,7 +1462,8 @@
 (define check-initer ((initer initerp)
                       (funtab fun-tablep)
                       (vartab var-tablep)
-                      (tagenv tag-envp))
+                      (tagenv tag-envp)
+                      (constp booleanp))
   :returns (type init-type-resultp)
   :short "Check an initializer."
   :long
@@ -1468,16 +1475,25 @@
    (xdoc::p
     "If the initializer is a list of expressions,
      for now we require them to be pure expressions,
-     and we return their types as a list initialization type."))
+     and we return their types as a list initialization type.")
+   (xdoc::p
+    "The parameter @('constp') passed to this ACL2 function
+     is a flag indicating whether the initializer must be constant or not."))
   (initer-case
    initer
    :single
    (b* ((type (check-expr-call-or-pure initer.get funtab vartab tagenv))
-        ((when (errorp type)) type))
+        ((when (errorp type)) type)
+        ((when (and constp
+                    (not (expr-constp initer.get))))
+         (error (list :not-constant :single initer.get))))
      (init-type-single type))
    :list
    (b* ((types (check-expr-pure-list initer.get vartab tagenv))
-        ((when (errorp types)) types))
+        ((when (errorp types)) types)
+        ((when (and constp
+                    (not (expr-list-constp initer.get))))
+         (error (list :not-constant :multi initer.get))))
      (init-type-list types)))
   :hooks (:fix))
 
@@ -1492,19 +1508,23 @@
     "This is used when comparing the type of an initializer
      with the declared type of the object.")
    (xdoc::p
-    "Fow now we require the initializer type to be a single one,
-     and to be equal to the declared type after array-to-pointer conversion.
-     Thus, for now we only support initialization of scalars:
-     if the declared type was an array type,
-     it would never be equal to
-     the array-to-pointer conversion of the initializer type,
-     which turns an array type into a pointer type.
-     Even though [C:6.7.9/11] allows scalars to be initialized with
-     singleton lists of expressions (i.e. single expressions between braces),
-     we are more strict here and require a single expression.")
+    "If the initializer type is a single one,
+     we require its type to match the declared type.
+     We perform an array-to-pointer type conversion,
+     consistently with assignments for scalars [C:6.7.9/11];
+     for structure types initialized via single expressions [C:6.7.9/13].")
    (xdoc::p
-    "We will extend this to declared array types
-     and to list initializer types."))
+    "If the initializer type is a list,
+     we require the declared type to be an array type
+     such that all the types in the initializer list
+     match the array element type.
+     If the array type has a size,
+     the length of the initializer list must match the array size.")
+   (xdoc::p
+    "Here we are a bit more restrictive than in [C:6.7.9].
+     In particular, [C:6.7.9/11] allows scalars to be initialized with
+     singleton lists of expressions (i.e. single expressions between braces);
+     but here we insist on scalars being initialized by single expressions."))
   (init-type-case
    itype
    :single (if (type-equiv type (apconvert-type itype.get))
@@ -1512,7 +1532,52 @@
              (error (list :init-type-mismatch
                           :required (type-fix type)
                           :supplied (init-type-fix itype))))
-   :list (error (list :init-type-unsupported (init-type-fix itype))))
+   :list (if (and (type-case type :array)
+                  (equal itype.get
+                         (repeat (len itype.get)
+                                 (type-array->of type)))
+                  (or (not (type-array->size type))
+                      (equal (type-array->size type)
+                             (len itype.get))))
+             :wellformed
+           (error (list :init-type-mismatch
+                        :required (type-fix type)
+                        :supplied (init-type-fix itype)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-obj-declon ((declon obj-declonp)
+                          (funtab fun-tablep)
+                          (vartab var-tablep)
+                          (tagenv tag-envp)
+                          (constp booleanp))
+  :returns (new-vartab var-table-resultp)
+  :short "Check an object declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We ensure that the type is not @('void'),
+     because the type must be complete [C:6.7/7],
+     and @('void') is incomplete [C:6.2.5/19].
+     We also ensure that the initializer type matches the declared type.
+     The @('constp') flag controls whether
+     we also require the initializer to be constant or not.
+     We return the updated variable table."))
+  (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init declon))
+       (wf (check-tyname tyname tagenv))
+       ((when (errorp wf)) (error (list :declon-error-type wf)))
+       (wf (check-ident var))
+       ((when (errorp wf)) (error (list :declon-error-var wf)))
+       (type (tyname-to-type tyname))
+       ((when (type-case type :void))
+        (error (list :declon-error-type-void (obj-declon-fix declon))))
+       (init-type (check-initer init funtab vartab tagenv constp))
+       ((when (errorp init-type))
+        (error (list :declon-error-init init-type)))
+       (wf? (init-type-matchp init-type type))
+       ((when (errorp wf?)) wf?))
+    (var-table-add-var var type vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1573,17 +1638,11 @@
      The type must not be @('void') [C:6.3.2.2].")
    (xdoc::p
     "For a block item that is a declaration,
-     we ensure that it is a variable (not a structure type) declaration.
-     We ensure that the type is not @('void'),
-     because the type must be complete [C:6.7/7],
-     and @('void') is incomplete [C:6.2.5/19].
-     We also ensure that the initializer has the same type as the variable
-     (which is more restrictive than [C:6.7.9]),
-     and we extend and return the variable table with the variable.
+     we check the (object) declaration,
+     without requiring the initializer to be constant.
      We return the singleton set with @('void'),
      because a declaration never returns a value
-     and proceeds with the next block item;
-     note that we do not return the empty set of return types.")
+     and proceeds with the next block item.")
    (xdoc::p
     "For a block item that is a statement, we check the statement.")
    (xdoc::p
@@ -1711,20 +1770,7 @@
     (block-item-case
      item
      :declon
-     (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
-          (wf (check-tyname tyname tagenv))
-          ((when (errorp wf)) (error (list :declon-error-type wf)))
-          (wf (check-ident var))
-          ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (tyname-to-type tyname))
-          ((when (type-case type :void))
-           (error (list :declon-error-type-void item.get)))
-          (init-type (check-initer init funtab vartab tagenv))
-          ((when (errorp init-type))
-           (error (list :declon-error-init init-type)))
-          (wf? (init-type-matchp init-type type))
-          ((when (errorp wf?)) wf?)
-          (vartab (var-table-add-var var type vartab))
+     (b* ((vartab (check-obj-declon item.get funtab vartab tagenv nil))
           ((when (errorp vartab)) (error (list :declon-error vartab))))
        (make-stmt-type :return-types (set::insert (type-void) nil)
                        :variables vartab))
@@ -1795,7 +1841,7 @@
     "The variable table passed as input is the one
      engendered by the parameter declarations that precede this one.
      We check the components of the parameter declaration
-     and that the parameter can be added to the variable table;
+     and we check that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
      If all checks succeed, we return the variable table
      updated with the parameter.")
@@ -1835,7 +1881,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fun-declor ((declor fun-declorp) (tagenv tag-envp))
+(define check-fun-declor ((declor fun-declorp)
+                          (vartab var-tablep)
+                          (tagenv tag-envp))
   :returns (vartab var-table-resultp)
   :short "Check a function declarator."
   :long
@@ -1843,21 +1891,31 @@
    (xdoc::p
     "We go through all the pointers, if any.
      We check the identifier and the list of parameter declarations.
-     We start with the empty variable table,
-     and we return the final variable table that contains the parameters.
-     This table is used when checking function definitions."))
+     We add a new block scope to the variable table,
+     for the block associated to the function definition
+     of which this declarator is part;
+     in fact, this is also adequate for checking a function declarator
+     that is part of a function declaration that is not a function definition,
+     as in that case we just need to ensure that the parameters are distinct.
+     We check the parameters starting with this variable table,
+     which (if successful) produces a variable table
+     that includes the parameters;
+     this table is used when checking the function definition."))
   (fun-declor-case
    declor
    :base (b* ((wf (check-ident declor.name))
-              ((when (errorp wf)) wf))
-           (check-param-declon-list declor.params (var-table-init) tagenv))
-   :pointer (check-fun-declor declor.decl tagenv))
+              ((when (errorp wf)) wf)
+              (vartab (var-table-add-block vartab)))
+           (check-param-declon-list declor.params vartab tagenv))
+   :pointer (check-fun-declor declor.decl vartab tagenv))
   :measure (fun-declor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fun-declon ((declon fun-declonp) (tagenv tag-envp))
+(define check-fun-declon ((declon fun-declonp)
+                          (vartab var-tablep)
+                          (tagenv tag-envp))
   :returns (wf wellformed-resultp)
   :short "Check a function declaration."
   :long
@@ -1870,26 +1928,34 @@
   (b* (((fun-declon declon) declon)
        (wf (check-tyspecseq declon.tyspec tagenv))
        ((when (errorp wf)) wf)
-       (vartab (check-fun-declor declon.declor tagenv))
+       (vartab (check-fun-declor declon.declor vartab tagenv))
        ((when (errorp vartab)) vartab))
     :wellformed)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fundef ((fundef fundefp) (funtab fun-tablep) (tagenv tag-envp))
+(define check-fundef ((fundef fundefp)
+                      (funtab fun-tablep)
+                      (vartab var-tablep)
+                      (tagenv tag-envp))
   :returns (new-funtab fun-table-resultp)
   :short "Check a function definition."
   :long
   (xdoc::topstring
    (xdoc::p
     "We check type specifier sequence and declarator,
-     obtaining the variable table that contains the parameters.
-     Importantly, the block items are checked in the initial variable table,
+     obtaining the variable table that includes the parameters.
+     Importantly, the block items are checked in this variable table,
      which has the types for the function parameters,
      without creating a new scope for the block (i.e. the compound statement):
      the reason is that the scope of function parameters
      terminates at the end of the associated block [C:6.2.1/4].")
+   (xdoc::p
+    "The variable table passed as parameter to this ACL2 function
+     always consists of just the current file scope,
+     i.e. the file-scope variables that precede the function definition
+     in the translation unit.")
    (xdoc::p
     "We ensure that the return types of the body
      match the return types of the function.
@@ -1914,7 +1980,7 @@
        ((when (errorp wf))
         (error (list :bad-fun-out-type name wf)))
        (out-type (tyname-to-type out-tyname))
-       (vartab (check-fun-declor fundef.declor tagenv))
+       (vartab (check-fun-declor fundef.declor vartab tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
        ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
        (in-types (type-name-list-to-type-list in-tynames))
@@ -1944,9 +2010,7 @@
      (see @(tsee struct-declon)).
      We go through the declarations
      and turn each of them into member types (see @(tsee member-type)).
-     We ensure that each member name is well-formed;
-     we will also need to check that each member type is well-formed,
-     but we need to extend our static semantics for that.
+     We ensure that each member name is well-formed.
      By using @(tsee member-type-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
@@ -2000,49 +2064,62 @@
 
 (define check-ext-declon ((ext ext-declonp)
                           (funtab fun-tablep)
+                          (vartab var-tablep)
                           (tagenv tag-envp))
-  :returns (new-funtab+tagenv funtab+tagenv-resultp)
+  :returns (new-funtab+vartab+tagenv funtab+vartab+tagenv-resultp)
   :short "Check an external declaration."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only allow function definitions and tag declarations.")
+    "For object declarations, we require the initializers to be constant
+     [C:6.7.9/4].")
    (xdoc::p
-    "If successful, we return updated function table and tag environment."))
+    "If successful, we return updated
+     function table, variable table, and tag environment."))
   (ext-declon-case
    ext
-   :fundef (b* ((funtab (check-fundef ext.get funtab tagenv))
+   :fundef (b* ((funtab (check-fundef ext.get funtab vartab tagenv))
                 ((when (errorp funtab)) funtab))
-             (make-funtab+tagenv :funs funtab
-                                 :tags (tag-env-fix tagenv)))
-   :obj-declon (error
-                (list :file-level-object-declaraion-not-supported ext.get))
+             (make-funtab+vartab+tagenv :funs funtab
+                                        :vars (var-table-fix vartab)
+                                        :tags (tag-env-fix tagenv)))
+   :obj-declon (b* ((vartab
+                     (check-obj-declon ext.get funtab vartab tagenv t))
+                    ((when (errorp vartab)) vartab))
+                 (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
+                                            :vars vartab
+                                            :tags (tag-env-fix tagenv)))
    :tag-declon (b* ((tagenv (check-tag-declon ext.get tagenv))
                     ((when (errorp tagenv)) tagenv))
-                 (make-funtab+tagenv :funs (fun-table-fix funtab)
-                                     :tags tagenv)))
+                 (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
+                                            :vars (var-table-fix vartab)
+                                            :tags tagenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-ext-declon-list ((exts ext-declon-listp)
                                (funtab fun-tablep)
+                               (vartab var-tablep)
                                (tagenv tag-envp))
-  :returns (new-funtab+tagenv funtab+tagenv-resultp)
+  :returns (new-funtab+vartab+tagenv funtab+vartab+tagenv-resultp)
   :short "Check a list of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread the function table and tag environment through."))
+    "We thread through
+     the function table, variable table, and tag environment."))
   (b* (((when (endp exts))
-        (make-funtab+tagenv :funs (fun-table-fix funtab)
-                            :tags (tag-env-fix tagenv)))
-       (funtab+tagenv (check-ext-declon (car exts) funtab tagenv))
-       ((when (errorp funtab+tagenv))
-        (error (list :ext-declon-error funtab+tagenv))))
+        (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
+                                   :vars (var-table-fix vartab)
+                                   :tags (tag-env-fix tagenv)))
+       (funtab+vartab+tagenv (check-ext-declon (car exts) funtab vartab tagenv))
+       ((when (errorp funtab+vartab+tagenv))
+        (error (list :ext-declon-error funtab+vartab+tagenv))))
     (check-ext-declon-list (cdr exts)
-                           (funtab+tagenv->funs funtab+tagenv)
-                           (funtab+tagenv->tags funtab+tagenv)))
+                           (funtab+vartab+tagenv->funs funtab+vartab+tagenv)
+                           (funtab+vartab+tagenv->vars funtab+vartab+tagenv)
+                           (funtab+vartab+tagenv->tags funtab+vartab+tagenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2059,9 +2136,11 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
+       (vartab (var-table-init))
        (tagenv (tag-env-init))
-       (funtab+tagenv (check-ext-declon-list tunit.declons funtab tagenv))
-       ((when (errorp funtab+tagenv))
-        (error (list :transunit-error funtab+tagenv))))
+       (funtab+vartab+tagenv
+        (check-ext-declon-list tunit.declons funtab vartab tagenv))
+       ((when (errorp funtab+vartab+tagenv))
+        (error (list :transunit-error funtab+vartab+tagenv))))
     :wellformed)
   :hooks (:fix))

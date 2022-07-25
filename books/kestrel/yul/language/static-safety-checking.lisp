@@ -93,10 +93,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funtypep
+(defruled not-reserrp-when-funtypep
   (implies (funtypep x)
-           (not (resulterrp x)))
-  :enable (funtypep resulterrp))
+           (not (reserrp x)))
+  :enable (funtypep reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,10 +121,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funtablep
+(defruled not-reserrp-when-funtablep
   (implies (funtablep x)
-           (not (resulterrp x)))
-  :enable resulterrp)
+           (not (reserrp x)))
+  :enable reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,7 +226,7 @@
 
   (defruled add-var-to-set-insert
     (b* ((varset1 (add-var var varset)))
-      (implies (not (resulterrp varset1))
+      (implies (not (reserrp varset1))
                (equal varset1
                       (set::insert (identifier-fix var)
                                    (identifier-set-fix varset)))))))
@@ -255,7 +255,7 @@
 
   (defruled add-vars-to-set-list-insert
     (b* ((varset1 (add-vars vars varset)))
-      (implies (not (resulterrp varset1))
+      (implies (not (reserrp varset1))
                (equal varset1
                       (set::list-insert (identifier-list-fix vars)
                                         (identifier-set-fix varset)))))
@@ -265,7 +265,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-path ((path pathp) (varset identifier-setp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if a path is safe."
   :long
   (xdoc::topstring
@@ -300,7 +300,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-path-list ((paths path-listp) (varset identifier-setp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if a list of paths is safe."
   (b* (((when (endp paths)) nil)
        ((ok &) (check-safe-path (car paths) varset)))
@@ -310,7 +310,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-literal ((lit literalp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if a literal is safe."
   :long
   (xdoc::topstring
@@ -421,7 +421,7 @@
   (verify-guards check-safe-expression
     :hints
     (("Goal"
-      :in-theory (enable acl2::natp-when-nat-resultp-and-not-resulterrp))))
+      :in-theory (enable acl2::natp-when-nat-resultp-and-not-reserrp))))
 
   (fty::deffixequiv-mutual check-safe-expressions))
 
@@ -491,7 +491,7 @@
                                   (value expressionp)
                                   (varset identifier-setp)
                                   (funtab funtablep))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if a single assignment is safe."
   :long
   (xdoc::topstring
@@ -514,7 +514,7 @@
                                  (value funcallp)
                                  (varset identifier-setp)
                                  (funtab funtablep))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if a multiple assignment is safe."
   :long
   (xdoc::topstring
@@ -563,10 +563,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-vars+modes-p
+(defruled not-reserrp-when-vars+modes-p
   (implies (vars+modes-p x)
-           (not (resulterrp x)))
-  :enable (vars+modes-p resulterrp))
+           (not (reserrp x)))
+  :enable (vars+modes-p reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -942,7 +942,7 @@
 
   (define check-safe-fundef ((fundef fundefp)
                              (funtab funtablep))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if a function definition is safe."
     :long
     (xdoc::topstring
@@ -981,7 +981,7 @@
 
   :prepwork
   ((local
-    (in-theory (enable mode-setp-when-mode-set-resultp-and-not-resulterrp))))
+    (in-theory (enable mode-setp-when-mode-set-resultp-and-not-reserrp))))
 
   :flag-local nil
 
@@ -991,7 +991,7 @@
     :hints
     (("Goal"
       :in-theory
-      (enable identifier-setp-when-identifier-set-resultp-and-not-resulterrp))))
+      (enable identifier-setp-when-identifier-set-resultp-and-not-reserrp))))
 
   (fty::deffixequiv-mutual check-safe-statements/blocks/cases/fundefs)
 
@@ -1004,7 +1004,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-fundef-list ((fundefs fundef-listp) (funtab funtablep))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if a list of function definitions is safe."
   :long
   (xdoc::topstring
@@ -1037,9 +1037,9 @@
   ///
 
   (defruled check-safe-fundef-list-of-statements-to-fundefs
-    (implies (not (resulterrp
+    (implies (not (reserrp
                    (check-safe-statement-list stmts varset funtab)))
-             (not (resulterrp
+             (not (reserrp
                    (check-safe-fundef-list (statements-to-fundefs stmts)
                                            funtab))))
     :use pred-holds
@@ -1050,9 +1050,9 @@
     ((defund-sk pred (stmts funtab)
        (forall varset
                (implies
-                (not (resulterrp
+                (not (reserrp
                       (check-safe-statement-list stmts varset funtab)))
-                (not (resulterrp
+                (not (reserrp
                       (check-safe-fundef-list (statements-to-fundefs stmts)
                                               funtab)))))
        :rewrite :direct)
@@ -1069,9 +1069,9 @@
      (defruled step-lemma
        (implies (and (consp stmts)
                      (pred (cdr stmts) funtab)
-                     (not (resulterrp
+                     (not (reserrp
                            (check-safe-statement-list stmts varset funtab))))
-                (not (resulterrp
+                (not (reserrp
                       (check-safe-fundef-list (statements-to-fundefs stmts)
                                               funtab))))
        :expand (check-safe-statement-list stmts varset funtab)
@@ -1096,7 +1096,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-top-block ((block blockp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if the top block is safe."
   :long
   (xdoc::topstring
@@ -1136,14 +1136,14 @@
   (defrule add-var-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (add-var var varset)))
-               (implies (not (resulterrp varset1))
+               (implies (not (reserrp varset1))
                         (set::subset varset varset1))))
     :enable add-var)
 
   (defrule add-vars-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (add-vars vars varset)))
-               (implies (not (resulterrp varset1))
+               (implies (not (reserrp varset1))
                         (set::subset varset varset1))))
     :enable (add-vars
              set::subset-transitive))
@@ -1151,14 +1151,14 @@
   (defrule check-safe-variable-single-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (check-safe-variable-single name init varset funtab)))
-               (implies (not (resulterrp varset1))
+               (implies (not (reserrp varset1))
                         (set::subset varset varset1))))
     :enable check-safe-variable-single)
 
   (defrule check-safe-variable-multi-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (check-safe-variable-multi name init varset funtab)))
-               (implies (not (resulterrp varset1))
+               (implies (not (reserrp varset1))
                         (set::subset varset varset1))))
     :enable check-safe-variable-multi)
 
@@ -1168,7 +1168,7 @@
       (implies
        (identifier-setp varset)
        (b* ((varsmodes (check-safe-statement stmt varset funtab)))
-         (implies (not (resulterrp varsmodes))
+         (implies (not (reserrp varsmodes))
                   (set::subset varset
                                (vars+modes->vars varsmodes)))))
       :flag check-safe-statement)
@@ -1177,7 +1177,7 @@
       (implies
        (identifier-setp varset)
        (b* ((varsmodes (check-safe-statement-list stmts varset funtab)))
-         (implies (not (resulterrp varsmodes))
+         (implies (not (reserrp varsmodes))
                   (set::subset varset
                                (vars+modes->vars varsmodes)))))
       :flag check-safe-statement-list)
@@ -1214,4 +1214,4 @@
        check-safe-statement
        check-safe-statement-list
        set::subset-transitive
-       identifier-setp-when-identifier-set-resultp-and-not-resulterrp)))))
+       identifier-setp-when-identifier-set-resultp-and-not-reserrp)))))

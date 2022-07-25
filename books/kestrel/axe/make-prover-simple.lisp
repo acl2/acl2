@@ -5037,7 +5037,7 @@
 ;;                                               (< (len dag) 2147483647)))
 ;;                                      (pseudo-term-listp assumptions)
 ;;                                      (pseudo-dag-arrayp context-array-name context-array context-array-len)
-;;                                      (contextp-with-bound context context-array-len)
+;;                                      (bounded-contextp context context-array-len)
 ;;                                      ;;todo: add more
 ;;                                      (all-rule-alistp rule-alists)
 ;;                                      (true-listp rule-alists)
@@ -5130,7 +5130,7 @@
                                             use
                                             state)
          (declare (xargs :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
-                                        :in-theory (e/d (array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp wf-dagp)
+                                        :in-theory (e/d (array-len-with-slack wf-dagp)
                                                         (symbol-listp top-nodenum myquotep get-global w quotep make-implication-dag-return-type))))
                          :stobjs state))
          (b* ( ;; Check inputs:

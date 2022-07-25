@@ -11,12 +11,12 @@
 
 (in-package "C")
 
-(include-book "function-environments")
-(include-book "computation-states")
 (include-book "integer-operations")
+(include-book "values")
 
 (include-book "../language/abstract-syntax-operations")
-(include-book "../language/structure-operations")
+(include-book "../language/computation-states")
+(include-book "../language/function-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,16 +492,16 @@
      Examples are the second operand of shift operations
      and the index operand of array subscript operations."))
   (b* ((arg (value-fix arg)))
-    (cond ((ucharp arg) (uchar-integer-value arg))
-          ((scharp arg) (schar-integer-value arg))
-          ((ushortp arg) (ushort-integer-value arg))
-          ((sshortp arg) (sshort-integer-value arg))
-          ((uintp arg) (uint-integer-value arg))
-          ((sintp arg) (sint-integer-value arg))
-          ((ulongp arg) (ulong-integer-value arg))
-          ((slongp arg) (slong-integer-value arg))
-          ((ullongp arg) (ullong-integer-value arg))
-          ((sllongp arg) (sllong-integer-value arg))
+    (cond ((ucharp arg) (uchar->get arg))
+          ((scharp arg) (schar->get arg))
+          ((ushortp arg) (ushort->get arg))
+          ((sshortp arg) (sshort->get arg))
+          ((uintp arg) (uint->get arg))
+          ((sintp arg) (sint->get arg))
+          ((ulongp arg) (ulong->get arg))
+          ((slongp arg) (slong->get arg))
+          ((ullongp arg) (ullong->get arg))
+          ((sllongp arg) (sllong->get arg))
           (t (prog2$ (impossible) 0))))
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-unsigned-integerp-alt-def
@@ -1635,6 +1635,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-value-to-value ((type typep) (ival init-valuep))
+  :returns (val value-resultp)
+  :short "Turn an initialization value into a value of a given type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Executing an initializer yields an initialization value,
+     which determines a value for the object being initialized,
+     as formalized by this ACL2 function.")
+   (xdoc::p
+    "If the initialization value consists of a single value,
+     we require the value's type to match the given type,
+     and we just return the underlying value.
+     In our current C subset,
+     it is always the case that the value is scalar, never aggregate.
+     So, if the check on the type succeeds,
+     it means that the given type is scalar too.")
+   (xdoc::p
+    "If the initialization value consists of a list of values,
+     we require the given type to be an array type
+     with either no size or size equal to the length of the list of values.
+     We require all the values to have the array element type.
+     We require that there is at least one value,
+     since arrays cannot be empty in C.
+     We create an array value from the values and return it."))
+  (init-value-case
+   ival
+   :single (if (type-equiv (type-of-value ival.get) type)
+               ival.get
+             (error (list :init-value-mismatch
+                          :required (type-fix type)
+                          :supplied (init-value-fix ival))))
+   :list (b* (((unless (type-case type :array))
+               (error (list :init-value-type-mismatch
+                            :required :array-type
+                            :supplied (init-value-fix ival))))
+              (elemtype (type-array->of type))
+              ((unless (equal (type-list-of-value-list ival.get)
+                              (repeat (len ival.get) elemtype)))
+               (error (list :init-value-element-type-mismatch
+                            :required elemtype
+                            :supplied ival.get)))
+              (size (type-array->size type))
+              ((when (and size
+                          (not (equal size (len ival.get)))))
+               (error (list :init-value-size-mismatch
+                            :required size
+                            :supplied (len ival.get))))
+              ((unless (consp ival.get))
+               (error (list :init-value-empty-mismatch))))
+           (make-value-array :elemtype elemtype :elements ival.get)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines exec
   :short "Mutually recursive functions for execution."
   :flag-local nil
@@ -2056,16 +2111,20 @@
                        (fenv fun-envp)
                        (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result value-resultp)
+    :returns (mv (result init-value-resultp)
                  (new-compst compustatep))
     :parents (atc-execution exec)
     :short "Execute an initializer."
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only accept single expressions.
-       The single expression must be a function call or a pure expression.
-       If it is a function call, it must return a value (not @('nil'))."))
+      "If the initializer consists of a single expression,
+       the expression must be a function call or a pure expression.
+       If it is a function call, it must return a value (not @('nil')).")
+     (xdoc::p
+      "If the initializer consists of a list of expressions,
+       the expressions must be pure,
+       to avoid ambiguities with the order of evaluation."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (initer-case
        initer
@@ -2077,11 +2136,14 @@
             ((when (errorp val)) (mv val compst))
             ((when (not val))
              (mv (error (list :void-initializer (initer-fix initer)))
-                 compst)))
-         (mv val compst))
+                 compst))
+            (ival (init-value-single val)))
+         (mv ival compst))
        :list
-       (mv (error (list :array-initializer-not-supported (initer-fix initer)))
-           (compustate-fix compst))))
+       (b* ((vals (exec-expr-pure-list initer.get compst))
+            ((when (errorp vals)) (mv vals (compustate-fix compst)))
+            (ival (init-value-list vals)))
+         (mv ival (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2118,15 +2180,12 @@
        item
        :declon
        (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
-            ((mv init compst) (exec-initer init compst fenv (1- limit)))
-            ((when (errorp init)) (mv init compst))
+            ((mv ival compst) (exec-initer init compst fenv (1- limit)))
+            ((when (errorp ival)) (mv ival compst))
             (type (tyname-to-type tyname))
-            ((unless (equal type (type-of-value init)))
-             (mv (error (list :decl-var-mistype var
-                              :required type
-                              :supplied (type-of-value init)))
-                 compst))
-            (new-compst (create-var var init compst))
+            (val (init-value-to-value type ival))
+            ((when (errorp val)) (mv val compst))
+            (new-compst (create-var var val compst))
             ((when (errorp new-compst)) (mv new-compst compst)))
          (mv nil new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))

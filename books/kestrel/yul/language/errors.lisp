@@ -31,7 +31,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define error-info-wfp ((error resulterrp))
+(define error-info-wfp ((error reserrp))
   :returns (yes/no booleanp)
   :short "Check if the information in an error is well-formed."
   :long
@@ -44,16 +44,16 @@
      the information is always a @(tsee cons).
      For better encapsulation and possible future extension,
      we capture that in this predicate."))
-  (consp (fty::resulterr->info error))
+  (consp (fty::reserr->info error))
   :hooks (:fix)
   ///
 
-  (defrule error-info-wfp-of-resulterr-of-cons
-    (error-info-wfp (resulterr (cons a b)))))
+  (defrule error-info-wfp-of-reserr-of-cons
+    (error-info-wfp (reserr (cons a b)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define resulterr-limitp (x)
+(define reserr-limitp (x)
   :returns (yes/no booleanp)
   :short "Recognize limit errors."
   :long
@@ -68,7 +68,7 @@
      by those ACL2 functions, which formalize a defensive dynamic semantics.")
    (xdoc::p
     "Here we define a predicate that recognizes limit errors,
-     i.e. values of type @(tsee resulterr)
+     i.e. values of type @(tsee reserr)
      whose innermost information starts with the keyword @(':limit'),
      where `innermost' refers to
      the stack discussed in @(tsee fty::err) and @(tsee fty::err-push).
@@ -76,11 +76,11 @@
      the definition of the ACL2 execution functions for Yul,
      in particular the fact that they return error limits of this form.
      This predicate must be adapted if that form changes."))
-  (and (resulterrp x)
-       (b* ((info (fty::resulterr->info x)))
-         (resulterr-limitp-aux info)))
+  (and (reserrp x)
+       (b* ((info (fty::reserr->info x)))
+         (reserr-limitp-aux info)))
   :prepwork
-  ((define resulterr-limitp-aux (stack)
+  ((define reserr-limitp-aux (stack)
      :returns (yes/no booleanp)
      :parents nil
      (cond ((atom stack) nil)
@@ -91,19 +91,18 @@
                                     (info (cadr fun-info))
                                     ((unless (consp info)) nil))
                                  (eq (car info) :limit)))
-           (t (resulterr-limitp-aux (cdr stack))))
-     :guard-debug t)))
+           (t (reserr-limitp-aux (cdr stack)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define resulterr-nonlimitp (x)
+(define reserr-nonlimitp (x)
   :returns (yes/no booleanp)
   :short "Recognize non-limit errors."
   :long
   (xdoc::topstring
    (xdoc::p
     "This recognizes all the errors
-     that are not recognized by @(tsee resulterr-limitp).
+     that are not recognized by @(tsee reserr-limitp).
      See that recognizer's documentation."))
-  (and (resulterrp x)
-       (not (resulterr-limitp x))))
+  (and (reserrp x)
+       (not (reserr-limitp x))))

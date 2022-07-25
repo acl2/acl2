@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -978,10 +978,10 @@
 ; in the corresponding position of x.
 
            (princ "(")
-           (loop for y in x
+           (loop with col+1 = (1+ col)
+                 for y in x
                  as y-raw in raw-x
                  as i from 1
-                 with col+1 = (1+ col)
                  do
                  (progn (when (not (= i 1))
                           (fms "~t0" (list (cons #\0 col+1))

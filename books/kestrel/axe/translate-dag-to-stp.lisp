@@ -123,6 +123,30 @@
            (equal x y))
   :rule-classes nil)
 
+(defund print-counterexample (cex dag-array-name dag-array)
+  (declare (xargs :guard (and (counterexamplep cex)
+                              (if (consp cex)
+                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
+                                t))))
+  (if (endp cex)
+      nil
+    (b* ((entry (first cex))
+         (nodenum (car entry))
+         (value (cdr entry))
+         ;(expr (aref1 dag-array-name dag-array nodenum))
+         (expr (dag-to-term-aux-array dag-array-name dag-array nodenum))
+         (- (cw "  Node ~x0: ~x1 is ~x2." nodenum expr value))
+         ;; Print newline unless this is the last line:
+         (- (and (consp (rest cex)) (cw "~%"))))
+      (print-counterexample (rest cex) dag-array-name dag-array))))
+
+(defund maybe-shorten-filename (base-filename)
+  (declare (xargs :guard (stringp base-filename)))
+  (if (< 200 (length base-filename)) ;fixme could increase the 200
+      ;;shorten the filename if it would be too long:
+      (string-append (subseq base-filename 0 199) "SHORTENED")
+    base-filename))
+
 ;drop? ;dup
 (defthm character-listp-of-reverse-list
   (implies (character-listp l)
@@ -2138,6 +2162,8 @@
 (defconst *counterexample* :counterexample)
 (defconst *possible-counterexample* :possible-counterexample)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;INPUT-FILENAME is the STP input (.cvc) file name
 ;OUTPUT-FILENAME is the STP output (.out) file name
 ;Runs an external script to call STP, using sys-call.
@@ -2150,13 +2176,13 @@
                           max-conflicts ;a number of conflicts, or nil for no max
                           counterexamplep
                           state)
-  (declare (xargs :stobjs state
-                  :guard (and (stringp input-filename)
+  (declare (xargs :guard (and (stringp input-filename)
                               (stringp output-filename)
                               ;;(booleanp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (booleanp counterexamplep))))
+                              (booleanp counterexamplep))
+                  :stobjs state))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
        ((mv status state) (if max-conflicts
                               (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string max-conflicts) counterexample-arg) state)
@@ -2241,30 +2267,6 @@
   :hints (("Goal" :in-theory (e/d (call-stp-on-file) (;LIST::EQUAL-CONS-CASES
                                                       )))))
 
-(defund print-counterexample (cex dag-array-name dag-array)
-  (declare (xargs :guard (and (counterexamplep cex)
-                              (if (consp cex)
-                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
-                                t))))
-  (if (endp cex)
-      nil
-    (b* ((entry (first cex))
-         (nodenum (car entry))
-         (value (cdr entry))
-         ;(expr (aref1 dag-array-name dag-array nodenum))
-         (expr (dag-to-term-aux-array dag-array-name dag-array nodenum))
-         (- (cw "  Node ~x0: ~x1 is ~x2." nodenum expr value))
-         ;; Print newline unless this is the last line:
-         (- (and (consp (rest cex)) (cw "~%"))))
-      (print-counterexample (rest cex) dag-array-name dag-array))))
-
-(defund maybe-shorten-filename (base-filename)
-  (declare (xargs :guard (stringp base-filename)))
-  (if (< 200 (length base-filename)) ;fixme could increase the 200
-      ;;shorten the filename if it would be too long:
-      (string-append (subseq base-filename 0 199) "SHORTENED")
-    base-filename))
-
 ;; TODO: What if we cut out some structure but it is not involved in the counterexample?
 (defun all-cuts-are-at-vars (cut-nodenum-type-alist dag-array-name dag-array)
   (declare (xargs :guard (and (nodenum-type-alistp cut-nodenum-type-alist)
@@ -2296,11 +2298,7 @@
                               constant-array-info ;may get an entry when we create translated-query-core (e.g., if a term is equated to a constant array)
                               counterexamplep
                               state)
-  (declare (xargs :stobjs state
-                  :guard-hints (("Goal" :do-not-induct t
-                                 :in-theory (enable PSEUDO-DAG-ARRAYP ;todo
-                                                    )))
-                  :guard (and (nat-listp nodenums-to-translate)
+  (declare (xargs :guard (and (nat-listp nodenums-to-translate)
                               (stringp extra-string)
                               (string-treep extra-asserts)
                               (nodenum-type-alistp cut-nodenum-type-alist)
@@ -2317,7 +2315,8 @@
                               (all-< (strip-cars cut-nodenum-type-alist)
                                      dag-len)
                               (string-treep translated-query-core)
-                              (constant-array-infop constant-array-info))))
+                              (constant-array-infop constant-array-info))
+                  :stobjs state))
   (b* (((mv temp-dir-name state)
         (maybe-make-temp-dir state))
        (base-filename (concatenate 'string temp-dir-name "/" base-filename))
@@ -2351,10 +2350,12 @@
         (call-stp-on-file stp-input-filename stp-output-filename print max-conflicts counterexamplep state))
        (counterexamplep (and (consp result)
                              (eq *counterexample* (car result)))) ;todo: maybe this should be labeled as :raw-counterexample?
-       (counterexample
-        (and counterexamplep
-             (let ((raw-counterexample (cadr result)))
-               (fixup-counterexample (sort-nodenum-type-alist cut-nodenum-type-alist) raw-counterexample))))
+       ((mv erp counterexample)
+        (if (not counterexamplep)
+            (mv (erp-nil) nil)
+          (let ((raw-counterexample (cadr result)))
+            (fixup-counterexample (sort-nodenum-type-alist cut-nodenum-type-alist) raw-counterexample nil))))
+       ((when erp) (mv *error* state))
        (counterexample-certainp (and counterexamplep
                                      (all-cuts-are-at-vars cut-nodenum-type-alist dag-array-name dag-array)))
        (- (and counterexamplep

@@ -1390,52 +1390,50 @@
            (old-dag-array-name 'normalize-xors-old-array)
            (old-dag-array (make-dag-into-array old-dag-array-name dag 0)) ; add slack space?
            ;; Even though the old dag won't change, we need to check parents of nodes in normalize-xors-aux
-           (old-dag-parent-array-name 'normalize-xors-parent-array))
-      (mv-let (old-dag-parent-array old-dag-constant-alist old-dag-variable-alist)
-        (make-dag-indices old-dag-array-name old-dag-array old-dag-parent-array-name old-dag-len)
-        (declare (ignore old-dag-constant-alist old-dag-variable-alist)) ;ffixme dont waste time computing these!
-        (let* ((new-dag-size (* 2 old-dag-len)) ;none of the nodes are valid
-               (new-dag-array-name 'normalize-xors-new-array)
-               (new-dag-array (make-empty-array new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
-               (new-dag-parent-array-name 'normalize-xors-new-parent-array)
-               (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
-               (new-dag-constant-alist nil)
-               (new-dag-variable-alist nil)
-               ;;indicates what each node in the original dag rewrote to:
-               (translation-array (make-empty-array 'translation-array old-dag-len)))
-          (prog2$ (and print
-                       (cw "(Simplifying xors (len is ~x0)...~%" old-dag-len))
-                  (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
-                    (normalize-xors-aux 0 old-dag-array old-dag-len old-dag-parent-array
-                                       old-dag-parent-array-name
-                                       new-dag-array 0 ;;new-dag-len
-                                       new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-dag-parent-array-name
-                                       translation-array print)
-                    (declare (ignore new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
-                    (if erp
-                        (mv erp nil nil)
-                      (let ((result (aref1 'translation-array translation-array old-top-nodenum)))
-                        (if (null result)
-                            (prog2$ (er hard? 'normalize-xors "Unexpected missing node translation")
-                                    (mv (erp-t) nil nil))
-                          (if (quotep result)
-                              (prog2$ (and print
-                                           (cw ")~%"))
-                                      (mv (erp-nil) result t))
-                            (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print))
-                                 ((when (<= 2147483646 (+ (len dag) ;;todo: this is for equivalent-dags below but that should be made more flexible (returning an erp)
-                                                          (len new-dag))))
-                                  (er hard? 'normalize-xors "DAGs too large.")
-                                  (mv :dag-too-large nil nil))
-                                 (changep (not (equivalent-dags dag new-dag))))
-                              (progn$ (and (eq :verbose print)
-                                           (progn$ (cw "(xors result:~%")
-                                                   (print-list new-dag)
-                                                   (cw ")~%")))
-                                      (and print (not changep) (cw " (No effect.)"))
-                                      (and print
-                                           (cw ")~%")) ;matches "Simplifying xors ..."
-                                      (mv (erp-nil) new-dag changep))))))))))))))
+           (old-dag-parent-array-name 'normalize-xors-parent-array)
+           (old-dag-parent-array (make-dag-parent-array-with-name2 old-dag-len old-dag-array-name old-dag-array old-dag-parent-array-name))
+           (new-dag-size (* 2 old-dag-len)) ;none of the nodes are valid
+           (new-dag-array-name 'normalize-xors-new-array)
+           (new-dag-array (make-empty-array new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
+           (new-dag-parent-array-name 'normalize-xors-new-parent-array)
+           (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
+           (new-dag-constant-alist nil)
+           (new-dag-variable-alist nil)
+           ;;indicates what each node in the original dag rewrote to:
+           (translation-array (make-empty-array 'translation-array old-dag-len)))
+      (prog2$ (and print
+                   (cw "(Simplifying xors (len is ~x0)...~%" old-dag-len))
+              (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
+                (normalize-xors-aux 0 old-dag-array old-dag-len old-dag-parent-array
+                                    old-dag-parent-array-name
+                                    new-dag-array 0 ;;new-dag-len
+                                    new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-dag-parent-array-name
+                                    translation-array print)
+                (declare (ignore new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+                (if erp
+                    (mv erp nil nil)
+                  (let ((result (aref1 'translation-array translation-array old-top-nodenum)))
+                    (if (null result)
+                        (prog2$ (er hard? 'normalize-xors "Unexpected missing node translation")
+                                (mv (erp-t) nil nil))
+                      (if (quotep result)
+                          (prog2$ (and print
+                                       (cw ")~%"))
+                                  (mv (erp-nil) result t))
+                        (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print))
+                             ((when (<= 2147483646 (+ (len dag) ;;todo: this is for equivalent-dags below but that should be made more flexible (returning an erp)
+                                                      (len new-dag))))
+                              (er hard? 'normalize-xors "DAGs too large.")
+                              (mv :dag-too-large nil nil))
+                             (changep (not (equivalent-dags dag new-dag))))
+                          (progn$ (and (eq :verbose print)
+                                       (progn$ (cw "(xors result:~%")
+                                               (print-list new-dag)
+                                               (cw ")~%")))
+                                  (and print (not changep) (cw " (No effect.)"))
+                                  (and print
+                                       (cw ")~%")) ;matches "Simplifying xors ..."
+                                  (mv (erp-nil) new-dag changep))))))))))))
 
 ;(normalize-xors '((2 bvxor '32 0 1) (1 . x) (0 . y)) t)
 

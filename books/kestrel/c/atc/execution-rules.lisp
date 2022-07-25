@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "execution")
+(include-book "arrays")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -799,8 +800,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-integer-value-rules
-  :short "Rules about the composition of @(tsee sint-integer-value)
+(defsection atc-sint-get-rules
+  :short "Rules about the composition of @(tsee sint->get)
           with @('sint-from-<type>') functions."
   :long
   (xdoc::topstring
@@ -808,47 +809,39 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
-  (defruled sint-integer-value-of-sint-from-schar
+  (defruled sint->get-of-sint-from-schar
     (implies (scharp x)
-             (equal (sint-integer-value (sint-from-schar x))
-                    (schar-integer-value x)))
-    :enable (sint-integer-value
-             schar-integer-value
-             sint-from-schar
+             (equal (sint->get (sint-from-schar x))
+                    (schar->get x)))
+    :enable (sint-from-schar
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-uchar
+  (defruled sint->get-of-sint-from-uchar
     (implies (ucharp x)
-             (equal (sint-integer-value (sint-from-uchar x))
-                    (uchar-integer-value x)))
-    :enable (sint-integer-value
-             uchar-integer-value
-             sint-from-uchar
+             (equal (sint->get (sint-from-uchar x))
+                    (uchar->get x)))
+    :enable (sint-from-uchar
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-sshort
+  (defruled sint->get-of-sint-from-sshort
     (implies (sshortp x)
-             (equal (sint-integer-value (sint-from-sshort x))
-                    (sshort-integer-value x)))
-    :enable (sint-integer-value
-             sshort-integer-value
-             sint-from-sshort
+             (equal (sint->get (sint-from-sshort x))
+                    (sshort->get x)))
+    :enable (sint-from-sshort
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-ushort
+  (defruled sint->get-of-sint-from-ushort
     (implies (ushortp x)
-             (equal (sint-integer-value (sint-from-ushort x))
-                    (ushort-integer-value x)))
-    :enable (sint-integer-value
-             ushort-integer-value
-             sint-from-ushort
+             (equal (sint->get (sint-from-ushort x))
+                    (ushort->get x)))
+    :enable (sint-from-ushort
              sint-integerp-alt-def))
 
-  (defval *atc-integer-value-rules*
-    '(sint-integer-value-of-sint-from-schar
-      sint-integer-value-of-sint-from-uchar
-      sint-integer-value-of-sint-from-sshort
-      sint-integer-value-of-sint-from-ushort)))
+  (defval *atc-sint-get-rules*
+    '(sint->get-of-sint-from-schar
+      sint->get-of-sint-from-uchar
+      sint->get-of-sint-from-sshort
+      sint->get-of-sint-from-ushort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1573,7 +1566,7 @@
                                     (pack op-kind '- lfixtype '-okp)))
                             ,@(and (member-eq op-kind '(:shl :shr))
                                    (cons 'exec-integer
-                                         *atc-integer-value-rules*))
+                                         *atc-sint-get-rules*))
                             ,@*atc-uaconvert-values-rules*
                             ,@*atc-promote-value-rules*))))
       (mv name event))
@@ -2538,13 +2531,29 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val))
              (equal (exec-initer initer compst fenv limit)
-                    (mv val compst1)))
+                    (mv (init-value-single val) compst1)))
     :enable exec-initer)
 
   (defval *atc-exec-initer-rules*
     '(exec-initer-when-single
       (:e initer-kind)
       (:e initer-single->get))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-init-value-to-value-rules
+  :short "Rules for @(tsee init-value-to-value)."
+
+  (defruled init-value-to-value-when-single
+    (implies (and (valuep val)
+                  (equal (type-of-value val)
+                         type))
+             (equal (init-value-to-value type (init-value-single val))
+                    val))
+    :enable init-value-to-value)
+
+  (defval *atc-init-value-to-value-rules*
+    '(init-value-to-value-when-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2561,13 +2570,13 @@
                   (equal var (mv-nth 0 var+tyname+init))
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
-                  (equal val+compst1
+                  (equal ival+compst1
                          (exec-initer init compst fenv (1- limit)))
-                  (equal val (mv-nth 0 val+compst1))
-                  (equal compst1 (mv-nth 1 val+compst1))
+                  (equal ival (mv-nth 0 ival+compst1))
+                  (equal compst1 (mv-nth 1 ival+compst1))
+                  (init-valuep ival)
+                  (equal val (init-value-to-value (tyname-to-type tyname) ival))
                   (valuep val)
-                  (equal (type-of-value val)
-                         (tyname-to-type tyname))
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
@@ -2591,7 +2600,8 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e obj-declon-to-ident+tyname+init))))
+      (:e obj-declon-to-ident+tyname+init)
+      return-type-of-init-value-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

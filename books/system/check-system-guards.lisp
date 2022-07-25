@@ -44,6 +44,9 @@
 (ubt 1)
 (ld ; linebreak to avoid warning during regression
  "../projects/hexnet/hexnet-model.lisp")
+(ubt 1)
+(ld ; linebreak to avoid warning during regression
+ "projects/apply/loop-tests.lisp" :dir :system)
 (value :q)
 (report-guard-checks) ; should show lots of checking
 ||#

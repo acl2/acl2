@@ -335,6 +335,7 @@
      write-of-write-same
      read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
      read-in-terms-of-nth-and-pos-eric-4-bytes ; this is for resolving reads of the program.
+     read-in-terms-of-nth-and-pos-eric-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
      acl2::equal-of-bvplus-constant-and-constant
