@@ -18,6 +18,10 @@
 (include-book "build-enumcalls")
 (include-book "with-timeout" :ttags ((:acl2s-timeout)))
 
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
+
 (set-state-ok t)
 
 ;;;; * Main Idea

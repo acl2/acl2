@@ -9,7 +9,10 @@
 
 (include-book "simple-search")
 (include-book "incremental-search")
-          
+
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
 
 (set-state-ok t)
 

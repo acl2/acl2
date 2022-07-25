@@ -25,7 +25,7 @@
                     (<= ,,min a)
                     (< a ,,max)))
          (type-of-type (type-of-type ',name M A))
-         (alias? (!= type-of-type ',name)))
+         (alias? (not (equal type-of-type ',name))))
       (value
        (if alias?
            '(value-triple :invisible)

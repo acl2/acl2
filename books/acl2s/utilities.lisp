@@ -233,6 +233,19 @@ A macro that locally turns off @('cgen') testing and then calls @('defthm').
                     nil
                     ((defthm ,name ,@args))))
 
+(defxdoc defthmd-no-test
+  :parents (acl2s-utilities acl2::cgen)
+  :short "A version of @('defthmd') with testing disabled."
+  :long"<p>
+A macro that locally turns off @('cgen') testing and then calls @('defthmd').
+</p>
+")
+
+(defmacro defthmd-no-test (name &rest args)
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defthmd ,name ,@args))))
+
 ; :trans1 (defthm-no-test foo (equal (+ x y) (+ y x)))
 ; :u (defthm foo (equal (+ x y) (+ y x))) :u
 
