@@ -301,6 +301,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define objdesign->base-address ((objdes objdesignp))
+  :returns (addr addressp)
+  :short "Base address of an object designator."
+  (objdesign-case objdes
+                  :address objdes.get
+                  :element (objdesign->base-address objdes.super)
+                  :member (objdesign->base-address objdes.super))
+  :measure (objdesign-count objdes)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define update-object ((objdes objdesignp) (val valuep) (compst compustatep))
   :returns (new-compst compustatep)
   :short (xdoc::topstring

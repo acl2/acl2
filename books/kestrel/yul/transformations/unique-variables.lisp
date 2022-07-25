@@ -63,7 +63,7 @@
 
   (defruled var-unique-vars-to-set-insert
     (b* ((allvars1 (var-unique-vars var allvars)))
-      (implies (not (resulterrp allvars1))
+      (implies (not (reserrp allvars1))
                (equal allvars1
                       (set::insert (identifier-fix var)
                                    (identifier-set-fix allvars)))))))
@@ -88,7 +88,7 @@
 
   (defruled var-list-unique-vars-to-set-list-insert
     (b* ((allvars1 (var-list-unique-vars vars allvars)))
-      (implies (not (resulterrp allvars1))
+      (implies (not (reserrp allvars1))
                (equal allvars1
                       (set::list-insert (identifier-list-fix vars)
                                         (identifier-set-fix allvars)))))
@@ -201,49 +201,49 @@
     (defthm statement-unique-vars-extend
       (implies (identifier-setp allvars)
                (b* ((allvars1 (statement-unique-vars stmt allvars)))
-                 (implies (not (resulterrp allvars1))
+                 (implies (not (reserrp allvars1))
                           (set::subset allvars allvars1))))
       :flag statement-unique-vars)
 
     (defthm statement-list-unique-vars-extend
       (implies (identifier-setp allvars)
                (b* ((allvars1 (statement-list-unique-vars stmts allvars)))
-                 (implies (not (resulterrp allvars1))
+                 (implies (not (reserrp allvars1))
                           (set::subset allvars allvars1))))
       :flag statement-list-unique-vars)
 
     (defthm block-unique-vars-extend
       (implies (identifier-setp allvars)
                (b* ((allvars1 (block-unique-vars block allvars)))
-                 (implies (not (resulterrp allvars1))
+                 (implies (not (reserrp allvars1))
                           (set::subset allvars allvars1))))
       :flag block-unique-vars)
 
     (defthm block-option-unique-vars-extend
       (implies (identifier-setp allvars)
                (b* ((allvars1 (block-option-unique-vars block? allvars)))
-                 (implies (not (resulterrp allvars1))
+                 (implies (not (reserrp allvars1))
                           (set::subset allvars allvars1))))
       :flag block-option-unique-vars)
 
     (defthm swcase-unique-vars-extend
       (implies (identifier-setp allvars)
                (b* ((allvars1 (swcase-unique-vars case allvars)))
-                 (implies (not (resulterrp allvars1))
+                 (implies (not (reserrp allvars1))
                           (set::subset allvars allvars1))))
       :flag swcase-unique-vars)
 
     (defthm swcase-list-unique-vars-extend
       (implies (identifier-setp allvars)
                (b* ((allvars1 (swcase-list-unique-vars cases allvars)))
-                 (implies (not (resulterrp allvars1))
+                 (implies (not (reserrp allvars1))
                           (set::subset allvars allvars1))))
       :flag swcase-list-unique-vars)
 
     (defthm fundef-unique-vars-extend
       (implies (identifier-setp allvars)
                (b* ((allvars1 (fundef-unique-vars fundef allvars)))
-                 (implies (not (resulterrp allvars1))
+                 (implies (not (reserrp allvars1))
                           (set::subset allvars allvars1))))
       :flag fundef-unique-vars)
 

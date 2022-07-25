@@ -58,7 +58,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-mode-setp
+(defruled not-reserrp-when-mode-setp
   (implies (mode-setp x)
-           (not (resulterrp x)))
-  :enable (mode-setp resulterrp))
+           (not (reserrp x)))
+  :enable (mode-setp reserrp))

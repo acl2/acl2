@@ -101,18 +101,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define objdesign->base-address ((objdes objdesignp))
-  :returns (addr addressp)
-  :short "Base address of an object designator."
-  (objdesign-case objdes
-                  :address objdes.get
-                  :element (objdesign->base-address objdes.super)
-                  :member (objdesign->base-address objdes.super))
-  :measure (objdesign-count objdes)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define object-disjointp ((objdes1 objdesignp) (objdes2 objdesignp))
   :returns (yes/no booleanp)
   :short "Check if two designated objects are disjoint."
