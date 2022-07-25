@@ -586,9 +586,13 @@
      Otherwise, first we recursively read the super-object,
      then we access the sub-object,
      ensuring that the super-object is of the appropriate kind
-     for the object designator."))
+     for the object designator.")
+   (xdoc::p
+    "For now we reject named variables.
+     We will add support for them later."))
   (objdesign-case
    objdes
+   :variable (error :not-supported)
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
@@ -635,9 +639,13 @@
      we retrieve the super-object,
      and we update its element or member,
      provided that the super-object is of the right kind.
-     Then we recursively write the updated super-object."))
+     Then we recursively write the updated super-object.")
+   (xdoc::p
+    "For now we reject named variables.
+     We will add support for them later."))
   (objdesign-case
    objdes
+   :variable (error :not-supported)
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
