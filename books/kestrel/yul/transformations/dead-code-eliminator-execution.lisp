@@ -234,7 +234,7 @@
    (xdoc::p
     "We transform function scopes and leave errors unchanged."))
   (b* ((funscope? (funscope-result-fix funscope?)))
-    (if (resulterrp funscope?)
+    (if (reserrp funscope?)
         funscope?
       (funscope-dead funscope?)))
   :hooks (:fix))
@@ -269,7 +269,7 @@
    (xdoc::p
     "We transform function environments and leave errors unchanged."))
   (b* ((funenv? (funenv-result-fix funenv?)))
-    (if (resulterrp funenv?)
+    (if (reserrp funenv?)
         funenv?
       (funenv-dead funenv?)))
   :hooks (:fix))
@@ -306,7 +306,7 @@
    (xdoc::p
     "We transform the pairs and leave errors unchanged."))
   (b* ((funinfoenv? (funinfo+funenv-result-fix funinfoenv?)))
-    (if (resulterrp funinfoenv?)
+    (if (reserrp funinfoenv?)
         funinfoenv?
       (funinfo+funenv-dead funinfoenv?)))
   :hooks (:fix))
@@ -327,8 +327,8 @@
      discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (eoutcome-result-fix x))
        (y (eoutcome-result-fix y)))
-    (cond ((resulterrp x) (resulterrp y))
-          ((resulterrp y) (resulterrp x))
+    (cond ((reserrp x) (reserrp y))
+          ((reserrp y) (reserrp x))
           (t (equal x y))))
   :hooks (:fix)
   ///
@@ -346,8 +346,8 @@
      discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (soutcome-result-fix x))
        (y (soutcome-result-fix y)))
-    (cond ((resulterrp x) (resulterrp y))
-          ((resulterrp y) (resulterrp x))
+    (cond ((reserrp x) (reserrp y))
+          ((reserrp y) (reserrp x))
           (t (equal x y))))
   :hooks (:fix)
   ///
@@ -409,7 +409,7 @@
          (funscope-result-dead (funscope-for-fundefs fundefs)))
   :enable (funscope-for-fundefs
            funscope-result-dead
-           funscopep-when-funscope-resultp-and-not-resulterrp))
+           funscopep-when-funscope-resultp-and-not-reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -434,8 +434,8 @@
      :enable (add-funs
               funscope-result-dead
               funenv-result-dead
-              funscopep-when-funscope-resultp-and-not-resulterrp
-              not-resulterrp-when-funenvp))))
+              funscopep-when-funscope-resultp-and-not-reserrp
+              not-reserrp-when-funenvp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -556,7 +556,7 @@
                             fundef-nofunp
                             block-option-some->val
                             block-nofunp-of-funinfo->body
-                            not-resulterrp-when-funenvp)))
+                            not-reserrp-when-funenvp)))
 
   (set-induction-depth-limit 1)
 

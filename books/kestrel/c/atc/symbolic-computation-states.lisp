@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "computation-states")
+(include-book "../language/computation-states")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,6 +298,18 @@
      (defret consp-of-update-var-aux
        (equal (consp new-scopes)
               (consp scopes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define objdesign->base-address ((objdes objdesignp))
+  :returns (addr addressp)
+  :short "Base address of an object designator."
+  (objdesign-case objdes
+                  :address objdes.get
+                  :element (objdesign->base-address objdes.super)
+                  :member (objdesign->base-address objdes.super))
+  :measure (objdesign-count objdes)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

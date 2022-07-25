@@ -38,10 +38,10 @@
   :default-parent t)
 
 ;; Some conventions:
-;; * If a parsing function just fails to parse, a resulterr is returned
+;; * If a parsing function just fails to parse, a reserr is returned
 ;;   so that its caller can try other alternatives.
 ;; * If a parsing function fails due to malformed or unexpected input,
-;;   we throw a hard error, and then return a resulterr for logic reasons.
+;;   we throw a hard error, and then return a reserr for logic reasons.
 ;; When successful, some parsing functions just eat (e.g., parse-symbol);
 ;; some parsing functions sometimes just eat and sometimes eat and build (e.g., parse-keyword);
 ;; and some parsing functions always eat and build (e.g., parse-identifier).
@@ -79,12 +79,12 @@
   '( "." "," "->" "(" ")" ":=" "{" "}"))
 
 (define parse-symbol ((symbol stringp) (tokens abnf::tree-listp))
-  :returns (tokens-after-symbol-or-resulterr abnf::tree-list-resultp
+  :returns (tokens-after-symbol-or-reserr abnf::tree-list-resultp
                                              :hints
                                              (("Goal" :in-theory
-                                               (enable abnf::tree-listp-when-tree-list-resultp-and-not-resulterrp))))
+                                               (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
 ;  :verbosep t ; for debugging
-  :short "Attempts to eat the named @('symbol'), returning either the list of remaining tokens or a resulterr."
+  :short "Attempts to eat the named @('symbol'), returning either the list of remaining tokens or a reserr."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -117,7 +117,7 @@
          ((unless (and (abnf::tree-case putative-symbol-tree :nonleaf)
                        (equal (abnf::tree-nonleaf->rulename? putative-symbol-tree)
                               (abnf::rulename "symbol"))))
-          ;; This is normal when trying various alternatives, so just return the resulterr.
+          ;; This is normal when trying various alternatives, so just return the reserr.
           (err (cons "token is not a symbol" tokens)))
 
          (branches (abnf::tree-nonleaf->branches putative-symbol-tree))
@@ -150,8 +150,8 @@
       (abnf::tree-list-fix (rest tokens))))
   ///
   (defret len-of-parse-symbol-<
-    (implies (not (resulterrp tokens-after-symbol-or-resulterr))
-             (< (len tokens-after-symbol-or-resulterr)
+    (implies (not (reserrp tokens-after-symbol-or-reserr))
+             (< (len tokens-after-symbol-or-reserr)
                 (len tokens)))
     :rule-classes :linear
     )
@@ -173,12 +173,12 @@
   '( "function" "if" "for" "switch" "case" "default" "let" "leave" "break" "continue" ))
 
 (define parse-keyword ((keyword stringp) (tokens abnf::tree-listp))
-  :returns (mv (ast-node statement-optionp) (tokens-after-keyword-or-resulterr abnf::tree-list-resultp))
+  :returns (mv (ast-node statement-optionp) (tokens-after-keyword-or-reserr abnf::tree-list-resultp))
   :short "Attempts to eat the named @('keyword')."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Returns two values: an optional statement AST node and either the list of remaining tokens or a resulterr.")
+    "Returns two values: an optional statement AST node and either the list of remaining tokens or a reserr.")
    (xdoc::p
     "If a keyword is found, and if it is @('leave'), @('break'), or @('continue'), then
      the appropriate statement is built and returned as the first value.
@@ -186,7 +186,7 @@
      has surface syntax consisting solely of a single keyword.
      In either case, the second value returns is the list of remaining tokens after eating the keyword token.")
    (xdoc::p
-    "If no keyword is found, the first value returned is @('NIL') and the second is a resulterr.")
+    "If no keyword is found, the first value returned is @('NIL') and the second is a reserr.")
    (xdoc::p
     "In this context, @('keyword') is a nonterminal in the ABNF grammar for Yul,
      and its alternatives are terminals (aka terminal symbols) that are the actual keywords.
@@ -216,7 +216,7 @@
          ((unless (and (abnf::tree-case putative-keyword-tree :nonleaf)
                        (equal (abnf::tree-nonleaf->rulename? putative-keyword-tree)
                               (abnf::rulename "keyword"))))
-          ;; This is normal when trying various alternatives, so just return the resulterr.
+          ;; This is normal when trying various alternatives, so just return the reserr.
           (mv nil
               (err (cons "token is not a keyword" tokens))))
 
@@ -257,8 +257,8 @@
           (abnf::tree-list-fix (rest tokens)))))
   ///
   (defret len-of-parse-keyword-<
-    (implies (not (resulterrp tokens-after-keyword-or-resulterr))
-             (< (len tokens-after-keyword-or-resulterr)
+    (implies (not (reserrp tokens-after-keyword-or-reserr))
+             (< (len tokens-after-keyword-or-reserr)
                 (len tokens)))
     :rule-classes :linear)
   )
@@ -271,16 +271,16 @@
 ;; After identifying the token as an identifier, Let the fringe walker gather the full text of it.
 
 (define parse-identifier ((tokens abnf::tree-listp))
-  :returns (mv (ast-node identifier-optionp) (tokens-after-identifier-or-resulterr abnf::tree-list-resultp))
+  :returns (mv (ast-node identifier-optionp) (tokens-after-identifier-or-reserr abnf::tree-list-resultp))
   :short "Attempts to eat an identifier token and build an identifier AST node."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Returns two values: an optional identifier AST node and either the list of remaining tokens or a resulterr.")
+    "Returns two values: an optional identifier AST node and either the list of remaining tokens or a reserr.")
    (xdoc::p
     "If an identifier token is found, the first value returned is an identifier AST node with the full token leaf text.")
    (xdoc::p
-    "If no identifier is found, the first value returned is @('NIL') and the second value is a resulterr."))
+    "If no identifier is found, the first value returned is @('NIL') and the second value is a reserr."))
   (b* (((when (endp tokens))
           ;; It is possible this always indicates malformed input or logic error.
           ;; However, just in case this can occur on a false parse branch,
@@ -293,7 +293,7 @@
          ((unless (and (abnf::tree-case putative-identifier-tree :nonleaf)
                        (equal (abnf::tree-nonleaf->rulename? putative-identifier-tree)
                               (abnf::rulename "identifier"))))
-          ;; This is normal when trying various alternatives, so just return the resulterr.
+          ;; This is normal when trying various alternatives, so just return the reserr.
           (mv nil
               (err (cons "token is not an identifier" tokens)))))
 
@@ -310,8 +310,8 @@
           (abnf::tree-list-fix (rest tokens)))))
   ///
   (defret len-of-parse-identifier-<
-    (implies (not (resulterrp tokens-after-identifier-or-resulterr))
-             (< (len tokens-after-identifier-or-resulterr)
+    (implies (not (reserrp tokens-after-identifier-or-reserr))
+             (< (len tokens-after-identifier-or-reserr)
                 (len tokens)))
     :rule-classes :linear))
 
@@ -533,7 +533,7 @@
                     (equal (first escape-sequence-contents) *list-leafterm-x*))
                (cst2ast-xhh (second escape-sequence-contents)))
               (t (err "unexpected input to cst2ast-escape-sequence 6"))))
-       ((when (resulterrp yul-escape-or-err))
+       ((when (reserrp yul-escape-or-err))
         yul-escape-or-err))
     (make-string-element-escape :get yul-escape-or-err)))
 
@@ -583,7 +583,7 @@
                               (cst2ast-escape-sequence subtree))
                              (t
                               (cst2ast-quoted-printable subtree double-quoted-p))))
-       ((when (resulterrp string-element))
+       ((when (reserrp string-element))
           (err "bad structure for string literal content element 4")))
     string-element))
 
@@ -724,17 +724,17 @@
           (t nil))))
 
 (define parse-literal ((tokens abnf::tree-listp))
-  :returns (mv (ast-node literal-optionp) (tokens-after-literal-or-resulterr abnf::tree-list-resultp))
+  :returns (mv (ast-node literal-optionp) (tokens-after-literal-or-reserr abnf::tree-list-resultp))
   :short "Attempts to eat a literal and build a literal AST node."
   :long
   (xdoc::topstring
     (xdoc::p
-      "Returns two values: an optional literal AST node and either the list of remaining tokens or a resulterr.")
+      "Returns two values: an optional literal AST node and either the list of remaining tokens or a reserr.")
     (xdoc::p
       "If a valid literal token is found, the first value returned
        is a literal AST node of the appropriate kind.  Different kinds have different substructure.")
     (xdoc::p
-      "If no literal is found, the first value returned is @('NIL') and the second value is a resulterr."))
+      "If no literal is found, the first value returned is @('NIL') and the second value is a reserr."))
   (b* (((when (endp tokens))
         ;; It is possible this always indicates malformed input or logic error.
         ;; However, just in case this can occur on a false parse branch,
@@ -750,7 +750,7 @@
        ((unless (and (abnf::tree-case putative-literal-tree :nonleaf)
                      (equal (abnf::tree-nonleaf->rulename? putative-literal-tree)
                             (abnf::rulename "literal"))))
-        ;; This is normal when trying various alternatives, so just return the resulterr.
+        ;; This is normal when trying various alternatives, so just return the reserr.
         (mv nil
             (err (cons "token is not a literal" tokens))))
 
@@ -776,8 +776,8 @@
         (rest tokens)))
     ///
     (defret len-of-parse-literal-<
-      (implies (not (resulterrp tokens-after-literal-or-resulterr))
-               (< (len tokens-after-literal-or-resulterr)
+      (implies (not (reserrp tokens-after-literal-or-reserr))
+               (< (len tokens-after-literal-or-reserr)
                   (len tokens)))
       :rule-classes :linear)
   )
@@ -792,14 +792,14 @@
   (b* ((tokens (abnf::tree-list-fix tokens))
        ((when (endp tokens)) (mv nil tokens))
        (tokens-after-dot-or-err (parse-symbol "." tokens))
-       ((when (resulterrp tokens-after-dot-or-err))
+       ((when (reserrp tokens-after-dot-or-err))
         (mv nil tokens))
        ;; saw a dot; look for an identifier
        ((mv first-id tokens-after-first-id)
         (parse-identifier tokens-after-dot-or-err))
        ((when (null first-id))
         (mv nil tokens))
-       ((when (resulterrp tokens-after-first-id))
+       ((when (reserrp tokens-after-first-id))
         (mv nil tokens))
        ((unless (identifierp first-id))
         (mv nil tokens))
@@ -827,7 +827,7 @@
        ((when (null first-id))
         (mv (err (cons "can't be path since no identifier" tokens))
             nil))
-       ((when (resulterrp tokens-after-first-id))
+       ((when (reserrp tokens-after-first-id))
         (mv (err (cons "can't be path since no identifier 2" tokens))
             nil))
        ((mv rest-ids rest-tokens)
@@ -837,11 +837,11 @@
     (mv (make-path :get (cons first-id rest-ids)) rest-tokens))
   ///
   (defret len-of-parse-path-<
-    (implies (not (resulterrp ast-node))
+    (implies (not (reserrp ast-node))
              (< (len tokens-after-path)
                 (len tokens)))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-pathp)))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-pathp)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -857,15 +857,15 @@
        ((mv id-ast? tokens-after-identifier-or-error)
         (parse-identifier tokens))
        ((when (or (null id-ast?)
-                  (resulterrp tokens-after-identifier-or-error)))
+                  (reserrp tokens-after-identifier-or-error)))
         (mv (err "no id here 2") nil))
        (tokens-after-paren-or-error (parse-symbol "(" tokens-after-identifier-or-error))
-       ((when (resulterrp tokens-after-paren-or-error))
+       ((when (reserrp tokens-after-paren-or-error))
         (mv (err "no start of funcall here") nil)))
     (mv id-ast? tokens-after-paren-or-error))
   ///
   (defret len-of-parse-identifier-and-open-paren-<
-    (implies (not (resulterrp result-ast))
+    (implies (not (reserrp result-ast))
              (< (len tokens-after-id-and-open-paren)
                 (len tokens)))
     :rule-classes :linear))
@@ -883,21 +883,21 @@
          ((mv literal-ast tokens-after-literal-or-err)
           (parse-literal tokens))
          ((when (and (literalp literal-ast)
-                     (not (resulterrp tokens-after-literal-or-err))))
+                     (not (reserrp tokens-after-literal-or-err))))
           (mv (make-expression-literal :get literal-ast) tokens-after-literal-or-err))
 
          ;; Since path and function-call both start with an identifier,
          ;; but function-call requires a following "(", try function-call next
          ((mv function-call-ast tokens-after-function-call)
           (parse-function-call tokens))
-         ((unless (resulterrp function-call-ast))
+         ((unless (reserrp function-call-ast))
           (mv (make-expression-funcall :get function-call-ast)
               tokens-after-function-call))
 
          ;; Finally, try path.
          ((mv path-ast tokens-after-path)
           (parse-path tokens))
-         ((unless (resulterrp path-ast))
+         ((unless (reserrp path-ast))
           (mv (make-expression-path :get path-ast) tokens-after-path)))
 
       ;; none of those worked
@@ -910,18 +910,18 @@
     :short "Attempts to eat a function call and build a funcall AST node."
     (b* (((mv id-or-err tokens-after-id-and-open-paren)
           (parse-identifier-and-open-paren tokens))
-         ((when (resulterrp id-or-err))
+         ((when (reserrp id-or-err))
           (mv (err "no function call here 0") nil))
 
          ;; First expression in optional expression list
          ((mv first-expression-arg-ast tokens-after-first-expression)
           (parse-expression tokens-after-id-and-open-paren)))
 
-      (if (resulterrp first-expression-arg-ast)
+      (if (reserrp first-expression-arg-ast)
 
           ;; There are no expressions, so we need to see a close paren now
           (b* ((tokens-after-close-paren-or-err (parse-symbol ")" tokens-after-id-and-open-paren))
-               ((when (resulterrp tokens-after-close-paren-or-err))
+               ((when (reserrp tokens-after-close-paren-or-err))
                 (mv (err (cons "no ) after zero expressions so not a function call" tokens)) nil))
                ((unless (mbt (< (len tokens-after-close-paren-or-err)
                                 (len tokens))))
@@ -937,7 +937,7 @@
              ((mv rest-expressions rest-tokens)
               (parse-*-comma-expression tokens-after-first-expression))
              (tokens-after-close-paren-or-err2 (parse-symbol ")" rest-tokens))
-             ((when (resulterrp tokens-after-close-paren-or-err2))
+             ((when (reserrp tokens-after-close-paren-or-err2))
               (mv (err (cons "no ) after one or more expressions so not a function call" tokens)) nil)))
           (mv (make-funcall
                :name id-or-err
@@ -952,12 +952,12 @@
          ((when (endp tokens))
           (mv nil tokens))
          (tokens-after-comma-or-err (parse-symbol "," tokens))
-         ((when (resulterrp tokens-after-comma-or-err))
+         ((when (reserrp tokens-after-comma-or-err))
           (mv nil tokens))
          ;; saw a comma; look for an expression
          ((mv first-expr tokens-after-first-expr)
           (parse-expression tokens-after-comma-or-err))
-         ((when (resulterrp first-expr))
+         ((when (reserrp first-expr))
           (mv nil tokens))
          ((unless (expressionp first-expr))
           (mv nil tokens))
@@ -974,13 +974,13 @@
   ///
   (std::defret-mutual len-of-parse-expressions-<
     (defret len-of-parse-expression-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-expression)
                   (len tokens)))
       :rule-classes :linear
       :fn parse-expression)
     (defret len-of-parse-function-call-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-funcall)
                   (len tokens)))
       :rule-classes :linear
@@ -990,7 +990,7 @@
       :rule-classes :linear
       :fn parse-*-comma-expression)
     :hints (("Goal"
-             :in-theory (enable not-resulterrp-when-expressionp not-resulterrp-when-funcallp)
+             :in-theory (enable not-reserrp-when-expressionp not-reserrp-when-funcallp)
              :expand ((parse-*-comma-expression tokens)
                       (parse-function-call tokens))))
     )
@@ -1016,14 +1016,14 @@
   (b* ((tokens (abnf::tree-list-fix tokens))
        ((when (endp tokens)) (mv nil tokens))
        (tokens-after-comma-or-err (parse-symbol "," tokens))
-       ((when (resulterrp tokens-after-comma-or-err))
+       ((when (reserrp tokens-after-comma-or-err))
         (mv nil tokens))
        ;; saw a comma; look for an identifier
        ((mv first-id tokens-after-first-id)
         (parse-identifier tokens-after-comma-or-err))
        ((when (null first-id))
         (mv nil tokens))
-       ((when (resulterrp tokens-after-first-id))
+       ((when (reserrp tokens-after-first-id))
         (mv nil tokens))
        ((unless (identifierp first-id))
         (mv nil tokens))
@@ -1066,13 +1066,13 @@
 
   (b* (((mv ?key1 tokens-after-let)
         (parse-keyword "let" tokens))
-       ((when (resulterrp tokens-after-let))
+       ((when (reserrp tokens-after-let))
         (mv (err (cons "no variable decl here" tokens)) nil))
        ((mv let-var-1 tokens-after-let-var-1)
         (parse-identifier tokens-after-let))
        ((when (null let-var-1))
         (mv (err (cons "no variable decl here 2" tokens)) nil))
-       ((when (resulterrp tokens-after-let-var-1))
+       ((when (reserrp tokens-after-let-var-1))
         (mv (err (cons "no variable decl here 3" tokens)) nil))
        ;; see if there are any more identifiers (preceded by commas)
        ((mv rest-identifiers tokens-after-rest-identifiers)
@@ -1081,13 +1081,13 @@
        (tokens-after-init-symbol
         (parse-symbol ":=" tokens-after-rest-identifiers))
        ((mv init-ast tokens-final)
-        (if (resulterrp tokens-after-init-symbol)
+        (if (reserrp tokens-after-init-symbol)
             (mv nil tokens-after-rest-identifiers)
           (b* (((mv init-ast tokens-after-init)
                 (if (null rest-identifiers)
                     (parse-expression tokens-after-init-symbol)
                   (parse-function-call tokens-after-init-symbol)))
-               ((when (resulterrp init-ast))
+               ((when (reserrp init-ast))
                 ;; the init doesn't parse, but it is optional,
                 ;; so skip it and unwind the tokens
                 (mv nil tokens-after-rest-identifiers)))
@@ -1100,7 +1100,7 @@
         tokens-final))
   ///
   (defret len-of-parse-variable-declaration-<
-    (implies (not (resulterrp result-ast))
+    (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
 
@@ -1121,7 +1121,7 @@
   (b* ((tokens (abnf::tree-list-fix tokens))
        ((when (endp tokens)) (mv nil tokens))
        (tokens-after-comma-or-err (parse-symbol "," tokens))
-       ((when (resulterrp tokens-after-comma-or-err))
+       ((when (reserrp tokens-after-comma-or-err))
         (mv nil tokens))
        ;; saw a comma; look for an path
        ((mv first-path tokens-after-first-path)
@@ -1133,7 +1133,7 @@
     (mv (cons first-path rest-paths)
         (abnf::tree-list-fix tokens-after-rest-paths)))
   :measure (len tokens)
-  :hints (("Goal" :in-theory (enable not-resulterrp-when-pathp)))
+  :hints (("Goal" :in-theory (enable not-reserrp-when-pathp)))
   :verify-guards nil
   ///
   (verify-guards parse-*-comma-path)
@@ -1141,7 +1141,7 @@
     (<= (len tokens-after-paths)
         (len tokens))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-pathp))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-pathp))))
   )
 ;; consider having theorems that say
 ;; (implies (null result-asts) (= (len tokens-after-paths) (len tokens)))
@@ -1153,7 +1153,7 @@
   :short "Attempts to eat an assignment statement and build a @('statement') AST node of kind @(':assign-single') or @(':assign-multiple')."
   (b* (((mv path-ast tokens-after-path)
         (parse-path tokens))
-       ((when (resulterrp path-ast))
+       ((when (reserrp path-ast))
         (mv (err (cons "no assignment statement here" tokens))
             nil))
        ;; See how many more instances of ( "," path ) can be parsed.
@@ -1162,13 +1162,13 @@
        ((mv additional-paths tokens-after-additional-paths)
         (parse-*-comma-path tokens-after-path))
        (tokens-after-assignment-symbol (parse-symbol ":=" tokens-after-additional-paths))
-       ((when (resulterrp tokens-after-assignment-symbol))
+       ((when (reserrp tokens-after-assignment-symbol))
         (mv (err (cons "assignment statement requires ':='" tokens)) nil))
        ((mv init-ast tokens-after-init-form)
         (if (null additional-paths)
             (parse-expression tokens-after-assignment-symbol)
           (parse-function-call tokens-after-assignment-symbol)))
-       ((when (resulterrp init-ast))
+       ((when (reserrp init-ast))
         (mv (err (cons "assignment statement does not finish properly" tokens))
             nil)))
     (mv (if (null additional-paths)
@@ -1179,7 +1179,7 @@
         tokens-after-init-form))
   ///
   (defret len-of-parse-assignment-statement-<
-    (implies (not (resulterrp result-ast))
+    (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear)
   )
@@ -1195,12 +1195,12 @@
   (b* (((mv statement-or-nil tokens-after-statement)
         (parse-keyword "leave" tokens)))
     (if (or (not (statementp statement-or-nil))
-            (resulterrp tokens-after-statement))
+            (reserrp tokens-after-statement))
         (mv (err "no leave statement here") (abnf::tree-list-fix tokens))
       (mv statement-or-nil (abnf::tree-list-fix tokens-after-statement))))
   ///
   (defret len-of-parse-leave-statement-<
-    (implies (not (resulterrp result-ast))
+    (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
 
@@ -1214,12 +1214,12 @@
   (b* (((mv statement-or-nil tokens-after-statement)
         (parse-keyword "break" tokens)))
     (if (or (not (statementp statement-or-nil))
-            (resulterrp tokens-after-statement))
+            (reserrp tokens-after-statement))
         (mv (err "no break statement here") (abnf::tree-list-fix tokens))
       (mv statement-or-nil (abnf::tree-list-fix tokens-after-statement))))
   ///
   (defret len-of-parse-break-statement-<
-    (implies (not (resulterrp result-ast))
+    (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
 
@@ -1234,12 +1234,12 @@
   (b* (((mv statement-or-nil tokens-after-statement)
         (parse-keyword "continue" tokens)))
     (if (or (not (statementp statement-or-nil))
-            (resulterrp tokens-after-statement))
+            (reserrp tokens-after-statement))
         (mv (err "no continue statement here") (abnf::tree-list-fix tokens))
       (mv statement-or-nil (abnf::tree-list-fix tokens-after-statement))))
   ///
   (defret len-of-parse-continue-statement-<
-    (implies (not (resulterrp result-ast))
+    (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
 
@@ -1280,57 +1280,57 @@
 
          ;; block
          ((mv block-result tokens-after) (parse-block tokens))
-         ((unless (resulterrp block-result))
+         ((unless (reserrp block-result))
           (mv (make-statement-block :get block-result)
               tokens-after))
 
          ;; variable declaration
          ((mv decl-result tokens-after) (parse-variable-declaration tokens))
-         ((unless (resulterrp decl-result))
+         ((unless (reserrp decl-result))
           (mv decl-result tokens-after))
 
          ;; assignment
          ((mv assignment-result tokens-after) (parse-assignment-statement tokens))
-         ((unless (resulterrp assignment-result))
+         ((unless (reserrp assignment-result))
           (mv assignment-result tokens-after))
 
          ;; function call
          ((mv function-call-result tokens-after) (parse-function-call tokens))
-         ((unless (resulterrp function-call-result))
+         ((unless (reserrp function-call-result))
           (mv (make-statement-funcall :get function-call-result)
               tokens-after))
 
          ;; if statement
          ((mv if-result tokens-after) (parse-if-statement tokens))
-         ((unless (resulterrp if-result))
+         ((unless (reserrp if-result))
           (mv if-result tokens-after))
 
          ;; for statement
          ((mv for-result tokens-after) (parse-for-statement tokens))
-         ((unless (resulterrp for-result))
+         ((unless (reserrp for-result))
           (mv for-result tokens-after))
 
          ;; switch statement
          ((mv switch-result tokens-after) (parse-switch-statement tokens))
-         ((unless (resulterrp switch-result))
+         ((unless (reserrp switch-result))
           (mv switch-result tokens-after))
 
          ;; leave
          ((mv leave-result tokens-after) (parse-leave-statement tokens))
-         ((unless (resulterrp leave-result))
+         ((unless (reserrp leave-result))
           (mv leave-result tokens-after))
          ;; break
          ((mv break-result tokens-after) (parse-break-statement tokens))
-         ((unless (resulterrp break-result))
+         ((unless (reserrp break-result))
           (mv break-result tokens-after))
          ;; continue
          ((mv continue-result tokens-after) (parse-continue-statement tokens))
-         ((unless (resulterrp continue-result))
+         ((unless (reserrp continue-result))
           (mv continue-result tokens-after))
 
          ;; function definition
          ((mv fundef-result tokens-after) (parse-fundef tokens))
-         ((unless (resulterrp fundef-result))
+         ((unless (reserrp fundef-result))
           (mv (make-statement-fundef :get fundef-result)
               tokens-after))
 
@@ -1348,7 +1348,7 @@
          ;; parse required symbol "{"
          (tokens-after-open-brace-or-err
           (parse-symbol "{" tokens))
-         ((when (resulterrp tokens-after-open-brace-or-err))
+         ((when (reserrp tokens-after-open-brace-or-err))
           (mv (err (cons "no block start here" tokens)) nil))
          ;; parse zero or more statements
          ((mv block-statements tokens-after-block-statements)
@@ -1356,7 +1356,7 @@
          ;; parse required symbol "}"
          (tokens-after-close-brace-or-err
           (parse-symbol "}" tokens-after-block-statements))
-         ((when (resulterrp tokens-after-close-brace-or-err))
+         ((when (reserrp tokens-after-close-brace-or-err))
           (mv (err (cons "no close brace for block" tokens)) nil))
          ((unless (mbt (< (len tokens-after-close-brace-or-err)
                           (len tokens))))
@@ -1372,13 +1372,13 @@
     (b* (((when (endp tokens))
           (mv (err "no if statement here") nil))
          ;; parse required keyword "if"
-         ((mv ?if-ast-node tokens-after-if-or-resulterr)
+         ((mv ?if-ast-node tokens-after-if-or-reserr)
           (parse-keyword "if" tokens))
-         ((when (resulterrp tokens-after-if-or-resulterr))
+         ((when (reserrp tokens-after-if-or-reserr))
           (mv (err "no if statement here 2") nil))
          ((mv expression-or-err tokens-after-if-expression)
-          (parse-expression tokens-after-if-or-resulterr))
-         ((when (resulterrp expression-or-err))
+          (parse-expression tokens-after-if-or-reserr))
+         ((when (reserrp expression-or-err))
           (mv (err "no expression after 'if'") nil))
          ((mv block-or-err tokens-after-if-block)
           (parse-block tokens-after-if-expression))
@@ -1397,15 +1397,15 @@
           (mv (err "no for statement here") nil))
 
          ;; parse required keyword "for"
-         ((mv ?for-ast-node tokens-after-for-or-resulterr)
+         ((mv ?for-ast-node tokens-after-for-or-reserr)
           (parse-keyword "for" tokens))
-         ((when (resulterrp tokens-after-for-or-resulterr))
+         ((when (reserrp tokens-after-for-or-reserr))
           (mv (err "no for statement here 2") nil))
 
          ;; parse init block
          ((mv init-block tokens-after-init-block)
-          (parse-block tokens-after-for-or-resulterr))
-         ((when (resulterrp init-block))
+          (parse-block tokens-after-for-or-reserr))
+         ((when (reserrp init-block))
           (mv (err "no init block after 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-init-block)
@@ -1415,7 +1415,7 @@
          ;; parse test expression
          ((mv test-expression tokens-after-test-expression)
           (parse-expression tokens-after-init-block))
-         ((when (resulterrp test-expression))
+         ((when (reserrp test-expression))
           (mv (err "no test expression for 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-test-expression)
@@ -1425,7 +1425,7 @@
          ;; parse update block
          ((mv update-block tokens-after-update-block)
           (parse-block tokens-after-test-expression))
-         ((when (resulterrp update-block))
+         ((when (reserrp update-block))
           (mv (err "no update block for 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-update-block)
@@ -1435,7 +1435,7 @@
          ;; parse body block
          ((mv body-block tokens-after-body-block)
           (parse-block tokens-after-update-block))
-         ((when (resulterrp body-block))
+         ((when (reserrp body-block))
           (mv (err "no body block for 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-body-block)
@@ -1459,15 +1459,15 @@
           (mv (err "no switch statement here") nil))
 
          ;; parse required keyword "switch"
-         ((mv ?switch-ast-node tokens-after-switch-or-resulterr)
+         ((mv ?switch-ast-node tokens-after-switch-or-reserr)
           (parse-keyword "switch" tokens))
-         ((when (resulterrp tokens-after-switch-or-resulterr))
+         ((when (reserrp tokens-after-switch-or-reserr))
           (mv (err "no switch statement here 2") nil))
 
          ;; parse target expression
          ((mv target-expression tokens-after-target-expression)
-          (parse-expression tokens-after-switch-or-resulterr))
-         ((when (resulterrp target-expression))
+          (parse-expression tokens-after-switch-or-reserr))
+         ((when (reserrp target-expression))
           (mv (err "no target expression after 'switch'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-target-expression)
@@ -1489,14 +1489,14 @@
          ;; the whole clause fails and the clause is omitted.
          ((mv default-block-option tokens-after-block-option)
           (b* (;; parse default block keyword
-               ((mv ?default-ast tokens-after-default-or-resulterr)
+               ((mv ?default-ast tokens-after-default-or-reserr)
                 (parse-keyword "default" tokens-after-case-clauses))
-               ((when (resulterrp tokens-after-default-or-resulterr))
+               ((when (reserrp tokens-after-default-or-reserr))
                 (mv nil tokens-after-case-clauses))
                ;; parse default block
                ((mv default-block tokens-after-default-block)
-                (parse-block tokens-after-default-or-resulterr))
-               ((when (resulterrp default-block))
+                (parse-block tokens-after-default-or-reserr))
+               ((when (reserrp default-block))
                 (mv nil tokens-after-case-clauses)))
             (mv default-block tokens-after-default-block)))
          ;; inform the measure proof of the intermediate decrease
@@ -1521,22 +1521,22 @@
           (mv (err "no case clause here") nil))
 
          ;; parse required keyword "case"
-         ((mv ?case-ast-node tokens-after-case-or-resulterr)
+         ((mv ?case-ast-node tokens-after-case-or-reserr)
           (parse-keyword "case" tokens))
-         ((when (resulterrp tokens-after-case-or-resulterr))
+         ((when (reserrp tokens-after-case-or-reserr))
           (mv (err "no case clause here 2") nil))
 
          ;; parse the case's value, a literal
-         ((mv value-literal? tokens-after-value-literal-or-resulterr)
-          (parse-literal tokens-after-case-or-resulterr))
+         ((mv value-literal? tokens-after-value-literal-or-reserr)
+          (parse-literal tokens-after-case-or-reserr))
          ((unless (and (literalp value-literal?)
-                       (not (resulterrp tokens-after-value-literal-or-resulterr))))
+                       (not (reserrp tokens-after-value-literal-or-reserr))))
           (mv (err "can't parse case's value literal") nil))
 
          ;; parse the case's body, a block
          ((mv body-block tokens-after-body-block)
-          (parse-block tokens-after-value-literal-or-resulterr))
-         ((when (resulterrp body-block))
+          (parse-block tokens-after-value-literal-or-reserr))
+         ((when (reserrp body-block))
           (mv (err "can't parse case's body block") nil)))
 
       (mv (make-swcase :value value-literal?
@@ -1555,7 +1555,7 @@
        single function that parses zero-or-more clauses."))
     (b* (((when (endp tokens)) (mv nil nil))
          ((mv first-clause tokens-after-clause) (parse-case-clause tokens))
-         ((when (resulterrp first-clause))
+         ((when (reserrp first-clause))
           ; found zero clauses here
           (mv nil (abnf::tree-list-fix tokens)))
          ;; We found first-clause, now look for more.
@@ -1575,30 +1575,30 @@
           (mv (err "no function definition here") nil))
 
          ;; parse required keyword "function"
-         ((mv ?function-ast-node tokens-after-function-or-resulterr)
+         ((mv ?function-ast-node tokens-after-function-or-reserr)
           (parse-keyword "function" tokens))
-         ((when (resulterrp tokens-after-function-or-resulterr))
+         ((when (reserrp tokens-after-function-or-reserr))
           (mv (err "no function definition here 2") nil))
          ;; inform the measure proof of the intermediate decrease
-         ((unless (mbt (< (len tokens-after-function-or-resulterr)
+         ((unless (mbt (< (len tokens-after-function-or-reserr)
                           (len tokens))))
           (mv (err "logic error") nil))
 
          ;; parse the function's name, an identifier
-         ((mv id-or-null tokens-after-id-or-resulterr)
-          (parse-identifier tokens-after-function-or-resulterr))
+         ((mv id-or-null tokens-after-id-or-reserr)
+          (parse-identifier tokens-after-function-or-reserr))
          ((when (null id-or-null))
           (mv (err "missing function name") nil))
-         ((when (resulterrp tokens-after-id-or-resulterr))
+         ((when (reserrp tokens-after-id-or-reserr))
           (mv (err "missing function name") nil))
          ;; inform the measure proof of the intermediate decrease
-         ((unless (mbt (< (len tokens-after-id-or-resulterr)
+         ((unless (mbt (< (len tokens-after-id-or-reserr)
                           (len tokens))))
             (mv (err "logic error") nil))
 
          ;; parse the required "("
-         (tokens-after-open-paren (parse-symbol "(" tokens-after-id-or-resulterr))
-         ((when (resulterrp tokens-after-open-paren))
+         (tokens-after-open-paren (parse-symbol "(" tokens-after-id-or-reserr))
+         ((when (reserrp tokens-after-open-paren))
           (mv (err "missing '(' in function definition") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-open-paren)
@@ -1614,7 +1614,7 @@
                 (parse-identifier tokens-after-open-paren))
                ((when (null first-id))
                 (mv nil tokens-after-open-paren))
-               ((when (resulterrp tokens-after-first-id))
+               ((when (reserrp tokens-after-first-id))
                 (mv nil tokens-after-open-paren))
                ;; remaining identifiers
                ((mv rest-ids tokens-after-rest-ids)
@@ -1627,7 +1627,7 @@
 
          ;; parse the required ")"
          (tokens-after-close-paren (parse-symbol ")" tokens-after-input-ids))
-         ((when (resulterrp tokens-after-close-paren))
+         ((when (reserrp tokens-after-close-paren))
           (mv (err "missing ')' in function definition") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-close-paren)
@@ -1637,7 +1637,7 @@
          ;; the "->" is optional
          ((mv output-ids tokens-after-output-ids)
           (b* ((tokens-after-arrow (parse-symbol "->" tokens-after-close-paren))
-               ((when (resulterrp tokens-after-arrow))
+               ((when (reserrp tokens-after-arrow))
                 (mv nil tokens-after-close-paren))
 
                ;; inform the measure proof of the intermediate decrease
@@ -1651,7 +1651,7 @@
                 (parse-identifier tokens-after-arrow))
                ((when (null first-output-id))
                 (mv (err "missing output identifier in function definition") nil))
-               ((when (resulterrp tokens-after-first-output-id))
+               ((when (reserrp tokens-after-first-output-id))
                 (mv (err "missing output identifier in function definition") nil))
 
                ;; inform the measure proof of the intermediate decrease
@@ -1669,7 +1669,7 @@
                 (mv (err "logic error") nil)))
             (mv (cons first-output-id rest-output-ids)
                 tokens-after-rest-output-ids)))
-         ((when (resulterrp output-ids))
+         ((when (reserrp output-ids))
           (mv (err (cons "parse error in output ids" output-ids)) nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-output-ids)
@@ -1679,7 +1679,7 @@
          ;; parse the required function body block
          ((mv body-block tokens-after-body-block)
           (parse-block tokens-after-output-ids))
-         ((when (resulterrp body-block))
+         ((when (reserrp body-block))
           (mv (err "no function definition body") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-body-block)
@@ -1703,7 +1703,7 @@
        statement rule to make it reasonably easy to disambiguate the statements."))
     (b* (((when (endp tokens)) (mv nil nil))
          ((mv first-statement tokens-after-statement) (parse-statement tokens))
-         ((when (resulterrp first-statement))
+         ((when (reserrp first-statement))
           ;; found zero statements here
           (mv nil (abnf::tree-list-fix tokens)))
          ;; We found first-statement, now look for more and return those found.
@@ -1724,37 +1724,37 @@
 
   (std::defret-mutual len-of-parse-statements-<
     (defret len-of-parse-statement-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-statement)
                   (len tokens)))
       :rule-classes :linear
       :fn parse-statement)
     (defret len-of-parse-block-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-block)
                   (len tokens)))
       :rule-classes :linear
       :fn parse-block)
     (defret len-of-parse-if-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-statement)
                   (len tokens)))
       :rule-classes :linear
       :fn parse-if-statement)
     (defret len-of-parse-for-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-statement)
                   (len tokens)))
       :rule-classes :linear
       :fn parse-for-statement)
     (defret len-of-parse-switch-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-statement)
                   (len tokens)))
       :rule-classes :linear
       :fn parse-switch-statement)
     (defret len-of-parse-case-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-clause)
                   (len tokens)))
       :rule-classes :linear
@@ -1765,7 +1765,7 @@
       :rule-classes :linear
       :fn parse-*-case-clause)
     (defret len-of-parse-fundef-<
-      (implies (not (resulterrp result-ast))
+      (implies (not (reserrp result-ast))
                (< (len tokens-after-fundef)
                   (len tokens)))
       :rule-classes :linear
@@ -1789,13 +1789,13 @@
   (xdoc::topstring
    (xdoc::p
     "@('yul-string') must contain the surface syntax of a single Yul block.")
-   (xdoc::p "Returns either a block or a resulterrp.
+   (xdoc::p "Returns either a block or a reserrp.
              Yul object notation is not supported at this time."))
   (b* ((tokens (tokenize-yul yul-string))
-       ((when (resulterrp tokens))
+       ((when (reserrp tokens))
         tokens)
        ((mv top-block tokens-after-ast) (parse-block tokens))
-       ((when (resulterrp top-block))
+       ((when (reserrp top-block))
         top-block)
        ;; We may want to relax this next restriction if we want multiple things
        ;; at the top level.
@@ -1814,10 +1814,10 @@
     "This does the same thing as @(see parse-yul), but does not need to
 convert the string to bytes first."))
   (b* ((tokens (tokenize-yul-bytes yul-bytes))
-       ((when (resulterrp tokens))
+       ((when (reserrp tokens))
         tokens)
        ((mv top-block tokens-after-ast) (parse-block tokens))
-       ((when (resulterrp top-block))
+       ((when (reserrp top-block))
         top-block)
        ;; We may want to relax this next restriction if we want multiple things
        ;; at the top level.

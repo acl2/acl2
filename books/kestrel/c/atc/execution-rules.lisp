@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "execution")
+(include-book "arrays")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -2530,13 +2531,29 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val))
              (equal (exec-initer initer compst fenv limit)
-                    (mv val compst1)))
+                    (mv (init-value-single val) compst1)))
     :enable exec-initer)
 
   (defval *atc-exec-initer-rules*
     '(exec-initer-when-single
       (:e initer-kind)
       (:e initer-single->get))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-init-value-to-value-rules
+  :short "Rules for @(tsee init-value-to-value)."
+
+  (defruled init-value-to-value-when-single
+    (implies (and (valuep val)
+                  (equal (type-of-value val)
+                         type))
+             (equal (init-value-to-value type (init-value-single val))
+                    val))
+    :enable init-value-to-value)
+
+  (defval *atc-init-value-to-value-rules*
+    '(init-value-to-value-when-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2553,13 +2570,13 @@
                   (equal var (mv-nth 0 var+tyname+init))
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
-                  (equal val+compst1
+                  (equal ival+compst1
                          (exec-initer init compst fenv (1- limit)))
-                  (equal val (mv-nth 0 val+compst1))
-                  (equal compst1 (mv-nth 1 val+compst1))
+                  (equal ival (mv-nth 0 ival+compst1))
+                  (equal compst1 (mv-nth 1 ival+compst1))
+                  (init-valuep ival)
+                  (equal val (init-value-to-value (tyname-to-type tyname) ival))
                   (valuep val)
-                  (equal (type-of-value val)
-                         (tyname-to-type tyname))
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
@@ -2583,7 +2600,8 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e obj-declon-to-ident+tyname+init))))
+      (:e obj-declon-to-ident+tyname+init)
+      return-type-of-init-value-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

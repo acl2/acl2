@@ -1440,6 +1440,7 @@
           *atc-exec-fun-rules*
           *atc-exec-stmt-rules*
           *atc-exec-initer-rules*
+          *atc-init-value-to-value-rules*
           *atc-exec-block-item-rules*
           *atc-exec-block-item-list-rules*
           *atc-init-scope-rules*

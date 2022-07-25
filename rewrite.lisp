@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -19249,7 +19249,7 @@
 ; of making a second attempt to use linear lemmas after successfully using at
 ; least one disjunctive inequality, is invoked only when setting up the pot-lst
 ; (obj = '?).  We found it much too expensive in some cases without this
-; restriction, as discussed in a comment in (deflabel note-8-4 ...) in the
+; restriction, as discussed in a comment in (defxdoc note-8-4 ...) in the
 ; source documentation (see books/system/doc/acl2-doc.lisp).
 
   (declare (ignore geneqv pequiv-info ttree)
