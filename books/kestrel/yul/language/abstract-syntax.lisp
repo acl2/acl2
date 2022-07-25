@@ -71,10 +71,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-identifierp
+(defruled not-reserrp-when-identifierp
   (implies (identifierp x)
-           (not (resulterrp x)))
-  :enable (identifierp resulterrp))
+           (not (reserrp x)))
+  :enable (identifierp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,10 +101,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-identifier-listp
+(defruled not-reserrp-when-identifier-listp
   (implies (identifier-listp x)
-           (not (resulterrp x)))
-  :enable resulterrp)
+           (not (reserrp x)))
+  :enable reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,10 +139,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-identifier-setp
+(defruled not-reserrp-when-identifier-setp
   (implies (identifier-setp x)
-           (not (resulterrp x)))
-  :enable (resulterrp identifier-setp))
+           (not (reserrp x)))
+  :enable (reserrp identifier-setp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -229,10 +229,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-pathp
+(defruled not-reserrp-when-pathp
   (implies (pathp x)
-           (not (resulterrp x)))
-  :enable (pathp resulterrp))
+           (not (reserrp x)))
+  :enable (pathp reserrp))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -522,10 +522,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-expressionp
+(defruled not-reserrp-when-expressionp
   (implies (expressionp x)
-           (not (resulterrp x)))
-  :enable (expressionp resulterrp))
+           (not (reserrp x)))
+  :enable (expressionp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,10 +543,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funcallp
+(defruled not-reserrp-when-funcallp
   (implies (funcallp x)
-           (not (resulterrp x)))
-  :enable (funcallp resulterrp))
+           (not (reserrp x)))
+  :enable (funcallp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -668,10 +668,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-blockp
+(defruled not-reserrp-when-blockp
   (implies (blockp x)
-           (not (resulterrp x)))
-  :enable (blockp resulterrp))
+           (not (reserrp x)))
+  :enable (blockp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -682,10 +682,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-statementp
+(defruled not-reserrp-when-statementp
   (implies (statementp x)
-           (not (resulterrp x)))
-  :enable (statementp resulterrp))
+           (not (reserrp x)))
+  :enable (statementp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,10 +696,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-fundefp
+(defruled not-reserrp-when-fundefp
   (implies (fundefp x)
-           (not (resulterrp x)))
-  :enable (fundefp resulterrp))
+           (not (reserrp x)))
+  :enable (fundefp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -710,10 +710,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-swcasep
+(defruled not-reserrp-when-swcasep
   (implies (swcasep x)
-           (not (resulterrp x)))
-  :enable (swcasep resulterrp))
+           (not (reserrp x)))
+  :enable (swcasep reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

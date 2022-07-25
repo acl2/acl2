@@ -1557,7 +1557,7 @@
                      (element-case the-el :rulename)))
         (err (cons :not-rulename-element the-el)))
        (rest-rulenames (rulenames-from-singular-conc-and-rep (rest concs)))
-       ((when (resulterrp rest-rulenames))
+       ((when (reserrp rest-rulenames))
         rest-rulenames)
        ((unless (acl2::string-listp rest-rulenames))
         (err (cons :impossible rest-rulenames))))
@@ -1588,7 +1588,7 @@
     "integer-type = unsigned-type / signed-type")
    (xdoc::p
     "If all of the requirements are satisified, the return value is a list
-     of the \"sub\" rulenames.  Otherwise a @(see resulterrp) is returned."))
+     of the \"sub\" rulenames.  Otherwise a @(see reserrp) is returned."))
 
   (b* (((mv rules ?not-rules)
         (rules-of-name (rulename (acl2::str-fix rule-name)) grammar))

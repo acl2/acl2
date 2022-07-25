@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-renamefun ((old identifierp) (new identifierp) (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two function names are related by function renaming."
   :long
   (xdoc::topstring
@@ -54,7 +54,7 @@
   (define expression-renamefun ((old expressionp)
                                 (new expressionp)
                                 (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two expressions are
             related by function renaming."
     :long
@@ -87,7 +87,7 @@
   (define expression-list-renamefun ((old expression-listp)
                                      (new expression-listp)
                                      (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two lists of expressions are
             related by function renaming."
     :long
@@ -108,7 +108,7 @@
   (define funcall-renamefun ((old funcallp)
                              (new funcallp)
                              (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two function calls are
             related by function renaming."
     :long
@@ -131,7 +131,7 @@
 (define expression-option-renamefun ((old expression-optionp)
                                      (new expression-optionp)
                                      (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two optional expressions are
           related by function renaming."
   :long
@@ -161,7 +161,7 @@
 (define funcall-option-renamefun ((old funcall-optionp)
                                   (new funcall-optionp)
                                   (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two optional function calls are
           related by function renaming."
   :long
@@ -227,7 +227,7 @@
   ///
 
   (defruled same-len-when-add-funs-to-fun-renaming
-    (implies (not (resulterrp (add-funs-to-fun-renaming old new ren)))
+    (implies (not (reserrp (add-funs-to-fun-renaming old new ren)))
              (equal (len new) (len old)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -240,7 +240,7 @@
   (define statement-renamefun ((old statementp)
                                (new statementp)
                                (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two statements are
             related by function renaming."
     :long
@@ -394,7 +394,7 @@
   (define statement-list-renamefun ((old statement-listp)
                                     (new statement-listp)
                                     (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two lists of statements are
             related by function renaming."
     :long
@@ -415,7 +415,7 @@
   (define block-renamefun ((old blockp)
                            (new blockp)
                            (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two blocks are
             related by function renaming."
     :long
@@ -436,7 +436,7 @@
   (define block-option-renamefun ((old block-optionp)
                                   (new block-optionp)
                                   (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two optional blocks are
             related by function renaming."
     (block-option-case
@@ -459,7 +459,7 @@
   (define swcase-renamefun ((old swcasep)
                             (new swcasep)
                             (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two switch cases are
             related by function renaming."
     :long
@@ -479,7 +479,7 @@
   (define swcase-list-renamefun ((old swcase-listp)
                                  (new swcase-listp)
                                  (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two lists of switch cases are
             related by function renaming."
     :long
@@ -500,7 +500,7 @@
   (define fundef-renamefun ((old fundefp)
                             (new fundefp)
                             (ren renamingp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check if two function definitions are
             related by function renaming."
     :long
@@ -530,7 +530,7 @@
   (fty::deffixequiv-mutual statements/blocks/cases/fundefs-renamefun)
 
   (defruled same-statement-kind-when-statement-renamefun
-    (implies (not (resulterrp (statement-renamefun old new ren)))
+    (implies (not (reserrp (statement-renamefun old new ren)))
              (equal (statement-kind new)
                     (statement-kind old)))
     :expand (statement-renamefun old new ren)))
@@ -540,7 +540,7 @@
 (define fundef-list-renamefun ((old fundef-listp)
                                (new fundef-listp)
                                (ren renamingp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if two lists of function definitions are
           related by function renaming."
   :long
@@ -566,8 +566,8 @@
   ///
 
   (defrule fundef-list-renamefun-of-statement-to-fundefs
-    (implies (not (resulterrp (statement-list-renamefun old new ren)))
-             (not (resulterrp
+    (implies (not (reserrp (statement-list-renamefun old new ren)))
+             (not (reserrp
                    (fundef-list-renamefun (statements-to-fundefs old)
                                           (statements-to-fundefs new)
                                           ren))))

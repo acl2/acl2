@@ -125,6 +125,15 @@
 
    (xdoc::h3 "Changes to Existing Libraries")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
+
+   (xdoc::p
+    "The library of "
+    (xdoc::seetopic "fty::defresult" "result types")
+    " has been improved.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")

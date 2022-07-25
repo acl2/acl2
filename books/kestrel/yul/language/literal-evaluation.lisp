@@ -236,7 +236,7 @@
   ///
 
   (defret error-info-wfp-of-eval-plain-string-literal
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -308,7 +308,7 @@
   ///
 
   (defret error-info-wfp-of-eval-hex-string-literal
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -351,5 +351,5 @@
   ///
 
   (defret error-info-wfp-of-eval-literal
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))))

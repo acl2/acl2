@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-identifier ((iden identifierp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if an identifier is well-formed."
   :long
   (xdoc::topstring
@@ -64,7 +64,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-identifier-list ((idens identifier-listp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if all the identifiers in a list are well-formed."
   (b* (((when (endp idens)) nil)
        ((ok &) (check-identifier (car idens)))
@@ -79,7 +79,7 @@
           statements, blocks, cases, and function definitions."
 
   (define check-identifiers-statement ((stmt statementp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check the well-formedness of identifiers declared in statements."
     (statement-case
      stmt
@@ -104,7 +104,7 @@
     :measure (statement-count stmt))
 
   (define check-identifiers-statement-list ((stmts statement-listp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check the well-formedness of identifiers
             declared in a list of statements."
     (b* (((when (endp stmts)) nil)
@@ -114,13 +114,13 @@
     :measure (statement-list-count stmts))
 
   (define check-identifiers-block ((block blockp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check the well-formedness of identifiers declared in a block."
     (check-identifiers-statement-list (block->statements block))
     :measure (block-count block))
 
   (define check-identifiers-block-option ((block? block-optionp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check the well-formedness of identifiers
             declared in an optional block."
     (block-option-case
@@ -130,14 +130,14 @@
     :measure (block-option-count block?))
 
   (define check-identifiers-swcase ((case swcasep))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check the well-formedness of identifiers
             declared in cases of switch statements."
     (check-identifiers-block (swcase->body case))
     :measure (swcase-count case))
 
   (define check-identifiers-swcase-list ((cases swcase-listp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check the well-formedness of identifiers
             declared in lists of cases of switch statements."
     (b* (((when (endp cases)) nil)
@@ -147,7 +147,7 @@
     :measure (swcase-list-count cases))
 
   (define check-identifiers-fundef ((fundef fundefp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check the well-formedness of identifiers
             declared in function definitions."
     (b* (((ok &) (check-identifier (fundef->name fundef)))
