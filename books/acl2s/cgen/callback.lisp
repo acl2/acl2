@@ -13,7 +13,9 @@
 (include-book "cgen-search" :ttags :all)
 (include-book "acl2s-parameter")
 
-
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
 
 ;; The following 2 functions need to be revisited and rewritten if necessary
 (defun let-binding->dep-graph-alst (vt-lst ans)

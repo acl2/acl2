@@ -9,6 +9,10 @@
 (include-book "cgen-search")
 (include-book "callback")
 (include-book "acl2s-parameter")
+
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
                
 (set-state-ok t)  
 
