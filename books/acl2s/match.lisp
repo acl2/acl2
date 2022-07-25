@@ -85,7 +85,7 @@
       '(;; (t nil))
         ;; Made this change to enforce exhaustiveness
         (t (illegal 'match "match is not exhaustive" ())))
-    (B* ((pat (car pats))
+    (b* ((pat (car pats))
          (code (car codes))
          (type? (or (and (keywordp pat)
                          (get-type-from-keyword pat))
