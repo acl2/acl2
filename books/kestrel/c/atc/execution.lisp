@@ -2202,7 +2202,9 @@
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
        since @(tsee type-of-value) never returns @('void')
-       (under the guard).")
+       (under the guard).
+       For now we disallow array objects;
+       these will be supported later.")
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
@@ -2211,9 +2213,11 @@
        item
        :declon
        (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
+            (type (tyname-to-type tyname))
+            ((when (type-case type :array))
+             (mv (error :unsupported-local-array) (compustate-fix compst)))
             ((mv ival compst) (exec-initer init compst fenv (1- limit)))
             ((when (errorp ival)) (mv ival compst))
-            (type (tyname-to-type tyname))
             (val (init-value-to-value type ival))
             ((when (errorp val)) (mv val compst))
             (new-compst (create-var var val compst))

@@ -125,6 +125,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-type-kind-rules
+  :short "Rules for resolving @(tsee type-kind) on given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to relieve certain hypotheses in rules
+     that involve @(tsee type-kind) being applied to
+     certain constructed types."))
+
+  (defruled type-kind-of-type-schar
+    (equal (type-kind (type-schar))
+           :schar))
+
+  (defruled type-kind-of-type-uchar
+    (equal (type-kind (type-uchar))
+           :uchar))
+
+  (defruled type-kind-of-type-sshort
+    (equal (type-kind (type-sshort))
+           :sshort))
+
+  (defruled type-kind-of-type-ushort
+    (equal (type-kind (type-ushort))
+           :ushort))
+
+  (defruled type-kind-of-type-sint
+    (equal (type-kind (type-sint))
+           :sint))
+
+  (defruled type-kind-of-type-uint
+    (equal (type-kind (type-uint))
+           :uint))
+
+  (defruled type-kind-of-type-slong
+    (equal (type-kind (type-slong))
+           :slong))
+
+  (defruled type-kind-of-type-ulong
+    (equal (type-kind (type-ulong))
+           :ulong))
+
+  (defruled type-kind-of-type-sllong
+    (equal (type-kind (type-sllong))
+           :sllong))
+
+  (defruled type-kind-of-type-ullong
+    (equal (type-kind (type-ullong))
+           :ullong))
+
+  (defval *atc-type-kind-rules*
+    '(type-kind-of-type-schar
+      type-kind-of-type-uchar
+      type-kind-of-type-sshort
+      type-kind-of-type-ushort
+      type-kind-of-type-sint
+      type-kind-of-type-uint
+      type-kind-of-type-slong
+      type-kind-of-type-ulong
+      type-kind-of-type-sllong
+      type-kind-of-type-ullong)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-valuep-rules
   :short "Rules for discharging @(tsee valuep) hypotheses."
   :long
@@ -2570,12 +2633,14 @@
                   (equal var (mv-nth 0 var+tyname+init))
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
+                  (equal type (tyname-to-type tyname))
+                  (not (type-case type :array))
                   (equal ival+compst1
                          (exec-initer init compst fenv (1- limit)))
                   (equal ival (mv-nth 0 ival+compst1))
                   (equal compst1 (mv-nth 1 ival+compst1))
                   (init-valuep ival)
-                  (equal val (init-value-to-value (tyname-to-type tyname) ival))
+                  (equal val (init-value-to-value type ival))
                   (valuep val)
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))

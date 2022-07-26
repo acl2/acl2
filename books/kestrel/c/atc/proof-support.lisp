@@ -1416,6 +1416,7 @@
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
           *atc-tyname-to-type-rules*
+          *atc-type-kind-rules*
           *atc-valuep-rules*
           *atc-value-listp-rules*
           *atc-value-optionp-rules*
