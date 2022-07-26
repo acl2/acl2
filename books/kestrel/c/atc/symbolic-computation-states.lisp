@@ -304,7 +304,18 @@
 (define objdesign->base-address ((objdes objdesignp))
   :returns (addr addressp)
   :short "Base address of an object designator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We find the top-level object by recursion.
+     If it is an address, we return it, since it is the base address.
+     If it is a variable, for now we just return a dummy address:
+     for now this function is only used with object designators
+     that have addresses at the top level,
+     so this is adequate;
+     this will be properly generalized at some point."))
   (objdesign-case objdes
+                  :variable (address 0)
                   :address objdes.get
                   :element (objdesign->base-address objdes.super)
                   :member (objdesign->base-address objdes.super))

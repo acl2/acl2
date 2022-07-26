@@ -33,10 +33,12 @@
      However, in our model, we introduce
      a higher-level notion of object designator.
      We start by defining a notion of abstract addresses,
-     used as top-level object designators,
+     used as top-level object designators for allocated storage,
      i.e. to designate separate objects in the heap.
+     We also include top-level object designators for global variables,
+     i.e. objects declared with file scope.
      Then we allow object designators
-     to include information that selects sub-objects of the those objects,
+     to include information that selects sub-objects of the top-level objects,
      and sub-sub-objects of those sub-objects,
      and so on.
      The selection information is of two kinds:
@@ -81,10 +83,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An object designator is an address,
+    "An object designator is a named variable,
+     or an address in the heap,
      or a (structure) member of an object designator,
      or an (array) element of an object designator.
      See @(see object-designators)."))
+  (:variable ((get ident)))
   (:address ((get address)))
   (:element ((super objdesign)
              (index nat)))

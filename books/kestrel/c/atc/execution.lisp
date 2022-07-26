@@ -136,8 +136,26 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read the variable's value (if any) from the computation state."))
-  (read-var id compst)
+    "We read the variable's value (if any) from the computation state.
+     If the value is an array, we return a pointer value for the array.
+     As explained in @(tsee exec-arrsub),
+     our treatment of pointers and arrays differs slightly from full C,
+     but leads to equivalent results in our C subset.
+     This is essentially like an array-to-pointer conversion,
+     but with the pointer pointing to the whole array
+     instead of the first element,
+     and with the pointer type being the array element type.
+     The object designator is just the variable:
+     currently @(tsee exec-block-item) prohibits local arrays,
+     so a variable that contains an array can only be a global one.
+     All of this will be properly generalized eventually,
+     to bring things more in line with full C."))
+  (b* ((val (read-var id compst))
+       ((when (errorp val)) val))
+    (if (value-case val :array)
+        (make-value-pointer :designator? (objdesign-variable id)
+                            :reftype (value-array->elemtype val))
+      val))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1334,11 +1352,40 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must be a non-null pointer to an array
-     of type consistent with the array.
+    "The first operand must be a non-null pointer to an array;
+     the pointer must have the element type of the array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
-     and the indexed element is returned as result."))
+     and the indexed element is returned as result.")
+   (xdoc::p
+    "This semantics is an approximation of the real one in C,
+     but it is adequate to our C subset.
+     In full C, an array subscripting expression @('a[i]')
+     is equivalent to @('*(a+i)'),
+     so @('a') should be really a pointer to the first element of the array,
+     to which the index @('i') is added to obtain a pointer to the element.
+     In our C subset, we have limited support for pointers,
+     in particular there is no explicit pointer arithmetic,
+     other than implicitly as array subscripting.
+     So we have our own treatment of array subscipting,
+     in which the pointer is assumed to be to the array (not the first element),
+     and the index is just used to obtain the element
+     (note also that we always return values when evaluating expressions,
+     we never return object designators for now).
+     This treatment is equivalent to the real one for our purposes.
+     Note also that, in full C, the type of the pointer to the array
+     should be the array type, not the element type.
+     But again, we are somewhat pretending that the pointer to the array
+     is a pointer to the first element,
+     which justifies the type of the pointer as the array element type.
+     Note that, in full C, pointers are almost never to arrays,
+     but rather they are to elements of arrays.
+     The only way to get a pointer to an array as such is
+     via @('&a') when @('a') is an array object name;
+     except for this case, and for the case of an argument to @('sizeof'),
+     as well as for string literals (currently not in our C subset),
+     an array is always converted to a pointer to its first element
+     [C:6.3.2.1/3]."))
   (b* ((arr (value-result-fix arr))
        ((when (errorp arr)) arr)
        ((unless (value-case arr :pointer))
@@ -1772,7 +1819,9 @@
         where the target is a variable,
         or an array subscripting expression
         where the array is a structure pointer member expression
-        where the target is a variable.")
+        where the target is a variable.
+        See the discussion in @(tsee exec-arrsub) about arrays and pointers,
+        which also applies here.")
       (xdoc::li
        "A right-hand side consisting of
         a function call or a pure expression,
@@ -2171,7 +2220,9 @@
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
        since @(tsee type-of-value) never returns @('void')
-       (under the guard).")
+       (under the guard).
+       For now we disallow array objects;
+       these will be supported later.")
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
@@ -2180,9 +2231,11 @@
        item
        :declon
        (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
+            (type (tyname-to-type tyname))
+            ((when (type-case type :array))
+             (mv (error :unsupported-local-array) (compustate-fix compst)))
             ((mv ival compst) (exec-initer init compst fenv (1- limit)))
             ((when (errorp ival)) (mv ival compst))
-            (type (tyname-to-type tyname))
             (val (init-value-to-value type ival))
             ((when (errorp val)) (mv val compst))
             (new-compst (create-var var val compst))
