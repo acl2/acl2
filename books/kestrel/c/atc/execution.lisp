@@ -1334,11 +1334,40 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must be a non-null pointer to an array
-     of type consistent with the array.
+    "The first operand must be a non-null pointer to an array;
+     the pointer must have the element type of the array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
-     and the indexed element is returned as result."))
+     and the indexed element is returned as result.")
+   (xdoc::p
+    "This semantics is an approximation of the real one in C,
+     but it is adequate to our C subset.
+     In full C, an array subscripting expression @('a[i]')
+     is equivalent to @('*(a+i)'),
+     so @('a') should be really a pointer to the first element of the array,
+     to which the index @('i') is added to obtain a pointer to the element.
+     In our C subset, we have limited support for pointers,
+     in particular there is no explicit pointer arithmetic,
+     other than implicitly as array subscripting.
+     So we have our own treatment of array subscipting,
+     in which the pointer is assumed to be to the array (not the first element),
+     and the index is just used to obtain the element
+     (note also that we always return values when evaluating expressions,
+     we never return object designators for now).
+     This treatment is equivalent to the real one for our purposes.
+     Note also that, in full C, the type of the pointer to the array
+     should be the array type, not the element type.
+     But again, we are somewhat pretending that the pointer to the array
+     is a pointer to the first element,
+     which justifies the type of the pointer as the array element type.
+     Note that, in full C, pointers are almost never to arrays,
+     but rather they are to elements of arrays.
+     The only way to get a pointer to an array as such is
+     via @('&a') when @('a') is an array object name;
+     except for this case, and for the case of an argument to @('sizeof'),
+     as well as for string literals (currently not in our C subset),
+     an array is always converted to a pointer to its first element
+     [C:6.3.2.1/3]."))
   (b* ((arr (value-result-fix arr))
        ((when (errorp arr)) arr)
        ((unless (value-case arr :pointer))
@@ -1772,7 +1801,9 @@
         where the target is a variable,
         or an array subscripting expression
         where the array is a structure pointer member expression
-        where the target is a variable.")
+        where the target is a variable.
+        See the discussion in @(tsee exec-arrsub) about arrays and pointers,
+        which also applies here.")
       (xdoc::li
        "A right-hand side consisting of
         a function call or a pure expression,
