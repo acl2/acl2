@@ -37,10 +37,8 @@
   (xdoc::topstring
    (xdoc::p
     "A variable scope is a finite map from identifiers to values.
-     It represents the contents of the variables in a scope;
-     currently this is always a block scope,
-     because we do not model variables with file scope
-     (i.e. variables declared at the top level)."))
+     It represents the contents of the variables in a scope.
+     This may be a block scope or a file scope."))
   :key-type ident
   :val-type value
   :pred scopep)
@@ -138,13 +136,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A computation state consists of a stack of frames and a heap.
-     More components may be added
+    "A computation state consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "A scope for static storage [C:6.2.4].
+      Our current C subset only has one translation unit (i.e. file),
+      so the static storage corresponds to
+      the variables declared at the top-level in the file,
+      which form a scope.")
+    (xdoc::li
+     "A stack of frames.
+      The variables there are in automatic storage [C:6.2.4].")
+    (xdoc::li
+     "A heap.
+      This is allocated storage [C:6.2.4]."))
+   (xdoc::p
+    "More components may be added,
+     and some components may be refined,
      as our modeling coverage of C increases.")
    (xdoc::p
     "The stack grows leftward and shrinks rightward,
      i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
-  ((frames frame-list)
+  ((static scope)
+   (frames frame-list)
    (heap heap))
   :pred compustatep)
 
@@ -399,6 +413,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "For now we ignore static storage.
+     We will extend this function to deal with static storage soon.")
+   (xdoc::p
     "We add the variable to the top scope of the top frame;
      the variable comes with a value.
      If there is already a variable with the same name in the top scope,
@@ -443,6 +460,9 @@
   :short "Read a variable in a computation state."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "For now we ignore static storage.
+     We will extend this function to deal with static storage soon.")
    (xdoc::p
     "If there are no frames, we return an error:
      the variable is not found.
@@ -496,6 +516,9 @@
   :short "Write a variable in the computation state."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "For now we ignore static storage.
+     We will extend this function to deal with static storage soon.")
    (xdoc::p
     "We look for the variable in the same way as in @(tsee read-var),
      i.e. in the top frame's scopes from innermost to outermost.
