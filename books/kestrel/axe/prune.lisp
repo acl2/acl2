@@ -161,7 +161,7 @@
         (mv nil :unknown state)) ; give up if we are not allowed to call STP
        ;; TODO: Avoid turning the DAG into a term:
        (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
-       ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first.
+       ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
        (- (cw "(Attempting to prove test true with STP:~%"))
        ((mv true-result state)
         (prove-implication-with-stp simplified-test-term
