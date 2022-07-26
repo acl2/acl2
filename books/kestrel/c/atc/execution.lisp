@@ -146,7 +146,7 @@
      instead of the first element,
      and with the pointer type being the array element type.
      The object designator is just the variable:
-     currently @(tsee exec-block-item prohibits local arrays,
+     currently @(tsee exec-block-item) prohibits local arrays,
      so a variable that contains an array can only be a global one.
      All of this will be properly generalized eventually,
      to bring things more in line with full C."))
