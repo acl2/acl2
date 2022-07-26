@@ -13,8 +13,9 @@
 
 (in-package "ACL2")
 
-(local (include-book "../../ihs/logops-lemmas")) ;for unsigned-byte-p*
-(local (include-book "../../ihs/math-lemmas")) ;for *-preserves->-for-nonnegatives-1
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
 
 (in-theory (disable unsigned-byte-p))
 
@@ -85,11 +86,9 @@
                 (unsigned-byte-p ysize y))
            (unsigned-byte-p (+ xsize ysize) (* x y)))
   :hints (("Goal"
-           :use (:instance *-preserves->-for-nonnegatives-1
-                           (x1 (expt 2 xsize)) (x2 x)
-                           (y1 (expt 2 ysize)) (y2 y))
-           :in-theory (e/d (unsigned-byte-p)
-                           (*-preserves->-for-nonnegatives-1)))))
+
+           :in-theory (e/d (unsigned-byte-p expt-of-+)
+                           ()))))
 
 (defthm unsigned-byte-p-of-*-gen
   (implies (and (unsigned-byte-p xsize x)
@@ -116,9 +115,7 @@
                     (if (equal 0 n)
                         (equal 0 x)
                       (unsigned-byte-p (+ -1 n) x)))))
-  :hints (("Goal"
-           :in-theory (enable unsigned-byte-p-when-n-is-not-natp)
-           :use (:instance unsigned-byte-p* (size n) (i (* 2 x))))))
+  :hints (("Goal":in-theory (enable expt-of-+ unsigned-byte-p unsigned-byte-p-when-n-is-not-natp))))
 
 (defthm size-non-negative-when-unsigned-byte-p-free
   (implies (unsigned-byte-p size free)
@@ -153,7 +150,7 @@
                 (integerp n))
            (equal (unsigned-byte-p n (* (expt 2 m) x))
                   (unsigned-byte-p (- n m) x)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+))))
 
 (defthm unsigned-byte-p-of-*-of-expt-alt
   (implies (and (<= m n)
