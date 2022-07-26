@@ -770,7 +770,7 @@
      Thus, we use a binding hypothesis to read the variable's value,
      and we have a hypothesis requiring the value not to be an array.
      In order to discharge this hypothesis,
-     the rules in @(tsee atc-value-kind) rules are used."))
+     the rules in @(tsee atc-value-kind-rules) are used."))
 
   (defruled exec-ident-open
     (implies (and (equal val (read-var id compst))
