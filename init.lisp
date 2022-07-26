@@ -41,10 +41,6 @@
 ;(setq ccl::*backtrace-print-length* 10)
 ;(setq ccl::*backtrace-print-level* 10)
 
-; The following should be unnecessary, but we leave it for now in case some
-; proprietary books depend on it.
-(push :hons *features*)
-
 (unless (find-package "ACL2")
 
 ; File acl2r.lisp is created by GNUmakefile, though the user could create it

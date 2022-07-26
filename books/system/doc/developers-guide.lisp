@@ -1548,10 +1548,7 @@
 
  <li>The @('acl2r') target just generates a file @('acl2r.lisp') that is loaded
  in to Lisp at start up by the other two targets.  It defines features that
- support readtime conditionals during the build process.  For example, by
- default that file contains the form @('(push :hons *features*)'), so that
- forms prefixed by @('#+hons') are read while those prefixed by @('#-hons') are
- ignored.</li>
+ support readtime conditionals during the build process.</li>
 
  <li>The @('full') target compiles source files when compilation is indicated.
  Compilation is skipped for host Lisps CCL and SBCL because those Lisps compile

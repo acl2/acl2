@@ -66,7 +66,7 @@
  })
 
  <p>You can look at the above ``temporary'' file and see some interesting
- information related to features provided by your @(see hons-enabled) ACL2
+ information related to features provided by your (@(see hons-enabled)) ACL2
  executable.  For a further experiment, continue in ACL2 as follows.</p>
 
  @({

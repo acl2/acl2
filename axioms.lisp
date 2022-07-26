@@ -17684,7 +17684,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   hons-enabledp, which is called from set-serialize-character, which we
 ;   prefer to define before print-object$.  We have verified its guards
 ;   successfully later in this file, where w was previously defined.  So rather
-;   fight that battle here, we verify guards at the location of its original
+;   than fight that battle here, we verify guards at the location of its original
 ;   definition.
 
                   :verify-guards nil))
@@ -29003,9 +29003,3 @@ Lisp definition."
         (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
       (count-keys (cdr al)))))
 
-(defun hons-enabledp (state)
-  (declare (xargs :guard (state-p state))
-           (ignorable state))
-  (prog2$ (cw "WARNING: ~x0 is deprecated!~%"
-              'hons-enabledp)
-          t))
