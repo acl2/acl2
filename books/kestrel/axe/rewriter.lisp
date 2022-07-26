@@ -2228,7 +2228,8 @@
                      :rule-alist rule-alist
                      ;; Can assume all the other terms, because, if any is false, the whole conjunction is false:
                      :assumptions (append (rest terms) done-terms) ; note that we don't use the term to simplify itself!
-                     :monitor monitored-rules))
+                     :monitor monitored-rules
+                     :check-inputs nil))
          ((when erp) (mv erp nil nil state))
          (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
       (if (equal result-term term) ;; no change:
