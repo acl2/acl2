@@ -125,6 +125,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-type-kind-rules
+  :short "Rules for resolving @(tsee type-kind) on given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to relieve certain hypotheses in rules
+     that involve @(tsee type-kind) being applied to
+     certain constructed types."))
+
+  (defruled type-kind-of-type-schar
+    (equal (type-kind (type-schar))
+           :schar))
+
+  (defruled type-kind-of-type-uchar
+    (equal (type-kind (type-uchar))
+           :uchar))
+
+  (defruled type-kind-of-type-sshort
+    (equal (type-kind (type-sshort))
+           :sshort))
+
+  (defruled type-kind-of-type-ushort
+    (equal (type-kind (type-ushort))
+           :ushort))
+
+  (defruled type-kind-of-type-sint
+    (equal (type-kind (type-sint))
+           :sint))
+
+  (defruled type-kind-of-type-uint
+    (equal (type-kind (type-uint))
+           :uint))
+
+  (defruled type-kind-of-type-slong
+    (equal (type-kind (type-slong))
+           :slong))
+
+  (defruled type-kind-of-type-ulong
+    (equal (type-kind (type-ulong))
+           :ulong))
+
+  (defruled type-kind-of-type-sllong
+    (equal (type-kind (type-sllong))
+           :sllong))
+
+  (defruled type-kind-of-type-ullong
+    (equal (type-kind (type-ullong))
+           :ullong))
+
+  (defval *atc-type-kind-rules*
+    '(type-kind-of-type-schar
+      type-kind-of-type-uchar
+      type-kind-of-type-sshort
+      type-kind-of-type-ushort
+      type-kind-of-type-sint
+      type-kind-of-type-uint
+      type-kind-of-type-slong
+      type-kind-of-type-ulong
+      type-kind-of-type-sllong
+      type-kind-of-type-ullong)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-valuep-rules
   :short "Rules for discharging @(tsee valuep) hypotheses."
   :long
@@ -182,6 +245,89 @@
   (defval *atc-value-optionp-rules*
     '((:e value-optionp)
       value-optionp-when-valuep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-kind-rules
+  :short "Rules to resolve @(tsee value-kind) for various kinds of values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to relieve the hypothesis of
+     the rule for executing identifiers,
+     in @(tsee atc-exec-ident-rules)."))
+
+  (defruled value-kind-when-scharp
+    (implies (scharp x)
+             (equal (value-kind x)
+                    :schar))
+    :enable (scharp value-kind))
+
+  (defruled value-kind-when-ucharp
+    (implies (ucharp x)
+             (equal (value-kind x)
+                    :uchar))
+    :enable (ucharp value-kind))
+
+  (defruled value-kind-when-sshortp
+    (implies (sshortp x)
+             (equal (value-kind x)
+                    :sshort))
+    :enable (sshortp value-kind))
+
+  (defruled value-kind-when-ushortp
+    (implies (ushortp x)
+             (equal (value-kind x)
+                    :ushort))
+    :enable (ushortp value-kind))
+
+  (defruled value-kind-when-sintp
+    (implies (sintp x)
+             (equal (value-kind x)
+                    :sint))
+    :enable (sintp value-kind))
+
+  (defruled value-kind-when-uintp
+    (implies (uintp x)
+             (equal (value-kind x)
+                    :uint))
+    :enable (uintp value-kind))
+
+  (defruled value-kind-when-slongp
+    (implies (slongp x)
+             (equal (value-kind x)
+                    :slong))
+    :enable (slongp value-kind))
+
+  (defruled value-kind-when-ulongp
+    (implies (ulongp x)
+             (equal (value-kind x)
+                    :ulong))
+    :enable (ulongp value-kind))
+
+  (defruled value-kind-when-sllongp
+    (implies (sllongp x)
+             (equal (value-kind x)
+                    :sllong))
+    :enable (sllongp value-kind))
+
+  (defruled value-kind-when-ullongp
+    (implies (ullongp x)
+             (equal (value-kind x)
+                    :ullong))
+    :enable (ullongp value-kind))
+
+  (defval *atc-value-kind-rules*
+    '(value-kind-when-scharp
+      value-kind-when-ucharp
+      value-kind-when-sshortp
+      value-kind-when-ushortp
+      value-kind-when-sintp
+      value-kind-when-uintp
+      value-kind-when-slongp
+      value-kind-when-ulongp
+      value-kind-when-sllongp
+      value-kind-when-ullongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -619,16 +765,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute an identifier (as an expression),
-     we use a rule that is like the definition,
-     but provides a bit of separation/abstraction from the definition,
-     and it also avoids the binding of @('__function__').
-     The @(tsee read-var) call may undergo further rewriting,
-     as explained in @(see atc-read-var-rules)."))
+    "For now we only support the execution of non-array variables;
+     see @(tsee exec-ident).
+     Thus, we use a binding hypothesis to read the variable's value,
+     and we have a hypothesis requiring the value not to be an array.
+     In order to discharge this hypothesis,
+     the rules in @(tsee atc-value-kind-rules) are used."))
 
   (defruled exec-ident-open
-    (equal (exec-ident id compst)
-           (read-var id compst))
+    (implies (and (equal val (read-var id compst))
+                  (not (value-case val :array)))
+             (equal (exec-ident id compst)
+                    val))
     :enable exec-ident)
 
   (defval *atc-exec-ident-rules*
@@ -2570,12 +2718,14 @@
                   (equal var (mv-nth 0 var+tyname+init))
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
+                  (equal type (tyname-to-type tyname))
+                  (not (type-case type :array))
                   (equal ival+compst1
                          (exec-initer init compst fenv (1- limit)))
                   (equal ival (mv-nth 0 ival+compst1))
                   (equal compst1 (mv-nth 1 ival+compst1))
                   (init-valuep ival)
-                  (equal val (init-value-to-value (tyname-to-type tyname) ival))
+                  (equal val (init-value-to-value type ival))
                   (valuep val)
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))

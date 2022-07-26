@@ -4661,7 +4661,13 @@
     "The lemma instantiation is similar to the bindings,
      but it only concerns the formals of @('fn'), not the @('a-ptr') variables.
      The instantiation is used on the guard and termination theorems of @('fn'),
-     and therefore it can only concern the formals of @('fn')."))
+     and therefore it can only concern the formals of @('fn').")
+   (xdoc::p
+    "There is an intentional discrepancy between the fact that
+     an array pointer points to the whole array
+     while the type of the pointer is the array element type.
+     The reason is the approximate, but correct in our C subset,
+     treatment of arrays and pointers discussed in @(tsee exec-arrsub)."))
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
