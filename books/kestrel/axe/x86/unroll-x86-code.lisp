@@ -286,11 +286,13 @@
        ((mv erp rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil state))
+       ;; TODO: Option to turn this off, or to do just one pass
        ((mv erp assumptions state)
-        (acl2::simplify-terms-using-each-other assumptions
-                                               rule-alist
-                                               :monitor '()
-                                               ))
+        (acl2::simplify-terms-repeatedly ;; simplify-terms-using-each-other
+         assumptions
+         rule-alist
+         nil ; monitored-rules
+         state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        (- (cw "Done simplifying assumptions)~%"))

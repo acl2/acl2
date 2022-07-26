@@ -865,7 +865,10 @@
        (assumptions (append assumptions assumptions2)) ;TODO: which assumptions / term / dag should be used in the theorem below?
        ((mv erp assumptions state)
         (if simplify-assumptions
-            (simplify-terms-using-each-other assumptions rule-alist)
+            (simplify-terms-repeatedly ;; simplify-terms-using-each-other
+             assumptions rule-alist
+             nil ; monitored-rules
+             state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))
        (vars (merge-sort-symbol< (dag-vars dag)))
