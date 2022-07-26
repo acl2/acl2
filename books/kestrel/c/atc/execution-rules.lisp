@@ -248,6 +248,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-value-kind-rules
+  :short "Rules to resolve @(tsee value-kind) for various kinds of values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to relieve the hypothesis of
+     the rule for executing identifiers,
+     in @(tsee atc-exec-ident-rules)."))
+
+  (defruled value-kind-when-scharp
+    (implies (scharp x)
+             (equal (value-kind x)
+                    :schar))
+    :enable (scharp value-kind))
+
+  (defruled value-kind-when-ucharp
+    (implies (ucharp x)
+             (equal (value-kind x)
+                    :uchar))
+    :enable (ucharp value-kind))
+
+  (defruled value-kind-when-sshortp
+    (implies (sshortp x)
+             (equal (value-kind x)
+                    :sshort))
+    :enable (sshortp value-kind))
+
+  (defruled value-kind-when-ushortp
+    (implies (ushortp x)
+             (equal (value-kind x)
+                    :ushort))
+    :enable (ushortp value-kind))
+
+  (defruled value-kind-when-sintp
+    (implies (sintp x)
+             (equal (value-kind x)
+                    :sint))
+    :enable (sintp value-kind))
+
+  (defruled value-kind-when-uintp
+    (implies (uintp x)
+             (equal (value-kind x)
+                    :uint))
+    :enable (uintp value-kind))
+
+  (defruled value-kind-when-slongp
+    (implies (slongp x)
+             (equal (value-kind x)
+                    :slong))
+    :enable (slongp value-kind))
+
+  (defruled value-kind-when-ulongp
+    (implies (ulongp x)
+             (equal (value-kind x)
+                    :ulong))
+    :enable (ulongp value-kind))
+
+  (defruled value-kind-when-sllongp
+    (implies (sllongp x)
+             (equal (value-kind x)
+                    :sllong))
+    :enable (sllongp value-kind))
+
+  (defruled value-kind-when-ullongp
+    (implies (ullongp x)
+             (equal (value-kind x)
+                    :ullong))
+    :enable (ullongp value-kind))
+
+  (defval *atc-value-kind-rules*
+    '(value-kind-when-scharp
+      value-kind-when-ucharp
+      value-kind-when-sshortp
+      value-kind-when-ushortp
+      value-kind-when-sintp
+      value-kind-when-uintp
+      value-kind-when-slongp
+      value-kind-when-ulongp
+      value-kind-when-sllongp
+      value-kind-when-ullongp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-type-of-value-rules
   :short "Rules about @(tsee type-of-value)."
   :long
@@ -682,16 +765,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute an identifier (as an expression),
-     we use a rule that is like the definition,
-     but provides a bit of separation/abstraction from the definition,
-     and it also avoids the binding of @('__function__').
-     The @(tsee read-var) call may undergo further rewriting,
-     as explained in @(see atc-read-var-rules)."))
+    "For now we only support the execution of non-array variables;
+     see @(tsee exec-ident).
+     Thus, we use a binding hypothesis to read the variable's value,
+     and we have a hypothesis requiring the value not to be an array.
+     In order to discharge this hypothesis,
+     the rules in @(tsee atc-value-kind) rules are used."))
 
   (defruled exec-ident-open
-    (equal (exec-ident id compst)
-           (read-var id compst))
+    (implies (and (equal val (read-var id compst))
+                  (not (value-case val :array)))
+             (equal (exec-ident id compst)
+                    val))
     :enable exec-ident)
 
   (defval *atc-exec-ident-rules*

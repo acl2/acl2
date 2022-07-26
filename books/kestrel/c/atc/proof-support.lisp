@@ -1420,6 +1420,7 @@
           *atc-valuep-rules*
           *atc-value-listp-rules*
           *atc-value-optionp-rules*
+          *atc-value-kind-rules*
           *atc-type-of-value-rules*
           *atc-type-of-value-option-rules*
           *atc-value-array->elemtype-rules*
