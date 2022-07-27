@@ -7371,17 +7371,6 @@
          (bvchop size x))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
-(defthmd equal-of-logext
-  (implies (and ;(integerp x)
-                (integerp y)
-                (posp n)
-                )
-           (equal (equal x (logext n y))
-                  (and (equal (bvchop n x)
-                              (bvchop n y))
-                       (signed-byte-p n x)
-                       (integerp x)))))
-
 (defthmd bvchop-of-sum-of-logext-becomes-bvplus
   (implies (and (<= size size2)
                 (natp size)
