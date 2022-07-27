@@ -21,56 +21,56 @@
 
 ;A simple test
 (deftest
-  (prove-equivalence2 '(car (cons x 7)) 'x :rules '(car-cons equal-same)))
+  (prove-equal-with-tactics '(car (cons x 7)) 'x :rules '(car-cons equal-same)))
 
 ;; Test a failure:
 (deftest
-  (must-fail (prove-equivalence2 '(car (cons 7 x)) 'x :rules '(car-cons equal-same))))
+  (must-fail (prove-equal-with-tactics '(car (cons 7 x)) 'x :rules '(car-cons equal-same))))
 
 
 ;; Test redundancy checking:
 (deftest
-  (prove-equivalence2 '(car (cons x 7)) 'x :rules '(car-cons equal-same))
+  (prove-equal-with-tactics '(car (cons x 7)) 'x :rules '(car-cons equal-same))
   ;; redundant:
-  (prove-equivalence2 '(car (cons x 7)) 'x :rules '(car-cons equal-same))
+  (prove-equal-with-tactics '(car (cons x 7)) 'x :rules '(car-cons equal-same))
   ;; something non-redundant still fails:
-  (must-fail (prove-equivalence2 '(car (cons 7 x)) 'x :rules '(car-cons equal-same))))
+  (must-fail (prove-equal-with-tactics '(car (cons 7 x)) 'x :rules '(car-cons equal-same))))
 
 ;;TODO: Uncomment these after adding rules:
 
 ;; (must-fail
-;;  (prove-equivalence2 (dagify-term '(bvplus '32 '1 x))
+;;  (prove-equal-with-tactics (dagify-term '(bvplus '32 '1 x))
 ;;                      (dagify-term '(bvplus '32 '2 x))))
 
 ;; (deftest
-;;   (prove-equivalence2 (dagify-term '(bvplus '32 '7 x))
+;;   (prove-equal-with-tactics (dagify-term '(bvplus '32 '7 x))
 ;;                       (dagify-term '(bvplus '32 x '7))))
 
 
 ;; (must-fail ;the dags have different vars
-;;  (prove-equivalence2 (dagify-term '(bvplus '32 x y))
+;;  (prove-equal-with-tactics (dagify-term '(bvplus '32 x y))
 ;;                     (dagify-term '(bvplus '32 x z))))
 
 ;; ;TODO: Improve the error message here:
 ;; (must-fail ;the dags have different vars
-;;  (prove-equivalence2 (dagify-term '(bvplus '32 x y))
+;;  (prove-equal-with-tactics (dagify-term '(bvplus '32 x y))
 ;;                     (dagify-term '(bvmult '32 x y))))
 
 ;; ;try with terms instead of dags:
 ;; (deftest
-;;   (prove-equivalence2 '(bvplus '32 '7 x)
+;;   (prove-equal-with-tactics '(bvplus '32 '7 x)
 ;;                       '(bvplus '32 x '7)))
 
 ;; ; try with one term and one dag:
 ;; (deftest
-;;   (prove-equivalence2 '(bvplus '32 '7 x)
+;;   (prove-equal-with-tactics '(bvplus '32 '7 x)
 ;;                       (dagify-term '(bvplus '32 x '7))))
 
 (deftest
-  (prove-equivalence2 '(bvplus 32 '1 '1) ''2 :rules '(equal-same)))
+  (prove-equal-with-tactics '(bvplus 32 '1 '1) ''2 :rules '(equal-same)))
 
 (deftest
-  (must-fail (prove-equivalence2 '(bvplus 32 x y) '(bvmult 32 x y) :rules '(equal-same))))
+  (must-fail (prove-equal-with-tactics '(bvplus 32 x y) '(bvmult 32 x y) :rules '(equal-same))))
 
 
 (deftest
@@ -178,21 +178,21 @@
 ;; tests involving contexts
 
 (deftest
-  (prove-equivalence2 '(if (equal x 3) (+ x 2) 5) 5 :rules '(if-same-branches) :different-vars-ok t))
+  (prove-equal-with-tactics '(if (equal x 3) (+ x 2) 5) 5 :rules '(if-same-branches) :different-vars-ok t))
 
 (deftest
   (defstub f (x) t)
   ;; fails because we don't have precise context info for the term (+ x 2) since it appears in both branches of the if.
-  (must-fail (prove-equivalence2 '(if (equal x 3) (+ x 2) (f (+ x 2)))
-                                 '(if (equal x 3) 5 (f (+ x 2)))
-                                 :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
-                                 :different-vars-ok t)))
+  (must-fail (prove-equal-with-tactics '(if (equal x 3) (+ x 2) (f (+ x 2)))
+                                       '(if (equal x 3) 5 (f (+ x 2)))
+                                       :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
+                                       :different-vars-ok t)))
 
 (deftest
   (defstub f (x) t)
   ;; same goal as above but works because we call :rewrite-with-precise-contexts
-  (prove-equivalence2 '(if (equal x 3) (+ x 2) (f (+ x 2)))
-                      '(if (equal x 3) 5 (f (+ x 2)))
-                      :tactics '(:rewrite-with-precise-contexts)
-                      :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
-                      :different-vars-ok t))
+  (prove-equal-with-tactics '(if (equal x 3) (+ x 2) (f (+ x 2)))
+                            '(if (equal x 3) 5 (f (+ x 2)))
+                            :tactics '(:rewrite-with-precise-contexts)
+                            :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
+                            :different-vars-ok t))
