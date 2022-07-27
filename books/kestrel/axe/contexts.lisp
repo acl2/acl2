@@ -258,24 +258,11 @@
 ;;  :hints (("Goal" :in-theory (enable MAX-NODENUM-IN-CONTEXT))))
 
 ;strips off the nots
-;could make tail rec
-;todo: just use strip-nots-from-possibly-negated-nodenums?
-(defun get-nodenums-mentioned-in-possibly-negated-nodenums (items)
-  (declare (xargs :guard (possibly-negated-nodenumsp items)
-                  :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                                           possibly-negated-nodenump)))))
-  (if (endp items)
-      nil
-    (cons (let ((item (first items)))
-            (if (consp item) ;checks for a call of not
-                (farg1 item)
-              item))
-          (get-nodenums-mentioned-in-possibly-negated-nodenums (rest items)))))
-
 (defun get-nodenums-mentioned-in-context (context)
+  (declare (xargs :guard (contextp context)))
   (if (false-contextp context)
       nil
-    (get-nodenums-mentioned-in-possibly-negated-nodenums context)))
+    (strip-nots-from-possibly-negated-nodenums context)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

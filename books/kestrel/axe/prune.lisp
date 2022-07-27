@@ -102,9 +102,6 @@
            (pseudo-term-listp (get-equalities assumptions)))
   :hints (("Goal" :in-theory (enable get-equalities))))
 
-(defttag invariant-risk)
-(set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
-
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown.
 ;; (It may be the case that the test can be shown to be other true and false,
 ;; because the assumptions contradict, in which case the entire enclosing
