@@ -331,6 +331,14 @@
                   0))
   :hints (("Goal" :cases ((posp size)))))
 
+(defthm logext-of-+-of-1-and-expt-same
+  (implies (integerp size)
+           (equal (logext size (+ -1 (expt 2 size)))
+                  (if (equal (nfix size) 0)
+                      0
+                    -1)))
+  :hints (("Goal" :in-theory (enable logext))))
+
 (defthm logext-of-+-of-expt-same
   (implies (and (posp size)
                 (integerp x))

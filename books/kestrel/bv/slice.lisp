@@ -703,3 +703,13 @@
                        (<= (bvchop (+ 1 high) x) (+ -1 (* (+ 1 k) (expt 2 low))))
                        (<= (* k (expt 2 low)) (bvchop (+ 1 high) x)))))
   :hints (("Goal" :use (:instance equal-of-slice-helper (x (bvchop (+ 1 high) x))))))
+
+(defthm slice-of--1
+  (implies (and (<= low high)
+                (natp low)
+                (natp high))
+           (equal (slice high low -1)
+                  (+ -1 (expt 2 (+ 1 high (- low))))))
+  :hints (("Goal" :in-theory (e/d (slice)
+                                  (
+                                   )))))

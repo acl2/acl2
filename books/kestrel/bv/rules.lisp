@@ -398,29 +398,6 @@
 
 ;(local (in-theory (disable hack-6))) ;bozo
 
-;move?
-(defthm signed-byte-p-longer
-  (implies (and (signed-byte-p free i)
-                (<= free size)
-                (integerp size)
-                (natp free))
-           (signed-byte-p size i))
-  :hints (("Goal"
-;           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (+ -1 free)) (j (+ -1 size)))
-           :in-theory (e/d (signed-byte-p) (;EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                            ;<-OF-EXPT-AND-EXPT
-                                            )))))
-
-;; (skip -proofs
-;;  (defthm sbp-longer
-;;    (implies (and (signed-byte-p free x)
-;;                  (natp free)
-;;                  (natp n)
-;;                  (<= free n))
-;;             (signed-byte-p n x))
-;;    :hints (("Goal" :in-theory (e/d () ( ;integer-range-p
-;;                                                     hack-6))))))
-
 (defthm logext-identity2
   (implies (and (signed-byte-p free i)
                 (>= size free)
@@ -752,12 +729,7 @@
                                             logbitp-iff-getbit ;why - need getbit of logapp
                                             bvchop-of-logtail-becomes-slice)))))
 
-(defthmd bozohack
-  (implies (signed-byte-p 8 x)
-           (equal (logext 24 x)
-                  x)))
-
-;fixme consider "pick a bit" proofs?
+;todo: consider "pick a bit" proofs?
 
 ; todo: copy all bitxor thms for bitand and bitor
 
@@ -2795,18 +2767,12 @@
   :hints (("Goal" :in-theory (enable bvif myif))))
 
 ;bbozo gen
+;move
 (defthm usb-33-of-one-more
   (implies (and (< 0 x)
                 (unsigned-BYTE-P '33 X))
-           (unsigned-BYTE-P '33 (+ '-1 X)))
+           (unsigned-BYTE-P 33 (+ -1 X)))
   :hints (("Goal" :in-theory (enable unsigned-BYTE-P))))
-
-;bbozo gen
-(defthm sbp-32-when-non-neg
-  (implies (<= 0 x)
-           (equal (signed-byte-p 32 x)
-                  (unsigned-byte-p 31 x)))
-  :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p))))
 
 ;bozo gen
 (defthm getbit-33-of-minus-1
@@ -2816,6 +2782,7 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
+; gen, move
 (defthm usb-of-one-more-when-usb
   (implies (UNSIGNED-BYTE-P 31 x)
            (equal (UNSIGNED-BYTE-P 31 (+ 1 x))
@@ -3124,11 +3091,6 @@
       31)
   :rule-classes :linear)
 
-(defthm sbp-ubp-hack
-  (implies (unsigned-byte-p 31 x)
-           (signed-byte-p 32 (+ -1 x)))
-  :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p))))
-
 ;make a version with x a constant
 (defthm <-of-constant-and-bvcat-with-low-constant
   (implies (and (syntaxp (and (quotep k1) (quotep k2) (quotep lowsize)))
@@ -3170,10 +3132,6 @@
            ;;                 (z (expt 2 lowsize))
            ;;                 )
            )))
-
-
-
-
 
 (defthm signed-byte-p-of-myif
   (implies (and (signed-byte-p n a)
@@ -5282,22 +5240,6 @@
                   (LOGEXT 32 (+ K X))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
-(defthmd signed-byte-p-when-unsigned-byte-p-one-less
-  (implies (and (unsigned-byte-p (+ -1 n) x)
-                (natp n)
-                (< 0 n))
-           (signed-byte-p n x))
-  :hints (("Goal" :use (:instance backchain-signed-byte-p-to-unsigned-byte-p (size n) (i x))
-           :in-theory (disable backchain-signed-byte-p-to-unsigned-byte-p))))
-
-(defthm signed-byte-p-when-unsigned-byte-p
-  (implies (and (unsigned-byte-p n x)
-                (natp n)
-                (< 0 n))
-           (equal (signed-byte-p n x)
-                  (unsigned-byte-p (+ -1 n) x)))
-  :hints (("Goal" :in-theory (enable signed-byte-p-when-unsigned-byte-p-one-less))))
-
 ;fixme move
 ;restrict to constants?
 (defthm logext-when-usb-cheap
@@ -5649,16 +5591,6 @@
                 (posp N))
            (EQUAL (bvchop n x)
                   (bvcat 1 k1 (+ -1 n) k2))))
-
-(defthm sbvlt-of-minus-one
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (equal k (+ -1 (expt 2 size))) ;minus one
-                (unsigned-byte-p free x)
-                (< free size)
-                (natp size))
-           (sbvlt size k x))
-  :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
 
 ;see leftrotate32-of-leftrotate32
 ;; (defthm leftrotate32-of-bvuminus-and-leftrotate32
