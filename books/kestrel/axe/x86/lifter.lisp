@@ -1341,7 +1341,7 @@
         (- (cw "(Loop top PC is ~x0.)~%" loop-top-pc-term))
         (pc-offset (get-added-offset loop-top-pc-term 'text-offset))
         (pc-assumption `(equal (xr ':rip 'nil ,state-var) ,loop-top-pc-term))
-        (- (cw "(Loop top PC assumpton: ~x0.)~%" pc-assumption))
+        (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top:
         ((mv erp loop-top-rsp-dag state)
          (extract-rsp-dag extra-rules
