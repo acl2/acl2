@@ -456,7 +456,7 @@
   (if (consp arg)
       (if (natp (unquote arg))
           t
-        (prog2$ (cw "Warning: Non-integer constant ~x0 detected in a boolean context.~%" arg)
+        (prog2$ (cw "Warning: Non-integer constant ~x0 detected in BV boolean context.~%" arg)
                 nil))
     ;; it's a nodenum, so no checking is needed here (we will cut at that node if needed):
     t))
