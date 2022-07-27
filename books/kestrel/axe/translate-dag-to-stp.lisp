@@ -81,7 +81,9 @@
 
 (in-theory (disable open-output-channels open-output-channel-p1))
 
-(local (in-theory (enable <-of-+-of-1-when-integers)))
+(local (in-theory (e/d (<-of-+-of-1-when-integers)
+                       ;; Avoid printing during proofs
+                       ((:e fmt-to-comment-window)))))
 
 ;; (defthm equal-of-len-forward-to-cons
 ;;   (implies (and (equal k (len x))
