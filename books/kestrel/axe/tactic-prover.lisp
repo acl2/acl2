@@ -203,7 +203,7 @@
        (assumptions (second problem))
        (- (and print (cw "(Applying the Axe rewriter~%")))
        ((mv erp new-dag state)
-        (simp-dag dag
+        (simp-dag dag ; TODO: Use the basic rewriter (but it will need to support rewriting nodes assuming their [approximate] contexts)
                   :rule-alist rule-alist
                   :interpreted-function-alist interpreted-function-alist
                   :monitor monitor
@@ -865,7 +865,10 @@
        (assumptions (append assumptions assumptions2)) ;TODO: which assumptions / term / dag should be used in the theorem below?
        ((mv erp assumptions state)
         (if simplify-assumptions
-            (simplify-terms-using-each-other assumptions rule-alist)
+            (simplify-terms-repeatedly ;; simplify-terms-using-each-other
+             assumptions rule-alist
+             nil ; monitored-rules
+             state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))
        (vars (merge-sort-symbol< (dag-vars dag)))
