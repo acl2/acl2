@@ -115,8 +115,8 @@
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
          ((mv erp dag-or-quote state)
-          (acl2::simp-dag dag
-                          :rules rules
+          (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                          :rules rules ; todo: don't make the rule-alist each time
                           :assumptions assumptions
                           :monitor rules-to-monitor
                           :use-internal-contextsp use-internal-contextsp
@@ -175,7 +175,7 @@
                               total-steps
                               state))))))))
 
-;; Returns (mv erp result-dag rules-used assumption-rules-used state).
+;; Returns (mv erp result-dag-or-quotep rules-used assumption-rules-used state).
 (defun def-unrolled-fn-core (target
                              parsed-executable
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
@@ -287,11 +287,13 @@
        ((mv erp rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil state))
+       ;; TODO: Option to turn this off, or to do just one pass
        ((mv erp assumptions state)
-        (acl2::simplify-terms-using-each-other assumptions
-                                               rule-alist
-                                               :monitor '()
-                                               ))
+        (acl2::simplify-terms-repeatedly ;; simplify-terms-using-each-other
+         assumptions
+         rule-alist
+         nil ; monitored-rules
+         state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        (- (cw "Done simplifying assumptions)~%"))
@@ -307,14 +309,13 @@
                              (debug-rules32)
                            monitor))
        ;; Do the symbolic execution:
-       ((mv erp result-dag ; result-dag-or-quotep ; FFIXME: Handle a quotep here
-            state)
+       ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
-       (- (if (quotep result-dag)
-              (cw "Unrolled DAG is ~x0.~%" result-dag)
-            (acl2::print-dag-info result-dag 'result t))))
-    (mv (erp-nil) result-dag rules assumption-rules state)))
+       (- (if (quotep result-dag-or-quotep)
+              (cw "(Unrolling/lifting produced the constant ~x0.)~%" result-dag-or-quotep)
+            (acl2::print-dag-info result-dag-or-quotep 'result t))))
+    (mv (erp-nil) result-dag-or-quotep rules assumption-rules state)))
 
 ;; Returns (mv erp event state)
 (defun def-unrolled-fn (lifted-name

@@ -80,6 +80,7 @@
 
 ;; TODO: Add more options, such as :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
+;; This function has invariant-risk but still seems quite fast.
 (defun unroll-spec-basic-fn (defconst-name ;should begin and end with *
                               term
                               rules
@@ -120,7 +121,7 @@
                                   (eq :auto function-params))
                               (booleanp produce-theorem))
                   :stobjs state
-                  :mode :program ;; because this calls translate (todo: factor that out)
+                  :mode :program ;; because this calls translate-term, translate-terms, submit-events-quiet, and fresh-name-in-world-with-$s (todo: factor)
                   ))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
@@ -222,7 +223,7 @@
         (mv :unexpected-quotep nil state))
        ;; Make a theorem if the term is small enough.  We must use skip-proofs
        ;; because Axe does not yet produce an ACL2 proof. TODO: We could
-       ;; support adding the theorem even if the DAG is large is we use
+       ;; support adding the theorem even if the DAG is large if we use
        ;; dag-val-with-axe-evaluator to express the theorem.
        (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
        (dag-fns (dag-fns dag))
