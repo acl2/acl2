@@ -124,7 +124,8 @@
                           :print print ; :brief ;nil
                           ;; :print-interval 10000 ;todo: pass in
                           :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
-                          :memoizep memoizep))
+                          :memoizep memoizep
+                          :check-inputs nil))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quote))
           (mv (erp-nil) dag-or-quote state))
