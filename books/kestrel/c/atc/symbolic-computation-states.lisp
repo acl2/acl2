@@ -224,10 +224,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee create-var), but it does not return an error:
+    "This is like @(tsee create-var),
+     but it only operates on computation states with frames
+     (so that the variable is added to the top scope of the top frame,
+     and not to the static storage),
+     and it never returns an error:
      it always adds the variable to the current scope.
-     If the variable does not already exist in the current scope,
-     this is equivalent to @(tsee create-var), as proved later."))
+     If there are frames,
+     and the variable does not already exist in the current scope,
+     this is equivalent to @(tsee create-var), as proved later.")
+   (xdoc::p
+    "The reason for only operating on computation states with frames
+     is that, during symbolic execution, we always have frames,
+     because we are executing code in some function.
+     Thus, during symbolic execution we are only interested in
+     creating variables in the top scope of the top frame,
+     never in static storage.
+     In contrast, @(tsee create-var) is a more general function,
+     that creates variables in both automatic and static storage."))
   (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
@@ -493,7 +507,13 @@
    (xdoc::p
     "The theorem about @(tsee create-var) turns that into @(tsee add-var),
      provided that the variable can be created,
-     which we check via the function @('create-var-okp') introduced below.
+     which we check via the function @('create-var-okp') introduced below,
+     and also provided that there are frames.
+     The latter condition is motivated by the fact that,
+     during symbolic execution, we always have frames,
+     because we are always executing code in some function;
+     thus, we only need to replace @(tsee create-var) with @(tsee add-var)
+     when there are frames.
      Additional theorems about @('create-var-okp')
      go through the layers of the computation states to check this condition.
      No rule is needed for @('create-var-ok') on @(tsee update-var),
@@ -525,7 +545,8 @@
     :enable (create-var-okp add-var))
 
   (defruled create-var-to-add-var
-    (implies (create-var-okp var compst)
+    (implies (and (create-var-okp var compst)
+                  (not (equal (compustate-frames-number compst) 0)))
              (equal (create-var var val compst)
                     (add-var var val compst)))
     :enable (create-var add-var create-var-okp))

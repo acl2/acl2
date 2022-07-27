@@ -184,8 +184,23 @@
 (define compustate-frames-number ((compst compustatep))
   :returns (n natp)
   :short "Number of frames in the call stack of a computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem @('compustate-frames-number-of-compustate-same-frames')
+     is useful to show that @(tsee change-compustate)
+     for a component other than @(':frames')
+     preserves the number of frames."))
   (len (compustate->frames compst))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule compustate-frames-number-of-compustate-same-frames
+    (equal (compustate-frames-number
+            (compustate static
+                        (compustate->frames compst)
+                        heap))
+           (compustate-frames-number compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -407,27 +422,33 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define create-var ((var identp) (val valuep) (compst compustatep))
-  :guard (> (compustate-frames-number compst) 0)
   :returns (result compustate-resultp)
   :short "Create a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we ignore static storage.
-     We will extend this function to deal with static storage soon.")
-   (xdoc::p
-    "We add the variable to the top scope of the top frame;
-     the variable comes with a value.
-     If there is already a variable with the same name in the top scope,
+    "If there are no frames, we add the variable to the static storage;
+     otherwise, we add the variable to the top scope of the top frame.
+     The variable comes with a value.
+     If there is already a variable with the same name
+     (in the static storage or in the top scope of the top frame),
      we return an error: C disallows variable redefinition.
      However, there may well be a variable with the same in a different scope:
      in this case, the new variable hides the other one."))
-  (b* ((frame (top-frame compst))
+  (b* ((var (ident-fix var))
+       ((when (equal (compustate-frames-number compst) 0))
+        (b* ((static (compustate->static compst))
+             (pair (omap::in var static))
+             ((when (consp pair)) (error (list :var-redefinition var)))
+             (new-static (omap::update var (value-fix val) static))
+             (new-compst (change-compustate compst :static new-static)))
+          new-compst))
+       (frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
-       (pair (omap::in (ident-fix var) scope))
-       ((when (consp pair)) (error (list :var-redefinition (ident-fix var))))
-       (new-scope (omap::update (ident-fix var) (value-fix val) scope))
+       (pair (omap::in var scope))
+       ((when (consp pair)) (error (list :var-redefinition var)))
+       (new-scope (omap::update var (value-fix val) scope))
        (new-scopes (cons new-scope (cdr scopes)))
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
@@ -438,8 +459,7 @@
   (defret compustate-frames-number-of-create-var
     (implies (compustatep result)
              (equal (compustate-frames-number result)
-                    (compustate-frames-number compst)))
-    :hyp (> (compustate-frames-number compst) 0))
+                    (compustate-frames-number compst))))
 
   (defret compustate-scopes-numbers-of-create-var
     (implies (compustatep result)
