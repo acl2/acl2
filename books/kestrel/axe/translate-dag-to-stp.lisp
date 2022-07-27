@@ -2694,5 +2694,7 @@
       t
     (let* ((entry (car dag))
            (expr (cdr entry)))
-      (and (expr-is-purep expr)
-           (dag-is-purep (rest dag))))))
+      (if (expr-is-purep expr)
+          (dag-is-purep (rest dag))
+        (prog2$ (cw "Non-pure expression in DAG: ~x0.~%" expr)
+                nil)))))
