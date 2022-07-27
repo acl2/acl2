@@ -6288,6 +6288,26 @@
                  (GETBIT 31 x)))
  :hints (("Goal" :in-theory (e/d (getbit) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
 
+;drop since we have the gen version?
+;many cases
+(defthm sbvlt-of-bvuminus-and-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k))
+           (equal (sbvlt 32 (bvuminus 32 x) k)
+                  (if (equal 2147483648 (bvchop 32 k))
+                      nil
+                    (if (equal 2147483648 (bvchop 32 x))
+                        t
+                      (sbvlt 32
+                             (bvuminus 32 k) ;gets computed
+                             x)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt ;-rewrite
+                                   bvuminus
+                                   bvminus
+                                   bvlt bvplus bvchop-of-sum-cases
+                                   logext-of-plus)
+                                  ()))))
+
 (defthm sbvlt-of-bvuminus
   (implies (unsigned-byte-p 32 x)
            (equal (SBVLT 32 (BVUMINUS 32 x) 0)
@@ -6314,7 +6334,77 @@
                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                             <-OF-LOGEXT-AND-0-ALT)))))
 
-;gen the 0 to any constant!
+;move
+; not safe, can loop when rewriting the binding hyp
+(defthmd getbit-when-equal-of-bvchop-safe
+  (implies (and (equal (bvchop size x) free)
+                (equal result (getbit n free)) ; a binding hyp
+                (syntaxp (quotep result))
+                (< n size)
+                (natp n)
+                (natp size))
+           (equal (getbit n x)
+                  result)))
+
+;move
+(defthmd bvchop-when-equal-of-bvchop-safe
+  (implies (and (equal (bvchop size x) free)
+                (equal result (bvchop size0 free)) ; a binding hyp
+                (syntaxp (quotep result))
+                (< size0 size)
+                (natp size0)
+                (natp size))
+           (equal (bvchop size0 x)
+                  result)))
+
+;move
+(defthmd logext-when-equal-of-bvchop-safe
+  (implies (and (equal (bvchop size x) free)
+                (equal result (logext size free)) ; a binding hyp
+                (syntaxp (quotep result))
+                (posp size))
+           (equal (logext size x)
+                  result)))
+
+;move
+(defthmd logext-when-equal-of-bvchop
+  (implies (and (equal (bvchop size x) free)
+                (posp size))
+           (equal (logext size x)
+                  (logext size free))))
+
+;move
+(defthm equal-of-logext-and---of-expt2-of-one-less
+  (implies (posp size)
+           (equal (equal (logext size x) (- (expt 2 (+ -1 size))))
+                  (equal (bvchop size x) (expt 2 (+ -1 size)))))
+  :hints (("Goal" :in-theory (enable logext-cases
+                                     getbit-when-equal-of-bvchop-safe
+                                     bvchop-when-equal-of-bvchop-safe))))
+
+;todo: make a safe version for when we can exclude the weird case
+(defthm sbvlt-of-bvuminus-and-constant-gen
+  (implies (and (syntaxp (quotep k))
+;                (integerp k)
+                (posp size)
+                )
+           (equal (sbvlt size (bvuminus size x) k)
+                  (if (equal (expt 2 (+ -1 size)) (bvchop size k))
+                      nil
+                    (if (equal (expt 2 (+ -1 size)) (bvchop size x))
+                        t
+                      (sbvlt size
+                             (bvuminus size k) ;gets computed
+                             x)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt ;-rewrite
+                                   bvuminus
+                                   bvminus
+                                   bvlt bvplus bvchop-of-sum-cases
+                                   logext-of-plus
+                                   logext-when-equal-of-bvchop
+                                   logext-when-equal-of-bvchop-safe)
+                                  ()))))
+
 (defthm sbvlt-of-bvplus-of-0-and-constant
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p 31 k) ;gen?
