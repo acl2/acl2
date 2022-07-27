@@ -184,6 +184,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: instead of using this in a claim of the form (all-< (strip-nots-from-possibly-negated-nodenums items) dag-len), consider bounded-possibly-negated-nodenumsp
+;; TODO: Consider a tail-recursive version, especially if we don't care about the order
 (defund strip-nots-from-possibly-negated-nodenums (items)
   (declare (xargs :guard (possibly-negated-nodenumsp items)
                   :guard-hints (("Goal" :expand (possibly-negated-nodenumsp items)))))
