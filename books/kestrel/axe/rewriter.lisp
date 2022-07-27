@@ -2149,7 +2149,8 @@
         ;; could instead call rewrite-term...
         (simp-term term :rule-alist rule-alist
                    :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
-                   :monitor monitored-rules)
+                   :monitor monitored-rules
+                   :check-inputs nil)
         (if erp
             (mv erp nil nil state)
           (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
@@ -2175,15 +2176,16 @@
         (mv erp nil state)
       (if (not old-term)
           ;; Nothing more could be done:
-          (mv nil terms state)
+          (mv (erp-nil) terms state)
         (if (equal *t* new-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
             (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
           (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
 
+
 ;; TODO: Deprecate in favor of simplify-terms-repeatedly
-;; Simplify all the terms, which are implicitly conjoined, assuming all the
+;; Simplify all the terms, which are implicitly conjoined, each assuming all the
 ;; others (being careful not to let two terms each simplify the other to true).
 ;todo: maybe translate the terms
 ;; Returns (mv erp new-terms state).
