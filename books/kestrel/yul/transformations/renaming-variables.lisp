@@ -60,7 +60,7 @@
        (new (identifier-fix new)))
     (if (member-equal (cons old new) (renaming->list ren))
         nil
-      (err (list :mismatch old new (renaming-fix ren)))))
+      (reserrf (list :mismatch old new (renaming-fix ren)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,9 +78,9 @@
   (b* (((when (endp old))
         (if (endp new)
             nil
-          (err (list :mismatch-extra-new (identifier-list-fix new)))))
+          (reserrf (list :mismatch-extra-new (identifier-list-fix new)))))
        ((when (endp new))
-        (err (list :mismatch-extra-old (identifier-list-fix old))))
+        (reserrf (list :mismatch-extra-old (identifier-list-fix old))))
        ((ok &) (var-renamevar (car old) (car new) ren)))
     (var-list-renamevar (cdr old) (cdr new) ren))
   :hooks (:fix))
@@ -98,12 +98,12 @@
   (b* ((old-ids (path->get old))
        ((unless (and (consp old-ids)
                      (endp (cdr old-ids))))
-        (err (list :non-singleton-old-path (path-fix old))))
+        (reserrf (list :non-singleton-old-path (path-fix old))))
        (old-id (car old-ids))
        (new-ids (path->get new))
        ((unless (and (consp new-ids)
                      (endp (cdr new-ids))))
-        (err (list :non-singleton-old-path (path-fix new))))
+        (reserrf (list :non-singleton-old-path (path-fix new))))
        (new-id (car new-ids)))
     (var-renamevar old-id new-id ren))
   :hooks (:fix))
@@ -122,9 +122,9 @@
   (b* (((when (endp old))
         (if (endp new)
             nil
-          (err (list :mismatch-extra-new (path-list-fix new)))))
+          (reserrf (list :mismatch-extra-new (path-list-fix new)))))
        ((when (endp new))
-        (err (list :mismatch-extra-old (path-list-fix old))))
+        (reserrf (list :mismatch-extra-old (path-list-fix old))))
        ((ok &) (path-renamevar (car old) (car new) ren)))
     (path-list-renamevar (cdr old) (cdr new) ren))
   :hooks (:fix)
@@ -155,20 +155,20 @@
     (expression-case
      old
      :path (b* (((unless (expression-case new :path))
-                 (err (list :mismatch
-                        (expression-fix old)
-                        (expression-fix new))))
+                 (reserrf (list :mismatch
+                                (expression-fix old)
+                                (expression-fix new))))
                 ((expression-path new) new))
              (path-renamevar old.get new.get ren))
      :literal (if (expression-equiv old new)
                   nil
-                (err (list :mismatch
-                       (expression-fix old)
-                       (expression-fix new))))
+                (reserrf (list :mismatch
+                               (expression-fix old)
+                               (expression-fix new))))
      :funcall (b* (((unless (expression-case new :funcall))
-                    (err (list :mismatch
-                           (expression-fix old)
-                           (expression-fix new))))
+                    (reserrf (list :mismatch
+                                   (expression-fix old)
+                                   (expression-fix new))))
                    ((expression-funcall new) new))
                 (funcall-renamevar old.get new.get ren)))
     :measure (expression-count old))
@@ -187,9 +187,9 @@
     (b* (((when (endp old))
           (if (endp new)
               nil
-            (err (list :mismatch-extra-new (expression-list-fix new)))))
+            (reserrf (list :mismatch-extra-new (expression-list-fix new)))))
          ((when (endp new))
-          (err (list :mismatch-extra-old (expression-list-fix old))))
+          (reserrf (list :mismatch-extra-old (expression-list-fix old))))
          ((ok &) (expression-renamevar (car old) (car new) ren)))
       (expression-list-renamevar (cdr old) (cdr new) ren))
     :measure (expression-list-count old))
@@ -208,7 +208,7 @@
     (b* (((funcall old) old)
          ((funcall new) new)
          ((unless (equal old.name new.name))
-          (err (list :mismatch (funcall-fix old) (funcall-fix new)))))
+          (reserrf (list :mismatch (funcall-fix old) (funcall-fix new)))))
       (expression-list-renamevar old.args new.args ren))
     :measure (funcall-count old))
 
@@ -235,14 +235,14 @@
    old
    :none (if (expression-option-case new :none)
              nil
-           (err (list :mismatch
-                  (expression-option-fix old)
-                  (expression-option-fix new))))
+           (reserrf (list :mismatch
+                          (expression-option-fix old)
+                          (expression-option-fix new))))
    :some (expression-option-case
           new
-          :none (err (list :mismatch
-                       (expression-option-fix old)
-                       (expression-option-fix new)))
+          :none (reserrf (list :mismatch
+                               (expression-option-fix old)
+                               (expression-option-fix new)))
           :some (expression-renamevar (expression-option-some->val old)
                                       (expression-option-some->val new)
                                       ren)))
@@ -265,14 +265,14 @@
    old
    :none (if (funcall-option-case new :none)
              nil
-           (err (list :mismatch
-                  (funcall-option-fix old)
-                  (funcall-option-fix new))))
+           (reserrf (list :mismatch
+                          (funcall-option-fix old)
+                          (funcall-option-fix new))))
    :some (funcall-option-case
           new
-          :none (err (list :mismatch
-                       (funcall-option-fix old)
-                       (funcall-option-fix new)))
+          :none (reserrf (list :mismatch
+                               (funcall-option-fix old)
+                               (funcall-option-fix new)))
           :some (funcall-renamevar (funcall-option-some->val old)
                                    (funcall-option-some->val new)
                                    ren)))
@@ -300,9 +300,9 @@
        (new (identifier-fix new))
        (list (renaming->list ren))
        ((when (member-equal old (strip-cars list)))
-        (err (list :old-var-already-in-scope old new (renaming-fix ren))))
+        (reserrf (list :old-var-already-in-scope old new (renaming-fix ren))))
        ((when (member-equal new (strip-cdrs list)))
-        (err (list :new-var-already-in-scope old new (renaming-fix ren)))))
+        (reserrf (list :new-var-already-in-scope old new (renaming-fix ren)))))
     (renaming (cons (cons old new) list)))
   :hooks (:fix)
   ///
@@ -349,9 +349,9 @@
   (b* (((when (endp old))
         (if (endp new)
             (renaming-fix ren)
-          (err (list :mismatch-extra-new (identifier-list-fix new)))))
+          (reserrf (list :mismatch-extra-new (identifier-list-fix new)))))
        ((when (endp new))
-        (err (list :mismatch-extra-old (identifier-list-fix old))))
+        (reserrf (list :mismatch-extra-old (identifier-list-fix old))))
        ((ok ren) (add-var-to-var-renaming (car old) (car new) ren)))
     (add-vars-to-var-renaming (cdr old) (cdr new) ren))
   :hooks (:fix)
@@ -426,68 +426,68 @@
      old
      :block
      (b* (((unless (statement-case new :block))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-block new) new)
           ((ok &) (block-renamevar old.get new.get ren)))
        (renaming-fix ren))
      :variable-single
      (b* (((unless (statement-case new :variable-single))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-variable-single new) new)
           ((ok &) (expression-option-renamevar old.init new.init ren)))
        (add-var-to-var-renaming old.name new.name ren))
      :variable-multi
      (b* (((unless (statement-case new :variable-multi))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-variable-multi new) new)
           ((ok &) (funcall-option-renamevar old.init new.init ren)))
        (add-vars-to-var-renaming old.names new.names ren))
      :assign-single
      (b* (((unless (statement-case new :assign-single))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-assign-single new) new)
           ((ok &) (path-renamevar old.target new.target ren))
           ((ok &) (expression-renamevar old.value new.value ren)))
        (renaming-fix ren))
      :assign-multi
      (b* (((unless (statement-case new :assign-multi))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-assign-multi new) new)
           ((ok &) (path-list-renamevar old.targets new.targets ren))
           ((ok &) (funcall-renamevar old.value new.value ren)))
        (renaming-fix ren))
      :funcall
      (b* (((unless (statement-case new :funcall))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-funcall new) new)
           ((ok &) (funcall-renamevar old.get new.get ren)))
        (renaming-fix ren))
      :if
      (b* (((unless (statement-case new :if))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-if new) new)
           ((ok &) (expression-renamevar old.test new.test ren))
           ((ok &) (block-renamevar old.body new.body ren)))
        (renaming-fix ren))
      :for
      (b* (((unless (statement-case new :for))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-for new) new)
           (old-stmts (block->statements old.init))
           (new-stmts (block->statements new.init))
@@ -498,9 +498,9 @@
        (renaming-fix ren))
      :switch
      (b* (((unless (statement-case new :switch))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-switch new) new)
           ((ok &) (expression-renamevar old.target new.target ren))
           ((ok &) (swcase-list-renamevar old.cases new.cases ren))
@@ -508,27 +508,27 @@
        (renaming-fix ren))
      :leave
      (b* (((unless (statement-case new :leave))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new)))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new)))))
        (renaming-fix ren))
      :break
      (b* (((unless (statement-case new :break))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new)))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new)))))
        (renaming-fix ren))
      :continue
      (b* (((unless (statement-case new :continue))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new)))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new)))))
        (renaming-fix ren))
      :fundef
      (b* (((unless (statement-case new :fundef))
-           (err (list :mismatch
-                  (statement-fix old)
-                  (statement-fix new))))
+           (reserrf (list :mismatch
+                          (statement-fix old)
+                          (statement-fix new))))
           ((statement-fundef new) new)
           ((ok &) (fundef-renamevar old.get new.get)))
        (renaming-fix ren)))
@@ -549,9 +549,9 @@
     (b* (((when (endp old))
           (if (endp new)
               (renaming-fix ren)
-            (err (list :mismatch-extra-new (statement-list-fix new)))))
+            (reserrf (list :mismatch-extra-new (statement-list-fix new)))))
          ((when (endp new))
-          (err (list :mismatch-extra-old (statement-list-fix old))))
+          (reserrf (list :mismatch-extra-old (statement-list-fix old))))
          ((ok ren) (statement-renamevar (car old) (car new) ren)))
       (statement-list-renamevar (cdr old) (cdr new) ren))
     :measure (statement-list-count old))
@@ -584,14 +584,14 @@
      old
      :none (if (block-option-case new :none)
                nil
-             (err (list :mismatch
-                    (block-option-fix old)
-                    (block-option-fix new))))
+             (reserrf (list :mismatch
+                            (block-option-fix old)
+                            (block-option-fix new))))
      :some (block-option-case
             new
-            :none (err (list :mismatch
-                         (block-option-fix old)
-                         (block-option-fix new)))
+            :none (reserrf (list :mismatch
+                                 (block-option-fix old)
+                                 (block-option-fix new)))
             :some (block-renamevar (block-option-some->val old)
                                    (block-option-some->val new)
                                    ren)))
@@ -611,9 +611,9 @@
        and the bodies must be related."))
     (b* (((unless (equal (swcase->value old)
                          (swcase->value new)))
-          (err (list :mismatch-case-value
-                 (swcase->value old)
-                 (swcase->value new)))))
+          (reserrf (list :mismatch-case-value
+                         (swcase->value old)
+                         (swcase->value new)))))
       (block-renamevar (swcase->body old) (swcase->body new) ren))
     :measure (swcase-count old))
 
@@ -631,9 +631,9 @@
     (b* (((when (endp old))
           (if (endp new)
               nil
-            (err (list :mismatch-extra-new (swcase-list-fix new)))))
+            (reserrf (list :mismatch-extra-new (swcase-list-fix new)))))
          ((when (endp new))
-          (err (list :mismatch-extra-old (swcase-list-fix old))))
+          (reserrf (list :mismatch-extra-old (swcase-list-fix old))))
          ((ok &) (swcase-renamevar (car old) (car new) ren)))
       (swcase-list-renamevar (cdr old) (cdr new) ren))
     :measure (swcase-list-count old))
@@ -649,9 +649,9 @@
        and then we process the bodies."))
     (b* (((unless (equal (fundef->name old)
                          (fundef->name new)))
-          (err (list :mismatch-function-name
-                 (fundef->name old)
-                 (fundef->name new))))
+          (reserrf (list :mismatch-function-name
+                         (fundef->name old)
+                         (fundef->name new))))
          ((ok ren) (add-vars-to-var-renaming (fundef->inputs old)
                                              (fundef->inputs new)
                                              (renaming nil)))
@@ -827,9 +827,9 @@
   (b* (((when (endp old))
         (if (endp new)
             nil
-          (err (list :mismatch-extra-new (fundef-list-fix new)))))
+          (reserrf (list :mismatch-extra-new (fundef-list-fix new)))))
        ((when (endp new))
-        (err (list :mismatch-extra-old (fundef-list-fix old))))
+        (reserrf (list :mismatch-extra-old (fundef-list-fix old))))
        ((ok &) (fundef-renamevar (car old) (car new))))
     (fundef-list-renamevar (cdr old) (cdr new)))
   :hooks (:fix)

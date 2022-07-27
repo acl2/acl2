@@ -132,12 +132,12 @@
       to the current function symbol,
       it may be useful to automatically incorporate this information
       into the error result.
-      To this end, a macro @(tsee err) is provided
+      To this end, a macro @(tsee reserrf) is provided
       that automatically adds the function information
       to the information passed explicitly as input to the macro.
       A macro @(tsee err-push) is also provided
       to add function and other information
-      to an error of the form returned by @(tsee err) or @(tsee err-push),
+      to an error of the form returned by @(tsee reserrf) or @(tsee err-push),
       resulting in a stack of error information
       corresponding to the call stack.
       The @(tsee patbind-ok) binder automates the check-and-propagation
@@ -366,7 +366,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::defmacro+
- err (info)
+ reserrf (info)
  :parents (defresult)
  :short "Return an error result with a singleton stack."
  :long
@@ -377,12 +377,15 @@
     accompanied by the name of the current function @('fn'),
     as a doublet @('(fn info)').
     A singleton list with this doublet is returned.
-    This is a singleton stack,
-    in the sense that @(tsee err-push) pushes onto the stack
-    by @(tsee cons)ing additional pairs with the same form.")
+    This is a singleton stack, in the sense explained in @(tsee defresult).")
   (xdoc::p
    "This assumes that @('__function__') is bound to the function name,
-    which happens automatically with @(tsee define)."))
+    which happens automatically with @(tsee define).")
+  (xdoc::p
+   "This macro is a bit like the @('reserr') constructor
+    of the fixtype @(tsee reserr),
+    but the @('f') in the name conveys that
+    it adds the name of the function to the infomation passed as argument."))
  `(make-reserr :info (list (list __function__ ,info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
