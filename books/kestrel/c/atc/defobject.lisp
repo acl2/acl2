@@ -167,7 +167,7 @@
                                         (msg "The first input ~x0" name)
                                         t (irrelevant)))
        (name-string (symbol-name name))
-       ((unless (ident-stringp name-string))
+       ((unless (paident-stringp name-string))
         (er-soft+ ctx t (irrelevant)
                   "The SYMBOL-NAME ~x0 of the first input ~x1 ~
                    must be a portable ASCII C identifier."
