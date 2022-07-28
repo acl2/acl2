@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -560,7 +560,7 @@
        ((mv code vars) (def-parse-gen-code-for-alternation-aux
                          alt 1 fn-name group-fns option-fns repetition-fns)))
     `(b* (,@code)
-       (mv (err (list :found (list ,@vars) :required ',alt)) input)))
+       (mv (reserrf (list :found (list ,@vars) :required ',alt)) input)))
   :prepwork
   ((define def-parse-gen-code-for-alternation-aux
      ((alt alternationp)

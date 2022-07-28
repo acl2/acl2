@@ -71,7 +71,7 @@
      i.e. values of type @(tsee reserr)
      whose innermost information starts with the keyword @(':limit'),
      where `innermost' refers to
-     the stack discussed in @(tsee fty::err) and @(tsee fty::err-push).
+     the stack discussed in @(tsee fty::reserrf) and @(tsee fty::err-push).
      The adequacy of this predicate definition depends on
      the definition of the ACL2 execution functions for Yul,
      in particular the fact that they return error limits of this form.

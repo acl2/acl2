@@ -1087,7 +1087,7 @@
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -1147,7 +1147,7 @@
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -1228,7 +1228,7 @@
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -1308,7 +1308,7 @@
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -2973,7 +2973,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (ident-stringp (symbol-name var)))
+                   ((unless (paident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the MV-LET variable ~x1 of the function ~x2 ~
@@ -3464,7 +3464,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (ident-stringp (symbol-name var)))
+                   ((unless (paident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
@@ -4168,7 +4168,7 @@
   (b* (((when (endp typed-formals)) (acl2::value nil))
        ((cons formal type) (car typed-formals))
        (name (symbol-name formal))
-       ((unless (ident-stringp name))
+       ((unless (paident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
@@ -5268,7 +5268,7 @@
      in the @(':compound') case,
      and then we use the limit for the block."))
   (b* ((name (symbol-name fn))
-       ((unless (ident-stringp name))
+       ((unless (paident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
