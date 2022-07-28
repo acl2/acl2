@@ -329,13 +329,13 @@
                (parse-direct (list ,@(num-val-direct->get elem.get))
                              input))
               ,@(and check-error-p
-                     '(((when (reserrp tree)) (mv (err-push tree) input)))))
+                     '(((when (reserrp tree)) (mv (reserrf-push tree) input)))))
     :range `(((mv tree input)
               (parse-range ,(num-val-range->min elem.get)
                            ,(num-val-range->max elem.get)
                            input))
              ,@(and check-error-p
-                    '(((when (reserrp tree)) (mv (err-push tree) input))))))
+                    '(((when (reserrp tree)) (mv (reserrf-push tree) input))))))
    :char-val
    (char-val-case
     elem.get
@@ -344,13 +344,13 @@
                                   input))
                    ,@(and
                       check-error-p
-                      '(((when (reserrp tree)) (mv (err-push tree) input)))))
+                      '(((when (reserrp tree)) (mv (reserrf-push tree) input)))))
     :sensitive `(((mv tree input)
                   (parse-schars ,(char-val-sensitive->get elem.get)
                                 input))
                  ,@(and
                     check-error-p
-                    '(((when (reserrp tree)) (mv (err-push tree) input))))))
+                    '(((when (reserrp tree)) (mv (reserrf-push tree) input))))))
    :rulename (b* ((parse-rulename-fn
                    (acl2::packn-pos (list fn-name
                                           '-
@@ -360,17 +360,17 @@
                `(((mv tree input) (,parse-rulename-fn input))
                  ,@(and
                     check-error-p
-                    '(((when (reserrp tree)) (mv (err-push tree) input))))))
+                    '(((when (reserrp tree)) (mv (reserrf-push tree) input))))))
    :group (b* ((parse-group-fn (cdr (assoc-equal elem.get group-fns))))
             `(((mv tree input) (,parse-group-fn input))
               ,@(and
                  check-error-p
-                 '(((when (reserrp tree)) (mv (err-push tree) input))))))
+                 '(((when (reserrp tree)) (mv (reserrf-push tree) input))))))
    :option (b* ((parse-option-fn (cdr (assoc-equal elem.get option-fns))))
              `(((mv tree input) (,parse-option-fn input))
                ,@(and
                   check-error-p
-                  '(((when (reserrp tree)) (mv (err-push tree) input))))))
+                  '(((when (reserrp tree)) (mv (reserrf-push tree) input))))))
    :prose-val (raise "Prose value ~x0 not supported." elem.get)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -415,7 +415,7 @@
        ((when parse-repetition-fn?)
         (mv `(((mv ,trees-index input) (,parse-repetition-fn? input))
               ((when (reserrp ,trees-index))
-               (mv (err-push ,trees-index) input)))
+               (mv (reserrf-push ,trees-index) input)))
             trees-index))
        ((repetition rep) rep)
        ((when (equal rep.range
@@ -656,7 +656,7 @@
              ,(def-parse-gen-code-for-alternation
                 alt order fn-name group-fns option-fns repetition-fns))
             ((when (reserrp treess))
-             (mv (err-push treess) (nat-list-fix input))))
+             (mv (reserrf-push treess) (nat-list-fix input))))
          (mv (make-tree-nonleaf :rulename? (rulename ,rulename)
                                 :branches treess)
              input))
@@ -708,7 +708,7 @@
              ,(def-parse-gen-code-for-alternation
                 alt order fn-name group-fns option-fns repetition-fns))
             ((when (reserrp treess))
-             (mv (err-push treess) (nat-list-fix input))))
+             (mv (reserrf-push treess) (nat-list-fix input))))
          (mv (make-tree-nonleaf :rulename? nil
                                 :branches treess)
              input))

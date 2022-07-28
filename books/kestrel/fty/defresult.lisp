@@ -135,9 +135,10 @@
       To this end, a macro @(tsee reserrf) is provided
       that automatically adds the function information
       to the information passed explicitly as input to the macro.
-      A macro @(tsee err-push) is also provided
+      A macro @(tsee reserrf-push) is also provided
       to add function and other information
-      to an error of the form returned by @(tsee reserrf) or @(tsee err-push),
+      to an error of the form
+      returned by @(tsee reserrf) or @(tsee reserrf-push),
       resulting in a stack of error information
       corresponding to the call stack.
       The @(tsee patbind-ok) binder automates the check-and-propagation
@@ -391,7 +392,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::defmacro+
- err-push (error &optional info)
+ reserrf-push (error &optional info)
  :parents (defresult)
  :short "Push the current function onto the stack of an error result,
          optionally with additional information."
@@ -405,7 +406,7 @@
     actually using @('nil') as extra information;
     when that binder cannot be used for some reason,
     or when additional information must be pushed,
-    then this @('err-push') macro may come handy.")
+    then this @('reserrf-push') macro may come handy.")
   (xdoc::p
    "This assumes that @('__function__') is bound to the current function name,
     which is automatically the case when using @(tsee define)."))
@@ -457,7 +458,7 @@
   :body
   `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
         ((when (reserrp patbinder-ok-fresh-variable-for-result))
-         (err-push patbinder-ok-fresh-variable-for-result))
+         (reserrf-push patbinder-ok-fresh-variable-for-result))
         (,(car args) patbinder-ok-fresh-variable-for-result))
      ,acl2::rest-expr))
 
