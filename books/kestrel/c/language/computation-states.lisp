@@ -532,6 +532,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-static-var ((var identp) (compst compustatep))
+  :returns (val value-resultp)
+  :short "Read a variable in static storage."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the variable is not found, we return an error."))
+  (b* ((pair (omap::in (ident-fix var) (compustate->static compst)))
+       ((when (not pair)) (error (list :var-not-found (ident-fix var)))))
+    (cdr pair))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define read-var ((var identp) (compst compustatep))
   :returns (val value-resultp)
   :short "Read a variable in a computation state."
@@ -653,6 +667,32 @@
                                        compustate-scopes-numbers
                                        compustate-scopes-numbers-aux
                                        errorp-when-scope-list-resultp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-static-var ((var identp) (val valuep) (compst compustatep))
+  :returns (new-compst compustate-resultp)
+  :short "Write a varible in static storage."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the variable is not found, we return an error.
+     If the variable is found but its current value
+     has a different type from the one of the new value,
+     we return an error.
+     Otherwise, we overwrite the old value with the new one."))
+  (b* ((static (compustate->static compst))
+       (pair (omap::in (ident-fix var) static))
+       ((when (not pair)) (error (list :var-not-found (ident-fix var))))
+       ((unless (equal (type-of-value (cdr pair))
+                       (type-of-value val)))
+        (error (list :write-static-var-mistype (ident-fix var)
+                     :required (type-of-value (cdr pair))
+                     :supplied (type-of-value val))))
+       (new-static (omap::update (ident-fix var) (value-fix val) static))
+       (new-compst (change-compustate compst :static new-static)))
+    new-compst)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
