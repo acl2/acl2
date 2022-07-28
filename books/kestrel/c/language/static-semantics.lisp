@@ -606,7 +606,7 @@
     "We check whether the underlying ACL2 string forms a "
     (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII identifier")
     "."))
-  (if (ident-stringp (ident->name id))
+  (if (paident-stringp (ident->name id))
       :wellformed
     (error (list :illegal/unsupported-ident (ident-fix id))))
   :hooks (:fix))
