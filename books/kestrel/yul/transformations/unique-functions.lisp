@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -120,7 +120,7 @@
     :short "Check that a function definition has unique function names."
     (b* ((name (fundef->name fundef))
          ((when (set::in name (identifier-set-fix funs)))
-          (err (list :duplicate-funs name)))
+          (reserrf (list :duplicate-funs name)))
          (funs (set::insert name (identifier-set-fix funs))))
       (block-unique-funs (fundef->body fundef) funs))
     :measure (fundef-count fundef))

@@ -56,8 +56,8 @@
                           seq-backtrack
                           string=>nats
                           unsigned-byte-listp
-                          fty::err
                           fty::err-push
+                          fty::reserrf
                           fty::reserrp
                           set::list-in
                           set::nat-setp

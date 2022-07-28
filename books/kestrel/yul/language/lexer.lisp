@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -819,14 +819,14 @@
   (b* (((mv tree-1char input-after-1char)
         (lex-whitespace-char input))
        ((when (reserrp tree-1char))
-        (mv (err "whitespace problem")
+        (mv (reserrf "whitespace problem")
             (acl2::nat-list-fix input)))
        ((mv trees-restchars input-after-restchars)
         (lex-repetition-*-whitespace-char input-after-1char))
        ;; Can an error even happen?  Wouldn't it just return NIL (zero trees)?
        ;; Check error just in case.
        ((when (reserrp trees-restchars))
-        (mv (err "whitespace problem")
+        (mv (reserrf "whitespace problem")
             (acl2::nat-list-fix input))))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "whitespace")
@@ -860,12 +860,12 @@
                 (b* (((mv tree-star input-after-star)
                       (abnf::parse-ichars "*" input))
                      ((when (reserrp tree-star))
-                      (mv (err "problem lexing \"*\"") input))
+                      (mv (reserrf "problem lexing \"*\"") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment-after-star
                        input-after-star))
                      ((when (reserrp tree-rest))
-                      (mv (err "problem lexing rest-of-block-comment-after-star") input)))
+                      (mv (reserrf "problem lexing rest-of-block-comment-after-star") input)))
                   ;; combine the two trees into tree-star+rest
                   (mv (list (list tree-star) (list tree-rest))
                       input-after-rest)))
@@ -878,11 +878,11 @@
                 (b* (((mv tree-not-star input-after-not-star)
                       (lex-not-star input))
                      ((when (reserrp tree-not-star))
-                      (mv (err "problem lexing not-star") input))
+                      (mv (reserrf "problem lexing not-star") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment input-after-not-star))
                      ((when (reserrp tree-rest))
-                      (mv (err "problem lexing rest-of-block-comment") input)))
+                      (mv (reserrf "problem lexing rest-of-block-comment") input)))
                   ;; combine the two trees into
                   ;; tree-not-star+rest
                   (mv (list (list tree-not-star)
@@ -914,12 +914,12 @@
                 (b* (((mv tree-star input-after-star)
                       (abnf::parse-ichars "*" input))
                      ((when (reserrp tree-star))
-                      (mv (err "problem lexing \"*\"") input))
+                      (mv (reserrf "problem lexing \"*\"") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment-after-star
                        input-after-star))
                      ((when (reserrp tree-rest))
-                      (mv (err "problem lexing rest-of-block-comment-after-star") input)))
+                      (mv (reserrf "problem lexing rest-of-block-comment-after-star") input)))
                   ;; combine the two trees into tree-star+rest
                   (mv (list (list tree-star)
                             (list tree-rest))
@@ -933,11 +933,11 @@
                 (b* (((mv tree-not-star-or-slash input-after-not-star-or-slash)
                       (lex-not-star-or-slash input))
                      ((when (reserrp tree-not-star-or-slash))
-                      (mv (err "problem lexing not-star-or-slash") input))
+                      (mv (reserrf "problem lexing not-star-or-slash") input))
                      ((mv tree-rest input-after-rest)
                       (lex-rest-of-block-comment input-after-not-star-or-slash))
                      ((when (reserrp tree-rest))
-                      (mv (err "problem lexing rest-of-block-comment") input)))
+                      (mv (reserrf "problem lexing rest-of-block-comment") input)))
                   ;; combine the two trees into
                   ;; tree-not-star-or-slash+rest
                   (mv (list (list tree-not-star-or-slash)

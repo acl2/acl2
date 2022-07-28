@@ -58,7 +58,7 @@
              (str::letter/uscore/dollar-char-p (car chars))
              (str::letter/digit/uscore/dollar-charlist-p (cdr chars)))
         nil
-      (err (list :bad-identifier (identifier-fix iden)))))
+      (reserrf (list :bad-identifier (identifier-fix iden)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
