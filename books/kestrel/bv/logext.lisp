@@ -331,6 +331,14 @@
                   0))
   :hints (("Goal" :cases ((posp size)))))
 
+(defthm logext-of-+-of-1-and-expt-same
+  (implies (integerp size)
+           (equal (logext size (+ -1 (expt 2 size)))
+                  (if (equal (nfix size) 0)
+                      0
+                    -1)))
+  :hints (("Goal" :in-theory (enable logext))))
+
 (defthm logext-of-+-of-expt-same
   (implies (and (posp size)
                 (integerp x))
@@ -711,3 +719,20 @@
                                                BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                                ;;BVCHOP-OF-LOGTAIL
                                                )))))
+
+(defthmd logext-both-sides
+  (implies (equal x y)
+           (equal (logext size x) (logext size y))))
+
+(defthmd equal-of-logext
+  (implies (posp n)
+           (equal (equal x (logext n y))
+                  (and (equal (bvchop n x)
+                              (bvchop n y))
+                       (signed-byte-p n x)
+                       (integerp x))))
+  :hints (("Goal"
+           :use (:instance logext-both-sides
+                           (x (bvchop n x))
+                           (y (bvchop n y)) (size n))
+           :in-theory (disable signed-byte-p))))
