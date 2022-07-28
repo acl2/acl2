@@ -18,7 +18,7 @@
 (include-book "signed-byte-p")
 ;(include-book "rules0") ;for BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION
 (include-book "kestrel/utilities/polarity" :dir :system)
-(include-book "kestrel/utilities/myif" :dir :system)
+;(include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "single-bit")
 (include-book "bvxor")
@@ -44,7 +44,7 @@
 (include-book "bvdiv")
 ;;(include-book "sbvdiv")
 ;;(include-book "sbvdivdown")
-(include-book "bvsx")
+;(include-book "bvsx")
 (include-book "repeatbit2")
 (include-book "bvshr")
 (include-book "bvshl")
@@ -329,12 +329,10 @@
          (myif test
                (logext n a)
                (logext n b)))
-  :hints (("Goal" :in-theory (enable myif)))
-  )
+  :hints (("Goal" :in-theory (enable myif))))
 
-;bozo gen
 ;restrict to only certain applications of logand?
-(defthm logand-of-myif
+(defthmd logand-of-myif-arg2
   (equal (binary-logand k (myif test a b))
          (myif test (binary-logand k a)
                (binary-logand k b)))
@@ -487,8 +485,6 @@
                   (bvif 1 test (getbit n x1) (getbit n x2))))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-
-
 ;; (defthmd equal-hack
 ;;   (implies (and (equal free1 free2)
 ;;                 (equal (logext newsize free1) (logext newsize x))
@@ -533,10 +529,7 @@
                   (if (integerp x)
                       (equal (bvchop newsize x) (bvchop newsize y))
                     (equal 0 y))))
-  :hints (("Goal"
-           :use (:instance helper-lemm)
-           :in-theory (enable ;smyif
-                       ))))
+  :hints (("Goal" :use (:instance helper-lemm))))
 
 (defthmd add-bvchops-to-equality-of-sbps-4-alt
   (implies (and ; (bind-free (bind-newsize-to-termsize x) (newsize))
@@ -1725,14 +1718,6 @@
   (equal (bvif 1 test 0 1)
          (bvnot 1 (bool-to-bit test)))
   :hints (("Goal" :in-theory (enable bool-to-bit bvif myif))))
-
-(defthm bvchop-of-bvnot
-  (implies (and (<= n size)
-                (natp n)
-                (natp size))
-           (equal (bvchop n (bvnot size val))
-                  (bvnot n val)))
-  :hints (("Goal" :in-theory (enable bvnot))))
 
 
 ;; (thm
@@ -2959,8 +2944,6 @@
            (equal (BVAND n 256 x)
                   (bvcat 1 (getbit 8 x)
                          8 0))))
-
-
 
 ;reduces the number of mentions of x
 ;BOZO prove more like this
@@ -6902,15 +6885,6 @@
                   (bvchop 32 free))) ;gets computed
   :hints (("Goal" :in-theory (e/d (bvplus-drop) (BVPLUS-OF-1-TIGHTEN)))))
 
-;move
-(defthm equal-of-0-and-bvsx
-  (implies (and (natp size)
-                (posp old-size)
-                (<= old-size size))
-           (equal (equal 0 (bvsx size old-size x))
-                  (equal 0 (bvchop old-size x))))
-  :hints (("Goal" :in-theory (enable bvsx getbit-when-equal-of-constant-and-bvchop))))
-
 (defthm rewrite-bv-equality-when-sizes-dont-match-1
   (implies (and (bind-free (bind-var-to-bv-term-size 'x-size x) (x-size))
                 (bind-free (bind-var-to-bv-term-size-if-trimmable 'y-size y) (y-size))
@@ -7250,30 +7224,6 @@
                                    logtail-becomes-slice-bind-free
                                    bvchop-of-logtail-becomes-slice)))))
 
-;; todo: make a "both" rule
-(defthm slice-of-bvsx
-  (implies (and (< low old-size) ;this case (there must be at least one bit to sign-extend?)
-                ;(< high new-size)
-                (<= old-size new-size)
-                (<= low high)
-                (natp high)
-                (natp low)
-                (posp old-size)
-                (natp new-size))
-           (equal (slice high low (bvsx new-size old-size x))
-                  (bvsx (+ (min new-size (+ 1 high)) (- low))
-                        (- old-size low)
-                        (slice high low x))))
-  :hints (("Goal" :in-theory (enable bvsx natp))))
-
-(defthm bvsx-too-high
-  (implies (and (unsigned-byte-p (+ -1 old-size) x)
-                (<= old-size new-size))
-           (equal (bvsx new-size old-size x)
-                  x))
-  :hints (("Goal" :in-theory (e/d (natp bvsx getbit-too-high)
-                                  (collect-constants-times-equal)))))
-
 (defthm bvsx-too-high-syntactic
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (< xsize old-size)
@@ -7285,42 +7235,6 @@
   :hints (("Goal" :use (:instance bvsx-too-high)
            :in-theory (e/d (unsigned-byte-p-forced)
                            (bvsx-too-high)))))
-
-(defthm bvsx-of-bvsx
-  (implies (and (<= old-size new-size)
-                (<= new-size big-size)
-                (posp old-size) ;must have at least 1 bit to sign-extend..
-                (integerp new-size)
-                (integerp big-size))
-           (equal (bvsx big-size new-size (bvsx new-size old-size x))
-                  (bvsx big-size old-size x)))
-  :hints (("Goal" :in-theory (enable bvsx))))
-
-(defthm slice-of-bvsx-high
-  (implies (and (<= old-size low) ;this case
-                ;(< high new-size)
-                (<= old-size new-size)
-                (<= low high)
-                (natp high)
-                (natp low)
-                (posp old-size)
-                (natp new-size))
-           (equal (slice high low (bvsx new-size old-size x))
-                  (repeatbit (+ (min (+ 1 high) new-size)
-                                (- low))
-                             (getbit (+ -1 old-size) x))))
-  :hints (("Goal" :in-theory (enable bvsx natp))))
-
-(defthm unsigned-byte-p-of-bvsx-alt
-  (implies (and (< size new-size) ;this case
-                (<= old-size size) ;this case
-                (natp size)
-                (natp new-size)
-                (posp old-size)
-                (<= old-size new-size))
-           (equal (unsigned-byte-p size (bvsx new-size old-size x))
-                  (equal 0 (getbit (+ -1 old-size) x))))
-  :hints (("Goal" :in-theory (e/d (bvsx) (REPEATBIT-OF-1-ARG2)))))
 
 (defthm bvchop-subst-when-equal-of-bvchops-gen
   (implies (and (equal (bvchop size2 x) (bvchop size2 free))
