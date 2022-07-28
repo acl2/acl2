@@ -213,17 +213,17 @@
     (xdoc::p
      "Each C structure type declaration is represented by a @(tsee defstruct),
       whose name is passed as one of the targets @('ti') to ATC.
-      The symbol name, which is a portable ASCII C identifier
-      as defined in Section `Portable ASCII C Identifiers' below
-      (this is enforced by @(tsee defstruct)),
+      The symbol name, which is a "
+     (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
+     " (this is enforced by @(tsee defstruct)),
       represents the tag of the C structure type.")
 
     (xdoc::p
      "Each C external object definition is represented by a @(tsee defobject),
       whose name is passed as one of the target @('ti') to ATC.
-      The symbol name, which is a portable ASCII C identifier
-      as defined in Section `Portable ASCII C Identifiers' below
-      (this is enforced by @(tsee defobject)),
+      The symbol name, which is a "
+     (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
+     " (this is enforced by @(tsee defobject)),
       represents the name of the C external object.")
 
     (xdoc::p
@@ -245,9 +245,9 @@
 
     (xdoc::p
      "The symbol name of each non-recursive function target @('fn')
-      must be a portable ASCII C identifier
-      as defined in Section `Portable ASCII C Identifiers' below.
-      That symbol name is used as the name of the corresponding C function.
+      must be a "
+     (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
+     ". That symbol name is used as the name of the corresponding C function.
       Therefore, the non-recursive target functions
       must have all distinct symbol names;
       even if they are in different packages,
@@ -262,9 +262,9 @@
     (xdoc::p
      "The symbol name of each formal parameter of each function target @('fn'),
       both non-recursive and recursive,
-      must be a portable ASCII C identifier
-      as defined in Section `Portable ASCII C Identifiers' below.
-      When @('fn') is non-recursive,
+      must be a "
+     (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
+     ". When @('fn') is non-recursive,
       the symbol names of its parameters are used as
       the names of the formal parameters of the corresponding C function,
       in the same order,
@@ -484,9 +484,10 @@
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A term @('(let ((var (declar term))) body)'),
-       when the symbol name of @('var') is a portable ASCII C identifier
-       as defined in Section `Portable ASCII C Identifiers' below,
-       the symbol name of @('var') is distinct from
+       when the symbol name of @('var') is a "
+      (xdoc::seetopic "portable-ascii-identifiers"
+                      "portable ASCII C identifier")
+      ", the symbol name of @('var') is distinct from
        the symbol names of all the other ACL2 variables in scope,
        @('term') is an expression term for @('fn')
        returning a non-@('void') non-pointer C type
@@ -617,9 +618,10 @@
        followed by the C code represented by @('body').")
      (xdoc::li
       "A term @('(mv-let (var var1 ... varn) (declarn term) body)'),
-       when the symbol name of @('var') is a portable ASCII C identifier
-       as defined in Section `Portable ASCII C Identifiers' below,
-       the symbol name of @('var') is distinct from
+       when the symbol name of @('var') is a "
+      (xdoc::seetopic "portable-ascii-identifiers"
+                      "portable ASCII C identifier")
+      ", the symbol name of @('var') is distinct from
        the symbol names of all the other ACL2 variables in scope,
        each @('vari') is assignable,
        each @('vari') is among @('vars')
@@ -1151,38 +1153,6 @@
       Code unreachable under guards is rare but possible.
       In order to generate C code that is always statically well-formed,
       ATC independently checks the constraints about C types.")
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    (xdoc::evmac-subsection
-     "Portable ASCII C Identifiers"
-
-     (xdoc::p
-      "A portable ASCII C identifier is
-       a non-empty sequence of ASCII characters that:")
-     (xdoc::ul
-      (xdoc::li
-       "Consists of only
-        the 26 uppercase Latin letters,
-        the 26 lowercase Latin letters,
-        the 10 numeric digits,
-        and the underscore.")
-      (xdoc::li
-       "Starts with a letter or underscore.")
-      (xdoc::li
-       "Differs from all the C keywords, which are"
-       (xdoc::codeblock
-        "auto       extern     short      while"
-        "break      float      signed     _Alignas"
-        "case       for        sizeof     _Alignof"
-        "char       goto       static     _Atomic"
-        "const      if         struct     _Bool"
-        "continue   inline     switch     _Complex"
-        "default    int        typedef    _Generic"
-        "do         long       union      _Imaginary"
-        "double     register   unsigned   _Noreturn"
-        "else       restrict   void       _Static_assert"
-        "enum       return     volatile   _Thread_local"))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
