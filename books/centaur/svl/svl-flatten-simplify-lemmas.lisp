@@ -32,7 +32,7 @@
 
 
 
-
+#!SVL
 (defconst *svl-flatten-simplify-lemmas*
   '(;;4vec-rsh-of-4vec-concat
     ;;4vec-rsh-of-4vec-concat-2
@@ -125,6 +125,9 @@
     natp-4vec-rsh
     4vec-rsh-of-width=0
 
+    bits-of-4vec-bit?!
+    bits-of-4vec-bit?
+    
     (:executable-counterpart sv::svex-p)
     (:executable-counterpart sv::svar-p)
     (:executable-counterpart natp)

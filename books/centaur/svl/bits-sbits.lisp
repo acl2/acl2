@@ -2288,6 +2288,20 @@
 
 (add-svex-simplify-rule bits-of-4vec-bit?!)
 
+(def-rp-rule bits-of-4vec-bit?
+  (implies (and (natp start)
+                (natp size))
+           (equal (bits (sv::4vec-bit? test then else) start size)
+                  (sv::4vec-bit? (bits test start size)
+                                  (bits then start size)
+                                  (bits else start size))))
+  :hints (("Goal"
+           :use ((:instance 4vec-part-select-of-4vec-bit?))
+           :in-theory (e/d (bits)
+                           (4vec-part-select-of-4vec-bit?)))))
+
+(add-svex-simplify-rule bits-of-4vec-bit?)
+
 (progn
   (def-rp-rule 4vec-concat$-same-var-merge
     (implies (and (natp csize1)

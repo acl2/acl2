@@ -156,12 +156,51 @@
                                                                         )
                                                                    sv::*svex-op-table*))))))
 
+(define svex-apply-insert-part-select (term dont-rw)
+  :returns (mv res res-dont-rw)
+  (case-match term
+    (('sv::4vec-sign-ext width x)
+     (b* ((width-dont-rw (rp::dont-rw-car (rp::dont-rw-cdr dont-rw)))
+          (x-dont-rw  (rp::dont-rw-car (rp::dont-rw-cdr (rp::dont-rw-cdr dont-rw)))))
+       (mv `(sv::4vec-sign-ext ,width (sv::4vec-part-select '0 ,width ,x))
+           `(nil ,width-dont-rw (nil t ,width-dont-rw ,x-dont-rw)))))
+    (('sv::4vec-zero-ext width x)
+     (b* ((width-dont-rw (rp::dont-rw-car (rp::dont-rw-cdr dont-rw)))
+          (x-dont-rw  (rp::dont-rw-car (rp::dont-rw-cdr (rp::dont-rw-cdr dont-rw)))))
+       (mv `(sv::4vec-zero-ext ,width (sv::4vec-part-select '0 ,width ,x))
+           `(nil ,width-dont-rw (nil t ,width-dont-rw ,x-dont-rw)))))
+    (('sv::4VEC-PART-INSTALL lsb width x y)
+     (b* (((unless (and (quotep width)
+                        (consp (cdr width))
+                        (natp (unquote width))))
+           (mv term dont-rw))
+          (lsb-dont-rw (rp::dont-rw-car (rp::dont-rw-cdr dont-rw)))
+          (width-dont-rw (rp::dont-rw-car
+                          (rp::dont-rw-cdr
+                           (rp::dont-rw-cdr dont-rw))))
+          (x-dont-rw  (rp::dont-rw-car
+                       (rp::dont-rw-cdr
+                        (rp::dont-rw-cdr
+                         (rp::dont-rw-cdr dont-rw)))))
+          (y-dont-rw (rp::dont-rw-car
+                      (rp::dont-rw-cdr
+                       (rp::dont-rw-cdr
+                        (rp::dont-rw-cdr
+                         (rp::dont-rw-cdr dont-rw)))))))
+       (mv `(sv::4vec-part-install ,lsb ,width ,x (sv::4vec-part-select '0 ,width ,y))
+           `(nil ,lsb-dont-rw ,width-dont-rw ,x-dont-rw (nil t ,width-dont-rw ,y-dont-rw)))))
+    
+    (&
+     (mv term dont-rw))))
+
 (defund svex-apply-wog-meta (fn args args-dontrw)
   (declare (xargs :guard (and (true-listp args)
                               (true-listp args-dontrw))
                   :verify-guards nil))
-  (let* ((fn (fnsym-fix fn)))
-    (svex-apply-cases-wog-meta fn args args-dontrw)))
+  (b* ((fn (fnsym-fix fn))
+       ((mv term dont-rw)
+        (svex-apply-cases-wog-meta fn args args-dontrw)))
+    (svex-apply-insert-part-select term dont-rw)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; svex-eval-meta (svex-eval-wog-meta)
@@ -723,6 +762,23 @@ was ~st seconds."))
 ;; rp-evl-of-svex-eval-meta
 
 (local
+ (defret rp-evlt-of-svex-apply-insert-part-select
+   (implies (and (rp-evl-meta-extract-global-facts)
+                 (svex-eval-wog-formula-checks state))
+            (equal (rp-evlt res a)
+                   (rp-evlt term a)))
+   :fn svex-apply-insert-part-select
+   :hints (("Goal"
+            :in-theory (e/d (sv::4vec-sign-ext-of-4vec-part-select
+                             svex-apply-insert-part-select
+                             4vec-concat-insert-4vec-part-select)
+                            ())))))
+   
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; rp-evl-of-svex-eval-meta
+
+(local
  (encapsulate
      nil
 
@@ -1184,6 +1240,15 @@ was ~st seconds."))
 ;; rp-termp-of-functions
 
 (local
+ (defret rp-termp-svex-apply-insert-part-select
+   (implies (rp::rp-termp term)
+            (rp::rp-termp res))
+   :fn svex-apply-insert-part-select
+   :hints (("Goal"
+            :in-theory (e/d (svex-apply-insert-part-select)
+                            ())))))
+
+(local
  (encapsulate
      nil
 
@@ -1420,6 +1485,17 @@ was ~st seconds."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; valid-sc-of-functions
+
+(local
+ (defret valid-sc-svex-apply-insert-part-select
+   (implies (rp::valid-sc term a)
+            (rp::valid-sc res a))
+   :fn svex-apply-insert-part-select
+   :hints (("Goal"
+            :in-theory (e/d (svex-apply-insert-part-select
+                             rp::is-rp
+                             rp::is-if)
+                            ())))))
 
 (local
  (encapsulate
