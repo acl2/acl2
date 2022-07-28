@@ -137,6 +137,7 @@
                                      nil ; interpreted-fns
                                      rules-to-monitor
                                      t ;call-stp
+                                     print
                                      state))
          ((when erp) (mv erp nil state))
          (dag-fns (acl2::dag-fns dag)))

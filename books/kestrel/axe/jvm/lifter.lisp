@@ -6013,6 +6013,7 @@
                                     nil ; interpreted-fns
                                     (g :monitor options)
                                     (g :call-stp options)
+                                    print
                                     state))
         ((when erp) (mv erp nil nil nil nil nil nil state))
         (- (cw " Done attempting to run all branches.)~%")))
@@ -6540,6 +6541,7 @@
                                    nil ; interpreted-fns
                                    (g :monitor options)
                                    (g :call-stp options)
+                                   print
                                    state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Output DAG:~%")
