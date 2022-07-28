@@ -101,7 +101,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-char-listp ((chs character-listp))
+(define paident-char-listp ((chs character-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of ACL2 characters is not empty,
           consists only of ASCII letters, digits, and underscores,
@@ -117,12 +117,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-stringp ((str stringp))
+(define paident-stringp ((str stringp))
   :returns (yes/no booleanp)
   :short (xdoc::topstring
           "Check if an ACL2 string is a "
           (xdoc::seetopic "portable-ascii-identifiers"
                           "portable ASCII identifier")
           ".")
-  (and (ident-char-listp (str::explode str))
+  (and (paident-char-listp (str::explode str))
        (not (member-equal str *keywords*))))
