@@ -1102,7 +1102,10 @@
   (defruled read-object-of-add-frame
     (equal (read-object objdes (add-frame fun compst))
            (read-object objdes compst))
-    :enable (add-frame push-frame read-object))
+    :enable (add-frame
+             push-frame
+             read-object
+             read-static-var))
 
   (defruled read-object-of-enter-scope
     (equal (read-object objdes (enter-scope compst))
@@ -1110,7 +1113,8 @@
     :enable (enter-scope
              push-frame
              pop-frame
-             read-object))
+             read-object
+             read-static-var))
 
   (defruled read-object-of-add-var
     (equal (read-object objdes (add-var var val compst))
@@ -1118,7 +1122,8 @@
     :enable (add-var
              push-frame
              pop-frame
-             read-object))
+             read-object
+             read-static-var))
 
   (defruled read-object-of-update-var
     (equal (read-object objdes (update-var var val compst))
@@ -1126,7 +1131,8 @@
     :enable (update-var
              push-frame
              pop-frame
-             read-object))
+             read-object
+             read-static-var))
 
   (defruled read-object-of-update-object-same
     (implies (equal (objdesign-kind objdes) :address)

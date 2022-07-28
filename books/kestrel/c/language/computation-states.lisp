@@ -692,7 +692,20 @@
        (new-static (omap::update (ident-fix var) (value-fix val) static))
        (new-compst (change-compustate compst :static new-static)))
     new-compst)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret compustate-frames-number-of-write-static-var
+    (implies (compustatep new-compst)
+             (equal (compustate-frames-number new-compst)
+                    (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+
+  (defret compustate-scopes-numbers-of-write-static-var
+    (implies (compustatep new-compst)
+             (equal (compustate-scopes-numbers new-compst)
+                    (compustate-scopes-numbers compst)))
+    :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -741,18 +754,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the object designator is an address,
+    "If the object designator is a variable,
+     we look it up in static storage.
+     If the object designator is an address,
      we look up the object in the heap.
      Otherwise, first we recursively read the super-object,
      then we access the sub-object,
      ensuring that the super-object is of the appropriate kind
-     for the object designator.")
-   (xdoc::p
-    "For now we reject named variables.
-     We will add support for them later."))
+     for the object designator."))
   (objdesign-case
    objdes
-   :variable (error :not-supported)
+   :variable (read-static-var objdes.get compst)
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
@@ -789,7 +801,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the object designator is an address,
+    "If the object designator is a variable,
+     we write it in static storage.
+     If the object designator is an address,
      we check whether the heap has an object at the address,
      of the same type as the new object
      (note that, for arrays, the type includes the number of elements).
@@ -799,13 +813,10 @@
      we retrieve the super-object,
      and we update its element or member,
      provided that the super-object is of the right kind.
-     Then we recursively write the updated super-object.")
-   (xdoc::p
-    "For now we reject named variables.
-     We will add support for them later."))
+     Then we recursively write the updated super-object."))
   (objdesign-case
    objdes
-   :variable (error :not-supported)
+   :variable (write-static-var objdes.get val compst)
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
@@ -849,10 +860,18 @@
     (implies (compustatep new-compst)
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
-    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+    :hints (("Goal"
+             :in-theory (e/d (compustate-frames-number)
+                             (compustate-frames-number-of-write-static-var)))
+            '(:use (:instance compustate-frames-number-of-write-static-var
+                              (var (objdesign-variable->get objdes))))))
 
   (defret compustate-scopes-numbers-of-write-object
     (implies (compustatep new-compst)
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
-    :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
+    :hints (("Goal"
+             :in-theory (e/d (compustate-scopes-numbers)
+                             (compustate-scopes-numbers-of-write-static-var)))
+            '(:use (:instance compustate-scopes-numbers-of-write-static-var
+                              (var (objdesign-variable->get objdes)))))))
