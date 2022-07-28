@@ -22,7 +22,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are listed in [C:6.4.1].")
+    "These are listed in [C:6.4.1]:")
+   (xdoc::codeblock
+    "auto       extern     short      while"
+    "break      float      signed     _Alignas"
+    "case       for        sizeof     _Alignof"
+    "char       goto       static     _Atomic"
+    "const      if         struct     _Bool"
+    "continue   inline     switch     _Complex"
+    "default    int        typedef    _Generic"
+    "do         long       union      _Imaginary"
+    "double     register   unsigned   _Noreturn"
+    "else       restrict   void       _Static_assert"
+    "enum       return     volatile   _Thread_local")
    (xdoc::p
     "They consist of all ASCII characters,
      and therefore they are directly representable as ACL2 strings.")
