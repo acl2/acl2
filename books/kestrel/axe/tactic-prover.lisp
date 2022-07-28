@@ -1007,31 +1007,30 @@
                                       state)))
 
 ;;
-;; prove-equivalence2
+;; prove-equal-with-tactics
 ;;
 
 ;returns (mv erp event state)
 ;TODO: Auto-generate the name
 ;TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
-;; This could be called prove-equivalence-with-tactics-fn.
-(defun prove-equivalence2-fn (dag-or-term1
-                              dag-or-term2
-                              ;tests ;a natp indicating how many tests to run
-                              tactics
-                              assumptions
-                              ;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
-                              name
-                              print
-                              debug
-                              max-conflicts
-                              call-stp-when-pruning
-                              rules
-                              interpreted-fns
-                              monitor
-                              normalize-xors
-                              different-vars-ok
-                              whole-form
-                              state)
+(defun prove-equal-with-tactics-fn (dag-or-term1
+                                    dag-or-term2
+                                    ;;tests ;a natp indicating how many tests to run
+                                    tactics
+                                    assumptions
+                                    ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
+                                    name
+                                    print
+                                    debug
+                                    max-conflicts
+                                    call-stp-when-pruning
+                                    rules
+                                    interpreted-fns
+                                    monitor
+                                    normalize-xors
+                                    different-vars-ok
+                                    whole-form
+                                    state)
   (declare (xargs :guard (and (tacticsp tactics)
                               (booleanp debug)
                               (or (null max-conflicts)
@@ -1044,7 +1043,7 @@
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
-       (assumptions (translate-terms assumptions 'prove-equivalence2-fn (w state))) ;throws an error on bad input
+       (assumptions (translate-terms assumptions 'prove-equal-with-tactics-fn (w state))) ;throws an error on bad input
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 (w state)))
@@ -1059,9 +1058,9 @@
                (cw "NOTE: The two dags have different variables.~%")))
        ((when (and different-varsp
                    (not different-vars-ok)))
-        (mv (hard-error 'prove-equivalence2-fn "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
+        (mv (hard-error 'prove-equal-with-tactics-fn "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
             nil state ;rand
-           ))
+            ))
        ;; Make the equality DAG to be proved:
        ((mv erp dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state))
@@ -1080,7 +1079,7 @@
              ;; make the theorem:
              (term1 (dag-or-term-to-term dag-or-term1 state))
              (term2 (dag-or-term-to-term dag-or-term2 state))
-             (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equivalence2 nil (w state))))
+             (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equal-with-tactics-fn nil (w state))))
              (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
                        (defthmd ,defthm-name
                          (implies (and ,@assumptions)
@@ -1093,10 +1092,10 @@
              ;;          defthm))
              )
           (mv (erp-nil)
-              (extend-progn defthm `(table prove-equivalence2-table ',whole-form ',defthm))
+              (extend-progn defthm `(table prove-equal-with-tactics-table ',whole-form ',defthm))
               state))
       (progn$ (cw "Failure info: ~x0." info-acc)
-              (er hard 'prove-equivalence2-fn "Failed to prove.~%")
+              (er hard 'prove-equal-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 
        ;; (tests (if (eq :rewrite tactic)
@@ -1121,45 +1120,44 @@
 
 ;todo: allow :rule-classes
 ;; todo: get doc from kestrel-acl2/axe/doc.lisp
-;; This could be called prove-equivalence-with-tactics.
-(defmacro prove-equivalence2 (&whole
-                              whole-form
-                              dag-or-term1
-                              dag-or-term2
-                              &key
-                              ;; Options that affect what is proved:
-                              (assumptions 'nil) ;assumed when rewriting the miter
-                              (interpeted-fns 'nil)
-                              ;; Options that affect how the proof goes:
-                              (tactics ''(:rewrite))
-                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
-                              ;;(tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
-                              ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
-                              (call-stp-when-pruning 't)
-                              (debug 'nil)
-                              (max-conflicts '*default-stp-max-conflicts*)
-                              (normalize-xors 't)
-                              ;; Options for debugging:
-                              (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem ; todo: call choose-miter-name
-                              (print ':brief)
-                              (monitor 'nil)
-                              (different-vars-ok 'nil))
-  `(make-event (prove-equivalence2-fn ,dag-or-term1
-                                      ,dag-or-term2
-                                      ;; ,tests
-                                      ,tactics
-                                      ,assumptions
-                                      ;; ,types
-                                      ,name
-                                      ',print
-                                      ,debug
-                                      ,max-conflicts
-                                      ,call-stp-when-pruning
-                                      ,rules
-                                      ,interpeted-fns
-                                      ,monitor
-                                      ,normalize-xors
-                                      ',different-vars-ok
-                                      ',whole-form
-                                      state ; rand
-                                      )))
+(defmacro prove-equal-with-tactics (&whole
+                                    whole-form
+                                    dag-or-term1
+                                    dag-or-term2
+                                    &key
+                                    ;; Options that affect what is proved:
+                                    (assumptions 'nil) ;assumed when rewriting the miter
+                                    (interpeted-fns 'nil)
+                                    ;; Options that affect how the proof goes:
+                                    (tactics ''(:rewrite))
+                                    (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
+                                    ;;(tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
+                                    ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
+                                    (call-stp-when-pruning 't)
+                                    (debug 'nil)
+                                    (max-conflicts '*default-stp-max-conflicts*)
+                                    (normalize-xors 't)
+                                    ;; Options for debugging:
+                                    (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem ; todo: call choose-miter-name
+                                    (print ':brief)
+                                    (monitor 'nil)
+                                    (different-vars-ok 'nil))
+  `(make-event (prove-equal-with-tactics-fn ,dag-or-term1
+                                            ,dag-or-term2
+                                            ;; ,tests
+                                            ,tactics
+                                            ,assumptions
+                                            ;; ,types
+                                            ,name
+                                            ',print
+                                            ,debug
+                                            ,max-conflicts
+                                            ,call-stp-when-pruning
+                                            ,rules
+                                            ,interpeted-fns
+                                            ,monitor
+                                            ,normalize-xors
+                                            ',different-vars-ok
+                                            ',whole-form
+                                            state ; rand
+                                            )))
