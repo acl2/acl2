@@ -585,3 +585,11 @@
   :hints (("Goal" :in-theory (e/d (getbit)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of--1
+  (implies (natp n)
+           (equal (getbit n -1)
+                  1))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))

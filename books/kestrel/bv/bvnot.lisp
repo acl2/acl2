@@ -145,3 +145,11 @@
                       (+ -1 (expt 2 size))
                     (+ (bvchop size x) -1))))
   :hints (("Goal" :in-theory (enable bvnot lognot bvchop MOD-SUM-CASES))))
+
+(defthm bvchop-of-bvnot
+  (implies (and (<= n size)
+                (natp n)
+                (natp size))
+           (equal (bvchop n (bvnot size val))
+                  (bvnot n val)))
+  :hints (("Goal" :in-theory (enable bvnot))))
