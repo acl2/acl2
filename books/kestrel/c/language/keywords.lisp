@@ -37,18 +37,13 @@
     "enum       return     volatile   _Thread_local")
    (xdoc::p
     "They consist of all ASCII characters,
-     and therefore they are directly representable as ACL2 strings.")
-   (xdoc::p
-    "Given that ACL2 has keywords,
-     we use `@('ckeyword')' (instead of just `@('keyword')')
-     in the names of functions, constants, and fixtypes
-     related to C keywords."))
+     and therefore they are directly representable as ACL2 strings."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *ckeywords*
+(defval *keywords*
   :short "List of the keywords of C, as ACL2 strings."
   '("auto"
     "break"
@@ -95,5 +90,5 @@
     "_Static_assert"
     "_Thread_local")
   ///
-  (assert-event (string-listp *ckeywords*))
-  (assert-event (no-duplicatesp-equal *ckeywords*)))
+  (assert-event (string-listp *keywords*))
+  (assert-event (no-duplicatesp-equal *keywords*)))

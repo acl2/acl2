@@ -106,4 +106,4 @@
   :returns (yes/no booleanp)
   :short "Check if an ACL2 string is a portable ASCII identifier."
   (and (ident-char-listp (str::explode str))
-       (not (member-equal str *ckeywords*))))
+       (not (member-equal str *keywords*))))
