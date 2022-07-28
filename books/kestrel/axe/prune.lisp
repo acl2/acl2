@@ -158,7 +158,7 @@
         (mv nil :unknown state)) ; give up if we are not allowed to call STP
        ;; TODO: Avoid turning the DAG into a term:
        (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
-       ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first.
+       ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
        (- (cw "(Attempting to prove test true with STP:~%"))
        ((mv true-result state)
         (prove-implication-with-stp simplified-test-term
@@ -567,7 +567,9 @@
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
 ;; TODO: This can make the rule-alist each time it is called.
 (defund maybe-prune-dag-precisely (prune-branches ; t, nil, or a limit on the size
-                                   dag assumptions rules interpreted-fns monitored-rules call-stp state)
+                                   dag assumptions rules interpreted-fns monitored-rules call-stp
+                                   print
+                                   state)
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
@@ -578,6 +580,7 @@
                               (symbol-listp monitored-rules)
                               (or (booleanp call-stp)
                                   (natp call-stp))
+                              (axe-print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
   (let ((prune-branchesp (if (booleanp prune-branches)
@@ -589,10 +592,11 @@
     (if prune-branchesp
         (b* ((size (dag-or-quotep-size-fast dag)) ;todo: also perhaps done above
              (- (cw "(Pruning branches in DAG (~x0 nodes, ~x1 unique)~%" size (len dag)))
-             ;; (- (progn$ (cw "(DAG:~%")
-             ;;            (print-list dag)
-             ;;            (cw ")~%")))
-             (- (progn$ (cw "(Assumptions: ~X01)~%" assumptions nil)))
+             (- (and (print-level-at-least-tp print)
+                     (progn$ (cw "(DAG:~%")
+                             (print-list dag)
+                             (cw ")~%")
+                             (cw "(Assumptions: ~X01)~%" assumptions nil))))
              ((mv erp result-dag state)
               (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))
              ((when erp) (mv erp nil state))
@@ -603,8 +607,8 @@
               (mv nil dag state)))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
-  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp state))) ;; no error
-                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp state))))
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))) ;; no error
+                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))))
                 (pseudo-dagp dag)
                 (pseudo-term-listp assumptions)
                 (symbol-listp rules)
@@ -613,5 +617,5 @@
                 (or (booleanp call-stp)
                     (natp call-stp))
                 (ilks-plist-worldp (w state)))
-           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp state))))
+           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
