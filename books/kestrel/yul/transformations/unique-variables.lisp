@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -56,7 +56,7 @@
     "This is very similar to @(tsee add-var),
      but it has a different purpose."))
   (if (set::in (identifier-fix var) (identifier-set-fix allvars))
-      (err (list :non-unique-var (identifier-fix var)))
+      (reserrf (list :non-unique-var (identifier-fix var)))
     (set::insert (identifier-fix var) (identifier-set-fix allvars)))
   :hooks (:fix)
   ///
