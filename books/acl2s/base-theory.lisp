@@ -37,6 +37,8 @@
 (include-book "acl2s/cgen/base-cgen-rules" :dir :system)
 (include-book "match" :ttags :all)
 
+(include-book "kestrel/utilities/ubi" :dir :system)
+
 (set-termination-method :ccg)
 
 (local (set-defunc-timeout 1000))

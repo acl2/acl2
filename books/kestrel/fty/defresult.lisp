@@ -66,6 +66,34 @@
       But then one needs rules to handle the inherent disjunction.")
 
     (xdoc::p
+     "When functions naturally return multiple results (via @(tsee mv)),
+      the second approach adds an error result,
+      while the first approach could be applied to one of the results
+      (e.g. the ``main'' one, if there is such a thing).
+      Better yet from a conceptual point of view,
+      the function can be made to return a single result
+      that is either an error or a tuple of the good results.
+      This is less efficient than multiple results,
+      but it may be more appropriate for a higher-level specification function,
+      where issues of efficiency should be secondary,
+      and where it may be more important that, in case of error,
+      no dummy results are returned, so they cannot be accidentally used.
+      The term `tuple' above is used in a broad sense:
+      it does not have to be a list of values;
+      it could be a value of a @(tsee fty::defprod) type.
+      The claim above that
+      issues of efficiency should be secondary in specification functions
+      fits in a vision in which tools like "
+     (xdoc::seetopic "apt::apt" "APT")
+     " are used to turn possibly inefficient or even non-executable functions
+      into efficient ones.
+      When instead, for expediency, a compromise is sought
+      in which the same function is used for specification and execution,
+      then other considerations may apply,
+      and the second approach above may be preferable to the first one.
+      Nonetheless, there are applications where the first approach fits well.")
+
+    (xdoc::p
      "When calling functions that may return error results
       (whether the first or second approach above is used),
       it is common to check whether the returned result is an error one,
@@ -76,7 +104,7 @@
       which propagates the error triples unchanged;
       @(tsee b*) provides the "
      (xdoc::seetopic "acl2::patbind-er" "@('er') binder")
-     ", which expands into @(tsee er-let*).
+     ", which expands into something like @(tsee er-let*).
       As an aside, note that, when verifying return type theorems,
       using @(tsee er-let*) works when the (irrelevant) good result
       returned by a callee with an error result
@@ -90,24 +118,40 @@
       Given a fixtype of good results,
       it introduces a fixtype of good and error results,
       where the fixtype of error results is @(tsee reserr)
-      (from the first three letters of the two words of `result error'),
+      (from the first three letters of each of the two words of `result error'),
       which is provided along with @('defresult').
       This macro also generates rules
       to reason about the disjunction of good and error results.
       Along with @('defresult'),
       a @(tsee b*) binder @(tsee patbind-ok) is provided
-      to support the check-and-propagate-error pattern described above;
-      related macros @(tsee err) and @(tsee err-push) are also provided.")
+      to support the check-and-propagate-error pattern described above.")
 
     (xdoc::p
-     "The @(tsee patbind-ok) binder,
-      as well as the @(tsee err) and @(tsee err-push) macros,
-      assume that @('__function__') is bound to the enclosing function name.
-      This happens automatically when using @(tsee define).
-      As explained in @(tsee patbind-ok),
-      as errors are propagated from callee to caller,
-      the name of the callee is added to the error result,
-      providing a call stack trace.")
+     "When using @(tsee define),
+      which provides automatic binding of @('__function__')
+      to the current function symbol,
+      it may be useful to automatically incorporate this information
+      into the error result.
+      To this end, a macro @(tsee reserrf) is provided
+      that automatically adds the function information
+      to the information passed explicitly as input to the macro.
+      A macro @(tsee err-push) is also provided
+      to add function and other information
+      to an error of the form returned by @(tsee reserrf) or @(tsee err-push),
+      resulting in a stack of error information
+      corresponding to the call stack.
+      The @(tsee patbind-ok) binder automates the check-and-propagation
+      of errors that include function information.
+      This may be very useful for debugging,
+      or in general to provide informative error information.
+      It may be less useful for higher-level specifications,
+      in which errors are just errors that do not carry much information
+      (as producing and consuming that information
+      may detract from the clarity and conciseness of the specification).
+      Therefore, we plan to introduce a simpler version of
+      the @(tsee patbind-ok) binder that just does
+      error checking and propagation, without function information;
+      this will be also usable in code not written with @(tsee define).")
 
     (xdoc::p
      "The fact that the same error result type, namely @(tsee reserr),
@@ -117,7 +161,7 @@
       by any function that returns a type defined via @('defresult'),
       even if the good result types are different.
       It is also crucial that the result type is defined
-      as a flat, and not tagged, union of good and error result:
+      as a flat, and not tagged, union of good and error results:
       otherwise, error results would have to be unwrapped and wrapped
       depending on the result types of the callee and caller.")
 
@@ -322,7 +366,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::defmacro+
- err (info)
+ reserrf (info)
  :parents (defresult)
  :short "Return an error result with a singleton stack."
  :long
@@ -333,12 +377,15 @@
     accompanied by the name of the current function @('fn'),
     as a doublet @('(fn info)').
     A singleton list with this doublet is returned.
-    This is a singleton stack,
-    in the sense that @(tsee err-push) pushes onto the stack
-    by @(tsee cons)ing additional pairs with the same form.")
+    This is a singleton stack, in the sense explained in @(tsee defresult).")
   (xdoc::p
    "This assumes that @('__function__') is bound to the function name,
-    which happens automatically with @(tsee define)."))
+    which happens automatically with @(tsee define).")
+  (xdoc::p
+   "This macro is a bit like the @('reserr') constructor
+    of the fixtype @(tsee reserr),
+    but the @('f') in the name conveys that
+    it adds the name of the function to the infomation passed as argument."))
  `(make-reserr :info (list (list __function__ ,info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

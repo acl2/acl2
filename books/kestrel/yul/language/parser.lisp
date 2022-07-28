@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -80,10 +80,10 @@
 
 (define parse-symbol ((symbol stringp) (tokens abnf::tree-listp))
   :returns (tokens-after-symbol-or-reserr abnf::tree-list-resultp
-                                             :hints
-                                             (("Goal" :in-theory
-                                               (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
-;  :verbosep t ; for debugging
+                                          :hints
+                                          (("Goal" :in-theory
+                                            (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                                        ;  :verbosep t ; for debugging
   :short "Attempts to eat the named @('symbol'), returning either the list of remaining tokens or a reserr."
   :long
   (xdoc::topstring
@@ -104,21 +104,21 @@
   (if (not (member-equal symbol *yul-symbols*))
       (prog2$ (er hard? 'top-level
                   (string-append "parse-symbol called on something not in *yul-symbols*: " symbol))
-              (err (cons "program logic error" tokens)))
+              (reserrf (cons "program logic error" tokens)))
 
     (b* (((when (endp tokens))
           ;; It is possible this always indicates malformed input or logic error.
           ;; However, just in case this can occur on a false parse branch,
           ;; we will detect and report it in the top-level entry point
           ;; rather than throwing a hard error here.
-          (err (cons (string-append "ran out of tokens when trying to parse symbol: " symbol) tokens)))
+          (reserrf (cons (string-append "ran out of tokens when trying to parse symbol: " symbol) tokens)))
 
          (putative-symbol-tree (first tokens))
          ((unless (and (abnf::tree-case putative-symbol-tree :nonleaf)
                        (equal (abnf::tree-nonleaf->rulename? putative-symbol-tree)
                               (abnf::rulename "symbol"))))
           ;; This is normal when trying various alternatives, so just return the reserr.
-          (err (cons "token is not a symbol" tokens)))
+          (reserrf (cons "token is not a symbol" tokens)))
 
          (branches (abnf::tree-nonleaf->branches putative-symbol-tree))
          ((unless (and (listp branches)
@@ -131,22 +131,22 @@
           ;; so this is a hard error.
           (prog2$ (er hard? 'top-level
                       (string-append "symbol token seems to have the wrong structure for symbol:" symbol))
-                  (err (cons "cst structure error" tokens))))
+                  (reserrf (cons "cst structure error" tokens))))
 
          (leafterm-nats (abnf::tree-leafterm->get (caar branches)))
          ((unless (acl2::unsigned-byte-listp 8 leafterm-nats))
           ;; Another incorrect structure hard error
           (prog2$ (er hard? 'top-level
                       (string-append "unexpected type of leafterm nats when parsing symbol: " symbol))
-                  (err (cons "cst structure error 2" tokens))))
+                  (reserrf (cons "cst structure error 2" tokens))))
 
          (terminal-symbol (acl2::nats=>string leafterm-nats))
          ((unless (equal symbol terminal-symbol))
           ;; We didn't find this symbol, but something else might be valid at this point.
-          (err (cons (concatenate 'string
-                                  "looking for symbol: '" symbol
-                                  "', but received symbol: '" terminal-symbol "'")
-                     tokens))))
+          (reserrf (cons (concatenate 'string
+                                      "looking for symbol: '" symbol
+                                      "', but received symbol: '" terminal-symbol "'")
+                         tokens))))
       (abnf::tree-list-fix (rest tokens))))
   ///
   (defret len-of-parse-symbol-<
@@ -202,7 +202,7 @@
       (prog2$ (er hard? 'top-level
                   (string-append "parse-keyword called on something not in *yul-keywords*: " keyword))
               (mv nil
-                  (err (cons "program logic error" tokens))))
+                  (reserrf (cons "program logic error" tokens))))
 
     (b* (((when (endp tokens))
           ;; It is possible this always indicates malformed input or logic error.
@@ -210,7 +210,7 @@
           ;; we will detect and report it in the top-level entry point
           ;; rather than throwing a hard error here.
           (mv nil
-              (err (cons (string-append "ran out of tokens when trying to parse keyword: " keyword) tokens))))
+              (reserrf (cons (string-append "ran out of tokens when trying to parse keyword: " keyword) tokens))))
 
          (putative-keyword-tree (first tokens))
          ((unless (and (abnf::tree-case putative-keyword-tree :nonleaf)
@@ -218,7 +218,7 @@
                               (abnf::rulename "keyword"))))
           ;; This is normal when trying various alternatives, so just return the reserr.
           (mv nil
-              (err (cons "token is not a keyword" tokens))))
+              (reserrf (cons "token is not a keyword" tokens))))
 
          (branches (abnf::tree-nonleaf->branches putative-keyword-tree))
          ((unless (and (listp branches)
@@ -232,7 +232,7 @@
           (prog2$ (er hard? 'top-level
                       (string-append "keyword token seems to have the wrong structure for keyword:" keyword))
                   (mv nil
-                      (err (cons "cst structure error" tokens)))))
+                      (reserrf (cons "cst structure error" tokens)))))
 
          (leafterm-nats (abnf::tree-leafterm->get (caar branches)))
          ((unless (acl2::unsigned-byte-listp 8 leafterm-nats))
@@ -240,16 +240,16 @@
           (prog2$ (er hard? 'top-level
                       (string-append "unexpected type of leafterm nats when parsing keyword: " keyword))
                   (mv nil
-                      (err (cons "cst structure error 2" tokens)))))
+                      (reserrf (cons "cst structure error 2" tokens)))))
 
          (terminal-keyword (acl2::nats=>string leafterm-nats))
          ((unless (equal keyword terminal-keyword))
           ;; We didn't find this keyword, but something else might be valid at this point.
           (mv nil
-              (err (cons (concatenate 'string
-                                      "looking for keyword: '" keyword
-                                      "', but received keyword: '" terminal-keyword "'")
-                         tokens)))))
+              (reserrf (cons (concatenate 'string
+                                          "looking for keyword: '" keyword
+                                          "', but received keyword: '" terminal-keyword "'")
+                             tokens)))))
       (mv (cond ((equal keyword "leave") (make-statement-leave))
                 ((equal keyword "break") (make-statement-break))
                 ((equal keyword "continue") (make-statement-continue))
@@ -282,20 +282,20 @@
    (xdoc::p
     "If no identifier is found, the first value returned is @('NIL') and the second value is a reserr."))
   (b* (((when (endp tokens))
-          ;; It is possible this always indicates malformed input or logic error.
-          ;; However, just in case this can occur on a false parse branch,
-          ;; we will detect and report it in the top-level entry point
-          ;; rather than throwing a hard error here
-          (mv nil
-              (err (cons "ran out of tokens when trying to parse identifier" tokens))))
+        ;; It is possible this always indicates malformed input or logic error.
+        ;; However, just in case this can occur on a false parse branch,
+        ;; we will detect and report it in the top-level entry point
+        ;; rather than throwing a hard error here
+        (mv nil
+            (reserrf (cons "ran out of tokens when trying to parse identifier" tokens))))
 
-         (putative-identifier-tree (first tokens))
-         ((unless (and (abnf::tree-case putative-identifier-tree :nonleaf)
-                       (equal (abnf::tree-nonleaf->rulename? putative-identifier-tree)
-                              (abnf::rulename "identifier"))))
-          ;; This is normal when trying various alternatives, so just return the reserr.
-          (mv nil
-              (err (cons "token is not an identifier" tokens)))))
+       (putative-identifier-tree (first tokens))
+       ((unless (and (abnf::tree-case putative-identifier-tree :nonleaf)
+                     (equal (abnf::tree-nonleaf->rulename? putative-identifier-tree)
+                            (abnf::rulename "identifier"))))
+        ;; This is normal when trying various alternatives, so just return the reserr.
+        (mv nil
+            (reserrf (cons "token is not an identifier" tokens)))))
 
     ;; For brevity, do not walk the whole identifier tree separately here, just grab the fringe text.
     ;; abnf::tree->string states it returns stringp but it actually returns a list of nats.
@@ -305,7 +305,7 @@
           (prog2$ (er hard? 'top-level
                       "unexpected type of leafterm nats when parsing identifier")
                   (mv nil
-                      (err (cons "cst structure error" tokens))))))
+                      (reserrf (cons "cst structure error" tokens))))))
       (mv (make-identifier :get (acl2::nats=>string fringe))
           (abnf::tree-list-fix (rest tokens)))))
   ///
@@ -433,18 +433,18 @@
   :returns (escape escape-resultp)
   (b* (((unless (and (abnf::tree-listp escape-contents)
                      (equal (len escape-contents) 4)))
-        (err "unexpected input to cst2ast-uhhhh"))
+        (reserrf "unexpected input to cst2ast-uhhhh"))
        (fringe (abnf::tree-list->string escape-contents))
        ((unless (and (acl2::unsigned-byte-listp 8 fringe)
                      (equal (len fringe) 4)))
-        (err "unexpected input to cst2ast-uhhhh 2"))
+        (reserrf "unexpected input to cst2ast-uhhhh 2"))
        (hex-digit-chars (acl2::nats=>chars fringe))
        ((unless (and (str::hex-digit-char-listp hex-digit-chars)
                      (str::hex-digit-char-p (first hex-digit-chars))
                      (str::hex-digit-char-p (second hex-digit-chars))
                      (str::hex-digit-char-p (third hex-digit-chars))
                      (str::hex-digit-char-p (fourth hex-digit-chars))))
-        (err "unexpected input to cst2ast-uhhhh 3")))
+        (reserrf "unexpected input to cst2ast-uhhhh 3")))
     (make-escape-u
      :get (make-hex-quad
            :1st (make-hex-digit :get (first hex-digit-chars))
@@ -455,17 +455,17 @@
 (define cst2ast-xhh ((escape-contents abnf::tree-listp))
   :returns (escape escape-resultp)
   (b* (((unless (and (abnf::tree-listp escape-contents)
-                    (equal (len escape-contents) 2)))
-       (err "unexpected input to cst2ast-xhh"))
+                     (equal (len escape-contents) 2)))
+        (reserrf "unexpected input to cst2ast-xhh"))
        (fringe (abnf::tree-list->string escape-contents))
        ((unless (and (equal (len fringe) 2)
                      (acl2::unsigned-byte-listp 8 fringe)))
-        (err "unexpected input to cst2ast-xhh 2"))
+        (reserrf "unexpected input to cst2ast-xhh 2"))
        (hex-digit-chars (acl2::nats=>chars fringe))
        ((unless (and (str::hex-digit-char-listp hex-digit-chars)
                      (str::hex-digit-char-p (first hex-digit-chars))
                      (str::hex-digit-char-p (second hex-digit-chars))))
-        (err "unexpected input to cst2ast-xhh 3")))
+        (reserrf "unexpected input to cst2ast-xhh 3")))
     (make-escape-x
      :get (make-hex-pair
            :1st (make-hex-digit :get (first hex-digit-chars))
@@ -475,11 +475,11 @@
   :returns (escape escape-resultp)
   (b* (((unless (and (abnf::tree-listp escape-contents)
                      (equal (len escape-contents) 1)))
-        (err "unexpected input to cst2ast-single-char"))
+        (reserrf "unexpected input to cst2ast-single-char"))
        (fringe (abnf::tree-list->string escape-contents))
        ((unless (and (equal (len fringe) 1)
                      (acl2::unsigned-byte-listp 8 fringe)))
-        (err "unexpected input to cst2ast-single-char 2")))
+        (reserrf "unexpected input to cst2ast-single-char 2")))
     (case (car fringe)
       (39 (make-escape-single-quote))
       (34 (make-escape-double-quote))
@@ -489,30 +489,30 @@
       (116 (make-escape-letter-t))
       (110 (make-escape-line-feed))
       (114 (make-escape-carriage-return))
-      (t (err "unrecognized escaped character in cst2ast-single-char")))))
+      (t (reserrf "unrecognized escaped character in cst2ast-single-char")))))
 
 (define cst2ast-escape-sequence ((tree abnf::treep))
   :returns (element string-element-resultp)
   (b* (((unless (and (abnf::treep tree)
                      (abnf::tree-case tree :nonleaf)
                      (equal (abnf::tree-nonleaf->rulename? tree) (abnf::rulename "escape-sequence"))))
-        (err "unexpected input to cst2ast-escape-sequence"))
+        (reserrf "unexpected input to cst2ast-escape-sequence"))
        ((unless (and (equal (len (abnf::tree-nonleaf->branches tree)) 2)
                      (equal (car (abnf::tree-nonleaf->branches tree)) *list-leafterm-92*)))
-        (err "unexpected input to cst2ast-escape-sequence 2"))
+        (reserrf "unexpected input to cst2ast-escape-sequence 2"))
        (second-branch (cadr (abnf::tree-nonleaf->branches tree)))
        ;; in the case of \uFFFF, for example,
        ;; second-branch looks like  ((:NONLEAF NIL (((:LEAFTERM (117))) ..) ..))
        ((unless (and (abnf::tree-listp second-branch)
                      (equal (len second-branch) 1)))
-        (err "unexpected input to cst2ast-escape-sequence 3"))
+        (reserrf "unexpected input to cst2ast-escape-sequence 3"))
        (subtree (car second-branch))
        ;; in the case of \uFFFF, for example,
        ;; subtree looks like (:NONLEAF NIL (((:LEAFTERM (117))) ..) ..)
        ((unless (and (abnf::treep subtree)
                      (abnf::tree-case subtree :nonleaf)
                      (null (abnf::tree-nonleaf->rulename? subtree))))
-        (err "unexpected input to cst2ast-escape-sequence 4"))
+        (reserrf "unexpected input to cst2ast-escape-sequence 4"))
        (escape-sequence-contents (abnf::tree-nonleaf->branches subtree))
        ;; In the case of \uFFFF, for example,
        ;;   escape-sequence-contents looks like (((:LEAFTERM (117))) ..)
@@ -522,7 +522,7 @@
        ;; (2) it has two branches, the first of which is u or x, and the second of which
        ;; has the four or two digits.
        ((unless (abnf::tree-list-listp escape-sequence-contents))
-        (err "unexpected input to cst2ast-escape-sequence 5"))
+        (reserrf "unexpected input to cst2ast-escape-sequence 5"))
        (yul-escape-or-err
         (cond ((= (length escape-sequence-contents) 1)
                (cst2ast-single-char (car escape-sequence-contents)))
@@ -532,7 +532,7 @@
               ((and (= (length escape-sequence-contents) 2)
                     (equal (first escape-sequence-contents) *list-leafterm-x*))
                (cst2ast-xhh (second escape-sequence-contents)))
-              (t (err "unexpected input to cst2ast-escape-sequence 6"))))
+              (t (reserrf "unexpected input to cst2ast-escape-sequence 6"))))
        ((when (reserrp yul-escape-or-err))
         yul-escape-or-err))
     (make-string-element-escape :get yul-escape-or-err)))
@@ -546,11 +546,11 @@
   (declare (ignorable double-quoted-p))
   (b* (((unless (and (abnf::treep subtree)
                      (abnf::tree-case subtree :nonleaf)))
-        (err "unexpected input to cst2ast-quoted-printable"))
+        (reserrf "unexpected input to cst2ast-quoted-printable"))
        (fringe (abnf::tree->string subtree))
        ((unless (and (equal (len fringe) 1)
                      (acl2::unsigned-byte-p 8 (car fringe))))
-        (err "unexpected input to cst2ast-quoted-printable 2")))
+        (reserrf "unexpected input to cst2ast-quoted-printable 2")))
     (make-string-element-char :get (code-char (car fringe)))))
 
 ;; content should be a nonleaf with a rulename? nil
@@ -562,46 +562,46 @@
   (b* (((unless (and (abnf::treep content)
                      (abnf::tree-case content :nonleaf)
                      (null (abnf::tree-nonleaf->rulename? content))))
-        (err "bad structure for string literal content element"))
+        (reserrf "bad structure for string literal content element"))
        (branches (abnf::tree-nonleaf->branches content))
        ((unless (and (abnf::tree-list-listp branches)
                      (equal (len branches) 1)
                      (listp (car branches))
                      (equal (len (car branches)) 1)))
-        (err "bad structure for string literal content element 2"))
+        (reserrf "bad structure for string literal content element 2"))
        (subtree (caar branches))
        ((unless (and (abnf::treep subtree)
                      (abnf::tree-case subtree :nonleaf)))
-        (err "bad structure for string literal content element 3"))
+        (reserrf "bad structure for string literal content element 3"))
        (rulename (abnf::tree-nonleaf->rulename? subtree))
        ((unless (or (and double-quoted-p
-                        (member-equal rulename *double-quoted-content-rulenames*))
-                   (and (not double-quoted-p)
-                        (member-equal rulename *single-quoted-content-rulenames*))))
-         (err "bad structure for string literal content element 4"))
+                         (member-equal rulename *double-quoted-content-rulenames*))
+                    (and (not double-quoted-p)
+                         (member-equal rulename *single-quoted-content-rulenames*))))
+        (reserrf "bad structure for string literal content element 4"))
        (string-element (cond ((equal rulename (abnf::rulename "escape-sequence"))
                               (cst2ast-escape-sequence subtree))
                              (t
                               (cst2ast-quoted-printable subtree double-quoted-p))))
        ((when (reserrp string-element))
-          (err "bad structure for string literal content element 4")))
+        (reserrf "bad structure for string literal content element 4")))
     string-element))
 
 (define cst2ast-string-literal-contents ((contents abnf::tree-listp) (double-quoted-p booleanp))
   :returns (elements string-element-list-resultp)
   ;; Each tree is a nonleaf with no rulename.
   (b* (((unless (and (abnf::tree-listp contents) (booleanp double-quoted-p)))
-        (err "bad call to cst2ast-string-literal-contents"))
+        (reserrf "bad call to cst2ast-string-literal-contents"))
        ((when (endp contents))
         nil)
        (first-string-element (cst2ast-string-literal-content (car contents) double-quoted-p))
        ((unless (string-elementp first-string-element))
-        (err "problem in cst2ast-string-literal-contents"))
+        (reserrf "problem in cst2ast-string-literal-contents"))
        ((unless (listp (cdr contents)))
-        (err "problem in cst2ast-string-literal-contents 2"))
+        (reserrf "problem in cst2ast-string-literal-contents 2"))
        (rest-string-elements (cst2ast-string-literal-contents (cdr contents) double-quoted-p))
        ((unless (string-element-listp rest-string-elements))
-        (err "problem in cst2ast-string-literal-contents 3")))
+        (reserrf "problem in cst2ast-string-literal-contents 3")))
     (cons first-string-element
           rest-string-elements)))
 
@@ -654,16 +654,16 @@
                    (consp (cdr chars))
                    (str::hex-digit-char-p (first chars))
                    (str::hex-digit-char-p (second chars))))
-         (err "hex-char-codes-to-hex-pair-list: chars should be a true list of hex digits"))
+         (reserrf "hex-char-codes-to-hex-pair-list: chars should be a true list of hex digits"))
         (t
          (let* ((hex-digit1 (make-hex-digit :get (first chars)))
                 (hex-digit2 (make-hex-digit :get (second chars)))
                 (first-hex-pair (make-hex-pair :1st hex-digit1 :2nd hex-digit2)))
            (if (not (str::hex-digit-char-listp (cddr chars)))
-               (err "problem in hex-char-codes-to-hex-pair-list")
+               (reserrf "problem in hex-char-codes-to-hex-pair-list")
              (let ((rest-hex-pairs (hex-chars-to-hex-pair-list (cddr chars))))
                (if (not (hex-pair-listp rest-hex-pairs))
-                   (err "problem in hex-char-codes-to-hex-pair-list 2")
+                   (reserrf "problem in hex-char-codes-to-hex-pair-list 2")
                  (cons first-hex-pair rest-hex-pairs))))))))
 
 (define cst2ast-hex-string ((tree abnf::treep))
@@ -728,23 +728,23 @@
   :short "Attempts to eat a literal and build a literal AST node."
   :long
   (xdoc::topstring
-    (xdoc::p
-      "Returns two values: an optional literal AST node and either the list of remaining tokens or a reserr.")
-    (xdoc::p
-      "If a valid literal token is found, the first value returned
+   (xdoc::p
+    "Returns two values: an optional literal AST node and either the list of remaining tokens or a reserr.")
+   (xdoc::p
+    "If a valid literal token is found, the first value returned
        is a literal AST node of the appropriate kind.  Different kinds have different substructure.")
-    (xdoc::p
-      "If no literal is found, the first value returned is @('NIL') and the second value is a reserr."))
+   (xdoc::p
+    "If no literal is found, the first value returned is @('NIL') and the second value is a reserr."))
   (b* (((when (endp tokens))
         ;; It is possible this always indicates malformed input or logic error.
         ;; However, just in case this can occur on a false parse branch,
         ;; we will detect and report it in the top-level entry point
         ;; rather than throwing a hard error here
         (mv nil
-            (err (cons "ran out of tokens when trying to parse literal" tokens))))
+            (reserrf (cons "ran out of tokens when trying to parse literal" tokens))))
        ((unless (abnf::tree-listp tokens))
         (mv nil
-            (err "guard of parse-literal")))
+            (reserrf "guard of parse-literal")))
 
        (putative-literal-tree (first tokens))
        ((unless (and (abnf::tree-case putative-literal-tree :nonleaf)
@@ -752,7 +752,7 @@
                             (abnf::rulename "literal"))))
         ;; This is normal when trying various alternatives, so just return the reserr.
         (mv nil
-            (err (cons "token is not a literal" tokens))))
+            (reserrf (cons "token is not a literal" tokens))))
 
        (branches (abnf::tree-nonleaf->branches putative-literal-tree))
        ((unless (and (listp branches)
@@ -766,20 +766,20 @@
         (prog2$ (er hard? 'top-level
                     "literal token seems to have the wrong structure for a literal")
                 (mv nil
-                    (err (cons "program logic error 2" tokens)))))
+                    (reserrf (cons "program logic error 2" tokens)))))
 
        (parsed-literal-kind (cst2ast-literal-kind (caar branches)))
        ((when (null parsed-literal-kind))
         (mv nil
-            (err "problem with literal substructure"))))
+            (reserrf "problem with literal substructure"))))
     (mv parsed-literal-kind
         (rest tokens)))
-    ///
-    (defret len-of-parse-literal-<
-      (implies (not (reserrp tokens-after-literal-or-reserr))
-               (< (len tokens-after-literal-or-reserr)
-                  (len tokens)))
-      :rule-classes :linear)
+  ///
+  (defret len-of-parse-literal-<
+    (implies (not (reserrp tokens-after-literal-or-reserr))
+             (< (len tokens-after-literal-or-reserr)
+                (len tokens)))
+    :rule-classes :linear)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -820,20 +820,20 @@
   :returns (mv (ast-node path-resultp) (tokens-after-path abnf::tree-listp))
   :short "Attempts to eat a path and build a path AST node."
   (b* (((when (endp tokens))
-        (mv (err (cons "no path here" tokens))
+        (mv (reserrf (cons "no path here" tokens))
             nil))
        ((mv first-id tokens-after-first-id)
         (parse-identifier tokens))
        ((when (null first-id))
-        (mv (err (cons "can't be path since no identifier" tokens))
+        (mv (reserrf (cons "can't be path since no identifier" tokens))
             nil))
        ((when (reserrp tokens-after-first-id))
-        (mv (err (cons "can't be path since no identifier 2" tokens))
+        (mv (reserrf (cons "can't be path since no identifier 2" tokens))
             nil))
        ((mv rest-ids rest-tokens)
         (parse-*-.-identifier tokens-after-first-id))
        ((unless (mbt (< (len rest-tokens) (len tokens))))
-        (mv (err (cons "logic error" (cons tokens-after-first-id tokens))) nil)))
+        (mv (reserrf (cons "logic error" (cons tokens-after-first-id tokens))) nil)))
     (mv (make-path :get (cons first-id rest-ids)) rest-tokens))
   ///
   (defret len-of-parse-path-<
@@ -853,15 +853,15 @@
   :returns (mv (result-ast identifier-resultp) (tokens-after-id-and-open-paren abnf::tree-listp))
   :short "Attempts to eat an identifier and a following open parenthesis, and build an identifier AST node."
   (b* (((when (endp tokens))
-        (mv (err "no id here") nil))
+        (mv (reserrf "no id here") nil))
        ((mv id-ast? tokens-after-identifier-or-error)
         (parse-identifier tokens))
        ((when (or (null id-ast?)
                   (reserrp tokens-after-identifier-or-error)))
-        (mv (err "no id here 2") nil))
+        (mv (reserrf "no id here 2") nil))
        (tokens-after-paren-or-error (parse-symbol "(" tokens-after-identifier-or-error))
        ((when (reserrp tokens-after-paren-or-error))
-        (mv (err "no start of funcall here") nil)))
+        (mv (reserrf "no start of funcall here") nil)))
     (mv id-ast? tokens-after-paren-or-error))
   ///
   (defret len-of-parse-identifier-and-open-paren-<
@@ -877,7 +877,7 @@
     :returns (mv (result-ast expression-resultp) (tokens-after-expression abnf::tree-listp))
     :short "Attempts to eat an expression and build an expression AST node."
     (b* (((when (endp tokens))
-          (mv (err (cons "no expression here" tokens)) nil))
+          (mv (reserrf (cons "no expression here" tokens)) nil))
 
          ;; First look for the literal, since that is unambiguous
          ((mv literal-ast tokens-after-literal-or-err)
@@ -901,7 +901,7 @@
           (mv (make-expression-path :get path-ast) tokens-after-path)))
 
       ;; none of those worked
-      (mv (err (cons "no expression here 2" tokens)) nil))
+      (mv (reserrf (cons "no expression here 2" tokens)) nil))
     :measure (two-nats-measure (len tokens) 1))
 
   ;; function-call = identifier "(" [ expression *( "," expression ) ] ")"
@@ -911,7 +911,7 @@
     (b* (((mv id-or-err tokens-after-id-and-open-paren)
           (parse-identifier-and-open-paren tokens))
          ((when (reserrp id-or-err))
-          (mv (err "no function call here 0") nil))
+          (mv (reserrf "no function call here 0") nil))
 
          ;; First expression in optional expression list
          ((mv first-expression-arg-ast tokens-after-first-expression)
@@ -922,10 +922,10 @@
           ;; There are no expressions, so we need to see a close paren now
           (b* ((tokens-after-close-paren-or-err (parse-symbol ")" tokens-after-id-and-open-paren))
                ((when (reserrp tokens-after-close-paren-or-err))
-                (mv (err (cons "no ) after zero expressions so not a function call" tokens)) nil))
+                (mv (reserrf (cons "no ) after zero expressions so not a function call" tokens)) nil))
                ((unless (mbt (< (len tokens-after-close-paren-or-err)
                                 (len tokens))))
-                (mv (err "bad logic for defret") nil))
+                (mv (reserrf "bad logic for defret") nil))
                )
             (mv (make-funcall :name id-or-err :args nil)
                 tokens-after-close-paren-or-err))
@@ -933,12 +933,12 @@
         ;; we have one expression, now get zero or more ( ","  expression )
         (b* (;; but first inform the measure proof that len of tokens is decreasing
              ((unless (mbt (< (len tokens-after-first-expression) (len tokens))))
-              (mv (err "bad logic for measure") nil))
+              (mv (reserrf "bad logic for measure") nil))
              ((mv rest-expressions rest-tokens)
               (parse-*-comma-expression tokens-after-first-expression))
              (tokens-after-close-paren-or-err2 (parse-symbol ")" rest-tokens))
              ((when (reserrp tokens-after-close-paren-or-err2))
-              (mv (err (cons "no ) after one or more expressions so not a function call" tokens)) nil)))
+              (mv (reserrf (cons "no ) after one or more expressions so not a function call" tokens)) nil)))
           (mv (make-funcall
                :name id-or-err
                :args (cons first-expression-arg-ast rest-expressions))
@@ -1067,13 +1067,13 @@
   (b* (((mv ?key1 tokens-after-let)
         (parse-keyword "let" tokens))
        ((when (reserrp tokens-after-let))
-        (mv (err (cons "no variable decl here" tokens)) nil))
+        (mv (reserrf (cons "no variable decl here" tokens)) nil))
        ((mv let-var-1 tokens-after-let-var-1)
         (parse-identifier tokens-after-let))
        ((when (null let-var-1))
-        (mv (err (cons "no variable decl here 2" tokens)) nil))
+        (mv (reserrf (cons "no variable decl here 2" tokens)) nil))
        ((when (reserrp tokens-after-let-var-1))
-        (mv (err (cons "no variable decl here 3" tokens)) nil))
+        (mv (reserrf (cons "no variable decl here 3" tokens)) nil))
        ;; see if there are any more identifiers (preceded by commas)
        ((mv rest-identifiers tokens-after-rest-identifiers)
         (parse-*-comma-identifier tokens-after-let-var-1))
@@ -1154,7 +1154,7 @@
   (b* (((mv path-ast tokens-after-path)
         (parse-path tokens))
        ((when (reserrp path-ast))
-        (mv (err (cons "no assignment statement here" tokens))
+        (mv (reserrf (cons "no assignment statement here" tokens))
             nil))
        ;; See how many more instances of ( "," path ) can be parsed.
        ;; Use zero-or-more and then check for quantity
@@ -1163,13 +1163,13 @@
         (parse-*-comma-path tokens-after-path))
        (tokens-after-assignment-symbol (parse-symbol ":=" tokens-after-additional-paths))
        ((when (reserrp tokens-after-assignment-symbol))
-        (mv (err (cons "assignment statement requires ':='" tokens)) nil))
+        (mv (reserrf (cons "assignment statement requires ':='" tokens)) nil))
        ((mv init-ast tokens-after-init-form)
         (if (null additional-paths)
             (parse-expression tokens-after-assignment-symbol)
           (parse-function-call tokens-after-assignment-symbol)))
        ((when (reserrp init-ast))
-        (mv (err (cons "assignment statement does not finish properly" tokens))
+        (mv (reserrf (cons "assignment statement does not finish properly" tokens))
             nil)))
     (mv (if (null additional-paths)
             (make-statement-assign-single :target path-ast
@@ -1196,7 +1196,7 @@
         (parse-keyword "leave" tokens)))
     (if (or (not (statementp statement-or-nil))
             (reserrp tokens-after-statement))
-        (mv (err "no leave statement here") (abnf::tree-list-fix tokens))
+        (mv (reserrf "no leave statement here") (abnf::tree-list-fix tokens))
       (mv statement-or-nil (abnf::tree-list-fix tokens-after-statement))))
   ///
   (defret len-of-parse-leave-statement-<
@@ -1215,7 +1215,7 @@
         (parse-keyword "break" tokens)))
     (if (or (not (statementp statement-or-nil))
             (reserrp tokens-after-statement))
-        (mv (err "no break statement here") (abnf::tree-list-fix tokens))
+        (mv (reserrf "no break statement here") (abnf::tree-list-fix tokens))
       (mv statement-or-nil (abnf::tree-list-fix tokens-after-statement))))
   ///
   (defret len-of-parse-break-statement-<
@@ -1235,7 +1235,7 @@
         (parse-keyword "continue" tokens)))
     (if (or (not (statementp statement-or-nil))
             (reserrp tokens-after-statement))
-        (mv (err "no continue statement here") (abnf::tree-list-fix tokens))
+        (mv (reserrf "no continue statement here") (abnf::tree-list-fix tokens))
       (mv statement-or-nil (abnf::tree-list-fix tokens-after-statement))))
   ///
   (defret len-of-parse-continue-statement-<
@@ -1276,7 +1276,7 @@
   (define parse-statement ((tokens abnf::tree-listp))
     :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
     (b* (((when (endp tokens))
-          (mv (err "no statement here") nil))
+          (mv (reserrf "no statement here") nil))
 
          ;; block
          ((mv block-result tokens-after) (parse-block tokens))
@@ -1336,20 +1336,20 @@
 
          )
       ;; if none of those
-      (mv (err (cons "no statement seen" tokens)) nil))
+      (mv (reserrf (cons "no statement seen" tokens)) nil))
     :measure (two-nats-measure (len tokens) 1))
 
   (define parse-block ((tokens abnf::tree-listp))
     :returns (mv (result-ast block-resultp) (tokens-after-block abnf::tree-listp))
     :short "Eats a block (delimited by @('{ }')) and builds a @('block') AST node."
     (b* (((when (endp tokens))
-          (mv (err "no block here") nil))
+          (mv (reserrf "no block here") nil))
 
          ;; parse required symbol "{"
          (tokens-after-open-brace-or-err
           (parse-symbol "{" tokens))
          ((when (reserrp tokens-after-open-brace-or-err))
-          (mv (err (cons "no block start here" tokens)) nil))
+          (mv (reserrf (cons "no block start here" tokens)) nil))
          ;; parse zero or more statements
          ((mv block-statements tokens-after-block-statements)
           (parse-*-statement tokens-after-open-brace-or-err))
@@ -1357,10 +1357,10 @@
          (tokens-after-close-brace-or-err
           (parse-symbol "}" tokens-after-block-statements))
          ((when (reserrp tokens-after-close-brace-or-err))
-          (mv (err (cons "no close brace for block" tokens)) nil))
+          (mv (reserrf (cons "no close brace for block" tokens)) nil))
          ((unless (mbt (< (len tokens-after-close-brace-or-err)
                           (len tokens))))
-          (mv (err "logic error") nil)))
+          (mv (reserrf "logic error") nil)))
       (mv (make-block :statements block-statements)
           (abnf::tree-list-fix tokens-after-close-brace-or-err)))
     :measure (two-nats-measure (len tokens) 0))
@@ -1370,20 +1370,20 @@
     :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
     :short "Eats an @('if') statement and builds a @('statement') AST node of kind @(':if')."
     (b* (((when (endp tokens))
-          (mv (err "no if statement here") nil))
+          (mv (reserrf "no if statement here") nil))
          ;; parse required keyword "if"
          ((mv ?if-ast-node tokens-after-if-or-reserr)
           (parse-keyword "if" tokens))
          ((when (reserrp tokens-after-if-or-reserr))
-          (mv (err "no if statement here 2") nil))
+          (mv (reserrf "no if statement here 2") nil))
          ((mv expression-or-err tokens-after-if-expression)
           (parse-expression tokens-after-if-or-reserr))
          ((when (reserrp expression-or-err))
-          (mv (err "no expression after 'if'") nil))
+          (mv (reserrf "no expression after 'if'") nil))
          ((mv block-or-err tokens-after-if-block)
           (parse-block tokens-after-if-expression))
          ((unless (blockp block-or-err))
-          (mv (err "no block after 'if' expression") nil)))
+          (mv (reserrf "no block after 'if' expression") nil)))
       (mv (make-statement-if :test expression-or-err
                              :body block-or-err)
           (abnf::tree-list-fix tokens-after-if-block)))
@@ -1394,53 +1394,53 @@
     :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
     :short "Eats a @('for') statement and builds a @('statement') AST node of kind @(':for')."
     (b* (((when (endp tokens))
-          (mv (err "no for statement here") nil))
+          (mv (reserrf "no for statement here") nil))
 
          ;; parse required keyword "for"
          ((mv ?for-ast-node tokens-after-for-or-reserr)
           (parse-keyword "for" tokens))
          ((when (reserrp tokens-after-for-or-reserr))
-          (mv (err "no for statement here 2") nil))
+          (mv (reserrf "no for statement here 2") nil))
 
          ;; parse init block
          ((mv init-block tokens-after-init-block)
           (parse-block tokens-after-for-or-reserr))
          ((when (reserrp init-block))
-          (mv (err "no init block after 'for'") nil))
+          (mv (reserrf "no init block after 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-init-block)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse test expression
          ((mv test-expression tokens-after-test-expression)
           (parse-expression tokens-after-init-block))
          ((when (reserrp test-expression))
-          (mv (err "no test expression for 'for'") nil))
+          (mv (reserrf "no test expression for 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-test-expression)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse update block
          ((mv update-block tokens-after-update-block)
           (parse-block tokens-after-test-expression))
          ((when (reserrp update-block))
-          (mv (err "no update block for 'for'") nil))
+          (mv (reserrf "no update block for 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-update-block)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse body block
          ((mv body-block tokens-after-body-block)
           (parse-block tokens-after-update-block))
          ((when (reserrp body-block))
-          (mv (err "no body block for 'for'") nil))
+          (mv (reserrf "no body block for 'for'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-body-block)
                           (len tokens))))
-          (mv (err "logic error") nil)))
+          (mv (reserrf "logic error") nil)))
 
       (mv (make-statement-for :init init-block
                               :test test-expression
@@ -1456,23 +1456,23 @@
     :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
     :short "Eats a @('switch') statement and builds a @('statement') AST node of kind @(':switch')."
     (b* (((when (endp tokens))
-          (mv (err "no switch statement here") nil))
+          (mv (reserrf "no switch statement here") nil))
 
          ;; parse required keyword "switch"
          ((mv ?switch-ast-node tokens-after-switch-or-reserr)
           (parse-keyword "switch" tokens))
          ((when (reserrp tokens-after-switch-or-reserr))
-          (mv (err "no switch statement here 2") nil))
+          (mv (reserrf "no switch statement here 2") nil))
 
          ;; parse target expression
          ((mv target-expression tokens-after-target-expression)
           (parse-expression tokens-after-switch-or-reserr))
          ((when (reserrp target-expression))
-          (mv (err "no target expression after 'switch'") nil))
+          (mv (reserrf "no target expression after 'switch'") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-target-expression)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse as many case clauses as we see (zero or more)
          ;; This combines the two alternatives; we will sort them out later.
@@ -1481,7 +1481,7 @@
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-case-clauses)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; Parse an optional default clause.
          ;; Although the "default" keyword is not used anywhere else,
@@ -1502,10 +1502,10 @@
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-block-option)
                           (len tokens))))
-          (mv (err "logic error") nil)))
+          (mv (reserrf "logic error") nil)))
 
       (if (and (null case-clauses) (null default-block-option))
-          (mv (err "switch default block is not optional if there are no case clauses")
+          (mv (reserrf "switch default block is not optional if there are no case clauses")
               nil)
         (mv (make-statement-switch
              :target target-expression
@@ -1518,29 +1518,29 @@
     :returns (mv (result-ast swcase-resultp) (tokens-after-clause abnf::tree-listp))
     :short "Eats a @('case') clause for a @('switch') statement and builds an @('swcase') AST node."
     (b* (((when (endp tokens))
-          (mv (err "no case clause here") nil))
+          (mv (reserrf "no case clause here") nil))
 
          ;; parse required keyword "case"
          ((mv ?case-ast-node tokens-after-case-or-reserr)
           (parse-keyword "case" tokens))
          ((when (reserrp tokens-after-case-or-reserr))
-          (mv (err "no case clause here 2") nil))
+          (mv (reserrf "no case clause here 2") nil))
 
          ;; parse the case's value, a literal
          ((mv value-literal? tokens-after-value-literal-or-reserr)
           (parse-literal tokens-after-case-or-reserr))
          ((unless (and (literalp value-literal?)
                        (not (reserrp tokens-after-value-literal-or-reserr))))
-          (mv (err "can't parse case's value literal") nil))
+          (mv (reserrf "can't parse case's value literal") nil))
 
          ;; parse the case's body, a block
          ((mv body-block tokens-after-body-block)
           (parse-block tokens-after-value-literal-or-reserr))
          ((when (reserrp body-block))
-          (mv (err "can't parse case's body block") nil)))
+          (mv (reserrf "can't parse case's body block") nil)))
 
       (mv (make-swcase :value value-literal?
-                   :body body-block)
+                       :body body-block)
           tokens-after-body-block))
     :measure (two-nats-measure (len tokens) 0))
 
@@ -1556,7 +1556,7 @@
     (b* (((when (endp tokens)) (mv nil nil))
          ((mv first-clause tokens-after-clause) (parse-case-clause tokens))
          ((when (reserrp first-clause))
-          ; found zero clauses here
+                                        ; found zero clauses here
           (mv nil (abnf::tree-list-fix tokens)))
          ;; We found first-clause, now look for more.
          ;; But first, help out the measure proof.
@@ -1572,38 +1572,38 @@
     :returns (mv (result-ast fundef-resultp) (tokens-after-fundef abnf::tree-listp))
     :short "Eats a function definition and builds a @('fundef') AST node."
     (b* (((when (endp tokens))
-          (mv (err "no function definition here") nil))
+          (mv (reserrf "no function definition here") nil))
 
          ;; parse required keyword "function"
          ((mv ?function-ast-node tokens-after-function-or-reserr)
           (parse-keyword "function" tokens))
          ((when (reserrp tokens-after-function-or-reserr))
-          (mv (err "no function definition here 2") nil))
+          (mv (reserrf "no function definition here 2") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-function-or-reserr)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse the function's name, an identifier
          ((mv id-or-null tokens-after-id-or-reserr)
           (parse-identifier tokens-after-function-or-reserr))
          ((when (null id-or-null))
-          (mv (err "missing function name") nil))
+          (mv (reserrf "missing function name") nil))
          ((when (reserrp tokens-after-id-or-reserr))
-          (mv (err "missing function name") nil))
+          (mv (reserrf "missing function name") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-id-or-reserr)
                           (len tokens))))
-            (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse the required "("
          (tokens-after-open-paren (parse-symbol "(" tokens-after-id-or-reserr))
          ((when (reserrp tokens-after-open-paren))
-          (mv (err "missing '(' in function definition") nil))
+          (mv (reserrf "missing '(' in function definition") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-open-paren)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; Parse the function inputs, zero or more identifiers separated by commas.
          ;; Zero identifiers is allowed, so we return (mv nil tokens-after-open-paren)
@@ -1623,16 +1623,16 @@
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-input-ids)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse the required ")"
          (tokens-after-close-paren (parse-symbol ")" tokens-after-input-ids))
          ((when (reserrp tokens-after-close-paren))
-          (mv (err "missing ')' in function definition") nil))
+          (mv (reserrf "missing ')' in function definition") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-close-paren)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; the "->" is optional
          ((mv output-ids tokens-after-output-ids)
@@ -1643,21 +1643,21 @@
                ;; inform the measure proof of the intermediate decrease
                ((unless (mbt (< (len tokens-after-arrow)
                                 (len tokens))))
-                (mv (err "logic error") nil))
+                (mv (reserrf "logic error") nil))
 
                ;; Parse the function outputs, one or more identifiers separated by commas.
                ;; The first identifier is required since we already saw a "->"
                ((mv first-output-id tokens-after-first-output-id)
                 (parse-identifier tokens-after-arrow))
                ((when (null first-output-id))
-                (mv (err "missing output identifier in function definition") nil))
+                (mv (reserrf "missing output identifier in function definition") nil))
                ((when (reserrp tokens-after-first-output-id))
-                (mv (err "missing output identifier in function definition") nil))
+                (mv (reserrf "missing output identifier in function definition") nil))
 
                ;; inform the measure proof of the intermediate decrease
                ((unless (mbt (< (len tokens-after-first-output-id)
                                 (len tokens))))
-                (mv (err "logic error") nil))
+                (mv (reserrf "logic error") nil))
 
                ;; remaining output identifiers
                ((mv rest-output-ids tokens-after-rest-output-ids)
@@ -1666,25 +1666,25 @@
                ;; inform the measure proof of the intermediate decrease
                ((unless (mbt (< (len tokens-after-rest-output-ids)
                                 (len tokens))))
-                (mv (err "logic error") nil)))
+                (mv (reserrf "logic error") nil)))
             (mv (cons first-output-id rest-output-ids)
                 tokens-after-rest-output-ids)))
          ((when (reserrp output-ids))
-          (mv (err (cons "parse error in output ids" output-ids)) nil))
+          (mv (reserrf (cons "parse error in output ids" output-ids)) nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-output-ids)
                           (len tokens))))
-          (mv (err "logic error") nil))
+          (mv (reserrf "logic error") nil))
 
          ;; parse the required function body block
          ((mv body-block tokens-after-body-block)
           (parse-block tokens-after-output-ids))
          ((when (reserrp body-block))
-          (mv (err "no function definition body") nil))
+          (mv (reserrf "no function definition body") nil))
          ;; inform the measure proof of the intermediate decrease
          ((unless (mbt (< (len tokens-after-body-block)
                           (len tokens))))
-          (mv (err "logic error") nil)))
+          (mv (reserrf "logic error") nil)))
 
       (mv (make-fundef :name id-or-null
                        :inputs input-ids
@@ -1717,7 +1717,7 @@
     :measure (two-nats-measure (len tokens) 2))
 
   :ruler-extenders :all  ; it is possible that some of the uses of mbt to prove
-    ; token length decrease are unnecessary after we added :ruler-extenders :all
+                                        ; token length decrease are unnecessary after we added :ruler-extenders :all
 
   :verify-guards nil
   ///
@@ -1800,7 +1800,7 @@
        ;; We may want to relax this next restriction if we want multiple things
        ;; at the top level.
        ((unless (null tokens-after-ast))
-        (err "after parsing top-level yul block, there should be no more tokens")))
+        (reserrf "after parsing top-level yul block, there should be no more tokens")))
     top-block))
 
 
@@ -1822,5 +1822,5 @@ convert the string to bytes first."))
        ;; We may want to relax this next restriction if we want multiple things
        ;; at the top level.
        ((unless (null tokens-after-ast))
-        (err "after parsing top-level yul block, there should be no more tokens")))
+        (reserrf "after parsing top-level yul block, there should be no more tokens")))
     top-block))

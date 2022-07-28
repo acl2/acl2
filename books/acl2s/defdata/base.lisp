@@ -41,7 +41,7 @@
 (include-book "tools/rulesets" :dir :system)
 
 (include-book "var-book" :ttags :all)
-(include-book "ordinals/lexicographic-book" :dir :system)
+;(include-book "ordinals/lexicographic-book" :dir :system)
 
 ;; (make-event ;TODO make sure to get this working
 ;;  (er-progn
