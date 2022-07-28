@@ -81,7 +81,9 @@
 
 (in-theory (disable open-output-channels open-output-channel-p1))
 
-(local (in-theory (enable <-of-+-of-1-when-integers)))
+(local (in-theory (e/d (<-of-+-of-1-when-integers)
+                       ;; Avoid printing during proofs
+                       ((:e fmt-to-comment-window)))))
 
 ;; (defthm equal-of-len-forward-to-cons
 ;;   (implies (and (equal k (len x))
@@ -456,7 +458,7 @@
   (if (consp arg)
       (if (natp (unquote arg))
           t
-        (prog2$ (cw "Warning: Non-integer constant ~x0 detected in a boolean context.~%" arg)
+        (prog2$ (cw "Warning: Non-integer constant ~x0 detected in BV boolean context.~%" arg)
                 nil))
     ;; it's a nodenum, so no checking is needed here (we will cut at that node if needed):
     t))
@@ -2646,3 +2648,53 @@
 (defthm string-treep-of-translate-disjunction
   (string-treep (translate-disjunction items))
   :hints (("Goal" :in-theory (enable translate-disjunction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;inline?
+;check this - is it anything missing?
+;fixme check in this that the sizes are not 0 -- and print a warning (or even halt?) if they are?
+;does this function handle everything in *bv-and-array-fns-we-can-translate* ?
+;the quotep checks on arguments could be consp checks?
+;fixme compare to can-always-translate-expr-to-stp?
+(defun pure-fn-call-exprp (expr)
+  (declare (xargs :guard (dag-function-call-exprp expr)
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
+  (let ((fn (ffn-symb expr)))
+    ;;(member-eq fn *bv-and-array-fns-we-can-translate*)
+    ;;maybe we should check that operands are of the right type?
+    (case fn
+          ;;((myif) t) ;check more? we no longer translate myif, only bvif?
+          ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
+          ((boolor booland boolif not bitnot bitxor bitor bitand) t)
+          ((bv-array-write bv-array-read bvsx slice)
+           (and (consp (rest (dargs expr)))
+                (quotep (darg1 expr))
+                (quotep (darg2 expr))))
+          ((bvnot bvand bvor bvxor bvmult bvminus bvuminus bvplus bvdiv bvmod sbvdiv sbvrem bvchop ;$inline
+                  getbit sbvlt bvlt bvle bvif leftrotate32)
+           (and (consp (dargs expr))
+                (quotep (darg1 expr)))) ;fixme make sure the value is okay?
+          (bvcat (and (consp (rest (rest (dargs expr))))
+                      (quotep (darg1 expr))
+                      (quotep (darg3 expr))))
+          (otherwise nil))))
+
+(defund expr-is-purep (expr)
+  (declare (xargs :guard (dag-exprp expr)))
+  ;; (declare (xargs :guard t))
+  (or (variablep expr) ;check more?
+      (fquotep expr)   ;check more?
+      (pure-fn-call-exprp expr)))
+
+;; Checks whether everything in the DAG is something we can translate to STP
+(defund dag-is-purep (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (if (endp dag)
+      t
+    (let* ((entry (car dag))
+           (expr (cdr entry)))
+      (if (expr-is-purep expr)
+          (dag-is-purep (rest dag))
+        (prog2$ (cw "Non-pure expression in DAG: ~x0.~%" expr)
+                nil)))))
