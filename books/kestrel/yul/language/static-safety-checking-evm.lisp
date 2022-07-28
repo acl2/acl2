@@ -148,5 +148,5 @@
   (b* (((ok modes) (check-safe-block block nil (evm-funtable))))
     (if (equal modes (set::insert (mode-regular) nil))
         nil
-      (err (list :top-block-mode modes))))
+      (reserrf (list :top-block-mode modes))))
   :hooks (:fix))

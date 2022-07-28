@@ -30,10 +30,10 @@
                         defxdoc+
                         nat
                         nat-resultp
-                        fty::err
                         fty::info
                         fty::ok
                         fty::reserr
+                        fty::reserrf
                         fty::reserrp
                         fty::reserr-optionp
                         fty::stack

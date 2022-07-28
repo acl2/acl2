@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
   (if (consp input)
       (mv (lnfix (car input))
           (nat-list-fix (cdr input)))
-    (mv (err :end-of-input)
+    (mv (reserrf :end-of-input)
         nil))
   :hooks (:fix)
   ///
@@ -99,7 +99,7 @@
           ((when (reserrp nat?)) (mv (err-push nat?) (nat-list-fix input)))
           (nat nat?)
           ((unless (equal nat (lnfix (car nats))))
-           (mv (err (list :found nat :required (lnfix (car nats))))
+           (mv (reserrf (list :found nat :required (lnfix (car nats))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-direct-aux (cdr nats) input1))
           ((when (reserrp nats?)) (mv (err-push nats?) input1))
@@ -148,7 +148,7 @@
                          nat)
                      (<= nat
                          (lnfix max))))
-        (mv (err (list :found nat :required (lnfix min) (lnfix max)))
+        (mv (reserrf (list :found nat :required (lnfix min) (lnfix max)))
             (nat-list-fix input))))
     (mv (abnf::tree-leafterm (list nat))
         input1))
@@ -198,7 +198,7 @@
           ((when (reserrp nat?)) (mv (err-push nat?) (nat-list-fix input)))
           (nat nat?)
           ((unless (abnf::nat-match-insensitive-char-p nat (car chars)))
-           (mv (err (list :found nat :required (acl2::char-fix (car chars))))
+           (mv (reserrf (list :found nat :required (acl2::char-fix (car chars))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-ichars-aux (cdr chars) input1))
           ((when (reserrp nats?)) (mv (err-push nats?) input1))
@@ -265,7 +265,7 @@
           ((when (reserrp nat?)) (mv (err-push nat?) (nat-list-fix input)))
           (nat nat?)
           ((unless (abnf::nat-match-sensitive-char-p nat (car chars)))
-           (mv (err (list :found nat :required (acl2::char-fix (car chars))))
+           (mv (reserrf (list :found nat :required (acl2::char-fix (car chars))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-schars-aux (cdr chars) input1))
           ((when (reserrp nats?)) (mv (err-push nats?) input1))

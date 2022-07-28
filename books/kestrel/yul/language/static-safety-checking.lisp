@@ -140,7 +140,7 @@
   (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
     (if (consp pair)
         (cdr pair)
-      (err (list :function-not-found (identifier-fix name)))))
+      (reserrf (list :function-not-found (identifier-fix name)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,7 +171,7 @@
        (fundef (car fundefs))
        (fun (fundef->name fundef))
        ((when (consp (omap::in fun funtab)))
-        (err (list :duplicate-function fun))))
+        (reserrf (list :duplicate-function fun))))
     (omap::update fun (funtype-for-fundef fundef) funtab))
   :hooks (:fix))
 
@@ -191,7 +191,7 @@
        (overlap (set::intersect (omap::keys funtab1)
                                 (omap::keys funtab)))
        ((unless (set::empty overlap))
-        (err (list :duplicate-functions overlap))))
+        (reserrf (list :duplicate-functions overlap))))
     (omap::update* funtab1 funtab))
   :hooks (:fix))
 
@@ -219,7 +219,7 @@
   (b* ((var (identifier-fix var))
        (varset (identifier-set-fix varset)))
     (if (set::in var varset)
-        (err (list :duplicate-variable var))
+        (reserrf (list :duplicate-variable var))
       (set::insert var varset)))
   :hooks (:fix)
   ///
@@ -288,12 +288,12 @@
      but for now we state it as part of the static semantics."))
   (b* ((idens (path->get path))
        ((unless (consp idens))
-        (err (list :empty-path (path-fix path))))
+        (reserrf (list :empty-path (path-fix path))))
        ((unless (endp (cdr idens)))
-        (err (list :non-singleton-path (path-fix path))))
+        (reserrf (list :non-singleton-path (path-fix path))))
        (var (car idens))
        ((unless (check-var var varset))
-        (err (list :variable-not-found var))))
+        (reserrf (list :variable-not-found var))))
     nil)
   :hooks (:fix))
 
@@ -386,7 +386,7 @@
     (b* (((when (endp exprs)) 0)
          ((ok n) (check-safe-expression (car exprs) varset funtab))
          ((unless (= n 1))
-          (err (list :multi-value-argument (expression-fix (car exprs)))))
+          (reserrf (list :multi-value-argument (expression-fix (car exprs)))))
          ((ok n) (check-safe-expression-list (cdr exprs) varset funtab)))
       (1+ n))
     :measure (expression-list-count exprs))
@@ -408,9 +408,9 @@
          ((ok funty) (get-funtype call.name funtab))
          ((ok n) (check-safe-expression-list call.args varset funtab))
          ((unless (= n (funtype->in funty)))
-          (err (list :mismatched-formals-actuals
-                     :required (funtype->in funty)
-                     :supplied n))))
+          (reserrf (list :mismatched-formals-actuals
+                         :required (funtype->in funty)
+                         :supplied n))))
       (funtype->out funty))
     :measure (funcall-count call))
 
@@ -449,7 +449,7 @@
        ((when (not init)) varset-new)
        ((ok results) (check-safe-expression init varset funtab))
        ((unless (= results 1))
-        (err (list :declare-single-var-mismatch name results))))
+        (reserrf (list :declare-single-var-mismatch name results))))
     varset-new)
   :hooks (:fix))
 
@@ -477,11 +477,11 @@
        (init (funcall-option-fix init))
        ((ok varset-new) (add-vars names varset))
        ((unless (>= (len names) 2))
-        (err (list :declare-zero-one-var names)))
+        (reserrf (list :declare-zero-one-var names)))
        ((when (not init)) varset-new)
        ((ok results) (check-safe-funcall init varset funtab))
        ((unless (= results (len names)))
-        (err (list :declare-multi-var-mismatch names results))))
+        (reserrf (list :declare-multi-var-mismatch names results))))
     varset-new)
   :hooks (:fix))
 
@@ -504,7 +504,7 @@
   (b* (((ok &) (check-safe-path target varset))
        ((ok results) (check-safe-expression value varset funtab))
        ((unless (= results 1))
-        (err (list :assign-single-var-mismatch (path-fix target) results))))
+        (reserrf (list :assign-single-var-mismatch (path-fix target) results))))
     nil)
   :hooks (:fix))
 
@@ -528,11 +528,11 @@
      The variables must be two or more."))
   (b* (((ok &) (check-safe-path-list targets varset))
        ((unless (>= (len targets) 2))
-        (err (list :assign-zero-one-path (path-list-fix targets))))
+        (reserrf (list :assign-zero-one-path (path-list-fix targets))))
        ((ok results) (check-safe-funcall value varset funtab))
        ((unless (= results (len targets)))
-        (err (list :assign-single-var-mismatch
-               (path-list-fix targets) results))))
+        (reserrf (list :assign-single-var-mismatch
+                       (path-list-fix targets) results))))
     nil)
   :hooks (:fix))
 
@@ -743,13 +743,13 @@
      :funcall
      (b* (((ok results) (check-safe-funcall stmt.get varset funtab))
           ((unless (= results 0))
-           (err (list :discarded-values stmt.get))))
+           (reserrf (list :discarded-values stmt.get))))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) nil)))
      :if
      (b* (((ok results) (check-safe-expression stmt.test varset funtab))
           ((unless (= results 1))
-           (err (list :multi-valued-if-test stmt.test)))
+           (reserrf (list :multi-valued-if-test stmt.test)))
           ((ok modes) (check-safe-block stmt.body
                                         varset
                                         funtab)))
@@ -762,19 +762,19 @@
           (varset1 (vars+modes->vars varsmodes))
           (init-modes (vars+modes->modes varsmodes))
           ((when (set::in (mode-break) init-modes))
-           (err (list :break-in-loop-init stmt.init)))
+           (reserrf (list :break-in-loop-init stmt.init)))
           ((when (set::in (mode-continue) init-modes))
-           (err (list :continue-in-loop-init stmt.init)))
+           (reserrf (list :continue-in-loop-init stmt.init)))
           ((ok results) (check-safe-expression stmt.test varset1 funtab))
           ((unless (= results 1))
-           (err (list :multi-valued-for-test stmt.test)))
+           (reserrf (list :multi-valued-for-test stmt.test)))
           ((ok update-modes) (check-safe-block stmt.update
                                                varset1
                                                funtab))
           ((when (set::in (mode-break) update-modes))
-           (err (list :break-in-loop-update stmt.update)))
+           (reserrf (list :break-in-loop-update stmt.update)))
           ((when (set::in (mode-continue) update-modes))
-           (err (list :continue-in-loop-update stmt.update)))
+           (reserrf (list :continue-in-loop-update stmt.update)))
           ((ok body-modes) (check-safe-block stmt.body
                                              varset1
                                              funtab))
@@ -788,11 +788,11 @@
      :switch
      (b* (((ok results) (check-safe-expression stmt.target varset funtab))
           ((unless (= results 1))
-           (err (list :multi-valued-switch-target stmt.target)))
+           (reserrf (list :multi-valued-switch-target stmt.target)))
           ((unless (or (consp stmt.cases) stmt.default))
-           (err (list :no-cases-in-switch (statement-fix stmt))))
+           (reserrf (list :no-cases-in-switch (statement-fix stmt))))
           ((unless (no-duplicatesp-equal (swcase-list->value-list stmt.cases)))
-           (err (list :duplicate-switch-cases (statement-fix stmt))))
+           (reserrf (list :duplicate-switch-cases (statement-fix stmt))))
           ((ok cases-modes) (check-safe-swcase-list stmt.cases
                                                     varset
                                                     funtab))
@@ -973,9 +973,9 @@
                                        varset
                                        funtab))
          ((when (set::in (mode-break) modes))
-          (err (list :break-from-function (fundef-fix fundef))))
+          (reserrf (list :break-from-function (fundef-fix fundef))))
          ((when (set::in (mode-continue) modes))
-          (err (list :continue-from-function (fundef-fix fundef)))))
+          (reserrf (list :continue-from-function (fundef-fix fundef)))))
       nil)
     :measure (fundef-count fundef))
 
@@ -1111,7 +1111,7 @@
   (b* (((ok modes) (check-safe-block block nil nil)))
     (if (equal modes (set::insert (mode-regular) nil))
         nil
-      (err (list :top-block-mode modes))))
+      (reserrf (list :top-block-mode modes))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

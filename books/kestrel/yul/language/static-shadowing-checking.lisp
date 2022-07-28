@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -89,14 +89,14 @@
      :block (b* (((ok &) (check-shadow-block stmt.get vars)))
               (identifier-set-fix vars))
      :variable-single (if (set::in stmt.name (identifier-set-fix vars))
-                          (err (list :shadowed-var stmt.name))
+                          (reserrf (list :shadowed-var stmt.name))
                         (set::insert stmt.name (identifier-set-fix vars)))
      :variable-multi (b* ((declared (set::mergesort stmt.names))
                           (shadowed (set::intersect declared
                                                     (identifier-set-fix vars))))
                        (if (set::empty shadowed)
                            (set::union declared (identifier-set-fix vars))
-                         (err (list :shadowed-vars shadowed))))
+                         (reserrf (list :shadowed-vars shadowed))))
      :assign-single (identifier-set-fix vars)
      :assign-multi (identifier-set-fix vars)
      :funcall (identifier-set-fix vars)
@@ -179,7 +179,7 @@
          (outputs (fundef->outputs fundef))
          (declared (set::mergesort (append inputs outputs)))
          (shadowed (set::intersect declared (identifier-set-fix vars)))
-         ((unless (set::empty shadowed)) (err (list :shadowed-vars shadowed)))
+         ((unless (set::empty shadowed)) (reserrf (list :shadowed-vars shadowed)))
          (vars (set::union (identifier-set-fix vars) declared)))
       (check-shadow-block (fundef->body fundef) vars))
     :measure (fundef-count fundef))
