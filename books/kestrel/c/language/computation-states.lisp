@@ -164,6 +164,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption compustate-option
+  compustate
+  :short "Fixtype of optional computation states."
+  :pred compustate-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defresult compustate "computation states")
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -178,6 +185,17 @@
   (implies (compustatep x)
            (not (errorp x)))
   :enable (errorp compustatep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult compustate-option "optional computation states"
+  :enable (compustatep compustate-optionp errorp))
+
+(defruled compustate-resultp-when-compustate-option-result-and-not-nil
+  (implies (and (compustate-option-resultp x)
+                x)
+           (compustate-resultp x))
+  :enable (compustate-resultp compustate-option-resultp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -478,11 +496,11 @@
 (define read-auto-var ((var identp) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (val value-optionp)
-  :short "Read a variable from automatic storage."
+  :short "Read a variable in automatic storage."
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, read the variable from the scopes in the top frame.
+    "That is, read the variable in the scopes in the top frame.
      We search the scopes from innermost (leftmost) to outermost (rightmost),
      according to the scoping rules for variables,
      where variables in inner scopes may hide variables in outer scopes.")
@@ -533,33 +551,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-var ((var identp) (val valuep) (compst compustatep))
-  :returns (new-compst compustate-resultp)
-  :short "Write a variable in the computation state."
+(define write-auto-var ((var identp) (val valuep) (compst compustatep))
+  :guard (> (compustate-frames-number compst) 0)
+  :returns (new-compst compustate-option-resultp)
+  :short "Write a variable in automatic storage."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we ignore static storage.
-     We will extend this function to deal with static storage soon.")
-   (xdoc::p
-    "We look for the variable in the same way as in @(tsee read-var),
-     i.e. in the top frame's scopes from innermost to outermost.
-     The variable must exist, it is not created;
+    "That is, write the variable in the scopes of the top frame.
+     The scopes are searched in the same way as @(tsee read-auto-var).
+     The variable must exist in order to write to it, i.e. it is not created;
      variables are created only via @(tsee create-var).
      The new value must have the same type as the old value;
      note that, in our restricted dynamic semantics of C,
-     variables always have values, they are never uninitialized."))
-  (b* (((unless (> (compustate-frames-number compst) 0))
-        (error (list :write-var-empty-frame-stack (ident-fix var))))
-       (frame (top-frame compst))
-       (new-scopes (write-var-aux var val (frame->scopes frame)))
+     variables always have values, they are never uninitialized.")
+   (xdoc::p
+    "If the variable is not found, we return @('nil'), not an error.
+     The reason is that this ACL2 function is used
+     as a subroutine of @(tsee write-var),
+     where if a variable is not found in automatic storage,
+     it is looked up in static storage.
+     Thus, not finding a variable in automatic storage,
+     in this ACL2 function, is not necessarily an error.
+     If the auxiliary recursive function returns @('nil'),
+     it means that the variable was not found:
+     since a frame always has at least one scope (see @(tsee frame)),
+     this cannot be confused with a result where
+     the variable was just not found in the scopes.")
+   (xdoc::p
+    "We do not look at other frames,
+     because the variables in other frames are not in scope
+     when running in the top frame."))
+  (b* ((frame (top-frame compst))
+       (new-scopes (write-auto-var-aux var val (frame->scopes frame)))
        ((when (errorp new-scopes)) new-scopes)
+       ((when (endp new-scopes)) nil)
        (new-frame (change-frame frame :scopes new-scopes)))
     (push-frame new-frame (pop-frame compst)))
   :hooks (:fix)
 
   :prepwork
-  ((define write-var-aux ((var identp) (val valuep) (scopes scope-listp))
+  ((define write-auto-var-aux ((var identp) (val valuep) (scopes scope-listp))
      :returns (new-scopes
                scope-list-resultp
                :hints (("Goal"
@@ -567,8 +599,7 @@
                         (enable
                          scope-listp-when-scope-list-resultp-and-not-errorp))))
      :parents nil
-     (b* (((when (endp scopes))
-           (error (list :write-var-not-found (ident-fix var))))
+     (b* (((when (endp scopes)) nil)
           (scope (scope-fix (car scopes)))
           (pair (omap::in (ident-fix var) scope))
           ((when (consp pair))
@@ -576,38 +607,43 @@
                       (type-of-value val))
                (cons (omap::update (ident-fix var) (value-fix val) scope)
                      (scope-list-fix (cdr scopes)))
-             (error (list :write-var-mistype (ident-fix var)
+             (error (list :write-auto-var-mistype (ident-fix var)
                           :required (type-of-value (cdr pair))
                           :supplied (type-of-value val)))))
-          (new-cdr-scopes (write-var-aux var val (cdr scopes)))
-          ((when (errorp new-cdr-scopes)) new-cdr-scopes))
+          (new-cdr-scopes (write-auto-var-aux var val (cdr scopes)))
+          ((when (errorp new-cdr-scopes)) new-cdr-scopes)
+          ((when (endp new-cdr-scopes)) nil))
        (cons scope new-cdr-scopes))
      :hooks (:fix)
 
      ///
 
-     (defret consp-of-write-var-aux
-       (implies (scope-listp new-scopes)
+     (defret consp-of-write-auto-var-aux
+       (implies (and (scope-listp new-scopes)
+                     (consp new-scopes))
                 (equal (consp new-scopes)
                        (consp scopes)))
        :hints (("Goal" :in-theory (enable error))))
 
-     (defret len-of-write-var-aux
-       (implies (scope-listp new-scopes)
+     (defret len-of-write-auto-var-aux
+       (implies (and (scope-listp new-scopes)
+                     (consp new-scopes))
                 (equal (len new-scopes)
                        (len scopes)))
        :hints (("Goal" :in-theory (enable error errorp))))))
 
   ///
 
-  (defret compustate-frames-number-of-write-var
-    (implies (compustatep new-compst)
+  (defret compustate-frames-number-of-write-auto-var
+    (implies (and (not (equal (compustate-frames-number compst) 0))
+                  (compustatep new-compst))
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
     :hints (("Goal" :in-theory (enable not-errorp-when-compustatep))))
 
-  (defret compustate-scopes-numbers-of-write-var
-    (implies (compustatep new-compst)
+  (defret compustate-scopes-numbers-of-write-auto-var
+    (implies (and (not (equal (compustate-frames-number compst) 0))
+                  (compustatep new-compst))
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
     :hints (("Goal" :in-theory (enable top-frame
@@ -617,6 +653,45 @@
                                        compustate-scopes-numbers
                                        compustate-scopes-numbers-aux
                                        errorp-when-scope-list-resultp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-var ((var identp) (val valuep) (compst compustatep))
+  :returns (new-compst
+            compustate-resultp
+            :hints
+            (("Goal"
+              :in-theory
+              (enable
+               compustate-resultp-when-compustate-option-result-and-not-nil))))
+  :short "Write a variable in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we ignore static storage.
+     We will extend this function to deal with static storage soon.
+     If there are no frames,
+     or the variable is not found in automatic storage,
+     or the variable is found but has a value of inconsistent type,
+     we return an error."))
+  (if (> (compustate-frames-number compst) 0)
+      (b* ((new-compst (write-auto-var var val compst))
+           ((when (errorp new-compst)) new-compst))
+        (or new-compst
+            (error (list :var-not-found (ident-fix var)))))
+    (error (list :write-var-empty-frame-stack (ident-fix var))))
+  :hooks (:fix)
+  ///
+
+  (defret compustate-frames-number-of-write-var
+    (implies (compustatep new-compst)
+             (equal (compustate-frames-number new-compst)
+                    (compustate-frames-number compst))))
+
+  (defret compustate-scopes-numbers-of-write-var
+    (implies (compustatep new-compst)
+             (equal (compustate-scopes-numbers new-compst)
+                    (compustate-scopes-numbers compst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

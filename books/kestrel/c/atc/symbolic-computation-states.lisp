@@ -682,15 +682,16 @@
                     (update-var var val compst)))
     :enable (write-var-okp
              write-var
+             write-auto-var
              update-var
              errorp)
     :prep-lemmas
     ((defrule lemma
        (implies (write-var-aux-okp var val scopes)
-                (equal (write-var-aux var val scopes)
+                (equal (write-auto-var-aux var val scopes)
                        (update-var-aux var val scopes)))
        :enable (write-var-aux-okp
-                write-var-aux
+                write-auto-var-aux
                 update-var-aux
                 errorp))))
 
