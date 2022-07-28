@@ -710,6 +710,12 @@
                 (natp high))
            (equal (slice high low -1)
                   (+ -1 (expt 2 (+ 1 high (- low))))))
-  :hints (("Goal" :in-theory (e/d (slice)
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable slice))))
+
+(defthm unsigned-byte-p-of-slice-lemma
+  (implies (and (unsigned-byte-p (+ n low) x)
+                (natp n)
+                (natp low)
+                (natp high))
+           (unsigned-byte-p n (slice high low x)))
+  :hints (("Goal" :in-theory (e/d (slice) ()))))

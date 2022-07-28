@@ -7311,12 +7311,6 @@
                              (getbit (+ -1 old-size) x))))
   :hints (("Goal" :in-theory (enable bvsx natp))))
 
-(defthm unsigned-byte-p-of-repeatbit-of-1-arg2
-  (implies (natp n)
-           (equal (unsigned-byte-p size (repeatbit n 1))
-                  (and (<= n size)
-                       (natp size)))))
-
 (defthm unsigned-byte-p-of-bvsx-alt
   (implies (and (< size new-size) ;this case
                 (<= old-size size) ;this case
@@ -7491,15 +7485,6 @@
            (equal (booland (not (sbvlt size k x)) (not (equal k x)))
                   (sbvlt size x k)))
   :hints (("Goal" :use (:instance sbvlt-trichotomy (y k)))))
-
-(defthm unsigned-byte-p-of-slice-lemma
-  (implies (and (unsigned-byte-p (+ n low) x)
-                (natp n)
-                (natp low)
-                (natp high)
-                )
-           (unsigned-byte-p n (slice high low x)))
-  :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
 
 ;gen to deal with more that just 1 top bit
 (defthm unsigned-byte-p-of-slice-one-more
