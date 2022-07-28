@@ -58,9 +58,11 @@
            (integerp (* 1/2 n)))
   :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add)))))
 
-(defthm +-of-half
-  (equal (+ len (- (* 1/2 len)))
-         (* 1/2 len)))
+(local
+ ;;gen
+ (defthm +-of-half
+   (equal (+ x (- (* 1/2 x)))
+          (* 1/2 x))))
 
 ;expensive?
 ;fixme which do we prefer?  depends on priorities..
@@ -70,10 +72,11 @@
   (equal (equal (len x) 0)
          (not (consp x))))
 
-(defthm true-listp-of-cdr-when-consp
-  (implies (consp x)
-           (equal (true-listp (cdr x))
-                  (true-listp x))))
+;; ;make local?
+;; (defthmd true-listp-of-cdr-when-consp
+;;   (implies (consp x)
+;;            (equal (true-listp (cdr x))
+;;                   (true-listp x))))
 
 (defthm equal-of-true-listp-when-equal-of-cdr
   (IMPLIES (AND (EQUAL (CDR LST) (CDR RHS))
