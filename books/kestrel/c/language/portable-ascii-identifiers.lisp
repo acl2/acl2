@@ -24,8 +24,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a notion of C identifiers that are both ASCII and portable,
-     in the sense explained below.")
+    "A portable ASCII identifier is
+     a non-empty sequence of ASCII characters that:")
+   (xdoc::ul
+    (xdoc::li
+     "Consists of only
+      the 26 uppercase Latin letters,
+      the 26 lowercase Latin letters,
+      the 10 numeric digits,
+      and the underscore.")
+    (xdoc::li
+     "Starts with a letter or underscore.")
+    (xdoc::li
+     "Differs from all the "
+     (xdoc::seetopic "*keywords*" "keywords")
+     "."))
+   (xdoc::p
+    "The rationale behind this notion is the following.")
    (xdoc::p
     "[C:6.4.2] allows the following characters in identifiers:")
    (xdoc::ol
@@ -33,11 +48,11 @@
      "The ten numeric digits (but not in the starting position).")
     (xdoc::li
      "The 26 uppercase Latin letters,
-     the 26 lowercase Latin letter,
-     and the underscore.")
+      the 26 lowercase Latin letter,
+      and the underscore.")
     (xdoc::li
      "Some ranges of universal characters
-     (some of which cannot occur in the starting position).")
+      (some of which cannot occur in the starting position).")
     (xdoc::li
      "Other implementation-defined characters."))
    (xdoc::p
@@ -63,7 +78,7 @@
      and the characters in (4) may or may not be ASCII.")
    (xdoc::p
     "In our formalization of C, we currently assume that
-     source characters includes ASCII characters
+     source characters include ASCII characters
      and the basic source character set consists of ASCII characters.
      Our model of "
     (xdoc::seetopic "ident" "identifiers")
@@ -93,9 +108,9 @@
           and does not start with a digit."
   :long
   (xdoc::topstring-p
-   "Sequences of characters satisfying these conditions
-    may be portable ASCII identifiers,
-    provided they are distinct from C keywords.")
+   "Sequences of characters satisfying these conditions may be "
+   (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII identifiers")
+   ", provided they are distinct from keywords.")
   (and (consp chs)
        (str::letter/digit/uscore-charlist-p chs)
        (not (str::dec-digit-char-p (car chs)))))
@@ -104,6 +119,10 @@
 
 (define ident-stringp ((str stringp))
   :returns (yes/no booleanp)
-  :short "Check if an ACL2 string is a portable ASCII identifier."
+  :short (xdoc::topstring
+          "Check if an ACL2 string is a "
+          (xdoc::seetopic "portable-ascii-identifiers"
+                          "portable ASCII identifier")
+          ".")
   (and (ident-char-listp (str::explode str))
        (not (member-equal str *keywords*))))
