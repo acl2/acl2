@@ -663,16 +663,17 @@
                     (equal (type-of-value val)
                            (type-of-value old-val))))
     :enable (write-var-okp
-             read-var)
+             read-var
+             read-auto-var)
     :prep-lemmas
     ((defrule lemma
-       (implies (and (equal old-val (read-var-aux var scopes))
+       (implies (and (equal old-val (read-auto-var-aux var scopes))
                      (valuep old-val))
                 (equal (write-var-aux-okp var val scopes)
                        (equal (type-of-value val)
                               (type-of-value old-val))))
        :enable (write-var-aux-okp
-                read-var-aux))))
+                read-auto-var-aux))))
 
   (defruled write-var-to-update-var
     (implies (and (not (equal (compustate-frames-number compst) 0))
@@ -730,7 +731,8 @@
              (equal (read-var var (enter-scope compst))
                     (read-var var compst)))
     :enable (read-var
-             read-var-aux
+             read-auto-var
+             read-auto-var-aux
              enter-scope))
 
   (defruled read-var-of-add-var
@@ -741,7 +743,8 @@
                         (value-fix val)
                       (read-var var compst))))
     :enable (read-var
-             read-var-aux
+             read-auto-var
+             read-auto-var-aux
              add-var
              compustate-frames-number
              push-frame
@@ -755,16 +758,17 @@
                         (value-fix val2)
                       (read-var var compst))))
     :enable (read-var
+             read-auto-var
              update-var)
     :prep-lemmas
     ((defrule lemma
        (implies (consp scopes)
-                (equal (read-var-aux var (update-var-aux var2 val2 scopes))
+                (equal (read-auto-var-aux var (update-var-aux var2 val2 scopes))
                        (if (equal (ident-fix var)
                                   (ident-fix var2))
                            (value-fix val2)
-                         (read-var-aux var scopes))))
-       :enable (read-var-aux
+                         (read-auto-var-aux var scopes))))
+       :enable (read-auto-var-aux
                 update-var-aux))))
 
   (defruled read-var-of-update-object
@@ -772,6 +776,7 @@
              (equal (read-var var (update-object objdes obj compst))
                     (read-var var compst)))
     :enable (read-var
+             read-auto-var
              update-object
              top-frame
              compustate-frames-number))
@@ -887,11 +892,11 @@
                     compst1))
     :use (:instance update-var-of-read-var-same-lemma (compst compst1))
     :prep-lemmas
-    ((defruled update-var-aux-of-read-var-aux-same
-       (implies (valuep (read-var-aux var scopes))
-                (equal (update-var-aux var (read-var-aux var scopes) scopes)
+    ((defruled update-var-aux-of-read-auto-var-aux-same
+       (implies (valuep (read-auto-var-aux var scopes))
+                (equal (update-var-aux var (read-auto-var-aux var scopes) scopes)
                        (scope-list-fix scopes)))
-       :enable (read-var-aux
+       :enable (read-auto-var-aux
                 update-var-aux
                 omap::update-of-cdr-of-in-when-in)
        :prep-lemmas
@@ -907,8 +912,9 @@
                 (equal (update-var var (read-var var compst) compst)
                        compst))
        :enable (read-var
+                read-auto-var
                 update-var
-                update-var-aux-of-read-var-aux-same
+                update-var-aux-of-read-auto-var-aux-same
                 top-frame
                 push-frame
                 pop-frame

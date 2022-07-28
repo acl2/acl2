@@ -475,59 +475,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-auto-var ((var identp) (compst compustatep))
+  :guard (> (compustate-frames-number compst) 0)
+  :returns (val value-optionp)
+  :short "Read a variable from automatic storage."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, read the variable from the scopes in the top frame.
+     We search the scopes from innermost (leftmost) to outermost (rightmost),
+     according to the scoping rules for variables,
+     where variables in inner scopes may hide variables in outer scopes.")
+   (xdoc::p
+    "If the variable is not found, we return @('nil'), not an error.
+     The reason is that this ACL2 function is used
+     as a subroutine of @(tsee read-var),
+     where if a variable is not found in automatic storage,
+     it is looked up in static storage.
+     Thus, not finding a variable in automatic storage,
+     in this ACL2 function, is not necessarily an error.")
+   (xdoc::p
+    "We do not look at other frames,
+     because the variables in other frames are not in scope
+     when running in the top frame."))
+  (read-auto-var-aux var (frame->scopes (top-frame compst)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define read-auto-var-aux ((var identp) (scopes scope-listp))
+     :returns (val value-optionp)
+     :parents nil
+     (b* (((when (endp scopes)) nil)
+          (scope (car scopes))
+          (pair (omap::in (ident-fix var) (scope-fix scope)))
+          ((when (not pair)) (read-auto-var-aux var (cdr scopes))))
+       (cdr pair))
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define read-var ((var identp) (compst compustatep))
-  :returns (result value-resultp)
+  :returns (val value-resultp)
   :short "Read a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we ignore static storage.
-     We will extend this function to deal with static storage soon.")
-   (xdoc::p
-    "If there are no frames, we return an error:
-     the variable is not found.
-     In the future, the computation state may be extended
-     with file-scope (i.e. global) variables, which are not in frames;
-     when that happens, variables will be looked up there,
-     if they are not found in the top frame.")
-   (xdoc::p
-    "It should be the case that variables are looked up
-     only when executing code in function bodies,
-     and therefore when the frame stack is not empty.
-     Thus, it could make sense for this ACL2 function
-     to require the non-emptiness of the frame stack in the guard.
-     However, that would require @(tsee exec-expr-pure) to have that guard,
-     but in the future we may want to use @(tsee exec-expr-pure)
-     to evaluate constant expressions used as initializers
-     in external object definitions,
-     which happens with an empty frame stack.
-     So we avoid that guard here.")
-   (xdoc::p
-    "If the frame stack is not empty,
-     we look in the scopes of the top frame from left to right,
-     i.e. from innermost to outermost.
-     If we find a variable with that name, we return its value.
-     Otherwise we return an error.")
-   (xdoc::p
-    "We do not look at other frames,
-     because the variables in other frames are not in scope
-     for the C function in the top frame."))
+     We will extend this function to deal with static storage soon.
+     If there are no frames, or the variable is not found in automatic storage,
+     we return an error."))
   (if (> (compustate-frames-number compst) 0)
-      (read-var-aux var (frame->scopes (top-frame compst)))
+      (b* ((val (read-auto-var var compst)))
+        (or val
+            (error (list :var-not-found (ident-fix var)))))
     (error (list :read-var-empty-frame-stack (ident-fix var))))
-  :hooks (:fix)
-
-  :prepwork
-  ((define read-var-aux ((var identp) (scopes scope-listp))
-     :returns (result value-resultp)
-     :parents nil
-     (b* (((when (endp scopes))
-           (error (list :read-var-not-found (ident-fix var))))
-          (scope (car scopes))
-          (pair (omap::in (ident-fix var) (scope-fix scope)))
-          ((when (not pair)) (read-var-aux var (cdr scopes))))
-       (cdr pair))
-     :hooks (:fix))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
