@@ -12,13 +12,7 @@
 
 (include-book "std/util/bstar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
-
-;dup
-(local
- (defthm state-p1-of-mv-nth-2-of-read-acl2-oracle
-   (implies (state-p1 state)
-            (state-p1 (mv-nth 2 (read-acl2-oracle state))))
-   :hints (("Goal" :in-theory (enable read-acl2-oracle state-p1 open-output-channels)))))
+(local (include-book "read-acl2-oracle"))
 
 (defttag get-username) ; due to the sys-call+
 
