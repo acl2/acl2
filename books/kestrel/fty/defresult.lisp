@@ -123,7 +123,7 @@
       This macro also generates rules
       to reason about the disjunction of good and error results.
       Along with @('defresult'),
-      a @(tsee b*) binder @(tsee patbind-ok) is provided
+      a @(tsee b*) binder is provided
       to support the check-and-propagate-error pattern described above.")
 
     (xdoc::p
@@ -141,7 +141,7 @@
       returned by @(tsee reserrf) or @(tsee reserrf-push),
       resulting in a stack of error information
       corresponding to the call stack.
-      The @(tsee patbind-ok) binder automates the check-and-propagation
+      The @(tsee patbind-okf) binder automates the check-and-propagation
       of errors that include function information.
       This may be very useful for debugging,
       or in general to provide informative error information.
@@ -150,7 +150,7 @@
       (as producing and consuming that information
       may detract from the clarity and conciseness of the specification).
       Therefore, we plan to introduce a simpler version of
-      the @(tsee patbind-ok) binder that just does
+      the @(tsee patbind-okf) binder that just does
       error checking and propagation, without function information;
       this will be also usable in code not written with @(tsee define).")
 
@@ -402,7 +402,7 @@
    "This is useful when receiving an error result from a called function,
     to add the caller to the stack, and possibly more information,
     before propagating the error.
-    This addition is handled automatically when using @(tsee patbind-ok),
+    This addition is handled automatically when using @(tsee patbind-okf),
     actually using @('nil') as extra information;
     when that binder cannot be used for some reason,
     or when additional information must be pushed,
@@ -415,7 +415,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-b*-binder ok
+(def-b*-binder okf
   :parents (defresult)
   :short "@(tsee b*) binder for checking and propagating
           error results of fixtype @(tsee reserr)."
@@ -438,13 +438,13 @@
     "This binder is used as follows:")
    (xdoc::codeblock
     "(b* (..."
-    "     ((ok <pattern>) <term>)"
+    "     ((okf <pattern>) <term>)"
     "     ...)"
     "  ...)")
    (xdoc::p
-    "Note that the argument of @('(ok ...)')
+    "Note that the argument of @('(okf ...)')
      may be a supported single-valued @(tsee b*) pattern,
-     e.g. @('(ok (cons x y))').")
+     e.g. @('(okf (cons x y))').")
    (xdoc::p
     "In order to support such a pattern,
      we generate an initial binding to a variable,
@@ -454,12 +454,12 @@
      we pick a name for the first variable
      that is unlikely to occur in code."))
   :decls
-  ((declare (xargs :guard (acl2::destructure-guard ok args acl2::forms 1))))
+  ((declare (xargs :guard (acl2::destructure-guard okf args acl2::forms 1))))
   :body
-  `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
-        ((when (reserrp patbinder-ok-fresh-variable-for-result))
-         (reserrf-push patbinder-ok-fresh-variable-for-result))
-        (,(car args) patbinder-ok-fresh-variable-for-result))
+  `(b* ((patbinder-okf-fresh-variable-for-result ,(car acl2::forms))
+        ((when (reserrp patbinder-okf-fresh-variable-for-result))
+         (reserrf-push patbinder-okf-fresh-variable-for-result))
+        (,(car args) patbinder-okf-fresh-variable-for-result))
      ,acl2::rest-expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

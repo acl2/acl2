@@ -167,7 +167,7 @@
     "We go through the list and form a function table for the functions.
      It is an error if there are two functions with the same name."))
   (b* (((when (endp fundefs)) nil)
-       ((ok funtab) (funtable-for-fundefs (cdr fundefs)))
+       ((okf funtab) (funtable-for-fundefs (cdr fundefs)))
        (fundef (car fundefs))
        (fun (fundef->name fundef))
        ((when (consp (omap::in fun funtab)))
@@ -187,7 +187,7 @@
      and then we use that to update the given function table,
      ensuring that the two tables have disjoint functions."))
   (b* ((funtab (funtable-fix funtab))
-       ((ok funtab1) (funtable-for-fundefs fundefs))
+       ((okf funtab1) (funtable-for-fundefs fundefs))
        (overlap (set::intersect (omap::keys funtab1)
                                 (omap::keys funtab)))
        ((unless (set::empty overlap))
@@ -248,7 +248,7 @@
     "If this function does not return an error,
      it is equivalent to @('set::list-insert')."))
   (b* (((when (endp vars)) (identifier-set-fix varset))
-       ((ok varset) (add-var (car vars) varset)))
+       ((okf varset) (add-var (car vars) varset)))
     (add-vars (cdr vars) varset))
   :hooks (:fix)
   ///
@@ -303,7 +303,7 @@
   :returns (_ reserr-optionp)
   :short "Check if a list of paths is safe."
   (b* (((when (endp paths)) nil)
-       ((ok &) (check-safe-path (car paths) varset)))
+       ((okf &) (check-safe-path (car paths) varset)))
     (check-safe-path-list (cdr paths) varset))
   :hooks (:fix))
 
@@ -329,7 +329,7 @@
      such as that a string surrounded by double quotes
      cannot contain (unescaped) double quotes.
      Those are simply syntactic restrictions."))
-  (b* (((ok &) (eval-literal lit)))
+  (b* (((okf &) (eval-literal lit)))
     nil)
   :hooks (:fix))
 
@@ -360,9 +360,9 @@
        A literal always returns one result."))
     (expression-case
      expr
-     :path (b* (((ok &) (check-safe-path expr.get varset)))
+     :path (b* (((okf &) (check-safe-path expr.get varset)))
              1)
-     :literal (b* (((ok &) (check-safe-literal expr.get)))
+     :literal (b* (((okf &) (check-safe-literal expr.get)))
                 1)
      :funcall (check-safe-funcall expr.get varset funtab))
     :measure (expression-count expr))
@@ -384,10 +384,10 @@
       "We check each expression in turn.
        Each expression must return exactly one result."))
     (b* (((when (endp exprs)) 0)
-         ((ok n) (check-safe-expression (car exprs) varset funtab))
+         ((okf n) (check-safe-expression (car exprs) varset funtab))
          ((unless (= n 1))
           (reserrf (list :multi-value-argument (expression-fix (car exprs)))))
-         ((ok n) (check-safe-expression-list (cdr exprs) varset funtab)))
+         ((okf n) (check-safe-expression-list (cdr exprs) varset funtab)))
       (1+ n))
     :measure (expression-list-count exprs))
 
@@ -405,8 +405,8 @@
        and we return the number of outputs.
        Each argument expression must return a single result."))
     (b* (((funcall call) call)
-         ((ok funty) (get-funtype call.name funtab))
-         ((ok n) (check-safe-expression-list call.args varset funtab))
+         ((okf funty) (get-funtype call.name funtab))
+         ((okf n) (check-safe-expression-list call.args varset funtab))
          ((unless (= n (funtype->in funty)))
           (reserrf (list :mismatched-formals-actuals
                          :required (funtype->in funty)
@@ -445,9 +445,9 @@
      and it must return exactly one result."))
   (b* ((name (identifier-fix name))
        (init (expression-option-fix init))
-       ((ok varset-new) (add-var name varset))
+       ((okf varset-new) (add-var name varset))
        ((when (not init)) varset-new)
-       ((ok results) (check-safe-expression init varset funtab))
+       ((okf results) (check-safe-expression init varset funtab))
        ((unless (= results 1))
         (reserrf (list :declare-single-var-mismatch name results))))
     varset-new)
@@ -475,11 +475,11 @@
      as the number of variables."))
   (b* ((names (identifier-list-fix names))
        (init (funcall-option-fix init))
-       ((ok varset-new) (add-vars names varset))
+       ((okf varset-new) (add-vars names varset))
        ((unless (>= (len names) 2))
         (reserrf (list :declare-zero-one-var names)))
        ((when (not init)) varset-new)
-       ((ok results) (check-safe-funcall init varset funtab))
+       ((okf results) (check-safe-funcall init varset funtab))
        ((unless (= results (len names)))
         (reserrf (list :declare-multi-var-mismatch names results))))
     varset-new)
@@ -501,8 +501,8 @@
      see discussion there about non-singleton paths.")
    (xdoc::p
     "We check the expression, and and ensure that it returns one result."))
-  (b* (((ok &) (check-safe-path target varset))
-       ((ok results) (check-safe-expression value varset funtab))
+  (b* (((okf &) (check-safe-path target varset))
+       ((okf results) (check-safe-expression value varset funtab))
        ((unless (= results 1))
         (reserrf (list :assign-single-var-mismatch (path-fix target) results))))
     nil)
@@ -526,10 +526,10 @@
     "We check the function call, and ensure that it returns
      a number of results equal to the number of variables.
      The variables must be two or more."))
-  (b* (((ok &) (check-safe-path-list targets varset))
+  (b* (((okf &) (check-safe-path-list targets varset))
        ((unless (>= (len targets) 2))
         (reserrf (list :assign-zero-one-path (path-list-fix targets))))
-       ((ok results) (check-safe-funcall value varset funtab))
+       ((okf results) (check-safe-funcall value varset funtab))
        ((unless (= results (len targets)))
         (reserrf (list :assign-single-var-mismatch
                        (path-list-fix targets) results))))
@@ -709,73 +709,73 @@
     (statement-case
      stmt
      :block
-     (b* (((ok modes) (check-safe-block stmt.get varset funtab)))
+     (b* (((okf modes) (check-safe-block stmt.get varset funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes modes))
      :variable-single
-     (b* (((ok varset) (check-safe-variable-single stmt.name
+     (b* (((okf varset) (check-safe-variable-single stmt.name
                                                    stmt.init
                                                    varset
                                                    funtab)))
        (make-vars+modes :vars varset
                         :modes (set::insert (mode-regular) nil)))
      :variable-multi
-     (b* (((ok varset) (check-safe-variable-multi stmt.names
+     (b* (((okf varset) (check-safe-variable-multi stmt.names
                                                   stmt.init
                                                   varset
                                                   funtab)))
        (make-vars+modes :vars varset
                         :modes (set::insert (mode-regular) nil)))
      :assign-single
-     (b* (((ok &) (check-safe-assign-single stmt.target
+     (b* (((okf &) (check-safe-assign-single stmt.target
                                             stmt.value
                                             varset
                                             funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) nil)))
      :assign-multi
-     (b* (((ok &) (check-safe-assign-multi stmt.targets
+     (b* (((okf &) (check-safe-assign-multi stmt.targets
                                            stmt.value
                                            varset
                                            funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) nil)))
      :funcall
-     (b* (((ok results) (check-safe-funcall stmt.get varset funtab))
+     (b* (((okf results) (check-safe-funcall stmt.get varset funtab))
           ((unless (= results 0))
            (reserrf (list :discarded-values stmt.get))))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) nil)))
      :if
-     (b* (((ok results) (check-safe-expression stmt.test varset funtab))
+     (b* (((okf results) (check-safe-expression stmt.test varset funtab))
           ((unless (= results 1))
            (reserrf (list :multi-valued-if-test stmt.test)))
-          ((ok modes) (check-safe-block stmt.body
+          ((okf modes) (check-safe-block stmt.body
                                         varset
                                         funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) modes)))
      :for
      (b* ((stmts (block->statements stmt.init))
-          ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
-          ((ok varsmodes) (check-safe-statement-list stmts varset funtab))
+          ((okf funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
+          ((okf varsmodes) (check-safe-statement-list stmts varset funtab))
           (varset1 (vars+modes->vars varsmodes))
           (init-modes (vars+modes->modes varsmodes))
           ((when (set::in (mode-break) init-modes))
            (reserrf (list :break-in-loop-init stmt.init)))
           ((when (set::in (mode-continue) init-modes))
            (reserrf (list :continue-in-loop-init stmt.init)))
-          ((ok results) (check-safe-expression stmt.test varset1 funtab))
+          ((okf results) (check-safe-expression stmt.test varset1 funtab))
           ((unless (= results 1))
            (reserrf (list :multi-valued-for-test stmt.test)))
-          ((ok update-modes) (check-safe-block stmt.update
+          ((okf update-modes) (check-safe-block stmt.update
                                                varset1
                                                funtab))
           ((when (set::in (mode-break) update-modes))
            (reserrf (list :break-in-loop-update stmt.update)))
           ((when (set::in (mode-continue) update-modes))
            (reserrf (list :continue-in-loop-update stmt.update)))
-          ((ok body-modes) (check-safe-block stmt.body
+          ((okf body-modes) (check-safe-block stmt.body
                                              varset1
                                              funtab))
           (modes (if (or (set::in (mode-leave) init-modes)
@@ -786,17 +786,17 @@
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes modes))
      :switch
-     (b* (((ok results) (check-safe-expression stmt.target varset funtab))
+     (b* (((okf results) (check-safe-expression stmt.target varset funtab))
           ((unless (= results 1))
            (reserrf (list :multi-valued-switch-target stmt.target)))
           ((unless (or (consp stmt.cases) stmt.default))
            (reserrf (list :no-cases-in-switch (statement-fix stmt))))
           ((unless (no-duplicatesp-equal (swcase-list->value-list stmt.cases)))
            (reserrf (list :duplicate-switch-cases (statement-fix stmt))))
-          ((ok cases-modes) (check-safe-swcase-list stmt.cases
+          ((okf cases-modes) (check-safe-swcase-list stmt.cases
                                                     varset
                                                     funtab))
-          ((ok default-modes) (check-safe-block-option stmt.default
+          ((okf default-modes) (check-safe-block-option stmt.default
                                                        varset
                                                        funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
@@ -811,7 +811,7 @@
      (make-vars+modes :vars (identifier-set-fix varset)
                       :modes (set::insert (mode-continue) nil))
      :fundef
-     (b* (((ok &) (check-safe-fundef stmt.get funtab)))
+     (b* (((okf &) (check-safe-fundef stmt.get funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) nil))))
     :measure (statement-count stmt)
@@ -841,12 +841,12 @@
     (b* (((when (endp stmts))
           (make-vars+modes :vars (identifier-set-fix varset)
                            :modes (set::insert (mode-regular) nil)))
-         ((ok varsmodes) (check-safe-statement (car stmts)
+         ((okf varsmodes) (check-safe-statement (car stmts)
                                                varset
                                                funtab))
          (varset (vars+modes->vars varsmodes))
          (first-modes (vars+modes->modes varsmodes))
-         ((ok varsmodes) (check-safe-statement-list (cdr stmts)
+         ((okf varsmodes) (check-safe-statement-list (cdr stmts)
                                                     varset
                                                     funtab))
          (varset (vars+modes->vars varsmodes))
@@ -876,8 +876,8 @@
        and then we check the statements that form the block,
        discarding the final variable table."))
     (b* ((stmts (block->statements block))
-         ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
-         ((ok varsmodes) (check-safe-statement-list stmts varset funtab)))
+         ((okf funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
+         ((okf varsmodes) (check-safe-statement-list stmts varset funtab)))
       (vars+modes->modes varsmodes))
     :measure (block-count block))
 
@@ -911,7 +911,7 @@
       "We check its literal and its block.
        We return the termination modes of the block."))
     (b* (((swcase case) case)
-         ((ok &) (check-safe-literal case.value)))
+         ((okf &) (check-safe-literal case.value)))
       (check-safe-block case.body
                         varset
                         funtab))
@@ -931,10 +931,10 @@
        we return the union of the termination modes of the first case
        with the union of the termination modes for the remaining cases."))
     (b* (((when (endp cases)) nil)
-         ((ok first-modes) (check-safe-swcase (car cases)
+         ((okf first-modes) (check-safe-swcase (car cases)
                                               varset
                                               funtab))
-         ((ok rest-modes) (check-safe-swcase-list (cdr cases)
+         ((okf rest-modes) (check-safe-swcase-list (cdr cases)
                                                   varset
                                                   funtab)))
       (set::union first-modes rest-modes))
@@ -967,9 +967,9 @@
        ensuring that it does not end with @('break') or @('continue'),
        (i.e. only with @('leave') or regularly)."))
     (b* (((fundef fundef) fundef)
-         ((ok varset) (add-vars fundef.inputs nil))
-         ((ok varset) (add-vars fundef.outputs varset))
-         ((ok modes) (check-safe-block fundef.body
+         ((okf varset) (add-vars fundef.inputs nil))
+         ((okf varset) (add-vars fundef.outputs varset))
+         ((okf modes) (check-safe-block fundef.body
                                        varset
                                        funtab))
          ((when (set::in (mode-break) modes))
@@ -1030,8 +1030,8 @@
      we carry out the induction proof on a predicate
      that is universally quantified over variable tables."))
   (b* (((when (endp fundefs)) nil)
-       ((ok &) (check-safe-fundef (car fundefs) funtab))
-       ((ok &) (check-safe-fundef-list (cdr fundefs) funtab)))
+       ((okf &) (check-safe-fundef (car fundefs) funtab))
+       ((okf &) (check-safe-fundef-list (cdr fundefs) funtab)))
     nil)
   :hooks (:fix)
   ///
@@ -1108,7 +1108,7 @@
      it is only allowed to terminate regularly.
      If the checking succeeds, we return nothing (i.e. @('nil')).
      Otherwise, we return an error."))
-  (b* (((ok modes) (check-safe-block block nil nil)))
+  (b* (((okf modes) (check-safe-block block nil nil)))
     (if (equal modes (set::insert (mode-regular) nil))
         nil
       (reserrf (list :top-block-mode modes))))
