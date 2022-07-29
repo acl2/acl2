@@ -100,7 +100,7 @@
      In this case, the initial generic computation state
      includes part of the frame of the enclosing C function;
      the execution of the loop may add new scopes and variables,
-     so in this case the symbolic computtion state looks like")
+     so in this case the symbolic computation state looks like")
    (xdoc::codeblock
     "(add-var ... (add-var ... (enter-scope <compst>)...)")
    (xdoc::p
@@ -133,7 +133,8 @@
      This may happen for several different variables,
      leading to states of the form")
    (xdoc::codeblock
-    "(... (enter-scope (add-var ... (update-var ... (update-var ... <compst>)...)")
+    "(...
+      (add-var (enter-scope ... (update-var ... (update-var ... <compst>)...)")
    (xdoc::p
     "Below we introduce rules to order these @(tsee update-var)s
      according to the variables,
@@ -166,7 +167,7 @@
    (xdoc::p
     "for C functions and of the form")
    (xdoc::codeblock
-    "(... (enter-scope (add-var ... (update-object ... <compst>)...)")
+    "(... (enter-scope (update-object ... (update-object ... <compst>)...)")
    (xdoc::p
     "for C loops.
      We order the @(tsee update-object) calls
