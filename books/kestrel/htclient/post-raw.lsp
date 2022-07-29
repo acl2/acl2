@@ -32,6 +32,6 @@
 
       (error (condition)
              (let ((condition-str (format nil "~a" condition)))
-               (mv (msg "~s0: error listing ~s1: ~s2."
-                        'ls path condition-str)
+               (mv (msg "~s0: error from ~s1: ~s2."
+                        'post url condition-str)
                    nil state))))))
