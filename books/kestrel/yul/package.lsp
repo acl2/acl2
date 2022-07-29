@@ -31,7 +31,7 @@
                         nat
                         nat-resultp
                         fty::info
-                        fty::ok
+                        fty::okf
                         fty::reserr
                         fty::reserrf
                         fty::reserrp

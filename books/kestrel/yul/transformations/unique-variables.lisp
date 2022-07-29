@@ -81,7 +81,7 @@
     "This is very similar to @(tsee add-vars),
      but it has a different purpose."))
   (b* (((when (endp vars)) (identifier-set-fix allvars))
-       ((ok allvars) (var-unique-vars (car vars) allvars)))
+       ((okf allvars) (var-unique-vars (car vars) allvars)))
     (var-list-unique-vars (cdr vars) allvars))
   :hooks (:fix)
   ///
@@ -114,12 +114,12 @@
      :assign-multi (identifier-set-fix allvars)
      :funcall (identifier-set-fix allvars)
      :if (block-unique-vars stmt.body allvars)
-     :for (b* (((ok allvars) (block-unique-vars stmt.init allvars))
-               ((ok allvars) (block-unique-vars stmt.update allvars))
-               ((ok allvars) (block-unique-vars stmt.body allvars)))
+     :for (b* (((okf allvars) (block-unique-vars stmt.init allvars))
+               ((okf allvars) (block-unique-vars stmt.update allvars))
+               ((okf allvars) (block-unique-vars stmt.body allvars)))
             allvars)
-     :switch (b* (((ok allvars) (swcase-list-unique-vars stmt.cases allvars))
-                  ((ok allvars) (block-option-unique-vars stmt.default allvars)))
+     :switch (b* (((okf allvars) (swcase-list-unique-vars stmt.cases allvars))
+                  ((okf allvars) (block-option-unique-vars stmt.default allvars)))
                allvars)
      :leave (identifier-set-fix allvars)
      :break (identifier-set-fix allvars)
@@ -132,8 +132,8 @@
     :returns (new-allvars identifier-set-resultp)
     :short "Check that a list of statements has unique variable names."
     (b* (((when (endp stmts)) (identifier-set-fix allvars))
-         ((ok allvars) (statement-unique-vars (car stmts) allvars))
-         ((ok allvars) (statement-list-unique-vars (cdr stmts) allvars)))
+         ((okf allvars) (statement-unique-vars (car stmts) allvars))
+         ((okf allvars) (statement-list-unique-vars (cdr stmts) allvars)))
       allvars)
     :measure (statement-list-count stmts))
 
@@ -163,8 +163,8 @@
     :returns (new-allvars identifier-set-resultp)
     :short "Check that a list of switch cases has unique variable names."
     (b* (((when (endp cases)) (identifier-set-fix allvars))
-         ((ok allvars) (swcase-unique-vars (car cases) allvars))
-         ((ok allvars) (swcase-list-unique-vars (cdr cases) allvars)))
+         ((okf allvars) (swcase-unique-vars (car cases) allvars))
+         ((okf allvars) (swcase-list-unique-vars (cdr cases) allvars)))
       allvars)
     :measure (swcase-list-count cases))
 
@@ -172,7 +172,7 @@
     :returns (new-allvars identifier-set-resultp)
     :short "Check that a function definition has unique variable names."
     (b* (((fundef fundef) fundef)
-         ((ok allvars) (var-list-unique-vars (append fundef.inputs
+         ((okf allvars) (var-list-unique-vars (append fundef.inputs
                                                      fundef.outputs)
                                              allvars)))
       (block-unique-vars fundef.body allvars))

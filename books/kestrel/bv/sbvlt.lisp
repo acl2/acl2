@@ -16,6 +16,8 @@
 (include-book "kestrel/booleans/boolor" :dir :system) ;todo
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "unsigned-byte-p"))
+(local (include-book "signed-byte-p"))
 
 ;;signed less-than
 (defund sbvlt (n x y)
@@ -230,7 +232,7 @@
                 (natp y))
            (equal (sbvlt n x y)
                   (< x y)))
-  :hints (("Goal" :in-theory (enable sbvlt bvchop-identity))))
+  :hints (("Goal" :in-theory (enable sbvlt logext-identity signed-byte-p))))
 
 ;gen
 (defthm not-sbvlt-of-maxint-32
@@ -434,3 +436,13 @@
   :hints (("Goal" :cases ((posp size))
            :in-theory (enable sbvlt
                               EQUAL-OF-LOGEXT-AND-LOGEXT))))
+
+(defthm sbvlt-of-minus-one
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (equal k (+ -1 (expt 2 size))) ;minus one
+                (unsigned-byte-p free x)
+                (< free size)
+                (natp size))
+           (sbvlt size k x))
+  :hints (("Goal" :in-theory (enable sbvlt))))

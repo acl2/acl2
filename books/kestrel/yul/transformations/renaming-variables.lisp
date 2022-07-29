@@ -81,7 +81,7 @@
           (reserrf (list :mismatch-extra-new (identifier-list-fix new)))))
        ((when (endp new))
         (reserrf (list :mismatch-extra-old (identifier-list-fix old))))
-       ((ok &) (var-renamevar (car old) (car new) ren)))
+       ((okf &) (var-renamevar (car old) (car new) ren)))
     (var-list-renamevar (cdr old) (cdr new) ren))
   :hooks (:fix))
 
@@ -125,7 +125,7 @@
           (reserrf (list :mismatch-extra-new (path-list-fix new)))))
        ((when (endp new))
         (reserrf (list :mismatch-extra-old (path-list-fix old))))
-       ((ok &) (path-renamevar (car old) (car new) ren)))
+       ((okf &) (path-renamevar (car old) (car new) ren)))
     (path-list-renamevar (cdr old) (cdr new) ren))
   :hooks (:fix)
   ///
@@ -190,7 +190,7 @@
             (reserrf (list :mismatch-extra-new (expression-list-fix new)))))
          ((when (endp new))
           (reserrf (list :mismatch-extra-old (expression-list-fix old))))
-         ((ok &) (expression-renamevar (car old) (car new) ren)))
+         ((okf &) (expression-renamevar (car old) (car new) ren)))
       (expression-list-renamevar (cdr old) (cdr new) ren))
     :measure (expression-list-count old))
 
@@ -352,7 +352,7 @@
           (reserrf (list :mismatch-extra-new (identifier-list-fix new)))))
        ((when (endp new))
         (reserrf (list :mismatch-extra-old (identifier-list-fix old))))
-       ((ok ren) (add-var-to-var-renaming (car old) (car new) ren)))
+       ((okf ren) (add-var-to-var-renaming (car old) (car new) ren)))
     (add-vars-to-var-renaming (cdr old) (cdr new) ren))
   :hooks (:fix)
   ///
@@ -430,7 +430,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-block new) new)
-          ((ok &) (block-renamevar old.get new.get ren)))
+          ((okf &) (block-renamevar old.get new.get ren)))
        (renaming-fix ren))
      :variable-single
      (b* (((unless (statement-case new :variable-single))
@@ -438,7 +438,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-variable-single new) new)
-          ((ok &) (expression-option-renamevar old.init new.init ren)))
+          ((okf &) (expression-option-renamevar old.init new.init ren)))
        (add-var-to-var-renaming old.name new.name ren))
      :variable-multi
      (b* (((unless (statement-case new :variable-multi))
@@ -446,7 +446,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-variable-multi new) new)
-          ((ok &) (funcall-option-renamevar old.init new.init ren)))
+          ((okf &) (funcall-option-renamevar old.init new.init ren)))
        (add-vars-to-var-renaming old.names new.names ren))
      :assign-single
      (b* (((unless (statement-case new :assign-single))
@@ -454,8 +454,8 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-assign-single new) new)
-          ((ok &) (path-renamevar old.target new.target ren))
-          ((ok &) (expression-renamevar old.value new.value ren)))
+          ((okf &) (path-renamevar old.target new.target ren))
+          ((okf &) (expression-renamevar old.value new.value ren)))
        (renaming-fix ren))
      :assign-multi
      (b* (((unless (statement-case new :assign-multi))
@@ -463,8 +463,8 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-assign-multi new) new)
-          ((ok &) (path-list-renamevar old.targets new.targets ren))
-          ((ok &) (funcall-renamevar old.value new.value ren)))
+          ((okf &) (path-list-renamevar old.targets new.targets ren))
+          ((okf &) (funcall-renamevar old.value new.value ren)))
        (renaming-fix ren))
      :funcall
      (b* (((unless (statement-case new :funcall))
@@ -472,7 +472,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-funcall new) new)
-          ((ok &) (funcall-renamevar old.get new.get ren)))
+          ((okf &) (funcall-renamevar old.get new.get ren)))
        (renaming-fix ren))
      :if
      (b* (((unless (statement-case new :if))
@@ -480,8 +480,8 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-if new) new)
-          ((ok &) (expression-renamevar old.test new.test ren))
-          ((ok &) (block-renamevar old.body new.body ren)))
+          ((okf &) (expression-renamevar old.test new.test ren))
+          ((okf &) (block-renamevar old.body new.body ren)))
        (renaming-fix ren))
      :for
      (b* (((unless (statement-case new :for))
@@ -491,10 +491,10 @@
           ((statement-for new) new)
           (old-stmts (block->statements old.init))
           (new-stmts (block->statements new.init))
-          ((ok ren1) (statement-list-renamevar old-stmts new-stmts ren))
-          ((ok &) (expression-renamevar old.test new.test ren1))
-          ((ok &) (block-renamevar old.update new.update ren1))
-          ((ok &) (block-renamevar old.body new.body ren1)))
+          ((okf ren1) (statement-list-renamevar old-stmts new-stmts ren))
+          ((okf &) (expression-renamevar old.test new.test ren1))
+          ((okf &) (block-renamevar old.update new.update ren1))
+          ((okf &) (block-renamevar old.body new.body ren1)))
        (renaming-fix ren))
      :switch
      (b* (((unless (statement-case new :switch))
@@ -502,9 +502,9 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-switch new) new)
-          ((ok &) (expression-renamevar old.target new.target ren))
-          ((ok &) (swcase-list-renamevar old.cases new.cases ren))
-          ((ok &) (block-option-renamevar old.default new.default ren)))
+          ((okf &) (expression-renamevar old.target new.target ren))
+          ((okf &) (swcase-list-renamevar old.cases new.cases ren))
+          ((okf &) (block-option-renamevar old.default new.default ren)))
        (renaming-fix ren))
      :leave
      (b* (((unless (statement-case new :leave))
@@ -530,7 +530,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-fundef new) new)
-          ((ok &) (fundef-renamevar old.get new.get)))
+          ((okf &) (fundef-renamevar old.get new.get)))
        (renaming-fix ren)))
     :measure (statement-count old))
 
@@ -552,7 +552,7 @@
             (reserrf (list :mismatch-extra-new (statement-list-fix new)))))
          ((when (endp new))
           (reserrf (list :mismatch-extra-old (statement-list-fix old))))
-         ((ok ren) (statement-renamevar (car old) (car new) ren)))
+         ((okf ren) (statement-renamevar (car old) (car new) ren)))
       (statement-list-renamevar (cdr old) (cdr new) ren))
     :measure (statement-list-count old))
 
@@ -570,7 +570,7 @@
        because the scope of a block ends at the end of the block."))
     (b* ((old-stmts (block->statements old))
          (new-stmts (block->statements new))
-         ((ok &) (statement-list-renamevar old-stmts new-stmts ren)))
+         ((okf &) (statement-list-renamevar old-stmts new-stmts ren)))
       nil)
     :measure (block-count old))
 
@@ -634,7 +634,7 @@
             (reserrf (list :mismatch-extra-new (swcase-list-fix new)))))
          ((when (endp new))
           (reserrf (list :mismatch-extra-old (swcase-list-fix old))))
-         ((ok &) (swcase-renamevar (car old) (car new) ren)))
+         ((okf &) (swcase-renamevar (car old) (car new) ren)))
       (swcase-list-renamevar (cdr old) (cdr new) ren))
     :measure (swcase-list-count old))
 
@@ -652,10 +652,10 @@
           (reserrf (list :mismatch-function-name
                          (fundef->name old)
                          (fundef->name new))))
-         ((ok ren) (add-vars-to-var-renaming (fundef->inputs old)
+         ((okf ren) (add-vars-to-var-renaming (fundef->inputs old)
                                              (fundef->inputs new)
                                              (renaming nil)))
-         ((ok ren) (add-vars-to-var-renaming (fundef->outputs old)
+         ((okf ren) (add-vars-to-var-renaming (fundef->outputs old)
                                              (fundef->outputs new)
                                              ren)))
       (block-renamevar (fundef->body old) (fundef->body new) ren))
@@ -830,7 +830,7 @@
           (reserrf (list :mismatch-extra-new (fundef-list-fix new)))))
        ((when (endp new))
         (reserrf (list :mismatch-extra-old (fundef-list-fix old))))
-       ((ok &) (fundef-renamevar (car old) (car new))))
+       ((okf &) (fundef-renamevar (car old) (car new))))
     (fundef-list-renamevar (cdr old) (cdr new)))
   :hooks (:fix)
   ///
