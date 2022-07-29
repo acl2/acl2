@@ -742,7 +742,16 @@ Nested testing not allowed! Skipping testing of new goal...~%"
        (gcs% (cget gcs))
 
        (ctx (compute-event-ctx ctx-form))
-       (print-summary-p (and (cget print-cgen-summary) 
+
+       ;; PETE: replaced (cget print-cgen-summary) with t below and
+       ;; the logic for printing out is taken care of in
+       ;; print-testing-summary-fn. We now print out counterexamples/
+       ;; witnesses if the user requested >0 counterexamples/ witnesses
+       ;; to be generated and printed, even if they requested that the
+       ;; summary not be printed.  To turn off all output, they have
+       ;; to set the number of counterexamples/ witnesses to be
+       ;; generated and printed to 0.
+       (print-summary-p (and t ;(cget print-cgen-summary) 
                              ;(> (access gcs% cts) 0) ;commented out to collect vacuous stats
 ; dont print at the end of defun/defuns events (any help to CCG by cgen is invisible) TODO
                              (allowed-cgen-event-ctx-p ctx)))
