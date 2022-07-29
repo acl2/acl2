@@ -127,6 +127,22 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
+
+   (xdoc::p
+    "The @(tsee apt::simplify) transformation no longer breaks when certain @(see
+     default-hints) or @(see override-hints) are present.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "Xdoc Library"))
+
+   (xdoc::p
+    "There is now XDOC support for Greek letters and more mathematical
+     symbols.  See @(see xdoc::entities).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
