@@ -135,14 +135,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "Xdoc Library"))
-
-   (xdoc::p
-    "There is now XDOC support for Greek letters and more mathematical
-     symbols.  See @(see xdoc::entities).")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
@@ -168,6 +160,14 @@
     "The library of "
     (xdoc::seetopic "fty::defresult" "result types")
     " has been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
+
+   (xdoc::p
+    "There is now XDOC support for Greek letters and more mathematical
+     symbols.  See @(see xdoc::entities).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
