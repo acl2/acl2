@@ -145,7 +145,7 @@
     "This is like @(tsee check-safe-top-block) for generic Yul,
      except that the initial function table is
      the one with the EVM functions."))
-  (b* (((ok modes) (check-safe-block block nil (evm-funtable))))
+  (b* (((okf modes) (check-safe-block block nil (evm-funtable))))
     (if (equal modes (set::insert (mode-regular) nil))
         nil
       (reserrf (list :top-block-mode modes))))
