@@ -480,7 +480,7 @@
 
   (defruled exit-scope-of-enter-scope
     (implies (and (compustatep compst)
-                  (not (equal (compustate-frames-number compst) 0)))
+                  (> (compustate-frames-number compst) 0))
              (equal (exit-scope (enter-scope compst))
                     compst))
     :enable (enter-scope
@@ -547,7 +547,7 @@
 
   (defruled create-var-to-add-var
     (implies (and (create-var-okp var compst)
-                  (not (equal (compustate-frames-number compst) 0)))
+                  (> (compustate-frames-number compst) 0))
              (equal (create-var var val compst)
                     (add-var var val compst)))
     :enable (create-var add-var create-var-okp))
@@ -677,7 +677,7 @@
                 read-auto-var-aux))))
 
   (defruled write-var-to-update-var
-    (implies (and (not (equal (compustate-frames-number compst) 0))
+    (implies (and (> (compustate-frames-number compst) 0)
                   (write-var-okp var val compst))
              (equal (write-var var val compst)
                     (update-var var val compst)))
@@ -729,7 +729,7 @@
      The fourth and fifth theorems serve to move past object updates."))
 
   (defruled read-var-of-enter-scope
-    (implies (not (equal (compustate-frames-number compst) 0))
+    (implies (> (compustate-frames-number compst) 0)
              (equal (read-var var (enter-scope compst))
                     (read-var var compst)))
     :enable (read-var
@@ -738,7 +738,7 @@
              enter-scope))
 
   (defruled read-var-of-add-var
-    (implies (not (equal (compustate-frames-number compst) 0))
+    (implies (> (compustate-frames-number compst) 0)
              (equal (read-var var (add-var var2 val compst))
                     (if (equal (ident-fix var)
                                (ident-fix var2))
@@ -753,7 +753,7 @@
              top-frame))
 
   (defruled read-var-of-update-var
-    (implies (not (equal (compustate-frames-number compst) 0))
+    (implies (> (compustate-frames-number compst) 0)
              (equal (read-var var (update-var var2 val2 compst))
                     (if (equal (ident-fix var)
                                (ident-fix var2))
@@ -774,7 +774,7 @@
                 update-var-aux))))
 
   (defruled read-var-of-update-object
-    (implies (not (equal (compustate-frames-number compst) 0))
+    (implies (> (compustate-frames-number compst) 0)
              (equal (read-var var (update-object objdes obj compst))
                     (read-var var compst)))
     :enable (read-var
@@ -870,7 +870,7 @@
                                 (quotep (cadr var))))
                   (<< (ident-fix var2)
                       (ident-fix var))
-                  (not (equal (compustate-frames-number compst) 0)))
+                  (> (compustate-frames-number compst) 0))
              (equal (update-var var val (update-var var2 val2 compst))
                     (update-var var2 val2 (update-var var val compst))))
     :rule-classes ((:rewrite :loop-stopper nil))
@@ -1327,19 +1327,19 @@
     "The last theorems serve to skip over @(tsee update-object) calls."))
 
   (defruled compustate-frames-number-of-add-frame-not-zero
-    (not (equal (compustate-frames-number (add-frame fun compst)) 0))
+    (> (compustate-frames-number (add-frame fun compst)) 0)
     :enable add-frame)
 
   (defruled compustate-frames-number-of-enter-scope-not-zero
-    (not (equal (compustate-frames-number (enter-scope compst)) 0))
+    (> (compustate-frames-number (enter-scope compst)) 0)
     :enable enter-scope)
 
   (defruled compustate-frames-number-of-add-var-not-zero
-    (not (equal (compustate-frames-number (add-var var val compst)) 0))
+    (> (compustate-frames-number (add-var var val compst)) 0)
     :enable add-var)
 
   (defruled compustate-frames-number-of-update-var-not-zero
-    (not (equal (compustate-frames-number (update-var var val compst)) 0))
+    (> (compustate-frames-number (update-var var val compst)) 0)
     :enable update-var)
 
   (defruled compustate-frames-number-of-update-object
