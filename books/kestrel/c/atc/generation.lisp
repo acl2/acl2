@@ -5864,7 +5864,7 @@
        ((mv formals-bindings pointer-hyps & instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
-                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (> (compustate-frames-number ,compst-var) 0)
                    ,@pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
@@ -5990,7 +5990,7 @@
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
-                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
@@ -6159,7 +6159,7 @@
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
-                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)

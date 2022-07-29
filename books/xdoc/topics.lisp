@@ -1601,11 +1601,13 @@ manual.</p>")
 
 (local (set-default-parents xdoc-tests))
 
-(defxdoc test-of-entities
-  :short "Placeholder topic for testing out HTML entity support in XDOC."
-  :long "<p>Here are the entities that XDOC allows:</p>
+(defxdoc entities
+  :parents (xdoc xdoc-tests)
+  :short "HTML entity support in XDOC."
+  :long "<h3>Entities that XDOC allows:</h3>
 
 <p>Normal XML entities:</p>
+
 <ul>
 <li>@('&amp;')   becomes &amp;</li>
 <li>@('&lt;')    becomes &lt;</li>
@@ -1614,7 +1616,8 @@ manual.</p>")
 <li>@('&apos;')  becomes &apos;</li>
 </ul>
 
-<p>Additional entities allowed by XDOC:</p>
+<p>Additional basic entities allowed by XDOC:</p>
+
 <ul>
 <li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
 <li>@('&mdash;') becomes &mdash;</li>
@@ -1624,6 +1627,78 @@ manual.</p>")
 <li>@('&ldquo;') becomes &ldquo;</li>
 <li>@('&rdquo;') becomes &rdquo;</li>
 </ul>
+
+<p>Capitalized Greek letters:</p>
+
+<ul>
+<li>@('&Alpha;') becomes &Alpha;</li>
+<li>@('&Beta;') becomes &Beta;</li>
+<li>@('&Gamma;') becomes &Gamma;</li>
+<li>@('&Delta;') becomes &Delta;</li>
+<li>@('&Epsilon;') becomes &Epsilon;</li>
+<li>@('&Zeta;') becomes &Zeta;</li>
+<li>@('&Eta;') becomes &Eta;</li>
+<li>@('&Theta;') becomes &Theta;</li>
+<li>@('&Iota;') becomes &Iota;</li>
+<li>@('&Kappa;') becomes &Kappa;</li>
+<li>@('&Lambda;') becomes &Lambda;</li>
+<li>@('&Mu;') becomes &Mu;</li>
+<li>@('&Nu;') becomes &Nu;</li>
+<li>@('&Xi;') becomes &Xi;</li>
+<li>@('&Omicron;') becomes &Omicron;</li>
+<li>@('&Pi;') becomes &Pi;</li>
+<li>@('&Rho;') becomes &Rho;</li>
+<li>@('&Sigma;') becomes &Sigma;</li>
+<li>@('&Tau;') becomes &Tau;</li>
+<li>@('&Upsilon;') becomes &Upsilon;</li>
+<li>@('&Phi;') becomes &Phi;</li>
+<li>@('&Chi;') becomes &Chi;</li>
+<li>@('&Psi;') becomes &Psi;</li>
+<li>@('&Omega;') becomes &Omega;</li>
+</ul>
+
+<p>Lower case Greek letters:</p>
+
+<ul>
+<li>@('&alpha;') becomes &alpha;</li>
+<li>@('&beta;') becomes &beta;</li>
+<li>@('&gamma;') becomes &gamma;</li>
+<li>@('&delta;') becomes &delta;</li>
+<li>@('&epsilon;') becomes &epsilon;</li>
+<li>@('&zeta;') becomes &zeta;</li>
+<li>@('&eta;') becomes &eta;</li>
+<li>@('&theta;') becomes &theta;</li>
+<li>@('&iota;') becomes &iota;</li>
+<li>@('&kappa;') becomes &kappa;</li>
+<li>@('&lambda;') becomes &lambda;</li>
+<li>@('&mu;') becomes &mu;</li>
+<li>@('&nu;') becomes &nu;</li>
+<li>@('&xi;') becomes &xi;</li>
+<li>@('&omicron;') becomes &omicron;</li>
+<li>@('&pi;') becomes &pi;</li>
+<li>@('&rho;') becomes &rho;</li>
+<li>@('&sigma;') becomes &sigma;</li>
+<li>@('&tau;') becomes &tau;</li>
+<li>@('&upsilon;') becomes &upsilon;</li>
+<li>@('&phi;') becomes &phi;</li>
+<li>@('&chi;') becomes &chi;</li>
+<li>@('&psi;') becomes &psi;</li>
+<li>@('&omega;') becomes &omega;</li>
+</ul>
+
+<p>Mathematical symbols:</p>
+
+<ul>
+<li>@('&forall;') becomes &forall;</li>
+<li>@('&exist;') becomes &exist;</li>
+<li>@('&empty;') becomes &empty;</li>
+<li>@('&isin;') becomes &isin;</li>
+<li>@('&notin;') becomes &notin;</li>
+<li>@('&prod;') becomes &prod;</li>
+<li>@('&sum;') becomes &sum;</li>
+</ul>
+
+<h3>A few tests</h3>
 
 <p>Test of `single' and ``double'' smart quoting for legacy topics.</p>
 
