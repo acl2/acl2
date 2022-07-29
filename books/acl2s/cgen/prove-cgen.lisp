@@ -531,7 +531,7 @@ history s-hist.")
        (num-subgoals (len s-hist))
        (start (cget start-time))
        (end (cget end-time))
-       
+       (print-cgen-summary (cget print-cgen-summary))
        )
    (case-match gcs%
      (('gcs% (total dups . vacs) 
@@ -551,11 +551,11 @@ history s-hist.")
 "~% ~x0 evaluates to ~x1. Nothing to test!~%" pform res))))
 
            
-           (-  (cw? (normal-output-flag vl) 
+           (-  (cw? (and print-cgen-summary (normal-output-flag vl))
                     "~%**Summary of Cgen/testing**~%"))
            (- (cw? (verbose-flag vl)
                    "~x0~%" pform))
-           (- (cw? (normal-output-flag vl)
+           (- (cw? (and print-cgen-summary (normal-output-flag vl))
                "~|We tested ~x0 examples across ~x1 subgoals, of which ~x2 (~x3 unique) satisfied the hypotheses, and found ~x4 counterexamples and ~x5 witnesses.~%"
                total num-subgoals sat-runs uniq-runs num-cts num-wts))
 
