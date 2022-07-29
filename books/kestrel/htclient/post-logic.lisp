@@ -36,7 +36,7 @@
    (xdoc::h2
     "Examples")
    (xdoc::@{}
-    "(htclient::post \"https://proof.kestrel.edu/sdhfsl93r23jfsljklsgbsl/machine_interface\"
+    "(htclient::post \"https://httpbin.org/post\"
     '((\"n\" . \"3\") (\"checkpoints\" . \"((ACL-NUMBERP A))\")) state)"))
 
   :ignore-ok t
