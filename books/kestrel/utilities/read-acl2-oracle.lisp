@@ -26,3 +26,15 @@
   (equal (open-input-channels (mv-nth 2 (read-acl2-oracle state)))
          (open-input-channels state))
   :hints (("Goal" :in-theory (enable open-input-channels read-acl2-oracle update-acl2-oracle))))
+
+;move
+(local
+ (defthm w-of-update-acl2-oracle
+   (equal (w (update-acl2-oracle x st))
+          (w st))
+   :hints (("Goal" :in-theory (enable w update-acl2-oracle)))))
+
+(defthm w-of-mv-nth-2-of-read-acl2-oracle
+  (equal (w (mv-nth 2 (read-acl2-oracle state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable w read-acl2-oracle update-acl2-oracle))))
