@@ -101,7 +101,7 @@
             (reserrf (list :mismatch-extra-new (expression-list-fix new)))))
          ((when (endp new))
           (reserrf (list :mismatch-extra-old (expression-list-fix old))))
-         ((ok &) (expression-renamefun (car old) (car new) ren)))
+         ((okf &) (expression-renamefun (car old) (car new) ren)))
       (expression-list-renamefun (cdr old) (cdr new) ren))
     :measure (expression-list-count old))
 
@@ -118,7 +118,7 @@
        and the arguments must be related."))
     (b* (((funcall old) old)
          ((funcall new) new)
-         ((ok &) (fun-renamefun old.name new.name ren)))
+         ((okf &) (fun-renamefun old.name new.name ren)))
       (expression-list-renamefun old.args new.args ren))
     :measure (funcall-count old))
 
@@ -221,7 +221,7 @@
           (reserrf (list :mismatch-extra-new (identifier-list-fix new)))))
        ((when (endp new))
         (reserrf (list :mismatch-extra-old (identifier-list-fix old))))
-       ((ok ren) (add-fun-to-fun-renaming (car old) (car new) ren)))
+       ((okf ren) (add-fun-to-fun-renaming (car old) (car new) ren)))
     (add-funs-to-fun-renaming (cdr old) (cdr new) ren))
   :hooks (:fix)
   ///
@@ -270,7 +270,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-block new) new)
-          ((ok &) (block-renamefun old.get new.get ren)))
+          ((okf &) (block-renamefun old.get new.get ren)))
        nil)
      :variable-single
      (b* (((unless (statement-case new :variable-single))
@@ -282,7 +282,7 @@
            (reserrf (list :mismatch
                           (statement-fix old)
                           (statement-fix new))))
-          ((ok &) (expression-option-renamefun old.init new.init ren)))
+          ((okf &) (expression-option-renamefun old.init new.init ren)))
        nil)
      :variable-multi
      (b* (((unless (statement-case new :variable-multi))
@@ -294,7 +294,7 @@
            (reserrf (list :mismatch
                           (statement-fix old)
                           (statement-fix new))))
-          ((ok &) (funcall-option-renamefun old.init new.init ren)))
+          ((okf &) (funcall-option-renamefun old.init new.init ren)))
        nil)
      :assign-single
      (b* (((unless (statement-case new :assign-single))
@@ -306,7 +306,7 @@
            (reserrf (list :mismatch
                           (statement-fix old)
                           (statement-fix new))))
-          ((ok &) (expression-renamefun old.value new.value ren)))
+          ((okf &) (expression-renamefun old.value new.value ren)))
        nil)
      :assign-multi
      (b* (((unless (statement-case new :assign-multi))
@@ -318,7 +318,7 @@
            (reserrf (list :mismatch
                           (statement-fix old)
                           (statement-fix new))))
-          ((ok &) (funcall-renamefun old.value new.value ren)))
+          ((okf &) (funcall-renamefun old.value new.value ren)))
        nil)
      :funcall
      (b* (((unless (statement-case new :funcall))
@@ -326,7 +326,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-funcall new) new)
-          ((ok &) (funcall-renamefun old.get new.get ren)))
+          ((okf &) (funcall-renamefun old.get new.get ren)))
        nil)
      :if
      (b* (((unless (statement-case new :if))
@@ -334,8 +334,8 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-if new) new)
-          ((ok &) (expression-renamefun old.test new.test ren))
-          ((ok &) (block-renamefun old.body new.body ren)))
+          ((okf &) (expression-renamefun old.test new.test ren))
+          ((okf &) (block-renamefun old.body new.body ren)))
        nil)
      :for
      (b* (((unless (statement-case new :for))
@@ -347,11 +347,11 @@
           (new-stmts (block->statements new.init))
           (old-funs (fundef-list->name-list (statements-to-fundefs old-stmts)))
           (new-funs (fundef-list->name-list (statements-to-fundefs new-stmts)))
-          ((ok ren) (add-funs-to-fun-renaming old-funs new-funs ren))
-          ((ok &) (statement-list-renamefun old-stmts new-stmts ren))
-          ((ok &) (expression-renamefun old.test new.test ren))
-          ((ok &) (block-renamefun old.update new.update ren))
-          ((ok &) (block-renamefun old.body new.body ren)))
+          ((okf ren) (add-funs-to-fun-renaming old-funs new-funs ren))
+          ((okf &) (statement-list-renamefun old-stmts new-stmts ren))
+          ((okf &) (expression-renamefun old.test new.test ren))
+          ((okf &) (block-renamefun old.update new.update ren))
+          ((okf &) (block-renamefun old.body new.body ren)))
        nil)
      :switch
      (b* (((unless (statement-case new :switch))
@@ -359,9 +359,9 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-switch new) new)
-          ((ok &) (expression-renamefun old.target new.target ren))
-          ((ok &) (swcase-list-renamefun old.cases new.cases ren))
-          ((ok &) (block-option-renamefun old.default new.default ren)))
+          ((okf &) (expression-renamefun old.target new.target ren))
+          ((okf &) (swcase-list-renamefun old.cases new.cases ren))
+          ((okf &) (block-option-renamefun old.default new.default ren)))
        nil)
      :leave
      (b* (((unless (statement-case new :leave))
@@ -387,7 +387,7 @@
                           (statement-fix old)
                           (statement-fix new))))
           ((statement-fundef new) new)
-          ((ok &) (fundef-renamefun old.get new.get ren)))
+          ((okf &) (fundef-renamefun old.get new.get ren)))
        nil))
     :measure (statement-count old))
 
@@ -408,7 +408,7 @@
             (reserrf (list :mismatch-extra-new (statement-list-fix new)))))
          ((when (endp new))
           (reserrf (list :mismatch-extra-old (statement-list-fix old))))
-         ((ok &) (statement-renamefun (car old) (car new) ren)))
+         ((okf &) (statement-renamefun (car old) (car new) ren)))
       (statement-list-renamefun (cdr old) (cdr new) ren))
     :measure (statement-list-count old))
 
@@ -428,8 +428,8 @@
          (new-stmts (block->statements new))
          (old-fns (fundef-list->name-list (statements-to-fundefs old-stmts)))
          (new-fns (fundef-list->name-list (statements-to-fundefs new-stmts)))
-         ((ok ren) (add-funs-to-fun-renaming old-fns new-fns ren))
-         ((ok &) (statement-list-renamefun old-stmts new-stmts ren)))
+         ((okf ren) (add-funs-to-fun-renaming old-fns new-fns ren))
+         ((okf &) (statement-list-renamefun old-stmts new-stmts ren)))
       nil)
     :measure (block-count old))
 
@@ -493,7 +493,7 @@
             (reserrf (list :mismatch-extra-new (swcase-list-fix new)))))
          ((when (endp new))
           (reserrf (list :mismatch-extra-old (swcase-list-fix old))))
-         ((ok &) (swcase-renamefun (car old) (car new) ren)))
+         ((okf &) (swcase-renamefun (car old) (car new) ren)))
       (swcase-list-renamefun (cdr old) (cdr new) ren))
     :measure (swcase-list-count old))
 
@@ -511,7 +511,7 @@
        see the treatment of blocks.
        The inputs and outputs must be the same.
        The bodies must be related by function renaming."))
-    (b* (((ok &) (fun-renamefun (fundef->name old)
+    (b* (((okf &) (fun-renamefun (fundef->name old)
                                 (fundef->name new)
                                 ren))
          ((unless (equal (fundef->inputs old)
@@ -560,7 +560,7 @@
           (reserrf (list :mismatch-extra-new (fundef-list-fix new)))))
        ((when (endp new))
         (reserrf (list :mismatch-extra-old (fundef-list-fix old))))
-       ((ok &) (fundef-renamefun (car old) (car new) ren)))
+       ((okf &) (fundef-renamefun (car old) (car new) ren)))
     (fundef-list-renamefun (cdr old) (cdr new) ren))
   :hooks (:fix)
   ///

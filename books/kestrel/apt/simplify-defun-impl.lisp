@@ -3065,34 +3065,28 @@
   (pairlis-x1 'local (pairlis$ forms nil)))
 
 (defun simplify-defun-heuristics (alist)
-
-; It is a bit of overkill to make defattach-system local, since it already
-; expands to a local event.  But we use make it local anyhow, so that tools
-; will avoid printing these events to the screen.
-
-  `(local
-    (with-output
+  `(with-output
 
 ; Presumably nobody wants to see the output from the events below.  They should
 ; never cause an error, so we ensure that error output is on so that such an
 ; unexpected error will be apparent.
 
-      :off :all
-      :on error
-      (progn
-        (defattach-system
+     :off :all
+     :on error
+     (progn
+       (defattach-system
          acl2::simplifiable-mv-nth-p
          ,(or (cdr (assoc-eq 'acl2::simplifiable-mv-nth-p alist))
               'acl2::constant-nil-function-arity-0))
-        (defattach-system
+       (defattach-system
          too-many-ifs-pre-rewrite
          ,(or (cdr (assoc-eq 'too-many-ifs-pre-rewrite alist))
               'too-many-ifs-pre-rewrite-noop))
-        (defattach-system
+       (defattach-system
          too-many-ifs-post-rewrite
          ,(or (cdr (assoc-eq 'too-many-ifs-post-rewrite alist))
               'too-many-ifs-post-rewrite-noop))
-        (defattach-system
+       (defattach-system
          assume-true-false-aggressive-p
          ,(or (cdr (assoc-eq 'assume-true-false-aggressive-p alist))
               'constant-t-function-arity-0))
@@ -3104,10 +3098,14 @@
 ; examples where rewrite rules that applied during the original simplification
 ; no longer applied during the validation.
 
-        (defattach-system
+       (defattach-system
          rewrite-if-avoid-swap
          ,(or (cdr (assoc-eq 'rewrite-if-avoid-swap alist))
-              'constant-t-function-arity-0))))))
+              'constant-t-function-arity-0))
+       (table acl2::default-hints-table t
+              (quote ,(cdr (assoc-eq 'default-hints alist))))
+       (table acl2::default-hints-table :override
+              (quote ,(cdr (assoc-eq 'override-hints alist)))))))
 
 (defun remove-final-hints-lst (lst)
 
@@ -3385,6 +3383,8 @@
 ; See with-simplify-setup.
 
   `(b* ((wrld (w state))
+        (acl2::simplifiable-mv-nth-p-old
+         (cdr (attachment-pair 'acl2::simplifiable-mv-nth-p wrld)))
         (too-many-ifs-pre-rewrite-old
          (cdr (attachment-pair 'too-many-ifs-pre-rewrite wrld)))
         (too-many-ifs-post-rewrite-old
@@ -3393,6 +3393,8 @@
          (cdr (attachment-pair 'assume-true-false-aggressive-p wrld)))
         (rewrite-if-avoid-swap-old
          (cdr (attachment-pair 'rewrite-if-avoid-swap wrld)))
+        (default-hints-old (default-hints wrld))
+        (override-hints-old (override-hints wrld))
         ((er -)
          (trans-eval-error-triple (apt::simplify-defun-heuristics nil)
                                   ctx state))
@@ -3405,11 +3407,14 @@
         ((er -)
          (trans-eval-error-triple
           (apt::simplify-defun-heuristics
-           `((too-many-ifs-pre-rewrite . ,too-many-ifs-pre-rewrite-old)
+           `((acl2::simplifiable-mv-nth-p . ,acl2::simplifiable-mv-nth-p-old)
+             (too-many-ifs-pre-rewrite . ,too-many-ifs-pre-rewrite-old)
              (too-many-ifs-post-rewrite . ,too-many-ifs-post-rewrite-old)
              (assume-true-false-aggressive-p
               . ,assume-true-false-aggressive-p-old)
-             (rewrite-if-avoid-swap . ,rewrite-if-avoid-swap-old)))
+             (rewrite-if-avoid-swap . ,rewrite-if-avoid-swap-old)
+             (default-hints . ,default-hints-old)
+             (override-hints . ,override-hints-old)))
           ctx state)))
      (value form)))
 
