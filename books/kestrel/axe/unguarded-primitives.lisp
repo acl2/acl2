@@ -245,7 +245,7 @@
   (if (and (stringp pkg)
            (not (equal "" pkg)))
       (pkg-witness pkg)
-    'acl2::acl2-pkg-witness))
+    'acl2-pkg-witness))
 
 (defthmd equal-when-symbols
   (implies (and (symbolp x)
