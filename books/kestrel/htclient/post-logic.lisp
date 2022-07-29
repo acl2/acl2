@@ -10,11 +10,17 @@
 
 (in-package "HTCLIENT")
 
-(include-book "read-acl2-oracle")
-
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This will be replaced by an include-book later.
+(defthm state-p1-of-read-acl2-oracle
+  (implies (state-p1 state)
+           (state-p1 (mv-nth 2 (read-acl2-oracle state))))
+  :hints (("Goal" :in-theory (enable read-acl2-oracle))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
