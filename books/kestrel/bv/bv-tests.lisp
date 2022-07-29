@@ -304,31 +304,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests with no arguments (except a size arg):
-(thm (equal (bvand2 8) 255))
-(thm (equal (bvor2 8) 0))
-(thm (equal (bvxor2 8) 0))
+(thm (equal (bvandn 8) 255))
+(thm (equal (bvorn 8) 0))
+(thm (equal (bvxorn 8) 0))
 
 ;; Tests with 1 arg:
-(thm (equal (bvand2 32 x) (bvchop 32 x)))
-(thm (equal (bvor2 32 x) (bvchop 32 x)))
-(thm (equal (bvxor2 32 x) (bvchop 32 x)))
+(thm (equal (bvandn 32 x) (bvchop 32 x)))
+(thm (equal (bvorn 32 x) (bvchop 32 x)))
+(thm (equal (bvxorn 32 x) (bvchop 32 x)))
 
 ;; Tests with 2 args:
-(thm (equal (bvand2 32 x y) (bvand 32 x y)))
-(thm (equal (bvor2 32 x y) (bvor 32 x y)))
-(thm (equal (bvxor2 32 x y) (bvxor 32 x y)))
+(thm (equal (bvandn 32 x y) (bvand 32 x y)))
+(thm (equal (bvorn 32 x y) (bvor 32 x y)))
+(thm (equal (bvxorn 32 x y) (bvxor 32 x y)))
 
 ;; Tests with 3 args:
-(thm (equal (bvand2 32 x y z) (bvand 32 x (bvand 32 y z))))
-(thm (equal (bvor2 32 x y z) (bvor 32 x (bvor 32 y z))))
-(thm (equal (bvxor2 32 x y z) (bvxor 32 x (bvxor 32 y z))))
+(thm (equal (bvandn 32 x y z) (bvand 32 x (bvand 32 y z))))
+(thm (equal (bvorn 32 x y z) (bvor 32 x (bvor 32 y z))))
+(thm (equal (bvxorn 32 x y z) (bvxor 32 x (bvxor 32 y z))))
 
 ;; Tests with 0 size and no other args:
-(thm (equal (bvand2 0) 0))
-(thm (equal (bvor2 0) 0))
-(thm (equal (bvxor2 0) 0))
+(thm (equal (bvandn 0) 0))
+(thm (equal (bvorn 0) 0))
+(thm (equal (bvxorn 0) 0))
 
 ;; Tests with 0 size and 1 real arg:
-(thm (equal (bvand2 0 x) 0))
-(thm (equal (bvor2 0 x) 0))
-(thm (equal (bvxor2 0 x) 0))
+(thm (equal (bvandn 0 x) 0))
+(thm (equal (bvorn 0 x) 0))
+(thm (equal (bvxorn 0 x) 0))

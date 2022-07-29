@@ -234,22 +234,20 @@
                               nil))))
     (cons fn (cons param args))))
 
-;; TODO: Better names for these?:
-
-;; A variant of BVAND that allows any number of things to be ANDed together
-(defmacro bvand2 (size &rest args)
+;; A variant of BVAND that ANDs together n values, for n>=0.
+(defmacro bvandn (size &rest args)
   (cond ((null args) `(+ -1 (expt 2 ,size)))  ; AND of no things is all ones
         ((null (cdr args)) `(bvchop ,size ,(car args)))
         (t (xxxjoin2 'bvand size args))))
 
-;; A variant of BVOR that allows any number of things to be ORed together
-(defmacro bvor2 (size &rest args)
+;; A variant of BVOR that ORs together n values, for n>=0.
+(defmacro bvorn (size &rest args)
   (cond ((null args) 0) ; OR of no things is 0
         ((null (cdr args)) `(bvchop ,size ,(car args)))
         (t (xxxjoin2 'bvor size args))))
 
-;; A variant of BVXOR that allows any number of things to be XORed together
-(defmacro bvxor2 (size &rest args)
+;; A variant of BVXOR that XORs together n values, for n>=0.
+(defmacro bvxorn (size &rest args)
   (cond ((null args) 0) ; XOR of no things is 0
         ((null (cdr args)) `(bvchop ,size ,(car args)))
         (t (xxxjoin2 'bvxor size args))))
