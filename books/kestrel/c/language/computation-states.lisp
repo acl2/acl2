@@ -649,14 +649,14 @@
   ///
 
   (defret compustate-frames-number-of-write-auto-var
-    (implies (and (not (equal (compustate-frames-number compst) 0))
+    (implies (and (> (compustate-frames-number compst) 0)
                   (compustatep new-compst))
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
     :hints (("Goal" :in-theory (enable not-errorp-when-compustatep))))
 
   (defret compustate-scopes-numbers-of-write-auto-var
-    (implies (and (not (equal (compustate-frames-number compst) 0))
+    (implies (and (> (compustate-frames-number compst) 0)
                   (compustatep new-compst))
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
