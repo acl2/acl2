@@ -129,6 +129,7 @@
                          \"width\" : 123.456E1,
                          \"weight\" : 123.456E-7,
                          \"weight2\" : 1.23456E-5,
+                         \"val\" : 0.00023456,
                          \"happy\" : true,
                          \"sad\" : false,
                          \"pets\" : null,
@@ -146,6 +147,7 @@
                               ("width" . 30864/25)
                               ("weight" . 1929/156250000)
                               ("weight2" . 1929/156250000)
+                              ("val" . 733/3125000) ; same as 23456/100000000
                               ("happy" . :TRUE)
                               ("sad" . :FALSE)
                               ("pets" . :NULL)
