@@ -390,9 +390,9 @@
                   (new.body (statement-for->body new))
                   (old-stmts (block->statements old.init))
                   (new-stmts (block->statements new.init))
-                  ((ok funtab) (add-funtypes (statements-to-fundefs old-stmts)
+                  ((okf funtab) (add-funtypes (statements-to-fundefs old-stmts)
                                              funtab))
-                  ((ok ren1) (statement-list-renamevar old-stmts new-stmts ren)))
+                  ((okf ren1) (statement-list-renamevar old-stmts new-stmts ren)))
                (list (statement-list-induct old-stmts
                                             new-stmts
                                             ren
@@ -424,7 +424,7 @@
                                     (funtab funtablep))
        (b* (((when (endp old)) nil)
             ((when (endp new)) nil)
-            ((ok ren1) (statement-renamevar (car old) (car new) ren)))
+            ((okf ren1) (statement-renamevar (car old) (car new) ren)))
          (list (statement-induct (car old) (car new) ren funtab)
                (statement-list-induct (cdr old)
                                       (cdr new)
@@ -438,7 +438,7 @@
                            (funtab funtablep))
        (b* ((old-stmts (block->statements old))
             (new-stmts (block->statements new))
-            ((ok funtab) (add-funtypes (statements-to-fundefs old-stmts)
+            ((okf funtab) (add-funtypes (statements-to-fundefs old-stmts)
                                        funtab)))
          (list (statement-list-induct old-stmts new-stmts ren funtab)))
        :measure (block-count old))
@@ -477,10 +477,10 @@
                             (funtab funtablep))
        (b* (((fundef old) old)
             ((fundef new) new)
-            ((ok ren) (add-vars-to-var-renaming old.inputs
+            ((okf ren) (add-vars-to-var-renaming old.inputs
                                                 new.inputs
                                                 (renaming nil)))
-            ((ok ren) (add-vars-to-var-renaming old.outputs new.outputs ren)))
+            ((okf ren) (add-vars-to-var-renaming old.outputs new.outputs ren)))
          (block-induct old.body new.body ren funtab))
        :measure (fundef-count old))
 
