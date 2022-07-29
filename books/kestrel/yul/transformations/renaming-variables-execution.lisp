@@ -1894,22 +1894,22 @@
                               (limit natp))
        (declare (ignore ren))
        (b* (((when (zp limit)) nil)
-            ((ok (funinfo+funenv old-info+env)) (find-fun fun old-funenv))
-            ((ok (funinfo+funenv new-info+env)) (find-fun fun new-funenv))
+            ((okf (funinfo+funenv old-info+env)) (find-fun fun old-funenv))
+            ((okf (funinfo+funenv new-info+env)) (find-fun fun new-funenv))
             ((funinfo old-funinfo) old-info+env.info)
             ((funinfo new-funinfo) new-info+env.info)
-            ((ok old-cstate) (init-local old-funinfo.inputs
+            ((okf old-cstate) (init-local old-funinfo.inputs
                                          args
                                          old-funinfo.outputs
                                          old-cstate))
-            ((ok new-cstate) (init-local new-funinfo.inputs
+            ((okf new-cstate) (init-local new-funinfo.inputs
                                          args
                                          new-funinfo.outputs
                                          new-cstate))
-            ((ok ren1) (add-vars-to-var-renaming old-funinfo.inputs
+            ((okf ren1) (add-vars-to-var-renaming old-funinfo.inputs
                                                  new-funinfo.inputs
                                                  (renaming nil)))
-            ((ok ren1) (add-vars-to-var-renaming old-funinfo.outputs
+            ((okf ren1) (add-vars-to-var-renaming old-funinfo.outputs
                                                  new-funinfo.outputs
                                                  ren1)))
          (block-induct old-funinfo.body
@@ -2060,11 +2060,11 @@
                     (new-stmt.body (statement-for->body new-stmt))
                     (old-stmts (block->statements old-stmt.init))
                     (new-stmts (block->statements new-stmt.init))
-                    ((ok old-funenv1) (add-funs (statements-to-fundefs old-stmts)
+                    ((okf old-funenv1) (add-funs (statements-to-fundefs old-stmts)
                                                 old-funenv))
-                    ((ok new-funenv1) (add-funs (statements-to-fundefs new-stmts)
+                    ((okf new-funenv1) (add-funs (statements-to-fundefs new-stmts)
                                                 new-funenv))
-                    ((ok ren1) (statement-list-renamevar old-stmts new-stmts ren))
+                    ((okf ren1) (statement-list-renamevar old-stmts new-stmts ren))
                     (old-outcome (exec-statement-list old-stmts
                                                       old-cstate
                                                       old-funenv1
@@ -2177,7 +2177,7 @@
        (b* (((when (zp limit)) nil)
             ((when (endp old-stmts)) nil)
             ((when (endp new-stmts)) nil)
-            ((ok ren1) (statement-renamevar (car old-stmts) (car new-stmts) ren))
+            ((okf ren1) (statement-renamevar (car old-stmts) (car new-stmts) ren))
             (old-outcome (exec-statement (car old-stmts)
                                          old-cstate
                                          old-funenv
@@ -2237,9 +2237,9 @@
        (b* (((when (zp limit)) nil)
             (old-stmts (block->statements old-block))
             (new-stmts (block->statements new-block))
-            ((ok old-funenv) (add-funs (statements-to-fundefs old-stmts)
+            ((okf old-funenv) (add-funs (statements-to-fundefs old-stmts)
                                        old-funenv))
-            ((ok new-funenv) (add-funs (statements-to-fundefs new-stmts)
+            ((okf new-funenv) (add-funs (statements-to-fundefs new-stmts)
                                        new-funenv)))
          (statement-list-induct old-stmts
                                 new-stmts
