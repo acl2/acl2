@@ -140,7 +140,7 @@
     "We go through the list and form a function scope for the functions.
      It is an error if there are two functions with the same name."))
   (b* (((when (endp fundefs)) nil)
-       ((ok scope) (funscope-for-fundefs (cdr fundefs)))
+       ((okf scope) (funscope-for-fundefs (cdr fundefs)))
        (fundef (car fundefs))
        (fun (fundef->name fundef))
        (fun+info (omap::in fun scope))
@@ -313,8 +313,8 @@
      the functions already in the environment.
      This ACL2 function is used for all the function definitions in a block;
      see @(tsee exec-block)."))
-  (b* (((ok funscope) (funscope-for-fundefs fundefs))
-       ((ok &) (ensure-funscope-disjoint funscope funenv)))
+  (b* (((okf funscope) (funscope-for-fundefs fundefs))
+       ((okf &) (ensure-funscope-disjoint funscope funenv)))
     (cons funscope (funenv-fix funenv)))
   :hooks (:fix)
   :prepwork
@@ -431,8 +431,8 @@
                value-listp-when-value-list-resultp-and-not-reserrp))))
   :short "Lift @(tsee read-var-value) to lists."
   (b* (((when (endp vars)) nil)
-       ((ok val) (read-var-value (car vars) cstate))
-       ((ok vals) (read-vars-values (cdr vars) cstate)))
+       ((okf val) (read-var-value (car vars) cstate))
+       ((okf vals) (read-vars-values (cdr vars) cstate)))
     (cons val vals))
   :hooks (:fix)
   ///
@@ -497,7 +497,7 @@
           (reserrf (list :extra-values (value-list-fix vals)))))
        ((when (endp vals))
         (reserrf (list :extra-variables (identifier-list-fix vars))))
-       ((ok cstate) (write-var-value (car vars) (car vals) cstate)))
+       ((okf cstate) (write-var-value (car vars) (car vals) cstate)))
     (write-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix)
   ///
@@ -552,7 +552,7 @@
           (reserrf (list :extra-values (value-list-fix vals)))))
        ((when (endp vals))
         (reserrf (list :extra-variables (identifier-list-fix vars))))
-       ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
+       ((okf cstate) (add-var-value (car vars) (car vals) cstate)))
     (add-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix)
   ///
@@ -607,8 +607,8 @@
      The output variables are initialized to 0."))
   (declare (ignore cstate))
   (b* ((cstate (change-cstate cstate :local nil))
-       ((ok cstate) (add-vars-values in-vars in-vals cstate))
-       ((ok cstate) (add-vars-values out-vars
+       ((okf cstate) (add-vars-values in-vars in-vals cstate))
+       ((okf cstate) (add-vars-values out-vars
                                      (repeat (len out-vars) (value 0))
                                      cstate)))
     cstate)
@@ -734,8 +734,8 @@
    (xdoc::p
     "This lifts @(tsee path-to-var) to lists."))
   (b* (((when (endp paths)) nil)
-       ((ok var) (path-to-var (car paths)))
-       ((ok vars) (paths-to-vars (cdr paths))))
+       ((okf var) (path-to-var (car paths)))
+       ((okf vars) (paths-to-vars (cdr paths))))
     (cons var vars))
   :hooks (:fix)
   ///
@@ -767,8 +767,8 @@
     "We look up the variable in the computation state.
      This always returns a single value,
      and does not change the computation state."))
-  (b* (((ok var) (path-to-var path))
-       ((ok val) (read-var-value var cstate)))
+  (b* (((okf var) (path-to-var path))
+       ((okf val) (read-var-value var cstate)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix)
   ///
@@ -788,7 +788,7 @@
     "Executing a literal
      returns a single value
      and does not change the computation state."))
-  (b* (((ok val) (eval-literal lit)))
+  (b* (((okf val) (eval-literal lit)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix)
   ///
@@ -840,12 +840,12 @@
     (b* (((when (zp limit)) (reserrf (list :limit (expression-list-fix exprs))))
          ((when (endp exprs)) (make-eoutcome :cstate (cstate-fix cstate)
                                              :values nil))
-         ((ok (eoutcome outcome))
+         ((okf (eoutcome outcome))
           (exec-expression (car exprs) cstate funenv (1- limit)))
          ((unless (equal (len outcome.values) 1))
           (reserrf (list :not-single-value outcome.values)))
          (val (car outcome.values))
-         ((ok (eoutcome outcome))
+         ((okf (eoutcome outcome))
           (exec-expression-list (cdr exprs) outcome.cstate funenv (1- limit))))
       (make-eoutcome :cstate outcome.cstate :values (cons val outcome.values)))
     :measure (nfix limit))
@@ -866,7 +866,7 @@
        in [Yul: Specification of Yul: Formal Specification]."))
     (b* (((when (zp limit)) (reserrf (list :limit (funcall-fix call))))
          ((funcall call) call)
-         ((ok (eoutcome outcome))
+         ((okf (eoutcome outcome))
           (exec-expression-list (rev call.args) cstate funenv (1- limit))))
       (exec-function call.name outcome.values outcome.cstate funenv (1- limit)))
     :measure (nfix limit))
@@ -903,17 +903,17 @@
     (b* (((when (zp limit)) (reserrf (list :limit
                                            (identifier-fix fun)
                                            (value-list-fix args))))
-         ((ok (funinfo+funenv info+env)) (find-fun fun funenv))
+         ((okf (funinfo+funenv info+env)) (find-fun fun funenv))
          ((funinfo info) info+env.info)
          (lstate-before (cstate->local cstate))
-         ((ok cstate) (init-local info.inputs args info.outputs cstate))
-         ((ok (soutcome outcome))
+         ((okf cstate) (init-local info.inputs args info.outputs cstate))
+         ((okf (soutcome outcome))
           (exec-block info.body cstate info+env.env (1- limit)))
          ((when (mode-case outcome.mode :break))
           (reserrf (list :break-from-function (identifier-fix fun))))
          ((when (mode-case outcome.mode :continue))
           (reserrf (list :continue-from-function (identifier-fix fun))))
-         ((ok vals) (read-vars-values info.outputs outcome.cstate))
+         ((okf vals) (read-vars-values info.outputs outcome.cstate))
          (cstate (change-cstate outcome.cstate
                                 :local lstate-before)))
       (make-eoutcome :cstate cstate :values vals))
@@ -1011,59 +1011,59 @@
        (expression-option-case
         stmt.init
         :some
-        (b* (((ok (eoutcome outcome))
+        (b* (((okf (eoutcome outcome))
               (exec-expression stmt.init.val cstate funenv (1- limit)))
              ((unless (equal (len outcome.values) 1))
               (reserrf (list :not-single-value outcome.values)))
-             ((ok cstate)
+             ((okf cstate)
               (add-var-value stmt.name (car outcome.values) outcome.cstate)))
           (make-soutcome :cstate cstate :mode (mode-regular)))
         :none
-        (b* (((ok cstate) (add-var-value stmt.name (value 0) cstate)))
+        (b* (((okf cstate) (add-var-value stmt.name (value 0) cstate)))
           (make-soutcome :cstate cstate :mode (mode-regular))))
        :variable-multi
        (if (>= (len stmt.names) 2)
            (funcall-option-case
             stmt.init
             :some
-            (b* (((ok (eoutcome outcome))
+            (b* (((okf (eoutcome outcome))
                   (exec-funcall stmt.init.val cstate funenv (1- limit)))
-                 ((ok cstate)
+                 ((okf cstate)
                   (add-vars-values stmt.names outcome.values outcome.cstate)))
               (make-soutcome :cstate cstate :mode (mode-regular)))
             :none
-            (b* (((ok cstate) (add-vars-values stmt.names
+            (b* (((okf cstate) (add-vars-values stmt.names
                                                (repeat (len stmt.names)
                                                        (value 0))
                                                cstate)))
               (make-soutcome :cstate cstate :mode (mode-regular))))
          (reserrf (list :non-multiple-variables stmt.names)))
        :assign-single
-       (b* (((ok var) (path-to-var stmt.target))
-            ((ok (eoutcome outcome))
+       (b* (((okf var) (path-to-var stmt.target))
+            ((okf (eoutcome outcome))
              (exec-expression stmt.value cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
              (reserrf (list :not-single-value outcome.values)))
-            ((ok cstate)
+            ((okf cstate)
              (write-var-value var (car outcome.values) outcome.cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
        :assign-multi
        (b* (((unless (>= (len stmt.targets) 2))
              (reserrf (list :non-multiple-variables stmt.targets)))
-            ((ok vars) (paths-to-vars stmt.targets))
-            ((ok (eoutcome outcome))
+            ((okf vars) (paths-to-vars stmt.targets))
+            ((okf (eoutcome outcome))
              (exec-funcall stmt.value cstate funenv (1- limit)))
-            ((ok cstate)
+            ((okf cstate)
              (write-vars-values vars outcome.values outcome.cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
        :funcall
-       (b* (((ok (eoutcome outcome))
+       (b* (((okf (eoutcome outcome))
              (exec-funcall stmt.get cstate funenv (1- limit)))
             ((when (consp outcome.values))
              (reserrf (list :funcall-statement-returns outcome.values))))
          (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
        :if
-       (b* (((ok (eoutcome outcome))
+       (b* (((okf (eoutcome outcome))
              (exec-expression stmt.test cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
              (reserrf (list :if-test-not-single-value outcome.values)))
@@ -1074,8 +1074,8 @@
        :for
        (b* ((vars-before (omap::keys (cstate->local cstate)))
             (stmts (block->statements stmt.init))
-            ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
-            ((ok (soutcome outcome))
+            ((okf funenv) (add-funs (statements-to-fundefs stmts) funenv))
+            ((okf (soutcome outcome))
              (exec-statement-list stmts cstate funenv (1- limit)))
             ((when (mode-case outcome.mode :break))
              (reserrf (list :break-from-for-init (statement-fix stmt))))
@@ -1084,7 +1084,7 @@
             ((when (mode-case outcome.mode :leave))
              (b* ((cstate (restrict-vars vars-before outcome.cstate)))
                (make-soutcome :cstate cstate :mode (mode-leave))))
-            ((ok (soutcome outcome))
+            ((okf (soutcome outcome))
              (exec-for-iterations stmt.test
                                   stmt.update
                                   stmt.body
@@ -1098,7 +1098,7 @@
             (cstate (restrict-vars vars-before outcome.cstate)))
          (make-soutcome :cstate cstate :mode outcome.mode))
        :switch
-       (b* (((ok (eoutcome outcome))
+       (b* (((okf (eoutcome outcome))
              (exec-expression stmt.target cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
              (reserrf (list :not-single-value outcome.values))))
@@ -1135,7 +1135,7 @@
     (b* (((when (zp limit)) (reserrf (list :limit (statement-list-fix stmts))))
          ((when (endp stmts)) (make-soutcome :cstate (cstate-fix cstate)
                                              :mode (mode-regular)))
-         ((ok (soutcome outcome))
+         ((okf (soutcome outcome))
           (exec-statement (car stmts) cstate funenv (1- limit)))
          ((unless (mode-case outcome.mode :regular)) outcome))
       (exec-statement-list (cdr stmts) outcome.cstate funenv (1- limit)))
@@ -1160,8 +1160,8 @@
     (b* (((when (zp limit)) (reserrf (list :limit (block-fix block))))
          (vars-before (omap::keys (cstate->local cstate)))
          (stmts (block->statements block))
-         ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
-         ((ok (soutcome outcome))
+         ((okf funenv) (add-funs (statements-to-fundefs stmts) funenv))
+         ((okf (soutcome outcome))
           (exec-statement-list stmts cstate funenv (1- limit)))
          (cstate (restrict-vars vars-before outcome.cstate)))
       (make-soutcome :cstate cstate :mode outcome.mode))
@@ -1204,19 +1204,19 @@
                                            (expression-fix test)
                                            (block-fix update)
                                            (block-fix body))))
-         ((ok (eoutcome outcome))
+         ((okf (eoutcome outcome))
           (exec-expression test cstate funenv (1- limit)))
          ((unless (equal (len outcome.values) 1))
           (reserrf (list :for-test-not-single-value outcome.values)))
          ((when (equal (car outcome.values) (value 0)))
           (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
-         ((ok (soutcome outcome))
+         ((okf (soutcome outcome))
           (exec-block body outcome.cstate funenv (1- limit)))
          ((when (mode-case outcome.mode :break))
           (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
          ((when (mode-case outcome.mode :leave))
           (make-soutcome :cstate outcome.cstate :mode outcome.mode))
-         ((ok (soutcome outcome))
+         ((okf (soutcome outcome))
           (exec-block update outcome.cstate funenv (1- limit)))
          ((when (mode-case outcome.mode :break))
           (reserrf (list :break-from-for-update (block-fix update))))
@@ -1254,7 +1254,7 @@
            :none (make-soutcome :cstate (cstate-fix cstate)
                                 :mode (mode-regular))))
          ((swcase case) (car cases))
-         ((ok caseval) (eval-literal case.value))
+         ((okf caseval) (eval-literal case.value))
          ((when (value-equiv target caseval))
           (exec-block case.body cstate funenv (1- limit))))
       (exec-switch-rest (cdr cases) default target cstate funenv (1- limit)))
@@ -1344,7 +1344,7 @@
      In case of success, we return the final computation state."))
   (b* ((cstate (make-cstate :local nil))
        (funenv nil)
-       ((ok (soutcome outcome)) (exec-block block cstate funenv limit))
+       ((okf (soutcome outcome)) (exec-block block cstate funenv limit))
        ((unless (equal outcome.mode (mode-regular)))
         (reserrf (list :top-block-move outcome.mode))))
     outcome.cstate)
