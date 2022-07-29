@@ -1,7 +1,7 @@
 ; Tests of bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,7 @@
 (include-book "sbvrem")
 (include-book "putbits")
 (include-book "sbvmoddown")
+(include-book "defs")
 
 ;todo: move
 (defmacro without-guard-checking-events (&rest forms)
@@ -299,3 +300,35 @@
 (assert-equal (putbits 8 6 4 #b010 #b11111111) #b10101111)
 
 (assert-equal (putbit 8 4 1 0) #b10000)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tests with no arguments (except a size arg):
+(thm (equal (bvand2 8) 255))
+(thm (equal (bvor2 8) 0))
+(thm (equal (bvxor2 8) 0))
+
+;; Tests with 1 arg:
+(thm (equal (bvand2 32 x) (bvchop 32 x)))
+(thm (equal (bvor2 32 x) (bvchop 32 x)))
+(thm (equal (bvxor2 32 x) (bvchop 32 x)))
+
+;; Tests with 2 args:
+(thm (equal (bvand2 32 x y) (bvand 32 x y)))
+(thm (equal (bvor2 32 x y) (bvor 32 x y)))
+(thm (equal (bvxor2 32 x y) (bvxor 32 x y)))
+
+;; Tests with 3 args:
+(thm (equal (bvand2 32 x y z) (bvand 32 x (bvand 32 y z))))
+(thm (equal (bvor2 32 x y z) (bvor 32 x (bvor 32 y z))))
+(thm (equal (bvxor2 32 x y z) (bvxor 32 x (bvxor 32 y z))))
+
+;; Tests with 0 size and no other args:
+(thm (equal (bvand2 0) 0))
+(thm (equal (bvor2 0) 0))
+(thm (equal (bvxor2 0) 0))
+
+;; Tests with 0 size and 1 real arg:
+(thm (equal (bvand2 0 x) 0))
+(thm (equal (bvor2 0 x) 0))
+(thm (equal (bvxor2 0 x) 0))

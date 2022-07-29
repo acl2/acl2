@@ -1,7 +1,7 @@
 ; Cherry-pick the definitions of the BV functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -234,10 +234,24 @@
                               nil))))
     (cons fn (cons param args))))
 
-;fixme similar macros for the other operators?
+;; TODO: Better names for these?:
+
+;; A variant of BVAND that allows any number of things to be ANDed together
+(defmacro bvand2 (size &rest args)
+  (cond ((null args) `(+ -1 (expt 2 ,size)))  ; AND of no things is all ones
+        ((null (cdr args)) `(bvchop ,size ,(car args)))
+        (t (xxxjoin2 'bvand size args))))
+
+;; A variant of BVOR that allows any number of things to be ORed together
+(defmacro bvor2 (size &rest args)
+  (cond ((null args) 0) ; OR of no things is 0
+        ((null (cdr args)) `(bvchop ,size ,(car args)))
+        (t (xxxjoin2 'bvor size args))))
+
+;; A variant of BVXOR that allows any number of things to be XORed together
 (defmacro bvxor2 (size &rest args)
-  (cond ((null args) 0)
-        ((null (cdr args)) `(bvchop size ,(car args)))
+  (cond ((null args) 0) ; XOR of no things is 0
+        ((null (cdr args)) `(bvchop ,size ,(car args)))
         (t (xxxjoin2 'bvxor size args))))
 
 ;leaving these two enabled for now:
