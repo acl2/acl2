@@ -23,6 +23,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "These are currently used for both and shallow embedding,
+     but the plan is to keep these just for the shallow embedding,
+     while @(see integer-operations) is meant to contain
+     versions of the integer operations for the deep embedding.")
+   (xdoc::p
     "We define ACL2 functions that model C operations on
      the integer types supported in our model,
      namely the standard unsigned and signed integers, except @('_Bool').")

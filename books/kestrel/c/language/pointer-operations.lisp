@@ -17,7 +17,7 @@
 
 (defxdoc+ pointer-operations
   :parents (language)
-  :short "Some operations on C pointers."
+  :short "Operations on C pointers."
   :order-subtopics t
   :default-parent t)
 

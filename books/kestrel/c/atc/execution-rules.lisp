@@ -812,7 +812,11 @@
              (equal (exec-const const)
                     (sint value)))
     :enable (exec-const
-             exec-iconst))
+             exec-iconst
+             value-sint->get
+             sint
+             value-kind
+             valuep))
 
   (defruled exec-const-to-slong
     (implies (and (syntaxp (quotep const))
@@ -831,7 +835,11 @@
              (equal (exec-const const)
                     (slong value)))
     :enable (exec-const
-             exec-iconst))
+             exec-iconst
+             value-slong->get
+             slong
+             value-kind
+             valuep))
 
   (defruled exec-const-to-sllong
     (implies (and (syntaxp (quotep const))
@@ -858,7 +866,11 @@
              slong-integerp-alt-def
              sint-integerp-alt-def
              ulong-integerp-alt-def
-             uint-integerp-alt-def))
+             uint-integerp-alt-def
+             value-sllong->get
+             sllong
+             value-kind
+             valuep))
 
   (defruled exec-const-to-uint
     (implies (and (syntaxp (quotep const))
@@ -873,7 +885,11 @@
              (equal (exec-const const)
                     (uint value)))
     :enable (exec-const
-             exec-iconst))
+             exec-iconst
+             value-uint->get
+             uint
+             value-kind
+             valuep))
 
   (defruled exec-const-to-ulong
     (implies (and (syntaxp (quotep const))
@@ -897,7 +913,11 @@
     :enable (exec-const
              exec-iconst
              sint-integerp-alt-def
-             slong-integerp-alt-def))
+             slong-integerp-alt-def
+             value-ulong->get
+             ulong
+             value-kind
+             valuep))
 
   (defruled exec-const-to-ullong
     (implies (and (syntaxp (quotep const))
@@ -922,7 +942,11 @@
              slong-integerp-alt-def
              sllong-integerp-alt-def
              uint-integerp-alt-def
-             ulong-integerp-alt-def))
+             ulong-integerp-alt-def
+             value-ullong->get
+             ullong
+             value-kind
+             valuep))
 
   (defval *atc-exec-const-rules*
     '(exec-const-to-sint
