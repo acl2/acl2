@@ -280,6 +280,14 @@
                   (+ x y))))
 
 ;; Could this be too expensive?
+;; Disabled since it can get rid of NATP even though that may be our normal form.
+(defthmd natp-of-+-when-integerp-and-integerp
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (natp (+ x y))
+                  (<= 0 (+ x y)))))
+
+;; Could this be too expensive?
 (defthm natp-of-+-when-natp-and-natp
   (implies (and (natp x)
                 (natp y))

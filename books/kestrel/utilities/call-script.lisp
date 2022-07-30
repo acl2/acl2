@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "state"))
+(local (include-book "read-acl2-oracle"))
 
 (defttag call-script)
 
@@ -19,11 +20,6 @@
 (in-theory (disable getenv$))
 
 (in-theory (disable mv-nth))
-
-(defthm state-p1-of-mv-nth-2-of-read-acl2-oracle
-  (implies (state-p1 state)
-           (state-p1 (mv-nth 2 (read-acl2-oracle state))))
-  :hints (("Goal" :in-theory (enable read-acl2-oracle state-p1 open-output-channels))))
 
 ;move
 (defthm state-p1-of-mv-nth-2-of-getenv$
