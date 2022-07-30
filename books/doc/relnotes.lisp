@@ -142,16 +142,20 @@
    (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
 
    (xdoc::p
-    "The formalization of C has been extended and improved.
-     See the documentation of the formalization for details.")
+    "Support has been added for
+     external object definitions (i.e. global variables) of array types.")
+
+   (xdoc::p
+    "Some parts of the formalization have been simplified
+     and moved out of ATC and into the C formalization proper.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
-    "ATC has been extended to cover a larger subset of C.
-     See the user documentation of ATC for more details.")
+    "Support has been added for
+     external object definitions (i.e. global variables) of array types.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
