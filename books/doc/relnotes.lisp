@@ -157,9 +157,9 @@
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
 
    (xdoc::p
-    "The library of "
+    "In the library of "
     (xdoc::seetopic "fty::defresult" "result types")
-    " has been improved.")
+    ", some names have been improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
