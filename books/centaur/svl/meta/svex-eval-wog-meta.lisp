@@ -169,6 +169,22 @@
           (x-dont-rw  (rp::dont-rw-car (rp::dont-rw-cdr (rp::dont-rw-cdr dont-rw)))))
        (mv `(sv::4vec-zero-ext ,width (sv::4vec-part-select '0 ,width ,x))
            `(nil ,width-dont-rw (nil t ,width-dont-rw ,x-dont-rw)))))
+    (('sv::4vec-concat width x y)
+     (b* ((width-dont-rw (rp::dont-rw-car (rp::dont-rw-cdr dont-rw)))
+          (x-dont-rw  (rp::dont-rw-car (rp::dont-rw-cdr (rp::dont-rw-cdr dont-rw))))
+          (y-dont-rw  (rp::dont-rw-car (rp::dont-rw-cdr
+                                        (rp::dont-rw-cdr
+                                         (rp::dont-rw-cdr dont-rw))))))
+       (mv `(svl::4vec-concat$ ,width (sv::4vec-part-select '0 ,width ,x) ,y)
+           `(nil ,width-dont-rw (nil t ,width-dont-rw ,x-dont-rw) ,y-dont-rw))))
+    (('svl::4vec-concat$ width x y)
+     (b* ((width-dont-rw (rp::dont-rw-car (rp::dont-rw-cdr dont-rw)))
+          (x-dont-rw  (rp::dont-rw-car (rp::dont-rw-cdr (rp::dont-rw-cdr dont-rw))))
+          (y-dont-rw  (rp::dont-rw-car (rp::dont-rw-cdr
+                                        (rp::dont-rw-cdr
+                                         (rp::dont-rw-cdr dont-rw))))))
+       (mv `(svl::4vec-concat$ ,width (sv::4vec-part-select '0 ,width ,x) ,y)
+           `(nil ,width-dont-rw (nil t ,width-dont-rw ,x-dont-rw) ,y-dont-rw))))
     (('sv::4VEC-PART-INSTALL lsb width x y)
      (b* (((unless (and (quotep width)
                         (consp (cdr width))
@@ -633,6 +649,7 @@ was ~st seconds."))
         svex-eval-wog-formula-checks
         (;;svex-eval-wog-meta-main
          sv::4vec-fix$inline
+         svl::4vec-concat$
          make-fast-alist
          svex-env-fastlookup-wog
          ;;svexl-node-eval-wog-meta-main
@@ -761,6 +778,7 @@ was ~st seconds."))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rp-evl-of-svex-eval-meta
 
+
 (local
  (defret rp-evlt-of-svex-apply-insert-part-select
    (implies (and (rp-evl-meta-extract-global-facts)
@@ -771,6 +789,7 @@ was ~st seconds."))
    :hints (("Goal"
             :in-theory (e/d (sv::4vec-sign-ext-of-4vec-part-select
                              svex-apply-insert-part-select
+                             4VEC-CONCAT$
                              4vec-concat-insert-4vec-part-select)
                             ())))))
    

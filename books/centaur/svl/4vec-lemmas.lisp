@@ -5370,7 +5370,8 @@
 
 (add-svex-simplify-rule integerp-4vec-reduction-or-to-4vec-bitor)
 
-(def-rp-rule 4vec-reduction-or-to-4vec-bitor
+(def-rp-rule :disabled t
+  4vec-reduction-or-to-4vec-bitor
   (implies (and (integerp x))
            (equal (sv::4vec-reduction-or x)
                   (- (sv::4vec-bitor (sv::4vec-part-select 0 1 x)
@@ -7837,10 +7838,10 @@
                      (integerp x)
                      (integerp z))
                 (integerp (sv::4vec-? x y z)))
-       (implies (and (integerp x)
+       #|(implies (and (integerp x)
                      (integerp y)
                      (integerp z))
-                (integerp (sv::4vec-?* x y z)))
+                (integerp (sv::4vec-?* x y z)))|#
        (implies (and (integerp y)
                      (integerp x)
                      (integerp z))
@@ -8000,7 +8001,8 @@
                             SV::4VEC->LOWER)
                            ()))))
 
-(def-rp-rule 4vec-reduction-and-to-4vec-bitand
+(def-rp-rule 
+  4vec-reduction-and-to-4vec-bitand
   (implies (and (integerp x)
                 (syntaxp (or (atom x)
                              (not (equal (car x) 'UNARY--)))))
