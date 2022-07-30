@@ -164,6 +164,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The "
+    (xdoc::seetopic "patbind-er" "@('er') binder")
+    " of @(tsee b*) has been extended with
+     an option @(':iferr') to return an alternative value
+     in the error triple in case of error.
+     See the latest documentation for details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
 
    (xdoc::p
