@@ -142,7 +142,8 @@
    (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
 
    (xdoc::p
-    "The formalization of C has been extended and improved.")
+    "The formalization of C has been extended and improved.
+     See the documentation of the formalization for details.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
