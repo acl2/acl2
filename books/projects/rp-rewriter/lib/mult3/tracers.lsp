@@ -254,3 +254,23 @@ Valid:~x8~%~%"
                    pp-res-lst (pp-lst-orderedp pp-res-lst)
                    c-res-lst (list (s-sum-ordered-listp c-res-lst) (ordered-s/c-p-lst c-res-lst))
                    valid))))))
+
+
+(clear-memoize-statistics) (clear-memoize-tables)
+
+(progn
+  (profile 'SVL::CONCAT-META)
+  (profile 'SVL::BITS-OF-META-FN)
+  (profile 'SVL::4VEC-RSH-OF-META)
+  (profile 'rp::rp-rw-rule)
+  (profile 'rp::rp-rw-rule-aux)
+  (profile 'rp::rp-rw-meta-rule-main)
+  (profile 'rp::s-c-spec-meta)
+  (profile 'rp::preprocess-then-rp-rw)
+  (profile 'rp::unpack-booth-meta)
+  (profile 'rp::hons-copy2)
+  (profile 'rp::pp-flatten-fn)
+  (profile 'rp::unpack-booth-general-meta$)
+  (profile 'rp::unpack-booth-general-postprocessor)
+  (profile 'rp::pp-radix8+-fix)
+  (profile 'rp::ex-from-pp-lst))

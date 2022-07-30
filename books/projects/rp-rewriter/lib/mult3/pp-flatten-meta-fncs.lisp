@@ -787,8 +787,12 @@
 
 (defattach pp-lists-limit return-16000)
 
+
+
 (define pp-term-to-pp-lists ((term pp-term-p)
-                             (sign booleanp))
+                             (sign booleanp)
+                             &key
+                             ((term-size-limit integerp) 'term-size-limit))
   :measure (cons-count term)
   :hints (("goal"
            :in-theory (e/d (measure-lemmas) ())))
@@ -810,7 +814,7 @@
 
                 (anded (and$-pp-lists lst1 lst2 nil sign))
                 (len-added (len anded))
-                ((when (> len-added (pp-lists-limit))) (mv `((,sign ,term)) t))
+                ((when (> len-added term-size-limit)) (mv `((,sign ,term)) t))
                 (anded (sort-pp-lists anded len-added)))
              (mv anded nil)))
           ((binary-or-p term)
@@ -824,11 +828,11 @@
 
                 (lst1&lst2 (and$-pp-lists lst1 lst2 nil (not sign)))
                 (len-lst1&lst2 (len lst1&lst2))
-                ((when (> len-lst1&lst2 (pp-lists-limit))) (mv `((,sign ,term)) t))
+                ((when (> len-lst1&lst2 term-size-limit)) (mv `((,sign ,term)) t))
                 (lst1&lst2 (sort-pp-lists lst1&lst2 len-lst1&lst2))
 
                 (merged (merge-sorted-pp-lists lst1+lst2 lst1&lst2))
-                ((when (> (len merged) (pp-lists-limit))) (mv `((,sign ,term)) t)))
+                ((when (> (len merged) term-size-limit)) (mv `((,sign ,term)) t)))
              (mv merged nil)))
           ((binary-xor-p term)
            (b* ((x (cadr term))
@@ -844,7 +848,7 @@
                 (merged (merge-sorted-pp-lists
                          acc
                          (merge-sorted-pp-lists minus-x-and-y minus-x-and-y)))
-                ((when (> (len merged) (pp-lists-limit))) (mv `((,sign ,term)) t)))
+                ((when (> (len merged) term-size-limit)) (mv `((,sign ,term)) t)))
              (mv merged nil)))
           ((binary-?-p term)
            (b* ((test (cadr term))
@@ -857,18 +861,18 @@
                 
                 (x-and-test (and$-pp-lists test-lst x-lst nil sign))
                 (len-x-and-test (len x-and-test))
-                ((when (> len-x-and-test (pp-lists-limit))) (mv `((,sign ,term)) t))
+                ((when (> len-x-and-test term-size-limit)) (mv `((,sign ,term)) t))
                 (x-and-test (sort-pp-lists x-and-test (len x-and-test)))
                 
                 (--y-and-test (and$-pp-lists test-lst y-lst nil (not sign)))
                 (len--y-and-test (len --y-and-test))
                 (--y-and-test (sort-pp-lists --y-and-test len--y-and-test))
-                ((when (> len-x-and-test (pp-lists-limit))) (mv `((,sign ,term)) t))
+                ((when (> len-x-and-test term-size-limit)) (mv `((,sign ,term)) t))
                 (merged 
                  (merge-sorted-pp-lists x-and-test
                                         (merge-sorted-pp-lists --y-and-test
                                                                y-lst)))
-                ((when (> (len merged) (pp-lists-limit))) (mv `((,sign ,term)) t)))
+                ((when (> (len merged) term-size-limit)) (mv `((,sign ,term)) t)))
              (mv merged nil)))
           ((binary-not-p term)
            (b* ((x (cadr term))
@@ -894,7 +898,7 @@
 
   ///
 
-  (verify-guards pp-term-to-pp-lists
+  (verify-guards pp-term-to-pp-lists-fn
     :hints (("goal"
              :in-theory (e/d () ())))))
 
@@ -1049,7 +1053,8 @@
                        `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
                      (create-and-list-instance (list (caddr term) (cadr term)))))))
              (list cur-single)))
-          (t (b* (((mv pp-lists too-large) (pp-term-to-pp-lists term sign))
+          (t (b* ((term-size-limit (pp-lists-limit))
+                  ((mv pp-lists too-large) (pp-term-to-pp-lists term sign))
                   ((when too-large)
                    (progn$ (cwe "Warning: pp-flatten got a term that grows too large: ~p0 ~%"
                                 term)
@@ -1284,6 +1289,7 @@
         (('binary-sum cur rest)
          (b* (((unless (pp-term-p cur))
                (mv nil nil))
+              (term-size-limit (pp-lists-limit))
               ((mv pp-lists1 too-large) (pp-term-to-pp-lists cur nil))
               ((when too-large)
                (progn$
@@ -1297,6 +1303,7 @@
            (mv t (merge-sorted-pp-lists pp-lists1 pp-lists2))))
         (& (b* (((unless (pp-term-p term-orig))
                  (mv nil nil))
+                (term-size-limit (pp-lists-limit))
                 ((mv res too-large) (pp-term-to-pp-lists term-orig nil))
                 ((when too-large)
                  (progn$
