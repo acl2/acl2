@@ -10,29 +10,17 @@
 
 (in-package "ACL2")
 
+(local (include-book "update-acl2-oracle"))
+
 (defthm state-p1-of-mv-nth-2-of-read-acl2-oracle
    (implies (state-p1 state)
             (state-p1 (mv-nth 2 (read-acl2-oracle state))))
    :hints (("Goal" :in-theory (enable read-acl2-oracle state-p1 open-output-channels))))
 
-;move
-(local
- (defthm open-input-channels-of-update-acl2-oracle
-   (equal (open-input-channels (update-acl2-oracle x st))
-          (open-input-channels st))
-   :hints (("Goal" :in-theory (enable open-input-channels update-acl2-oracle)))))
-
 (defthm open-input-channels-of-mv-nth-2-of-read-acl2-oracle
   (equal (open-input-channels (mv-nth 2 (read-acl2-oracle state)))
          (open-input-channels state))
   :hints (("Goal" :in-theory (enable open-input-channels read-acl2-oracle update-acl2-oracle))))
-
-;move
-(local
- (defthm w-of-update-acl2-oracle
-   (equal (w (update-acl2-oracle x st))
-          (w st))
-   :hints (("Goal" :in-theory (enable w update-acl2-oracle)))))
 
 (defthm w-of-mv-nth-2-of-read-acl2-oracle
   (equal (w (mv-nth 2 (read-acl2-oracle state)))
