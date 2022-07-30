@@ -102,4 +102,11 @@
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
                                            type-signed-integerp)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret type-of-value-of-value-integer
+    (implies (not (errorp val))
+             (equal (type-of-value val)
+                    (type-fix type)))
+    :hints (("Goal" :in-theory (enable type-of-value)))))
