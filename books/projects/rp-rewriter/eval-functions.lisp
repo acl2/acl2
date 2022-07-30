@@ -440,3 +440,83 @@
 (make-flag valid-sc-nt :defthm-macro-name defthm-valid-sc-nt
            :hints (("Goal"
                     :in-theory (e/d (measure-lemmas) ()))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; valid rule functions
+
+
+(defun valid-rulep-sk-body (rule a)
+  (implies (eval-and-all-nt (rp-hyp rule) a)
+           (and (if (rp-iff-flag rule)
+                    (iff (rp-evl (rp-lhs rule) a)
+                         (rp-evl (rp-rhs rule) a))
+                  (equal (rp-evl (rp-lhs rule) a)
+                         (rp-evl (rp-rhs rule) a)))
+                (implies (include-fnc (rp-rhs rule) 'rp)
+                         (valid-sc-nt (rp-rhs rule) a)))))
+
+
+(defun-sk valid-rulep-sk (rule)
+  (forall a
+          (valid-rulep-sk-body rule a)))
+
+
+(defun valid-rulep (rule)
+  (and (rule-syntaxp rule)
+       (valid-rulep-sk rule)))
+
+(defun valid-rulesp (rules)
+  (if (endp rules)
+      (equal rules nil)
+    (and (valid-rulep (car rules))
+         (valid-rulesp (cdr rules)))))
+
+(defun valid-rules-alistp (rules-alistp)
+  (if (endp rules-alistp)
+      (equal rules-alistp nil)
+    (and (consp (car rules-alistp))
+         (symbolp (caar rules-alistp))
+         (valid-rulesp (cdar rules-alistp))
+         (valid-rules-alistp (cdr rules-alistp)))))
+
+(defun valid-rules-list-listp (rules-list)
+  (if (atom rules-list)
+      (equal rules-list nil)
+    (and (valid-rulesp (car rules-list))
+         (valid-rules-list-listp (cdr rules-list)))))
+
+(defun valid-rules-alistp-def2 (rules-alist)
+  (and (alistp rules-alist)
+       (symbol-listp (strip-cars rules-alist))
+       (valid-rules-list-listp (strip-cdrs rules-alist))))
+
+
+
+(defun-sk valid-rp-statep (rp-state)
+  (declare (xargs :stobjs (rp-state)))
+  (forall key
+          (or (not (symbolp key))
+              (and (valid-rulesp
+                    (rules-alist-outside-in-get key rp-state))
+                   (valid-rulesp
+                    (rules-alist-inside-out-get key rp-state))))))
+
+(defthm valid-rulesp-implies-rule-list-syntaxp
+  (implies (valid-rulesp rules)
+           (rule-list-syntaxp rules)))
+
+(defthm valid-rp-statep-and-rp-statep-implies-valid-rp-state-syntaxp
+  (implies (and (rp-statep rp-state)
+                (valid-rp-statep rp-state))
+           (valid-rp-state-syntaxp rp-state))
+  :hints (("goal"
+           :expand ((valid-rp-state-syntaxp rp-state)
+                    (valid-rp-state-syntaxp-aux rp-state))
+           :use ((:instance valid-rp-statep-necc
+                            (key (valid-rp-state-syntaxp-aux-witness rp-state))))
+           :in-theory (e/d ()
+                           (valid-rp-statep
+                            valid-rp-state-syntaxp-aux
+                            rp-statep)))))

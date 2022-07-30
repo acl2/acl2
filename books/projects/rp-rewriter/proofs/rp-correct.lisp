@@ -41,7 +41,6 @@
 (include-book "../rp-rewriter")
 (local (include-book "local-lemmas"))
 (local (include-book "aux-function-lemmas"))
-(include-book "proof-functions")
 (local (include-book "proof-function-lemmas"))
 (local (include-book "rp-equal-lemmas"))
 (local (include-book "apply-bindings-lemmas"))
@@ -255,11 +254,23 @@
 
 
 
-(local
+#|(local
  (defthmd nonnil-p-lemma
    (implies (nonnil-p term)
             (and (rp-evlt term a)
-                 (rp-evl term a)))))
+                 (rp-evl term a)))))|#
+
+(local
+ (defthmd nonnil-p-lemma
+   (iff (nonnil-p term)
+        (and (hide (nonnil-p term))
+             (rp-evlt term a)
+             (rp-evl term a)))
+   :hints (("Goal"
+            :expand (hide (nonnil-p term))
+            :in-theory (e/d () ())))))
+
+
 
 (local
  (defthm rp-evlt-of-CASESPLIT-FROM-CONTEXT-TRIG
@@ -304,28 +315,6 @@
                     (rp-termp term))
                (and (rp-termp (caddr term))
                     (rp-termp (cadr term))))))
-
-   #|(local
-   (defthm lemma2
-   (implies (and (consp term)
-   (consp (cdr term))
-   (consp (cddr term))
-   (not (equal (car term) 'quote))
-   (all-falist-consistent term))
-   (and (all-falist-consistent (caddr term))
-   (all-falist-consistent (cadr term))))))||#
-
-   #|(local
-   (defthm lemma3
-   (implies (and (consp term)
-   (consp (cdr term))
-   (consp (cddr term))
-   (not (equal (car term) 'quote))
-   (rp-syntaxp term))
-   (and (rp-syntaxp (caddr term))
-   (rp-syntaxp (cadr term))))
-   :hints (("Goal"
-   :in-theory (e/d (is-rp) ())))))||#
 
    (local
     (defthm lemma4
@@ -419,6 +408,17 @@
      :hints (("Goal"
               :expand (VALID-SC-SUBTERMS nil a)
               :in-theory (e/d () ()))))
+
+   (defthm rp-trans-of-CASESPLIT-FROM-CONTEXT-TRIG
+     (and (equal (rp-evlt `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+                 (rp-evlt x a))
+          (equal (rp-trans `(CASESPLIT-FROM-CONTEXT-TRIG ,x))
+                 `(CASESPLIT-FROM-CONTEXT-TRIG ,(rp-trans x))))
+     :hints (("Goal"
+              :in-theory (e/d (rp-trans
+                               RP-TRANS-LST
+                               IS-FALIST) ()))))
+          
     
 
    (defthm preprocess-then-rp-rw-is-correct-lemma
@@ -427,7 +427,8 @@
                    (not (include-fnc term 'rp))
                    (alistp a)
                    (rp-evl-meta-extract-global-facts :state state)
-                   (rp-formula-checks state)
+                   (rp-meta-fnc-formula-checks state)
+                   (rp-proc-formula-checks state)
                    (valid-rp-statep rp-state)
                    (rp-statep rp-state)
                    )
@@ -585,7 +586,8 @@
                   (rp-statep rp-state)
                   (alistp a)
                   (rp-evl-meta-extract-global-facts :state state)
-                  (rp-formula-checks state)
+                  (rp-meta-fnc-formula-checks state)
+                   (rp-proc-formula-checks state)
                   )
              (iff (rp-evl (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
                   (rp-evl term a)))
