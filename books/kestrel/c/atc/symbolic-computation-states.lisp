@@ -255,6 +255,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define var-in-scopes-p ((var identp) (scopes scope-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable is in a list of scopes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an auxiliary function, used by others below."))
+  (b* (((when (endp scopes)) nil)
+       (var-val (omap::in (ident-fix var) (scope-fix (car scopes))))
+       ((when (consp var-val)) t))
+    (var-in-scopes-p var (cdr scopes)))
+  :hooks (:fix)
+  ///
+
+  (defruled var-in-scopes-p-when-valuep-of-read-auto-var-aux
+    (implies (valuep (read-auto-var-aux var scopes))
+             (var-in-scopes-p var scopes))
+    :enable read-auto-var-aux)
+
+  (defruled var-in-scopes-p-when-read-auto-var-aux
+    (implies (read-auto-var-aux var scopes)
+             (var-in-scopes-p var scopes))
+    :enable read-auto-var-aux)
+
+  (defruled not-var-in-scopes-p-when-not-read-auto-var-aux
+    (implies (not (read-auto-var-aux var scopes))
+             (not (var-in-scopes-p var scopes)))
+    :enable read-auto-var-aux
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (scopep x)
+                     (consp (omap::in k x)))
+                (cdr (omap::in k x)))
+       :use valuep-of-cdr-of-in-scopep
+       :disable valuep-of-cdr-of-in-scopep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define update-var ((var identp) (val valuep) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (new-compst compustatep)
@@ -267,33 +305,41 @@
   (xdoc::topstring
    (xdoc::p
     "This is like @(tsee write-var), but it does not return an error.
-     First, its guard requires at least one frame,
-     so we always get a frame via @(tsee top-frame).
-     (Actually, given that this function is only used for symbolic execution,
-     it does not need to be guard-verified;
-     the same applies to @(tsee add-frame) and @(tsee add-var),
-     but for now we keep them guard-verified.)
-     Second, as we go through the scopes,
-     when we reach the outermost scope without finding the variable,
-     we add it to that scope anyhow:
+     First, if we do not find the variable in automatic storage,
+     we add it to static storage unconditionally:
      this ensures that the variable is always there,
      which simplifies other rules;
      we check that the variable is actually there
      when we turn @(tsee write-var) into @(tsee update-var),
      in another rule.
-     Third, we do not check the type of the new value
-     against the type of the old value if the variable exists,
+     Second, we do not check the type of the new value
+     against the type of the old value if the variable is found,
      and instead we unconditionally overwrite the old value with the new value:
      this ensures that the new value is always there,
      which simplified other rules;
      we check that the types match
      when we turn @(tsee write-var) into @(tsee update-var),
-     in another rule."))
+     in another rule.")
+   (xdoc::p
+    "The guard requires at least one frame.
+     This is adequate,
+     since we only use this function during symbolic execution,
+     when we are executing some function's code,
+     and so there must be always some frame.
+     (Actually, given that this function is only used for symbolic execution,
+     it does not need to be guard-verified;
+     the same applies to @(tsee add-frame) and @(tsee add-var),
+     but for now we keep them guard-verified.)"))
   (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
-       (new-scopes (update-var-aux var val scopes))
-       (new-frame (change-frame frame :scopes new-scopes)))
-    (push-frame new-frame (pop-frame compst)))
+       (autop (var-in-scopes-p var scopes))
+       ((when autop)
+        (b* ((new-scopes (update-var-aux var val scopes))
+             (new-frame (change-frame frame :scopes new-scopes)))
+          (push-frame new-frame (pop-frame compst))))
+       (static (compustate->static compst))
+       (new-static (omap::update (ident-fix var) (value-fix val) static)))
+    (change-compustate compst :static new-static))
   :hooks (:fix)
 
   :prepwork
@@ -303,8 +349,7 @@
      (b* (((when (endp scopes)) nil)
           (scope (scope-fix (car scopes)))
           (pair (omap::in (ident-fix var) scope))
-          ((when (or (consp pair)
-                     (endp (cdr scopes))))
+          ((when (consp pair))
            (cons (omap::update (ident-fix var) (value-fix val) scope)
                  (scope-list-fix (cdr scopes)))))
        (cons scope (update-var-aux var val (cdr scopes))))
@@ -312,7 +357,14 @@
      ///
      (defret consp-of-update-var-aux
        (equal (consp new-scopes)
-              (consp scopes))))))
+              (consp scopes)))
+     (defruled var-in-scopes-p-of-update-var-aux
+       (implies (var-in-scopes-p var2 scopes)
+                (equal (var-in-scopes-p var (update-var-aux var2 val scopes))
+                       (or (equal (ident-fix var)
+                                  (ident-fix var2))
+                           (var-in-scopes-p var scopes))))
+       :enable var-in-scopes-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,7 +643,14 @@
     :guard (> (compustate-frames-number compst) 0)
     :returns (yes/no booleanp)
     :parents nil
-    (write-var-aux-okp var val (frame->scopes (top-frame compst)))
+    (b* ((scopes (frame->scopes (top-frame compst)))
+         (autop (var-in-scopes-p var scopes))
+         ((when autop) (write-var-aux-okp var val scopes))
+         (static (compustate->static compst))
+         (pair (omap::in (ident-fix var) static)))
+      (and (consp pair)
+           (equal (type-of-value (cdr pair))
+                  (type-of-value val))))
     :hooks (:fix)
     :prepwork
     ((define write-var-aux-okp ((var identp) (val valuep) (scopes scope-listp))
@@ -611,7 +670,11 @@
            (write-var-okp var val compst))
     :enable (write-var-okp
              write-var-aux-okp
-             enter-scope))
+             var-in-scopes-p
+             enter-scope
+             push-frame
+             pop-frame
+             top-frame))
 
   (defruled write-var-okp-of-add-var
     (equal (write-var-okp var val (add-var var2 val2 compst))
@@ -622,7 +685,11 @@
              (write-var-okp var val compst)))
     :enable (write-var-okp
              write-var-aux-okp
-             add-var))
+             var-in-scopes-p
+             add-var
+             push-frame
+             pop-frame
+             top-frame))
 
   (defruled write-var-okp-of-update-var
     (equal (write-var-okp var val (update-var var2 val2 compst))
@@ -632,21 +699,35 @@
                       (type-of-value val))
              (write-var-okp var val compst)))
     :enable (write-var-okp
-             update-var)
+             update-var
+             top-frame
+             push-frame
+             pop-frame
+             var-in-scopes-p-of-update-var-aux)
     :prep-lemmas
-    ((defrule lemma
-       (implies (consp scopes)
+    ((defrule lemma1
+       (implies (and (var-in-scopes-p var scopes)
+                     (var-in-scopes-p var2 scopes))
                 (equal (write-var-aux-okp var
                                           val
-                                          (update-var-aux var2
-                                                          val2
-                                                          scopes))
+                                          (update-var-aux var2 val2 scopes))
                        (if (equal (ident-fix var)
                                   (ident-fix var2))
                            (equal (type-of-value val2)
                                   (type-of-value val))
                          (write-var-aux-okp var val scopes))))
-       :enable (write-var-aux-okp
+       :enable (var-in-scopes-p
+                write-var-aux-okp
+                update-var-aux))
+     (defrule lemma2
+       (implies (or (not (var-in-scopes-p var scopes))
+                    (not (var-in-scopes-p var2 scopes)))
+                (equal (write-var-aux-okp var
+                                          val
+                                          (update-var-aux var2 val2 scopes))
+                       (write-var-aux-okp var val scopes)))
+       :enable (var-in-scopes-p
+                write-var-aux-okp
                 update-var-aux))))
 
   (defruled write-var-okp-of-update-object
@@ -658,6 +739,7 @@
 
   (defruled write-var-okp-when-valuep-of-read-var
     (implies (and (syntaxp (symbolp compst))
+                  (> (compustate-frames-number compst) 0)
                   (equal old-val (read-var var compst))
                   (valuep old-val))
              (equal (write-var-okp var val compst)
@@ -665,7 +747,10 @@
                            (type-of-value old-val))))
     :enable (write-var-okp
              read-var
-             read-auto-var)
+             read-auto-var
+             read-static-var
+             var-in-scopes-p-when-valuep-of-read-auto-var-aux
+             not-var-in-scopes-p-when-not-read-auto-var-aux)
     :prep-lemmas
     ((defrule lemma
        (implies (and (equal old-val (read-auto-var-aux var scopes))
@@ -684,17 +769,26 @@
     :enable (write-var-okp
              write-var
              write-auto-var
+             write-static-var
              update-var
-             errorp)
+             errorp
+             push-frame
+             pop-frame
+             top-frame)
     :prep-lemmas
-    ((defrule lemma
+    ((defrule lemma1
        (implies (write-var-aux-okp var val scopes)
                 (equal (write-auto-var-aux var val scopes)
                        (update-var-aux var val scopes)))
        :enable (write-var-aux-okp
                 write-auto-var-aux
                 update-var-aux
-                errorp))))
+                errorp))
+     (defrule lemma2
+       (implies (and (consp scopes)
+                     (consp (write-auto-var-aux var val scopes)))
+                (var-in-scopes-p var scopes))
+       :enable (var-in-scopes-p write-auto-var-aux))))
 
   (defval *atc-write-var-rules*
     '(write-var-to-update-var
@@ -735,7 +829,12 @@
     :enable (read-var
              read-auto-var
              read-auto-var-aux
-             enter-scope))
+             read-static-var
+             enter-scope
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number))
 
   (defruled read-var-of-add-var
     (implies (> (compustate-frames-number compst) 0)
@@ -747,9 +846,11 @@
     :enable (read-var
              read-auto-var
              read-auto-var-aux
+             read-static-var
              add-var
              compustate-frames-number
              push-frame
+             pop-frame
              top-frame))
 
   (defruled read-var-of-update-var
@@ -761,16 +862,34 @@
                       (read-var var compst))))
     :enable (read-var
              read-auto-var
-             update-var)
+             read-static-var
+             update-var
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             var-in-scopes-p-when-read-auto-var-aux)
+    :cases ((var-in-scopes-p var
+                             (frame->scopes (car (compustate->frames compst)))))
     :prep-lemmas
-    ((defrule lemma
-       (implies (consp scopes)
+    ((defrule lemma1
+       (implies (and (var-in-scopes-p var scopes)
+                     (var-in-scopes-p var2 scopes))
                 (equal (read-auto-var-aux var (update-var-aux var2 val2 scopes))
                        (if (equal (ident-fix var)
                                   (ident-fix var2))
                            (value-fix val2)
                          (read-auto-var-aux var scopes))))
-       :enable (read-auto-var-aux
+       :enable (var-in-scopes-p
+                read-auto-var-aux
+                update-var-aux))
+     (defrule lemma2
+       (implies (or (not (var-in-scopes-p var scopes))
+                    (not (var-in-scopes-p var2 scopes)))
+                (equal (read-auto-var-aux var (update-var-aux var2 val2 scopes))
+                       (read-auto-var-aux var scopes)))
+       :enable (var-in-scopes-p
+                read-auto-var-aux
                 update-var-aux))))
 
   (defruled read-var-of-update-object
@@ -779,6 +898,7 @@
                     (read-var var compst)))
     :enable (read-var
              read-auto-var
+             read-static-var
              update-object
              top-frame
              compustate-frames-number))
@@ -838,7 +958,11 @@
            (enter-scope (update-var var val compst)))
     :enable (update-var
              update-var-aux
-             enter-scope))
+             enter-scope
+             push-frame
+             pop-frame
+             top-frame
+             var-in-scopes-p))
 
   (defruled update-var-of-add-var
     (equal (update-var var val (add-var var2 val2 compst))
@@ -848,18 +972,27 @@
              (add-var var2 val2 (update-var var val compst))))
     :enable (update-var
              update-var-aux
-             add-var))
+             add-var
+             push-frame
+             pop-frame
+             top-frame
+             var-in-scopes-p))
 
   (defruled update-var-of-update-var-same
     (equal (update-var var val (update-var var val2 compst))
            (update-var var val compst))
     :enable (update-var
-             update-var-aux)
+             update-var-aux
+             push-frame
+             pop-frame
+             top-frame
+             var-in-scopes-p-of-update-var-aux)
     :prep-lemmas
     ((defrule lemma
        (equal (update-var-aux var val (update-var-aux var val2 scopes))
               (update-var-aux var val scopes))
        :enable update-var-aux)))
+
 
   (defruled update-var-of-update-var-less
     (implies (and (syntaxp (and (consp var2)
@@ -875,18 +1008,24 @@
                     (update-var var2 val2 (update-var var val compst))))
     :rule-classes ((:rewrite :loop-stopper nil))
     :enable (update-var
-             <<)
+             <<
+             push-frame
+             pop-frame
+             top-frame
+             var-in-scopes-p-of-update-var-aux)
     :prep-lemmas
     ((defrule lemma
-       (implies (not (equal (ident-fix var)
-                            (ident-fix var2)))
-                (equal (update-var-aux var val (update-var-aux var2 val2 scopes))
-                       (update-var-aux var2 val2 (update-var-aux var val scopes))))
+       (implies
+        (not (equal (ident-fix var)
+                    (ident-fix var2)))
+        (equal (update-var-aux var val (update-var-aux var2 val2 scopes))
+               (update-var-aux var2 val2 (update-var-aux var val scopes))))
        :enable update-var-aux)))
 
   (defruled update-var-of-read-var-same
     (implies (and (syntaxp (symbolp compst))
                   (compustatep compst1)
+                  (> (compustate-frames-number compst1) 0)
                   (valuep (read-var var compst))
                   (equal (read-var var compst)
                          (read-var var compst1)))
@@ -894,7 +1033,13 @@
                     compst1))
     :use (:instance update-var-of-read-var-same-lemma (compst compst1))
     :prep-lemmas
-    ((defruled update-var-aux-of-read-auto-var-aux-same
+    ((defrule omap::update-of-cdr-of-in-when-in
+       (implies (omap::in k m)
+                (equal (omap::update k (cdr (omap::in k m)) m)
+                       m))
+       :induct (omap::in k m)
+       :enable omap::in)
+     (defruled update-var-aux-of-read-auto-var-aux-same
        (implies (valuep (read-auto-var-aux var scopes))
                 (equal (update-var-aux var (read-auto-var-aux var scopes) scopes)
                        (scope-list-fix scopes)))
@@ -902,25 +1047,24 @@
                 update-var-aux
                 omap::update-of-cdr-of-in-when-in)
        :prep-lemmas
-       ((defruled omap::update-of-cdr-of-in-when-in
-          (implies (consp (omap::in k m))
-                   (equal (omap::update k (cdr (omap::in k m)) m)
-                          m))
-          :induct (omap::in k m)
-          :enable omap::in)))
+       ())
      (defruled update-var-of-read-var-same-lemma
        (implies (and (compustatep compst)
+                     (> (compustate-frames-number compst) 0)
                      (valuep (read-var var compst)))
                 (equal (update-var var (read-var var compst) compst)
                        compst))
        :enable (read-var
                 read-auto-var
+                read-static-var
                 update-var
                 update-var-aux-of-read-auto-var-aux-same
                 top-frame
                 push-frame
                 pop-frame
-                compustate-frames-number))))
+                compustate-frames-number
+                var-in-scopes-p-when-valuep-of-read-auto-var-aux
+                not-var-in-scopes-p-when-not-read-auto-var-aux))))
 
   (defval *atc-update-var-rules*
     '(update-var-of-enter-scope
@@ -1127,8 +1271,9 @@
              read-static-var))
 
   (defruled read-object-of-update-var
-    (equal (read-object objdes (update-var var val compst))
-           (read-object objdes compst))
+    (implies (objdesign-case objdes :address)
+             (equal (read-object objdes (update-var var val compst))
+                    (read-object objdes compst)))
     :enable (update-var
              push-frame
              pop-frame
@@ -1338,9 +1483,15 @@
     (> (compustate-frames-number (add-var var val compst)) 0)
     :enable add-var)
 
-  (defruled compustate-frames-number-of-update-var-not-zero
-    (> (compustate-frames-number (update-var var val compst)) 0)
-    :enable update-var)
+  (defruled compustate-frames-number-of-update-var
+    (equal (compustate-frames-number (update-var var val compst))
+           (compustate-frames-number compst))
+    :enable (update-var
+             compustate-frames-number
+             push-frame
+             pop-frame
+             top-frame
+             var-in-scopes-p))
 
   (defruled compustate-frames-number-of-update-object
     (equal (compustate-frames-number (update-object objdes obj compst))
@@ -1352,7 +1503,7 @@
     '(compustate-frames-number-of-add-frame-not-zero
       compustate-frames-number-of-enter-scope-not-zero
       compustate-frames-number-of-add-var-not-zero
-      compustate-frames-number-of-update-var-not-zero
+      compustate-frames-number-of-update-var
       compustate-frames-number-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
