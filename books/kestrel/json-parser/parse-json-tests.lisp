@@ -1,6 +1,6 @@
 ; Tests for the JSON parser
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -107,7 +107,7 @@
 ;; Parse a whole JSON object
 (assert!
  (mv-let (erp res)
-   (parse-json (coerce "{\"FirstName\" : \"John\", \"LastName\" : \"Smith\"}" 'list))
+   (parse-string-as-json "{\"FirstName\" : \"John\", \"LastName\" : \"Smith\"}")
    (and (null erp)
         (equal res '(:OBJECT (("FirstName" . "John")
                               ("LastName" . "Smith")))))))
@@ -115,7 +115,7 @@
 ;; A version with Unicode escapes
 (assert!
  (mv-let (erp res)
-   (parse-json (coerce "{\"First\\u20ACName\" : \"Jo\\u20AC\hn\", \"LastName\" : \"Smith\"}" 'list))
+   (parse-string-as-json "{\"First\\u20ACName\" : \"Jo\\u20AC\hn\", \"LastName\" : \"Smith\"}")
    (and (null erp)
         (equal res '(:OBJECT (("First€Name" . "Jo€hn")
                               ("LastName" . "Smith")))))))
@@ -123,8 +123,13 @@
 ;; A test with various kinds of values
 (assert!
  (mv-let (erp res)
-   (parse-json (coerce "{\"name\" : \"Jo\\u20AC\hn\",
+   (parse-string-as-json "{\"name\" : \"Jo\\u20AC\hn\",
                          \"age\" : 20,
+                         \"height\" : 123.456E7,
+                         \"width\" : 123.456E1,
+                         \"weight\" : 123.456E-7,
+                         \"weight2\" : 1.23456E-5,
+                         \"val\" : 0.00023456,
                          \"happy\" : true,
                          \"sad\" : false,
                          \"pets\" : null,
@@ -134,11 +139,15 @@
                                         100,
                                         true,
                                         false,
-                                        null]}"
-                       'list))
+                                        null]}")
    (and (null erp)
         (equal res '(:OBJECT (("name" . "Jo€hn")
                               ("age" . 20)
+                              ("height" . 1234560000)
+                              ("width" . 30864/25)
+                              ("weight" . 1929/156250000)
+                              ("weight2" . 1929/156250000)
+                              ("val" . 733/3125000) ; same as 23456/100000000
                               ("happy" . :TRUE)
                               ("sad" . :FALSE)
                               ("pets" . :NULL)
