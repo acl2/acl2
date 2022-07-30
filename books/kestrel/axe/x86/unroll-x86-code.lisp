@@ -133,12 +133,14 @@
          ;; Prune the DAG:
          ((mv erp dag state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
-                                     dag assumptions rules
-                                     nil ; interpreted-fns
-                                     rules-to-monitor
-                                     t ;call-stp
-                                     print
-                                     state))
+                                           dag
+                                           assumptions ; todo: often the assumptions for lifting are not relevant here
+                                           rules
+                                           nil ; interpreted-fns
+                                           rules-to-monitor
+                                           t ;call-stp
+                                           print
+                                           state))
          ((when erp) (mv erp nil state))
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
