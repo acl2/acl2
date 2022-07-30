@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nat-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,3 +93,11 @@
                 (consp x))
            (natp (car x)))
   :rule-classes :type-prescription)
+
+;; Seems better than the one in STD (except perhaps for the double-rewrite).
+(defthm nat-listp-of-update-nth-better
+  (implies (nat-listp l)
+           (equal (nat-listp (update-nth n val l))
+                  (and (<= (nfix n) (len l)) ;might be adding to the end
+                       (natp val))))
+  :hints (("Goal" :in-theory (enable nat-listp update-nth))))
