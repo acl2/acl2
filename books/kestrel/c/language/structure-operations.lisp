@@ -17,7 +17,7 @@
 
 (defxdoc+ structure-operations
   :parents (language)
-  :short "Some operations on C structures."
+  :short "Operations on C structures."
   :order-subtopics t
   :default-parent t)
 
