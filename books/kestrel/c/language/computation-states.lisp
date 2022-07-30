@@ -552,15 +552,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we ignore static storage.
-     We will extend this function to deal with static storage soon.
-     If there are no frames, or the variable is not found in automatic storage,
-     we return an error."))
+    "First we try automatic storage (if there are frames), then static storage.
+     Indeed, file scope is outside all the block scopes,
+     so it must be tried last."))
   (if (> (compustate-frames-number compst) 0)
       (b* ((val (read-auto-var var compst)))
         (or val
-            (error (list :var-not-found (ident-fix var)))))
-    (error (list :read-var-empty-frame-stack (ident-fix var))))
+            (read-static-var var compst)))
+    (read-static-var var compst))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -721,18 +720,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we ignore static storage.
-     We will extend this function to deal with static storage soon.
-     If there are no frames,
-     or the variable is not found in automatic storage,
-     or the variable is found but has a value of inconsistent type,
-     we return an error."))
+    "First we try automatic storage, if there are frames.
+     If there is an error, we propagate it.
+     If instead the variable was not found,
+     we try static storage."))
   (if (> (compustate-frames-number compst) 0)
       (b* ((new-compst (write-auto-var var val compst))
            ((when (errorp new-compst)) new-compst))
         (or new-compst
-            (error (list :var-not-found (ident-fix var)))))
-    (error (list :write-var-empty-frame-stack (ident-fix var))))
+            (write-static-var var val compst)))
+    (write-static-var var val compst))
   :hooks (:fix)
   ///
 

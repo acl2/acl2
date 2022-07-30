@@ -17,7 +17,7 @@
 
 (defxdoc+ array-operations
   :parents (language)
-  :short "Some operations on C arrays."
+  :short "Operations on C arrays."
   :order-subtopics t
   :default-parent t)
 
