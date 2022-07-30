@@ -3595,11 +3595,8 @@
                      (t
                       (let ((base-rcnst
                              (and rewrite
-                                  (change
-                                   rewrite-constant
-                                   *empty-rewrite-constant*
-                                   :current-enabled-structure pc-ens
-                                   :force-info t))))
+                                  (make-rcnst pc-ens w state
+                                              :force-info t))))
                         (mv-let
                           (flg hyps-type-alist pot-lst ttree)
                           (hyps-type-alist-and-pot-lst assumptions
