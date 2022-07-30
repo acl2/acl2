@@ -135,14 +135,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "Xdoc Library"))
-
-   (xdoc::p
-    "There is now XDOC support for Greek letters and more mathematical
-     symbols.  See @(see xdoc::entities).")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
@@ -150,24 +142,49 @@
    (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
 
    (xdoc::p
-    "The formalization of C has been extended and improved.")
+    "Support has been added for
+     external object definitions (i.e. global variables) of array types.")
+
+   (xdoc::p
+    "Some parts of the formalization have been simplified
+     and moved out of ATC and into the C formalization proper.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
-    "ATC has been extended to cover a larger subset of C.
-     See the user documentation of ATC for more details.")
+    "Support has been added for
+     external object definitions (i.e. global variables) of array types.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
 
    (xdoc::p
-    "The library of "
+    "In the library of "
     (xdoc::seetopic "fty::defresult" "result types")
-    " has been improved.")
+    ", some names have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The "
+    (xdoc::seetopic "patbind-er" "@('er') binder")
+    " of @(tsee b*) has been extended with
+     an option @(':iferr') to return an alternative value
+     in the error triple in case of error.
+     See the latest documentation for details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
+
+   (xdoc::p
+    "There is now XDOC support for Greek letters and more mathematical
+     symbols.  See @(see xdoc::entities).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
