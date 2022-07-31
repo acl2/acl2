@@ -2160,48 +2160,48 @@
               ;;term was simplified, so stop this pass:
               (mv nil term result-term state))))))))
 
-;; See also improve-invars.
-;fixme handle boolands?
-;; Returns (mv erp new-terms state) where new-terms is a set of terms whose conjunction is equal to the conjunction of terms.
-;; TODO: Deprecate
-(defun simplify-terms (terms
-                       ;;print
-                       rule-alist
-                       monitored-rules
-                       state)
-  (declare (xargs :mode :program :stobjs state))
-  (mv-let (erp old-term new-term state)
-    (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
-    (if erp
-        (mv erp nil state)
-      (if (not old-term)
-          ;; Nothing more could be done:
-          (mv (erp-nil) terms state)
-        (if (equal *t* new-term) ;todo: also check for *nil*?
-            ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
-            (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
-          (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
+;; ;; See also improve-invars.
+;; ;fixme handle boolands?
+;; ;; Returns (mv erp new-terms state) where new-terms is a set of terms whose conjunction is equal to the conjunction of terms.
+;; ;; TODO: Deprecate
+;; (defun simplify-terms (terms
+;;                        ;;print
+;;                        rule-alist
+;;                        monitored-rules
+;;                        state)
+;;   (declare (xargs :mode :program :stobjs state))
+;;   (mv-let (erp old-term new-term state)
+;;     (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
+;;     (if erp
+;;         (mv erp nil state)
+;;       (if (not old-term)
+;;           ;; Nothing more could be done:
+;;           (mv (erp-nil) terms state)
+;;         (if (equal *t* new-term) ;todo: also check for *nil*?
+;;             ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
+;;             (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
+;;           (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+;;             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
 
 
-;; TODO: Deprecate in favor of simplify-terms-repeatedly
-;; Simplify all the terms, which are implicitly conjoined, each assuming all the
-;; others (being careful not to let two terms each simplify the other to true).
-;todo: maybe translate the terms
-;; Returns (mv erp new-terms state).
-(defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
-  (declare (xargs :guard (and (pseudo-term-listp terms)
-                              (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)) ;todo: turn some of these into checks
-                  :stobjs state
-                  :mode :program))
-  (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
-    (simplify-terms terms rule-alist monitored-rules state)))
+;; ;; TODO: Deprecate in favor of simplify-terms-repeatedly
+;; ;; Simplify all the terms, which are implicitly conjoined, each assuming all the
+;; ;; others (being careful not to let two terms each simplify the other to true).
+;; ;todo: maybe translate the terms
+;; ;; Returns (mv erp new-terms state).
+;; (defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
+;;   (declare (xargs :guard (and (pseudo-term-listp terms)
+;;                               (rule-alistp rule-alist)
+;;                               (symbol-listp monitored-rules)) ;todo: turn some of these into checks
+;;                   :stobjs state
+;;                   :mode :program))
+;;   (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
+;;     (simplify-terms terms rule-alist monitored-rules state)))
 
-;; TODO: Deprecate
-;; Returns (mv erp new-terms state).
-(defmacro simplify-terms-using-each-other (terms rule-alist &key (monitor 'nil))
-  `(simplify-terms-using-each-other-fn ,terms ,rule-alist ,monitor state))
+;; ;; TODO: Deprecate
+;; ;; Returns (mv erp new-terms state).
+;; (defmacro simplify-terms-using-each-other (terms rule-alist &key (monitor 'nil))
+;;   `(simplify-terms-using-each-other-fn ,terms ,rule-alist ,monitor state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

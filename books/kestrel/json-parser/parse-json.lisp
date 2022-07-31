@@ -1,6 +1,6 @@
 ; A simple JSON parser
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1154,3 +1154,16 @@
                 (character-listp chars))
            (parsed-json-valuep (mv-nth 1 (parse-json chars))))
   :hints (("Goal" :in-theory (e/d (parse-json) (cdr-iff)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp parsed-value), where ERP is nil iff no error occured.
+(defund parse-string-as-json (string)
+  (declare (xargs :guard (stringp string)))
+  (parse-json (coerce string 'list)))
+
+(defthm parsed-json-valuep-of-mv-nth-1-of-parse-string-as-json
+  (implies (and (not (mv-nth 0 (parse-string-as-json string))) ; no error
+                (stringp string))
+           (parsed-json-valuep (mv-nth 1 (parse-string-as-json string))))
+  :hints (("Goal" :in-theory (e/d (parse-string-as-json) ()))))

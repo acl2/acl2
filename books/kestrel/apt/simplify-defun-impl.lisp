@@ -3065,28 +3065,34 @@
   (pairlis-x1 'local (pairlis$ forms nil)))
 
 (defun simplify-defun-heuristics (alist)
-  `(with-output
+
+; It is a bit of overkill to make defattach-system local, since it already
+; expands to a local event.  But we use make it local anyhow, so that tools
+; will avoid printing these events to the screen.
+
+  `(local
+    (with-output
 
 ; Presumably nobody wants to see the output from the events below.  They should
 ; never cause an error, so we ensure that error output is on so that such an
 ; unexpected error will be apparent.
 
-     :off :all
-     :on error
-     (progn
-       (defattach-system
+      :off :all
+      :on error
+      (progn
+        (defattach-system
          acl2::simplifiable-mv-nth-p
          ,(or (cdr (assoc-eq 'acl2::simplifiable-mv-nth-p alist))
               'acl2::constant-nil-function-arity-0))
-       (defattach-system
+        (defattach-system
          too-many-ifs-pre-rewrite
          ,(or (cdr (assoc-eq 'too-many-ifs-pre-rewrite alist))
               'too-many-ifs-pre-rewrite-noop))
-       (defattach-system
+        (defattach-system
          too-many-ifs-post-rewrite
          ,(or (cdr (assoc-eq 'too-many-ifs-post-rewrite alist))
               'too-many-ifs-post-rewrite-noop))
-       (defattach-system
+        (defattach-system
          assume-true-false-aggressive-p
          ,(or (cdr (assoc-eq 'assume-true-false-aggressive-p alist))
               'constant-t-function-arity-0))
@@ -3098,14 +3104,13 @@
 ; examples where rewrite rules that applied during the original simplification
 ; no longer applied during the validation.
 
-       (defattach-system
+        (defattach-system
          rewrite-if-avoid-swap
          ,(or (cdr (assoc-eq 'rewrite-if-avoid-swap alist))
               'constant-t-function-arity-0))
-       (table acl2::default-hints-table t
-              (quote ,(cdr (assoc-eq 'default-hints alist))))
-       (table acl2::default-hints-table :override
-              (quote ,(cdr (assoc-eq 'override-hints alist)))))))
+        (defattach-system
+          acl2::heavy-linear-p
+          constant-t-function-arity-0)))))
 
 (defun remove-final-hints-lst (lst)
 

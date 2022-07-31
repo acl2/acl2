@@ -173,6 +173,6 @@
 
 (include-book "intro")
 
-;; (include-book "bv-tests") ; not including this one because it just contains tests
+;; (include-book "tests") ; not including this one because it just contains tests
 
 (include-book "doc")
