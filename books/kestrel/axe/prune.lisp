@@ -195,6 +195,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund make-bool-fix (arg)
+  (declare (xargs :guard (pseudo-termp arg)))
+  (if (quotep arg)
+      (enquote (bool-fix (unquote arg)))
+    `(bool-fix$inline ,arg)))
+
+(defthm pseudo-termp-of-make-bool-fix
+  (implies (pseudo-termp arg)
+           (pseudo-termp (make-bool-fix arg)))
+  :hints (("Goal" :in-theory (enable make-bool-fix))))
+
+(defund make-bvchop (size x)
+  (declare (xargs :guard (and (pseudo-termp size)
+                              (pseudo-termp x))))
+  (if (and (quotep x) ; unusual, so we test this first
+           (quotep size)
+           (natp (unquote x))
+           (natp (unquote size)))
+      (enquote (bvchop (unquote size) (unquote x)))
+    `(bvchop ,size ,x)))
+
+(defthm pseudo-termp-of-make-bvchop
+  (implies (and (pseudo-termp x)
+                (pseudo-termp size))
+           (pseudo-termp (make-bvchop size x)))
+  :hints (("Goal" :in-theory (enable make-bvchop))))
+
+
+
+
+
 ;; TODO: Thread through a print option
 (mutual-recursion
  ;; Returns (mv erp result-term state) where RESULT-TERM is equal
@@ -256,6 +287,7 @@
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    then-branch ; special case when both branches are the same
+                                 ;; TODO: Handle ground term here:
                                  `(,fn ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (boolif ;; (boolif test then-branch else-branch)
@@ -280,7 +312,8 @@
                       (mv erp nil state)
                     (mv (erp-nil)
                         ;; todo: skip the bool-fix if known-boolean:
-                        `(bool-fix$inline ,then-branch) state)))
+                        (make-bool-fix then-branch)
+                        state)))
               (if (eq :false result)
                   ;; Throw away the then-branch:
                   (mv-let (erp else-branch state)
@@ -290,7 +323,8 @@
                         (mv erp nil state)
                       (mv (erp-nil)
                           ;; todo: skip the bool-fix if known-boolean:
-                          `(bool-fix$inline ,else-branch) state)))
+                          (make-bool-fix else-branch)
+                          state)))
                 ;; todo: if it simplifies to something other than t/nil, use that here?
                 (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
@@ -310,7 +344,8 @@
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
-                                   `(bool-fix$inline ,then-branch) ; special case when both branches are the same
+                                   (make-bool-fix then-branch) ; special case when both branches are the same
+                                 ;; Can't be a ground term since test was not resolved:
                                  `(boolif ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (bvif ;; (bvif size test then-branch else-branch)
@@ -335,7 +370,8 @@
                   (if erp
                       (mv erp nil state)
                     (mv (erp-nil)
-                        `(bvchop ,size ,then-branch) state)))
+                        (make-bvchop size then-branch)
+                        state)))
               (if (eq :false result)
                   ;; Throw away the then-branch:
                   (mv-let (erp else-branch state)
@@ -344,7 +380,8 @@
                     (if erp
                         (mv erp nil state)
                       (mv (erp-nil)
-                          `(bvchop ,size ,else-branch) state)))
+                          (make-bvchop size else-branch)
+                          state)))
                 ;; todo: if it simplifies to something other than t/nil, use that here?
                 (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
@@ -364,7 +401,8 @@
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
-                                   `(bvchop ,size ,then-branch) ; special case when both branches are the same
+                                   (make-bvchop size then-branch) ; special case when both branches are the same
+                                 ;; Can't be a ground term since test was not resolved:
                                  `(bvif ,size ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (t ;; Anything other than if/myif/bvif/boolif:
@@ -383,6 +421,7 @@
             (b* ((args (fargs term))
                  ((mv erp new-args state) (prune-terms-aux args assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                  ((when erp) (mv erp nil state)))
+              ;; TODO: Handle ground term here:
               (mv (erp-nil) `(,fn ,@new-args) state))))))))
 
  ;; Returns (mv erp result-terms state) where, if ERP is nil, then the
