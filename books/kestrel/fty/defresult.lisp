@@ -38,8 +38,10 @@
 
     (xdoc::p
      "In ACL2, an approach is to have the function return multiple results:
-      an error result (@('nil') if there is no error),
-      and a good result that is irrelevant if the error result is non-@('nil');
+      an error result
+      (which is @('nil') if there is no error),
+      and a good result
+      (which is irrelevant if the error result is non-@('nil'));
       for instance, this is the idiom of "
      (xdoc::seetopic "acl2::error-triple" "error triples")
      ". Another approach is to have the function return
@@ -56,6 +58,14 @@
       when the error result is non-@('nil'),
       some good result must be nonetheless returned,
       which might be accidentally used, as nothing could prevent that.
+      Returning something like @('nil') as good result means that,
+      unless @('nil') happens to be a good result,
+      it is not the case that the good result
+      always has the type of good results,
+      leading to conditional return type theorems
+      instead of unconditional ones;
+      the latter are more efficient, and conceptually cleaner,
+      but there is nothing technically wrong with conditional ones either.
       The second approach avoids this issue,
       because if there is an error result then there is no good result at all;
       the downside is that the result may have two different types.
@@ -67,31 +77,34 @@
 
     (xdoc::p
      "When functions naturally return multiple results (via @(tsee mv)),
-      the second approach adds an error result,
-      while the first approach could be applied to one of the results
+      the first approach adds an error result,
+      while the second approach could be applied to one of the results
       (e.g. the ``main'' one, if there is such a thing).
       Better yet from a conceptual point of view,
-      the function can be made to return a single result
+      the function can be made to return a single result,
+      instead of multiple ones,
       that is either an error or a tuple of the good results.
-      This is less efficient than multiple results,
+      This is less efficient than multiple results
+      (efficiency is indeed the purpose of multiple results with @(tsee mv)),
       but it may be more appropriate for a higher-level specification function,
       where issues of efficiency should be secondary,
       and where it may be more important that, in case of error,
       no dummy results are returned, so they cannot be accidentally used.
       The term `tuple' above is used in a broad sense:
       it does not have to be a list of values;
-      it could be a value of a @(tsee fty::defprod) type.
+      it could be a value of a @(tsee fty::defprod) type, for example.
       The claim above that
       issues of efficiency should be secondary in specification functions
-      fits in a vision in which tools like "
+      fits into a vision in which tools like "
      (xdoc::seetopic "apt::apt" "APT")
      " are used to turn possibly inefficient or even non-executable functions
       into efficient ones.
-      When instead, for expediency, a compromise is sought
-      in which the same function is used for specification and execution,
+      When instead, for expediency or practicality, a compromise is sought
+      in which the same function is used for specification and execution
+      (which sometimes also involves uses of @(tsee mbe)),
       then other considerations may apply,
-      and the second approach above may be preferable to the first one.
-      Nonetheless, there are applications where the first approach fits well.")
+      and the first approach above may be preferable to the second one.
+      Nonetheless, there are applications where the second approach fits well.")
 
     (xdoc::p
      "When calling functions that may return error results
@@ -104,14 +117,7 @@
       which propagates the error triples unchanged;
       @(tsee b*) provides the "
      (xdoc::seetopic "acl2::patbind-er" "@('er') binder")
-     ", which expands into something like @(tsee er-let*).
-      As an aside, note that, when verifying return type theorems,
-      using @(tsee er-let*) works when the (irrelevant) good result
-      returned by a callee with an error result
-      also belongs to the type of the good results returned by the caller;
-      otherwise, one must explicitly check for the error
-      and return an appropriate triple,
-      or perhaps use a more complex macro or binder.")
+     ", which expands into something like @(tsee er-let*).")
 
     (xdoc::p
      "The @('defresult') macro provides support for the second approach above.
@@ -122,6 +128,9 @@
       which is provided along with @('defresult').
       This macro also generates rules
       to reason about the disjunction of good and error results.
+      To return an error (when an error condition arises),
+      the constructor @('reserr') of the @(tsee reserr) fixtype can be used:
+      it takes an argument of any type.
       Along with @('defresult'),
       a @(tsee b*) binder is provided
       to support the check-and-propagate-error pattern described above.")
@@ -146,7 +155,7 @@
       This may be very useful for debugging,
       or in general to provide informative error information.
       It may be less useful for higher-level specifications,
-      in which errors are just errors that do not carry much information
+      in which errors do not carry much information
       (as producing and consuming that information
       may detract from the clarity and conciseness of the specification).
       Therefore, we plan to introduce a simpler version of
@@ -164,11 +173,13 @@
       It is also crucial that the result type is defined
       as a flat, and not tagged, union of good and error results:
       otherwise, error results would have to be unwrapped and wrapped
-      depending on the result types of the callee and caller.")
+      depending on the result types of the callee and caller,
+      using different unwrapping and wrapping function for each type.")
 
     (xdoc::p
      "The fixtype of good and error results introduced by @('defresult')
-      is similar to an instance of Rust's polymorphic type @('Result').
+      is similar to an instance of Rust's polymorphic type @('Result'),
+      from which the `result' part of @('defresult') is taken.
       However, while the Rust type is parameterized over
       both the good and error result types,
       in @('defresult') errors always have the same type.
