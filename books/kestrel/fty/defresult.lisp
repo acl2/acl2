@@ -132,7 +132,7 @@
       the constructor @('reserr') of the @(tsee reserr) fixtype can be used:
       it takes an argument of any type.
       Along with @('defresult'),
-      a @(tsee b*) binder is provided
+      a @(tsee b*) binder @(tsee patbind-ok) is provided
       to support the check-and-propagate-error pattern described above.")
 
     (xdoc::p
@@ -151,17 +151,28 @@
       resulting in a stack of error information
       corresponding to the call stack.
       The @(tsee patbind-okf) binder automates the check-and-propagation
-      of errors that include function information.
-      This may be very useful for debugging,
+      of errors that include function information.")
+
+    (xdoc::p
+     "The @(tsee reserrf) and @(tsee reserrf-push) macros,
+      and the @(tsee patbind-okf) binder,
+      may be very useful for debugging,
       or in general to provide informative error information.
-      It may be less useful for higher-level specifications,
+      They may be less useful for higher-level specifications,
       in which errors do not carry much information
       (as producing and consuming that information
-      may detract from the clarity and conciseness of the specification).
-      Therefore, we plan to introduce a simpler version of
-      the @(tsee patbind-okf) binder that just does
-      error checking and propagation, without function information;
-      this will be also usable in code not written with @(tsee define).")
+      may detract from the clarity and conciseness of the specification):
+      for higher-level specifications,
+      the simpler function @(tsee reserr) and binder @(tsee patbind-ok)
+      may be more appropriate.
+      Note that the @('f') in the names of the first set of items conveys
+      that they are a version of the simpler ones
+      that take the function name bound to @('__function__') into account;
+      note also that there is no @('reserr-push'),
+      since it is not needed for
+      the simpler errors and checks and propagation.
+      We also remark that the simpler ones can be used
+      in code not written using @(tsee define).")
 
     (xdoc::p
      "The fact that the same error result type, namely @(tsee reserr),
@@ -426,10 +437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-b*-binder okf
+(def-b*-binder ok
   :parents (defresult)
   :short "@(tsee b*) binder for checking and propagating
-          error results of fixtype @(tsee reserr)."
+          error results of the fixtype @(tsee reserr)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -437,25 +448,19 @@
      but it is for " (xdoc::seetopic "defresult" "result types") ".")
    (xdoc::p
     "It checks whether the value of the bound term is an error,
-     returning a slightly modified error if the check succeeds.
-     Otherwise, the binder proceeds with the rest of the computation.
-     The aforementioned modification of the error consists in
-     pushing the current function's name
-     onto the stack component of the error,
-     without (i.e. with @('nil') additional information;
-     this binder assumes that @('__function__') is bound to the function name,
-     which is automatically the case when using @(tsee define).")
+     returning the same error if the check succeeds.
+     Otherwise, the binder proceeds with the rest of the computation.")
    (xdoc::p
     "This binder is used as follows:")
    (xdoc::codeblock
     "(b* (..."
-    "     ((okf <pattern>) <term>)"
+    "     ((ok <pattern>) <term>)"
     "     ...)"
     "  ...)")
    (xdoc::p
-    "Note that the argument of @('(okf ...)')
+    "Note that the argument of @('(ok ...)')
      may be a supported single-valued @(tsee b*) pattern,
-     e.g. @('(okf (cons x y))').")
+     e.g. @('(ok (cons x y))').")
    (xdoc::p
     "In order to support such a pattern,
      we generate an initial binding to a variable,
@@ -464,6 +469,31 @@
      As done in other binders that come with @(tsee b*),
      we pick a name for the first variable
      that is unlikely to occur in code."))
+  :decls
+  ((declare (xargs :guard (acl2::destructure-guard ok args acl2::forms 1))))
+  :body
+  `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
+        ((when (reserrp patbinder-ok-fresh-variable-for-result))
+         (reserrf-push patbinder-ok-fresh-variable-for-result))
+        (,(car args) patbinder-ok-fresh-variable-for-result))
+     ,acl2::rest-expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-b*-binder okf
+  :parents (defresult)
+  :short "@(tsee b*) binder for checking and propagating
+          error results of the fixtype @(tsee reserr)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee patbind-ok),
+     but it takes into account the current function name,
+     assuming that @('__funtion__') is bound to it
+     (which is automatically the case when using @(tsee define)).
+     This binder checks whether the value of the bound term is an error,
+     returning a slightly modified error if the check succeeds.
+     Otherwise, the binder proceeds with the rest of the computation."))
   :decls
   ((declare (xargs :guard (acl2::destructure-guard okf args acl2::forms 1))))
   :body
