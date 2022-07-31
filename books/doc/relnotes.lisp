@@ -133,6 +133,11 @@
     "The @(tsee apt::simplify) transformation no longer breaks when certain @(see
      default-hints) or @(see override-hints) are present.")
 
+   (xdoc::p
+    "The @(tsee apt::simplify) transformation uses the new @('heavy-linear-p')
+     capability (see @(see note-8-6) to strengthen the use of @(see
+     linear-arithmetic) during rewriting.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
