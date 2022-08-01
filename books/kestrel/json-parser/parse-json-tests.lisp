@@ -12,6 +12,7 @@
 
 (include-book "parse-json")
 (include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 
 ;; NOTE: To see the Unicode characters in this file, try M-x
 ;; revert-buffer-with-coding-system utf-8.  But that may not be necessary
@@ -156,3 +157,33 @@
                                                               ("nickname" . "Mike")))
                                                     "Darnell" 100 :TRUE
                                                     :FALSE :NULL)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns :error or the parsed JSON object
+(defun parse-string-as-json2 (str)
+  (declare (xargs :guard (stringp str)))
+  (mv-let (erp res)
+    (parse-json (coerce str 'list))
+    (if erp
+        :error
+      res)))
+
+(assert-equal (parse-string-as-json2 "0") 0)
+(assert-equal (parse-string-as-json2 "123") 123)
+(assert-equal (parse-string-as-json2 "-123") -123)
+(assert-equal (parse-string-as-json2 "10.5") 21/2)
+(assert-equal (parse-string-as-json2 "-10.5") -21/2)
+(assert-equal (parse-string-as-json2 "0.5") 1/2)
+(assert-equal (parse-string-as-json2 "-0.5") -1/2)
+(assert-equal (parse-string-as-json2 "1e2") 100)
+(assert-equal (parse-string-as-json2 "1.5e2") 150)
+(assert-equal (parse-string-as-json2 "-1e2") -100)
+(assert-equal (parse-string-as-json2 "-1.5e2") -150)
+(assert-equal (parse-string-as-json2 "4e-2") 4/100)
+(assert-equal (parse-string-as-json2 "4.5e-2") (/ 9/2 100))
+(assert-equal (parse-string-as-json2 "-4e-2") -4/100)
+(assert-equal (parse-string-as-json2 "-4.5e-2") (- (/ 9/2 100)))
+
+(assert-equal (parse-string-as-json2 "[1, 2, 3]") '(:array (1 2 3)))
+(assert-equal (parse-string-as-json2 "{\"a\" : 1, \"b\" : 2}") '(:OBJECT (("a" . 1) ("b" . 2))))
