@@ -226,6 +226,7 @@
 ;; Newest top-level Axe tools ("basic" means that these are for general-purpose
 ;; use, rather than specialized for the JVM, or for x86, etc.):
 (include-book "rewriter-basic")
+;; (include-book "rewriter-basic-code-only") ; not worth including here?
 (include-book "prover-basic")
 (include-book "prover-basic-clause-processor")
 (include-book "def-simplified")
