@@ -39,19 +39,33 @@
 //   renderHtml(String of XDOC XML markup) -> HTML DOM Object
 
 // Warning: Keep this in sync with *entity-strings* and
-// *entitytok-as-plaintext-fal* in ../parse-xml.lisp and
-// *xml-entity-stuff* in ../prepare-topic.lisp.
+// *entitytok-as-plaintext-fal* in ../parse-xml.lisp,
+// *xml-entity-stuff* in ../prepare-topic.lisp, and
+// (defxdoc entities ...) in topics.lisp.
 function wrapXdocFragment(str)
 {
     var wrap = "<!DOCTYPE xdoc [";
     wrap += "<!ENTITY ndash \"&#8211;\">";
     wrap += "<!ENTITY mdash \"&#8212;\">";
+    wrap += "<!ENTITY larr \"&#8592;\">";
     wrap += "<!ENTITY rarr \"&#8594;\">";
+    wrap += "<!ENTITY harr \"&#8596;\">";
+    wrap += "<!ENTITY lang \"&#9001;\">";
+    wrap += "<!ENTITY rang \"&#9002;\">";
+    wrap += "<!ENTITY hellip \"&#8230;\">";
     wrap += "<!ENTITY nbsp \"&#160;\">";
     wrap += "<!ENTITY lsquo \"&#8216;\">";
     wrap += "<!ENTITY rsquo \"&#8217;\">";
     wrap += "<!ENTITY ldquo \"&#8220;\">";
     wrap += "<!ENTITY rdquo \"&#8221;\">";
+    wrap += "<!ENTITY and   \"&#8743;\">";
+    wrap += "<!ENTITY or    \"&#8744;\">";
+    wrap += "<!ENTITY not   \"&#172;\">";
+    wrap += "<!ENTITY ne    \"&#8800;\">";
+    wrap += "<!ENTITY le    \"&#8804;\">";
+    wrap += "<!ENTITY ge    \"&#8805;\">";
+    wrap += "<!ENTITY mid   \"&#8739;\">";
+    wrap += "<!ENTITY times \"&#215;\">";
     wrap += "<!ENTITY Alpha \"&#913;\">";
     wrap += "<!ENTITY Beta \"&#914;\">";
     wrap += "<!ENTITY Gamma \"&#915;\">";
