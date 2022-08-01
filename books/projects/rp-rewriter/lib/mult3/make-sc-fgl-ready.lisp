@@ -136,107 +136,107 @@
         (binary-fnc-p term))))
 
 (acl2::defines
- make-sc-fgl-ready-meta
- :hints (("Goal"
-          :in-theory (e/d ()
-                          (ex-from-rp))))
- :prepwork ((local
-             (in-theory (e/d (measure-lemmas)
-                             (FALIST-CONSISTENT))))
-            (local
-             (defthm dummy-lemma0
-               (IMPLIES (AND
-                         (CONSP (EX-FROM-RP TERM)))
-                        (O< 1 (CONS-COUNT TERM)))
-               :hints (("Goal"
-                        :do-not-induct t
-                        :induct (EX-FROM-RP TERM)
-                        :expand ((CONS-COUNT TERM))
-                        :in-theory (e/d (ex-from-rp
-                                         cons-count)
-                                        (+-IS-SUM))))))
-            (local
-             (defthm dummy-lemma1
-               (and (implies (and
-                              (not (consp (ex-from-rp term)))
-                              (rp-termp term))
-                             (symbolp (ex-from-rp term)))
-                    (implies (and
-                              (rp-termp term))
-                             (ex-from-rp term)))
-               :hints (("Goal"
-                        :in-theory (e/d (rp-termp ex-from-rp)
-                                        ())))))
+  make-sc-fgl-ready-meta
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           (ex-from-rp))))
+  :prepwork ((local
+              (in-theory (e/d (measure-lemmas)
+                              (FALIST-CONSISTENT))))
+             (local
+              (defthm dummy-lemma0
+                (IMPLIES (AND
+                          (CONSP (EX-FROM-RP TERM)))
+                         (O< 1 (CONS-COUNT TERM)))
+                :hints (("Goal"
+                         :do-not-induct t
+                         :induct (EX-FROM-RP TERM)
+                         :expand ((CONS-COUNT TERM))
+                         :in-theory (e/d (ex-from-rp
+                                          cons-count)
+                                         (+-IS-SUM))))))
+             (local
+              (defthm dummy-lemma1
+                (and (implies (and
+                               (not (consp (ex-from-rp term)))
+                               (rp-termp term))
+                              (symbolp (ex-from-rp term)))
+                     (implies (and
+                               (rp-termp term))
+                              (ex-from-rp term)))
+                :hints (("Goal"
+                         :in-theory (e/d (rp-termp ex-from-rp)
+                                         ())))))
 
-            (local
-             (defthm rp-termp-of-trans-list
-               (implies (rp-term-listp lst)
-                        (rp-termp (trans-list lst)))
-               :hints (("Goal"
-                        :do-not-induct t
-                        :induct (trans-list lst)
-                        :in-theory (e/d () ())))))
+             (local
+              (defthm rp-termp-of-trans-list
+                (implies (rp-term-listp lst)
+                         (rp-termp (trans-list lst)))
+                :hints (("Goal"
+                         :do-not-induct t
+                         :induct (trans-list lst)
+                         :in-theory (e/d () ())))))
 
-            )
+             )
 
- :returns-hints (("Goal"
-                  :do-not-induct t
-                  :expand ((:free (x y)
-                                  (rp-termp (cons x y))))
-                  :in-theory (e/d () (rp-termp
-                                      ex-from-rp)
-                                  )))
+  :returns-hints (("Goal"
+                   :do-not-induct t
+                   :expand ((:free (x y)
+                                   (rp-termp (cons x y))))
+                   :in-theory (e/d () (rp-termp
+                                       ex-from-rp)
+                                   )))
 
- :flag-defthm-macro defthm-make-sc-fgl-ready-meta
- :flag-local nil
+  :flag-defthm-macro defthm-make-sc-fgl-ready-meta
+  :flag-local nil
 
- (define make-sc-fgl-ready-meta ((term rp-termp))
-   :returns (res rp-termp :hyp (rp-termp term))
-   :measure (cons-count term)
-   :verify-guards nil
-   (b* ((term (ex-from-rp$ term)))
-     (case-match term
-       (('s & pp c)
-        `(acl2::logcar$inline (binary-sum (sum-list ,(make-sc-fgl-ready-meta pp))
-                                          (sum-list ,(make-sc-fgl-ready-meta c)))))
-       (('c & s pp c)
-        `(acl2::logcdr$inline (binary-sum
-                               (sum-list ,(make-sc-fgl-ready-meta s))
-                               (binary-sum (sum-list ,(make-sc-fgl-ready-meta pp))
-                                           (sum-list ,(make-sc-fgl-ready-meta c))))))
-       (('bit-of x index)
-        `(acl2::logbit$inline ,index ,(make-sc-fgl-ready-meta x)))
+  (define make-sc-fgl-ready-meta ((term rp-termp))
+    :returns (res rp-termp :hyp (rp-termp term))
+    :measure (cons-count term)
+    :verify-guards nil
+    (b* ((term (ex-from-rp$ term)))
+      (case-match term
+        (('s & pp c)
+         `(acl2::logcar$inline (binary-sum (sum-list ,(make-sc-fgl-ready-meta pp))
+                                           (sum-list ,(make-sc-fgl-ready-meta c)))))
+        (('c & s pp c)
+         `(acl2::logcdr$inline (binary-sum
+                                (sum-list ,(make-sc-fgl-ready-meta s))
+                                (binary-sum (sum-list ,(make-sc-fgl-ready-meta pp))
+                                            (sum-list ,(make-sc-fgl-ready-meta c))))))
+        (('bit-of x index)
+         `(acl2::logbit$inline ,index ,(make-sc-fgl-ready-meta x)))
 
-       (('quote . &)
-        term)
-       (('falist . &)
-        term)
-       (('list . lst)
-        (trans-list (make-sc-fgl-ready-meta-lst lst)))
-       (('if a b c) ;; just to make proofs a little bit easier.
-        `(if ,(make-sc-fgl-ready-meta a)
-             ,(make-sc-fgl-ready-meta b)
-           ,(make-sc-fgl-ready-meta c)))
-       ((fnc . args)
-        `(,fnc . ,(make-sc-fgl-ready-meta-lst args)))
-       (& term))))
- (define make-sc-fgl-ready-meta-lst ((lst rp-term-listp))
-   :returns (res-lst rp-term-listp :hyp (rp-term-listp lst))
-   :measure (cons-count lst)
-   (if (atom lst)
-       nil
-     (cons-with-hint (make-sc-fgl-ready-meta (car lst))
-                     (make-sc-fgl-ready-meta-lst (cdr lst))
-                     lst)))
- ///
- (verify-guards make-sc-fgl-ready-meta-lst))
+        (('quote . &)
+         term)
+        (('falist . &)
+         term)
+        (('list . lst)
+         (trans-list (make-sc-fgl-ready-meta-lst lst)))
+        (('if a b c) ;; just to make proofs a little bit easier.
+         `(if ,(make-sc-fgl-ready-meta a)
+              ,(make-sc-fgl-ready-meta b)
+            ,(make-sc-fgl-ready-meta c)))
+        ((fnc . args)
+         `(,fnc . ,(make-sc-fgl-ready-meta-lst args)))
+        (& term))))
+  (define make-sc-fgl-ready-meta-lst ((lst rp-term-listp))
+    :returns (res-lst rp-term-listp :hyp (rp-term-listp lst))
+    :measure (cons-count lst)
+    (if (atom lst)
+        nil
+      (cons-with-hint (make-sc-fgl-ready-meta (car lst))
+                      (make-sc-fgl-ready-meta-lst (cdr lst))
+                      lst)))
+  ///
+  (verify-guards make-sc-fgl-ready-meta-lst))
 
 (define make-sc-fgl-ready-meta-main ((term rp-termp))
   :returns (mv (res rp-termp :hyp (rp-termp term))
                (dont-rw))
   (mv (make-sc-fgl-ready-meta term) t))
 
-;;;
+
 
 (local
  (progn
@@ -316,15 +316,15 @@
                               ()))))
 
    #|(defthm 4vec-concat$-is-logapp
-     (implies (and (natp a)
-                   (integerp x)
-                   (integerp y))
-              (equal (svl::4vec-concat$ a x y)
-                     (logapp a x y)))
-     :hints (("Goal"
-              :in-theory (e/d (SVL::LOGAPP-TO-4VEC-CONCAT
-                               svl::4vec-concat$)
-                              (logapp)))))||#
+   (implies (and (natp a)
+   (integerp x)
+   (integerp y))
+   (equal (svl::4vec-concat$ a x y)
+   (logapp a x y)))
+   :hints (("Goal"
+   :in-theory (e/d (SVL::LOGAPP-TO-4VEC-CONCAT
+   svl::4vec-concat$)
+   (logapp)))))||#
 
    (defthmd rp-evlt-of-ex-from-rp-reverse
      (and (implies (syntaxp (atom term))
@@ -387,54 +387,7 @@
                                (term x)))
               :in-theory (e/d () ()))))
 
-   (defret-mutual make-sc-fgl-ready-meta-correct
-     (defret make-sc-fgl-ready-meta-correct
-       (implies (and (rp-evl-meta-extract-global-facts :state state)
-                     (make-sc-fgl-ready-meta-formula-checks state)
-                     ;;(valid-sc term a)
-                     )
-                (and (equal (rp-evlt res a)
-                            (rp-evlt term a))
-                     ;;(valid-sc res a)
-                     ))
-       :fn make-sc-fgl-ready-meta)
-
-     (defret make-sc-fgl-ready-meta-lst-correct
-       (implies (and (rp-evl-meta-extract-global-facts :state state)
-                     (make-sc-fgl-ready-meta-formula-checks state)
-                     ;;(valid-sc-subterms lst a)
-                     )
-                (and (equal (rp-evlt-lst res-lst a)
-                            (rp-evlt-lst lst a))
-                     ;; (valid-sc-subterms res-lst a)
-                     ))
-       :fn make-sc-fgl-ready-meta-lst)
-
-     :hints (("Goal"
-              :do-not-induct t
-
-              :in-theory (e/d* (make-sc-fgl-ready-meta
-                                make-sc-fgl-ready-meta-lst
-                                RP-EVLt-OF-FNCALL-ARGS
-                                RP-EVL-OF-FNCALL-ARGS
-                                rp-evlt-of-ex-from-rp-reverse
-                                regular-eval-lemmas
-                                regular-eval-lemmas-with-ex-from-rp
-                                )
-                               (rp-evlt-of-ex-from-rp
-                                (:DEFINITION EX-FROM-RP)
-                                (:REWRITE NOT-INCLUDE-RP)
-                                (:DEFINITION INCLUDE-FNC)
-                                (:REWRITE DEFAULT-CDR)
-                                (:DEFINITION INCLUDE-FNC-SUBTERMS)
-                                (:REWRITE RP-EVL-OF-RP-EQUAL2)
-                                (:REWRITE RP-TERMP-OF-RP-TRANS)
-                                (:REWRITE
-                                 RETURN-TYPE-OF-MAKE-SC-FGL-READY-META.RES)
-                                (:DEFINITION RP-TERM-LISTP)
-                                (:REWRITE IS-IF-RP-TERMP)
-                                (:DEFINITION RP-TERMP)
-                                rp-trans-is-term-when-list-is-absent)))))
+   #||#
 
    (defret make-sc-fgl-ready-metawhen-quoted
      (implies (and (case-match term (('QUOTE . &) t)))
@@ -452,72 +405,121 @@
      :hints (("Goal"
               :in-theory (e/d (make-sc-fgl-ready-meta-lst) ()))))
 
-   (defret-mutual make-sc-fgl-ready-meta-valid-sc
-     (defret make-sc-fgl-ready-meta-valid-sc
-       (implies (and (rp-evl-meta-extract-global-facts :state state)
-                     (make-sc-fgl-ready-meta-formula-checks state)
-                     (valid-sc term a)
-                     (rp-termp term)
-                     )
-                (valid-sc res a))
-       :fn make-sc-fgl-ready-meta)
+   #||#))
 
-     (defret make-sc-fgl-ready-meta-lst-valid-sc
-       (implies (and (rp-evl-meta-extract-global-facts :state state)
-                     (make-sc-fgl-ready-meta-formula-checks state)
-                     (rp-term-listp lst)
-                     (valid-sc-subterms lst a))
-                (valid-sc-subterms res-lst a))
-       :fn make-sc-fgl-ready-meta-lst)
 
-     :hints (("Goal"
-              :do-not-induct t
-              :expand ((:free (x y)
-                              (valid-sc (cons x y) a))
-                       ;;(MAKE-SC-FGL-READY-META-LST (CDDR (EX-FROM-RP TERM)))
-                       ;;(MAKE-SC-FGL-READY-META-LST (CDR (EX-FROM-RP TERM)))
-                       ;;(MAKE-SC-FGL-READY-META TERM)
-                       (VALID-SC (EX-FROM-RP TERM) A))
-              :in-theory (e/d* (make-sc-fgl-ready-meta
-                                make-sc-fgl-ready-meta-lst
-                                RP-EVLt-OF-FNCALL-ARGS
-                                RP-EVL-OF-FNCALL-ARGS
-                                rp-evlt-of-ex-from-rp-reverse
-                                regular-eval-lemmas
-                                is-if
-                                is-rp
-                                regular-eval-lemmas-with-ex-from-rp
-                                valid-sc-of-ex-from-rp-reverse
-                                )
-                               (rp-evlt-of-ex-from-rp
-                                VALID-SC-OF-EX-FROM-RP
-                                VALID-SC-EX-FROM-RP-2
-                                (:DEFINITION EVAL-AND-ALL)
-                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                                (:DEFINITION ACL2::APPLY$-BADGEP)
-                                (:DEFINITION RP-TRANS)
-                                (:DEFINITION EX-FROM-RP)
-                                (:REWRITE NOT-INCLUDE-RP)
-                                (:DEFINITION INCLUDE-FNC)
-                                (:REWRITE DEFAULT-CDR)
-                                (:DEFINITION INCLUDE-FNC-SUBTERMS)
-                                (:REWRITE RP-EVL-OF-RP-EQUAL2)
-                                (:REWRITE RP-TERMP-OF-RP-TRANS)
-                                (:REWRITE DEFAULT-CAR)
-                                (:REWRITE
-                                 RETURN-TYPE-OF-MAKE-SC-FGL-READY-META.RES)
-                                ;;(:DEFINITION RP-TERM-LISTP)
-                                (:REWRITE IS-IF-RP-TERMP)
-                                (:DEFINITION RP-TERMP)
-                                rp-trans-is-term-when-list-is-absent)))))))
+(defret-mutual make-sc-fgl-ready-meta-correct
+  (defret make-sc-fgl-ready-meta-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (make-sc-fgl-ready-meta-formula-checks state)
+                  ;;(valid-sc term a)
+                  )
+             (and (equal (rp-evlt res a)
+                         (rp-evlt term a))
+                  ;;(valid-sc res a)
+                  ))
+    :fn make-sc-fgl-ready-meta)
+
+  (defret make-sc-fgl-ready-meta-lst-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (make-sc-fgl-ready-meta-formula-checks state)
+                  ;;(valid-sc-subterms lst a)
+                  )
+             (and (equal (rp-evlt-lst res-lst a)
+                         (rp-evlt-lst lst a))
+                  ;; (valid-sc-subterms res-lst a)
+                  ))
+    :fn make-sc-fgl-ready-meta-lst)
+
+  :hints (("Goal"
+           :do-not-induct t
+
+           :in-theory (e/d* (make-sc-fgl-ready-meta
+                             make-sc-fgl-ready-meta-lst
+                             RP-EVLt-OF-FNCALL-ARGS
+                             RP-EVL-OF-FNCALL-ARGS
+                             rp-evlt-of-ex-from-rp-reverse
+                             regular-eval-lemmas
+                             regular-eval-lemmas-with-ex-from-rp
+                             )
+                            (rp-evlt-of-ex-from-rp
+                             (:DEFINITION EX-FROM-RP)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                             (:REWRITE RP-TERMP-OF-RP-TRANS)
+                             (:REWRITE
+                              RETURN-TYPE-OF-MAKE-SC-FGL-READY-META.RES)
+                             (:DEFINITION RP-TERM-LISTP)
+                             (:REWRITE IS-IF-RP-TERMP)
+                             (:DEFINITION RP-TERMP)
+                             rp-trans-is-term-when-list-is-absent)))))
+
+(defret-mutual make-sc-fgl-ready-meta-valid-sc
+  (defret make-sc-fgl-ready-meta-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (make-sc-fgl-ready-meta-formula-checks state)
+                  (valid-sc term a)
+                  (rp-termp term)
+                  )
+             (valid-sc res a))
+    :fn make-sc-fgl-ready-meta)
+
+  (defret make-sc-fgl-ready-meta-lst-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (make-sc-fgl-ready-meta-formula-checks state)
+                  (rp-term-listp lst)
+                  (valid-sc-subterms lst a))
+             (valid-sc-subterms res-lst a))
+    :fn make-sc-fgl-ready-meta-lst)
+
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((:free (x y)
+                           (valid-sc (cons x y) a))
+                    ;;(MAKE-SC-FGL-READY-META-LST (CDDR (EX-FROM-RP TERM)))
+                    ;;(MAKE-SC-FGL-READY-META-LST (CDR (EX-FROM-RP TERM)))
+                    ;;(MAKE-SC-FGL-READY-META TERM)
+                    (VALID-SC (EX-FROM-RP TERM) A))
+           :in-theory (e/d* (make-sc-fgl-ready-meta
+                             make-sc-fgl-ready-meta-lst
+                             RP-EVLt-OF-FNCALL-ARGS
+                             RP-EVL-OF-FNCALL-ARGS
+                             rp-evlt-of-ex-from-rp-reverse
+                             regular-eval-lemmas
+                             is-if
+                             is-rp
+                             regular-eval-lemmas-with-ex-from-rp
+                             valid-sc-of-ex-from-rp-reverse
+                             )
+                            (rp-evlt-of-ex-from-rp
+                             VALID-SC-OF-EX-FROM-RP
+                             VALID-SC-EX-FROM-RP-2
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                             (:DEFINITION ACL2::APPLY$-BADGEP)
+                             (:DEFINITION RP-TRANS)
+                             (:DEFINITION EX-FROM-RP)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                             (:REWRITE RP-TERMP-OF-RP-TRANS)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE
+                              RETURN-TYPE-OF-MAKE-SC-FGL-READY-META.RES)
+                             ;;(:DEFINITION RP-TERM-LISTP)
+                             (:REWRITE IS-IF-RP-TERMP)
+                             (:DEFINITION RP-TERMP)
+                             rp-trans-is-term-when-list-is-absent)))))
+
+
 
 (memoize 'make-sc-fgl-ready-meta)
 
-(add-postprocessor
- :processor-fnc make-sc-fgl-ready-meta
- :valid-syntaxp t
- :disabledp t
- :formula-checks make-sc-fgl-ready-meta-formula-checks
- :hints (("Goal"
-          :in-theory (e/d (make-sc-fgl-ready-meta-main) ()))))
+
+

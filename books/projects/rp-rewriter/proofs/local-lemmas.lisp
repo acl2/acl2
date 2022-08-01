@@ -38,7 +38,7 @@
 
 (in-package "RP")
 (include-book "tools/flag" :dir :system)
-;(include-book "proof-functions")
+
 
 ;; lemmas that are to be used locally
 

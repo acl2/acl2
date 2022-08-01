@@ -108,7 +108,8 @@
                                           rp-state
                                           state))
            ((mv rw rp-state)
-            (if (rp-formula-checks state)
+            (if (and (rp-meta-fnc-formula-checks state)
+                     (rp-proc-formula-checks state))
                 (preprocess-then-rp-rw car-cl rp-state state)
               (mv car-cl rp-state))))
         (mv nil

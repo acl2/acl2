@@ -1792,12 +1792,28 @@
   (add-rp-rule pull-out-dumb-twos-complement
                :rw-direction :both))
 
+
+;; reduction or/and stuff
 (def-rp-rule 4vec-reduction-and-of---bitp
   (implies (bitp x)
            (equal (sv::4vec-reduction-and (-- x))
                   (- x)))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
+
+
+(def-rp-rule 
+  4vec-reduction-or-to-4vec-bitor-for-mult-proofs
+  (implies (and (integerp x)
+                (equal (sv::4vec-rsh 7 x) 0)
+                (syntaxp (not (cons-count-compare x 300))))
+           (equal (sv::4vec-reduction-or x)
+                  (- (sv::4vec-bitor (sv::4vec-part-select 0 1 x)
+                                     (- (sv::4vec-reduction-or (sv::4vec-rsh 1 x)))))))
+  :hints (("Goal"
+           :in-theory '(svl::4vec-reduction-or-to-4vec-bitor))))
+
+
 
 (bump-all-meta-rules)
 

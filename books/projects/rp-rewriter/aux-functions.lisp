@@ -1859,7 +1859,15 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (define valid-rp-state-syntaxp (rp-state)
   (and (rp-statep rp-state)
-       (valid-rp-state-syntaxp-aux rp-state)))
+       (valid-rp-state-syntaxp-aux rp-state))
+  ///
+  (defthm VALID-RP-STATE-SYNTAXP-implies
+    (implies (VALID-RP-STATE-SYNTAXP rp-state)
+             (AND (RP-STATEP RP-STATE)
+                  (VALID-RP-STATE-SYNTAXP-AUX RP-STATE)))
+    :rule-classes (:forward-chaining)
+    :hints (("Goal"
+             :in-theory (e/d (VALID-RP-STATE-SYNTAXP) ())))))
 
 (defun-sk rp-state-preservedp-sk (old-rp-state new-rp-state)
   (declare (xargs :verify-guards nil))
