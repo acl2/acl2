@@ -265,7 +265,7 @@
     defconst-computed2 ;drop?
     defconst-computed3
 
-    ;; Axe stuff:
+    ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
     simp-dag
     compose-term-and-dag
     compose-term-and-dags
@@ -275,7 +275,7 @@
     result-array-stobj
     dag-to-term
     make-term-into-dag
-    simplify-terms-using-each-other
+    ;; simplify-terms-using-each-other
     make-cons-nest
     dag-fns
     make-rule-alist

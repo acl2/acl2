@@ -38,8 +38,10 @@
 
     (xdoc::p
      "In ACL2, an approach is to have the function return multiple results:
-      an error result (@('nil') if there is no error),
-      and a good result that is irrelevant if the error result is non-@('nil');
+      an error result
+      (which is @('nil') if there is no error),
+      and a good result
+      (which is irrelevant if the error result is non-@('nil'));
       for instance, this is the idiom of "
      (xdoc::seetopic "acl2::error-triple" "error triples")
      ". Another approach is to have the function return
@@ -56,6 +58,14 @@
       when the error result is non-@('nil'),
       some good result must be nonetheless returned,
       which might be accidentally used, as nothing could prevent that.
+      Returning something like @('nil') as good result means that,
+      unless @('nil') happens to be a good result,
+      it is not the case that the good result
+      always has the type of good results,
+      leading to conditional return type theorems
+      instead of unconditional ones;
+      the latter are more efficient, and conceptually cleaner,
+      but there is nothing technically wrong with conditional ones either.
       The second approach avoids this issue,
       because if there is an error result then there is no good result at all;
       the downside is that the result may have two different types.
@@ -67,31 +77,34 @@
 
     (xdoc::p
      "When functions naturally return multiple results (via @(tsee mv)),
-      the second approach adds an error result,
-      while the first approach could be applied to one of the results
+      the first approach adds an error result,
+      while the second approach could be applied to one of the results
       (e.g. the ``main'' one, if there is such a thing).
       Better yet from a conceptual point of view,
-      the function can be made to return a single result
+      the function can be made to return a single result,
+      instead of multiple ones,
       that is either an error or a tuple of the good results.
-      This is less efficient than multiple results,
+      This is less efficient than multiple results
+      (efficiency is indeed the purpose of multiple results with @(tsee mv)),
       but it may be more appropriate for a higher-level specification function,
       where issues of efficiency should be secondary,
       and where it may be more important that, in case of error,
       no dummy results are returned, so they cannot be accidentally used.
       The term `tuple' above is used in a broad sense:
       it does not have to be a list of values;
-      it could be a value of a @(tsee fty::defprod) type.
+      it could be a value of a @(tsee fty::defprod) type, for example.
       The claim above that
       issues of efficiency should be secondary in specification functions
-      fits in a vision in which tools like "
+      fits into a vision in which tools like "
      (xdoc::seetopic "apt::apt" "APT")
      " are used to turn possibly inefficient or even non-executable functions
       into efficient ones.
-      When instead, for expediency, a compromise is sought
-      in which the same function is used for specification and execution,
+      When instead, for expediency or practicality, a compromise is sought
+      in which the same function is used for specification and execution
+      (which sometimes also involves uses of @(tsee mbe)),
       then other considerations may apply,
-      and the second approach above may be preferable to the first one.
-      Nonetheless, there are applications where the first approach fits well.")
+      and the first approach above may be preferable to the second one.
+      Nonetheless, there are applications where the second approach fits well.")
 
     (xdoc::p
      "When calling functions that may return error results
@@ -104,14 +117,7 @@
       which propagates the error triples unchanged;
       @(tsee b*) provides the "
      (xdoc::seetopic "acl2::patbind-er" "@('er') binder")
-     ", which expands into something like @(tsee er-let*).
-      As an aside, note that, when verifying return type theorems,
-      using @(tsee er-let*) works when the (irrelevant) good result
-      returned by a callee with an error result
-      also belongs to the type of the good results returned by the caller;
-      otherwise, one must explicitly check for the error
-      and return an appropriate triple,
-      or perhaps use a more complex macro or binder.")
+     ", which expands into something like @(tsee er-let*).")
 
     (xdoc::p
      "The @('defresult') macro provides support for the second approach above.
@@ -122,8 +128,11 @@
       which is provided along with @('defresult').
       This macro also generates rules
       to reason about the disjunction of good and error results.
+      To return an error (when an error condition arises),
+      the constructor @('reserr') of the @(tsee reserr) fixtype can be used:
+      it takes an argument of any type.
       Along with @('defresult'),
-      a @(tsee b*) binder is provided
+      a @(tsee b*) binder @(tsee patbind-ok) is provided
       to support the check-and-propagate-error pattern described above.")
 
     (xdoc::p
@@ -142,17 +151,28 @@
       resulting in a stack of error information
       corresponding to the call stack.
       The @(tsee patbind-okf) binder automates the check-and-propagation
-      of errors that include function information.
-      This may be very useful for debugging,
+      of errors that include function information.")
+
+    (xdoc::p
+     "The @(tsee reserrf) and @(tsee reserrf-push) macros,
+      and the @(tsee patbind-okf) binder,
+      may be very useful for debugging,
       or in general to provide informative error information.
-      It may be less useful for higher-level specifications,
-      in which errors are just errors that do not carry much information
+      They may be less useful for higher-level specifications,
+      in which errors do not carry much information
       (as producing and consuming that information
-      may detract from the clarity and conciseness of the specification).
-      Therefore, we plan to introduce a simpler version of
-      the @(tsee patbind-okf) binder that just does
-      error checking and propagation, without function information;
-      this will be also usable in code not written with @(tsee define).")
+      may detract from the clarity and conciseness of the specification):
+      for higher-level specifications,
+      the simpler function @(tsee reserr) and binder @(tsee patbind-ok)
+      may be more appropriate.
+      Note that the @('f') in the names of the first set of items conveys
+      that they are a version of the simpler ones
+      that take the function name bound to @('__function__') into account;
+      note also that there is no @('reserr-push'),
+      since it is not needed for
+      the simpler errors and checks and propagation.
+      We also remark that the simpler ones can be used
+      in code not written using @(tsee define).")
 
     (xdoc::p
      "The fact that the same error result type, namely @(tsee reserr),
@@ -164,11 +184,13 @@
       It is also crucial that the result type is defined
       as a flat, and not tagged, union of good and error results:
       otherwise, error results would have to be unwrapped and wrapped
-      depending on the result types of the callee and caller.")
+      depending on the result types of the callee and caller,
+      using different unwrapping and wrapping function for each type.")
 
     (xdoc::p
      "The fixtype of good and error results introduced by @('defresult')
-      is similar to an instance of Rust's polymorphic type @('Result').
+      is similar to an instance of Rust's polymorphic type @('Result'),
+      from which the `result' part of @('defresult') is taken.
       However, while the Rust type is parameterized over
       both the good and error result types,
       in @('defresult') errors always have the same type.
@@ -415,10 +437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-b*-binder okf
+(def-b*-binder ok
   :parents (defresult)
   :short "@(tsee b*) binder for checking and propagating
-          error results of fixtype @(tsee reserr)."
+          error results of the fixtype @(tsee reserr)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -426,25 +448,19 @@
      but it is for " (xdoc::seetopic "defresult" "result types") ".")
    (xdoc::p
     "It checks whether the value of the bound term is an error,
-     returning a slightly modified error if the check succeeds.
-     Otherwise, the binder proceeds with the rest of the computation.
-     The aforementioned modification of the error consists in
-     pushing the current function's name
-     onto the stack component of the error,
-     without (i.e. with @('nil') additional information;
-     this binder assumes that @('__function__') is bound to the function name,
-     which is automatically the case when using @(tsee define).")
+     returning the same error if the check succeeds.
+     Otherwise, the binder proceeds with the rest of the computation.")
    (xdoc::p
     "This binder is used as follows:")
    (xdoc::codeblock
     "(b* (..."
-    "     ((okf <pattern>) <term>)"
+    "     ((ok <pattern>) <term>)"
     "     ...)"
     "  ...)")
    (xdoc::p
-    "Note that the argument of @('(okf ...)')
+    "Note that the argument of @('(ok ...)')
      may be a supported single-valued @(tsee b*) pattern,
-     e.g. @('(okf (cons x y))').")
+     e.g. @('(ok (cons x y))').")
    (xdoc::p
     "In order to support such a pattern,
      we generate an initial binding to a variable,
@@ -453,6 +469,31 @@
      As done in other binders that come with @(tsee b*),
      we pick a name for the first variable
      that is unlikely to occur in code."))
+  :decls
+  ((declare (xargs :guard (acl2::destructure-guard ok args acl2::forms 1))))
+  :body
+  `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
+        ((when (reserrp patbinder-ok-fresh-variable-for-result))
+         (reserrf-push patbinder-ok-fresh-variable-for-result))
+        (,(car args) patbinder-ok-fresh-variable-for-result))
+     ,acl2::rest-expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-b*-binder okf
+  :parents (defresult)
+  :short "@(tsee b*) binder for checking and propagating
+          error results of the fixtype @(tsee reserr)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee patbind-ok),
+     but it takes into account the current function name,
+     assuming that @('__funtion__') is bound to it
+     (which is automatically the case when using @(tsee define)).
+     This binder checks whether the value of the bound term is an error,
+     returning a slightly modified error if the check succeeds.
+     Otherwise, the binder proceeds with the rest of the computation."))
   :decls
   ((declare (xargs :guard (acl2::destructure-guard okf args acl2::forms 1))))
   :body
