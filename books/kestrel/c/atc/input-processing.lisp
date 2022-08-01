@@ -255,9 +255,12 @@
                         "The target function ~x0 has the same name as ~
                          the target DEFOBJECT ~x1 that precedes it."
                         target (car previous-objs)))
-             ((mv erp (list previous-fns uncalled-fns) state)
-              (atc-process-function target previous-fns uncalled-fns ctx state))
-             ((when erp) (mv erp irrelevant state)))
+             ((er (list previous-fns uncalled-fns) :iferr irrelevant)
+              (atc-process-function target
+                                    previous-fns
+                                    uncalled-fns
+                                    ctx
+                                    state)))
           (acl2::value (list previous-structs
                              previous-objs
                              previous-fns
@@ -450,9 +453,8 @@
   (b* (((unless (consp targets))
         (er-soft+ ctx t nil
                   "At least one target must be supplied."))
-       ((mv erp (list & & previous-fns uncalled-fns) state)
+       ((er (list & & previous-fns uncalled-fns) :iferr nil)
         (atc-process-target-list targets nil nil nil nil ctx state))
-       ((when erp) (mv erp nil state))
        ((unless (endp uncalled-fns))
         (er-soft+ ctx t nil
                   "The recursive target functions ~&0 ~

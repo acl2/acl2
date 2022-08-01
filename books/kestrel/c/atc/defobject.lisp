@@ -255,9 +255,8 @@
     "In essence, this generates C code for
      a term used in the initializer of the external object."))
   (b* (((acl2::fun (irrelevant)) (list (irr-expr) (irr-type)))
-       ((mv erp (list okp const out-type) state)
+       ((er (list okp const out-type) :iferr (irrelevant))
         (atc-check-iconst term ctx state))
-       ((when erp) (mv erp (irrelevant) state))
        ((when okp)
         (acl2::value
          (list (expr-const (const-int const))
@@ -345,8 +344,8 @@
                    a single non-stobj value, ~
                    but it returns ~x1 instead."
                   term stobjs-out))
-       ((mv erp (list expr type) state) (defobject-term-to-expr term ctx state))
-       ((when erp) (mv erp (irr-expr) state))
+       ((er (list expr type) :iferr (irr-expr))
+        (defobject-term-to-expr term ctx state))
        ((unless (equal type elemtype))
         (er-soft+ ctx t (irr-expr)
                   "The initializer term ~x0 has type ~x1, ~
@@ -369,9 +368,8 @@
     "We process each item,
      returning the corresponding list of expressions if successful."))
   (b* (((when (endp terms)) (acl2::value nil))
-       ((mv erp expr state) (defobject-process-init-term
-                              (car terms) elemtype ctx state))
-       ((when erp) (mv erp nil state))
+       ((er expr :iferr nil) (defobject-process-init-term
+                               (car terms) elemtype ctx state))
        ((er exprs) (defobject-process-init-terms
                      (cdr terms) elemtype ctx state)))
     (acl2::value (cons expr exprs))))
@@ -422,15 +420,14 @@
   :mode :program
   :short "Process the inputs of @(tsee defobject)."
   (b* (((acl2::fun (irrelevant)) (list "" (irr-ident) (irr-type) nil nil))
-       ((mv erp (list name-string name-ident redundantp) state)
+       ((er (list name-string name-ident redundantp):iferr (irrelevant))
         (defobject-process-name name call ctx state))
-       ((when erp) (mv erp (irrelevant) state))
        ((when redundantp)
         (acl2::value (list name-string name-ident (irr-type) nil t)))
-       ((mv erp type state) (defobject-process-type type ctx state))
-       ((when erp) (mv erp (irrelevant) state))
-       ((mv erp exprs state) (defobject-process-init init type ctx state))
-       ((when erp) (mv erp (irrelevant) state)))
+       ((er type :iferr (irrelevant))
+        (defobject-process-type type ctx state))
+       ((er exprs :iferr (irrelevant))
+        (defobject-process-init init type ctx state)))
     (acl2::value (list name-string name-ident type exprs nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -495,9 +492,8 @@
                state)
   :mode :program
   :short "Process the inputs and generate the events."
-  (b* (((mv erp (list name-string name-ident type exprs redundantp) state)
+  (b* (((er (list name-string name-ident type exprs redundantp) :iferr '(_))
         (defobject-process-inputs name type init call ctx state))
-       ((when erp) (mv erp '(_) state))
        ((when redundantp) (acl2::value '(value-triple :redundant)))
        (event (defobject-gen-everything
                 name name-string name-ident type init exprs call)))

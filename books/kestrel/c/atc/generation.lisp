@@ -1771,9 +1771,8 @@
             (acl2::value
              (list (expr-ident (make-ident :name (symbol-name var)))
                    (type-fix type)))))
-         ((mv erp (list okp const out-type) state)
+         ((er (list okp const out-type) :iferr (irr))
           (atc-check-iconst term ctx state))
-         ((when erp) (mv erp (irr) state))
          ((when okp)
           (acl2::value
            (list (expr-const (const-int const))
@@ -1931,19 +1930,17 @@
                                elem-type))))
          ((mv okp arg) (atc-check-sint-from-boolean term))
          ((when okp)
-          (b* (((mv erp expr state)
-                (atc-gen-expr-bool arg inscope prec-tags fn ctx state))
-               ((when erp) (mv erp (irr) state)))
+          (b* (((er expr :iferr (irr))
+                (atc-gen-expr-bool arg inscope prec-tags fn ctx state)))
             (mv nil (list expr (type-sint)) state)))
          ((mv okp test then else) (atc-check-condexpr term))
          ((when okp)
-          (b* (((mv erp test-expr state) (atc-gen-expr-bool test
-                                                            inscope
-                                                            prec-tags
-                                                            fn
-                                                            ctx
-                                                            state))
-               ((when erp) (mv erp (irr) state))
+          (b* (((er test-expr :iferr (irr)) (atc-gen-expr-bool test
+                                                               inscope
+                                                               prec-tags
+                                                               fn
+                                                               ctx
+                                                               state))
                ((er (list then-expr then-type)) (atc-gen-expr-pure
                                                  then
                                                  inscope
@@ -2061,9 +2058,8 @@
                                            :arg2 arg2-expr))))
          ((mv okp arg in-type) (atc-check-boolean-from-type term))
          ((when okp)
-          (b* (((mv erp (list expr type) state)
+          (b* (((er (list expr type) :iferr (irr-expr))
                 (atc-gen-expr-pure arg inscope prec-tags fn ctx state))
-               ((when erp) (mv erp expr state))
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr-expr)
                           "The conversion from ~x0 to boolean ~
@@ -2072,7 +2068,7 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           in-type arg type)))
-            (mv erp expr state))))
+            (acl2::value expr))))
       (er-soft+ ctx t (irr-expr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
@@ -2130,13 +2126,13 @@
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
   (b* (((when (endp terms)) (acl2::value (list nil nil)))
-       ((mv erp (list expr type) state) (atc-gen-expr-pure (car terms)
-                                                           inscope
-                                                           prec-tags
-                                                           fn
-                                                           ctx
-                                                           state))
-       ((when erp) (mv erp (list nil nil) state))
+       ((er(list expr type) :iferr (list nil nil))
+        (atc-gen-expr-pure (car terms)
+                           inscope
+                           prec-tags
+                           fn
+                           ctx
+                           state))
        ((er (list exprs types)) (atc-gen-expr-pure-list (cdr terms)
                                                         inscope
                                                         prec-tags
@@ -2217,14 +2213,14 @@
                         "The call ~x0 does not satisfy the restrictions ~
                          on array arguments being identical to the formals."
                         term))
-             ((mv erp (list arg-exprs types) state)
+             ((er (list arg-exprs types)
+                  :iferr (list (irr-expr) (irr-type) nil nil))
               (atc-gen-expr-pure-list args
                                       inscope
                                       prec-tags
                                       fn
                                       ctx
                                       state))
-             ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state))
              ((unless (equal types in-types))
               (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
                         "The function ~x0 with input types ~x1 ~
@@ -2239,9 +2235,8 @@
                         out-type
                         affect
                         `(binary-+ '2 ,limit))))))
-    (b* (((mv erp (list expr type) state)
-          (atc-gen-expr-pure term inscope prec-tags fn ctx state))
-         ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state)))
+    (b* (((er (list expr type) :iferr (list (irr-expr) (irr-type) nil nil))
+          (atc-gen-expr-pure term inscope prec-tags fn ctx state)))
       (acl2::value (list expr type affect '(quote 1)))))
   ///
   (more-returns
@@ -2891,13 +2886,12 @@
                             proofs
                             ctx
                             state))
-             ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                          inscope
-                                                          prec-tags
-                                                          fn
-                                                          ctx
-                                                          state))
-             ((when erp) (mv erp irr state))
+             ((er test-expr :iferr irr) (atc-gen-expr-bool test
+                                                           inscope
+                                                           prec-tags
+                                                           fn
+                                                           ctx
+                                                           state))
              ((er (list then-items then-type then-limit))
               (atc-gen-stmt then
                             var-term-alist
@@ -2994,9 +2988,8 @@
                                an attempt is made to modify the variables ~x1, ~
                                not all of which are assignable."
                               fn vars))
-                   ((mv erp
-                        (list init-expr init-type init-affect init-limit)
-                        state)
+                   ((er (list init-expr init-type init-affect init-limit)
+                        :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3005,23 +2998,21 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal init-affect vars))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars init-affect))
-                   ((mv erp typed-formals state)
+                   ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp & state) (atc-ensure-formals-not-lost vars
-                                                                  affect
-                                                                  typed-formals
-                                                                  fn
-                                                                  ctx
-                                                                  state))
-                   ((when erp) (mv erp irr state))
+                   ((er ?val :iferr irr)
+                    (atc-ensure-formals-not-lost vars
+                                                 affect
+                                                 typed-formals
+                                                 fn
+                                                 ctx
+                                                 state))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init-type))
@@ -3069,9 +3060,7 @@
                                to modify a non-assignable variable ~x1."
                               fn var))
                    (prev-type type?)
-                   ((mv erp
-                        (list rhs-expr rhs-type rhs-affect rhs-limit)
-                        state)
+                   ((er (list rhs-expr rhs-type rhs-affect rhs-limit) :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3080,7 +3069,6 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t irr
                               "The type ~x0 of the term ~x1 ~
@@ -3095,16 +3083,15 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars rhs-affect))
-                   ((mv erp typed-formals state)
+                   ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp & state) (atc-ensure-formals-not-lost vars
-                                                                  affect
-                                                                  typed-formals
-                                                                  fn
-                                                                  ctx
-                                                                  state))
-                   ((when erp) (mv erp irr state))
+                   ((er ?val :iferr irr)
+                    (atc-ensure-formals-not-lost vars
+                                                 affect
+                                                 typed-formals
+                                                 fn
+                                                 ctx
+                                                 state))
                    ((when (type-case rhs-type :array))
                     (raise "Internal error: array type ~x0." rhs-type)
                     (acl2::value irr))
@@ -3167,16 +3154,15 @@
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
                         fn val))
-             ((mv erp typed-formals state)
+             ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((when erp) (mv erp irr state))
-             ((mv erp & state) (atc-ensure-formals-not-lost vars
-                                                            affect
-                                                            typed-formals
-                                                            fn
-                                                            ctx
-                                                            state))
-             ((when erp) (mv erp irr state))
+             ((er ? :iferr irr)
+              (atc-ensure-formals-not-lost vars
+                                           affect
+                                           typed-formals
+                                           fn
+                                           ctx
+                                           state))
              ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val
                             var-term-alist
@@ -3237,15 +3223,12 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((mv erp (list arr-expr type1) state)
+                   ((er (list arr-expr type1) :iferr irr)
                     (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp (list sub-expr type2) state)
+                   ((er (list sub-expr type2) :iferr irr)
                     (atc-gen-expr-pure sub inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp (list elem-expr type3) state)
+                   ((er (list elem-expr type3) :iferr irr)
                     (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal type1 (type-pointer elem-type)))
                     (er-soft+ ctx t irr
                               "The array ~x0 of type ~x1 ~
@@ -3315,13 +3298,11 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((mv erp (list struct-expr type1) state)
+                   ((er (list struct-expr type1) :iferr irr)
                     (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp (list member-expr type2) state)
-                    (atc-gen-expr-pure member-value
-                                       inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
+                   ((er (list member-expr type2) :iferr irr)
+                    (atc-gen-expr-pure
+                     member-value inscope prec-tags fn ctx state))
                    ((unless (equal type1 (type-pointer (type-struct tag))))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -3381,9 +3362,8 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((mv erp (list struct-expr struct-type) state)
+                   ((er (list struct-expr struct-type) :iferr irr)
                     (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal struct-type
                                    (type-pointer (type-struct tag))))
                     (er-soft+ ctx t irr
@@ -3393,9 +3373,8 @@
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
                               var struct-type (type-pointer (type-struct tag))))
-                   ((mv erp (list index-expr index-type1) state)
+                   ((er (list index-expr index-type1) :iferr irr)
                     (atc-gen-expr-pure index inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal index-type1 index-type))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -3406,9 +3385,8 @@
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
                               var struct-type index index-type1 index-type))
-                   ((mv erp (list elem-expr elem-type1) state)
+                   ((er (list elem-expr elem-type1) :iferr irr)
                     (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal elem-type1 elem-type))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -3471,9 +3449,8 @@
                                must be a portable ASCII C identifier, ~
                                but it is not."
                               (symbol-name var) var fn))
-                   ((mv erp
-                        (list init-expr init-type init-affect init-limit)
-                        state)
+                   ((er (list init-expr init-type init-affect init-limit)
+                        :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3482,7 +3459,6 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((when (consp init-affect))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -3528,9 +3504,8 @@
                         fn var))
              ((when (eq wrapper? 'assign))
               (b* ((prev-type type?)
-                   ((mv erp
-                        (list rhs-expr rhs-type rhs-affect rhs-limit)
-                        state)
+                   ((er (list rhs-expr rhs-type rhs-affect rhs-limit)
+                        :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3539,7 +3514,6 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t irr
                               "The type ~x0 of the term ~x1 ~
@@ -3604,16 +3578,15 @@
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
-             ((mv erp typed-formals state)
+             ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((when erp) (mv erp irr state))
-             ((mv erp & state) (atc-ensure-formals-not-lost (list var)
-                                                            affect
-                                                            typed-formals
-                                                            fn
-                                                            ctx
-                                                            state))
-             ((when erp) (mv erp irr state))
+             ((er ? :iferr irr)
+              (atc-ensure-formals-not-lost (list var)
+                                           affect
+                                           typed-formals
+                                           fn
+                                           ctx
+                                           state))
              ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val
                             var-term-alist
@@ -3680,7 +3653,7 @@
            ((equal terms affect)
             (acl2::value (list nil (type-void) (pseudo-term-quote 1))))
            ((equal (cdr terms) affect)
-            (b* (((mv erp (list expr type eaffect limit) state)
+            (b* (((er (list expr type eaffect limit) :iferr irr)
                   (atc-gen-expr (car terms)
                                 var-term-alist
                                 inscope
@@ -3689,7 +3662,6 @@
                                 prec-tags
                                 ctx
                                 state))
-                 ((when erp) (mv erp irr state))
                  ((when (consp eaffect))
                   (er-soft+ ctx t irr
                             "The first argument ~x0 of the term ~x1 ~
@@ -3790,14 +3762,13 @@
                          which differs from the variables ~x3 ~
                          being affected here."
                         fn loop-fn fn-affect affect))
-             ((mv erp (list arg-exprs types) state)
+             ((er (list arg-exprs types) :iferr irr)
               (atc-gen-expr-pure-list args
                                       inscope
                                       prec-tags
                                       fn
                                       ctx
                                       state))
-             ((when erp) (mv erp irr state))
              ((unless (equal types in-types))
               (er-soft+ ctx t irr
                         "The function ~x0 with input types ~x1 ~
@@ -3811,7 +3782,7 @@
           (acl2::value (list (list (block-item-stmt (stmt-expr call-expr)))
                              (type-void)
                              `(binary-+ '5 ,limit)))))
-       ((mv erp (list expr type eaffect limit) state)
+       ((er (list expr type eaffect limit) :iferr irr)
         (atc-gen-expr term
                       var-term-alist
                       inscope
@@ -3820,7 +3791,6 @@
                       prec-tags
                       ctx
                       state))
-       ((when erp) (mv erp irr state))
        ((when loop-flag)
         (er-soft+ ctx t irr
                   "A loop body must end with ~
@@ -4071,13 +4041,12 @@
                            proofs
                            ctx
                            state))
-       ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                    inscope
-                                                    prec-tags
-                                                    fn
-                                                    ctx
-                                                    state))
-       ((when erp) (mv erp (irr) state))
+       ((er test-expr :iferr (irr)) (atc-gen-expr-bool test
+                                                       inscope
+                                                       prec-tags
+                                                       fn
+                                                       ctx
+                                                       state))
        (formals (formals+ fn wrld))
        ((mv okp affect)
         (b* (((when (member-eq else formals)) (mv t (list else)))
@@ -4092,7 +4061,7 @@
                    does not have the required form. ~
                    See the user documentation."
                   else fn))
-       ((mv erp (list body-items body-type body-limit) state)
+       ((er (list body-items body-type body-limit) :iferr (irr))
         (atc-gen-stmt then
                       nil
                       (cons nil inscope)
@@ -4105,7 +4074,6 @@
                       proofs
                       ctx
                       state))
-       ((when erp) (mv erp (irr) state))
        ((unless (type-case body-type :void))
         (raise "Internal error: ~
                 the loop body ~x0 of ~x1 ~ returns type ~x2."
@@ -7303,52 +7271,43 @@
                   names-to-avoid))
         (b* (((when (function-symbolp target (w state)))
               (b* ((fn target)
-                   ((mv erp
-                        (list exts
+                   ((er (list exts
                               prec-fns
                               local-events
                               exported-events
                               names-to-avoid)
-                        state)
+                        :iferr (list nil nil nil nil nil))
                     (if (irecursivep+ fn (w state))
-                        (b* (((mv erp
-                                  (list local-events
+                        (b* (((er (list local-events
                                         exported-events
                                         prec-fns
                                         names-to-avoid)
-                                  state)
+                                  :iferr (list nil nil nil nil nil))
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
                                             proofs prog-const
                                             fn-thms fn-appconds appcond-thms
-                                            print names-to-avoid ctx state))
-                             ((when erp)
-                              (mv erp (list nil nil nil nil nil) state)))
+                                            print names-to-avoid ctx state)))
                           (acl2::value (list nil
                                              prec-fns
                                              local-events
                                              exported-events
                                              names-to-avoid)))
-                      (b* (((mv erp
-                                (list fundef
+                      (b* (((er (list fundef
                                       local-events
                                       exported-events
                                       prec-fns
                                       names-to-avoid)
-                                state)
+                                :iferr (list nil nil nil nil nil))
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
                                             proofs
                                             prog-const init-fun-env-thm fn-thms
                                             print names-to-avoid ctx state))
-                           ((when erp)
-                            (mv erp (list nil nil nil nil nil) state))
                            (ext (ext-declon-fundef fundef)))
                         (acl2::value (list (list ext)
                                            prec-fns
                                            local-events
                                            exported-events
-                                           names-to-avoid)))))
-                   ((when erp)
-                    (mv erp (list nil nil nil nil nil nil nil) state)))
+                                           names-to-avoid))))))
                 (acl2::value
                  (list exts
                        prec-fns
@@ -7644,10 +7603,10 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &) (atc-gen-file ',tunit
-                                     ,output-file
-                                     ',pretty-printing
-                                     state)))
+          (b* (((er ?val) (atc-gen-file ',tunit
+                                        ,output-file
+                                        ',pretty-printing
+                                        state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
