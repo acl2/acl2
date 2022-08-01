@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "test-cases")
 (include-book "find-probable-facts")
 (include-book "jvm/rule-lists-jvm") ;drop?
 (include-book "rules-in-rule-lists")

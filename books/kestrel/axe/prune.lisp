@@ -117,7 +117,7 @@
                               (or (booleanp call-stp)
                                   (natp call-stp)))
                   :stobjs state))
-  (b* ((- (cw "(Attempting to resolve test using ~x0 assumptions and ~x1 equality assumptons.~%" (len assumptions) (len equality-assumptions)))
+  (b* ((- (cw "(Attempting to resolve test using ~x0 assumptions and ~x1 equality assumptions.~%" (len assumptions) (len equality-assumptions)))
        ;; First apply the Axe Rewriter to the test:
        (- (cw "(Simplifying test.~%"))
        ;; TODO: Consider first doing something faster than a DAG-producing
