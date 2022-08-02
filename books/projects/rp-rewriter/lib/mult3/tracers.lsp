@@ -258,7 +258,15 @@ Valid:~x8~%~%"
 
 (clear-memoize-statistics) (clear-memoize-tables)
 
+(rp::show-rules :cnt)
+
 (progn
+  (profile 'rp::create-c-instance)
+  (profile 'rp::create-s-instance)
+  (profile 'rp::create-s-c-res-instance)
+  (profile 'rp::c-sum-merge-main-fn)
+  (profile 'rp::sum-merge-lst-for-s)
+  
   (profile 'SVL::CONCAT-META)
   (profile 'SVL::BITS-OF-META-FN)
   (profile 'SVL::4VEC-RSH-OF-META)
@@ -273,4 +281,10 @@ Valid:~x8~%~%"
   (profile 'rp::unpack-booth-general-meta$)
   (profile 'rp::unpack-booth-general-postprocessor)
   (profile 'rp::pp-radix8+-fix)
-  (profile 'rp::ex-from-pp-lst))
+  (profile 'rp::ex-from-pp-lst)
+  (profile 'rp::c-of-s-fix-lst)
+  (profile 'rp::maybe-bitp-precheck)
+  (profile 'rp::c-pattern1-reduce)
+  (profile 'rp::c-pattern2-reduce)
+  (profile 'rp::c-pattern0-reduce)
+  )

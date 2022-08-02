@@ -1328,6 +1328,24 @@
                             +-is-sum
                             svl::bits-of-bits-1)))))
 
+
+(def-rp-rule bits-of----of-bitp
+  (implies (and (syntaxp (quotep size))
+                (posp size)
+                (bitp x)
+                (natp start)) 
+           (equal (svl::bits (-- x) start size)
+                  (if (equal size 1)
+                      x
+                    (svl::4vec-concat$ 1
+                                       x
+                                       (svl::bits (-- x) 0 (1- size))))))
+  :hints (("Goal"
+           :in-theory (e/d (-- svl::bits) (+-is-sum)))))
+
+
+
+
 ;; -------------------------------------------------------------------------------
 ;; -------------------------------------------------------------------------------
 
@@ -1812,6 +1830,16 @@
                                      (- (sv::4vec-reduction-or (sv::4vec-rsh 1 x)))))))
   :hints (("Goal"
            :in-theory '(svl::4vec-reduction-or-to-4vec-bitor))))
+
+(rp::def-rp-rule 4vec-times-to-*
+   (implies (and (integerp x)
+                 (integerp y))
+            (equal (sv::4vec-times x y)
+                   (* x y)))
+   :hints (("Goal"
+            :in-theory (e/d (SV::4VEC->UPPER
+                             SV::4VEC->LOWER
+                             sv::4vec-times) ()))))
 
 
 

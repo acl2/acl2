@@ -79,6 +79,15 @@
   (sv::4vec-part-select start
                         size val))
 
+
+(define is-bits-p (term)
+  (case-match term (('bits & & &) t))
+  ///
+  (defthm is-bits-p-implies
+    (implies (is-bits-p term)
+             (case-match term (('bits & & &) t)))
+    :rule-classes :forward-chaining))
+
 #|(defund 4vec-lsh$ (size val)
   (declare (ignorable size val))
   (sv::4vec-lsh (nfix size) val))||#
