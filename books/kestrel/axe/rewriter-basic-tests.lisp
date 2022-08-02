@@ -494,3 +494,16 @@
                         nil t t (w state))
    (and (not erp)
         (equal (dag-to-term res) '(if (not (consp x)) (equal '3 (car x)) (equal '4 (car x)))))))
+
+;; Example where a BVIF becomes a (bvchop '32 '1), which can be evaluated.
+;; Since we simplify the result, all is well.
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(bvif '32 't '1 x)
+                        nil
+                        nil ;(make-rule-alist! '(default-car) (w state))
+                        nil nil
+                        t ;memoize=t
+                        nil t t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) ''1))))

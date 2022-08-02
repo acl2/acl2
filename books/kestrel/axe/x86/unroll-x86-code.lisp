@@ -134,8 +134,9 @@
          ((mv erp dag state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
                                            dag
-                                           ;; the assumptions used during lifting seem unlikely to be helpful when pruning, and user assumptions
-                                           ;; seem like they should be used during lifting (TODO: What about assumptions only usable by STP?)
+                                           ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
+                                           ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
+                                           ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
                                            nil ; assumptions
                                            rules
                                            nil ; interpreted-fns
