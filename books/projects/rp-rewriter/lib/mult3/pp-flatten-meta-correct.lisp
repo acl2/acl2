@@ -2607,7 +2607,7 @@
 
    
    (local
-    (define hidden-pp-term-to-pp-lists (lst sign)
+    (define hidden-pp-term-to-pp-lists (lst sign &key (term-size-limit 'term-size-limit))
       :verify-guards nil
       :returns (mv res too-large-p)
       (pp-term-to-pp-lists lst sign)

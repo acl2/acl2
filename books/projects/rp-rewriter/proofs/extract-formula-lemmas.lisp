@@ -39,8 +39,8 @@
 
 (in-package "RP")
 (include-book "../extract-formula")
-
 (include-book "proof-functions")
+
 (local (include-book "proof-function-lemmas"))
 (local (include-book "aux-function-lemmas"))
 (local (include-book "rp-equal-lemmas"))

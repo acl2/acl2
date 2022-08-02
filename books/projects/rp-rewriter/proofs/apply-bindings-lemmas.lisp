@@ -41,7 +41,7 @@
 (include-book "../rp-rewriter")
 (include-book "aux-function-lemmas")
 (include-book "local-lemmas")
-(include-book "proof-functions")
+
 (include-book "rp-equal-lemmas")
 (include-book "proof-function-lemmas")
 

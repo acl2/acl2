@@ -55,6 +55,8 @@
 
 (include-book "spec-meta")
 
+(include-book "equal-of-if-with-constants")
+
 (local
  (include-book "summation-tree-meta-fncs-correct"))
 
@@ -64,7 +66,10 @@
 (local
  (include-book "unpack-booth-correct"))
 
-(include-book "equal-of-if-with-constants")
+(local
+ (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))
+
+
 
 ;;(include-book "verify-guards")
 
@@ -245,21 +250,45 @@
  :returns (mv term dont-rw))||#
 
 (rp::add-meta-rule
- :meta-fnc unpack-booth-meta
+ :meta-fnc unpack-booth-general-meta$
  :trig-fnc unpack-booth
  :valid-syntaxp t
  :formula-checks mult-formula-checks
- :returns (mv term dont-rw))
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d (unpack-booth-general-meta$) ()))))
 
-(rp::add-meta-rule
+#|(rp::add-meta-rule
  :meta-fnc unpack-booth-general-meta$
  :trig-fnc equal
  :valid-syntaxp t
  :formula-checks mult-formula-checks
- :returns (mv term dont-rw))
+ :returns (mv term dont-rw))|#
+
+(add-postprocessor
+ :processor-fnc make-sc-fgl-ready-meta
+ :valid-syntaxp t
+ :disabledp t
+ :formula-checks make-sc-fgl-ready-meta-formula-checks
+ :hints (("Goal"
+          :in-theory (e/d (make-sc-fgl-ready-meta-main) ()))))
 
 (add-postprocessor
  :processor-fnc medw-compress-any
  :valid-syntaxp t
  :disabledp t
  :formula-checks mult-formula-checks)
+
+(add-postprocessor
+ :processor-fnc unpack-booth-general-postprocessor
+ :valid-syntaxp t
+ :disabledp nil
+ :formula-checks mult-formula-checks
+ :returns (mv term rp-state)
+ :hints (("Goal"
+          :do-not-induct t
+          :in-theory (e/d (UNPACK-BOOTH-GENERAL-POSTPROCESSOR)
+                          (VALID-RP-STATEP
+                           rp-termp
+                           rp-rw
+                           rp-trans)))))

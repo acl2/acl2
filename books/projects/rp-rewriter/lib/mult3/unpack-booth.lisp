@@ -80,11 +80,7 @@
                                      (list (car pp-lst)))))
                       (unpack-booth-for-pp-lst (cdr pp-lst)))))
 
-(define good-hons-copy ((term))
-  (cond ((atom term)
-         term)
-        (t (hons (good-hons-copy (car term))
-                 (good-hons-copy (cdr term))))))
+
 
 (define include-binary-fnc-p (term)
   (or (include-fnc term 'binary-not)
@@ -725,6 +721,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
                                 :condition t
                                 :aokp t)
   (unpack-booth-buried-in-pp-lst* unpack-booth-buried-in-pp-lst-fn)
+  ;; unpack for subsequent mult proofs in the same module:
   (unpack-booth-for-s* unpack-booth-for-s-fn
                        :condition t
                        :aokp t)
@@ -751,12 +748,18 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
        t)
       (& nil))))|#
 
-(defthm good-hons-copy-is-its-arg
-  (equal (good-hons-copy term)
+(define hons-copy2 ((term))
+  (cond ((atom term)
+         term)
+        (t (hons (hons-copy2 (car term))
+                 (hons-copy2 (cdr term))))))
+
+(defthm hons-copy2-is-its-arg
+  (equal (hons-copy2 term)
          term)
   :hints (("Goal"
-           :expand (good-hons-copy term)
-           :in-theory (e/d (good-hons-copy) ()))))
+           :expand (hons-copy2 term)
+           :in-theory (e/d (hons-copy2) ()))))
 
 (local
  (defthm binary-fnc-p-implies
@@ -812,8 +815,8 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
                        (atom subterm))))
         (b* ((res (create-and-list-instance (list subterm-orig))))
           (mv (if signed `(-- ,res) res) t)))
-       (subterm-orig (hons-copy subterm-orig))
-       ;;(subterm-orig (good-hons-copy subterm-orig))
+       ;;(subterm-orig (hons-copy subterm-orig))
+       (subterm-orig (hons-copy2 subterm-orig))
 
        #|(- (or (good-s-chain subterm)
        (hard-error 'unpack-booth-meta ; ;
@@ -929,26 +932,31 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
 
          ((when (equal (car term) 'if))
           (b* (((unless (is-if term))
-                (mv term t nil))
+                (progn$
+                 (acl2::raise "Term function is if but does not satisfy is-if: ~p0 ~%" term)
+                 (mv term t nil)))
                ((mv test test-dont-rw test-changed)
                 (unpack-booth-general-meta (cadr term)))
                ((mv then then-dont-rw then-changed)
                 (unpack-booth-general-meta (caddr term)))
                ((mv else else-dont-rw else-changed)
                 (unpack-booth-general-meta (cadddr term))))
-            (if (or test-changed then-changed else-changed)
-                (mv `(if ,test ,then ,else)
-                    `(nil ,test-dont-rw ,then-dont-rw ,else-dont-rw)
-                    t)
-              (mv term t nil))))
+            (cond ((or test-changed then-changed else-changed)
+                   (mv `(if ,test ,then ,else)
+                       `(nil ,test-dont-rw ,then-dont-rw ,else-dont-rw)
+                       t))
+                  (t (mv term t nil)))))
          ((when (equal (car term) 'rp))
           (b* (((unless (is-rp term))
-                (mv term t nil))
+                (progn$
+                 (acl2::raise "Term function is rp but does not satisfy is-rp: ~p0 ~%" term)
+                 (mv term t nil)))
                ((mv res dont-rw changed)
                 (unpack-booth-general-meta (caddr term))))
-            (if changed
-                (mv `(rp ,(cadr term) ,res) `(nil t ,dont-rw) t)
-              (mv term t nil))))
+            (cond
+             ;;((quotep res) (mv res t changed))
+             (changed (mv `(rp ,(cadr term) ,res) `(nil t ,dont-rw) t))
+             (t (mv term t nil)))))
          
          ((mv args args-dont-rw changed)
           (unpack-booth-general-meta-lst (cdr term)))
@@ -1001,7 +1009,28 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
                               rp-termp))))))
 
 (define unpack-booth-general-meta$ ((term rp-termp))
-  :enabled t
+  ;;:enabled t
   (b* (((mv term dont-rw &)
         (unpack-booth-general-meta term)))
     (mv term dont-rw)))
+
+(define unpack-booth-general-postprocessor ((term rp-termp)
+                                            (rp-state)
+                                            (state))
+  ;;:enabled t
+  :prepwork
+  ((local
+    (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system)))
+  :guard (and (VALID-RP-STATE-SYNTAXP RP-STATE))
+  :returns (mv (res-term rp-termp
+                         :hyp (and (rp-termp term)
+                                   (valid-rp-state-syntaxp rp-state)))
+               (res-rp-state (valid-rp-state-syntaxp res-rp-state)
+                             :hyp (valid-rp-state-syntaxp rp-state)))
+  (b* (((mv term dont-rw changed)
+        (unpack-booth-general-meta term)))
+    (if (and changed
+             (or (rp-meta-fnc-formula-checks state) ;; expected to return t
+                 (acl2::raise "rp-meta-fnc-formula-checks didn't return t!`~%")))
+        (rp-rw term dont-rw nil t (expt 2 15) rp-state state)
+      (mv term rp-state))))

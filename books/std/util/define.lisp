@@ -2332,7 +2332,8 @@ may not work with macros that generate names like @('args.extensions').</p>"
     :hooks ;; precedence: local to define > config > hooks table
     :ruler-extenders
     :verify-guards
-    :ret-patbinder))
+    :ret-patbinder
+    :parents))
 
 (local
  (defthm define-config-keywords-okp

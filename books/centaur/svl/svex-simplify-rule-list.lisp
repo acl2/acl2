@@ -213,6 +213,8 @@
       (:rewrite bits-01-of-a-bit)
 
       ;; 4vec-lemmas.lisp:
+      (:rewrite bits-of-4vec-bit?!)
+      (:rewrite bits-of-4vec-bit?)
       (:rewrite integerp-implies-3vec-p)
       (:rewrite 4vec-bitand-of-3vec-fix)
       (:rewrite 4vec-part-select-of-4vec-reduction-and-when-amount=1)
