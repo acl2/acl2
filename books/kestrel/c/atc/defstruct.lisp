@@ -609,8 +609,8 @@
        ((unless (consp members))
         (er-soft+ ctx t irrelevant
                   "There must be at least one member."))
-       ((mv erp memtypes state) (defstruct-process-members members ctx state))
-       ((when erp) (mv erp irrelevant state)))
+       ((er memtypes :iferr irrelevant)
+        (defstruct-process-members members ctx state)))
     (acl2::value (list tag tag-ident memtypes nil)))
   ///
   (more-returns
@@ -1452,9 +1452,8 @@
                       state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Process the inputs and generate the events."
-  (b* (((mv erp (list tag tag-ident members redundant) state)
+  (b* (((er (list tag tag-ident members redundant) :iferr '(_))
         (defstruct-process-inputs args call ctx state))
-       ((when erp) (mv erp '(_) state))
        ((when redundant) (acl2::value '(value-triple :redundant)))
        (event (defstruct-gen-everything tag tag-ident members call)))
     (acl2::value event)))
