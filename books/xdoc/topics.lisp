@@ -1602,6 +1602,11 @@ manual.</p>")
 (local (set-default-parents xdoc-tests))
 
 (defxdoc entities
+
+; Warning: Keep this in sync with *entity-strings* and
+; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
+; fancy/xslt.js, and *xml-entity-stuff*in prepare-topic.lisp.
+
   :parents (xdoc xdoc-tests)
   :short "HTML entity support in XDOC."
   :long "<h3>Entities that XDOC allows:</h3>
@@ -1616,16 +1621,29 @@ manual.</p>")
 <li>@('&apos;')  becomes &apos;</li>
 </ul>
 
-<p>Additional basic entities allowed by XDOC:</p>
+<p>Additional basic and math entities allowed by XDOC:</p>
 
 <ul>
 <li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
 <li>@('&mdash;') becomes &mdash;</li>
+<li>@('&larr;')  becomes &larr;</li>
 <li>@('&rarr;')  becomes &rarr;</li>
+<li>@('&harr;')  becomes &harr;</li>
+<li>@('&lang;')  becomes &lang;</li>
+<li>@('&rang;')  becomes &rang;</li>
+<li>@('&hellip;') becomes &hellip;</li>
 <li>@('&lsquo;') becomes &lsquo;</li>
 <li>@('&rsquo;') becomes &rsquo;</li>
 <li>@('&ldquo;') becomes &ldquo;</li>
 <li>@('&rdquo;') becomes &rdquo;</li>
+<li>@('&and;')   becomes &and;</li>
+<li>@('&or;')    becomes &or;</li>
+<li>@('&not;')   becomes &not;</li>
+<li>@('&ne;')    becomes &ne;</li>
+<li>@('&le;')    becomes &le;</li>
+<li>@('&ge;')    becomes &ge;</li>
+<li>@('&mid;')   becomes &mid;</li>
+<li>@('&times;') becomes &times;</li>
 </ul>
 
 <p>Capitalized Greek letters:</p>

@@ -66,8 +66,7 @@
 ;
 ;    (:ENTITY TYPE) represents entities like &amp;
 ;
-;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :NDASH, :MDASH, :RARR, LSQUO,
-;        RSQUO, LDQUO, :RDQUO, or keywords corresponding to Greek letters.
+;      - TYPE is :AMP, :LT, :GT, etc.
 
 
 
@@ -311,8 +310,8 @@
 (defconst *entity-strings*
 
 ; Warning: Keep this in sync with *entitytok-as-plaintext-fal* below,
-; *xml-entity-stuff* in prepare-topic.lisp, and wrapXdocFragment in
-; fancy/xslt.js.
+; *xml-entity-stuff* in prepare-topic.lisp, wrapXdocFragment in
+; fancy/xslt.js, and (defxdoc entities ...) in topics.lisp.
 
   '("amp"
     "lt"
@@ -322,11 +321,24 @@
     "nbsp"
     "ndash"
     "mdash"
+    "larr"
     "rarr"
+    "harr"
+    "lang"
+    "rang"
+    "hellip"
     "lsquo"
     "rsquo"
     "ldquo"
     "rdquo"
+    "and"
+    "or"
+    "not"
+    "ne"
+    "le"
+    "ge"
+    "mid"
+    "times"
 
 ; capitalized Greek letters
 
@@ -463,7 +475,8 @@
 (defconst *entitytok-as-plaintext-fal*
 
 ; Warning: Keep this in sync with *entity-strings* above, *xml-entity-stuff* in
-; prepare-topic.lisp, and wrapXdocFragment in fancy/xslt.js.
+; prepare-topic.lisp, and wrapXdocFragment in fancy/xslt.js, and (defxdoc
+; entities ...) in topics.lisp.
 
   (make-fast-alist
    '((:AMP   . "&")
@@ -474,11 +487,24 @@
      (:NBSP  . " . ")
      (:NDASH . "--")
      (:MDASH . "---")
+     (:LARR  . "<--")
      (:RARR  . "-->")
+     (:HARR  . "<->")
+     (:LANG  . "<")
+     (:RANG  . ">")
+     (:HELLIP . "...")
      (:LSQUO . "`")
      (:RSQUO . "'")
      (:LDQUO . "``")
      (:RDQUO . "''")
+     (:AND   . "&")
+     (:OR    . "\\/")
+     (:NOT   . "~")
+     (:NE    . "!=")
+     (:LE    . "<=")
+     (:GE    . ">=")
+     (:MID   . "|")
+     (:TIMES . "x")
 
      (:|Alpha|   . "\\Alpha")
      (:|Beta|    . "\\Beta")
