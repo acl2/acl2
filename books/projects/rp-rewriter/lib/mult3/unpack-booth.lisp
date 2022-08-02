@@ -718,7 +718,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
 (acl2::memoize-partial
  ((unpack-booth-buried-in-pp* unpack-booth-buried-in-pp-fn)
   (unpack-booth-process-pp-arg* unpack-booth-process-pp-arg-fn
-                                :condition t
+                                :condition nil
                                 :aokp t)
   (unpack-booth-buried-in-pp-lst* unpack-booth-buried-in-pp-lst-fn)
   ;; unpack for subsequent mult proofs in the same module:
@@ -748,18 +748,33 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
        t)
       (& nil))))|#
 
-(define hons-copy2 ((term))
-  (cond ((atom term)
-         term)
-        (t (hons (hons-copy2 (car term))
-                 (hons-copy2 (cdr term))))))
 
-(defthm hons-copy2-is-its-arg
-  (equal (hons-copy2 term)
-         term)
-  :hints (("Goal"
-           :expand (hons-copy2 term)
-           :in-theory (e/d (hons-copy2) ()))))
+(progn
+  (define hons-copy2 ((term))
+    (hons-copy term)
+    ///
+    (defthm hons-copy2-is-its-arg
+      (equal (hons-copy2 term)
+             term)))
+
+  (profile 'hons-copy2)
+  
+  (encapsulate
+    (((unpack-booth-later-hons-copy-enabled) => *))
+    (local
+     (defun unpack-booth-later-hons-copy-enabled ()
+       nil)))
+
+  (defmacro enable-unpack-booth-later-hons-copy (enable)
+    (if enable
+        `(defattach unpack-booth-later-hons-copy-enabled return-t)
+      `(defattach  unpack-booth-later-hons-copy-enabled return-nil)))
+
+  (enable-unpack-booth-later-hons-copy nil))
+
+
+
+
 
 (local
  (defthm binary-fnc-p-implies
@@ -816,7 +831,9 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
         (b* ((res (create-and-list-instance (list subterm-orig))))
           (mv (if signed `(-- ,res) res) t)))
        ;;(subterm-orig (hons-copy subterm-orig))
-       (subterm-orig (hons-copy2 subterm-orig))
+       (subterm-orig (if (unpack-booth-later-hons-copy-enabled)
+                         (hons-copy2 subterm-orig)
+                       subterm-orig))
 
        #|(- (or (good-s-chain subterm)
        (hard-error 'unpack-booth-meta ; ;
