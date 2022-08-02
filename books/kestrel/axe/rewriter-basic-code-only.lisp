@@ -15,7 +15,8 @@
 ;; todo: also need to include all the calls of add-known-boolean (making sure
 ;; the functions are defined)
 
-(with-supporters
+(with-output :off (event summary)
+  (with-supporters
  (local (include-book "rewriter-basic"))
  ;; things that with-supporters cannot determine are needed (feel free to
  ;; extend this list as needed to make this with-supporters command work):
@@ -62,4 +63,4 @@
      (IF ERP
          (ER HARD? 'MAKE-RULE-ALIST!
              "Error making rule alist.")
-         RULE-ALIST))))
+         RULE-ALIST)))))
