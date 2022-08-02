@@ -203,6 +203,7 @@
        ;;sv::3vec-fix
        bit-concat
        ;;sv::4vec-fix
+       svl::Bits
        ))))
 
 
