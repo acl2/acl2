@@ -39,7 +39,13 @@
   :returns (yes/no booleanp)
   :short "Check if a pointer is null."
   (not (value-pointer->designator? ptr))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule value-pointer-nullp-of-value-pointer
+    (equal (value-pointer-nullp (value-pointer objdes type))
+           (not objdes))
+    :enable value-pointer-nullp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,4 +56,10 @@
   :short "Object designator of a non-null pointer."
   (objdesign-fix (value-pointer->designator? ptr))
   :guard-hints (("Goal" :in-theory (enable value-pointer-nullp)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule value-pointer->designator-of-value-pointer
+    (equal (value-pointer->designator (value-pointer designator type))
+           (objdesign-fix designator))
+    :enable value-pointer->designator))

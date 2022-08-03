@@ -765,19 +765,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only support the execution of non-array variables;
-     see @(tsee exec-ident).
-     Thus, we use a binding hypothesis to read the variable's value,
-     and we have a hypothesis requiring the value not to be an array.
-     In order to discharge this hypothesis,
-     the rules in @(tsee atc-value-kind-rules) are used."))
+    "We use a binding hypothesis to read the variable's value,
+     and we rewrite @(tsee exec-ident) differently
+     based on whether the value is an array or not."))
 
   (defruled exec-ident-open
-    (implies (and (equal val (read-var id compst))
-                  (not (value-case val :array)))
+    (implies (equal val (read-var id compst))
              (equal (exec-ident id compst)
-                    val))
-    :enable exec-ident)
+                    (if (value-case val :array)
+                        (value-pointer (objdesign-variable id)
+                                       (value-array->elemtype val))
+                      val)))
+    :enable (exec-ident value-kind errorp))
 
   (defval *atc-exec-ident-rules*
     '(exec-ident-open)))
