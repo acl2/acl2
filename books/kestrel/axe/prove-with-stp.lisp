@@ -41,6 +41,8 @@
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
+(local (in-theory (disable state-p)))
+
 ;move
 (local
  (defthm nat-listp-of-reverse-list
@@ -2441,7 +2443,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Tries tp prove that the HYPS imply the CONC.
+;; Tries to prove that the HYPS imply the CONC.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defund prove-node-implication-with-stp (hyps ; possibly-negated-nodenums
                                          conc ; a possibly-negated-nodenum
@@ -2467,6 +2469,50 @@
   ;; we prove (or (not <hyp1>) (not <hyp2>) ... (not <hypn>) conc):
   (prove-node-disjunction-with-stp (cons conc (negate-possibly-negated-nodenums hyps))
                                    dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown
+(defund try-to-resolve-test-with-stp (test       ; a nodenum
+                                      assumptions ; possibly-negated-nodenums
+                                      dag-array ;must be named 'dag-array (todo: generalize?)
+                                      dag-len
+                                      dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
+                                      base-filename
+                                      print
+                                      max-conflicts ;a number of conflicts, or nil for no max
+                                      ;;counterexamplep
+                                      state)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (natp test)
+                              (< test dag-len)
+                              (bounded-possibly-negated-nodenumsp assumptions dag-len)
+                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
+                              (stringp base-filename)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              ;; (booleanp counterexamplep)
+                              )
+                  :stobjs state))
+  (b* (((mv true-result state) (prove-node-implication-with-stp assumptions
+                                                                test
+                                                                dag-array dag-len dag-parent-array
+                                                                base-filename print max-conflicts
+                                                                nil ;  counterexamplep (todo: maybe use and return)
+                                                                state))
+       ((when (eq :error true-result)) (mv :error-proving-implication :unknown state))
+       ((when (eq :valid true-result)) (mv (erp-nil) :true state))
+       ((mv false-result state) (prove-node-implication-with-stp assumptions
+                                                                 `(not, test)
+                                                                 dag-array dag-len dag-parent-array
+                                                                 base-filename print max-conflicts
+                                                                 nil ;  counterexamplep (todo: maybe use and return)
+                                                                 state))
+       ((when (eq :error false-result)) (mv :error-proving-implication :unknown state))
+       ((when (eq :valid false-result)) (mv (erp-nil) :false state)))
+    (mv (erp-nil) :unknown state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
