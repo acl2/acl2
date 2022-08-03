@@ -50,6 +50,23 @@
   (let ((ld-history (ld-history state)))
     (most-recent-theorem-aux ld-history ld-history)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund most-recent-theorem-goal (state)
+  (declare (xargs :stobjs state
+                  ;; is this implied by statep?:
+                  :guard (and (boundp-global 'ld-history state)
+                              (weak-ld-history-entry-list-p (get-global 'ld-history state)))))
+  (let ((form (most-recent-theorem state)))
+    (if (not (true-listp form))
+        (er hard? 'most-recent-theorem-goal "Unexpected form for most-recent-theorem: ~x0." form)
+      (case (car form)
+        (thm (cadr form))
+        (defthm (caddr form))
+        (t (er hard? 'most-recent-theorem-goal "Can't get the body of the event ~x0 (not a thm or defthm)." form))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; We are in multiple entry mode IFF the ld-history has length at least 2.
 (defund multiple-ld-history-entry-modep (state)
   (declare (xargs :stobjs state
