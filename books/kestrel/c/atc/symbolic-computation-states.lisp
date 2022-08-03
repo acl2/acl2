@@ -808,19 +808,34 @@
    (xdoc::p
     "The theorems below about @(tsee read-var) are a bit different
      because @(tsee read-var) does not return a state, but a value instead.
-     The first theorem skips over @(tsee enter-scope).
-     The second theorem
+     The first theorem turns @(tsee read-var) into @(tsee read-static-var)
+     when we encounter @(tsee add-frame):
+     since @(tsee add-frame) adds no variables in automatic storage,
+     the variable must be in static storage.
+     The second theorem skips over @(tsee enter-scope).
+     The third theorem
      either returns the value of the encountered variable or skips over it,
      based on whether the names coincide or not.
      There is no theorem for @(tsee add-frame) because this situation
      never happens during the symbolic execution.
-     The third theorem serves for variables read in loops
+     The fourth theorem serves for variables read in loops
      that are declared outside the scope of the loop,
      i.e. that are represented as @(tsee update-var)s:
      if the two variables are the same, the value is returned;
      otherwise, we skip over the @(tsee update-var)
      in search for the variable.
-     The fourth and fifth theorems serve to move past object updates."))
+     The fifth theorem serves to move past object updates."))
+
+  (defruled read-var-of-add-frame
+    (equal (read-var var (add-frame fun compst))
+           (read-static-var var compst))
+    :enable (read-var
+             read-auto-var
+             read-auto-var-aux
+             read-static-var
+             add-frame
+             push-frame
+             top-frame))
 
   (defruled read-var-of-enter-scope
     (implies (> (compustate-frames-number compst) 0)
@@ -904,10 +919,65 @@
              compustate-frames-number))
 
   (defval *atc-read-var-rules*
-    '(read-var-of-enter-scope
+    '(read-var-of-add-frame
+      read-var-of-enter-scope
       read-var-of-add-var
       read-var-of-update-var
       read-var-of-update-object)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-read-static-var-rules
+  :short "Rules about @(tsee read-static-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are somewhat similar to the ones about @(tsee read-var).
+     We go through the frame, the scopes, and the (automatic) variables.
+     We also go through object updates,
+     which currently are only for objects in the heap
+     (see @(tsee update-object)).")
+   (xdoc::p
+    "We will extend this to also deal with @(tsee update-var) soon."))
+
+  (defruled read-static-var-of-add-frame
+    (equal (read-static-var var (add-frame fun compst))
+           (read-static-var var compst))
+    :enable (read-static-var
+             add-frame
+             push-frame)
+    :disable omap::in-when-in-tail)
+
+  (defruled read-static-var-of-enter-scope
+    (equal (read-static-var var (enter-scope compst))
+           (read-static-var var compst))
+    :enable (read-static-var
+             enter-scope
+             push-frame
+             pop-frame)
+    :disable omap::in-when-in-tail)
+
+  (defruled read-static-var-of-add-var
+    (equal (read-static-var var (add-var var2 val compst))
+           (read-static-var var compst))
+    :enable (read-static-var
+             add-var
+             push-frame
+             pop-frame)
+    :disable omap::in-when-in-tail)
+
+  (defruled read-static-var-of-update-object
+    (equal (read-static-var var (update-object objdes val compst))
+           (read-static-var var compst))
+    :enable (read-static-var
+             update-object)
+    :disable omap::in-when-in-tail)
+
+  (defval *atc-read-static-var-rules*
+    '(read-static-var-of-add-frame
+      read-static-var-of-enter-scope
+      read-static-var-of-add-var
+      read-static-var-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1238,6 +1308,11 @@
      this is similar to the interaction
      between @(tsee read-var) and @(tsee update-var).")
    (xdoc::p
+    "The last theorem is a bit different.
+     It lets us replace @(tsee read-object)
+     with the more specific @(tsee read-static-var)
+     when the object designator is for a static variable.")
+   (xdoc::p
     "We include the rule for commutativity of @(tsee object-disjointp),
      so it does not matter the order of the disjoint objects
      in the hypotheses of the rules vs. the available hypothesis
@@ -1297,6 +1372,11 @@
              object-disjointp
              objdesign->base-address))
 
+  (defruled read-object-of-objdesign-variable
+    (equal (read-object (objdesign-variable var) compst)
+           (read-static-var var compst))
+    :enable read-object)
+
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
       read-object-of-enter-scope
@@ -1304,6 +1384,7 @@
       read-object-of-update-var
       read-object-of-update-object-same
       read-object-of-update-object-disjoint
+      read-object-of-objdesign-variable
       object-disjointp-commutative)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1516,6 +1597,7 @@
           *atc-create-var-rules*
           *atc-write-var-rules*
           *atc-read-var-rules*
+          *atc-read-static-var-rules*
           *atc-update-var-rules*
           *atc-write-object-rules*
           *atc-read-object-rules*
