@@ -1624,7 +1624,7 @@ manual.</p>")
 <p>Additional basic and math entities allowed by XDOC:</p>
 
 <ul>
-<li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
+<li>@('&nbsp;')  becomes &nbsp; (that is, a single space)</li>
 <li>@('&mdash;') becomes &mdash;</li>
 <li>@('&larr;')  becomes &larr;</li>
 <li>@('&rarr;')  becomes &rarr;</li>

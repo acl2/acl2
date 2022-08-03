@@ -271,8 +271,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "During symbolic execution, C identifiers in the computation state
-     always have the form @('(ident <string>)'),
+    "During symbolic execution,
+     C identifiers in the computation state
+     have the canonical form @('(ident <string>)'),
      where @('<string>') is a quoted string constant.
      To keep them in this form, we leave @(tsee ident) disabled.
      Since the symbolic execution
@@ -298,6 +299,7 @@
      We introduce similar rules for terms of the form
      @('(create-var <ident> ...)'),
      @('(read-var <ident> ...)'),
+     @('(read-static-var <ident> ...)'),
      @('(write-var <ident> ...)'),
      @('(type-struct <ident>)'), and
      @('(exec-memberp ... <ident> ...)')."))
@@ -330,6 +332,12 @@
                               args compst fenv limit)
                     (exec-fun (ident (ident->name fun))
                               args compst fenv limit))))
+
+  (defruled read-static-var-of-const-identifier
+    (implies (and (syntaxp (quotep var))
+                  (identp var))
+             (equal (read-static-var var compst)
+                    (read-static-var (ident (ident->name var)) compst))))
 
   (defruled create-var-of-const-identifier
     (implies (and (syntaxp (quotep var))
@@ -388,6 +396,7 @@
     exec-fun-of-const-identifier
     create-var-of-const-identifier
     read-var-of-const-identifier
+    read-static-var-of-const-identifier
     write-var-of-const-identifier
     type-struct-of-const-identifier
     exec-memberp-of-const-identifier
