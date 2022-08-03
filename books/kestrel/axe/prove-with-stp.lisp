@@ -2439,6 +2439,37 @@
                 (mv (er hard? 'prove-node-disjunction-with-stp "Bad result, ~x0, from prove-node-disjunction-with-stp-at-depth." result)
                     state)))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries tp prove that the HYPS imply the CONC.
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defund prove-node-implication-with-stp (hyps ; possibly-negated-nodenums
+                                         conc ; a possibly-negated-nodenum
+                                         dag-array ;must be named 'dag-array (todo: generalize?)
+                                         dag-len
+                                         dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
+                                         base-filename    ;a string
+                                         print
+                                         max-conflicts ;a number of conflicts, or nil for no max
+                                         counterexamplep
+                                         state)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (bounded-possibly-negated-nodenump conc dag-len)
+                              (bounded-possibly-negated-nodenumsp hyps dag-len)
+                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
+                              (stringp base-filename)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (booleanp counterexamplep))
+                  :stobjs state))
+  ;; we prove (or (not <hyp1>) (not <hyp2>) ... (not <hypn>) conc):
+  (prove-node-disjunction-with-stp (cons conc (negate-possibly-negated-nodenums hyps))
+                                   dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Attempt to use STP to prove the disjunction of the terms in CLAUSE.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;fixme pass in other options?
@@ -2447,12 +2478,12 @@
 ;todo: exploit boolean structure in the hyps (and conc?)
 ;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
 (defun prove-clause-with-stp (clause counterexamplep max-conflicts print base-filename state)
-  (declare (xargs :stobjs state
-                  :guard (and (pseudo-term-listp clause)
+  (declare (xargs :guard (and (pseudo-term-listp clause)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (stringp base-filename))
+                  :stobjs state
                   :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp-when-nat-listp)))))
   (b* ( ;; Check for bad input (todo: drop this check?):
        ((when (not (pseudo-term-listp clause)))
@@ -2488,13 +2519,13 @@
 ;; and HYPS to be already translated.  ;Returns (mv result state) where RESULT
 ;; is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)..
 (defund prove-implication-with-stp (conc hyps counterexamplep max-conflicts print base-filename state)
-  (declare (xargs :stobjs state
-                  :guard (and (pseudo-termp conc)
+  (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (stringp base-filename))))
+                              (stringp base-filename))
+                  :stobjs state))
   (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - TODO: remove double negation?
        (clause (cons conc negated-hyps)))
     (prove-clause-with-stp clause
