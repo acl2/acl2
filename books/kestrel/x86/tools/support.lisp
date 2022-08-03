@@ -1900,10 +1900,6 @@
            (equal (if x x y)
                   (if x t y))))
 
-(defthm memberp-of-cons-same
-  (acl2::memberp x (cons x y))
-  :hints (("Goal" :in-theory (enable acl2::memberp))))
-
 (defthm xr-of-myif
   (equal (xr fld index (acl2::myif test then else))
          (acl2::myif test

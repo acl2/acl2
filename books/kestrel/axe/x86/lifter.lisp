@@ -294,7 +294,7 @@
      stack-height-decreased-wrt
      get-pc
      acl2::memberp-of-cons-irrel-strong
-     x86isa::memberp-of-cons-same
+     acl2::memberp-of-cons-same
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
      acl2::equal-of-same-cancel-4
