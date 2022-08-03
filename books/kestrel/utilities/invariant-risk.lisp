@@ -15,6 +15,7 @@
 
 (include-book "kestrel/utilities/world" :dir :system) ; todo: reduce, for all-functions-in-world
 
+;; Keeps the elements of FNS that have invariant-risk.
 (defun filter-invariant-risk-functions (fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld))))
@@ -31,6 +32,10 @@
                 (symbol-listp fns))
            (symbol-listp (filter-invariant-risk-functions fns wrld))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Keeps the elements of FNS (a list of functions in WRLD) that are in :program
+;; mode.
 (defun filter-program-mode-functions (fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld))))
@@ -46,6 +51,9 @@
                 (symbol-listp fns))
            (symbol-listp (filter-program-mode-functions fns wrld))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a list of all functions in WRLD that have invariant-risk
 (defund invariant-risk-functions-in-world (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (let* ((all-functions (all-functions-in-world wrld)))
@@ -56,7 +64,9 @@
            (symbol-listp (invariant-risk-functions-in-world wrld)))
   :hints (("Goal" :in-theory (enable invariant-risk-functions-in-world))))
 
-;; Return the list of all :program mode functions with invariant-risk in the
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns the list of all :program mode functions with invariant-risk in the
 ;; current world.  Example use: (invariant-risk-program-mode-functions-in-world (w state))
 (defun invariant-risk-program-mode-functions-in-world (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
