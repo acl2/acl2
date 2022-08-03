@@ -43,6 +43,17 @@
                       (memberp a x))))
   :hints (("Goal" :in-theory (enable memberp))))
 
+;BOZO really the other should be called -cheap and this one should have no suffix
+(defthm memberp-of-cons-irrel-strong
+  (implies (not (equal a b))
+           (equal (memberp a (cons b x))
+                  (memberp a x)))
+  :hints (("Goal" :in-theory (enable memberp-of-cons))))
+
+(defthm memberp-of-cons-same
+  (memberp x (cons x y))
+  :hints (("Goal" :in-theory (enable acl2::memberp))))
+
 (defthm memberp-of-append
   (equal (memberp a (append x y))
          (or (memberp a x)
@@ -335,3 +346,12 @@
                  (consp lst))) ;clean this up?
            (consp lst)))
   :hints (("Goal" :in-theory (enable memberp ))))
+
+;rename
+(defthm memberp-of-cdr-when-not-memberp
+  (implies (not (memberp x lst))
+           (not (memberp x (cdr lst)))))
+
+(defthm memberp-nth-1-cdr
+  (equal (memberp (nth 1 x) (cdr x))
+         (< 1 (len x))))
