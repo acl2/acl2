@@ -1749,7 +1749,7 @@
          (if erp
              (mv erp nil nil nil nil state)
            (mv (erp-nil) changep state-dag generated-events next-loop-num state)))
-     (if (eq 'myif (ffn-symb state-term)) ;todo: pass the test as an asumption?
+     (if (eq 'myif (ffn-symb state-term)) ;todo: pass the test as an assumption?
          (b* ((- (cw "(Handling a myif with test ~x0.)~%" (farg1 state-term)))
               ((mv erp changep then-branch-dag generated-events next-loop-num state)
                (lift-loop-leaves (farg2 state-term)
