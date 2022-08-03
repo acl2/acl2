@@ -53,6 +53,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv logic-functions program-functions).
+(defun classify-functions (fns wrld logic-acc program-acc)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld))))
+  (if (endp fns)
+      (mv logic-acc program-acc)
+    (let ((fn (first fns)))
+      (if (programp fn wrld)
+          (classify-functions (rest fns) wrld logic-acc (cons fn program-acc))
+        (classify-functions (rest fns) wrld (cons fn logic-acc) program-acc)))))
+
+(defthm symbol-listp-of-mv-nth-0-of-classify-functions
+  (implies (and ;(plist-worldp wrld)
+                (symbol-listp fns)
+                (symbol-listp logic-acc))
+           (symbol-listp (mv-nth 0 (classify-functions fns wrld logic-acc program-acc)))))
+
+(defthm symbol-listp-of-mv-nth-1-of-classify-functions
+  (implies (and ;(plist-worldp wrld)
+                (symbol-listp fns)
+                (symbol-listp program-acc))
+           (symbol-listp (mv-nth 1 (classify-functions fns wrld logic-acc program-acc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a list of all functions in WRLD that have invariant-risk
 (defund invariant-risk-functions-in-world (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
@@ -86,3 +111,16 @@
 ;;                  (not (getpropc sym 'predefined)))
 ;;         (push sym ans))))
 ;;   ans)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun invariant-risk-report-fn (wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (let ((fns (invariant-risk-functions-in-world wrld)))
+    (mv-let (logic-functions program-functions)
+      (classify-functions fns wrld nil nil)
+      (progn$ (cw ":logic functions with invariant-risk: ~X01.~%" logic-functions nil)
+              (cw ":program functions with invariant-risk: ~X01.~%" program-functions nil)))))
+
+(defmacro invariant-risk-report ()
+  '(invariant-risk-report-fn (w state)))
