@@ -2079,21 +2079,21 @@
 
 
 ;bozo gen
-(defthm oddp-9-tighten
+(defthmd oddp-9-tighten
   (implies (and (oddp x)
                 (integerp x))
            (equal (< x 9)
                   (<= x 7))))
 
 ;bozo hope this doesn't loop
-(defthm oddp-9-tighten2
+(defthmd oddp-9-tighten2
   (implies (and (not (equal x 9))
                 (oddp x)
                 (integerp x))
            (equal (< 9 x)
                   (< 7 x))))
 
-(defthm oddp-9-7-rule
+(defthmd oddp-9-7-rule
   (implies (and (oddp x)
                 (integerp x)
                 (<= x 9)
@@ -2483,20 +2483,20 @@
   :hints (("Goal" :in-theory (enable myif))))
 
 ;gen? -alt?
-(defthm myif-of-logext-logior-32-hack
+(defthmd myif-of-logext-logior-32-hack
   (implies (signed-byte-p 32 x)
            (equal (myif test x (logext 32 (bvor 32 y x)))
                   (logext 32 (bvor 32 (myif test 0 y) x))))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;BOZO think about the extra logext here
-(defthm myif-of-logext-logior-32-hack-2
+(defthmd myif-of-logext-logior-32-hack-2
   (implies t;(signed-byte-p 32 x)
            (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
                   (logext 32 (bvor 32 (myif test 0 y) x))))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm myif-of-logior-32-hack
+(defthmd myif-of-logior-32-hack
   (implies (and (natp n)
                 (unsigned-byte-p n x))
            (equal (myif test x (bvor n y x))
@@ -2512,7 +2512,7 @@
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;BOZO think about the extra logext here
-(defthm myif-of-logext-logior-32-hack-2
+(defthmd myif-of-logext-logior-32-hack-2
   (implies t;(signed-byte-p 32 x)
            (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
                   (logext 32 (bvor 32 (myif test 0 y) x))))
@@ -3263,11 +3263,11 @@
                 (< k free))
            (not (equal x k))))
 
-;bozo this seemed necessary to get rid of some logext32's. - where did they come from?
-;trying disabled...
-(defthmd usbp8-implies-sbp32
-  (implies (unsigned-byte-p 8 x)
-           (signed-byte-p 32 x)))
+;; ;bozo this seemed necessary to get rid of some logext32's. - where did they come from?
+;; ;trying disabled...
+;; (defthmd usbp8-implies-sbp32
+;;   (implies (unsigned-byte-p 8 x)
+;;            (signed-byte-p 32 x)))
 
 ;; (defund iushr32 (r s)
 ;;   (bvchop 32 (jvm::iushr r s)))
