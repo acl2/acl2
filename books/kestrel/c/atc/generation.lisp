@@ -2485,7 +2485,7 @@
     "We look for a term of the form @('(<type> <formal>)')
      among the conjuncts of the function's guard,
      for each formal @('<formal>') of @('fn'),
-     where @('<type>') is a predicate that determined a C type
+     where @('<type>') is a predicate that determines a C type
      according to @(tsee atc-recognizer-to-type).
      We ensure that there is exactly one such term for each formal.")
    (xdoc::p
@@ -4505,7 +4505,8 @@
 
 (define atc-gen-outer-bindings-and-hyps ((typed-formals atc-symbol-type-alistp)
                                          (compst-var symbolp)
-                                         (fn-recursivep booleanp))
+                                         (fn-recursivep booleanp)
+                                         (prec-objs atc-string-objinfo-alistp))
   :returns (mv (bindings doublet-listp)
                (pointer-hyps true-listp)
                (pointer-subst symbol-symbol-alistp
@@ -4543,8 +4544,10 @@
     "Consider a non-recursive @('fn'), which represents a C function.
      Its correctness theorem equates (roughly speaking)
      a call of @(tsee exec-fun) with a call of @('fn').
-     However, while @('fn') takes arrays and structures as arguments,
-     @(tsee exec-fun) takes pointers to those arrays and structures.
+     However, while @('fn') takes arrays and structures in the heap
+     as arguments,
+     @(tsee exec-fun) takes pointers to those arrays and structures
+     as arguments.
      So we introduce variables for the pointers,
      named after the formals of @('fn') that are arrays or structures:
      we add @('-PTR') to the formals of @('fn'),
@@ -4569,6 +4572,27 @@
      by applying the substitution @('pointer-subst') to the formals of @('fn'):
      this way, @('a') gets substituted with @('a-ptr'),
      which is what we want since @(tsee exec-fun) takes pointers, not arrays.")
+   (xdoc::p
+    "The treatment of arrays that are external objects is different.
+     Similarly to heap arrays,
+     @('fn') takes the whole external arrays as arguments.
+     But @(tsee exec-fun) takes nothing for these as arguments:
+     those arrays are found in the static storage of the computation state.
+     We still need to generate a binding that relates
+     the variables passed to @('fn') that contain these arrays
+     to the computation state:
+     we do it via bindings of the form
+     @('((a (read-static-var (ident ...) compst)))'),
+     which we generate here.
+     We generate no pointer hypotheses in this case:
+     we do not introduce a pointer variable,
+     so there is no need for hypotheses about it;
+     the pointer is generated internally during symbolic execution,
+     with an object designator for the variable in static storage.
+     We generate no pointer substitution in this case:
+     again, there is no pointer variable introduced here.
+     Finally, we generate an instantiation pair consisting of
+     the formal and the @('(read-static-var (ident ...) compst)') call.")
    (xdoc::p
     "The non-array non-structure formals of a non-recursive @('fn')
      do not cause any bindings, hypotheses, or substitutions to be generated.
@@ -4618,6 +4642,10 @@
      because that only applies to @(tsee exec-fun),
      which is not used for C loops.")
    (xdoc::p
+    "We do not yet handle the case in which a recursive @('fn')
+     operates on external arrays;
+     we will add that soon.")
+   (xdoc::p
     "The reason for generating and using these bindings in the theorems,
      as opposed to making the substitutions in the theorem's formula,
      is greater readability.
@@ -4642,6 +4670,7 @@
        (formal-objdes `(value-pointer->designator ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
        (pointerp (type-case type :pointer))
+       (extobjp (assoc-equal (symbol-name formal) prec-objs))
        (bindings
         (if fn-recursivep
             (if pointerp
@@ -4649,11 +4678,17 @@
                       `(,formal (read-object ,formal-objdes ,compst-var)))
               (list `(,formal (read-var ,formal-id ,compst-var))))
           (if pointerp
-              (list `(,formal (read-object ,formal-objdes ,compst-var)))
+              (if extobjp
+                  (list `(,formal
+                          (read-static-var (ident ,(symbol-name formal))
+                                           ,compst-var)))
+                (list `(,formal (read-object ,formal-objdes ,compst-var))))
             nil)))
        (subst? (and pointerp
+                    (not extobjp)
                     (list (cons formal formal-ptr))))
        (hyps (and pointerp
+                  (not extobjp)
                   (list `(valuep ,formal-ptr)
                         `(value-case ,formal-ptr :pointer)
                         `(not (value-pointer-nullp ,formal-ptr))
@@ -4670,12 +4705,17 @@
                                                   ,compst-var)))
                    (list `(,formal (read-var ,formal-id ,compst-var))))
                (if pointerp
-                   (list `(,formal (read-object ,formal-objdes ,compst-var)))
+                   (if extobjp
+                       (list `(,formal
+                               (read-static-var (ident ,(symbol-name formal))
+                                                ,compst-var)))
+                     (list `(,formal (read-object ,formal-objdes ,compst-var))))
                  nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
                                          compst-var
-                                         fn-recursivep)))
+                                         fn-recursivep
+                                         prec-objs)))
     (mv (append bindings more-bindings)
         (append hyps more-hyps)
         (append subst? more-subst)
@@ -4725,6 +4765,29 @@
        (more-hyps (atc-gen-object-disjoint-hyps (cdr pointer-vars))))
     (append hyps more-hyps))
   :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-filter-exec-fun-args ((formals symbol-listp)
+                                  (prec-objs atc-string-objinfo-alistp))
+  :returns (args symbol-listp :hyp (symbol-listp formals))
+  :short "Filter external objects out of the formals,
+          for passing to @(tsee exec-fun),"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the generated correctness theorem for each non-recursive function,
+     we generally pass to @(tsee exec-fun)
+     an argument for each formal of the function.
+     Except for formals that represent external objects:
+     those are accessed in the computation state.
+     Thus, here we filter, out of a list of formals,
+     the ones that represent external objects."))
+  (b* (((when (endp formals)) nil)
+       (formal (car formals)))
+    (if (assoc-equal (symbol-name formal) prec-objs)
+        (atc-filter-exec-fun-args (cdr formals) prec-objs)
+      (cons formal (atc-filter-exec-fun-args (cdr formals) prec-objs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4802,6 +4865,7 @@
                                   (affect symbol-listp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prec-tags atc-string-taginfo-alistp)
+                                  (prec-objs atc-string-objinfo-alistp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
@@ -4951,7 +5015,10 @@
                        nil
                      (genvar 'atc "RESULT" nil formals)))
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var nil))
+        (atc-gen-outer-bindings-and-hyps typed-formals
+                                         compst-var
+                                         nil
+                                         prec-objs))
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
@@ -4961,7 +5028,9 @@
                    ,@pointer-hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (exec-fun-args (fsublis-var-lst pointer-subst formals))
+       (exec-fun-args (fsublis-var-lst pointer-subst
+                                       (atc-filter-exec-fun-args formals
+                                                                 prec-objs)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (if (type-case type :void)
                                nil
@@ -5320,6 +5389,7 @@
                                             affect
                                             prec-fns
                                             prec-tags
+                                            prec-objs
                                             prog-const
                                             fn-thms
                                             fn-fun-env-thm
@@ -5805,6 +5875,7 @@
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
                                        (prec-tags atc-string-taginfo-alistp)
+                                       (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -5830,7 +5901,7 @@
        (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
        ((mv formals-bindings pointer-hyps & instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    ,@pointer-hyps
@@ -5923,6 +5994,7 @@
                                        (body-term pseudo-termp)
                                        (prec-fns atc-symbol-fninfo-alistp)
                                        (prec-tags atc-string-taginfo-alistp)
+                                       (prec-objs atc-string-objinfo-alistp)
                                        (prog-const symbolp)
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
@@ -5954,7 +6026,7 @@
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
@@ -6043,6 +6115,7 @@
                                   (loop-body stmtp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prec-tags atc-string-taginfo-alistp)
+                                  (prec-objs atc-string-objinfo-alistp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-result-thm symbolp)
@@ -6123,7 +6196,7 @@
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
@@ -6382,6 +6455,7 @@
                                                  test-term
                                                  fn-thms
                                                  prec-tags
+                                                 prec-objs
                                                  names-to-avoid
                                                  wrld))
                  ((mv body-local-events
@@ -6395,6 +6469,7 @@
                                                  body-term
                                                  prec-fns
                                                  prec-tags
+                                                 prec-objs
                                                  prog-const
                                                  fn-thms
                                                  body-limit
@@ -6412,6 +6487,7 @@
                                             loop-body
                                             prec-fns
                                             prec-tags
+                                            prec-objs
                                             prog-const
                                             fn-thms
                                             fn-result-thm
