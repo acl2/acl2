@@ -5186,8 +5186,63 @@
   :hints (("Goal"
            :in-theory (e/d (repeat) ()))))
 
+(create-regular-eval-lemma svl::bits 3 mult-formula-checks)
+
+(encapsulate
+  nil
+  (local
+   (use-arith-5 t))
+  (defthm bitp-of-loghead-1
+    (bitp (loghead 1 x))))
+
+(defthm svl::bitp-of-bits
+  (implies (and (integerp (svl::bits x start 1)))
+           (bitp (svl::bits x start 1)))
+  :otf-flg t
+  :hints (("Goal"
+           :in-theory (e/d (SV::4VEC-PART-SELECT
+                            SV::4VEC-ZERO-EXT
+                            SV::4VEC->LOWER
+
+                            SV::2VEC
+                            SV::4VEC-CONCAT
+                            SV::4VEC->UPPER
+                            SV::4VEC
+                            svl::bits
+                            )
+                           (+-IS-SUM
+                            logapp loghead )))))
+
+(defthmd has-integerp-rp-implies
+  (implies (and (has-integerp-rp x)
+                (valid-sc x a))
+           (integerp (rp-evlt x a)))
+  :hints (("Goal"
+           :in-theory (e/d (valid-sc-single-step
+                            has-integerp-rp)
+                           ()))))
+
+(defthmd is-bitp-svl-bits-implies-bitp
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a)
+                (is-bitp-svl-bits term))
+           (and (VALID-SC (LIST 'RP ''BITP TERM) A)
+                (bitp (rp-evlt term a))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance has-integerp-rp-implies
+                            (x term)))
+           :in-theory (e/d* (is-bitp-svl-bits
+                             regular-eval-lemmas-with-ex-from-rp
+                             regular-eval-lemmas
+                             valid-sc-single-step)
+                            (has-integerp-rp-implies)))))
+
 (defret extract-new-sum-element-correct-valid-sc
-  (implies (and (valid-sc term a)
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a)
                 (valid-sc-subterms acc a))
            (valid-sc-subterms acc-res a))
   :fn extract-new-sum-element
@@ -5195,7 +5250,8 @@
   :hints (("Goal"
            :do-not-induct t
            :induct (extract-new-sum-element term acc)
-           :in-theory (e/d (extract-new-sum-element
+           :in-theory (e/d (is-bitp-svl-bits-implies-bitp
+                            extract-new-sum-element
                             quote-listp-implies-valid-sc
                             quote-listp-implies-valid-sc-subterms
                             rp-evlt-when-quotep
@@ -5226,7 +5282,9 @@
                             EVL-OF-EXTRACT-FROM-RP)))))
 
 (defret extract-new-sum-consed-correct-valid-sc
-  (implies (valid-sc term a)
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a))
            (valid-sc-subterms acc-res a))
   :fn extract-new-sum-consed
   :hints (("Goal"
@@ -5634,7 +5692,7 @@
   :fn pp-radix8+-fix-aux-precollect2
   :hints (("Goal"
            :do-not-induct t
-           :induct (pp-radix8+-fix-aux-precollect2 SINGLE-PP) 
+           :induct (pp-radix8+-fix-aux-precollect2 SINGLE-PP)
            :in-theory (e/d* (bitp BINARY-?-rw-to-sum
                              regular-rp-evl-of_s_when_mult-formula-checks
                              regular-rp-evl-of_binary-and_when_mult-formula-checks
@@ -5665,7 +5723,7 @@
                               rp-trans-is-term-when-list-is-absent)
                              rp-evlt-of-ex-from-rp
                              rp-trans-lst)))))
-           
+
 
 (define sum-lst-and-eval-for-pp-radix8+-fix (lst e-lst a)
   (if (atom lst)
@@ -5727,7 +5785,7 @@
                 (equal (equal (-- x) 0) t))
        (implies (and (bitp x)
                      (not (equal x 0)))
-                (equal (equal x 1) t))))  
+                (equal (equal x 1) t))))
 
 
 
@@ -5849,7 +5907,7 @@
   :hints (("goal"
            :do-not-induct t
            :in-theory (e/d
-                       (pp-radix8+-fix-aux-for-pp-lst 
+                       (pp-radix8+-fix-aux-for-pp-lst
                         ;;-redef
                         )
                        (rp-trans
@@ -6472,10 +6530,10 @@
                   (sum (sum-list (rp-evlt-lst pp-lst a))
                        (-- (sum-list (rp-evlt-lst s-lst a)))
                        (-- (sum-list (rp-evlt-lst c-lst a))))))
-  :fn ex-from-pp-lst 
+  :fn ex-from-pp-lst
   :hints (("goal"
            :do-not-induct t
-           :in-theory (e/d* (ex-from-pp-lst 
+           :in-theory (e/d* (ex-from-pp-lst
                              ;;regular-eval-lemmas-with-ex-from-rp
                              )
                             ()))))

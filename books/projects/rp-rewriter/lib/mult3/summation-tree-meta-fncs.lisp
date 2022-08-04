@@ -45,6 +45,8 @@
 
 (include-book "sum-merge-fncs")
 
+
+
 (local
  (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
 
@@ -4283,10 +4285,10 @@
                (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
   (if (atom pp-lst)
       (mv nil nil nil)
-    (b* (((mv rest-s-lst rest-pp-lst rest-c-lst)
-          (pp-radix8+-fix-aux2 (cdr pp-lst)))
-         ((mv res-s-lst res-pp-lst res-c-lst valid)
-          (pp-radix8+-fix-aux (car pp-lst))))
+    (b* (((mv res-s-lst res-pp-lst res-c-lst valid)
+          (pp-radix8+-fix-aux (car pp-lst)))
+         ((mv rest-s-lst rest-pp-lst rest-c-lst)
+          (pp-radix8+-fix-aux2 (cdr pp-lst))))
       (if valid
           (mv (s-sum-merge-aux res-s-lst rest-s-lst)
               (pp-sum-merge-aux res-pp-lst rest-pp-lst)
@@ -4335,6 +4337,13 @@
 
 ;;;;;;;;;;;;;;;;;;;
 
+(define is-bitp-svl-bits ((term-orig rp-termp))
+  (and (has-integerp-rp term-orig)
+       (b* ((term (ex-from-rp$ term-orig)))
+         (case-match term
+           (('svl::bits & & ''1)
+            t)))))
+
 (define extract-new-sum-element ((term rp-termp) acc)
   :returns (acc-res rp-term-listp
                     :hyp (and (rp-termp term)
@@ -4370,7 +4379,8 @@
           (binary-fnc-p abs-term)
           (has-bitp-rp term-orig))
       (cons term-orig acc))
-     
+     ((is-bitp-svl-bits term-orig)
+      (cons `(rp 'bitp ,term-orig) acc))
      (t
       (progn$
        (hard-error 'extract-new-sum-element

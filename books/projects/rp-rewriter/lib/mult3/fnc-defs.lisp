@@ -47,6 +47,8 @@
 
 (include-book "centaur/svl/portcullis" :dir :system)
 
+(include-book "centaur/svl/fnc-defs" :dir :system)
+
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 
@@ -1133,6 +1135,17 @@
           (has-bitp-rp (caddr term)))
     nil))
 
+(define has-integerp-rp (term)
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ())))
+  :guard-hints (("goal"
+                 :in-theory (e/d (is-rp) ())))
+  (if (is-rp term)
+      (or (equal (cadr term)
+                 ''integerp)
+          (has-integerp-rp (caddr term)))
+    nil))
+
 (define append-wog (l1 l2)
   ;;(append l1 l2)
   ;; same as append 
@@ -1237,6 +1250,7 @@
        ;;sv::3vec-fix
        bit-concat
        ;;sv::4vec-fix
+       svl::bits
        ))))
 
 
