@@ -562,3 +562,57 @@
     :enable (ulong-max
              sllong-max
              long-bits-vs-llong-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-min ((type typep))
+  :guard (type-integer-nonbool-nonchar-p type)
+  :returns (min integerp)
+  :short "Minimum mathematical integer value of an integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we exclude the @('_Bool') and the plain @('char') type,
+     via the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (cond ((type-case type :schar) (schar-min))
+        ((type-case type :uchar) 0)
+        ((type-case type :sshort) (sshort-min))
+        ((type-case type :ushort) 0)
+        ((type-case type :sint) (sint-min))
+        ((type-case type :uint) 0)
+        ((type-case type :slong) (slong-min))
+        ((type-case type :ulong) 0)
+        ((type-case type :sllong) (sllong-min))
+        ((type-case type :ullong) 0)
+        (t (prog2$ (impossible) 0)))
+  :guard-hints (("Goal" :in-theory (enable type-integer-nonbool-nonchar-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-max ((type typep))
+  :guard (type-integer-nonbool-nonchar-p type)
+  :returns (min integerp)
+  :short "Maximum mathematical integer value of an integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we exclude the @('_Bool') and the plain @('char') type,
+     via the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (cond ((type-case type :schar) (schar-max))
+        ((type-case type :uchar) (uchar-max))
+        ((type-case type :sshort) (sshort-max))
+        ((type-case type :ushort) (ushort-max))
+        ((type-case type :sint) (sint-max))
+        ((type-case type :uint) (uint-max))
+        ((type-case type :slong) (slong-max))
+        ((type-case type :ulong) (ulong-max))
+        ((type-case type :sllong) (sllong-max))
+        ((type-case type :ullong) (ullong-max))
+        (t (prog2$ (impossible) 0)))
+  :guard-hints (("Goal" :in-theory (enable type-integer-nonbool-nonchar-p)))
+  :hooks (:fix))
