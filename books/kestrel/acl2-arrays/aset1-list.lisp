@@ -16,6 +16,9 @@
 (include-book "acl2-arrays")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 
+;; There is a built-in function, aset1-lst, that is somewhat similar to this,
+;; but its guard is not verifiable.
+
 ;set many indices to the same value
 (defund aset1-list (array-name array indices value)
   (declare (xargs :guard (and (array1p array-name array)
