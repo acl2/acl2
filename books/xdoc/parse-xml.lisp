@@ -484,7 +484,7 @@
      (:GT    . ">")
      (:QUOT  . "\"")
      (:APOS  . "'")
-     (:NBSP  . " ")
+     (:NBSP  . " ") ; wart: disappears when preceded only by spaces except in <code>..</code>
      (:NDASH . "--")
      (:MDASH . "---")
      (:LARR  . "<--")
@@ -504,7 +504,7 @@
      (:LE    . "<=")
      (:GE    . ">=")
      (:MID   . "|")
-     (:TIMES . "x")
+     (:TIMES . "\\times")
 
      (:|Alpha|   . "\\Alpha")
      (:|Beta|    . "\\Beta")
