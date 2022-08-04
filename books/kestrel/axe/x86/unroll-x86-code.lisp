@@ -283,6 +283,9 @@
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (rules (set-difference-eq rules remove-rules))
+       (rules-to-monitor (if (eq :debug monitor)
+                             (debug-rules32)
+                           monitor))
        ;; Next, we simplify the assumptions.  This allows us to state the
        ;; theorem about a lifted routine concisely, using an assumption
        ;; function that opens to a large conjunction before lifting is
@@ -298,7 +301,7 @@
         (acl2::simplify-terms-repeatedly ;; simplify-terms-using-each-other
          assumptions
          rule-alist
-         nil ; monitored-rules
+         rules-to-monitor
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
@@ -311,9 +314,7 @@
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
-       (rules-to-monitor (if (eq :debug monitor)
-                             (debug-rules32)
-                           monitor))
+
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
