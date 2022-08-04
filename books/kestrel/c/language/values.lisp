@@ -366,50 +366,81 @@
   :prepwork ((local (include-book "std/lists/len" :dir :system)))
   ///
 
-  (defruled type-signed-integerp-of-type-of-signed-integer-value
-    (implies (value-signed-integerp val)
-             (type-signed-integerp (type-of-value val)))
-    :enable value-signed-integerp)
+  (defrule type-kind-of-type-of-value
+    (equal (type-kind (type-of-value val))
+           (value-kind val)))
 
-  (defruled type-unsigned-integerp-of-type-of-unsigned-integer-value
-    (implies (value-unsigned-integerp val)
-             (type-unsigned-integerp (type-of-value val)))
-    :enable value-unsigned-integerp)
+  (defrule type-signed-integerp-of-type-of-value
+    (equal (type-signed-integerp (type-of-value val))
+           (value-signed-integerp val))
+    :enable (value-signed-integerp
+             type-signed-integerp))
 
-  (defruled type-integerp-of-type-of-integer-value
-    (implies (value-integerp val)
-             (type-integerp (type-of-value val)))
+  (defrule type-unsigned-integerp-of-type-of-value
+    (equal (type-unsigned-integerp (type-of-value val))
+           (value-unsigned-integerp val))
+    :enable (value-unsigned-integerp
+             type-unsigned-integerp))
+
+  (defrule type-integerp-of-type-of-value
+    (equal (type-integerp (type-of-value val))
+           (value-integerp val))
     :enable (value-integerp
              value-signed-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
 
-  (defruled type-realp-of-type-of-real-value
-    (implies (value-realp val)
-             (type-realp (type-of-value val)))
+  (defrule type-realp-of-type-of-value
+    (equal (type-realp (type-of-value val))
+           (value-realp val))
     :enable (value-realp
              value-integerp
              value-signed-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
 
-  (defruled type-arithmeticp-of-type-of-arithmetic-value
-    (implies (value-arithmeticp val)
-             (type-arithmeticp (type-of-value val)))
+  (defrule type-arithmeticp-of-type-of-value
+    (equal (type-arithmeticp (type-of-value val))
+           (value-arithmeticp val))
     :enable (value-arithmeticp
              value-realp
              value-integerp
              value-signed-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
 
-  (defruled type-scalarp-of-type-of-scalar-value
-    (implies (value-scalarp val)
-             (type-scalarp (type-of-value val)))
+  (defrule type-scalarp-of-type-of-value
+    (equal (type-scalarp (type-of-value val))
+           (value-scalarp val))
     :enable (value-scalarp
              value-arithmeticp
              value-realp
              value-integerp
              value-signed-integerp
              value-unsigned-integerp
-             type-scalarp)))
+             type-scalarp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
+
+  (defrule type-integer-nonbool-nonchar-p-of-type-of-value
+    (equal (type-integer-nonbool-nonchar-p (type-of-value val))
+           (value-integerp val))
+    :enable (value-integerp
+             value-signed-integerp
+             value-unsigned-integerp
+             type-integer-nonbool-nonchar-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
