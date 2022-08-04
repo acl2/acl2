@@ -437,7 +437,12 @@
   (defrule type-integerp-of-promote-type
     (equal (type-integerp (promote-type type))
            (type-integerp type))
-    :enable (type-integerp type-unsigned-integerp type-signed-integerp)))
+    :enable (type-integerp type-unsigned-integerp type-signed-integerp))
+
+  (defrule type-integer-nonbool-nonchar-of-promote-type
+    (implies (type-integer-nonbool-nonchar-p type)
+             (type-integer-nonbool-nonchar-p (promote-type type)))
+    :enable type-integer-nonbool-nonchar-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

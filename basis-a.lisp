@@ -2389,6 +2389,7 @@
    (f-get-global 'fmt-soft-right-margin state)))
 
 (defun set-fmt-hard-right-margin (n state)
+  (declare (xargs :guard (posp n) :stobjs state))
   (cond
    ((and (integerp n)
          (< 0 n))
@@ -2403,6 +2404,7 @@
         state))))
 
 (defun set-fmt-soft-right-margin (n state)
+  (declare (xargs :guard (posp n) :stobjs state))
   (cond
    ((and (integerp n)
          (< 0 n))
