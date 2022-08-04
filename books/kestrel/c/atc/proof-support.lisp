@@ -1435,6 +1435,7 @@
           *atc-value-array->elemtype-rules*
           *atc-array-length-rules*
           *atc-array-length-write-rules*
+          *atc-static-variable-pointer-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
