@@ -10,19 +10,30 @@
 
 (in-package "ACL2")
 
-;; NOTE: When using this tool, consider doing (adjust-ld-history t state) so
+;; SETUP:
+;;
+;; 1. Set the ACL2_ADVICE_SERVER environment variable to the server URL (often
+;; ends in '/machine_interface')
+;;
+;; 2. When using this tool, consider doing (adjust-ld-history t state) so
 ;; that the advice tool can give advice even when the failing theorem is not
 ;; the most recent event.
 
 ;; TODO: Add filtering of unhelpful recommendations:
-;; - use-lemma when the rule is already enabled
-;; - (maybe) use-lemma when the rule had nothing to do with the goal
-;; - add-enable-hint when the rule is already enabled
-;; - add-disable-hint when the rule is already disabled
-;; - add-hyp when the hyp is already there
-;; - add-hyp when the hyp would conflict with the existing assumptions
-;; - add-hyp when cgen can falsify the theorem even with the hyp
-;; - anything except add-hyp when cgen can falsify the theorem (can't possibly fix the problem)
+;; - skip use-lemma when the rule is already enabled
+;; - (maybe) skip use-lemma when the rule had nothing to do with the goal
+;; - skip add-enable-hint when the rule is already enabled
+;; - skip add-disable-hint when the rule is already disabled
+;; - skip add-hyp when the hyp is already there
+;; - add-skip hyp when the hyp would contradict the existing assumptions (together satisfiable together)
+;; - skip add-hyp when cgen can falsify the theorem even with the hyp
+;; - (maybe) skip a hyp that is implied by the existing hyps (low probability of working)
+;; - skip add-library when already present
+;; - skip :hints that are already present or subsumed by ones already present
+;; - (maybe) skip :hints that conflict with ones already present (e.g., :induct, enable vs and explicit disable)
+;; - avoid anything except add-hyp when cgen can falsify the theorem (can't possibly fix the problem)
+;; - (maybe) try to avoid theory-invariant warnings
+;; - (maybe) try to help clean up hyps (e.g., replacing a subsumed hyp when add-hyp strengthens one, maybe using tau)
 ;; - what else?
 
 ;; TODO: Automatically try some of the pieces of advice
@@ -30,6 +41,8 @@
 ;; TODO: Incorporate cgen to try to see if the theorem is valid or not.
 
 ;; TODO: Why does getting advice take ~3 seconds?
+
+;; TODO: Allow doing :rec <n> to try recommendation <n>
 
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system) ; todo reduce, for nat-to-string
@@ -202,7 +215,7 @@
   (b* (((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
        ((when (not (stringp server-url)))
-        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in 'machine_interface').")
+        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface')<.")
         (mv :no-server nil state))
        (most-recent-theorem (most-recent-theorem state))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-theorem nil))
