@@ -1059,6 +1059,7 @@
             X86ISA::!MS
             X86ISA::!MS$a
 
+            acl2::bv-array-read-shorten-axe
             )))
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
