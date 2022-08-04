@@ -188,6 +188,9 @@
 (verify-termination-boot-strap print-object$) ; and guards
 (verify-termination-boot-strap print-object$-preserving-case) ; and guards
 
+(verify-termination-boot-strap set-fmt-hard-right-margin) ; and guards
+(verify-termination-boot-strap set-fmt-soft-right-margin) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
