@@ -442,6 +442,12 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+(defthm pseudo-dagp-of-cdr-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (equal (pseudo-dagp (cdr dag))
+                  (consp (cdr dag))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux))))
+
 (defthm bounded-dag-exprp-of-lookup-equal-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
                 (<= n (top-nodenum dag))
