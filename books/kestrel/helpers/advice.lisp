@@ -217,14 +217,14 @@
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
-       (most-recent-theorem (most-recent-theorem state))
-       (- (cw "Generating advice for:~%~X01:~%" most-recent-theorem nil))
-       (most-recent-theorem-goal (most-recent-theorem-goal state))
+       (most-recent-failed-theorem (most-recent-failed-theorem state))
+       (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
+       (most-recent-failed-theorem-goal (most-recent-failed-theorem-goal state))
        (untranslated-checkpoints (checkpoint-list-pretty t ; todo: consider non-top
                                                          state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        (untranslated-checkpoints (if (equal untranslated-checkpoints '(<goal>))
-                                     (list most-recent-theorem-goal) ; todo: flatten ANDs in this?
+                                     (list most-recent-failed-theorem-goal) ; todo: flatten ANDs in this?
                                    untranslated-checkpoints))
        ;; ;; todo: eventually, don't do this:
        ;; (untranslated-checkpoints (untranslate-list-list translated-checkpoints
