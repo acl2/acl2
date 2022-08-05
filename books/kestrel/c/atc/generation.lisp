@@ -4508,9 +4508,9 @@
                                          (fn-recursivep booleanp)
                                          (prec-objs atc-string-objinfo-alistp))
   :returns (mv (bindings doublet-listp)
-               (pointer-hyps true-listp)
-               (pointer-subst symbol-symbol-alistp
-                              :hyp (atc-symbol-type-alistp typed-formals))
+               (hyps true-listp)
+               (subst symbol-symbol-alistp
+                      :hyp (atc-symbol-type-alistp typed-formals))
                (instantiation doublet-listp))
   :short "Generate the outer bindings,
           pointer hypotheses,
@@ -4531,7 +4531,7 @@
      explained below.
      We also generate a variable substitution, explained below.
      We also generate an instantiation
-     for a lemma used in the hints of the generated theorem.")
+     for lemmas used in the hints of generated theorems.")
    (xdoc::p
     "The (outer) bindings can be determined from
      the formals of the ACL2 function @('fn') that represents
@@ -4567,11 +4567,13 @@
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
      we also generate an alist element @('(a . a-ptr)'),
-     returned as part of the @('pointer-subst') result,
+     returned as part of the @('subst') result,
      that is used to generate the argument list of @(tsee exec-fun),
-     by applying the substitution @('pointer-subst') to the formals of @('fn'):
+     by applying the substitution @('subst') to the formals of @('fn'):
      this way, @('a') gets substituted with @('a-ptr'),
-     which is what we want since @(tsee exec-fun) takes pointers, not arrays.")
+     which is what we want since @(tsee exec-fun) takes pointers, not arrays.
+     The substitution is also used to calculate the final computation state,
+     in @(tsee atc-gen-cfun-final-compustate).")
    (xdoc::p
     "The treatment of arrays that are external objects is different.
      Similarly to heap arrays,
@@ -4584,7 +4586,7 @@
      we do it via bindings of the form
      @('((a (read-static-var (ident ...) compst)))'),
      which we generate here.
-     We generate no pointer hypotheses in this case:
+     We generate no hypotheses in this case:
      we do not introduce a pointer variable,
      so there is no need for hypotheses about it;
      the pointer is generated internally during symbolic execution,
@@ -4610,7 +4612,8 @@
      There is still a correspondence, of course:
      the formals of @('fn') correspond to variables in the computation state.
      We consider separately
-     the case of arrays or structures,
+     the case of arrays or structures in the heap,
+     the case of arrays in static storage,
      and the case of non-arrays and non-structures.")
    (xdoc::p
     "If @('a') is a non-array non-structure formal of a recursive @('fn'),
@@ -4618,9 +4621,11 @@
      where @('<a>') is the identifier derived from the name of @('a').
      Thus, in this case we generate the binding @('(a (read-var <a> compst))').
      Since no pointers are involved, in this case we generate
-     no hypotheses and no substitutions.")
+     no hypotheses and no substitutions;
+     we generate an instantiation that instantiates
+     the formal with @('(read-var <a> compst)').")
    (xdoc::p
-    "If @('a') is an array or structure formal of a recursive @('fn'),
+    "If @('a') is a heap array or structure formal of a recursive @('fn'),
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
      We generate two bindings @('(a-ptr (read-var <a> compst))')
@@ -4638,17 +4643,34 @@
      It should be clear why the two bindings have to be in that order;
      the bindings are put into a @(tsee b*),
      which enforces the order.
-     We generate no substitution map in @('pointer-subst') here,
-     because that only applies to @(tsee exec-fun),
-     which is not used for C loops.")
+     We generate a substitution of @('a') with @('a-ptr'),
+     for use by @(tsee atc-gen-loop-final-compustate)
+     (not to calculate the arguments of @(tsee exec-fun),
+     because no @(tsee exec-fun) call is involved in the theorem for loops.
+     The instantiation combines @(tsee read-var) and @(tsee read-object).")
    (xdoc::p
-    "We do not yet handle the case in which a recursive @('fn')
-     operates on external arrays;
-     we will add that soon.")
+    "If @('a') is an array in static storage,
+     things are more similar to the case in which @('fn') is not recursive.
+     The binding is with @(tsee read-static-var), i.e. the same.
+     We generate a different hypothesis from all other cases:
+     the hypothesis is that @(tsee read-var) on the variable in question
+     rewrites to @(tsee read-static-var).
+     This amounts to say that the variable is in static storage.
+     This is necessary for theorems for C loops,
+     because a @(tsee read-var) during execution cannot reach @(tsee add-frame)
+     and be turned into @(tsee read-static-var) as done for C functions.
+     This hypothesis is relieved in the correctness theorem
+     of the non-recursive function that calls the recursive one:
+     the symbolic execution for the non-recursive one
+     can have @(tsee read-var) reach @(tsee add-frame)
+     and turn that into @(tsee read-static-var).
+     We generate no substitution, since there are no pointer variables.
+     We generate an instantiation that instantiates the formal
+     with the @(tsee read-static-var) call.")
    (xdoc::p
-    "The reason for generating and using these bindings in the theorems,
+    "The reason for generating and using the described bindings in the theorems,
      as opposed to making the substitutions in the theorem's formula,
-     is greater readability.
+     is greater readability of the theorems.
      Particularly in the case of loop theorems,
      if @('a') occurs a few times in the guard,
      the guard with just @('a') in those occurrences is more readable than
@@ -4674,41 +4696,47 @@
        (bindings
         (if fn-recursivep
             (if pointerp
-                (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                      `(,formal (read-object ,formal-objdes ,compst-var)))
+                (if extobjp
+                    (list `(,formal
+                            (read-static-var ,formal-id ,compst-var)))
+                  (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                        `(,formal (read-object ,formal-objdes ,compst-var))))
               (list `(,formal (read-var ,formal-id ,compst-var))))
           (if pointerp
               (if extobjp
                   (list `(,formal
-                          (read-static-var (ident ,(symbol-name formal))
-                                           ,compst-var)))
+                          (read-static-var ,formal-id ,compst-var)))
                 (list `(,formal (read-object ,formal-objdes ,compst-var))))
             nil)))
-       (subst? (and pointerp
-                    (not extobjp)
-                    (list (cons formal formal-ptr))))
+       (subst (and pointerp
+                   (not extobjp)
+                   (list (cons formal formal-ptr))))
        (hyps (and pointerp
-                  (not extobjp)
-                  (list `(valuep ,formal-ptr)
-                        `(value-case ,formal-ptr :pointer)
-                        `(not (value-pointer-nullp ,formal-ptr))
-                        `(equal (objdesign-kind
-                                 (value-pointer->designator ,formal-ptr))
-                                :address)
-                        `(equal (value-pointer->reftype ,formal-ptr)
-                                ,(type-to-maker (type-pointer->to type))))))
+                  (if extobjp
+                      (list `(equal (read-var ,formal-id ,compst-var)
+                                    (read-static-var ,formal-id ,compst-var)))
+                    (list `(valuep ,formal-ptr)
+                          `(value-case ,formal-ptr :pointer)
+                          `(not (value-pointer-nullp ,formal-ptr))
+                          `(equal (objdesign-kind
+                                   (value-pointer->designator ,formal-ptr))
+                                  :address)
+                          `(equal (value-pointer->reftype ,formal-ptr)
+                                  ,(type-to-maker (type-pointer->to type)))))))
        (inst (if fn-recursivep
                  (if pointerp
-                     (list `(,formal (read-object (value-pointer->designator
-                                                   (read-var ,formal-id
-                                                             ,compst-var))
-                                                  ,compst-var)))
+                     (if extobjp
+                         (list `(,formal
+                                 (read-static-var ,formal-id ,compst-var)))
+                       (list `(,formal (read-object (value-pointer->designator
+                                                     (read-var ,formal-id
+                                                               ,compst-var))
+                                                    ,compst-var))))
                    (list `(,formal (read-var ,formal-id ,compst-var))))
                (if pointerp
                    (if extobjp
                        (list `(,formal
-                               (read-static-var (ident ,(symbol-name formal))
-                                                ,compst-var)))
+                               (read-static-var ,formal-id ,compst-var)))
                      (list `(,formal (read-object ,formal-objdes ,compst-var))))
                  nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
@@ -4718,7 +4746,7 @@
                                          prec-objs)))
     (mv (append bindings more-bindings)
         (append hyps more-hyps)
-        (append subst? more-subst)
+        (append subst more-subst)
         (append inst more-inst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4793,7 +4821,7 @@
 
 (define atc-gen-cfun-final-compustate ((affect symbol-listp)
                                        (typed-formals atc-symbol-type-alistp)
-                                       (pointer-subst symbol-symbol-alistp)
+                                       (subst symbol-symbol-alistp)
                                        (compst-var symbolp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
@@ -4818,12 +4846,12 @@
     "The parameter @('affect') passed to this code
      consists of the formals of @('fn') that represent arrays and structures
      affected by the body of the ACL2 function that represents the C function.
-     The parameter @('pointer-subst') is
+     The parameter @('subst') is
      the result of @(tsee atc-gen-outer-bindings-and-hyps)
      that maps array and structure formals of the ACL2 function
      to the corresponding pointer variables used by the correctness theorems.
      Thus, we go through @('affect'),
-     looking up the corresponding pointer variables in @('pointer-subst'),
+     looking up the corresponding pointer variables in @('subst'),
      and we construct
      each nested @(tsee write-object) call,
      which needs both a pointer and an array or structure;
@@ -4845,12 +4873,11 @@
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
                formal type)))
-    `(write-object (value-pointer->designator ,(cdr (assoc-eq formal
-                                                              pointer-subst)))
+    `(write-object (value-pointer->designator ,(cdr (assoc-eq formal subst)))
                    ,(add-suffix-to-fn formal "-NEW")
                    ,(atc-gen-cfun-final-compustate (cdr affect)
                                                    typed-formals
-                                                   pointer-subst
+                                                   subst
                                                    compst-var)))
   :prepwork
   ((defrulel lemma
@@ -5014,21 +5041,21 @@
        (result-var (if (type-case type :void)
                        nil
                      (genvar 'atc "RESULT" nil formals)))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+       ((mv formals-bindings hyps subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals
                                          compst-var
                                          nil
                                          prec-objs))
        (diff-pointer-hyps
-        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (exec-fun-args (fsublis-var-lst pointer-subst
+       (exec-fun-args (fsublis-var-lst subst
                                        (atc-filter-exec-fun-args formals
                                                                  prec-objs)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
@@ -5042,7 +5069,7 @@
        (final-compst
         (atc-gen-cfun-final-compustate affect
                                        typed-formals
-                                       pointer-subst
+                                       subst
                                        compst-var))
        (concl `(equal (exec-fun (ident ,(symbol-name fn))
                                 (list ,@exec-fun-args)
@@ -5900,11 +5927,11 @@
                                            wrld))
        (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
-       ((mv formals-bindings pointer-hyps & instantiation)
+       ((mv formals-bindings hyps & instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
                       ,test-term))
@@ -5941,7 +5968,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
-                                       (pointer-subst symbol-symbol-alistp)
+                                       (subst symbol-symbol-alistp)
                                        (compst-var symbolp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
@@ -5971,17 +5998,17 @@
      because the names of the formals must be portable C identifiers."))
   (b* (((when (endp mod-vars)) compst-var)
        (mod-var (car mod-vars))
-       (ptr (cdr (assoc-eq mod-var pointer-subst))))
+       (ptr (cdr (assoc-eq mod-var subst))))
     (if ptr
         `(write-object (value-pointer->designator ,ptr)
                        ,(add-suffix-to-fn mod-var "-NEW")
                        ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                       pointer-subst
+                                                       subst
                                                        compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                  pointer-subst
+                                                  subst
                                                   compst-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6025,16 +6052,16 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+       ((mv formals-bindings hyps subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
-        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)
                    ,(untranslate test-term nil wrld)))
@@ -6042,9 +6069,7 @@
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
                         `(mv ,@affect-new)))
-       (final-compst (atc-gen-loop-final-compustate affect
-                                                    pointer-subst
-                                                    compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect subst compst-var))
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
@@ -6195,25 +6220,23 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+       ((mv formals-bindings hyps subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
-        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
                         `(mv ,@affect-new)))
-       (final-compst (atc-gen-loop-final-compustate affect
-                                                    pointer-subst
-                                                    compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect subst compst-var))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
                               (mv nil ,final-compst))))

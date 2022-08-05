@@ -227,4 +227,7 @@ work around that using @('eval-when').</p>
     ; ** functionality
     (defun foo (x y z)
       (cl-json:...))
-})")
+})
+
+<p>The user has access to the CL-JSON functionality because the non-raw
+@('cl-json.lisp') book is included in the non-raw @('my-book.lisp') book.</p>")
