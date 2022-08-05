@@ -48,3 +48,6 @@ structs
 
 ext-objs.c
 ext-objs
+
+ext-objs-2.c
+ext-objs-2
