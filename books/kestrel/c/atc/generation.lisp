@@ -3020,7 +3020,7 @@
                               val var vars init-affect))
                    ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((er ?val :iferr irr)
+                   ((er & :iferr irr)
                     (atc-ensure-formals-not-lost vars
                                                  affect
                                                  typed-formals
@@ -3099,7 +3099,7 @@
                               val var vars rhs-affect))
                    ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((er ?val :iferr irr)
+                   ((er & :iferr irr)
                     (atc-ensure-formals-not-lost vars
                                                  affect
                                                  typed-formals
@@ -3170,7 +3170,7 @@
                         fn val))
              ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((er ? :iferr irr)
+             ((er & :iferr irr)
               (atc-ensure-formals-not-lost vars
                                            affect
                                            typed-formals
@@ -3594,7 +3594,7 @@
                         fn val))
              ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((er ? :iferr irr)
+             ((er & :iferr irr)
               (atc-ensure-formals-not-lost (list var)
                                            affect
                                            typed-formals
@@ -7725,10 +7725,10 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er ?val) (atc-gen-file ',tunit
-                                        ,output-file
-                                        ',pretty-printing
-                                        state)))
+          (b* (((er &) (atc-gen-file ',tunit
+                                     ,output-file
+                                     ',pretty-printing
+                                     state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
