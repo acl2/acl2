@@ -1,0 +1,40 @@
+# Installation
+
+## Using Quicklisp
+
+1. Install quicklisp
+2. Use quicklisp to install local-time
+
+      (ql:quickload :local-time)
+
+## Manual Installation
+
+1. Make sure the ASDF library is loaded.  In SBCL, this involves:
+
+      (require :asdf)
+
+2. Add the path to the directory containing local-time.asd to
+   asdf:*central-registry*.  If you've installed this package using
+   asdf-install, this shouldn't be necessary.
+
+      (push "/my/local-time/directory/" asdf:*central-registry*)
+
+3. Load local-time using ASDF:
+
+      (asdf:oos 'asdf:load-op 'local-time)
+
+4. In your own projects, you can direct asdf to automatically load
+   LOCAL-TIME with the :depends-on asdf:defsystem directive.
+
+      (defsystem myproject
+          :depends-on (local-time)
+          ...)
+
+## Testing
+
+local-time uses Stefil for testing. To run the Stefil test suite, do
+the following:-
+
+    (ql:quickload :local-time.test)
+    (in-suite test)
+    (test)

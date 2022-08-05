@@ -38,17 +38,89 @@
 //   renderText(String of XDOC XML markup) -> String of Plain Text
 //   renderHtml(String of XDOC XML markup) -> HTML DOM Object
 
+// Warning: Keep this in sync with *entity-strings* and
+// *entitytok-as-plaintext-fal* in ../parse-xml.lisp,
+// *xml-entity-stuff* in ../prepare-topic.lisp, and
+// (defxdoc entities ...) in topics.lisp.
 function wrapXdocFragment(str)
 {
     var wrap = "<!DOCTYPE xdoc [";
     wrap += "<!ENTITY ndash \"&#8211;\">";
     wrap += "<!ENTITY mdash \"&#8212;\">";
+    wrap += "<!ENTITY larr \"&#8592;\">";
     wrap += "<!ENTITY rarr \"&#8594;\">";
+    wrap += "<!ENTITY harr \"&#8596;\">";
+    wrap += "<!ENTITY lang \"&#9001;\">";
+    wrap += "<!ENTITY rang \"&#9002;\">";
+    wrap += "<!ENTITY hellip \"&#8230;\">";
     wrap += "<!ENTITY nbsp \"&#160;\">";
     wrap += "<!ENTITY lsquo \"&#8216;\">";
     wrap += "<!ENTITY rsquo \"&#8217;\">";
     wrap += "<!ENTITY ldquo \"&#8220;\">";
     wrap += "<!ENTITY rdquo \"&#8221;\">";
+    wrap += "<!ENTITY and   \"&#8743;\">";
+    wrap += "<!ENTITY or    \"&#8744;\">";
+    wrap += "<!ENTITY not   \"&#172;\">";
+    wrap += "<!ENTITY ne    \"&#8800;\">";
+    wrap += "<!ENTITY le    \"&#8804;\">";
+    wrap += "<!ENTITY ge    \"&#8805;\">";
+    wrap += "<!ENTITY mid   \"&#8739;\">";
+    wrap += "<!ENTITY times \"&#215;\">";
+    wrap += "<!ENTITY Alpha \"&#913;\">";
+    wrap += "<!ENTITY Beta \"&#914;\">";
+    wrap += "<!ENTITY Gamma \"&#915;\">";
+    wrap += "<!ENTITY Delta \"&#916;\">";
+    wrap += "<!ENTITY Epsilon \"&#917;\">";
+    wrap += "<!ENTITY Zeta \"&#918;\">";
+    wrap += "<!ENTITY Eta \"&#919;\">";
+    wrap += "<!ENTITY Theta \"&#920;\">";
+    wrap += "<!ENTITY Iota \"&#921;\">";
+    wrap += "<!ENTITY Kappa \"&#922;\">";
+    wrap += "<!ENTITY Lambda \"&#923;\">";
+    wrap += "<!ENTITY Mu \"&#924;\">";
+    wrap += "<!ENTITY Nu \"&#925;\">";
+    wrap += "<!ENTITY Xi \"&#926;\">";
+    wrap += "<!ENTITY Omicron \"&#927;\">";
+    wrap += "<!ENTITY Pi \"&#928;\">";
+    wrap += "<!ENTITY Rho \"&#929;\">";
+    wrap += "<!ENTITY Sigma \"&#931;\">";
+    wrap += "<!ENTITY Tau \"&#932;\">";
+    wrap += "<!ENTITY Upsilon \"&#933;\">";
+    wrap += "<!ENTITY Phi \"&#934;\">";
+    wrap += "<!ENTITY Chi \"&#935;\">";
+    wrap += "<!ENTITY Psi \"&#936;\">";
+    wrap += "<!ENTITY Omega \"&#937;\">";
+    wrap += "<!ENTITY alpha \"&#945;\">";
+    wrap += "<!ENTITY beta \"&#946;\">";
+    wrap += "<!ENTITY gamma \"&#947;\">";
+    wrap += "<!ENTITY delta \"&#948;\">";
+    wrap += "<!ENTITY epsilon \"&#949;\">";
+    wrap += "<!ENTITY zeta \"&#950;\">";
+    wrap += "<!ENTITY eta \"&#951;\">";
+    wrap += "<!ENTITY theta \"&#952;\">";
+    wrap += "<!ENTITY iota \"&#953;\">";
+    wrap += "<!ENTITY kappa \"&#954;\">";
+    wrap += "<!ENTITY lambda \"&#955;\">";
+    wrap += "<!ENTITY mu \"&#956;\">";
+    wrap += "<!ENTITY nu \"&#957;\">";
+    wrap += "<!ENTITY xi \"&#958;\">";
+    wrap += "<!ENTITY omicron \"&#959;\">";
+    wrap += "<!ENTITY pi \"&#960;\">";
+    wrap += "<!ENTITY rho \"&#961;\">";
+    wrap += "<!ENTITY sigma \"&#963;\">";
+    wrap += "<!ENTITY tau \"&#964;\">";
+    wrap += "<!ENTITY upsilon \"&#965;\">";
+    wrap += "<!ENTITY phi \"&#966;\">";
+    wrap += "<!ENTITY chi \"&#967;\">";
+    wrap += "<!ENTITY psi \"&#968;\">";
+    wrap += "<!ENTITY omega \"&#969;\">";
+    wrap += "<!ENTITY forall \"&#8704;\">";
+    wrap += "<!ENTITY exist \"&#8707;\">";
+    wrap += "<!ENTITY empty \"&#8709;\">";
+    wrap += "<!ENTITY isin \"&#8712;\">";
+    wrap += "<!ENTITY notin \"&#8713;\">";
+    wrap += "<!ENTITY prod \"&#8719;\">";
+    wrap += "<!ENTITY sum \"&#8721;\">";
     wrap += "]>";
     wrap += "<root>" + str + "</root>";
     return wrap;

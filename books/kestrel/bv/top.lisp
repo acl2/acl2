@@ -171,6 +171,8 @@
 (include-book "rules11")
 (include-book "rules12")
 
-;; (include-book "bv-tests") ; not including this one because it just contains tests
+(include-book "intro")
+
+;; (include-book "tests") ; not including this one because it just contains tests
 
 (include-book "doc")

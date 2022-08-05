@@ -146,7 +146,10 @@
     "Also return an alist from the recursive target functions
      to the corresponding applicability condition names.")
    (xdoc::p
-    "We skip over @(tsee defstruct) names and non-recursive function names."))
+    "We skip over
+     @(tsee defstruct) names,
+     @(tsee defobject) names,
+     and non-recursive function names."))
   (b* (((when (endp targets)) (mv nil nil))
        (target (car targets))
        ((when (not (function-symbolp target wrld)))
@@ -305,7 +308,7 @@
      The symbol table has always at least one scope.")
    (xdoc::p
     "This is always called after checking that
-     the variable is not already in scope.
+     that variable is not already in scope (via @(tsee atc-check-var)).
      So it unconditionally adds the variable without checking first."))
   (cons (acons (symbol-fix var)
                (type-fix type)
@@ -579,7 +582,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defalist atc-string-taginfo-alist
-  :short "Fixtype of alists from symbols to tag information."
+  :short "Fixtype of alists from strings to tag information."
   :key-type string
   :val-type atc-tag-info
   :true-listp t
@@ -751,6 +754,30 @@
        (more-thms
         (atc-string-taginfo-alist-to-member-write-thms (cdr prec-tags))))
     (append thms more-thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod atc-obj-info
+  :short "Fixtype of information associated to
+          an ACL2 @(tsee defobject) symbol translated to a C external object."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now this is just a wrapper of @(tsee defobject-info),
+     but we may extend it with more ATC-specific information in the future."))
+  ((defobject defobject-info))
+  :pred atc-obj-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist atc-string-objinfo-alist
+  :short "Fixtype of alists from strings to object information."
+  :key-type string
+  :val-type atc-obj-info
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred atc-string-objinfo-alistp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1060,7 +1087,7 @@
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -1120,7 +1147,7 @@
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -1201,7 +1228,7 @@
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -1281,7 +1308,7 @@
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (ident-stringp member)) (no))
+       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
@@ -1706,7 +1733,7 @@
        on the recursively generated structure expression.
        The type is the member element's type.")
      (xdoc::p
-      "If the term is a call of @(tsee c::sint-from-boolean),
+      "If the term is a call of @(tsee sint-from-boolean),
        we call the mutually recursive ACL2 function
        that translates the argument
        (which must be an expression term returning a boolean)
@@ -2159,7 +2186,7 @@
      to execute the expression completely.")
    (xdoc::p
     "If the term is a call of a function that precedes @('fn')
-     in the list of target functions @('fn1'), ..., @('fnp'),
+     in the list of target functions among @('t1'), ..., @('tp'),
      we translate it to a C function call on the translated arguments.
      The type of the expression is the result type of the function,
      which is looked up in the function alist passed as input:
@@ -2275,7 +2302,7 @@
    (xdoc::p
     "This is explained in the user documentation.
      Here we perform a shallow check,
-     because we will examine the term in full detail
+     because we examine the term in full detail
      when recursively generating C code from it.
      In essence, here we check that the term is either
      (i) an @(tsee if) whose test is not @(tsee mbt) or @(tsee mbt$) or
@@ -2330,11 +2357,11 @@
    (xdoc::p
     "If the body of a non-recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
-     that affect a formal of @('fn') of pointer type,
+     that affects a formal of @('fn') of pointer type,
      that formal must be among the variables affected by ('fn').
      If the body of a recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
-     that affect a formal of @('fn') of any type,
+     that affects a formal of @('fn') of any type,
      that formal must be among the variables affected by ('fn').
      In other words, no modification of formals must be ``lost''.
      The case of formals of pointer types is clear,
@@ -2371,7 +2398,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-recognizer-to-type ((recognizer symbolp)
-                                (prec-tags atc-string-taginfo-alistp))
+                                (prec-tags atc-string-taginfo-alistp)
+                                (prec-objs atc-string-objinfo-alistp))
   :returns (type type-optionp)
   :short "C type corresponding to a recognizer name, if any."
   :long
@@ -2379,8 +2407,18 @@
    (xdoc::p
     "This is used to determine the types of the formal parameters of functions
      from the recognizers used in the guard,
-     as explained in the user documentation.
-     Note that the structure recognizers represent pointer types."))
+     as explained in the user documentation.")
+   (xdoc::p
+    "If the predicate is a known one for integer or integer array types,
+     that readily determines the type.
+     Otherwise, there may be two possibilities.
+     One is that the recognizer is the one of a @(tsee defstruct),
+     of the form @('struct-<tag>-p'):
+     in this case, the type is pointer to the structure.
+     The other possibility is that recognizer is the one of a @(tsee defobject),
+     of the form @('object-<name>-p'):
+     in this case, the type is a pointer to the integer type
+     that is the element type of the array type of the object."))
   (case recognizer
     (scharp (type-schar))
     (ucharp (type-uchar))
@@ -2402,26 +2440,44 @@
     (ulong-arrayp (type-pointer (type-ulong)))
     (sllong-arrayp (type-pointer (type-sllong)))
     (ullong-arrayp (type-pointer (type-ullong)))
-    (t (b* (((mv okp struct tag p) (atc-check-symbol-3part recognizer))
+    (t (b* (((mv okp struct/object tag/name p)
+             (atc-check-symbol-3part recognizer))
             ((unless (and okp
-                          (equal (symbol-name struct) "STRUCT")
                           (equal (symbol-name p) "P")))
-             nil)
-            (tag (symbol-name tag))
-            (info (cdr (assoc-equal tag prec-tags)))
-            ((unless info) nil)
-            ((unless (atc-tag-infop info))
-             (raise "Internal error: malformed DEFSTRUCT info ~x0." info))
-            (info (atc-tag-info->defstruct info))
-            ((unless (eq recognizer (defstruct-info->recognizer info))) nil)
-            ((unless (ident-stringp tag))
-             (raise "Internal error: tag ~x0 not valid identifier." tag)))
-         (type-pointer (type-struct (ident tag)))))))
+             nil))
+         (cond ((equal (symbol-name struct/object) "STRUCT")
+                (b* ((tag (symbol-name tag/name))
+                     (info (cdr (assoc-equal tag prec-tags)))
+                     ((unless info) nil)
+                     ((unless (atc-tag-infop info))
+                      (raise "Internal error: malformed ATC-TAG-INFO ~x0."
+                             info))
+                     (info (atc-tag-info->defstruct info))
+                     ((unless (eq recognizer (defstruct-info->recognizer info)))
+                      nil))
+                  (type-pointer (type-struct (defstruct-info->tag info)))))
+               ((equal (symbol-name struct/object) "OBJECT")
+                (b* ((name (symbol-name tag/name))
+                     (info (cdr (assoc-equal name prec-objs)))
+                     ((unless info) nil)
+                     ((unless (atc-obj-infop info))
+                      (raise "Internal error: malformed ATC-OBJ-INFO ~x0."
+                             info))
+                     (info (atc-obj-info->defobject info))
+                     ((unless (eq recognizer (defobject-info->recognizer info)))
+                      nil)
+                     (arrtype (defobject-info->type info))
+                     ((unless (type-case arrtype :array))
+                      (raise "Internal error: object ~s0 has type ~x1."
+                             name arrtype)))
+                  (type-pointer (type-array->of arrtype))))
+               (t nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-typed-formals ((fn symbolp)
                            (prec-tags atc-string-taginfo-alistp)
+                           (prec-objs atc-string-objinfo-alistp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
@@ -2434,11 +2490,12 @@
     "We look for a term of the form @('(<type> <formal>)')
      among the conjuncts of the function's guard,
      for each formal @('<formal>') of @('fn'),
-     where @('<type>') is a predicate corresponding to a C type.")
+     where @('<type>') is a predicate that determined a C type
+     according to @(tsee atc-recognizer-to-type).
+     We ensure that there is exactly one such term for each formal.")
    (xdoc::p
-    "We ensure that there is exactly one such term for each formal.
-     If this is successful,
-     we return an alist from the formals to the types.
+    "If this is successful,
+     we return an alist from the formals to their types.
      The alist has unique keys, in the order of the formals.")
    (xdoc::p
     "We first extract the guard's conjuncts,
@@ -2462,10 +2519,10 @@
                                                           guard-conjuncts
                                                           nil
                                                           prec-tags
+                                                          prec-objs
                                                           ctx
                                                           state)))
-    (atc-typed-formals-final-alist
-     fn formals guard prelim-alist prec-tags ctx state))
+    (atc-typed-formals-final-alist fn formals guard prelim-alist ctx state))
 
   :prepwork
 
@@ -2475,6 +2532,7 @@
                                            (guard-conjuncts pseudo-term-listp)
                                            (prelim-alist atc-symbol-type-alistp)
                                            (prec-tags atc-string-taginfo-alistp)
+                                           (prec-objs atc-string-objinfo-alistp)
                                            (ctx ctxp)
                                            state)
      :returns (mv erp
@@ -2493,10 +2551,11 @@
                                            (cdr guard-conjuncts)
                                            prelim-alist
                                            prec-tags
+                                           prec-objs
                                            ctx
                                            state))
           (type-fn (ffn-symb conjunct))
-          (type (atc-recognizer-to-type type-fn prec-tags))
+          (type (atc-recognizer-to-type type-fn prec-tags prec-objs))
           ((when (not type))
            (atc-typed-formals-prelim-alist fn
                                            formals
@@ -2504,6 +2563,7 @@
                                            (cdr guard-conjuncts)
                                            prelim-alist
                                            prec-tags
+                                           prec-objs
                                            ctx
                                            state))
           (arg (fargn conjunct 1))
@@ -2514,6 +2574,7 @@
                                            (cdr guard-conjuncts)
                                            prelim-alist
                                            prec-tags
+                                           prec-objs
                                            ctx
                                            state))
           ((when (consp (assoc-eq arg prelim-alist)))
@@ -2532,6 +2593,7 @@
                                        (cdr guard-conjuncts)
                                        prelim-alist
                                        prec-tags
+                                       prec-objs
                                        ctx
                                        state)))
 
@@ -2539,7 +2601,6 @@
                                           (formals symbol-listp)
                                           (guard pseudo-termp)
                                           (prelim-alist atc-symbol-type-alistp)
-                                          (prec-tags atc-string-taginfo-alistp)
                                           (ctx ctxp)
                                           state)
      :returns (mv erp
@@ -2561,7 +2622,6 @@
                                                              (cdr formals)
                                                              guard
                                                              prelim-alist
-                                                             prec-tags
                                                              ctx
                                                              state)))
        (acl2::value (acons formal type typed-formals)))
@@ -2577,6 +2637,7 @@
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
                       (prec-tags atc-string-taginfo-alistp)
+                      (prec-objs atc-string-objinfo-alistp)
                       (proofs booleanp)
                       (ctx ctxp)
                       state)
@@ -2668,7 +2729,8 @@
      from the term that the variable is bound to,
      which also determines the type of the variable,
      and which must affect the bound variables except the first one;
-     the type must not be a pointer type (code generation fails if it is).
+     the type must not be a pointer type (code generation fails if it is);
+     we also ensure that the other variables are assignable.
      Otherwise, if the term involves an @('assign<n>') wrapper,
      we ensure that the first bound variable is assignable,
      which implies that it must be in scope,
@@ -2676,7 +2738,8 @@
      we generate an assignment whose right-hand side is
      obtained from the unwrapped term,
      which must be an expression term returning a C value
-     that affects the bound variables except the first one.
+     that affects the bound variables except the first one;
+     we also ensure that the other variables are assignable.
      Otherwise, if the term involves no wrapper,
      we ensure that the bound variables are all assignable,
      and that the non-wrapped term has the form
@@ -2689,11 +2752,15 @@
      the block items for the bound term,
      it still has enough limit to execute the block items for the body term.")
    (xdoc::p
-    "If the term is a @(tsee let), there are five cases.
+    "If the term is a @(tsee let), there are six cases.
      If the binding has the form of an array write,
      we generate an array assignment.
-     If the binding has the form of a structure write,
-     we generate a structure pointer member assignment.
+     If the binding has the form of a structure scalar member write,
+     we generate an assignment to
+     the member of the pointed structure.
+     If the binding has the form of a structure array member write,
+     we generate an assignment to
+     the element of the member of the pointed structure.
      The other three cases are similar to
      the three @(tsee mv-let) cases above.
      The limit is calculated as follows.
@@ -2806,6 +2873,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -2819,6 +2887,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -2838,6 +2907,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -2850,6 +2920,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -2902,7 +2973,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (ident-stringp (symbol-name var)))
+                   ((unless (paident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the MV-LET variable ~x1 of the function ~x2 ~
@@ -2942,7 +3013,7 @@
                                but it affects ~x3 instead."
                               val var vars init-affect))
                    ((mv erp typed-formals state)
-                    (atc-typed-formals fn prec-tags ctx state))
+                    (atc-typed-formals fn prec-tags prec-objs ctx state))
                    ((when erp) (mv erp irr state))
                    ((mv erp & state) (atc-ensure-formals-not-lost vars
                                                                   affect
@@ -2968,6 +3039,7 @@
                                   fn
                                   prec-fns
                                   prec-tags
+                                  prec-objs
                                   proofs
                                   ctx
                                   state))
@@ -2984,6 +3056,12 @@
              ((when (eq wrapper? 'assign))
               (b* ((var var?)
                    ((mv type? innermostp &) (atc-check-var var inscope))
+                   ((unless type?)
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               an attempt is being made ~
+                               to modify a variable ~x1 not in scope."
+                              fn var))
                    ((unless (atc-var-assignablep var innermostp affect))
                     (er-soft+ ctx t irr
                               "When generating C code for the function ~x0, ~
@@ -3018,7 +3096,7 @@
                                but it affects ~x3 instead."
                               val var vars rhs-affect))
                    ((mv erp typed-formals state)
-                    (atc-typed-formals fn prec-tags ctx state))
+                    (atc-typed-formals fn prec-tags prec-objs ctx state))
                    ((when erp) (mv erp irr state))
                    ((mv erp & state) (atc-ensure-formals-not-lost vars
                                                                   affect
@@ -3051,6 +3129,7 @@
                                   fn
                                   prec-fns
                                   prec-tags
+                                  prec-objs
                                   proofs
                                   ctx
                                   state))
@@ -3089,7 +3168,7 @@
                          does not have the required form."
                         fn val))
              ((mv erp typed-formals state)
-              (atc-typed-formals fn prec-tags ctx state))
+              (atc-typed-formals fn prec-tags prec-objs ctx state))
              ((when erp) (mv erp irr state))
              ((mv erp & state) (atc-ensure-formals-not-lost vars
                                                             affect
@@ -3107,6 +3186,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -3127,6 +3207,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -3209,6 +3290,7 @@
                                   fn
                                   prec-fns
                                   prec-tags
+                                  prec-objs
                                   proofs
                                   ctx
                                   state))
@@ -3274,6 +3356,7 @@
                                   fn
                                   prec-fns
                                   prec-tags
+                                  prec-objs
                                   proofs
                                   ctx
                                   state))
@@ -3355,6 +3438,7 @@
                                   fn
                                   prec-fns
                                   prec-tags
+                                  prec-objs
                                   proofs
                                   ctx
                                   state))
@@ -3380,7 +3464,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (ident-stringp (symbol-name var)))
+                   ((unless (paident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
@@ -3422,6 +3506,7 @@
                                   fn
                                   prec-fns
                                   prec-tags
+                                  prec-objs
                                   proofs
                                   ctx
                                   state))
@@ -3493,6 +3578,7 @@
                                   fn
                                   prec-fns
                                   prec-tags
+                                  prec-objs
                                   proofs
                                   ctx
                                   state))
@@ -3519,7 +3605,7 @@
                          This is disallowed."
                         fn val))
              ((mv erp typed-formals state)
-              (atc-typed-formals fn prec-tags ctx state))
+              (atc-typed-formals fn prec-tags prec-objs ctx state))
              ((when erp) (mv erp irr state))
              ((mv erp & state) (atc-ensure-formals-not-lost (list var)
                                                             affect
@@ -3537,6 +3623,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -3558,6 +3645,7 @@
                             fn
                             prec-fns
                             prec-tags
+                            prec-objs
                             proofs
                             ctx
                             state))
@@ -3573,7 +3661,7 @@
             (er-soft+ ctx t irr
                       "A loop body must end with ~
                        a recursive call on every path, ~
-                       but in the fucntion ~x0 it ends with ~x1 instead."
+                       but in the function ~x0 it ends with ~x1 instead."
                       fn term)
           (acl2::value (list nil (type-void) (pseudo-term-quote 1)))))
        ((mv okp terms) (fty-check-list-call term))
@@ -3585,7 +3673,7 @@
               (er-soft+ ctx t irr
                         "A loop body must end with ~
                          a recursive call on every path, ~
-                         but in the fucntion ~x0 ~
+                         but in the function ~x0 ~
                          it ends with ~x1 instead."
                         fn term)))
           (cond
@@ -3737,7 +3825,7 @@
         (er-soft+ ctx t irr
                   "A loop body must end with ~
                    a recursive call on every path, ~
-                   but in the fucntion ~x0 it ends with ~x1 instead."
+                   but in the function ~x0 it ends with ~x1 instead."
                   fn term))
        ((unless (equal affect eaffect))
         (er-soft+ ctx t irr
@@ -3868,6 +3956,7 @@
                            (measure-formals symbol-listp)
                            (prec-fns atc-symbol-fninfo-alistp)
                            (prec-tags atc-string-taginfo-alistp)
+                           (prec-objs atc-string-objinfo-alistp)
                            (proofs booleanp)
                            (ctx ctxp)
                            state)
@@ -3887,6 +3976,7 @@
                                                                measure-formals
                                                                prec-fns
                                                                prec-tags
+                                                               prec-objs
                                                                proofs
                                                                ctx
                                                                state))))
@@ -3964,6 +4054,7 @@
                            measure-formals
                            prec-fns
                            prec-tags
+                           prec-objs
                            proofs
                            ctx
                            state))
@@ -3976,6 +4067,7 @@
                            measure-formals
                            prec-fns
                            prec-tags
+                           prec-objs
                            proofs
                            ctx
                            state))
@@ -4009,6 +4101,7 @@
                       fn
                       prec-fns
                       prec-tags
+                      prec-objs
                       proofs
                       ctx
                       state))
@@ -4043,6 +4136,7 @@
                                                    measure-formals
                                                    prec-fns
                                                    prec-tags
+                                                   prec-objs
                                                    proofs
                                                    ctx
                                                    state))))))
@@ -4051,6 +4145,7 @@
 
 (define atc-gen-param-declon-list ((typed-formals atc-symbol-type-alistp)
                                    (fn symbolp)
+                                   (prec-objs atc-string-objinfo-alistp)
                                    (ctx ctxp)
                                    state)
   :returns (mv erp
@@ -4066,11 +4161,14 @@
      as calculated by @(tsee atc-typed-formals).")
    (xdoc::p
     "We check that the name of the parameter is a portable C identifier,
-     and distinct from the names of the other parameters."))
+     and distinct from the names of the other parameters.")
+   (xdoc::p
+    "If a parameter represents an access to an external object,
+     we skip it, i.e. we do not generate a declaration for it."))
   (b* (((when (endp typed-formals)) (acl2::value nil))
        ((cons formal type) (car typed-formals))
        (name (symbol-name formal))
-       ((unless (ident-stringp name))
+       ((unless (paident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
@@ -4084,12 +4182,21 @@
                    another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
                   formal fn cdr-formals))
+       ((when (b* ((info (cdr (assoc-equal (symbol-name formal) prec-objs)))
+                   ((unless info) nil)
+                   ((unless (atc-obj-infop info))
+                    (raise "Internal error: ~
+                            malformed ATC-OBJ-INFO ~x0."
+                           info))
+                   (info (atc-obj-info->defobject info)))
+                (eq (defobject-info->name-symbol info) formal)))
+        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs ctx state))
        ((mv tyspec declor) (ident+type-to-tyspec+declor (make-ident :name name)
                                                         type))
        (param (make-param-declon :tyspec tyspec
                                  :declor declor))
        ((er params)
-        (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
+        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs ctx state)))
     (acl2::value (cons param params)))
   :prepwork ((local
               (in-theory
@@ -4554,7 +4661,13 @@
     "The lemma instantiation is similar to the bindings,
      but it only concerns the formals of @('fn'), not the @('a-ptr') variables.
      The instantiation is used on the guard and termination theorems of @('fn'),
-     and therefore it can only concern the formals of @('fn')."))
+     and therefore it can only concern the formals of @('fn').")
+   (xdoc::p
+    "There is an intentional discrepancy between the fact that
+     an array pointer points to the whole array
+     while the type of the pointer is the array element type.
+     The reason is the approximate, but correct in our C subset,
+     treatment of arrays and pointers discussed in @(tsee exec-arrsub)."))
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
@@ -4959,40 +5072,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-new-function-name ((fn-name stringp)
-                                     (prec-fns atc-symbol-fninfo-alistp))
-  :returns (mv (okp booleanp)
-               (conflicting-fn symbolp))
-  :short "Check that a C function name is new."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, ensure that the symbol name of @('fn')
-     differs from the ones in @('prec-fns').
-     It is not enough that the symbols are different:
-     the symbol names must be different,
-     because package names are ignored when translating to C.
-     We return a boolean saying whether the check succeeds or not.
-     If it does not, we return the function that causes the conflict,
-     i.e. that has the same symbol name as @('fn')."))
-  (atc-check-new-function-name-aux
-   fn-name
-   (strip-cars (atc-symbol-fninfo-alist-fix prec-fns)))
-
-  :prepwork
-  ((define atc-check-new-function-name-aux ((fn-name stringp)
-                                            (fns symbol-listp))
-     :returns (mv (okp booleanp)
-                  (conflicting-fn symbolp))
-     :parents nil
-     (cond ((endp fns) (mv t nil))
-           ((equal (symbol-fix fn-name)
-                   (symbol-name (symbol-fix (car fns))))
-            (mv nil (car fns)))
-           (t (atc-check-new-function-name-aux fn-name (cdr fns)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-formal-pointerp ((formal symbolp)
                              (typed-formals atc-symbol-type-alistp))
   :returns (yes/no booleanp)
@@ -5153,6 +5232,7 @@
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
+                        (prec-objs atc-string-objinfo-alistp)
                         (proofs booleanp)
                         (prog-const symbolp)
                         (init-fun-env-thm symbolp)
@@ -5188,22 +5268,15 @@
      in the @(':compound') case,
      and then we use the limit for the block."))
   (b* ((name (symbol-name fn))
-       ((unless (ident-stringp name))
+       ((unless (paident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
-       ((mv okp conflicting-fn) (atc-check-new-function-name name prec-fns))
-       ((when (not okp))
-        (er-soft+ ctx t nil
-                  "The symbol name ~s0 of the function ~x1 ~
-                   must be distinct from the symbol names of ~
-                   the oher ACL2 functions translated to C functions, ~
-                   but the function ~x2 has the same symbol name."
-                  name fn conflicting-fn))
        (wrld (w state))
-       ((er typed-formals) (atc-typed-formals fn prec-tags ctx state))
-       ((er params) (atc-gen-param-declon-list typed-formals fn ctx state))
+       ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
+       ((er params) (atc-gen-param-declon-list
+                     typed-formals fn prec-objs ctx state))
        (body (ubody+ fn wrld))
        ((er affect) (atc-find-affected fn
                                        body
@@ -5219,6 +5292,7 @@
                                                    fn
                                                    prec-fns
                                                    prec-tags
+                                                   prec-objs
                                                    proofs
                                                    ctx
                                                    state))
@@ -5790,7 +5864,7 @@
        ((mv formals-bindings pointer-hyps & instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
-                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (> (compustate-frames-number ,compst-var) 0)
                    ,@pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
@@ -5916,7 +5990,7 @@
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
-                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
@@ -6085,7 +6159,7 @@
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
-                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
@@ -6223,6 +6297,7 @@
 (define atc-gen-loop ((fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
                       (prec-tags atc-string-taginfo-alistp)
+                      (prec-objs atc-string-objinfo-alistp)
                       (proofs booleanp)
                       (prog-const symbolp)
                       (fn-thms symbol-symbol-alistp)
@@ -6263,7 +6338,7 @@
         (if proofs
             (atc-gen-loop-measure-fn fn names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
-       ((er typed-formals) (atc-typed-formals fn prec-tags ctx state))
+       ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
        (body (ubody+ fn wrld))
        ((er (list loop-stmt
                   test-term
@@ -6278,6 +6353,7 @@
                            measure-formals
                            prec-fns
                            prec-tags
+                           prec-objs
                            proofs
                            ctx
                            state))
@@ -6560,7 +6636,6 @@
           (indexfixtype (integer-type-to-fixtype indextype))
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
-          (indextype-integer-value (pack indexfixtype '-integer-value))
           (array-reader (pack elemfixtype '-array-read-alt-def))
           (array-checker (pack elemfixtype '-array-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
@@ -6623,7 +6698,6 @@
                       ,checker-acl2int
                       ,reader
                       ,reader-acl2int
-                      ,indextype-integer-value
                       ,array-reader
                       ,array-checker
                       ,not-error-array-thm
@@ -6905,14 +6979,13 @@
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
           (elemtypep (pack elemfixtype 'p))
-          (indextype-integer-value (pack indexfixtype '-integer-value))
+          (indextype->get (pack indexfixtype '->get))
           (array-writer (pack elemfixtype '-array-write-alt-def))
           (array-checker (pack elemfixtype '-array-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
           (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
-          (indextype->get (pack indexfixtype '->get))
           (type-thm (pack indexfixtype '->get$inline))
           (thm-name (pack 'exec-member-write-when-
                           recognizer
@@ -6982,7 +7055,6 @@
                       ,not-error-thm
                       ,type-of-value-thm
                       ,kind-array-thm
-                      ,indextype-integer-value
                       ,checker
                       ,checker-acl2int
                       ,writer
@@ -7121,41 +7193,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-tag-declon ((tag symbolp)
+(define atc-gen-tag-declon ((tag stringp)
+                            (info defstruct-infop)
                             (prec-tags atc-string-taginfo-alistp)
                             (proofs booleanp)
                             (names-to-avoid symbol-listp)
-                            (ctx ctxp)
-                            state)
-  :returns (mv erp
-               (val "A @('(tuple (declon tag-declonp)
-                                 (local-events pseudo-event-form-listp)
-                                 (updated-prec-tags atc-string-taginfo-alistp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                            (wrld plist-worldp))
+  :returns (mv (declon "A @(tsee tag-declonp).")
+               (local-events "A @(tsee pseudo-event-form-listp).")
+               (updated-prec-tags "A @(tsee atc-string-taginfo-alistp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate a C structure type declaration,
           with accompanying theorems."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We ensure that the tag is not already in the table of preceding tags.
-     We extend the table with the information for this tag,
-     retrieved from the @(tsee defstruct) table in the ACL2 world")
-   (xdoc::p
-    "This has no accompanying generated theorems."))
-  (b* ((irr (list (irr-tag-declon) nil nil nil))
-       (tag (symbol-name tag))
-       ((when (consp (assoc-equal tag prec-tags)))
-        (raise "Internal error: tag ~x0 already encountered." tag)
-        (acl2::value irr))
-       (info (defstruct-table-lookup tag (w state)))
-       ((unless info)
-        (er-soft+ ctx t irr
-                  "There is no DEFSTRUCT associated to the tag ~x0."
-                  tag))
-       (meminfos (defstruct-info->members info))
+  (b* ((meminfos (defstruct-info->members info))
        (memtypes (defstruct-member-info-list->memtype-list meminfos))
        (tag-ident (defstruct-info->tag info))
        (recognizer (defstruct-info->recognizer info))
@@ -7171,7 +7222,7 @@
                                               not-error-thm
                                               meminfos
                                               names-to-avoid
-                                              (w state))
+                                              wrld)
           (mv nil nil names-to-avoid)))
        ((mv write-thm-events write-thm-names names-to-avoid)
         (if proofs
@@ -7182,25 +7233,45 @@
                                                type-of-value-thm
                                                meminfos
                                                names-to-avoid
-                                               (w state))
+                                               wrld)
           (mv nil nil names-to-avoid)))
        (thm-events (append read-thm-events write-thm-events))
        (info (make-atc-tag-info :defstruct info
                                 :member-read-thms read-thm-names
                                 :member-write-thms write-thm-names))
        (prec-tags (acons tag info prec-tags)))
-    (acl2::value
-     (list (make-tag-declon-struct :tag tag-ident
-                                   :members struct-declons)
-           thm-events
-           prec-tags
-           names-to-avoid))))
+    (mv (make-tag-declon-struct :tag tag-ident :members struct-declons)
+        thm-events
+        prec-tags
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-obj-declon ((name stringp)
+                            (info defobject-infop)
+                            (prec-objs atc-string-objinfo-alistp))
+  :returns (mv (declon obj-declonp)
+               (updated-prec-objs atc-string-objinfo-alistp))
+  :short "Generate a C external object definition."
+  (b* ((id (defobject-info->name-ident info))
+       (type (defobject-info->type info))
+       (exprs (defobject-info->init info))
+       ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
+       (declon (make-obj-declon :tyspec tyspec
+                                :declor declor
+                                :init (initer-list exprs)))
+       (info (atc-obj-info info))
+       (prec-objs (acons (str-fix name)
+                         info
+                         (atc-string-objinfo-alist-fix prec-objs))))
+    (mv declon prec-objs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-ext-declon-list ((targets symbol-listp)
                                  (prec-fns atc-symbol-fninfo-alistp)
                                  (prec-tags atc-string-taginfo-alistp)
+                                 (prec-objs atc-string-objinfo-alistp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
                                  (init-fun-env-thm symbolp)
@@ -7221,68 +7292,111 @@
   :mode :program
   :short "Generate a list of C external declarations from the targets,
           including generating C loops from recursive ACL2 functions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "After we process the first function @('fn') in @('fns'),
-     we use the extended @('prec-fns') for the subsequent functions.")
-   (xdoc::p
-    "We treat @(tsee defstruct) tags differently.
-     We treat recursive and non-recursive functions differently."))
   (b* (((when (endp targets)) (acl2::value (list nil nil nil names-to-avoid)))
        (target (car targets))
-       ((unless (function-symbolp target (w state)))
-        (b* (((mv erp
-                  (list tag-declon tag-thms prec-tags names-to-avoid)
-                  state)
-              (atc-gen-tag-declon target prec-tags proofs names-to-avoid ctx state))
-             ((when erp) (mv erp (list nil nil nil names-to-avoid) state))
-             (ext (ext-declon-tag-declon tag-declon))
-             ((er (list exts local-events exported-events names-to-avoid))
-              (atc-gen-ext-declon-list (cdr targets) prec-fns prec-tags proofs
-                                       prog-const init-fun-env-thm fn-thms
-                                       fn-appconds appcond-thms
-                                       print names-to-avoid ctx state)))
-          (acl2::value (list (cons ext exts)
-                             (append tag-thms local-events)
-                             exported-events
-                             names-to-avoid))))
-       (fn target)
-       ((er (list exts local-events exported-events prec-fns names-to-avoid))
-        (if (irecursivep+ fn (w state))
-            (b* (((mv erp
-                      (list local-events
-                            exported-events
-                            prec-fns
-                            names-to-avoid)
-                      state)
-                  (atc-gen-loop fn prec-fns prec-tags proofs prog-const
-                                fn-thms fn-appconds appcond-thms
-                                print names-to-avoid ctx state))
-                 ((when erp) (mv erp (list nil nil nil nil) state)))
-              (acl2::value (list nil
-                                 local-events
-                                 exported-events
-                                 prec-fns
-                                 names-to-avoid)))
-          (b* (((mv erp
-                    (list
-                     fundef local-events exported-events prec-fns names-to-avoid)
-                    state)
-                (atc-gen-fundef fn prec-fns prec-tags proofs
-                                prog-const init-fun-env-thm fn-thms
-                                print names-to-avoid ctx state))
-               ((when erp) (mv erp (list nil nil nil nil) state))
-               (ext (ext-declon-fundef fundef)))
-            (acl2::value (list (list ext)
-                               local-events
-                               exported-events
-                               prec-fns
-                               names-to-avoid)))))
-       ((er
-         (list more-exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list (cdr targets) prec-fns prec-tags proofs
-                                 prog-const init-fun-env-thm fn-thms
+       ((er (list exts
+                  prec-fns
+                  prec-tags
+                  prec-objs
+                  local-events
+                  exported-events
+                  names-to-avoid))
+        (b* (((when (function-symbolp target (w state)))
+              (b* ((fn target)
+                   ((mv erp
+                        (list exts
+                              prec-fns
+                              local-events
+                              exported-events
+                              names-to-avoid)
+                        state)
+                    (if (irecursivep+ fn (w state))
+                        (b* (((mv erp
+                                  (list local-events
+                                        exported-events
+                                        prec-fns
+                                        names-to-avoid)
+                                  state)
+                              (atc-gen-loop fn prec-fns prec-tags prec-objs
+                                            proofs prog-const
+                                            fn-thms fn-appconds appcond-thms
+                                            print names-to-avoid ctx state))
+                             ((when erp)
+                              (mv erp (list nil nil nil nil nil) state)))
+                          (acl2::value (list nil
+                                             prec-fns
+                                             local-events
+                                             exported-events
+                                             names-to-avoid)))
+                      (b* (((mv erp
+                                (list fundef
+                                      local-events
+                                      exported-events
+                                      prec-fns
+                                      names-to-avoid)
+                                state)
+                            (atc-gen-fundef fn prec-fns prec-tags prec-objs
+                                            proofs
+                                            prog-const init-fun-env-thm fn-thms
+                                            print names-to-avoid ctx state))
+                           ((when erp)
+                            (mv erp (list nil nil nil nil nil) state))
+                           (ext (ext-declon-fundef fundef)))
+                        (acl2::value (list (list ext)
+                                           prec-fns
+                                           local-events
+                                           exported-events
+                                           names-to-avoid)))))
+                   ((when erp)
+                    (mv erp (list nil nil nil nil nil nil nil) state)))
+                (acl2::value
+                 (list exts
+                       prec-fns
+                       prec-tags
+                       prec-objs
+                       local-events
+                       exported-events
+                       names-to-avoid))))
+             (name (symbol-name target))
+             (info (defstruct-table-lookup name (w state)))
+             ((when info)
+              (b* (((mv tag-declon tag-thms prec-tags names-to-avoid)
+                    (atc-gen-tag-declon name info prec-tags proofs
+                                        names-to-avoid (w state)))
+                   (ext (ext-declon-tag-declon tag-declon)))
+                (acl2::value
+                 (list (list ext)
+                       prec-fns
+                       prec-tags
+                       prec-objs
+                       tag-thms
+                       nil
+                       names-to-avoid))))
+             (info (defobject-table-lookup name (w state)))
+             ((when info)
+              (b* (((mv obj-declon prec-objs)
+                    (atc-gen-obj-declon name info prec-objs))
+                   (ext (ext-declon-obj-declon obj-declon)))
+                (acl2::value
+                 (list (list ext)
+                       prec-fns
+                       prec-tags
+                       prec-objs
+                       nil
+                       nil
+                       names-to-avoid)))))
+          (acl2::value
+           (prog2$ (raise "Internal error: ~
+                           target ~x0 is not ~
+                           a function or DEFSTRUCT or DEFOBJECT."
+                          target)
+                   (list nil nil nil nil nil nil nil)))))
+       ((er (list more-exts
+                  more-local-events
+                  more-exported-events
+                  names-to-avoid))
+        (atc-gen-ext-declon-list (cdr targets) prec-fns prec-tags prec-objs
+                                 proofs prog-const init-fun-env-thm fn-thms
                                  fn-appconds appcond-thms
                                  print names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
@@ -7441,7 +7555,7 @@
                                            (w state)))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list targets nil nil proofs
+        (atc-gen-ext-declon-list targets nil nil nil proofs
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))

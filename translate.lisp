@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -13428,8 +13428,7 @@
 ; We defer discussion of the :values keyword to Section 12 below.
 
 ; All ACL2 function symbols in the measure m and the two bodies must be badged
-; so apply$ can handle them (and must be warranted if proofs are to be done
-; about them).
+; (and, when in :logic mode, warranted) so apply$ can handle them.
 
 ; The do- and fin- bodies look like terms composed of IF, LET, LET*, PROGN,
 ; SETQ, MV-SETQ, RETURN, and LOOP-FINISH forms, where tests, variable bindings,
@@ -18491,7 +18490,7 @@
 ;   (declare (xargs :stobjs st))
 ;   (... (with-global-stobj st ...) ....))
 ; (defattach f g)
-; (defun h (st) 
+; (defun h (st)
 ;   (declare (xargs :stobjs st))
 ;   (... (f .. st ..) ...))
 ; (h st)

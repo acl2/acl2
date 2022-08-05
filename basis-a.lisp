@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -4888,6 +4888,7 @@
      push-untouchable
      remove-untouchable
      reset-prehistory
+     disable-ubt
      set-body
      table
      encapsulate

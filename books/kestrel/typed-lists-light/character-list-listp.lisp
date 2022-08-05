@@ -1,6 +1,6 @@
 ; A recognizer for lists of lists of characters
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,4 +27,9 @@
   (implies (character-list-listp x)
            (true-listp x))
   :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable character-list-listp))))
+
+(defthm true-listp-when-character-list-listp
+  (implies (character-list-listp x)
+           (true-listp x))
   :hints (("Goal" :in-theory (enable character-list-listp))))

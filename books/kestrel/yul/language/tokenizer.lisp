@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -57,28 +57,28 @@
   :returns (subtree abnf::tree-resultp)
   :short "Check if the ABNF tree is a nonleaf for rule \"lexeme\",
           extracting its component tree (token, comment, or whitespace) if successful.
-          If not successful, returns a resulterrp."
+          If not successful, returns a reserrp."
   (b* (((unless (abnf::tree-case tree :nonleaf))
-        (err "should be lexeme tree, but is not a nonleaf"))
+        (reserrf "should be lexeme tree, but is not a nonleaf"))
        (rulename? (abnf::tree-nonleaf->rulename? tree))
        ((unless (equal rulename? (abnf::rulename "lexeme")))
-        (err "tree should have rulename lexeme, but does not"))
+        (reserrf "tree should have rulename lexeme, but does not"))
        (branches (abnf::tree-nonleaf->branches tree))
        ;; Branches is a concatenation of repetitions.
        ;; Here, the concatenation should have exactly one item.
        ((unless (equal (len branches) 1))
-        (err "lexeme tree branches should have exactly one list"))
+        (reserrf "lexeme tree branches should have exactly one list"))
        (repetition (car branches))
        ;; Repetition is a list of subtrees.
        ;; Here, the repetition should have exactly one item
        ;; (which is the token, comment or whitespace subtree
        ;; but we don't check that here).
        ((unless (equal (len repetition) 1))
-        (err "lexeme repetition should have exactly one subtree"))
+        (reserrf "lexeme repetition should have exactly one subtree"))
        ;; This should never happen, but check to make sure
        ;; item returned is a tree.
        ((unless (abnf::treep (car repetition)))
-        (err "lexeme repetition item should be an ABNF tree")))
+        (reserrf "lexeme repetition item should be an ABNF tree")))
     (car repetition)))
 
 ;; token = keyword / literal / identifier / symbol
@@ -86,28 +86,28 @@
   :returns (subtree abnf::tree-resultp)
   :short "Check if the ABNF tree is a nonleaf for rule \"token\",
           extracting its component tree (keyword, literal, identifier, or symbol) if successful.
-          If it is not successful, returns a resulterrp."
+          If it is not successful, returns a reserrp."
   (b* (((unless (abnf::tree-case tree :nonleaf))
-        (err "should be token tree, but is not a nonleaf"))
+        (reserrf "should be token tree, but is not a nonleaf"))
        (rulename? (abnf::tree-nonleaf->rulename? tree))
        ((unless (equal rulename? (abnf::rulename "token")))
-        (err "tree should have rulename token, but does not"))
+        (reserrf "tree should have rulename token, but does not"))
        (branches (abnf::tree-nonleaf->branches tree))
        ;; Branches is a concatenation of repetitions.
        ;; Here, the concatenation should have exactly one item.
        ((unless (equal (len branches) 1))
-        (err "token tree branches should have exactly one list"))
+        (reserrf "token tree branches should have exactly one list"))
        (repetition (car branches))
        ;; Repetition is a list of subtrees.
        ;; Here, the repetition should have exactly one item
        ;; (which is the keyword, literal, identifier, or symbol)
        ;; but we don't check that here).
        ((unless (equal (len repetition) 1))
-        (err "token repetition should have exactly one subtree"))
+        (reserrf "token repetition should have exactly one subtree"))
        ;; This should never happen, but check to make sure
        ;; item returned is a tree.
        ((unless (abnf::treep (car repetition)))
-        (err "token repetition item should be an ABNF tree")))
+        (reserrf "token repetition item should be an ABNF tree")))
     (car repetition)))
 
 (define filter-and-reduce-lexeme-tree-to-subtoken-trees ((trees abnf::tree-listp))
@@ -117,30 +117,30 @@
   (xdoc::topstring
    (xdoc::p
     "Discards without error trees other than \"token\" under \"lexeme\".
-     However, if the structure under lexeme or token is incorrect, returns resulterrp."))
+     However, if the structure under lexeme or token is incorrect, returns reserrp."))
   ;; We need a separate check of the guard for logic mode to work
   (if (mbt (abnf::tree-listp trees)) ; otherwise just returns nil
       (b* (((when (endp trees)) nil)
             (first-tree (car trees))
             (rest-trees (cdr trees))
             (first-tree-under-lexeme (check-and-deref-tree-lexeme? first-tree))
-            ((when (resulterrp first-tree-under-lexeme))
-             (err "bad structure under lexeme"))
+            ((when (reserrp first-tree-under-lexeme))
+             (reserrf "bad structure under lexeme"))
             (processed-rest-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees rest-trees))
-            ((when (resulterrp processed-rest-trees))
-             (err "bad structure under lexeme"))
+            ((when (reserrp processed-rest-trees))
+             (reserrf "bad structure under lexeme"))
             ;; this can't happen, but it is helpful for the return type proof
             ((unless (abnf::tree-listp processed-rest-trees))
-             (err "type error that should not happen"))
+             (reserrf "type error that should not happen"))
             ;; if it is not a token, it is a whitespace or comment, so just return the rest
             ((unless (is-tree-rulename? first-tree-under-lexeme "token"))
              processed-rest-trees)
             (first-tree-under-token (check-and-deref-tree-token? first-tree-under-lexeme))
-            ((when (resulterrp first-tree-under-token))
-             (err "bad structure under token"))
+            ((when (reserrp first-tree-under-token))
+             (reserrf "bad structure under token"))
             ;; this can't happen, but is helpful for the return type proof
             ((unless (abnf::treep first-tree-under-token))
-             (err "type error that should not happen 2")))
+             (reserrf "type error that should not happen 2")))
         (cons first-tree-under-token
               processed-rest-trees))
     ;; can't get here, but return '() for logic reasons
@@ -156,13 +156,13 @@
      Each token is represented by an @(see abnf::tree).
      Discards comments and whitespace.  If the input structure from any lexeme
      down to the specific token type is incorrect, returns an error result value of type
-     @(see fty::resulterr) instead of a list of tokens.
-     Also, if the input string ends in the middle of a token, returns @('resulterr')."))
+     @(see fty::reserr) instead of a list of tokens.
+     Also, if the input string ends in the middle of a token, returns @('reserr')."))
   (b* (((mv erp lexeme-trees) (lexemeize-yul yul-string))
-       ((when erp) (err "problem lexing yul-string"))
+       ((when erp) (reserrf "problem lexing yul-string"))
        (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees lexeme-trees))
-       ((when (resulterrp subtoken-trees))
-        (err "problem with structure of lexeme tree")))
+       ((when (reserrp subtoken-trees))
+        (reserrf "problem with structure of lexeme tree")))
     subtoken-trees))
 
 ;; A variation on tokenize-yul that takes a list of bytes
@@ -175,10 +175,10 @@
     "This does the same thing as @(see tokenize-yul), but does not need to
 convert the string to bytes first."))
   (b* (((mv erp lexeme-trees) (lexemeize-yul-bytes yul-bytes))
-       ((when erp) (err "problem lexing yul-bytes"))
+       ((when erp) (reserrf "problem lexing yul-bytes"))
        (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees lexeme-trees))
-       ((when (resulterrp subtoken-trees))
-        (err "problem with structure of lexeme tree")))
+       ((when (reserrp subtoken-trees))
+        (reserrf "problem with structure of lexeme tree")))
     subtoken-trees))
 
 
@@ -215,5 +215,5 @@ convert the string to bytes first."))
     }
 }
 ")))
-  (and (not (resulterrp subtoken-trees))
+  (and (not (reserrp subtoken-trees))
        (subtoken-tree-listp subtoken-trees))))

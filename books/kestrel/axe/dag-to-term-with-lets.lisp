@@ -468,7 +468,7 @@
                               (binding-arrayp 'binding-array binding-array (+ 1 top-nodenum))
                               (equal (alen1 'binding-array binding-array)
                                      (+ 1 top-nodenum))
-                              (dag-parent-arrayp 'parent-array-temp parent-array)
+                              (dag-parent-arrayp 'parent-array-temp parent-array) ; alen1 may not match that of dag-array
                               (equal (alen1 'parent-array-temp parent-array)
                                      (+ 1 top-nodenum)))))
   (if (or (not (mbt (natp nodenum)))
@@ -512,7 +512,7 @@
 (defun dag-array-to-term-with-lets (dag-len dag-array-name dag-array)
   (declare (xargs :guard (and (posp dag-len)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
-  (let ((parent-array (make-dag-parent-array-with-name dag-len dag-array-name dag-array 'parent-array-temp))
+  (let ((parent-array (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array 'parent-array-temp))
         (term-array (make-empty-array 'term-array dag-len))
         (binding-array (make-empty-array 'binding-array dag-len))
         (supporters-array (make-supporters-array dag-len dag-array-name dag-array)))

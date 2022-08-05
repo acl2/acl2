@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -6586,7 +6586,7 @@
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
    (top-clause . current-clause)
    ((splitter-output . current-literal) . oncep-override)
-   (nonlinearp . cheap-linearp)
+   (nonlinearp . heavy-linearp)
    (case-split-limitations . forbidden-fns)
    . backchain-limit-rw)
   t)
@@ -6645,8 +6645,9 @@
 ; Nonlinearp -- A boolean indicating whether nonlinear arithmetic should be
 ; considered to be active.
 
-; Cheap-linearp -- A boolean indicating whether linear arithmetic should avoid
-; rewriting terms to turn into polys and avoid adding linear lemmas.
+; Heavy-linearp -- Indicates whether linear arithmetic should rewrite terms to
+; turn into polys and add linear lemmas.  When :heavy, do extra work when
+; rewriting IF calls.
 
 ; We always obtain our rewrite-constant by loading relevant information into
 ; the following empty constant.  Warning: The constant below is dangerously
@@ -6669,7 +6670,7 @@
         :fns-to-be-ignored-by-rewrite nil
         :force-info nil
         :nonlinearp nil
-        :cheap-linearp nil
+        :heavy-linearp t
         :oncep-override :clear
         :pt nil
         :restrictions-alist nil
@@ -6677,6 +6678,9 @@
         :terms-to-be-ignored-by-rewrite nil
         :top-clause nil
         :backchain-limit-rw nil))
+
+(defstub heavy-linear-p () t)
+(defattach heavy-linear-p constant-nil-function-arity-0)
 
 ; So much for the rcnst.
 
@@ -7628,9 +7632,18 @@
                                  (cond
                                   (erp (exit-brr-wormhole state))
                                   (val
-                                   (er-progn (set-ld-error-action :continue state)
-; The aliases had better ensure that every exit  is via exit-brr-wormhole.
-                                             (value :invisible)))
+                                   (er-progn
+                                    (set-ld-error-action :continue state)
+                                    (with-output
+                                      :off :all
+                                      (disable-ubt
+                                       (msg "Note that ~x0 was executed when ~
+                                             an interactive break occurred ~
+                                             due to a monitored rule; see ~
+                                             :DOC break-rewrite."
+                                            'disable-ubt)))
+; The aliases had better ensure that every exit is via exit-brr-wormhole.
+                                    (value :invisible)))
                                   (t (exit-brr-wormhole state))))))
                :ld-prompt  nil
                :ld-missing-input-ok nil
@@ -13780,6 +13793,132 @@
                           (declare (ignore rewrittenp))
                           (mv step-limit term1 ttree)))))))
 
+(defun assume-true-false-heavy-linearp (test ; &extra formals
+                                        rdepth step-limit
+                                        type-alist obj geneqv pequiv-info
+                                        wrld state
+                                        fnstack ancestors
+                                        backchain-limit
+                                        simplify-clause-pot-lst
+                                        rcnst gstack ttree)
+
+; This is the interface to assume-true-false when rewriting is done when rcst
+; specifies the use of heavy-linearp.
+
+  (declare (ignore obj))
+  (mv-let (must-be-true
+           must-be-false
+           true-type-alist
+           false-type-alist
+           ts-ttree)
+
+; See the long comment above the calls of assume-true-false in rewrite-if.
+
+    (assume-true-false test nil
+                       (ok-to-force rcnst)
+                       nil type-alist
+                       (access rewrite-constant rcnst
+                               :current-enabled-structure)
+                       wrld
+                       simplify-clause-pot-lst
+                       (access rewrite-constant rcnst :pt)
+                       nil)
+    (cond
+     ((or must-be-true must-be-false)
+      (mv step-limit must-be-true must-be-false
+          true-type-alist false-type-alist
+          simplify-clause-pot-lst simplify-clause-pot-lst ts-ttree))
+     (t ; Note that ts-ttree is irrelevant.
+      (let ((test+ (list test)))
+      (sl-let
+         (contradictionp true-pot-lst)
+         (rewrite-entry
+          (add-terms-and-lemmas test+ nil t)
+          :obj t)
+         (cond
+          (contradictionp
+           (mv step-limit nil t nil false-type-alist
+               nil simplify-clause-pot-lst
+               (push-lemma
+                *fake-rune-for-linear*
+                (access poly contradictionp :ttree))))
+          (t
+           (sl-let
+            (contradictionp false-pot-lst)
+            (rewrite-entry
+             (add-terms-and-lemmas test+ nil nil)
+             :obj nil)
+            (cond
+             (contradictionp
+              (mv step-limit t nil true-type-alist nil
+                  simplify-clause-pot-lst nil
+                  (push-lemma
+                   *fake-rune-for-linear*
+                   (access poly contradictionp :ttree))))
+             (t (mv step-limit nil nil true-type-alist false-type-alist
+                    true-pot-lst false-pot-lst nil))))))))))))
+
+(defun rewrite-if-finish (test unrewritten-test left right alist
+                               swapped-p
+                               must-be-true must-be-false
+                               true-type-alist false-type-alist
+                               true-pot-lst false-pot-lst
+                               ts-ttree ; &extra formals
+                               rdepth step-limit
+                               type-alist obj geneqv pequiv-info wrld state
+                               fnstack ancestors backchain-limit
+                               simplify-clause-pot-lst rcnst gstack ttree)
+  (cond
+   (must-be-true
+    (if (and unrewritten-test
+             (geneqv-refinementp 'iff geneqv wrld)
+             (equal unrewritten-test left))
+        (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
+      (rewrite-entry (rewrite left alist 2)
+                     :type-alist true-type-alist
+                     :simplify-clause-pot-lst true-pot-lst
+                     :ttree (cons-tag-trees ts-ttree ttree))))
+   (must-be-false
+    (rewrite-entry (rewrite right alist 3)
+                   :type-alist false-type-alist
+                   :simplify-clause-pot-lst false-pot-lst
+                   :ttree (cons-tag-trees ts-ttree ttree)))
+   (t (let ((ttree (normalize-rw-any-cache ttree)))
+        (sl-let
+         (rewritten-left ttree)
+         (if (and unrewritten-test
+                  (geneqv-refinementp 'iff geneqv wrld)
+                  (equal unrewritten-test left))
+             (mv step-limit *t* ttree)
+           (sl-let (rw-left ttree1)
+                   (rewrite-entry (rewrite left alist 2)
+                                  :type-alist true-type-alist
+                                  :simplify-clause-pot-lst true-pot-lst
+                                  :ttree (rw-cache-enter-context ttree))
+                   (mv step-limit
+                       rw-left
+                       (rw-cache-exit-context ttree ttree1))))
+         (sl-let (rewritten-right ttree1)
+                 (rewrite-entry (rewrite right alist 3)
+                                :type-alist false-type-alist
+                                :simplify-clause-pot-lst false-pot-lst
+                                :ttree (rw-cache-enter-context
+                                        ttree))
+                 (mv-let
+                   (rewritten-term ttree)
+                   (rewrite-if1 test
+                                rewritten-left rewritten-right
+                                swapped-p
+                                type-alist geneqv
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                (ok-to-force rcnst)
+                                wrld
+                                (rw-cache-exit-context ttree ttree1))
+                   (rewrite-entry
+                    (rewrite-with-lemmas
+                     rewritten-term)))))))))
+
 (defun rewrite-if (test unrewritten-test left right alist ; &extra formals
                         rdepth step-limit
                         type-alist obj geneqv pequiv-info wrld state fnstack
@@ -13832,13 +13971,27 @@
                (mv step-limit *t* ttree)
              (rewrite-entry (rewrite left alist 2)))
          (rewrite-entry (rewrite right alist 3))))
-      (t (let ((ens (access rewrite-constant rcnst :current-enabled-structure)))
-           (mv-let
-             (must-be-true
-              must-be-false
-              true-type-alist
-              false-type-alist
-              ts-ttree)
+      ((eq (access rewrite-constant rcnst :heavy-linearp) :heavy)
+       (sl-let (must-be-true
+                must-be-false
+                true-type-alist
+                false-type-alist
+                true-pot-lst
+                false-pot-lst
+                ts-ttree)
+               (rewrite-entry (assume-true-false-heavy-linearp test))
+               (rewrite-entry
+                (rewrite-if-finish test unrewritten-test left right alist
+                                   swapped-p
+                                   must-be-true must-be-false
+                                   true-type-alist false-type-alist
+                                   true-pot-lst false-pot-lst
+                                   ts-ttree))))
+      (t (mv-let (must-be-true
+                  must-be-false
+                  true-type-alist
+                  false-type-alist
+                  ts-ttree)
 
 ; Once upon a time, the call of assume-true-false below was replaced by a call
 ; of repetitious-assume-true-false.  See the Essay on Repetitive Typing.  This
@@ -13883,60 +14036,29 @@
 ; power when rewriting the current clause, because it is potentially expensive
 ; and the user can see (and therefore change) what is going on.
 
-             (if ancestors
-                 (assume-true-false test nil
-                                    (ok-to-force rcnst)
-                                    nil type-alist ens wrld
-                                    simplify-clause-pot-lst
-                                    (access rewrite-constant rcnst :pt)
-                                    nil)
+           (if ancestors
                (assume-true-false test nil
                                   (ok-to-force rcnst)
-                                  nil type-alist ens wrld nil nil nil))
-             (cond
-              (must-be-true
-               (if (and unrewritten-test
-                        (geneqv-refinementp 'iff geneqv wrld)
-                        (equal unrewritten-test left))
-                   (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
-                 (rewrite-entry (rewrite left alist 2)
-                                :type-alist true-type-alist
-                                :ttree (cons-tag-trees ts-ttree ttree))))
-              (must-be-false
-               (rewrite-entry (rewrite right alist 3)
-                              :type-alist false-type-alist
-                              :ttree (cons-tag-trees ts-ttree ttree)))
-              (t (let ((ttree (normalize-rw-any-cache ttree)))
-                   (sl-let
-                    (rewritten-left ttree)
-                    (if (and unrewritten-test
-                             (geneqv-refinementp 'iff geneqv wrld)
-                             (equal unrewritten-test left))
-                        (mv step-limit *t* ttree)
-                      (sl-let (rw-left ttree1)
-                              (rewrite-entry (rewrite left alist 2)
-                                             :type-alist true-type-alist
-                                             :ttree (rw-cache-enter-context ttree))
-                              (mv step-limit
-                                  rw-left
-                                  (rw-cache-exit-context ttree ttree1))))
-                    (sl-let (rewritten-right ttree1)
-                            (rewrite-entry (rewrite right alist 3)
-                                           :type-alist false-type-alist
-                                           :ttree (rw-cache-enter-context
-                                                   ttree))
-                            (mv-let
-                              (rewritten-term ttree)
-                              (rewrite-if1 test
-                                           rewritten-left rewritten-right
-                                           swapped-p
-                                           type-alist geneqv ens
-                                           (ok-to-force rcnst)
-                                           wrld
-                                           (rw-cache-exit-context ttree ttree1))
-                              (rewrite-entry
-                               (rewrite-with-lemmas
-                                rewritten-term)))))))))))))))
+                                  nil type-alist
+                                  (access rewrite-constant rcnst
+                                          :current-enabled-structure)
+                                  wrld
+                                  simplify-clause-pot-lst
+                                  (access rewrite-constant rcnst :pt)
+                                  nil)
+             (assume-true-false test nil
+                                (ok-to-force rcnst)
+                                nil type-alist
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                wrld nil nil nil))
+           (rewrite-entry
+            (rewrite-if-finish test unrewritten-test left right alist
+                               swapped-p
+                               must-be-true must-be-false
+                               true-type-alist false-type-alist
+                               simplify-clause-pot-lst simplify-clause-pot-lst
+                               ts-ttree))))))))
 
 (defun rewrite-args (args alist bkptr rewritten-args-rev
                           deep-pequiv-lst shallow-pequiv-lst
@@ -18597,7 +18719,7 @@
          (contradictionp new-pot-lst)
          (if (and (nvariablep (car new-vars))
                   (not (flambda-applicationp (car new-vars)))
-                  (not (access rewrite-constant rcnst :cheap-linearp)))
+                  (access rewrite-constant rcnst :heavy-linearp))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
                                  (getpropc (ffn-symb (car new-vars))
@@ -18794,7 +18916,7 @@
         (cond
          ((or (flambda-applicationp
                (car new-vars))
-              (access rewrite-constant rcnst :cheap-linearp))
+              (not (access rewrite-constant rcnst :heavy-linearp)))
           (mv step-limit nil simplify-clause-pot-lst))
          (t
           (rewrite-entry
@@ -19262,7 +19384,7 @@
      (sl-let
       (term-lst ttree-lst)
       (if (and (access rewrite-constant rcnst :nonlinearp)
-               (not (access rewrite-constant rcnst :cheap-linearp)))
+               (access rewrite-constant rcnst :heavy-linearp))
 
 ; This call to rewrite-linear-term-lst is new to Version_2.7.
 ; We wish to be able to have a different normal form when doing

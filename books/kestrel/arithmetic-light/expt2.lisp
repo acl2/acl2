@@ -61,6 +61,16 @@
            (integerp (* (/ (expt 2 i1)) (expt 2 i2))))
   :rule-classes :type-prescription)
 
+;; Like the above but also includes x.
+(defthm integer-of-*-of-/-of-expt2-and-*-of-expt2
+  (implies (and (<= i j)
+                (integerp x)
+                (integerp i)
+                (integerp j))
+           (integerp (* (/ (expt 2 i)) (* x (expt 2 j)))))
+  :hints (("Goal" :use (:instance integerp-of-* (y (expt 2 (- j i))))
+           :in-theory (e/d (expt-of-+) (integerp-of-*)))))
+
 (defthm expt-bound-linear-weak
   (implies (and (<= size free)
                 (integerp free)

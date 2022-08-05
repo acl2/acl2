@@ -62,15 +62,17 @@
 (thm (formatp 32 24))
 (thm (formatp 64 53))
 (thm (formatp 128 113))
-(thm (formatp 128 113))
 ;; TODO: Add the general formula for k>=128.
 
 ;; In case we are keeping formatp disabled
+;; TODO: Strengthen?
 (defthm formatp-forward
   (implies (formatp k p)
            (and (integerp k)
-                (posp k)
-                (< p k)))
+                (integerp p)
+                (<= 2 p)
+                (<= 4 k)
+                (< (+ 1 p) k)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable formatp))))
 
@@ -201,10 +203,10 @@
   :hints (("Goal" :in-theory (enable representable-positive-normalp representable-normalp))))
 
 (defthm representable-normalp-of--
-  (implies (rationalp rat)
-           (equal (representable-normalp k p (- rat))
-                  (representable-normalp k p rat)))
-  :hints (("Goal" :in-theory (enable representable-normalp))))
+  (equal (representable-normalp k p (- rat))
+         (representable-normalp k p rat))
+  :hints (("Goal" :in-theory (enable representable-normalp
+                                     representable-positive-normalp))))
 
 (defthmd representable-positive-normalp-of-abs
   (equal (representable-positive-normalp k p (abs rat))
@@ -244,10 +246,10 @@
   :hints (("Goal" :in-theory (enable representable-positive-subnormalp representable-subnormalp))))
 
 (defthm representable-subnormalp-of--
-  (implies (rationalp rat)
-           (equal (representable-subnormalp k p (- rat))
-                  (representable-subnormalp k p rat)))
-  :hints (("Goal" :in-theory (enable representable-subnormalp))))
+  (equal (representable-subnormalp k p (- rat))
+         (representable-subnormalp k p rat))
+  :hints (("Goal" :in-theory (enable representable-subnormalp
+                                     representable-positive-subnormalp))))
 
 ;; The normals and subnormals are disjoint.
 (defthm not-and-representable-normalp-and-representable-subnormalp
@@ -274,10 +276,13 @@
   :hints (("Goal" :in-theory (enable representable-nonzero-rationalp))))
 
 (defthm representable-nonzero-rationalp-of--
-  (implies (rationalp rat)
-           (equal (representable-nonzero-rationalp k p (- rat))
-                  (representable-nonzero-rationalp k p rat)))
-  :hints (("Goal" :in-theory (enable representable-nonzero-rationalp))))
+  (equal (representable-nonzero-rationalp k p (- rat))
+         (representable-nonzero-rationalp k p rat))
+  :hints (("Goal" :in-theory (enable representable-nonzero-rationalp
+                                     representable-normalp
+                                     representable-positive-normalp
+                                     representable-subnormalp
+                                     representable-positive-subnormalp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

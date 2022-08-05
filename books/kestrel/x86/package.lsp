@@ -195,9 +195,9 @@
     bvchop
     logext
     getbit
-    sbvlt
     bvlt
     bvle
+    sbvlt
     sbvle
     bvcat
     bvplus
@@ -207,11 +207,18 @@
     bvshl
     bvshr
     bvashr
+    bvdiv
+    sbvdiv
+    bvmod
+    sbvrem
     logtail
     slice ;note that we don't get the slice from x86isa
     myif
     bool->bit$inline
     bool->bit
+    boolif
+    boolor
+    booland
     logapp
     logmask
 
@@ -228,11 +235,17 @@
     bvsx
     repeatbit
 
+    ceiling-of-lg
+    lg
+    log2
+
     farg1
     farg2
     farg3
     farg4
     check-arities
+
+    lookup-eq-safe
 
     ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
     common-lisp::ignorable
@@ -246,11 +259,13 @@
     erp-nil
     erp-t
 
+    def-constant-opener
+
     defconst-computed
     defconst-computed2 ;drop?
     defconst-computed3
 
-    ;; Axe stuff:
+    ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
     simp-dag
     compose-term-and-dag
     compose-term-and-dags
@@ -260,7 +275,7 @@
     result-array-stobj
     dag-to-term
     make-term-into-dag
-    simplify-terms-using-each-other
+    ;; simplify-terms-using-each-other
     make-cons-nest
     dag-fns
     make-rule-alist
@@ -281,6 +296,9 @@
 
     bv-array-to-list
     bv-array-to-list-aux
+    bv-array-read
+    bv-array-write
+    bv-arrayp
 
     ;; Stuff supporting b*
     b*

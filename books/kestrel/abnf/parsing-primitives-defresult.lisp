@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
   (if (consp input)
       (mv (lnfix (car input))
           (nat-list-fix (cdr input)))
-    (mv (err :end-of-input)
+    (mv (reserrf :end-of-input)
         nil))
   :hooks (:fix)
   ///
@@ -64,7 +64,7 @@
     :rule-classes :linear)
 
   (defret len-of-parse-next-<
-    (implies (not (resulterrp nat))
+    (implies (not (reserrp nat))
              (< (len rest-input)
                 (len input)))
     :rule-classes :linear))
@@ -76,7 +76,7 @@
                (rest-input nat-listp))
   :short "Parse a direct numeric value consisting of given natural numbers."
   (b* (((mv nats input) (parse-direct-aux nats input))
-       ((when (resulterrp nats)) (mv (err-push nats) input)))
+       ((when (reserrp nats)) (mv (reserrf-push nats) input)))
     (mv (abnf::tree-leafterm nats)
         input))
   :hooks (:fix)
@@ -91,18 +91,18 @@
           (("Goal"
             :in-theory
             (enable
-             acl2::nat-listp-when-nat-list-resultp-and-not-resulterrp))))
+             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp nats)) (mv nil (nat-list-fix input)))
           ((mv nat? input1) (parse-next input))
-          ((when (resulterrp nat?)) (mv (err-push nat?) (nat-list-fix input)))
+          ((when (reserrp nat?)) (mv (reserrf-push nat?) (nat-list-fix input)))
           (nat nat?)
           ((unless (equal nat (lnfix (car nats))))
-           (mv (err (list :found nat :required (lnfix (car nats))))
+           (mv (reserrf (list :found nat :required (lnfix (car nats))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-direct-aux (cdr nats) input1))
-          ((when (resulterrp nats?)) (mv (err-push nats?) input1))
+          ((when (reserrp nats?)) (mv (reserrf-push nats?) input1))
           (nats nats?))
        (mv (cons nat nats) input2))
      :hooks (:fix)
@@ -114,7 +114,7 @@
        :rule-classes :linear)
 
      (defret len-of-parse-direct-aux-<
-       (implies (and (not (resulterrp nats1))
+       (implies (and (not (reserrp nats1))
                      (consp nats))
                 (< (len rest-input)
                    (len input)))
@@ -128,7 +128,7 @@
     :rule-classes :linear)
 
   (defret len-of-parse-direct-<
-    (implies (and (not (resulterrp tree))
+    (implies (and (not (reserrp tree))
                   (consp nats))
              (< (len rest-input)
                 (len input)))
@@ -142,13 +142,13 @@
                (rest-input nat-listp))
   :short "Parse a range numeric value consisting of given minimum and maximum."
   (b* (((mv nat? input1) (parse-next input))
-       ((when (resulterrp nat?)) (mv (err-push nat?) (nat-list-fix input)))
+       ((when (reserrp nat?)) (mv (reserrf-push nat?) (nat-list-fix input)))
        (nat nat?)
        ((unless (and (<= (lnfix min)
                          nat)
                      (<= nat
                          (lnfix max))))
-        (mv (err (list :found nat :required (lnfix min) (lnfix max)))
+        (mv (reserrf (list :found nat :required (lnfix min) (lnfix max)))
             (nat-list-fix input))))
     (mv (abnf::tree-leafterm (list nat))
         input1))
@@ -161,7 +161,7 @@
     :rule-classes :linear)
 
   (defret len-of-parse-range-<
-    (implies (not (resulterrp tree))
+    (implies (not (reserrp tree))
              (< (len rest-input)
                 (len input)))
     :rule-classes :linear))
@@ -174,7 +174,7 @@
   :short "Parse a case-insensitive character value consisting of
           a given string of characters."
   (b* (((mv nats input) (parse-ichars-aux (str::explode chars) input))
-       ((when (resulterrp nats)) (mv (err-push nats) input)))
+       ((when (reserrp nats)) (mv (reserrf-push nats) input)))
     (mv (abnf::tree-leafterm nats)
         input))
   :hooks (:fix)
@@ -189,19 +189,19 @@
           (("Goal"
             :in-theory
             (enable
-             acl2::natp-when-nat-resultp-and-not-resulterrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-resulterrp))))
+             acl2::natp-when-nat-resultp-and-not-reserrp
+             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp chars)) (mv nil (nat-list-fix input)))
           ((mv nat? input1) (parse-next input))
-          ((when (resulterrp nat?)) (mv (err-push nat?) (nat-list-fix input)))
+          ((when (reserrp nat?)) (mv (reserrf-push nat?) (nat-list-fix input)))
           (nat nat?)
           ((unless (abnf::nat-match-insensitive-char-p nat (car chars)))
-           (mv (err (list :found nat :required (acl2::char-fix (car chars))))
+           (mv (reserrf (list :found nat :required (acl2::char-fix (car chars))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-ichars-aux (cdr chars) input1))
-          ((when (resulterrp nats?)) (mv (err-push nats?) input1))
+          ((when (reserrp nats?)) (mv (reserrf-push nats?) input1))
           (nats nats?))
        (mv (cons nat nats) input2))
      :hooks (:fix)
@@ -213,7 +213,7 @@
        :rule-classes :linear)
 
      (defret len-of-parse-ichars-aux-<
-       (implies (and (not (resulterrp nats))
+       (implies (and (not (reserrp nats))
                      (consp chars))
                 (< (len rest-input)
                    (len input)))
@@ -227,7 +227,7 @@
     :rule-classes :linear)
 
   (defret len-of-parse-ichars-<
-    (implies (and (not (resulterrp tree))
+    (implies (and (not (reserrp tree))
                   (consp (str::explode chars)))
              (< (len rest-input)
                 (len input)))
@@ -241,7 +241,7 @@
   :short "Parse a case-sensitive character value consisting of
           a given string of characters."
   (b* (((mv nats input) (parse-schars-aux (str::explode chars) input))
-       ((when (resulterrp nats)) (mv (err-push nats) input)))
+       ((when (reserrp nats)) (mv (reserrf-push nats) input)))
     (mv (abnf::tree-leafterm nats)
         input))
   :hooks (:fix)
@@ -256,19 +256,19 @@
           (("Goal"
             :in-theory
             (enable
-             acl2::natp-when-nat-resultp-and-not-resulterrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-resulterrp))))
+             acl2::natp-when-nat-resultp-and-not-reserrp
+             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp chars)) (mv nil (nat-list-fix input)))
           ((mv nat? input1) (parse-next input))
-          ((when (resulterrp nat?)) (mv (err-push nat?) (nat-list-fix input)))
+          ((when (reserrp nat?)) (mv (reserrf-push nat?) (nat-list-fix input)))
           (nat nat?)
           ((unless (abnf::nat-match-sensitive-char-p nat (car chars)))
-           (mv (err (list :found nat :required (acl2::char-fix (car chars))))
+           (mv (reserrf (list :found nat :required (acl2::char-fix (car chars))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-schars-aux (cdr chars) input1))
-          ((when (resulterrp nats?)) (mv (err-push nats?) input1))
+          ((when (reserrp nats?)) (mv (reserrf-push nats?) input1))
           (nats nats?))
        (mv (cons nat nats) input2))
      :hooks (:fix)
@@ -280,7 +280,7 @@
        :rule-classes :linear)
 
      (defret len-of-parse-schars-aux-<
-       (implies (and (not (resulterrp nats))
+       (implies (and (not (reserrp nats))
                      (consp chars))
                 (< (len rest-input)
                    (len input)))
@@ -294,7 +294,7 @@
     :rule-classes :linear)
 
   (defret len-of-parse-schars-<
-    (implies (and (not (resulterrp tree))
+    (implies (and (not (reserrp tree))
                   (consp (str::explode chars)))
              (< (len rest-input)
                 (len input)))

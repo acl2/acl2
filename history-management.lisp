@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -5207,6 +5207,17 @@
 ; to the user.
 
 (defrec command-number-baseline-info
+
+; Although permanent-p comes from the pflg argument of reset-prehistory, the
+; two may have different shapes.  The reset-prehistory pflg argument is t, nil,
+; :disable-ubt, or a msgp.  The corresponding value of permanent-p stored in
+; this record is t, nil, or -- for both :disable-ubt and a msgp -- a cons of
+; the form (absolute-command-number . x), where x is nil if the argument was
+; :disable-ubt and otherwise is the msgp argument.  See reset-prehistory-fn.
+
+; So even using ubt-prehistory: if permanent-p is t then we can't undo through
+; :current, and if permanent-p is a cons then we can't undo through its car.
+
   (current permanent-p . original)
   nil)
 

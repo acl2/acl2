@@ -205,7 +205,7 @@ my %canonical_path_memo = ();
 
 sub canonical_path_aux {
     my $fname = shift;
-    
+
     my $abs_path = abs_canonical_path($fname);
     if ($BASE_PATH && $abs_path) {
 	my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
@@ -287,10 +287,6 @@ sub lookup_colon_dir {
     }
     return $dirpath;
 }
-
-
-# (check-hons-enabled (:book
-# cert_param (hons-only)
 
 
 
@@ -437,7 +433,7 @@ sub expand_dirname_cmd {
     } else {
 	my $dir = dirname($basename);
 	my $fullpath = File::Spec->file_name_is_absolute($relname) ?
-	    $relname . $ext : 
+	    $relname . $ext :
 	    File::Spec->catfile($dir, $relname . $ext);
 	# was:
 	# $fullname = canonical_path(rel_path($dir, $relname . $ext));
@@ -466,7 +462,7 @@ sub print_events {
     }
     print "\n";
 }
-    
+
 my %times_seen = ();
 
 sub print_times_seen {
@@ -494,7 +490,7 @@ sub src_deps {
 	print STDERR "Circular dependency found in src_deps of $fname\n";
 	return 0;
     }
-    
+
     $seen->{$fname} = 1;
 
     $times_seen{$fname} = ($times_seen{$fname} || 0) + 1;
@@ -766,7 +762,7 @@ sub find_deps {
 	print "others:\n";
 	print_lst($certinfo->otherdeps);
     }
-    
+
     my $image;
 
     if ($certifiable) {
@@ -844,7 +840,7 @@ sub deps_dfs {
 
 }
 
-# Depth-first search through the dependency map in order to propagate requirements (e.g. hons-only)
+# Depth-first search through the dependency map in order to propagate requirements (e.g. ccl-only)
 # from books with that cert_param to books that include them.
 sub propagate_reqparam {
     my ($target, $paramname, $visited, $depdb) = @_;
@@ -862,7 +858,7 @@ sub propagate_reqparam {
 	}
 	return;
     }
-    
+
     my $certdeps = $depdb->cert_deps($target);
     my $set_param = 0;
     foreach my $dep (@$certdeps) {
@@ -912,7 +908,7 @@ sub check_up_to_date {
 	    $up_to_date{$target} = 0;
 	    return;
 	}
-	
+
 	my $certdeps = $depdb->cert_deps($target);
 	foreach my $cert (@$certdeps) {
 	    $dfs->($cert);
@@ -932,9 +928,9 @@ sub check_up_to_date {
 	}
 	my $srcdeps = $depdb->cert_srcdeps($target);
 	my $otherdeps = $depdb->cert_otherdeps($target);
-	
+
 	foreach my $dep (@$srcdeps, @$otherdeps) {
-	    if ( (! $force_up_to_date->{$dep}) && 
+	    if ( (! $force_up_to_date->{$dep}) &&
 		 ($force_out_of_date->{$dep} || ! (-e $dep) || ! newer_than_or_equal($target, $dep))) {
 		$up_to_date{$target} = 0;
 		return;
@@ -1294,7 +1290,7 @@ sub add_deps {
 
     # 	push(@{$depdb->{$target}->[2]}, @$recsrcs);
     # }
-	
+
 }
 
 sub read_targets {

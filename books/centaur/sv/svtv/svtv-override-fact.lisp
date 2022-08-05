@@ -46,6 +46,7 @@
    lemma-args
    no-lemmas
    hints
+   rule-classes
    pkg-sym))
 
 (program)
@@ -393,6 +394,7 @@
          lemma-args
          no-lemmas
          hints
+         rule-classes
          (pkg-sym name))
         args)
        (triples (acl2::template-subst
@@ -412,7 +414,7 @@
                      (masks (acl2::fal-extract inputs inmasks)))
                   `(and ,@(svtv-unsigned-byte-hyps masks) ,hyp))
               hyp)))
-       
+
     (value
      (svtv-override-fact-events
       (make-svtv-override-fact
@@ -433,12 +435,13 @@
        :lemma-args lemma-args
        :hints hints
        :no-lemmas no-lemmas
+       :rule-classes rule-classes
        :pkg-sym pkg-sym)))))
 
 (defmacro def-svtv-override-fact (name &rest args)
   `(make-event (svtv-override-fact-fn ',name ',args state)))
-     
-                           
+
+
 
 
 (defxdoc def-svtv-override-fact
@@ -460,7 +463,8 @@ particular shape of input env."
    :concl conclusion-term
    :enable rules-list
    :unsigned-byte-hyps nil
-   :no-lemmas nil)
+   :no-lemmas nil
+   :rule-classes nil)
  })
 
 <p>For each of the keyword arguments, if absent a default will be looked up in
@@ -519,7 +523,10 @@ keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').</li>
 <li>@(':no-lemmas') says to skip the initial override theorem and monotonicity lemma
 and tries to prove the final theorem directly, with the hints given by the user.</li>
 
-<li>@(':hints') are hints for the final theorem, only used if @(':no-lemmas') is set.</li>
+<li>@(':hints') are hints for the final theorem, only used if @(':no-lemmas')
+is set.</li>
+
+<li>@(':rule-classes') gives the rule classes of the theorem proved.</li>
 
 <li>@(':unsigned-byte-hyps') says to automatically add @('unsigned-byte-p')
 hypotheses for each input and override variable.</li>

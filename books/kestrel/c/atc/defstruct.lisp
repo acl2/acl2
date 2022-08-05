@@ -445,7 +445,7 @@
                    but the first component of ~x0 is not a symbol."
                   member))
        (name (symbol-name name))
-       ((unless (ident-stringp name))
+       ((unless (paident-stringp name))
         (er-soft+ ctx t nil
                   "Each input after the first one ~
                    must be a doublet (NAME TYPE) of symbols ~
@@ -588,7 +588,7 @@
                    but ~x0 is not."
                   tag))
        (tag-name (symbol-name tag))
-       ((unless (ident-stringp tag-name))
+       ((unless (paident-stringp tag-name))
         (er-soft+ ctx t irrelevant
                   "The name ~x0 of the symbol ~x1 passed as first input, ~
                    which defines the name of the structure, ~

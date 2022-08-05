@@ -71,6 +71,23 @@
   (defun foo$not-normalized (y) (cons y y))
   (simplify foo))
 
+; Simple test of heavy-linearp
+(deftest
+  (defun f1 (x)
+    (declare (ignore x))
+    3)
+  (defthm f1-greater-than-2
+    (< 2 (f1 x))
+    :rule-classes :linear)
+  (in-theory (disable f1))
+  (defun f2 (x a b)
+    (if (< 2 (f1 x))
+        a
+      b))
+  (simplify f2)
+  (must-be-redundant
+   (DEFUN F2$1 (X A B) (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL)) A)))
+
 ;;simple example of a recursive function
 (deftest
   (defun bar (x) (if (zp x) 0 (+ 1 1 (bar (+ -1 x)))))

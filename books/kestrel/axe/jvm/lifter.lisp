@@ -61,7 +61,7 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/utilities/auto-termination" :dir :system)
-(include-book "../prune") ;for maybe-prune-dag
+(include-book "../prune") ; for maybe-prune-dag-precisely
 (include-book "kestrel/jvm/symbolic-execution2" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
@@ -5995,24 +5995,26 @@
           :check-inputs nil
           ))
         ((when erp) (mv erp nil nil nil nil nil nil state))
+        ;; TODO: Handle a state-dag that is a quotep?
         ;; Prune unreachable branches:
         ;; TODO: May need to repeatedly prune branches and rewrite?
         ((mv erp state-dag state)
-         (maybe-prune-dag-new (g :prune-branches options)
-                              state-dag
-                              hyps
-                              (set-difference-eq
-                               ;;todo: improve?:
-                               (append (amazing-rules-spec-and-dag)
-                                       (map-rules)
-                                       ;; (jvm-semantics-rules)
-                                       (jvm-simplification-rules)
-                                       (g :extra-rules options))
-                               (g :remove-rules options))
-                              nil ; interpreted-fns
-                              (g :monitor options)
-                              (g :call-stp options)
-                              state))
+         (maybe-prune-dag-precisely (g :prune-branches options)
+                                    state-dag
+                                    hyps
+                                    (set-difference-eq
+                                     ;;todo: improve?:
+                                     (append (amazing-rules-spec-and-dag)
+                                             (map-rules)
+                                             ;; (jvm-semantics-rules)
+                                             (jvm-simplification-rules)
+                                             (g :extra-rules options))
+                                     (g :remove-rules options))
+                                    nil ; interpreted-fns
+                                    (g :monitor options)
+                                    (g :call-stp options)
+                                    print
+                                    state))
         ((when erp) (mv erp nil nil nil nil nil nil state))
         (- (cw " Done attempting to run all branches.)~%")))
      (if (member-eq 'run-until-exit-segment-or-hit-loop-header (dag-fns state-dag))
@@ -6523,22 +6525,24 @@
        ;; ((when (not (pseudo-term-listp assumptions)))
        ;;   (er hard? 'lift-java-code-fn "Hyps are not pseudo-terms: ~X01" assumptions nil)
        ;;   (mv t nil state))
+       ;; TODO: Handle an output-dag that is a quotep?
        ((mv erp output-dag state)
-        (maybe-prune-dag-new (g :prune-branches options)
-                             output-dag
-                             assumptions ;todo think about this
-                             (set-difference-eq
-                              ;;todo: improve?:
-                              (append (amazing-rules-spec-and-dag)
-                                      (map-rules)
-                                      ;; (jvm-semantics-rules)
-                                      (jvm-simplification-rules)
-                                      (g :extra-rules options))
-                              (g :remove-rules options))
-                             nil ; interpreted-fns
-                             (g :monitor options)
-                             (g :call-stp options)
-                             state))
+        (maybe-prune-dag-precisely (g :prune-branches options)
+                                   output-dag
+                                   assumptions ;todo think about this
+                                   (set-difference-eq
+                                    ;;todo: improve?:
+                                    (append (amazing-rules-spec-and-dag)
+                                            (map-rules)
+                                            ;; (jvm-semantics-rules)
+                                            (jvm-simplification-rules)
+                                            (g :extra-rules options))
+                                    (g :remove-rules options))
+                                   nil ; interpreted-fns
+                                   (g :monitor options)
+                                   (g :call-stp options)
+                                   print
+                                   state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Output DAG:~%")
                              (print-list output-dag)

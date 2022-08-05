@@ -335,6 +335,7 @@
      write-of-write-same
      read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
      read-in-terms-of-nth-and-pos-eric-4-bytes ; this is for resolving reads of the program.
+     read-in-terms-of-nth-and-pos-eric-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
      acl2::equal-of-bvplus-constant-and-constant
@@ -617,8 +618,6 @@
                                                  )))
                ((when erp) (mv erp nil nil nil state)))
             (mv (erp-nil) one-rep-term exit-term exit-test-term state)))))))
-
-(in-theory (disable ACL2::NATP-MEANS-NON-NEG)) ;todo
 
 ;todo: this is slowing stuff down: ACL2::USE-ALL-HEAPREF-TABLE-ENTRYP-FOR-CAR
 
@@ -1301,9 +1300,7 @@
                    measure-alist
                    base-name
                    lifter-rules
-                   state
-
-                   )
+                   state)
    (declare (xargs :stobjs (state)
                    :mode :program
                    :guard (and (posp loop-depth)
@@ -1342,7 +1339,7 @@
         (- (cw "(Loop top PC is ~x0.)~%" loop-top-pc-term))
         (pc-offset (get-added-offset loop-top-pc-term 'text-offset))
         (pc-assumption `(equal (xr ':rip 'nil ,state-var) ,loop-top-pc-term))
-        (- (cw "(Loop top PC assumpton: ~x0.)~%" pc-assumption))
+        (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top:
         ((mv erp loop-top-rsp-dag state)
          (extract-rsp-dag extra-rules
@@ -2028,7 +2025,8 @@
                           (w state)))
         ((when erp) (mv erp nil nil nil state))
         ((mv erp assumptions state)
-         (simplify-terms-using-each-other assumptions rule-alist))
+         ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
+         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
         (state-var (pack-in-package-of-symbol 'x86 'x86_ loop-depth))

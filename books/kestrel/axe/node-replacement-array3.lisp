@@ -20,7 +20,10 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
-(local (in-theory (disable symbol-listp alistp member-equal natp)))
+(local (in-theory (e/d (natp-of-cadr-when-possibly-negated-nodenump
+                        <-of-cadr-when-bounded-possibly-negated-nodenump
+                        <-when-bounded-possibly-negated-nodenump)
+                       (symbol-listp alistp member-equal natp))))
 
 ;; pairs representing updates to be made to the node-replacement-array, to undo changes made to it for true and else branches
 (defund bounded-undo-pairsp (pairs dag-len)
@@ -91,30 +94,31 @@
                                                                               known-booleans
                                                                               undo-pairs-acc)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (possibly-negated-nodenumsp possibly-negated-nodenums)
-                              (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                                     dag-len)
+                              (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                               (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                               (natp node-replacement-count)
                               (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                               (symbol-listp known-booleans)
                               (bounded-undo-pairsp undo-pairs-acc dag-len))
-                  :guard-hints (("Goal" :expand ((possibly-negated-nodenumsp possibly-negated-nodenums)
-                                                 (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
+                  :guard-hints (("Goal" :expand (;;(possibly-negated-nodenumsp possibly-negated-nodenums)
+                                                 (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
+                                                 ;;(strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
                                                  (ALL-DARGP (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))
                                                  (ALL-DARGP (CDR (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))))
                                  :in-theory (enable (:d strip-nots-from-possibly-negated-nodenums)
                                                     bounded-undo-pairsp
                                                     strip-not-from-possibly-negated-nodenum
                                                     possibly-negated-nodenump
+                                                    bounded-possibly-negated-nodenumsp
+                                                    bounded-possibly-negated-nodenump
                                                     CONSP-OF-CDR)))))
   (if (endp possibly-negated-nodenums)
       (mv node-replacement-array node-replacement-count undo-pairs-acc)
     (let ((pnn (first possibly-negated-nodenums)))
       (if (consp pnn) ; check for (not <nodenum>)
           ;; Since we are assuming (not <nodenum>), we can set <nodenum> to be replaced with 'nil:
-          (let* ((negated-nodenum (darg1 pnn)) ; is darg1 the best idiom here?
+          (let* ((negated-nodenum (farg1 pnn))
                  (old-val (if (< negated-nodenum node-replacement-count)
                               (aref1 'node-replacement-array node-replacement-array negated-nodenum)
                             nil)))
@@ -192,9 +196,7 @@
 
 (defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (possibly-negated-nodenumsp possibly-negated-nodenums)
-                (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                       dag-len)
+                (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                 (natp node-replacement-count)
@@ -212,20 +214,23 @@
                   (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                   (bounded-undo-pairsp undo-pairs dag-len)
                   )))
-  :hints (("Goal" :expand ((POSSIBLY-NEGATED-NODENUMSP POSSIBLY-NEGATED-NODENUMS)
-                           (STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS POSSIBLY-NEGATED-NODENUMS))
+  :hints (("Goal" :expand (;(bounded-POSSIBLY-NEGATED-NODENUMSP POSSIBLY-NEGATED-NODENUMS dag-len)
+
+                           ;;(STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS POSSIBLY-NEGATED-NODENUMS)
+                           )
            :induct t
            :in-theory (enable UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
                               bounded-undo-pairsp
-                              (:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
-                              STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
-                              POSSIBLY-NEGATED-NODENUMP))))
+                              ;(:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
+                              ;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
+                              ;POSSIBLY-NEGATED-NODENUMP
+                              ;bounded-POSSIBLY-NEGATED-NODENUMSP
+                              ;bounded-POSSIBLY-NEGATED-NODENUMP
+                              ))))
 
 (defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type-alen1
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (possibly-negated-nodenumsp possibly-negated-nodenums)
-                (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                       dag-len)
+                (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                 (natp node-replacement-count)
@@ -239,14 +244,17 @@
                                                                                                                             dag-array dag-len
                                                                                                                             known-booleans
                                                                                                                             undo-pairs-acc)))))
-  :hints (("Goal" :expand ((POSSIBLY-NEGATED-NODENUMSP POSSIBLY-NEGATED-NODENUMS)
-                           (STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS POSSIBLY-NEGATED-NODENUMS))
+  :hints (("Goal" :expand (;(POSSIBLY-NEGATED-NODENUMSP POSSIBLY-NEGATED-NODENUMS)
+                           ;;(STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS POSSIBLY-NEGATED-NODENUMS)
+                           )
            :induct t
+           :do-not '(generalize eliminate-destructors)
            :in-theory (enable UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
                               bounded-undo-pairsp
-                              (:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
-                              STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
-                              POSSIBLY-NEGATED-NODENUMP))))
+                              ;(:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
+                              ;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
+                              ;;POSSIBLY-NEGATED-NODENUMP
+                              ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,7 +326,8 @@
            (<= (alen1 'node-replacement-array node-replacement-array)
                (alen1 'node-replacement-array (mv-nth 0 (update-node-replacement-array-for-assuming-node nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)))))
   :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-node
-                                     ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP))))
+                                     ;; ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP
+                                     ))))
 
 (defthm update-node-replacement-array-for-assuming-node-return-type-alen1-corollary
   (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))
@@ -350,7 +359,8 @@
                               (natp node-replacement-count)
                               (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                               (symbol-listp known-booleans))
-                  :guard-hints (("Goal" :in-theory (enable ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP)))))
+                  :guard-hints (("Goal" :in-theory (enable ;;ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP
+                                                    )))))
   (let* ((disjunction (get-axe-disjunction-from-dag-item nodenum 'dag-array dag-array dag-len)) ; assume (not (or a b c)) by assuming (not a) and (not b), etc.
          (conjunction (negate-axe-disjunction disjunction)))
     (if (quotep conjunction)
@@ -380,7 +390,8 @@
                   (bounded-undo-pairsp undo-pairs dag-len)
                   )))
   :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-negation-of-node
-                                     ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP))))
+                                     ;;ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP
+                                     ))))
 
 (defthm update-node-replacement-array-for-assuming-negation-of-node-return-type-corollary
   (implies (and (<= dag-len bound)
@@ -410,7 +421,8 @@
            (<= (alen1 'node-replacement-array node-replacement-array)
                (alen1 'node-replacement-array (mv-nth 0 (update-node-replacement-array-for-assuming-negation-of-node nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)))))
   :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-negation-of-node
-                                     ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP))))
+                                     ;;ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP
+                                     ))))
 
 (defthm update-node-replacement-array-for-assuming-negation-of-node-return-type-alen1-corollary
   (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))

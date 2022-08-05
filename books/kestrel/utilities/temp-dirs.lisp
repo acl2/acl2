@@ -14,6 +14,7 @@
 (include-book "get-process-id")
 (include-book "get-username")
 (include-book "std/util/bstar" :dir :system)
+(local (include-book "read-acl2-oracle"))
 
 (in-theory (disable mv-nth)) ;make local?
 

@@ -77,8 +77,7 @@ use Cygwin_paths;
 # (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 # (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
-my %reqparams = ("hons-only"      => "HONS_ONLY",
-                 "uses-glucose"   => "USES_GLUCOSE",
+my %reqparams = ("uses-glucose"   => "USES_GLUCOSE",
                  "uses-ipasir"    => "USES_IPASIR",
                  "uses-abc"       => "USES_ABC",
                  "uses-smtlink"   => "USES_SMTLINK",
@@ -1132,7 +1131,7 @@ unless ($no_makefile) {
     $ysmf and print $smf ")\n\n";
     print $mf "\n\n";
 
-    # Write out the list of hons-only certs and other reqparams.
+    # Write out the list of certs and other reqparams.
     my %visited;
     $ysmf and print $smf "; Note: following are lists of cert files needed for various optional build parameters.\n";
     foreach my $reqparam (keys %reqparams) {

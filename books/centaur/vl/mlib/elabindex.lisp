@@ -32,6 +32,9 @@
 
 (in-package "VL")
 
+; Matt K. mod: Avoid ACL2(p) failure ("Exit code from ACL2 is 0")
+(set-waterfall-parallelism nil)
+
 (include-book "scopestack")
 (include-book "centaur/sv/svex/svex" :dir :system)
 (local (include-book "../util/arithmetic"))
@@ -176,7 +179,7 @@ recursively, which we don't support for now anyway.)</p>")
 
 
 (deftypes vl-elabscope
-  
+
   (fty::defalist vl-elabscope-alist :key-type vl-elabkey :val-type vl-elabscope
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -267,7 +270,7 @@ recursively, which we don't support for now anyway.)</p>")
   (if (hons-equal (vl-elabscope-subscope key x) (vl-elabscope-fix val))
       (vl-elabscope-fix x)
     (vl-elabscope-update-subscope key val x)))
-  
+
 
 (define vl-elabscope-update-package-subscope ((name stringp) (val vl-elabscope-p) (x vl-elabscope-p))
   :returns (new-x vl-elabscope-p)
@@ -378,7 +381,7 @@ are empty.</p>")
     :returns (new-scopes vl-elabscopes-p)
     (cons (cons nil (vl-elabscope-fix scope))
           (vl-elabscopes-fix scopes)))
-  
+
   (define vl-elabscopes-push-named ((key vl-elabkey-p)
                                     (scopes vl-elabscopes-p)
                                     &key (allow-empty 'nil))
@@ -428,7 +431,7 @@ are empty.</p>")
 
 (defsection vl-elabscopes-traverse
 
-  
+
 
   (deftagsum vl-elabinstruction
     :layout :list
@@ -501,7 +504,7 @@ are empty.</p>")
 
 
 (defsection vl-elabscopes-pop/update
-  
+
   (define vl-elabpaths-append ((x vl-elabtraversal-p)
                                (y vl-elabtraversal-p))
     :short "Concatenate two reversed elabtraversals to get a reversed traversal that
@@ -649,9 +652,9 @@ are empty.</p>")
         (prog2$ (or allow-empty (raise "Empty elabscopes"))
                 (make-vl-elabscope))
       (cdar x))))
-        
-  
-       
+
+
+
 
 
 
@@ -729,11 +732,11 @@ are empty.</p>")
 ;;                    (mod (vl-elabscope-def-subscope x.mod.name root)))
 ;;                 (cons (cons (vl-elabkey-def x.mod.name)
 ;;                             (or mod (make-vl-elabscope))) root-level)))))
-                    
-      
-               
 
-  
+
+
+
+
 
 ;; (define vl-elabscopes-lookup ((name stringp)
 ;;                               (ss vl-scopestack-p)
@@ -907,7 +910,7 @@ are empty.</p>")
                                       vl-elabindex->undostack)))))
 
 (define vl-elabindex-push ((scope vl-scope-p)
-                           &key (elabindex 'elabindex))  
+                           &key (elabindex 'elabindex))
   :returns (new-elabindex)
   (b* ((key (vl-scope->elabkey scope))
        (scopes (vl-elabindex->scopes elabindex))
@@ -949,10 +952,10 @@ are empty.</p>")
   (defret undostack-of-vl-elabindex-sync-scopes
     (equal (vl-elabindex->undostack new-elabindex)
            (vl-elabindex->undostack))))
-       
 
 
-       
+
+
 
 
 
@@ -1044,7 +1047,7 @@ are empty.</p>")
                                                   (with-local-ps (vl-print-warnings warnings))
                                                   (with-local-ps (vl-pp-fundecl new-x))))
 )
-   
+
 
 (defparameter *last-scope* nil)
 

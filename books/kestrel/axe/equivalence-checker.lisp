@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "test-cases")
 (include-book "find-probable-facts")
 (include-book "jvm/rule-lists-jvm") ;drop?
 (include-book "rules-in-rule-lists")
@@ -8206,42 +8205,6 @@
       0
     (+ (len (cdr (car alist)))
        (sum-of-cdr-lens (cdr alist)))))
-
-;inline?
-;check this - is it anything missing?
-;fixme check in this that the sizes are not 0 -- and print a warning (or even halt?) if they are?
-;does this function handle everything in *bv-and-array-fns-we-can-translate* ?
-;the quotep checks on arguments could be consp checks?
-;fixme compare to can-always-translate-expr-to-stp?
-(defun pure-fn-call-exprp (expr)
-  (declare (xargs :guard (dag-function-call-exprp expr)
-                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
-  (let ((fn (ffn-symb expr)))
-    ;;(member-eq fn *bv-and-array-fns-we-can-translate*)
-    ;;maybe we should check that operands are of the right type?
-    (case fn
-          ;;((myif) t) ;check more? we no longer translate myif, only bvif?
-          ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
-          ((boolor booland boolif not bitnot bitxor bitor bitand) t)
-          ((bv-array-write bv-array-read bvsx slice)
-           (and (consp (rest (dargs expr)))
-                (quotep (darg1 expr))
-                (quotep (darg2 expr))))
-          ((bvnot bvand bvor bvxor bvmult bvminus bvuminus bvplus bvdiv bvmod sbvdiv sbvrem bvchop ;$inline
-                  getbit sbvlt bvlt bvle bvif leftrotate32)
-           (and (consp (dargs expr))
-                (quotep (darg1 expr)))) ;fixme make sure the value is okay?
-          (bvcat (and (consp (rest (rest (dargs expr))))
-                      (quotep (darg1 expr))
-                      (quotep (darg3 expr))))
-          (otherwise nil))))
-
-(defund expr-is-purep (expr)
-  (declare (xargs :guard (dag-exprp expr)))
-  ;; (declare (xargs :guard t))
-  (or (variablep expr) ;check more?
-      (fquotep expr)   ;check more?
-      (pure-fn-call-exprp expr)))
 
 (defun miter-is-purep-aux (index len miter-array-name miter-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array len)

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -86,34 +86,34 @@
        which is used to check the update and body blocks of the loop."))
     (statement-case
      stmt
-     :block (b* (((ok &) (check-shadow-block stmt.get vars)))
+     :block (b* (((okf &) (check-shadow-block stmt.get vars)))
               (identifier-set-fix vars))
      :variable-single (if (set::in stmt.name (identifier-set-fix vars))
-                          (err (list :shadowed-var stmt.name))
+                          (reserrf (list :shadowed-var stmt.name))
                         (set::insert stmt.name (identifier-set-fix vars)))
      :variable-multi (b* ((declared (set::mergesort stmt.names))
                           (shadowed (set::intersect declared
                                                     (identifier-set-fix vars))))
                        (if (set::empty shadowed)
                            (set::union declared (identifier-set-fix vars))
-                         (err (list :shadowed-vars shadowed))))
+                         (reserrf (list :shadowed-vars shadowed))))
      :assign-single (identifier-set-fix vars)
      :assign-multi (identifier-set-fix vars)
      :funcall (identifier-set-fix vars)
-     :if (b* (((ok &) (check-shadow-block stmt.body vars)))
+     :if (b* (((okf &) (check-shadow-block stmt.body vars)))
            (identifier-set-fix vars))
      :for (b* ((stmts (block->statements stmt.init))
-               ((ok vars1) (check-shadow-statement-list stmts vars))
-               ((ok &) (check-shadow-block stmt.update vars1))
-               ((ok &) (check-shadow-block stmt.body vars1)))
+               ((okf vars1) (check-shadow-statement-list stmts vars))
+               ((okf &) (check-shadow-block stmt.update vars1))
+               ((okf &) (check-shadow-block stmt.body vars1)))
             (identifier-set-fix vars))
-     :switch (b* (((ok &) (check-shadow-swcase-list stmt.cases vars))
-                  ((ok &) (check-shadow-block-option stmt.default vars)))
+     :switch (b* (((okf &) (check-shadow-swcase-list stmt.cases vars))
+                  ((okf &) (check-shadow-block-option stmt.default vars)))
                (identifier-set-fix vars))
      :leave (identifier-set-fix vars)
      :break (identifier-set-fix vars)
      :continue (identifier-set-fix vars)
-     :fundef (b* (((ok &) (check-shadow-fundef stmt.get vars)))
+     :fundef (b* (((okf &) (check-shadow-fundef stmt.get vars)))
                (identifier-set-fix vars)))
     :measure (statement-count stmt))
 
@@ -122,13 +122,13 @@
     :returns (new-vars identifier-set-resultp)
     :short "Check variable shadowing in a list of statements."
     (b* (((when (endp stmts)) (identifier-set-fix vars))
-         ((ok vars) (check-shadow-statement (car stmts) vars))
-         ((ok vars) (check-shadow-statement-list (cdr stmts) vars)))
+         ((okf vars) (check-shadow-statement (car stmts) vars))
+         ((okf vars) (check-shadow-statement-list (cdr stmts) vars)))
       vars)
     :measure (statement-list-count stmts))
 
   (define check-shadow-block ((block blockp) (vars identifier-setp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check variable shadowing in a block."
     :long
     (xdoc::topstring
@@ -136,13 +136,13 @@
       "We return no information in case of success,
        because the variables declared in a block
        are not visible after the block."))
-    (b* (((ok &) (check-shadow-statement-list (block->statements block) vars)))
+    (b* (((okf &) (check-shadow-statement-list (block->statements block) vars)))
       nil)
     :measure (block-count block))
 
   (define check-shadow-block-option ((block? block-optionp)
                                      (vars identifier-setp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check variable shadowing in an optional block."
     (block-option-case
      block?
@@ -151,22 +151,22 @@
     :measure (block-option-count block?))
 
   (define check-shadow-swcase ((case swcasep) (vars identifier-setp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check variable shadowing in a case."
     (check-shadow-block (swcase->body case) vars)
     :measure (swcase-count case))
 
   (define check-shadow-swcase-list ((cases swcase-listp) (vars identifier-setp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check variable shadowing in a list of cases."
     (b* (((when (endp cases)) nil)
-         ((ok &) (check-shadow-swcase (car cases) vars))
-         ((ok &) (check-shadow-swcase-list (cdr cases) vars)))
+         ((okf &) (check-shadow-swcase (car cases) vars))
+         ((okf &) (check-shadow-swcase-list (cdr cases) vars)))
       nil)
     :measure (swcase-list-count cases))
 
   (define check-shadow-fundef ((fundef fundefp) (vars identifier-setp))
-    :returns (_ resulterr-optionp)
+    :returns (_ reserr-optionp)
     :short "Check variable shadowing in a function definition."
     :long
     (xdoc::topstring
@@ -179,7 +179,7 @@
          (outputs (fundef->outputs fundef))
          (declared (set::mergesort (append inputs outputs)))
          (shadowed (set::intersect declared (identifier-set-fix vars)))
-         ((unless (set::empty shadowed)) (err (list :shadowed-vars shadowed)))
+         ((unless (set::empty shadowed)) (reserrf (list :shadowed-vars shadowed)))
          (vars (set::union (identifier-set-fix vars) declared)))
       (check-shadow-block (fundef->body fundef) vars))
     :measure (fundef-count fundef))

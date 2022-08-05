@@ -159,6 +159,7 @@
 (include-book "nodenum-type-alists")
 (include-book "numeric-lists")
 (include-book "packbv-axe")
+(include-book "possibly-negated-nodenums")
 (include-book "print-constant")
 (include-book "print-levels")
 (include-book "print-dag-to-file")
@@ -166,6 +167,8 @@
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
+(include-book "prune")
+(include-book "prune-dag")
 (include-book "rational-lists")
 (include-book "rebuild-literals")
 (include-book "rebuild-nodes2")
@@ -223,6 +226,7 @@
 ;; Newest top-level Axe tools ("basic" means that these are for general-purpose
 ;; use, rather than specialized for the JVM, or for x86, etc.):
 (include-book "rewriter-basic")
+;; (include-book "rewriter-basic-code-only") ; not worth including here?
 (include-book "prover-basic")
 (include-book "prover-basic-clause-processor")
 (include-book "def-simplified")
@@ -241,7 +245,6 @@
 (include-book "instantiate-hyp")
 (include-book "dagify")
 (include-book "sublis-var-and-eval")
-(include-book "prune")
 (include-book "result-array-stobj")
 (include-book "defconst-computed2")
 (include-book "strengthen-facts")

@@ -723,6 +723,7 @@
 
             the-check
             ;; get-prefixes:
+            ;; todo: drop these if we are no longer using xw:
             x86isa::get-prefixes-does-not-modify-x86-state-in-app-view-new ;targets mv-nth-3-of-get-prefixes
             x86isa::mv-nth-0-of-get-prefixes-of-xw-of-irrel
             x86isa::mv-nth-1-of-get-prefixes-of-xw-of-irrel
@@ -1004,6 +1005,7 @@
             x86isa::mv-nth-of-if
             x86isa::canonical-address-p-of-if
             read-in-terms-of-nth-and-pos-eric-4-bytes
+            read-in-terms-of-nth-and-pos-eric-8-bytes
 
             jle-condition-rewrite-1
             jle-condition-rewrite-2
@@ -1070,7 +1072,7 @@
      standard-state-assumption-32
      standard-assumptions-mach-o-64
      standard-assumptions-pe-64
-     bytes-loaded-in-text-section-64
+     bytes-loaded-at-address-64
      ;; Mach-O stuff:
      acl2::get-mach-o-code
      acl2::subroutine-address-mach-o

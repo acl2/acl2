@@ -1,0 +1,227 @@
+name: 'Test cl+ssl'
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  test-cl-plus-ssl:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - run: mkdir ${{ github.workspace }}/docker-home
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          path: ${{ github.workspace }}/docker-home/cl-plus-ssl
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - name: List files in the repository
+        run: |
+          pwd
+          ls ${{ github.workspace }}/docker-home/cl-plus-ssl
+      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - name: Fetching OpenSSL (and LibreSSL) release binaries
+        run: |
+          cd ${{ github.workspace }}/docker-home/cl-plus-ssl/test/run-on-many-lisps-and-openssls/openssl-releases/
+          ./bin-fetch.sh
+      - name: Fetching Apache Maven for ABCL
+        run: |
+          cd ${{ github.workspace }}/docker-home/
+          curl https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz --output apache-maven-3.8.6-bin.tar.gz
+          tar -xzf apache-maven-3.8.6-bin.tar.gz
+          rm apache-maven-3.8.6-bin.tar.gz
+      - run: |
+          docker run -u "$(id -u):$(id -g)" -i --mount type=bind,source=${{ github.workspace }}/docker-home,target=/home/cl/ clfoundation/cl-devel:2022-02-09 unpack-default-home-dir
+###############################################################################
+#
+# The combinations below are generated with test-gen-matrix.lisp
+#
+###############################################################################
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-0.9.8zh BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-0.9.8zh BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.0.0s BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.0.0s BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.0.2q BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.0.2q BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.1.0j BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.1.0j BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.1.1p BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-1.1.1p BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-3.0.4 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=openssl-3.0.4 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.2.7 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.2.7 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.5.5 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.5.5 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.6.5 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.6.5 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.8.3 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-2.8.3 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-3.0.1 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-3.0.1 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-3.5.3 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=sbcl OPENSSL=libressl-3.5.3 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-0.9.8zh BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-0.9.8zh BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.0.0s BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.0.0s BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.0.2q BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.0.2q BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.1.0j BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.1.0j BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.1.1p BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-1.1.1p BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-3.0.4 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=openssl-3.0.4 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.2.7 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.2.7 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.5.5 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.5.5 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.6.5 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.6.5 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.8.3 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-2.8.3 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-3.0.1 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-3.0.1 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-3.5.3 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=ccl OPENSSL=libressl-3.5.3 BITS=64 LIB_LOAD_MODE=old docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=openssl-0.9.8zh BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=openssl-1.0.0s BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=openssl-1.0.2q BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=openssl-1.1.0j BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=openssl-1.1.1p BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=openssl-3.0.4 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=libressl-2.2.7 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=libressl-2.5.5 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=libressl-2.6.5 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=libressl-2.8.3 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=libressl-3.0.1 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh
+      - if: always()
+        run: |
+           LISP=abcl OPENSSL=libressl-3.5.3 BITS=64 LIB_LOAD_MODE=new docker-home/cl-plus-ssl/.github/workflows/test.sh

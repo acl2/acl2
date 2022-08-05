@@ -12,13 +12,13 @@
                                        (<= (len dag) 2147483646))))
                   :guard-hints (("Goal" :in-theory (disable myquotep quotep)))))
   (mv-let (erp dag-or-quotep)
-    (acl2::make-term-into-dag-basic term
-                                    nil ;todo: ifns
-                                    )
+    (make-term-into-dag-basic term
+                              nil ;todo: ifns
+                              )
     (if erp
         (er hard? 'conjoin-term-with-dag! "Error making term into dag.")
       (if (and (not (myquotep dag-or-quotep))
                (< 2147483646 (len dag-or-quotep)))
           ;; todo: can this happen?
           (er hard? 'conjoin-term-with-dag! "DAG too long.")
-        (acl2::make-conjunction-dag! dag-or-quotep dag)))))
+        (make-conjunction-dag! dag-or-quotep dag)))))

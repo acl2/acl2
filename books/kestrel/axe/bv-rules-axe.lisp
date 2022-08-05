@@ -767,6 +767,39 @@
                   (+ y (+ x z))))
   :hints (("Goal" :in-theory (enable))))
 
+(defthmd if-becomes-bvif-1-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
+
+(defthmd if-becomes-bvif-2-axe
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced ysize y))
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif unsigned-byte-p-forced))))
+
+(defthmd if-becomes-bvif-3-axe
+  (implies (and (unsigned-byte-p ysize y) ; ysize is a free variable
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p-forced xsize x))
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif unsigned-byte-p-forced))))
+
+(defthmd if-becomes-bvif-4-axe
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
+                (unsigned-byte-p ysize y) ; ysize is a free variable
+                )
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
 (defthmd myif-becomes-bvif-1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -777,7 +810,7 @@
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
 (defthmd myif-becomes-bvif-2-axe
-  (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y))
            (equal (myif test x y)
@@ -785,12 +818,20 @@
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
 (defthmd myif-becomes-bvif-3-axe
-  (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y))
-           (equal (myif test y x)
-                  (bvif (max xsize ysize) test y x)))
+  (implies (and (unsigned-byte-p ysize y) ; ysize is a free variable
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p-forced xsize x))
+           (equal (myif test x y)
+                  (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
+
+(defthmd myif-becomes-bvif-4-axe
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
+                (unsigned-byte-p ysize y) ; ysize is a free variable
+                )
+           (equal (myif test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthmd slice-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1653,17 +1694,7 @@
                                     ) (;anti-bvplus ;max
                                     sum-bound-lemma)))))
 
-(defthmd if-becomes-bvif
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y)
-                (natp xsize)
-                (natp ysize)
-                )
-           (equal (if test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
+
 
 ;free var rule from usb to integerp of the index?
 
@@ -2128,3 +2159,25 @@
 ;bozo more like this?  gen the 0?
 (defthmd bv-array-read-non-negative
   (not (< (bv-array-read esize len index data) 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm not-equal-of-constant-and-bv-term-axe
+  (implies (and (syntaxp (quotep k))
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (syntaxp (quotep xsize))
+                (not (unsigned-byte-p xsize k)) ; gets computed
+                (unsigned-byte-p-forced xsize x))
+           (not (equal k x)))
+  :rule-classes nil ; since in ACL2, xsize not is bound when used
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm not-equal-of-constant-and-bv-term-alt-axe
+  (implies (and (syntaxp (quotep k))
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (syntaxp (quotep xsize))
+                (not (unsigned-byte-p xsize k)) ; gets computed
+                (unsigned-byte-p-forced xsize x))
+           (not (equal x k)))
+  :rule-classes nil ; since in ACL2, xsize not is bound when used
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))

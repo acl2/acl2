@@ -9,6 +9,10 @@
 (include-book "cgen-search")
 (include-book "callback")
 (include-book "acl2s-parameter")
+
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
                
 (set-state-ok t)  
 
@@ -122,6 +126,7 @@
 ;; April 30 2012 - put back state!
 (defun print-assignment (A top-vars top-term elided-var-map
                            vl counteregp state)
+  (declare (ignorable vl))
   (declare (xargs :stobjs (state)
                   :guard (and (symbol-doublet-listp A)
                               (implies (consp A) (consp (car A)))
@@ -145,26 +150,26 @@
        (vals  (acl2::make-evalable-lst-how (strip-cadrs top-A) (acl2::get-evalable-printing-abstractions state)))
        (top-A (list-up-lists (strip-cars top-A) vals))
        ((when consistent?)
-        (value (cw? (normal-output-flag vl)
+        (value (cw? t ;;(normal-output-flag vl)
                     "~| -- ~x0~%" top-A)))
                     ;;;"~| -- ~&0~%"  top-A)))
        )
     (if counteregp
         (progn$
-         (cw? (normal-output-flag vl)
+         (cw? t ;;(normal-output-flag vl)
               "~| -- ~x0~%"  top-A)
-         (cw? (normal-output-flag vl)
+         (cw? t ;;(normal-output-flag vl)
 "~|Note: The above counterexample is not consistent with the top-level form. ~
  Counterexamples are only guaranteed to be consistent with subgoals.~%")
          (value nil))
       (progn$
-       (cw? (normal-output-flag vl)
+       (cw? t ;;(normal-output-flag vl)
             "~| -- ~x0~%"  top-A)
-       (cw? (normal-output-flag vl)
+       (cw? t ;;(normal-output-flag vl)
 "~|Note: The above witness is not consistent with the top-level form. ~
  Witnesses are only guaranteed to be consistent with subgoals.~%")
        (value nil))
-       )))
+      )))
 
 
 
@@ -221,12 +226,16 @@ A-lst top-vars elide-map))
                                   nc nw top-vars top-term vl state))
          (nc (- nc (if cts-p (len A-lst) 0)))
          (nw (- nw (if cts-p 0 (len A-lst))))
-         (- (cw? (normal-output-flag vl) "~| [found in : ~x0]~%" name))
+         ;; (- (cw? (normal-output-flag vl) "~| [found in : ~x0]~%" name))
+         (- (cw  "~| [found in : ~x0]~%" name))
          (cl (clausify-hyps-concl hyps concl))
          (pform (acl2::prettyify-clause cl nil (w state)))
+         ;;(- (cw? (and (not (equal "top" name))
+         ;;           cts-p
+         ;;           (normal-output-flag vl)) "~x0~%" pform))
          (- (cw? (and (not (equal "top" name))
                       cts-p
-                      (normal-output-flag vl)) "~x0~%" pform))
+                      ) "~x0~%" pform))
          )
      (er-progn
       (print-assignments A-lst top-vars top-term elide-map vl cts-p state)
@@ -454,14 +463,26 @@ A-lst top-vars elide-map))
 history s-hist.")
   (b* (((er &) (if printc?
                    (prog2$
-                    (cw? (normal-output-flag vl)
-"~|~%We falsified the conjecture. Here are counterexamples:~|")
+                    ;; PETE: replaced with with cw, so that if printc?
+                    ;; is true (user requested >0 counterexamples to
+                    ;; be generated and printed), then we always print
+                    ;; counterexamples. Note that if user wants to
+                    ;; turn this off, they can set cts-to-print to 0
+                    ;;(cw? (normal-output-flag vl)
+                    (cw
+"~|~%**We falsified the conjecture. Here are counterexamples:**~|")
                     (print-cts/wts-subgoals s-hist T nc nw top-vars top-term vl state))
                  (value nil)))
 
        ((er &) (if printw?
                    (prog2$
-                    (cw? (normal-output-flag vl)
+                    ;; PETE: replaced with with cw, so that if printw?
+                    ;; is true (user requested >0 witnesses to be
+                    ;; generated and printed), then we always print
+                    ;; witnesses. Note that if user wants to turn this
+                    ;; off, they can set wts-to-print to 0
+                    ;; (cw? (normal-output-flag vl)
+                    (cw 
 "~|~%Cases in which the conjecture is true include:~|")
                     (print-cts/wts-subgoals s-hist NIL nc nw top-vars top-term vl state))
                  (value nil)))
@@ -510,7 +531,7 @@ history s-hist.")
        (num-subgoals (len s-hist))
        (start (cget start-time))
        (end (cget end-time))
-       
+       (print-cgen-summary (cget print-cgen-summary))
        )
    (case-match gcs%
      (('gcs% (total dups . vacs) 
@@ -530,11 +551,11 @@ history s-hist.")
 "~% ~x0 evaluates to ~x1. Nothing to test!~%" pform res))))
 
            
-           (-  (cw? (normal-output-flag vl) 
+           (-  (cw? (and print-cgen-summary (normal-output-flag vl))
                     "~%**Summary of Cgen/testing**~%"))
            (- (cw? (verbose-flag vl)
                    "~x0~%" pform))
-           (- (cw? (normal-output-flag vl)
+           (- (cw? (and print-cgen-summary (normal-output-flag vl))
                "~|We tested ~x0 examples across ~x1 subgoals, of which ~x2 (~x3 unique) satisfied the hypotheses, and found ~x4 counterexamples and ~x5 witnesses.~%"
                total num-subgoals sat-runs uniq-runs num-cts num-wts))
 
@@ -560,7 +581,8 @@ history s-hist.")
                            (newline (standard-co state) state)
                            (value :invisible))
                      (value nil)))
-           ((mv cts-to-print wts-to-print) (mv (cget num-print-counterexamples) (cget num-print-witnesses)))
+           ((mv cts-to-print wts-to-print)
+            (mv (cget num-print-counterexamples) (cget num-print-witnesses)))
            (top-ctx (cget top-ctx))
            ((er &)  (print-s-hist s-hist 
                                   (and (> cts-to-print 0) (> num-cts 0));print cts if true
@@ -902,3 +924,4 @@ history s-hist.")
 ;;    increasing probability of finding countereg.
 ;; 5. Registered constructors - check if destructor arguments are
 ;;     subtypes of dex-prex.
+

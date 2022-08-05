@@ -410,7 +410,7 @@
        (<etype>-array-index-okp (pack <etype> '-array-index-okp))
        (<etype>-array-read (pack <etype>-array '-read))
        (<etype>-array-write (pack <etype>-array '-write))
-       (<itype>-integer-value (pack <itype> '-integer-value))
+       (<itype>->get (pack <itype> '->get))
        (<etype>-array-<itype>-index-okp (pack
                                          <etype> '-array- <itype> '-index-okp))
        (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
@@ -439,7 +439,7 @@
                            " is valid for an array of type "
                            etype-string
                            ".")
-         (,<etype>-array-index-okp array (,<itype>-integer-value index))
+         (,<etype>-array-index-okp array (,<itype>->get index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -453,7 +453,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-read array (,<itype>-integer-value index))
+         (,<etype>-array-read array (,<itype>->get index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix))
@@ -470,7 +470,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-write array (,<itype>-integer-value index) element)
+         (,<etype>-array-write array (,<itype>->get index) element)
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix)
@@ -570,3 +570,134 @@
              sllong-arrayp
              ullong-arrayp
              errorp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection array-value-rules
+  :short "Some rules about array values."
+
+  (defrule valuep-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (valuep x))
+    :enable (valuep uchar-arrayp))
+
+  (defrule valuep-when-schar-arrayp
+    (implies (schar-arrayp x)
+             (valuep x))
+    :enable (valuep schar-arrayp))
+
+  (defrule valuep-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (valuep x))
+    :enable (valuep ushort-arrayp))
+
+  (defrule valuep-when-sshort-arrayp
+    (implies (sshort-arrayp x)
+             (valuep x))
+    :enable (valuep sshort-arrayp))
+
+  (defrule valuep-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (valuep x))
+    :enable (valuep uint-arrayp))
+
+  (defrule valuep-when-sint-arrayp
+    (implies (sint-arrayp x)
+             (valuep x))
+    :enable (valuep sint-arrayp))
+
+  (defrule valuep-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (valuep x))
+    :enable (valuep ulong-arrayp))
+
+  (defrule valuep-when-slong-arrayp
+    (implies (slong-arrayp x)
+             (valuep x))
+    :enable (valuep slong-arrayp))
+
+  (defrule valuep-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (valuep x))
+    :enable (valuep ullong-arrayp))
+
+  (defrule valuep-when-sllong-arrayp
+    (implies (sllong-arrayp x)
+             (valuep x))
+    :enable (valuep sllong-arrayp))
+
+  (defrule value-kind-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind uchar-arrayp))
+
+  (defrule value-kind-when-schar-arrayp
+    (implies (schar-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind schar-arrayp))
+
+  (defrule value-kind-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind ushort-arrayp))
+
+  (defrule value-kind-when-sshort-arrayp
+    (implies (sshort-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind sshort-arrayp))
+
+  (defrule value-kind-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind uint-arrayp))
+
+  (defrule value-kind-when-sint-arrayp
+    (implies (sint-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind sint-arrayp))
+
+  (defrule value-kind-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind ulong-arrayp))
+
+  (defrule value-kind-when-slong-arrayp
+    (implies (slong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind slong-arrayp))
+
+  (defrule value-kind-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind ullong-arrayp))
+
+  (defrule value-kind-when-sllong-arrayp
+    (implies (sllong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind sllong-arrayp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection array-value-disjoint-rules
+  :short "Rules about disjointness of array values."
+  (defthm-disjoint *array-value-disjoint-rules*
+    uchar-arrayp
+    schar-arrayp
+    ushort-arrayp
+    sshort-arrayp
+    uint-arrayp
+    sint-arrayp
+    ulong-arrayp
+    slong-arrayp
+    ullong-arrayp
+    sllong-arrayp))

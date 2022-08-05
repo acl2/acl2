@@ -18,6 +18,7 @@
 (local (include-book "../lists-light/cons"))
 (local (include-book "../lists-light/nth"))
 (local (include-book "../lists-light/len"))
+(local (include-book "../bv/unsigned-byte-p"))
 
 ;; Apply BVCHOP with the indicated SIZE to every element in LST
 ;; TODO: This re-does the expt inside the bvchop over and over.

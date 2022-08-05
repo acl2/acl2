@@ -21,6 +21,7 @@
 (local (include-book "repeatbit2"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
@@ -205,3 +206,31 @@
   (equal (bvsx new-size new-size x)
          (bvchop new-size x))
   :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-too-high
+  (implies (and (unsigned-byte-p (+ -1 old-size) x)
+                (<= old-size new-size))
+           (equal (bvsx new-size old-size x)
+                  x))
+  :hints (("Goal" :in-theory (enable natp bvsx getbit-too-high))))
+
+(defthm bvsx-of-bvsx
+  (implies (and (<= old-size new-size)
+                (<= new-size big-size)
+                (posp old-size) ;must have at least 1 bit to sign-extend..
+                (integerp new-size)
+                (integerp big-size))
+           (equal (bvsx big-size new-size (bvsx new-size old-size x))
+                  (bvsx big-size old-size x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm unsigned-byte-p-of-bvsx-alt
+  (implies (and (< size new-size) ;this case
+                (<= old-size size) ;this case
+                (natp size)
+                (natp new-size)
+                (posp old-size)
+                (<= old-size new-size))
+           (equal (unsigned-byte-p size (bvsx new-size old-size x))
+                  (equal 0 (getbit (+ -1 old-size) x))))
+  :hints (("Goal" :in-theory (e/d (bvsx) (REPEATBIT-OF-1-ARG2)))))

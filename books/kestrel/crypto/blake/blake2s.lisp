@@ -22,6 +22,7 @@
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
