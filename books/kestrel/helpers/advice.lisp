@@ -223,7 +223,7 @@
        (untranslated-checkpoints (checkpoint-list-pretty t ; todo: consider non-top
                                                          state))
        ((when (eq :unavailable untranslated-checkpoints))
-        (er hard? 'advice-fn "No checkpoints are available.")
+        (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
         (mv :no-checkpoints nil state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        (untranslated-checkpoints (if (equal untranslated-checkpoints '(<goal>))
