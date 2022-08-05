@@ -989,6 +989,7 @@
     '(read-static-var-of-add-frame
       read-static-var-of-enter-scope
       read-static-var-of-add-var
+      read-static-var-of-update-var
       read-static-var-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
