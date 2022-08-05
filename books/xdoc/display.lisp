@@ -602,7 +602,15 @@
                                    0)))
                   (prepend-each-line (make-list level :initial-element #\Space)
                                      text start-from (length text) acc))
-              (let ((wrapped (word-wrap-paragraph text level wrap-col)))
+              (let ((wrapped
+
+; Note that text origially marked as &nbsp; disappears when preceded only by
+; spaces except in <code>..</code>, because of the following call of
+; word-wrap-paragraph (note that here codep = nil).  It might take some code
+; reorganization to fix that problem, because at this point, each &nbsp; has
+; already been converted to a space.
+
+                     (word-wrap-paragraph text level wrap-col)))
                 (str::revappend-chars wrapped acc)))))
     (tokens-to-terminal rest wrap-col open-tags list-nums acc)))
 

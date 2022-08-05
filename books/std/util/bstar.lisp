@@ -1155,10 +1155,14 @@ the different value can be specified via @(':iferr'):</p>
                                       forms))))))
 
   :body
+  ;; We declare patbind-er-fresh-variable-for-val ignorable
+  ;; to ensure that the pattern (er & :iferr ...) works,
+  ;; because in that case patbind-er-fresh-variable-for-val is not used.
   `(mv-let (patbind-er-fresh-variable-for-erp
             patbind-er-fresh-variable-for-val
             state)
-     ,(car forms)
+       ,(car forms)
+     (declare (ignorable patbind-er-fresh-variable-for-val))
      (if patbind-er-fresh-variable-for-erp
          (mv patbind-er-fresh-variable-for-erp
              ,(if (eql (len args) 1)
