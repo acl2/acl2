@@ -48,15 +48,14 @@
 (include-book "kestrel/utilities/pack" :dir :system) ; todo reduce, for nat-to-string
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
+(include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "kestrel/utilities/hints" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/htclient/top" :dir :system)
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages tha might arise are known
 (include-book "std/io/read-string" :dir :system)
-
-;move these (TODO: Guards):
-(verify-termination set-fmt-hard-right-margin)
-(verify-termination set-fmt-soft-right-margin)
+(include-book "tools/prove-dollar" :dir :system)
 
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
@@ -111,22 +110,42 @@
     (prog2$ (show-recommendation (first recs) num)
             (show-recommendations-aux (rest recs) (+ 1 num)))))
 
+(defun widen-margins (state)
+  (declare (xargs :stobjs state
+                  :mode :program ; todo
+                  ))
+  (let* ((old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
+         (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
+         ;; save the old values for later restoration:
+         (state (f-put-global 'old-fmt-hard-right-margin old-fmt-hard-right-margin state))
+         (state (f-put-global 'old-fmt-soft-right-margin old-fmt-soft-right-margin state))
+         ;; Change the margins
+         (state (set-fmt-hard-right-margin 210 state))
+         (state (set-fmt-soft-right-margin 200 state)))
+    state))
+
+(defun unwiden-margins (state)
+  (declare (xargs :stobjs state
+                  :mode :program ; todo
+                  ))
+  ;; Restore the margins:
+  (let* ((state (set-fmt-hard-right-margin (f-get-global 'old-fmt-hard-right-margin state) state))
+         (state (set-fmt-soft-right-margin (f-get-global 'old-fmt-soft-right-margin state) state)))
+    state))
+
 ;; Returns state
+;; TODO: Redo to handle parsed recs
+;; TODO: Add ability to show only the ones that helped
 (defun show-recommendations (recs state)
   (declare (xargs :guard (parsed-json-valuesp recs)
                   :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))
                   :verify-guards nil ; todo
+                  :mode :program ;todo
                   :stobjs state))
-  (let* (;; Make the margins wider:
-         (old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
-         (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
-         (state (set-fmt-soft-right-margin 200 state))
-         (state (set-fmt-hard-right-margin 210 state)))
+  (let ((state (widen-margins state)))
     (progn$ (cw "~%RECOMMENDATIONS:~%")
             (show-recommendations-aux recs 1) ;; strip the :array
-            ;; Restore the margins:
-            (let* ((state (set-fmt-soft-right-margin old-fmt-soft-right-margin state))
-                   (state (set-fmt-hard-right-margin old-fmt-hard-right-margin state)))
+            (let ((state (unwiden-margins state)))
               state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,6 +219,166 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Think about THM vs DEFTHM
+;; TODO: May need to include a book for some rec to be legal
+;; TODO: Use a step-limit on proof attempts
+
+(defun make-thm-to-attempt (body hints otf-flg)
+  `(thm ,body
+        ,@(and hints `(:hints ,hints))
+        ,@(and otf-flg `(:otf-flg .otf-flg))))
+
+;; Returns (mv provedp state)
+(defmacro prove$-checked (ctx &rest args)
+  `(mv-let (erp provedp state)
+     (prove$ ,@args)
+     (if erp
+         (prog2$ (cw "Syntax error in prove$ call (made by ~x0)." ,ctx)
+                 (mv nil state))
+       (mv provedp state))))
+
+;; Returns (mv erp successp state).
+;; TODO: Skip if library already included
+(defun try-add-library (include-book-form theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name) ; todo: use to make a suggestion
+           )
+  (b* (((mv erp state) (submit-event-helper include-book-form nil nil state))
+       ((when erp) (er hard? 'try-add-library "Event failed: ~x0." include-book-form) (mv erp nil state))
+       ;; Now see whether we can prove the theorem using the new include-book:
+       ;; ((mv erp state) (submit-event-helper
+       ;;                  (make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg)
+       ;;                  t nil state))
+       ((mv provedp state) (prove$-checked 'try-add-library
+                                           theorem-body
+                                           :hints theorem-hints
+                                           :otf-flg theorem-otf-flg))
+       (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%")))
+       ;; Undo the include-book
+       ;; ((mv erp & state)
+       ;;  (ubt!-ubu!-fn ':ubt ':x state)
+       ;;  )
+       (state (submit-event-quiet '(u) state))
+       ((when erp) (er hard? 'try-add-library "Failed to undo include-book.") (mv erp nil state))
+       )
+    (mv nil provedp state)))
+
+;; Returns (mv erp successp state).
+;; TODO: Don't try a hyp that is already present
+(defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (
+       ;; Now see whether we can prove the theorem using the new hyp:
+       ;; ((mv erp state) (submit-event-helper
+       ;;                  ;; TODO: Add the hyp more nicely:
+       ;;                  (make-thm-to-attempt `(implies ,hyp ,theorem-body) theorem-hints theorem-otf-flg)
+       ;;                  t nil state))
+       ((mv provedp state) (prove$-checked 'try-add-hyp
+                                           `(implies ,hyp ,theorem-body)
+                                           :hints theorem-hints
+                                           :otf-flg theorem-otf-flg))
+       (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
+    (mv nil provedp state)))
+
+;; Returns (mv erp successp state).
+;; TODO: Don't enable if already enabled.
+(defun try-add-enable-hint (rule theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (;; Now see whether we can prove the theorem using the new hyp:
+       ;; ((mv erp state) (submit-event-helper
+       ;;                  (make-thm-to-attempt theorem-body
+       ;;                                       ;; todo: ensure this is nice:
+       ;;                                       (enable-runes-in-hints theorem-hints (list rule))
+       ;;                                       theorem-otf-flg)
+       ;;                  t nil state))
+       ((mv provedp state) (prove$-checked 'try-add-enable-hint
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           :hints (enable-runes-in-hints theorem-hints (list rule))
+                                           :otf-flg theorem-otf-flg))
+       (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "FAIL~%"))))
+    (mv nil provedp state)))
+
+;; Returns (mv erp successp state).
+;; TODO: Don't disable if already disabled.
+(defun try-add-disable-hint (rule theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (
+       ;; Now see whether we can prove the theorem using the new hyp:
+       ;; ((mv erp state) (submit-event-helper
+       ;;                  (make-thm-to-attempt theorem-body
+       ;;                                       ;; todo: ensure this is nice:
+       ;;                                       (disable-runes-in-hints theorem-hints (list rule))
+       ;;                                       theorem-otf-flg)
+       ;;                  t nil state))
+       ((mv provedp state) (prove$-checked 'try-add-disable-hint
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           :hints (disable-runes-in-hints theorem-hints (list rule))
+                                           :otf-flg theorem-otf-flg))
+       (- (if provedp (cw "SUCCESS: Disable ~x0~%" rule) (cw "FAIL~%"))))
+    (mv nil provedp state)))
+
+;; Returns (mv erp successp state).
+;; TODO: Don't disable if already disabled.
+(defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (
+       ;; Now see whether we can prove the theorem using the new hyp:
+       ;; ((mv erp state) (submit-event-helper
+       ;;                  (make-thm-to-attempt theorem-body
+       ;;                                       ;; todo: ensure this is nice:
+       ;;                                       (cons `("Goal" :use ,item)
+       ;;                                             theorem-hints)
+       ;;                                       theorem-otf-flg)
+       ;;                  t nil state))
+       ((mv provedp state) (prove$-checked 'try-add-use-hint
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           :hints (cons `("Goal" :use ,item) theorem-hints)
+                                           :otf-flg theorem-otf-flg))
+       (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "FAIL~%"))))
+    (mv nil provedp state)))
+
+;; Returns (mv erp result-bools state)
+(defun try-recommendations (recs
+                            theorem-name ; may be :thm
+                            theorem-body
+                            theorem-hints
+                            theorem-otf-flg
+                            rec-num
+                            result-bools-acc
+                            state)
+  (declare (xargs :stobjs state :mode :program))
+  (if (endp recs)
+      (mv nil (reverse result-bools-acc) state)
+    (b* ((rec (first recs))
+         (type (car rec))
+         (- (cw "~x0: " rec-num))
+         )
+      (mv-let (erp successp state)
+        (case type
+          (:add-library (try-add-library (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-hyp (try-add-hyp (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-enable-hint (try-add-enable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-disable-hint (try-add-disable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-use-hint (try-add-use-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          ;; same as for try-add-enable-hint above:
+          (:use-lemma (try-add-enable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (t (prog2$ (cw "UNHANDLED rec type ~x0.~%" type)
+                     (mv t nil state))))
+        (if erp
+            (mv erp nil state)
+          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg (+ 1 rec-num)
+                               (cons successp result-bools-acc)
+                               state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp nil state).
 (defun advice-fn (n ; number of recommendations requested
                   verbose
@@ -260,7 +439,26 @@
         (er hard? 'advice-fn "Error parsing recommendations.")
         (mv erp nil state))
        (- (cw "~%Parsed recs: ~X01" parsed-recommendations nil))
-       )
+       (- (cw "~%TRYING RECOMMENDATIONS:~%"))
+       ((mv name body hints otf-flg)
+        (if (eq 'thm (car most-recent-failed-theorem))
+            (mv :thm
+                (cadr most-recent-failed-theorem)
+                (assoc-eq :hints (cddr most-recent-failed-theorem))
+                (assoc-eq :otf-flg (cddr most-recent-failed-theorem)))
+          ;; Must be a defthm:
+          (mv (cadr most-recent-failed-theorem)
+              (caddr most-recent-failed-theorem)
+              (assoc-eq :hints (cdddr most-recent-failed-theorem))
+              (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
+       (state (widen-margins state))
+       ((mv erp
+            & ; result-bools ; todo: use
+            state) (try-recommendations parsed-recommendations name body hints otf-flg 1 nil state))
+       (state (unwiden-margins state))
+       ((when erp)
+        (er hard? 'advice-fn "Error trying recommendations.")
+        (mv erp nil state)))
     (mv nil ;(erp-nil)
         '(value-triple :invisible) state)))
 
