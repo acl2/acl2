@@ -375,11 +375,13 @@
                            (rule-classes ':linear))
   `(make-event (def-bounds-fn ',name ',term ',hyp ',cases ',simp-hints ',post-cases-hints ',integerp ',skip-lower ',skip-upper ',in-theory-override ',rule-classes state)))
 
-
+(defstub check-bounds-override () nil)
+(defattach check-bounds-override constant-nil-function-arity-0)
 
 (defmacro check-lower-bound (name bound)
   `(with-output :off :all :on (error comment)
-     (progn (assert-event (>= ,name ,bound)
+     (progn (assert-event (or (check-bounds-override)
+                              (>= ,name ,bound))
                           :msg (msg "~x0 bounds check failed: ~s1 < ~s2~%" ',name
                                     (str::hexify ,name)
                                     (str::hexify ,bound)))
@@ -387,7 +389,8 @@
 
 (defmacro check-upper-bound (name bound)
   `(with-output :off :all :on (error comment)
-     (progn (assert-event (<= ,name ,bound)
+     (progn (assert-event (or (check-bounds-override)
+                              (<= ,name ,bound))
                           :msg (msg "~x0 bounds check failed: ~s1 > ~s2~%" ',name
                                     (str::hexify ,name)
                                     (str::hexify ,bound)))

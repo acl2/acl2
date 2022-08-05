@@ -70,10 +70,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-valuep
+(defruled not-reserrp-when-valuep
   (implies (valuep x)
-           (not (resulterrp x)))
-  :enable (valuep resulterrp))
+           (not (reserrp x)))
+  :enable (valuep reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,7 +84,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-value-listp
+(defruled not-reserrp-when-value-listp
   (implies (value-listp x)
-           (not (resulterrp x)))
-  :enable (value-listp resulterrp))
+           (not (reserrp x)))
+  :enable (value-listp reserrp))

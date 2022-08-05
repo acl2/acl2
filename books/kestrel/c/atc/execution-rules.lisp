@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "execution")
+(include-book "arrays")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -124,6 +125,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-type-kind-rules
+  :short "Rules for resolving @(tsee type-kind) on given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to relieve certain hypotheses in rules
+     that involve @(tsee type-kind) being applied to
+     certain constructed types."))
+
+  (defruled type-kind-of-type-schar
+    (equal (type-kind (type-schar))
+           :schar))
+
+  (defruled type-kind-of-type-uchar
+    (equal (type-kind (type-uchar))
+           :uchar))
+
+  (defruled type-kind-of-type-sshort
+    (equal (type-kind (type-sshort))
+           :sshort))
+
+  (defruled type-kind-of-type-ushort
+    (equal (type-kind (type-ushort))
+           :ushort))
+
+  (defruled type-kind-of-type-sint
+    (equal (type-kind (type-sint))
+           :sint))
+
+  (defruled type-kind-of-type-uint
+    (equal (type-kind (type-uint))
+           :uint))
+
+  (defruled type-kind-of-type-slong
+    (equal (type-kind (type-slong))
+           :slong))
+
+  (defruled type-kind-of-type-ulong
+    (equal (type-kind (type-ulong))
+           :ulong))
+
+  (defruled type-kind-of-type-sllong
+    (equal (type-kind (type-sllong))
+           :sllong))
+
+  (defruled type-kind-of-type-ullong
+    (equal (type-kind (type-ullong))
+           :ullong))
+
+  (defval *atc-type-kind-rules*
+    '(type-kind-of-type-schar
+      type-kind-of-type-uchar
+      type-kind-of-type-sshort
+      type-kind-of-type-ushort
+      type-kind-of-type-sint
+      type-kind-of-type-uint
+      type-kind-of-type-slong
+      type-kind-of-type-ulong
+      type-kind-of-type-sllong
+      type-kind-of-type-ullong)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-valuep-rules
   :short "Rules for discharging @(tsee valuep) hypotheses."
   :long
@@ -181,6 +245,89 @@
   (defval *atc-value-optionp-rules*
     '((:e value-optionp)
       value-optionp-when-valuep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-kind-rules
+  :short "Rules to resolve @(tsee value-kind) for various kinds of values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to relieve the hypothesis of
+     the rule for executing identifiers,
+     in @(tsee atc-exec-ident-rules)."))
+
+  (defruled value-kind-when-scharp
+    (implies (scharp x)
+             (equal (value-kind x)
+                    :schar))
+    :enable (scharp value-kind))
+
+  (defruled value-kind-when-ucharp
+    (implies (ucharp x)
+             (equal (value-kind x)
+                    :uchar))
+    :enable (ucharp value-kind))
+
+  (defruled value-kind-when-sshortp
+    (implies (sshortp x)
+             (equal (value-kind x)
+                    :sshort))
+    :enable (sshortp value-kind))
+
+  (defruled value-kind-when-ushortp
+    (implies (ushortp x)
+             (equal (value-kind x)
+                    :ushort))
+    :enable (ushortp value-kind))
+
+  (defruled value-kind-when-sintp
+    (implies (sintp x)
+             (equal (value-kind x)
+                    :sint))
+    :enable (sintp value-kind))
+
+  (defruled value-kind-when-uintp
+    (implies (uintp x)
+             (equal (value-kind x)
+                    :uint))
+    :enable (uintp value-kind))
+
+  (defruled value-kind-when-slongp
+    (implies (slongp x)
+             (equal (value-kind x)
+                    :slong))
+    :enable (slongp value-kind))
+
+  (defruled value-kind-when-ulongp
+    (implies (ulongp x)
+             (equal (value-kind x)
+                    :ulong))
+    :enable (ulongp value-kind))
+
+  (defruled value-kind-when-sllongp
+    (implies (sllongp x)
+             (equal (value-kind x)
+                    :sllong))
+    :enable (sllongp value-kind))
+
+  (defruled value-kind-when-ullongp
+    (implies (ullongp x)
+             (equal (value-kind x)
+                    :ullong))
+    :enable (ullongp value-kind))
+
+  (defval *atc-value-kind-rules*
+    '(value-kind-when-scharp
+      value-kind-when-ucharp
+      value-kind-when-sshortp
+      value-kind-when-ushortp
+      value-kind-when-sintp
+      value-kind-when-uintp
+      value-kind-when-slongp
+      value-kind-when-ulongp
+      value-kind-when-sllongp
+      value-kind-when-ullongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -618,16 +765,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute an identifier (as an expression),
-     we use a rule that is like the definition,
-     but provides a bit of separation/abstraction from the definition,
-     and it also avoids the binding of @('__function__').
-     The @(tsee read-var) call may undergo further rewriting,
-     as explained in @(see atc-read-var-rules)."))
+    "For now we only support the execution of non-array variables;
+     see @(tsee exec-ident).
+     Thus, we use a binding hypothesis to read the variable's value,
+     and we have a hypothesis requiring the value not to be an array.
+     In order to discharge this hypothesis,
+     the rules in @(tsee atc-value-kind-rules) are used."))
 
   (defruled exec-ident-open
-    (equal (exec-ident id compst)
-           (read-var id compst))
+    (implies (and (equal val (read-var id compst))
+                  (not (value-case val :array)))
+             (equal (exec-ident id compst)
+                    val))
     :enable exec-ident)
 
   (defval *atc-exec-ident-rules*
@@ -663,7 +812,11 @@
              (equal (exec-const const)
                     (sint value)))
     :enable (exec-const
-             exec-iconst))
+             exec-iconst
+             value-sint->get
+             sint
+             value-kind
+             valuep))
 
   (defruled exec-const-to-slong
     (implies (and (syntaxp (quotep const))
@@ -682,7 +835,11 @@
              (equal (exec-const const)
                     (slong value)))
     :enable (exec-const
-             exec-iconst))
+             exec-iconst
+             value-slong->get
+             slong
+             value-kind
+             valuep))
 
   (defruled exec-const-to-sllong
     (implies (and (syntaxp (quotep const))
@@ -709,7 +866,11 @@
              slong-integerp-alt-def
              sint-integerp-alt-def
              ulong-integerp-alt-def
-             uint-integerp-alt-def))
+             uint-integerp-alt-def
+             value-sllong->get
+             sllong
+             value-kind
+             valuep))
 
   (defruled exec-const-to-uint
     (implies (and (syntaxp (quotep const))
@@ -724,7 +885,11 @@
              (equal (exec-const const)
                     (uint value)))
     :enable (exec-const
-             exec-iconst))
+             exec-iconst
+             value-uint->get
+             uint
+             value-kind
+             valuep))
 
   (defruled exec-const-to-ulong
     (implies (and (syntaxp (quotep const))
@@ -748,7 +913,11 @@
     :enable (exec-const
              exec-iconst
              sint-integerp-alt-def
-             slong-integerp-alt-def))
+             slong-integerp-alt-def
+             value-ulong->get
+             ulong
+             value-kind
+             valuep))
 
   (defruled exec-const-to-ullong
     (implies (and (syntaxp (quotep const))
@@ -773,7 +942,11 @@
              slong-integerp-alt-def
              sllong-integerp-alt-def
              uint-integerp-alt-def
-             ulong-integerp-alt-def))
+             ulong-integerp-alt-def
+             value-ullong->get
+             ullong
+             value-kind
+             valuep))
 
   (defval *atc-exec-const-rules*
     '(exec-const-to-sint
@@ -799,8 +972,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-integer-value-rules
-  :short "Rules about the composition of @(tsee sint-integer-value)
+(defsection atc-sint-get-rules
+  :short "Rules about the composition of @(tsee sint->get)
           with @('sint-from-<type>') functions."
   :long
   (xdoc::topstring
@@ -808,47 +981,39 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
-  (defruled sint-integer-value-of-sint-from-schar
+  (defruled sint->get-of-sint-from-schar
     (implies (scharp x)
-             (equal (sint-integer-value (sint-from-schar x))
-                    (schar-integer-value x)))
-    :enable (sint-integer-value
-             schar-integer-value
-             sint-from-schar
+             (equal (sint->get (sint-from-schar x))
+                    (schar->get x)))
+    :enable (sint-from-schar
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-uchar
+  (defruled sint->get-of-sint-from-uchar
     (implies (ucharp x)
-             (equal (sint-integer-value (sint-from-uchar x))
-                    (uchar-integer-value x)))
-    :enable (sint-integer-value
-             uchar-integer-value
-             sint-from-uchar
+             (equal (sint->get (sint-from-uchar x))
+                    (uchar->get x)))
+    :enable (sint-from-uchar
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-sshort
+  (defruled sint->get-of-sint-from-sshort
     (implies (sshortp x)
-             (equal (sint-integer-value (sint-from-sshort x))
-                    (sshort-integer-value x)))
-    :enable (sint-integer-value
-             sshort-integer-value
-             sint-from-sshort
+             (equal (sint->get (sint-from-sshort x))
+                    (sshort->get x)))
+    :enable (sint-from-sshort
              sint-integerp-alt-def))
 
-  (defruled sint-integer-value-of-sint-from-ushort
+  (defruled sint->get-of-sint-from-ushort
     (implies (ushortp x)
-             (equal (sint-integer-value (sint-from-ushort x))
-                    (ushort-integer-value x)))
-    :enable (sint-integer-value
-             ushort-integer-value
-             sint-from-ushort
+             (equal (sint->get (sint-from-ushort x))
+                    (ushort->get x)))
+    :enable (sint-from-ushort
              sint-integerp-alt-def))
 
-  (defval *atc-integer-value-rules*
-    '(sint-integer-value-of-sint-from-schar
-      sint-integer-value-of-sint-from-uchar
-      sint-integer-value-of-sint-from-sshort
-      sint-integer-value-of-sint-from-ushort)))
+  (defval *atc-sint-get-rules*
+    '(sint->get-of-sint-from-schar
+      sint->get-of-sint-from-uchar
+      sint->get-of-sint-from-sshort
+      sint->get-of-sint-from-ushort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1573,7 +1738,7 @@
                                     (pack op-kind '- lfixtype '-okp)))
                             ,@(and (member-eq op-kind '(:shl :shr))
                                    (cons 'exec-integer
-                                         *atc-integer-value-rules*))
+                                         *atc-sint-get-rules*))
                             ,@*atc-uaconvert-values-rules*
                             ,@*atc-promote-value-rules*))))
       (mv name event))
@@ -2538,13 +2703,29 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val))
              (equal (exec-initer initer compst fenv limit)
-                    (mv val compst1)))
+                    (mv (init-value-single val) compst1)))
     :enable exec-initer)
 
   (defval *atc-exec-initer-rules*
     '(exec-initer-when-single
       (:e initer-kind)
       (:e initer-single->get))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-init-value-to-value-rules
+  :short "Rules for @(tsee init-value-to-value)."
+
+  (defruled init-value-to-value-when-single
+    (implies (and (valuep val)
+                  (equal (type-of-value val)
+                         type))
+             (equal (init-value-to-value type (init-value-single val))
+                    val))
+    :enable init-value-to-value)
+
+  (defval *atc-init-value-to-value-rules*
+    '(init-value-to-value-when-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2561,13 +2742,15 @@
                   (equal var (mv-nth 0 var+tyname+init))
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
-                  (equal val+compst1
+                  (equal type (tyname-to-type tyname))
+                  (not (type-case type :array))
+                  (equal ival+compst1
                          (exec-initer init compst fenv (1- limit)))
-                  (equal val (mv-nth 0 val+compst1))
-                  (equal compst1 (mv-nth 1 val+compst1))
+                  (equal ival (mv-nth 0 ival+compst1))
+                  (equal compst1 (mv-nth 1 ival+compst1))
+                  (init-valuep ival)
+                  (equal val (init-value-to-value type ival))
                   (valuep val)
-                  (equal (type-of-value val)
-                         (tyname-to-type tyname))
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
@@ -2591,7 +2774,8 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e obj-declon-to-ident+tyname+init))))
+      (:e obj-declon-to-ident+tyname+init)
+      return-type-of-init-value-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

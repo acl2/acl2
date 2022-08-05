@@ -293,10 +293,6 @@ sub scan_cert_param {
 	}
 	return [cert_param_event, [["acl2x", 1]]];
     }
-    $regexp = "\\([\\s]*check-hons-enabled[\\s]+\\(:book";
-    if ($the_line =~ m/$regexp/) {
-	return [cert_param_event, [["hons-only", 1]]];
-    }
     return 0;
 }
 

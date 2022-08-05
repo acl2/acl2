@@ -12,10 +12,11 @@
 (in-package "ACL2")
 
 (include-book "kestrel/bv/getbit-def" :dir :system)
-(local (include-book "kestrel/bv/getbit" :dir :system))
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "bvchop-list")
+(local (include-book "kestrel/bv/getbit" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 ;use a map
 (defund getbit-list (n lst)

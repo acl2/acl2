@@ -1,0 +1,59 @@
+CL-UTILITIES Collection
+=======================
+
+On Cliki.net <http://www.cliki.net/Common%20Lisp%20Utilities>, there
+is a collection of Common Lisp Utilities, things that everybody writes
+since they're not part of the official standard. There are some very
+useful things there; the only problems are that they aren't
+implemented as well as you'd like (some aren't implemented at all) and
+they aren't conveniently packaged and maintained. It takes quite a bit
+of work to carefully implement utilities for common use, commented
+and documented, with error checking placed everywhere some dumb user
+might make a mistake.
+
+The CLRFI process <http://clrfi.alu.org/> is a lot better thought out,
+and will probably produce better standards than informal discussion on
+a Wiki, but it has one problem: at the time of this writing, it's not
+doing anything yet. Until the CLRFI process gets going, I think that a
+high-quality collection of the informal standards on Cliki is a
+valuable thing to have. It's here, and it's called cl-utilities.
+
+The home page is <http://common-lisp.net/project/cl-utilities/>.
+
+Documentation
+-------------
+
+Right now, documentation is at
+<http://www.cliki.net/Common%20Lisp%20Utilities>. There are a few
+differences, though:
+
+* The READ-DELIMITED function takes :start and :end keyword args.
+* A WITH-GENSYMS function is provided for compatibility.
+* COPY-ARRAY is not called SHALLOW-COPY-ARRAY.
+* The ONCE-ONLY macro is included.
+
+Installation
+------------
+
+To install cl-utilities, you'll need to do one of two things:
+
+* Download cl-utilities into a place where asdf can find it, then
+  load it via asdf. You will also need to get the split-sequence
+  package, which cl-utilities depends on.
+
+-or-
+
+* Use asdf-install: (asdf-install:install :cl-utilities)
+
+Feedback
+--------
+
+The current maintainer is Peter Scott. If you have questions, bugs,
+comments, or contributions, please send them to the cl-utilities-devel
+mailing list, <cl-utilities-devel@common-lisp.net>.
+
+License
+-------
+
+The code in cl-utilities is in the public domain. Do whatever you want
+with it.

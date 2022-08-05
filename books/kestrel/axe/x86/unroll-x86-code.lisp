@@ -18,10 +18,6 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-;; TODO: Add option to prune the DAG
-
-;; TODO: Add support for a fixed or limited number of steps, for debugging
-
 (include-book "kestrel/x86/tools/support-axe" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/tools/conditions" :dir :system)
@@ -33,7 +29,7 @@
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../rewriter") ;brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-using-each-other)
+(include-book "../rewriter") ;brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -119,8 +115,8 @@
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
          ((mv erp dag-or-quote state)
-          (acl2::simp-dag dag
-                          :rules rules
+          (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                          :rules rules ; todo: don't make the rule-alist each time
                           :assumptions assumptions
                           :monitor rules-to-monitor
                           :use-internal-contextsp use-internal-contextsp
@@ -128,25 +124,32 @@
                           :print print ; :brief ;nil
                           ;; :print-interval 10000 ;todo: pass in
                           :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
-                          :memoizep memoizep))
+                          :memoizep memoizep
+                          :check-inputs nil))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quote))
           (mv (erp-nil) dag-or-quote state))
          (dag dag-or-quote)
          ;; Prune the DAG:
          ((mv erp dag state)
-          (acl2::maybe-prune-dag-new prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
-                                     dag assumptions rules
-                                     nil ; interpreted-fns
-                                     rules-to-monitor
-                                     t ;call-stp
-                                     state))
+          (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
+                                           dag
+                                           ;; the assumptions used during lifting seem unlikely to be helpful when pruning, and user assumptions
+                                           ;; seem like they should be used during lifting (TODO: What about assumptions only usable by STP?)
+                                           nil ; assumptions
+                                           rules
+                                           nil ; interpreted-fns
+                                           rules-to-monitor
+                                           t ;call-stp
+                                           print
+                                           state))
          ((when erp) (mv erp nil state))
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
+            ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
           (if (acl2::equivalent-dags dag old-dag)
@@ -177,7 +180,7 @@
                               total-steps
                               state))))))))
 
-;; Returns (mv erp result-dag rules-used assumption-rules-used state).
+;; Returns (mv erp result-dag-or-quotep rules-used assumption-rules-used state).
 (defun def-unrolled-fn-core (target
                              parsed-executable
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
@@ -189,7 +192,6 @@
                              extra-rules
                              remove-rules
                              extra-assumption-rules
-
                              step-limit
                              step-increment
                              memoizep
@@ -199,7 +201,7 @@
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions
+                              ;; assumptions ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (output-indicatorp output)
@@ -219,7 +221,7 @@
                               (member print-base '(10 16)))
                   :stobjs (state)
                   :mode :program))
-  (b* ((- (cw "Lifting ~s0." target)) ;todo: print the executable name
+  (b* ((- (cw "Lifting ~s0.~%" target)) ;todo: print the executable name
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (cw "(Executable type: ~x0.)~%" executable-type))
        ;;todo: finish adding support for :entry-point!
@@ -290,11 +292,13 @@
        ((mv erp rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil state))
+       ;; TODO: Option to turn this off, or to do just one pass
        ((mv erp assumptions state)
-        (acl2::simplify-terms-using-each-other assumptions
-                                               rule-alist
-                                               :monitor '()
-                                               ))
+        (acl2::simplify-terms-repeatedly ;; simplify-terms-using-each-other
+         assumptions
+         rule-alist
+         nil ; monitored-rules
+         state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        (- (cw "Done simplifying assumptions)~%"))
@@ -310,14 +314,13 @@
                              (debug-rules32)
                            monitor))
        ;; Do the symbolic execution:
-       ((mv erp result-dag ; result-dag-or-quotep ; FFIXME: Handle a quotep here
-            state)
+       ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
-       (- (if (quotep result-dag)
-              (cw "Result is ~x0.~%" result-dag)
-            (acl2::print-dag-info result-dag 'result t))))
-    (mv (erp-nil) result-dag rules assumption-rules state)))
+       (- (if (quotep result-dag-or-quotep)
+              (cw "(Unrolling/lifting produced the constant ~x0.)~%" result-dag-or-quotep)
+            (acl2::print-dag-info result-dag-or-quotep 'result t))))
+    (mv (erp-nil) result-dag-or-quotep rules assumption-rules state)))
 
 ;; Returns (mv erp event state)
 (defun def-unrolled-fn (lifted-name
@@ -348,7 +351,7 @@
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions
+                              ;; assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (output-indicatorp output)

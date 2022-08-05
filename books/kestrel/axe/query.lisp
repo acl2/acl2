@@ -28,15 +28,21 @@
 ;; often be a conjunction.  TERM need not already be translated.
 ;; TODO: Should this do any kind of redundancy checking?
 ;; Returns (mv result state) where result is *sat*, *unsat*, *unknown*, or *error*.
-(defun query-fn (term ;; often a conjunction
+;; TODO: Suppress Axe printing like "Giving up because the uncut goal TACTIC-QUERY is invalid."
+(defun query-fn (term ;; untranslated, often a conjunction
                  rules
+                 max-conflicts
                  print
                  state)
-  (declare (xargs :stobjs (state)
-                  :mode :program ;because this calls translate-term
-                  :guard (and ;(pseudo-termp term)
-                          (symbol-listp rules) ;TODO: Support rules :auto (include some basic things like pushing NOT across IF)
-                          )))
+  (declare (xargs :guard (and (symbol-listp rules) ;TODO: Support rules :auto (include some basic things like pushing NOT across IF)
+                              (or (natp max-conflicts)
+                                  (null max-conflicts) ; no limit
+                                  (eq :auto max-conflicts))
+                              ;; print
+                              )
+                  :stobjs state
+                  :mode :program ;because this calls translate-term (TODO: Separate that out)
+                  ))
   (b* ((term (translate-term term 'query-fn (w state)))
        (term `(not ,term)) ;we attempt to prove the negation of the term
        ;; TODO: Try to extract assumptions from the term, but this is not quite right?  perhaps push the not through first?
@@ -49,7 +55,7 @@
        ((when erp) (mv *error* state))
        (monitor nil) ;todo
        (call-stp-when-pruning t)
-       (max-conflicts *default-stp-max-conflicts*) ; max-conflicts ;a number of conflicts, or nil for no max
+       (max-conflicts (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)) ; a number of conflicts, or nil for no max
        ;;(rule-alist (make-rule-alist rules (w state))) ;todo; don't need both of these..
 ;(assumptions (translate-terms assumptions 'prove-with-tactics-fn (w state))) ;throws an error on bad input
        ;; ((mv dag assumptions2)
@@ -102,8 +108,9 @@
 ;; todo: get doc from kestrel-acl2/axe/doc.lisp
 (defmacro query (term &key
                       (rules 'nil)
+                      (max-conflicts ':auto)
                       (print 'nil))
-  `(query-fn ',term ,rules ,print state))
+  `(query-fn ',term ,rules ',max-conflicts ,print state))
 
 (defmacro assert-query-result (query expected-result)
   `(assert-equal-with-stobjs ,query

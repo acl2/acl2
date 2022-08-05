@@ -1,0 +1,1 @@
+"Within a couple weeks of learning Lisp I found programming in any other language unbearably constraining." -- Paul Graham, Road to Lisp

@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -9408,12 +9408,11 @@
 ; raw Lisp definition of acl2::defconst.
 
             t)
-           (alist (and ; (hons-enabledp *the-live-state*) ; deprecated
-                       (loop for pair in
-                             (table-alist 'memoize-table (w *the-live-state*))
-                             when (fboundp (car pair)) ; always true?
-                             collect (cons (car pair)
-                                           (symbol-function (car pair)))))))
+           (alist (loop for pair in
+                        (table-alist 'memoize-table (w *the-live-state*))
+                        when (fboundp (car pair)) ; always true?
+                        collect (cons (car pair)
+                                      (symbol-function (car pair))))))
        (load-compiled ofile t)
        (loop for pair in alist
              when (not (eq (symbol-function (car pair))

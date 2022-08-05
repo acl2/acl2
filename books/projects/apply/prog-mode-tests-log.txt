@@ -1817,40 +1817,40 @@ on HELLO because HELLO has not been warranted.
 ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
                 COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
                 COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
@@ -1863,7 +1863,7 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 >>>(SET-GUARD-CHECKING T)
@@ -1981,7 +1981,7 @@ ACL2 !>>>(CALLER2 'JOHN)
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(CALLER2 "Mary and Tom")
@@ -2005,7 +2005,7 @@ ACL2 >>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
 on HELLO because HELLO has not been warranted.
 
 ACL2 >>>(SET-GUARD-CHECKING T)

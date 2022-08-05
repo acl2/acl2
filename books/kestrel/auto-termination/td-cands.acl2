@@ -3,20 +3,23 @@
 (in-package "ACL2")
 
 ; The following books are included to provide the packages that are
-; defined after including system book "doc/top-slow".
+; defined after including system book "top".
 
-(INCLUDE-BOOK "coi/alists/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "coi/bags/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "coi/syntax/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "coi/lists/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "coi/adviser/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/quantification/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "data-structures/memories/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/syntheto/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/blake/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/kdf/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/padding/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/sha-2/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/hmac/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/records/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "data-structures/memories/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/bags/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/syntax/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/alists/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/lists/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/adviser/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/jvm/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/dimacs-reader/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/proof-checker-array/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/proof-checker-itp13/portcullis" :DIR :SYSTEM)
@@ -28,9 +31,9 @@
 (INCLUDE-BOOK "coi/nary/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/svl/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/rp-rewriter/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "centaur/meta/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/lispfloat/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/clex/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/meta/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/lrat/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/truth/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/aig/portcullis" :DIR :SYSTEM)
@@ -41,9 +44,6 @@
 (INCLUDE-BOOK "centaur/depgraph/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/getopt/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/bridge/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "data-structures/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "cowles/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "build/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/zcash/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/pfcs/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/ethereum/semaphore/portcullis" :DIR :SYSTEM)
@@ -81,15 +81,18 @@
 (INCLUDE-BOOK "centaur/satlink/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "oslib/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/acre/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "centaur/fty/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "centaur/bitops/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/apt/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/soft/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/fty/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/bitops/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "data-structures/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "cowles/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "build/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "std/portcullis" :DIR :SYSTEM)
 
 ; Next we deal with packages whose associated book in
 ;   (KNOWN-PACKAGE-ALIST STATE)
-; is community book "doc/top-slow", which is too large to include efficiently.
+; is community book "top", which is too large to include efficiently.
 
 ; "MEMOIZE"
 (include-book "centaur/memoize/portcullis" :dir :system)

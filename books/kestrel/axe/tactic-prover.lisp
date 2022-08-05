@@ -43,10 +43,14 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
+
+(local (in-theory (enable rationalp-when-natp)))
 
 ;(local (in-theory (enable member-equal-becomes-memberp))) ;todo
 
-(local (in-theory (disable symbol-listp)))
+(local (in-theory (disable symbol-listp w)))
 
 ;; (defthm pseudo-termp-when-memberp
 ;;   (implies (and (memberp a y)
@@ -88,7 +92,8 @@
   (and (true-listp prob)
        (eql 2 (len prob))
        (pseudo-dag-or-quotep (first prob)) ; TODO: or don't even create a problem if it's a constant
-       (pseudo-term-listp (second prob))))
+       (pseudo-term-listp (second prob)) ;; todo: disallow constant assumptions?
+       ))
 
 (defthm proof-problemp-forward-to-true-listp
   (implies (proof-problemp prob)
@@ -198,7 +203,7 @@
        (assumptions (second problem))
        (- (and print (cw "(Applying the Axe rewriter~%")))
        ((mv erp new-dag state)
-        (simp-dag dag
+        (simp-dag dag ; TODO: Use the basic rewriter (but it will need to support rewriting nodes assuming their [approximate] contexts)
                   :rule-alist rule-alist
                   :interpreted-function-alist interpreted-function-alist
                   :monitor monitor
@@ -308,12 +313,13 @@
        (- (and print (cw "(Pruning branches without rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
        ((mv erp term state)
-        (prune-term-new term assumptions
-                        (empty-rule-alist) ;no rules (but see :prune-with-rules below)
-                        nil                ;no interpreted-fns (todo)
-                        nil                ;no point in monitoring anything
-                        call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
-                        state))
+        (prune-term term
+                    assumptions
+                    (empty-rule-alist) ;no rules (but see :prune-with-rules below)
+                    nil                ;no interpreted-fns (todo)
+                    nil                ;no point in monitoring anything
+                    call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                    state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
        ((mv erp new-dag) (make-term-into-dag-basic term nil))
        ((when erp) (mv *error* nil state))
@@ -352,10 +358,10 @@
        (- (and print (cw "(Pruning branches with rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
        ((mv erp term state)
-        (prune-term-new term assumptions rule-alist interpreted-function-alist
-                        monitor
-                        call-stp-when-pruning
-                        state))
+        (prune-term term assumptions rule-alist interpreted-function-alist
+                    monitor
+                    call-stp-when-pruning
+                    state))
        ((when erp) (mv *error* nil state))
        ((mv erp new-dag) (make-term-into-dag-basic term nil))
        ((when erp) (mv *error* nil state))
@@ -443,18 +449,39 @@
      <-lemma-for-known-operators    ; rename with axe in the name
      <-lemma-for-known-operators-alt ; rename with axe in the name
      eql ; introduced by case
+     not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
+     not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
      )
    (type-rules)
    (unsigned-byte-p-forced-rules)))
+
+(in-theory (disable (:e pre-stp-rules))) ; avoid big goals
+
+(defthmd symbol-listp-of-pre-stp-rules
+  (symbol-listp (pre-stp-rules))
+  :hints (("Goal" :in-theory (enable (:e pre-stp-rules)))))
+
+(local (in-theory (enable symbol-listp-of-pre-stp-rules)))
 
 (ensure-rules-known (pre-stp-rules))
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
 (defun apply-tactic-stp (problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts state)
-  (declare (xargs :guard (proof-problemp problem)
-                  :stobjs (state)
-                  :verify-guards nil ;todo: first verify guards for PROVE-DISJUNCTION-WITH-STP
+  (declare (xargs :guard (and (proof-problemp problem)
+                              (rule-alistp rule-alist)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (symbol-listp monitor)
+                              (booleanp normalize-xors)
+                              ;; print
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (ilks-plist-worldp (w state)))
+                  :guard-hints (("Goal" :in-theory (e/d (quotep-compound-recognizer)
+                                                        (myquotep quotep))
+                                 :do-not '(generalize eliminate-destructors)))
+                  :stobjs state
+                  :verify-guards nil ;todo
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
@@ -467,12 +494,15 @@
           (prog2$
            (cw "Note: The DAG is the constant NIL.~%")
            (mv *invalid* nil state))))
+       ((when (not (< (car (car (first problem))) 2147483646)))
+        (er hard? 'apply-tactic-stp "DAG too big.")
+        (mv *error* nil state))
        ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
        ((mv erp rule-alist) (add-to-rule-alist (pre-stp-rules) rule-alist (w state)))
        ((when erp)
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
-       ((mv erp dag)
+       ((mv erp dag) ; todo: call dag dag-or-quotep
         (simplify-dag-basic dag
                             assumptions
                             interpreted-function-alist
@@ -500,27 +530,31 @@
        (- (and print (cw " Calling STP to prove: ~x0.~%" (if (< dag-size 100) (dag-to-term dag) dag))))
        ;; todo: pull out some of this machinery (given a dag and assumptions, set up a disjunction in a dag-array):
        (dag-array-name 'dag-array)
-       (dag-array (make-into-array dag-array-name dag))
-       (top-nodenum (top-nodenum dag))
+       (dag-array (make-dag-into-array dag-array-name dag 0))
+       (top-nodenum (top-nodenum-of-dag dag))
        (dag-len (+ 1 top-nodenum))
        (dag-parent-array-name 'dag-parent-array)
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
-       ;; Add the assumptions to the DAG:
+       ;; Add the assumptions to the DAG (todo: negating these may not be necessary once prove-disjunction-with-stp can take negated nodenums):
        ((mv erp negated-assumption-nodenum-or-quoteps dag-array dag-len dag-parent-array & &)
-        (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?
+        (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?  or call merge-trees-into-dag-array-basic?
          (negate-terms assumptions)
          nil
          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
          nil ;fixme ifns
          ))
        ((when erp) (mv *error* nil state))
-       ;; We'll prove that either the conclusion is true or one of the assumptions is false:
-       ;; TODO: What if the top-nodenum is a disjunction?
-       ;; TODO: What if a negated assumption is disjunction (e.g., a negated conjuntion)?
-       (disjuncts (cons top-nodenum negated-assumption-nodenum-or-quoteps))
+       ;; Handle any disjuncts that are constants:
+       ((mv provedp negated-assumption-nodenums) ; todo: can there really be constants in negated-assumption-nodenum-or-quoteps?
+        (handle-constant-disjuncts negated-assumption-nodenum-or-quoteps nil))
+       ((when provedp)
+        (cw "NOTE: Proved due to a assumption of false.~%")
+        (mv *valid* nil state))
+       ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
+       (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
        ((mv result state)
-        (prove-disjunction-with-stp disjuncts
+        (prove-disjunction-with-stp disjunct-nodenums ; Disjuncts that represent disjunctions are flattened
                                     dag-array ;must be named 'dag-array (fixme generalize?)
                                     dag-len
                                     dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)
@@ -531,7 +565,7 @@
                                     state)))
     ;; this tactic has to prove the whole problem (it can't return a residual DAG)
     (if (eq *error* result)
-        (prog2$ (er hard 'apply-tactic-stp "Error applying STP tactic.)~%")
+        (prog2$ (er hard? 'apply-tactic-stp "Error applying STP tactic.)~%")
                 (mv *error* nil state))
       (if (eq *valid* result)
           (prog2$ (and print (cw "STP proved the goal.)~%"))
@@ -552,7 +586,7 @@
                           (mv *no-change*
                               result ;; return the counterexample in the info
                               state))
-                (prog2$ (er hard 'apply-tactic-stp "Bad result: ~x0." result)
+                (prog2$ (er hard? 'apply-tactic-stp "Bad result: ~x0." result)
                         (mv *error* nil state))))))))))
 
 ;;
@@ -831,7 +865,10 @@
        (assumptions (append assumptions assumptions2)) ;TODO: which assumptions / term / dag should be used in the theorem below?
        ((mv erp assumptions state)
         (if simplify-assumptions
-            (simplify-terms-using-each-other assumptions rule-alist)
+            (simplify-terms-repeatedly ;; simplify-terms-using-each-other
+             assumptions rule-alist
+             nil ; monitored-rules
+             state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))
        (vars (merge-sort-symbol< (dag-vars dag)))
@@ -970,31 +1007,30 @@
                                       state)))
 
 ;;
-;; prove-equivalence2
+;; prove-equal-with-tactics
 ;;
 
 ;returns (mv erp event state)
 ;TODO: Auto-generate the name
 ;TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
-;; This could be called prove-equivalence-with-tactics-fn.
-(defun prove-equivalence2-fn (dag-or-term1
-                              dag-or-term2
-                              ;tests ;a natp indicating how many tests to run
-                              tactics
-                              assumptions
-                              ;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
-                              name
-                              print
-                              debug
-                              max-conflicts
-                              call-stp-when-pruning
-                              rules
-                              interpreted-fns
-                              monitor
-                              normalize-xors
-                              different-vars-ok
-                              whole-form
-                              state)
+(defun prove-equal-with-tactics-fn (dag-or-term1
+                                    dag-or-term2
+                                    ;;tests ;a natp indicating how many tests to run
+                                    tactics
+                                    assumptions
+                                    ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
+                                    name
+                                    print
+                                    debug
+                                    max-conflicts
+                                    call-stp-when-pruning
+                                    rules
+                                    interpreted-fns
+                                    monitor
+                                    normalize-xors
+                                    different-vars-ok
+                                    whole-form
+                                    state)
   (declare (xargs :guard (and (tacticsp tactics)
                               (booleanp debug)
                               (or (null max-conflicts)
@@ -1007,7 +1043,7 @@
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
-       (assumptions (translate-terms assumptions 'prove-equivalence2-fn (w state))) ;throws an error on bad input
+       (assumptions (translate-terms assumptions 'prove-equal-with-tactics-fn (w state))) ;throws an error on bad input
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 (w state)))
@@ -1022,9 +1058,9 @@
                (cw "NOTE: The two dags have different variables.~%")))
        ((when (and different-varsp
                    (not different-vars-ok)))
-        (mv (hard-error 'prove-equivalence2-fn "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
+        (mv (hard-error 'prove-equal-with-tactics-fn "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
             nil state ;rand
-           ))
+            ))
        ;; Make the equality DAG to be proved:
        ((mv erp dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state))
@@ -1043,7 +1079,7 @@
              ;; make the theorem:
              (term1 (dag-or-term-to-term dag-or-term1 state))
              (term2 (dag-or-term-to-term dag-or-term2 state))
-             (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equivalence2 nil (w state))))
+             (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equal-with-tactics-fn nil (w state))))
              (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
                        (defthmd ,defthm-name
                          (implies (and ,@assumptions)
@@ -1056,10 +1092,10 @@
              ;;          defthm))
              )
           (mv (erp-nil)
-              (extend-progn defthm `(table prove-equivalence2-table ',whole-form ',defthm))
+              (extend-progn defthm `(table prove-equal-with-tactics-table ',whole-form ',defthm))
               state))
       (progn$ (cw "Failure info: ~x0." info-acc)
-              (er hard 'prove-equivalence2-fn "Failed to prove.~%")
+              (er hard 'prove-equal-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 
        ;; (tests (if (eq :rewrite tactic)
@@ -1084,45 +1120,44 @@
 
 ;todo: allow :rule-classes
 ;; todo: get doc from kestrel-acl2/axe/doc.lisp
-;; This could be called prove-equivalence-with-tactics.
-(defmacro prove-equivalence2 (&whole
-                              whole-form
-                              dag-or-term1
-                              dag-or-term2
-                              &key
-                              ;; Options that affect what is proved:
-                              (assumptions 'nil) ;assumed when rewriting the miter
-                              (interpeted-fns 'nil)
-                              ;; Options that affect how the proof goes:
-                              (tactics ''(:rewrite))
-                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
-                              ;;(tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
-                              ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
-                              (call-stp-when-pruning 't)
-                              (debug 'nil)
-                              (max-conflicts '*default-stp-max-conflicts*)
-                              (normalize-xors 't)
-                              ;; Options for debugging:
-                              (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem ; todo: call choose-miter-name
-                              (print ':brief)
-                              (monitor 'nil)
-                              (different-vars-ok 'nil))
-  `(make-event (prove-equivalence2-fn ,dag-or-term1
-                                      ,dag-or-term2
-                                      ;; ,tests
-                                      ,tactics
-                                      ,assumptions
-                                      ;; ,types
-                                      ,name
-                                      ',print
-                                      ,debug
-                                      ,max-conflicts
-                                      ,call-stp-when-pruning
-                                      ,rules
-                                      ,interpeted-fns
-                                      ,monitor
-                                      ,normalize-xors
-                                      ',different-vars-ok
-                                      ',whole-form
-                                      state ; rand
-                                      )))
+(defmacro prove-equal-with-tactics (&whole
+                                    whole-form
+                                    dag-or-term1
+                                    dag-or-term2
+                                    &key
+                                    ;; Options that affect what is proved:
+                                    (assumptions 'nil) ;assumed when rewriting the miter
+                                    (interpeted-fns 'nil)
+                                    ;; Options that affect how the proof goes:
+                                    (tactics ''(:rewrite))
+                                    (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
+                                    ;;(tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
+                                    ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
+                                    (call-stp-when-pruning 't)
+                                    (debug 'nil)
+                                    (max-conflicts '*default-stp-max-conflicts*)
+                                    (normalize-xors 't)
+                                    ;; Options for debugging:
+                                    (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem ; todo: call choose-miter-name
+                                    (print ':brief)
+                                    (monitor 'nil)
+                                    (different-vars-ok 'nil))
+  `(make-event (prove-equal-with-tactics-fn ,dag-or-term1
+                                            ,dag-or-term2
+                                            ;; ,tests
+                                            ,tactics
+                                            ,assumptions
+                                            ;; ,types
+                                            ,name
+                                            ',print
+                                            ,debug
+                                            ,max-conflicts
+                                            ,call-stp-when-pruning
+                                            ,rules
+                                            ,interpeted-fns
+                                            ,monitor
+                                            ,normalize-xors
+                                            ',different-vars-ok
+                                            ',whole-form
+                                            state ; rand
+                                            )))

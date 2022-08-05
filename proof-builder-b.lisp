@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3595,11 +3595,8 @@
                      (t
                       (let ((base-rcnst
                              (and rewrite
-                                  (change
-                                   rewrite-constant
-                                   *empty-rewrite-constant*
-                                   :current-enabled-structure pc-ens
-                                   :force-info t))))
+                                  (make-rcnst pc-ens w state
+                                              :force-info t))))
                         (mv-let
                           (flg hyps-type-alist pot-lst ttree)
                           (hyps-type-alist-and-pot-lst assumptions

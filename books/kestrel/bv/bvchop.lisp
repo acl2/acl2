@@ -23,15 +23,11 @@
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/mod-and-expt"))
 
-;move
-(defthm unsigned-byte-p-of-0-arg1
-  (equal (unsigned-byte-p 0 x)
-         (equal 0 x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
+;drop?
 (in-theory (disable unsigned-byte-p))
 
 ;(in-theory (disable BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P)) ;slow
+;drop?
 (in-theory (disable mod floor))
 
 ;for Axe
@@ -374,7 +370,7 @@
                       (+ -1 (expt 2 size1))
                     (+ -1 (expt 2 size2))))))
 
-;gen to any bv...
+
 (defthm bvchop-impossible-value
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p size k))
@@ -677,10 +673,10 @@
            :use (:instance mod-of-expt-of-2
                            (m (+ -1 (integer-length k)))))))
 
-(theory-invariant (incompatible (:definition bvchop) (:rewrite MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))
+(theory-invariant (incompatible (:definition bvchop) (:rewrite mod-of-expt-of-2-constant-version)))
 
 (defthm bitp-of-bvchop-of-1
-  (bitp (acl2::bvchop 1 x)))
+  (bitp (bvchop 1 x)))
 
 (defthm bvchop-+-cancel-cross
   (implies (and (force (integerp i))

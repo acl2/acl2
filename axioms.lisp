@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2159,8 +2159,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun len (x)
   (declare (xargs :guard t :mode :program))
   #-acl2-loop-only
-  (loop for tail on x
-        with acc of-type fixnum = 0
+  (loop with acc of-type fixnum = 0
+        for nil on x
         do (if (eql (the fixnum acc) most-positive-fixnum)
 
 ; We really don't expect lists of length greater than most-positive-fixnum.
@@ -2491,10 +2491,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (and (symbolp (car lst))
                 (symbol-listp (cdr lst))))))
 
-(defthm symbol-listp-forward-to-true-listp
-  (implies (symbol-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
+; The rule symbol-listp-forward-to-true-listp was formerly here, but it's
+; subsumed by a combination of the following strengthening together with
+; eqlable-listp-forward-to-atom-listp, and atom-listp-forward-to-true-listp.
+(defthm symbol-listp-forward-to-eqlable-listp
+       (implies (symbol-listp x)
+                (eqlable-listp x))
+       :rule-classes :forward-chaining)
 
 (defun symbol-doublet-listp (lst)
 
@@ -14461,7 +14464,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 8.4
+; ACL2 Version 8.5
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed in .cert files.
@@ -14486,7 +14489,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 8.4"
+                                "ACL2 Version 8.5"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -17681,7 +17684,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   hons-enabledp, which is called from set-serialize-character, which we
 ;   prefer to define before print-object$.  We have verified its guards
 ;   successfully later in this file, where w was previously defined.  So rather
-;   fight that battle here, we verify guards at the location of its original
+;   than fight that battle here, we verify guards at the location of its original
 ;   definition.
 
                   :verify-guards nil))
@@ -21467,6 +21470,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-fncall ev ev-lst ev-fncall!
     ev-fncall-rec ev-rec ev-rec-lst ev-rec-acl2-unwind-protect
     ev-fncall-w ev-fncall-w-body ev-w ev-w-lst
+    ev-for-trans-eval
 
     set-w set-w! cloaked-set-w!
 
@@ -28999,9 +29003,3 @@ Lisp definition."
         (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
       (count-keys (cdr al)))))
 
-(defun hons-enabledp (state)
-  (declare (xargs :guard (state-p state))
-           (ignorable state))
-  (prog2$ (cw "WARNING: ~x0 is deprecated!~%"
-              'hons-enabledp)
-          t))

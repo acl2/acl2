@@ -125,3 +125,9 @@
          (and (posp n)
               (not (equal 0 (bvchop 1 bit)))))
   :hints (("Goal" :in-theory (enable repeatbit))))
+
+(defthm unsigned-byte-p-of-repeatbit-of-1-arg2
+  (implies (natp n)
+           (equal (unsigned-byte-p size (repeatbit n 1))
+                  (and (<= n size)
+                       (natp size)))))

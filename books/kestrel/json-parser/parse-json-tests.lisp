@@ -1,6 +1,6 @@
 ; Tests for the JSON parser
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "parse-json")
 (include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 
 ;; NOTE: To see the Unicode characters in this file, try M-x
 ;; revert-buffer-with-coding-system utf-8.  But that may not be necessary
@@ -107,7 +108,7 @@
 ;; Parse a whole JSON object
 (assert!
  (mv-let (erp res)
-   (parse-json (coerce "{\"FirstName\" : \"John\", \"LastName\" : \"Smith\"}" 'list))
+   (parse-string-as-json "{\"FirstName\" : \"John\", \"LastName\" : \"Smith\"}")
    (and (null erp)
         (equal res '(:OBJECT (("FirstName" . "John")
                               ("LastName" . "Smith")))))))
@@ -115,7 +116,7 @@
 ;; A version with Unicode escapes
 (assert!
  (mv-let (erp res)
-   (parse-json (coerce "{\"First\\u20ACName\" : \"Jo\\u20AC\hn\", \"LastName\" : \"Smith\"}" 'list))
+   (parse-string-as-json "{\"First\\u20ACName\" : \"Jo\\u20AC\hn\", \"LastName\" : \"Smith\"}")
    (and (null erp)
         (equal res '(:OBJECT (("First€Name" . "Jo€hn")
                               ("LastName" . "Smith")))))))
@@ -123,8 +124,13 @@
 ;; A test with various kinds of values
 (assert!
  (mv-let (erp res)
-   (parse-json (coerce "{\"name\" : \"Jo\\u20AC\hn\",
+   (parse-string-as-json "{\"name\" : \"Jo\\u20AC\hn\",
                          \"age\" : 20,
+                         \"height\" : 123.456E7,
+                         \"width\" : 123.456E1,
+                         \"weight\" : 123.456E-7,
+                         \"weight2\" : 1.23456E-5,
+                         \"val\" : 0.00023456,
                          \"happy\" : true,
                          \"sad\" : false,
                          \"pets\" : null,
@@ -134,11 +140,15 @@
                                         100,
                                         true,
                                         false,
-                                        null]}"
-                       'list))
+                                        null]}")
    (and (null erp)
         (equal res '(:OBJECT (("name" . "Jo€hn")
                               ("age" . 20)
+                              ("height" . 1234560000)
+                              ("width" . 30864/25)
+                              ("weight" . 1929/156250000)
+                              ("weight2" . 1929/156250000)
+                              ("val" . 733/3125000) ; same as 23456/100000000
                               ("happy" . :TRUE)
                               ("sad" . :FALSE)
                               ("pets" . :NULL)
@@ -147,3 +157,33 @@
                                                               ("nickname" . "Mike")))
                                                     "Darnell" 100 :TRUE
                                                     :FALSE :NULL)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns :error or the parsed JSON object
+(defun parse-string-as-json2 (str)
+  (declare (xargs :guard (stringp str)))
+  (mv-let (erp res)
+    (parse-json (coerce str 'list))
+    (if erp
+        :error
+      res)))
+
+(assert-equal (parse-string-as-json2 "0") 0)
+(assert-equal (parse-string-as-json2 "123") 123)
+(assert-equal (parse-string-as-json2 "-123") -123)
+(assert-equal (parse-string-as-json2 "10.5") 21/2)
+(assert-equal (parse-string-as-json2 "-10.5") -21/2)
+(assert-equal (parse-string-as-json2 "0.5") 1/2)
+(assert-equal (parse-string-as-json2 "-0.5") -1/2)
+(assert-equal (parse-string-as-json2 "1e2") 100)
+(assert-equal (parse-string-as-json2 "1.5e2") 150)
+(assert-equal (parse-string-as-json2 "-1e2") -100)
+(assert-equal (parse-string-as-json2 "-1.5e2") -150)
+(assert-equal (parse-string-as-json2 "4e-2") 4/100)
+(assert-equal (parse-string-as-json2 "4.5e-2") (/ 9/2 100))
+(assert-equal (parse-string-as-json2 "-4e-2") -4/100)
+(assert-equal (parse-string-as-json2 "-4.5e-2") (- (/ 9/2 100)))
+
+(assert-equal (parse-string-as-json2 "[1, 2, 3]") '(:array (1 2 3)))
+(assert-equal (parse-string-as-json2 "{\"a\" : 1, \"b\" : 2}") '(:OBJECT (("a" . 1) ("b" . 2))))

@@ -556,36 +556,8 @@
         (get-all-keys-lst (cdr vals) alist)))))
 
 
-;from Matt ;TODO get rid of this
-(defun trans-eval2 (form ctx state)
-  (declare (xargs :mode :program :stobjs state))
-  (acl2::state-global-let*
-;   ((acl2::guard-checking-on :none))
-;; PETE: now controlled by the global cgen::cgen-guard-checking
-   ((acl2::guard-checking-on (@ cgen-guard-checking)))
-   (mv-let
-    (erp trans bindings state)
-    (acl2::translate1 form
-                      t nil
-                      t
-                      'top-level (w state) state)
-    (declare (ignore bindings))
-    (cond
-     (erp (mv t nil state))
-     (t
-      (let ((vars (all-vars trans)))
-        (cond
-         ((acl2::unknown-stobj-names vars t (w state)) ;;; known-stobjs = t
-          (er soft 'top-level
-              "Global variables, such as ~&0, are not allowed. See ~
-               :DOC ASSIGN and :DOC @."
-              (acl2::unknown-stobj-names vars t (w state)))) ;;; known-stobjs = t
-         (t (acl2::ev-for-trans-eval trans nil ctx state t
-
-; Matt K. mod: Added conservative value of new argument,
-; user-stobjs-modified-warning.
-
-                                     t)))))))))
+; Matt K. mod, 7/15/2022: Removed trans-eval2, which apparently isn't used,
+; since it called acl2::ev-for-trans-eval, which is now untouchable.
 
 ;returns (cdr (cons translated-term value)) == value of term under bindings
 (defun trans-eval-single-value-with-bindings (term bindings ctx state)

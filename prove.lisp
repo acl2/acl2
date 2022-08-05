@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -922,7 +922,8 @@
                    :forbidden-fns (forbidden-fns ,wrld ,state)
                    :nonlinearp (non-linearp ,wrld)
                    :backchain-limit-rw (backchain-limit ,wrld :rewrite)
-                   :rw-cache-state (rw-cache-state ,wrld))
+                   :rw-cache-state (rw-cache-state ,wrld)
+                   :heavy-linearp (if (heavy-linear-p) :heavy t))
            ,@args))
 
 ; We now finish the development of tau-clause...  To recap our story so far: In
@@ -933,8 +934,8 @@
 (defun cheap-type-alist-and-pot-lst (cl ens wrld state)
 
 ; Given a clause cl, we build a type-alist and linear pot-lst with all of the
-; literals in cl assumed false.  The pot-lst is built with the cheap-linearp
-; flag on, which means we do not rewrite terms before turning them into polys
+; literals in cl assumed false.  The pot-lst is built with the heavy-linearp
+; flag onff, which means we do not rewrite terms before turning them into polys
 ; and we add no linear lemmas.  We ensure that the type-alist has no
 ; assumptions or forced hypotheses.  FYI: Just to be doubly sure that we are
 ; not ignoring assumptions and forced hypotheses, you will note that in
@@ -958,7 +959,7 @@
                        cl nil type-alist
                        (make-rcnst ens wrld state
                                    :force-info 'weak
-                                   :cheap-linearp t)
+                                   :heavy-linearp nil)
                        wrld state *default-step-limit*)
                       (declare (ignore new-step-limit))
                       (cond

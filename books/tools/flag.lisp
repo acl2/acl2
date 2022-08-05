@@ -147,9 +147,7 @@ but it's usually nice to pick shorter names since you'll have to mention them
 in the theorems you prove.  The argument, if supplied and non-@('nil'), should
 be a list that specifies a short name for every function in the clique.  Each
 member of that list should be of the form @('(old new)') where (of course)
-@('old') and @('new') are symbols, except that for backward compatibility the
-form @('(old . new)') is allowed (but deprecated after March, 2021, ultimately
-to be eliminated).</li>
+@('old') and @('new') are symbols.</li>
 
 <li>@(':defthm-macro-name') lets you name the new macro that will be generated
 for proving theorems by inducting with the flag function.  By default it is
@@ -1092,8 +1090,8 @@ one such form may affect what you might think of as the proof of another.</p>
 
 (defun convert-flag-mapping (x x-original)
   (let ((str "The :flag-mapping argument of make-flag should be a true-list, ~
-              each of whose members is ideally of the forms (name1 name2).  ~
-              The value ~x0 is thus illegal."))
+              each of whose members is of the form (name1 name2).  The value ~
+              ~x0 is thus illegal."))
     (cond ((null x) nil)
           ((atom x) (er hard 'make-flag str x-original))
           (t (b* ((old (car x))
@@ -1101,9 +1099,6 @@ one such form may affect what you might think of as the proof of another.</p>
                          ((s1 s2) (and (symbolp s1)
                                        (symbolp s2)
                                        (cons s1 s2)))
-                         ((s1 . s2) (and (symbolp s1)
-                                         (symbolp s2)
-                                         old))
                          (& (er hard 'make-flag str x-original)))))
                (cons new
                      (convert-flag-mapping (cdr x) x-original)))))))

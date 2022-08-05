@@ -1,0 +1,81 @@
+<!DOCTYPE html> <html xmlns="http://www.w3.org/1999/xhtml"> <head> <meta charset="utf-8"> <title>Trivial-Mimes</title> <meta name="viewport" content="width=device-width"> <meta name="description" content="Tiny library to detect mime types in files."> <meta name="author" content="Nicolas Hafner &lt;shinmera@tymoon.eu&gt;"> <style type="text/css"> body{
+          max-width: 1024px;
+          margin: 0 auto 0 auto;
+          font-family: sans-serif;
+          color: #333333;
+          font-size: 14pt;
+          padding: 5px;
+      }
+      body>header{
+          display:flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          max-width: 100%;
+          text-align: center;
+      }
+      body>header img{
+          max-width: 50%;
+      }
+      img{
+          max-width: 100%;
+          max-height: 100%;
+      }
+      code{
+          font-family: Consolas, Inconsolata, monospace;
+      }
+      a{
+          text-decoration: none;
+          color: #0055AA;
+      }
+      a img{
+          border: none;
+      }
+      #documentation{
+          text-align: justify;
+      }
+      #documentation pre{
+          margin-left: 20px;
+          overflow: auto;
+      }
+      #documentation img{
+          margin: 5px;
+      }
+      #symbol-index>ul{
+          list-style: none;
+          padding: 0;
+      }
+      #symbol-index .package>ul{
+          list-style: none;
+          padding: 0 0 0 10px;
+      }
+      #symbol-index .package .nicknames{
+          font-weight: normal;
+      }
+      #symbol-index .package h4{
+          display: inline-block;
+          margin: 0;
+      }
+      #symbol-index .package article{
+          margin: 0 0 15px 0;
+      }
+      #symbol-index .package article header{
+          font-size: 1.2em;
+          font-weight: normal;
+      }
+      #symbol-index .package .name{
+          margin-right: 5px;
+      }
+      #symbol-index .package .docstring{
+          margin: 0 0 0 15px;
+          white-space: pre-wrap;
+          font-size: 12pt;
+      }
+      @media (max-width: 800px){
+          body{font-size: 12pt;}
+      } </style> </head> <body> <header> <h1>trivial-mimes</h1> <span class="version">1.1.0</span> <p class="description">Tiny library to detect mime types in files.</p> </header> <main> <article id="documentation">  <div><h2 id="about_trivial-mimes">About Trivial-Mimes</h2> <p>This is a teensy library that provides some functions to determine the mime-type of a file. As I've had a need for this kind of functionality more than once now and haven't found any suitably lightweight alternative I quickly whipped this up.</p> <h2 id="how_to">How To</h2> <pre><code>(<a href="#TRIVIAL-MIMES:MIME">mimes:mime</a> #p&quot;~/something.png&quot;)</code></pre> <p>Upon loading, trivial-mimes builds a mime-type database from the local <code>mime.types</code> file or a copy thereof from its own source directory. This database is a simple association of file extension to mime-type (see <code><a href="#TRIVIAL-MIMES:MIME-LOOKUP">mime-lookup</a></code>). If the mime lookup in the database fails, it will instead try to consult the <code>file</code> shell utility on unix systems (see <code><a href="#TRIVIAL-MIMES:MIME-PROBE">mime-probe</a></code>). If that too doesn't work, it falls back onto a default.</p> </div>  </article> <article id="copyright">  <h2>Copyright</h2> <span>trivial-mimes</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=Artistic">Artistic</a></span> license.  © <span>Nicolas Hafner &lt;shinmera@tymoon.eu&gt;</span> .  This library can be obtained on <a href="https://github.com/Shinmera/trivial-mimes">https://github.com/Shinmera/trivial-mimes</a>.  </article>  <article id="symbol-index"> <h2>Package Index</h2> <ul><li class="package"> <h3> <a name="TRIVIAL-MIMES" href="#TRIVIAL-MIMES">TRIVIAL-MIMES</a> <span class="nicknames">(ORG.TYMOONNEXT.TRIVIAL-MIMES MIMES)</span> </h3> <ul><li> <a name="TRIVIAL-MIMES:*MIME-DB*"> </a> <article id="SPECIAL TRIVIAL-MIMES:*MIME-DB*"> <header class="special"> <span class="type">special</span>  <h4 class="name"><code><a href="#SPECIAL%20TRIVIAL-MIMES%3A%2AMIME-DB%2A">*MIME-DB*</a></code></h4>  </header> <div class="docstring"><pre>An EQUALP hash-table with file-extensions as keys and the mime-types as values.</pre></div> </article> </li><li> <a name="TRIVIAL-MIMES:FIND-MIME.TYPES"> </a> <article id="FUNCTION TRIVIAL-MIMES:FIND-MIME.TYPES"> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#FUNCTION%20TRIVIAL-MIMES%3AFIND-MIME.TYPES">FIND-MIME.TYPES</a></code></h4> <code class="qualifiers"></code> <code class="arguments"></code><code>)</code>  </header> <div class="docstring"><pre>Attempts to find a usable MIME.TYPES file.
+If none can be found, an error is signalled.</pre></div> </article> </li><li> <a name="TRIVIAL-MIMES:MIME"> </a> <article id="FUNCTION TRIVIAL-MIMES:MIME"> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#FUNCTION%20TRIVIAL-MIMES%3AMIME">MIME</a></code></h4> <code class="qualifiers"></code> <code class="arguments">PATHNAME &amp;OPTIONAL (DEFAULT &quot;application/octet-stream&quot;)</code><code>)</code>  </header> <div class="docstring"><pre>Attempts to detect the mime-type of the given pathname.
+First uses MIME-LOOKUP, then MIME-PROBE and lastly returns the DEFAULT if both fail.</pre></div> </article> </li><li> <a name="TRIVIAL-MIMES:MIME-FILE-TYPE"> </a> <article id="FUNCTION TRIVIAL-MIMES:MIME-FILE-TYPE"> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#FUNCTION%20TRIVIAL-MIMES%3AMIME-FILE-TYPE">MIME-FILE-TYPE</a></code></h4> <code class="qualifiers"></code> <code class="arguments">MIME-TYPE</code><code>)</code>  </header> <div class="docstring"><pre>Returns a matching file-extension for the given mime-type.
+If the given mime-type cannot be found, NIL is returned.</pre></div> </article> </li><li> <a name="TRIVIAL-MIMES:MIME-LOOKUP"> </a> <article id="FUNCTION TRIVIAL-MIMES:MIME-LOOKUP"> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#FUNCTION%20TRIVIAL-MIMES%3AMIME-LOOKUP">MIME-LOOKUP</a></code></h4> <code class="qualifiers"></code> <code class="arguments">PATHNAME</code><code>)</code>  </header> <div class="docstring"><pre>Attempts to get the mime-type by file extension comparison.
+If none can be found, NIL is returned.</pre></div> </article> </li><li> <a name="TRIVIAL-MIMES:MIME-PROBE"> </a> <article id="FUNCTION TRIVIAL-MIMES:MIME-PROBE"> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#FUNCTION%20TRIVIAL-MIMES%3AMIME-PROBE">MIME-PROBE</a></code></h4> <code class="qualifiers"></code> <code class="arguments">PATHNAME</code><code>)</code>  </header> <div class="docstring"><pre>Attempts to get the mime-type through a call to the FILE shell utility.
+If the file does not exist or the platform is not unix, NIL is returned.</pre></div> </article> </li></ul> </li></ul> </article>  </main> </body> </html> 

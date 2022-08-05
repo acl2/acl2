@@ -1,7 +1,6 @@
 (in-package "ACL2")
 
 (include-book "ieee-floats-as-bvs")
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; for equal-of-slice
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

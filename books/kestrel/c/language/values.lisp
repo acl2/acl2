@@ -261,6 +261,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum init-value
+  :short "Fixtype of initializer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce a notion of values for "
+    (xdoc::seetopic "initer" "initializers")
+    ". An initializer value has the same structure as an initializer,
+     but expressions are replaced with (their) values.")
+   (xdoc::p
+    "As our model of initializers is extended,
+     out model of initializer values will be extended accordingly."))
+  (:single ((get value)))
+  (:list ((get value-list)))
+  :pred init-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a signed integer [C:6.2.5/4]."
@@ -406,6 +424,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-of-value-option ((val? value-optionp))
+  :returns (type typep)
+  :short "Type of an optional value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the value if the value is present,
+     while it is @('void') if the value is absent.
+     This is a handy extension of @(tsee type-of-value),
+     given that, in the dynamic semantics,
+     we model computations that may return @('void') (e.g. function calls)
+     as returning optional values, with @('nil') for no value."))
+  (value-option-case val?
+                     :some (type-of-value val?.val)
+                     :none (type-void))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define member-type-of-member-value ((member member-valuep))
   :returns (memtype member-typep)
   :short "Member type of a member value."
@@ -431,19 +468,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-of-value-option ((val? value-optionp))
-  :returns (type typep)
-  :short "Type of an optional value."
+(define init-type-of-init-value ((ival init-valuep))
+  :returns (itype init-typep)
+  :short "Initialization type of an initialization value."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the type of the value if the value is present,
-     while it is @('void') if the value is absent.
-     This is a handy extension of @(tsee type-of-value),
-     given that, in the dynamic semantics,
-     we model computations that may return @('void') (e.g. function calls)
-     as returning optional values, with @('nil') for no value."))
-  (value-option-case val?
-                     :some (type-of-value val?.val)
-                     :none (type-void))
+    "An @(tsee init-type) is the static counterpart of
+     an @(tsee init-value)."))
+  (init-value-case ival
+                   :single (init-type-single (type-of-value ival.get))
+                   :list (init-type-list (type-list-of-value-list ival.get)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult init-value "initialization values"
+  :enable (errorp init-valuep))
+
+(defsection init-value-result-theorems
+  :extension init-value-result
+
+  (defrule not-errorp-when-init-valuep
+    (implies (init-valuep x)
+             (not (errorp x)))
+    :rule-classes :tau-system
+    :enable (init-valuep
+             errorp)))
