@@ -4508,7 +4508,7 @@
                                          (fn-recursivep booleanp)
                                          (prec-objs atc-string-objinfo-alistp))
   :returns (mv (bindings doublet-listp)
-               (pointer-hyps true-listp)
+               (hyps true-listp)
                (pointer-subst symbol-symbol-alistp
                               :hyp (atc-symbol-type-alistp typed-formals))
                (instantiation doublet-listp))
@@ -4584,7 +4584,7 @@
      we do it via bindings of the form
      @('((a (read-static-var (ident ...) compst)))'),
      which we generate here.
-     We generate no pointer hypotheses in this case:
+     We generate no hypotheses in this case:
      we do not introduce a pointer variable,
      so there is no need for hypotheses about it;
      the pointer is generated internally during symbolic execution,
@@ -5014,7 +5014,7 @@
        (result-var (if (type-case type :void)
                        nil
                      (genvar 'atc "RESULT" nil formals)))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+       ((mv formals-bindings hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals
                                          compst-var
                                          nil
@@ -5025,7 +5025,7 @@
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (exec-fun-args (fsublis-var-lst pointer-subst
@@ -5900,11 +5900,11 @@
                                            wrld))
        (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
-       ((mv formals-bindings pointer-hyps & instantiation)
+       ((mv formals-bindings hyps & instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
                       ,test-term))
@@ -6025,7 +6025,7 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+       ((mv formals-bindings hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
@@ -6034,7 +6034,7 @@
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)
                    ,(untranslate test-term nil wrld)))
@@ -6195,7 +6195,7 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+       ((mv formals-bindings hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
@@ -6204,7 +6204,7 @@
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
