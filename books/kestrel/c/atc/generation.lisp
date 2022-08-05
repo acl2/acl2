@@ -781,6 +781,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-objinfo-alist-to-recognizers
+  ((prec-objs atc-string-objinfo-alistp))
+  :returns (recognizers symbol-listp)
+  :short "Project the recognizers
+          out of an external object information alist."
+  (b* (((when (endp prec-objs)) nil)
+       (info (cdar prec-objs))
+       (recognizer (defobject-info->recognizer (atc-obj-info->defobject info)))
+       (more-recognizers
+        (atc-string-objinfo-alist-to-recognizers (cdr prec-objs))))
+    (cons recognizer more-recognizers)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-type-to-recognizer ((type typep) (wrld plist-worldp))
   :returns (recognizer symbolp)
   :short "ACL2 recognizer corresponding to a C type."
@@ -4225,6 +4239,7 @@
                                (typed-formals atc-symbol-type-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
                                (prec-tags atc-string-taginfo-alistp)
+                               (prec-objs atc-string-objinfo-alistp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
@@ -4248,7 +4263,7 @@
      "Calls of @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
       are known to return C values.")
     (xdoc::li
-     "Calls of arrays and structure readers and writers
+     "Calls of array and structure readers and writers
       are known to return C values.")
     (xdoc::li
      "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
@@ -4266,7 +4281,7 @@
     (xdoc::li
      "An @(tsee mv) returns C values,
       because either they are parameters or bound variables,
-      or terms that recursively return C values
+      or they are terms that recursively return C values
       (the latter case is for non-recursive functions
       that return a non-@('void') result
       and also affect arrays and structures)."))
@@ -4276,8 +4291,14 @@
      the definition of @('fn'),
      the return type theorems of @(tsee sint-dec-const) and related functions,
      the return type theorems for array and structure readers and writers,
-     and the theorems about the preceding functions;
-     we also add a @(':use') hint for the guard theorem of @('fn').
+     and the theorems about the preceding functions.
+     We also include the definitions of the recognizers
+     of the external objects that precede @('fn'),
+     which certainly include any external object used in @('fn'):
+     this is needed if @('fn') returns the external object,
+     because the guard uses its recognizer,
+     which implies but differs from a type predicate.
+     We also add a @(':use') hint for the guard theorem of @('fn').
      The theorems about structure readers and writers
      are taken from the alist of the preceding structure tags.")
    (xdoc::p
@@ -4313,7 +4334,7 @@
      Then we operate on the resulting alist,
      which forms all the results of the function
      with their names (and @('nil') for the result, if present).
-     The alist is never empty (an ACL2 function must always return something);
+     The alist is never empty (an ACL2 function must always return something).
      If the alist is a singleton,
      we generate assertions about the function call.
      If the list has multiple elements,
@@ -4338,8 +4359,7 @@
      Without this, some proofs fail with a subgoal saying that
      a function result is @('nil'), which is false.
      This seems to happen only with functions returning multiple results,
-     where the results in question have the form @('(mv-nth ...)');
-     perhaps single results are taken care by ACL2's tau system.
+     where the results in question have the form @('(mv-nth ...)').
      So we generate these non-@('nil') theorems only for multiple results.
      These theorems have to be rewrite rules:
      with type prescription rules,
@@ -4397,6 +4417,7 @@
                   *atc-array-length-write-rules*
                   ',(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
                   ',(atc-string-taginfo-alist-to-writer-return-thms prec-tags)
+                  ',(atc-string-objinfo-alist-to-recognizers prec-objs)
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
@@ -5405,6 +5426,7 @@
                                          typed-formals
                                          prec-fns
                                          prec-tags
+                                         prec-objs
                                          names-to-avoid
                                          wrld))
                  ((mv fn-correct-local-events
@@ -6437,6 +6459,7 @@
                                          typed-formals
                                          prec-fns
                                          prec-tags
+                                         prec-objs
                                          names-to-avoid
                                          wrld))
                  (loop-test (stmt-while->test loop-stmt))
