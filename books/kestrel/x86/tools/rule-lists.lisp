@@ -1126,21 +1126,24 @@
      eql
      acl2::+-commutative-axe
      unicity-of-0
-     all-addreses-of-stack-slots
+     ;; all-addreses-of-stack-slots
      ms X86ISA::ms$A
      fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
      canonical-address-p-of-0
      addresses-of-subsequent-stack-slots
-     addresses-of-subsequent-stack-slots-aux-base
-     addresses-of-subsequent-stack-slots-aux-unroll
+     ;; addresses-of-subsequent-stack-slots-aux-base
+     ;; addresses-of-subsequent-stack-slots-aux-unroll
+     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux
      x86isa::canonical-address-listp-of-cons
      x86isa::canonical-address-p-between-special1
      x86isa::canonical-address-p-between-special2
      x86isa::canonical-address-p-between-special3
      acl2::fold-consts-in-+
      x86isa::canonical-address-listp-of-nil
-     )
+     acl2::integerp-of-+-when-integerp-1-cheap
+     x86isa::integerp-of-xr-rgf-4
+     x86isa::fix-of-xr-rgf-4)
    (acl2::lookup-rules)))
 
 (defun myif-rules ()

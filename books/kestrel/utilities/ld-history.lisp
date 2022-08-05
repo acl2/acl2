@@ -42,6 +42,7 @@
           (most-recent-theorem-aux (rest ld-history) whole-ld-history))))))
 
 ;; Returns the most recent THM or DEFTHM submitted by the user, or throws an error is there isn't one.
+;; TODO: What if the most recent theorem is inside an encapsulate or some other compound event (see what redo-flat does?)?
 (defund most-recent-theorem (state)
   (declare (xargs :stobjs state
                   ;; is this implied by statep?:
