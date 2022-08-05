@@ -1157,3 +1157,11 @@
   (acl2::unsigned-byte-p 1 (sub-af-spec32 dst src)))
 
 (in-theory (disable zf-spec))
+
+(defthm integerp-of-xr-rgf-4
+  (implies (x86p x86)
+           (integerp (xr ':rgf '4 x86))))
+
+(defthm fix-of-xr-rgf-4
+  (equal (fix (xr ':rgf '4 x86))
+         (xr ':rgf '4 x86)))

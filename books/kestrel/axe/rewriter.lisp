@@ -2252,7 +2252,8 @@
                   :stobjs state
                   :mode :program))
   (if (zp passes-left)
-      (mv (erp-nil) terms state)
+      (prog2$ (cw "NOTE: Limit reached when simplifying terms repeatedly.~%")
+              (mv (erp-nil) terms state))
     (b* (((mv erp new-terms againp state)
           (simplify-terms-once terms nil rule-alist monitored-rules nil state))
          ((when erp) (mv erp nil state)))
@@ -2269,7 +2270,8 @@
                   :stobjs state
                   :mode :program))
   (let ((len (len terms)))
-    (simplify-terms-repeatedly-aux (* len len) terms rule-alist monitored-rules state)))
+    ;; We add 1 so that if len=1 we get at least 2 passes:
+    (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
