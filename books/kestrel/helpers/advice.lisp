@@ -215,7 +215,7 @@
   (b* (((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
        ((when (not (stringp server-url)))
-        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface')<.")
+        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
        (most-recent-theorem (most-recent-theorem state))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-theorem nil))
