@@ -14,6 +14,7 @@
 (include-book "assumptions")
 (include-book "read-and-write")
 (include-book "../parsers/parsed-executable-tools")
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (defun bytes-loaded-at-address-64 (bytes addr x86)
   (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 bytes)
@@ -38,19 +39,32 @@
                bytes
                x86)))
 
-(defun addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
+(defund addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
   (if (zp num-stack-slots)
       nil
     (cons address
           (addresses-of-subsequent-stack-slots-aux (+ -1 num-stack-slots) (+ -8 address)))))
 
-(defthm addresses-of-subsequent-stack-slots-aux-opener
+(defthmd addresses-of-subsequent-stack-slots-aux-opener
   (implies (and (syntaxp (quotep num-stack-slots))
                 (< num-stack-slots 1000) ;prevent huge expansions
                 (not (zp num-stack-slots)))
            (equal (addresses-of-subsequent-stack-slots-aux num-stack-slots address)
                   (cons address
-                        (addresses-of-subsequent-stack-slots-aux (+ -1 num-stack-slots) (+ -8 address))))))
+                        (addresses-of-subsequent-stack-slots-aux (+ -1 num-stack-slots) (+ -8 address)))))
+  :hints (("Goal" :in-theory (enable addresses-of-subsequent-stack-slots-aux))))
+
+(defthm canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux
+  (implies (and (posp num-stack-slots)
+                (integerp address))
+           (equal (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots-aux num-stack-slots address))
+                  (and (x86isa::canonical-address-p address)
+                       (x86isa::canonical-address-p (+ (* -8 (- num-stack-slots 1)) address)))))
+  :hints (("Subgoal *1/2" :cases ((equal 1 num-stack-slots)))
+          ("Goal" :expand (addresses-of-subsequent-stack-slots-aux 1 address)
+           :in-theory (enable addresses-of-subsequent-stack-slots-aux
+                              x86isa::canonical-address-p signed-byte-p integer-range-p))))
+
 
 ;; recall that the stack grows downward
 ;; These are just the starting addresses of the slots (1 address per 8-byte slot)
@@ -58,8 +72,8 @@
   (let ((first-slot-address (+ -8 rsp)))
     (addresses-of-subsequent-stack-slots-aux num-stack-slots first-slot-address)))
 
-(defun all-addreses-of-stack-slots (num-slots rsp)
-  (x86isa::create-canonical-address-list (* 8 num-slots) (+ (* -8 num-slots) rsp)))
+;; (defun all-addreses-of-stack-slots (num-slots rsp)
+;;   (x86isa::create-canonical-address-list (* 8 num-slots) (+ (* -8 num-slots) rsp)))
 
 ;; This is separate so we can easily create a list of terms to pass to symsim.
 ;; NOTE: Some of these (e.g., stack pointer alignment) are conventions that may not be respected by malware!
