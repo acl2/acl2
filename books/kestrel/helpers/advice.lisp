@@ -222,6 +222,9 @@
        (most-recent-failed-theorem-goal (most-recent-failed-theorem-goal state))
        (untranslated-checkpoints (checkpoint-list-pretty t ; todo: consider non-top
                                                          state))
+       ((when (eq :unavailable untranslated-checkpoints))
+        (er hard? 'advice-fn "No checkpoints are available.")
+        (mv :no-checkpoints nil state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        (untranslated-checkpoints (if (equal untranslated-checkpoints '(<goal>))
                                      (list most-recent-failed-theorem-goal) ; todo: flatten ANDs in this?
