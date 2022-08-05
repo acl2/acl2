@@ -933,12 +933,13 @@
   (xdoc::topstring
    (xdoc::p
     "These are somewhat similar to the ones about @(tsee read-var).
-     We go through the frame, the scopes, and the (automatic) variables.
+     We go through the frame, the scopes, and the added (automatic) variables.
+     We also go through the updated variables,
+     provided that the names are distinct;
+     this will have to be refined soon.
      We also go through object updates,
      which currently are only for objects in the heap
-     (see @(tsee update-object)).")
-   (xdoc::p
-    "We will extend this to also deal with @(tsee update-var) soon."))
+     (see @(tsee update-object))."))
 
   (defruled read-static-var-of-add-frame
     (equal (read-static-var var (add-frame fun compst))
@@ -966,6 +967,17 @@
              pop-frame)
     :disable omap::in-when-in-tail)
 
+  (defruled read-static-var-of-update-var
+    (implies (not (equal (ident-fix var)
+                         (ident-fix var2)))
+             (equal (read-static-var var (update-var var2 val compst))
+                    (read-static-var var compst)))
+    :enable (read-static-var
+             update-var
+             push-frame
+             pop-frame)
+    :disable omap::in-when-in-tail)
+
   (defruled read-static-var-of-update-object
     (equal (read-static-var var (update-object objdes val compst))
            (read-static-var var compst))
@@ -977,6 +989,7 @@
     '(read-static-var-of-add-frame
       read-static-var-of-enter-scope
       read-static-var-of-add-var
+      read-static-var-of-update-var
       read-static-var-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
