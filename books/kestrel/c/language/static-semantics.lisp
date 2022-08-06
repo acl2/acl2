@@ -439,10 +439,10 @@
            (type-integerp type))
     :enable (type-integerp type-unsigned-integerp type-signed-integerp))
 
-  (defrule type-integer-nonbool-nonchar-of-promote-type
-    (implies (type-integer-nonbool-nonchar-p type)
-             (type-integer-nonbool-nonchar-p (promote-type type)))
-    :enable type-integer-nonbool-nonchar-p))
+  (defrule type-nonchar-integerp-of-promote-type
+    (implies (type-nonchar-integerp type)
+             (type-nonchar-integerp (promote-type type)))
+    :enable type-nonchar-integerp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -568,6 +568,13 @@
              type-integerp
              type-unsigned-integerp
              type-signed-integerp
+             promote-type))
+
+  (defrule type-nonchar-integerp-of-uaconvert-types
+    (implies (and (type-nonchar-integerp type1)
+                  (type-nonchar-integerp type2))
+             (type-nonchar-integerp (uaconvert-types type1 type2)))
+    :enable (type-nonchar-integerp
              promote-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

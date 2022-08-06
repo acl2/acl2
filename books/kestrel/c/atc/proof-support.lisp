@@ -848,14 +848,14 @@
           models of C integer operations that involve one C integer type."
   (b* ((ops '(plus minus bitnot lognot)))
     (atc-integer-ops-1-return-names-loop-ops ops
-                                             *integer-nonbool-nonchar-types*))
+                                             *nonchar-integer-types**))
 
   :prepwork
 
   ((define atc-integer-ops-1-return-names-loop-types ((op symbolp)
                                                       (types type-listp))
      :guard (and (member-eq op '(plus minus bitnot lognot))
-                 (type-integer-listp types))
+                 (type-nonchar-integer-listp types))
      :returns (names symbol-listp)
      :parents nil
      (cond
@@ -871,7 +871,7 @@
    (define atc-integer-ops-1-return-names-loop-ops ((ops symbol-listp)
                                                     (types type-listp))
      :guard (and (subsetp-eq ops '(plus minus bitnot lognot))
-                 (type-integer-listp types))
+                 (type-nonchar-integer-listp types))
      :returns (names symbol-listp)
      :parents nil
      (cond ((endp ops) nil)
@@ -889,8 +889,8 @@
                   'lt 'gt 'le 'ge 'eq 'ne
                   'bitand 'bitxor 'bitior)))
     (atc-integer-ops-2-return-names-loop-ops ops
-                                             *integer-nonbool-nonchar-types*
-                                             *integer-nonbool-nonchar-types*))
+                                             *nonchar-integer-types**
+                                             *nonchar-integer-types**))
 
   :prepwork
 
@@ -901,8 +901,8 @@
                                      'shl 'shr
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
-                 (type-integerp ltype)
-                 (type-integer-listp rtypes))
+                 (type-nonchar-integerp ltype)
+                 (type-nonchar-integer-listp rtypes))
      :returns (names symbol-listp)
      :parents nil
      (cond
@@ -929,8 +929,8 @@
                                      'shl 'shr
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
-                 (type-integer-listp ltypes)
-                 (type-integer-listp rtypes))
+                 (type-nonchar-integer-listp ltypes)
+                 (type-nonchar-integer-listp rtypes))
      :returns (names symbol-listp)
      :parents nil
      (cond ((endp ltypes) nil)
@@ -949,8 +949,8 @@
                                        'shl 'shr
                                        'lt 'gt 'le 'ge 'eq 'ne
                                        'bitand 'bitxor 'bitior))
-                 (type-integer-listp ltypes)
-                 (type-integer-listp rtypes))
+                 (type-nonchar-integer-listp ltypes)
+                 (type-nonchar-integer-listp rtypes))
      :returns (names symbol-listp)
      :parents nil
      (cond ((endp ops) nil)
@@ -968,15 +968,15 @@
   :short "List of rewrite rules for the return types of
           models of C integer conversions."
   (atc-integer-convs-return-names-loop-src-types
-   *integer-nonbool-nonchar-types*
-   *integer-nonbool-nonchar-types*)
+   *nonchar-integer-types**
+   *nonchar-integer-types**)
 
   :prepwork
 
   ((define atc-integer-convs-return-names-loop-dst-types ((stype typep)
                                                           (dtypes type-listp))
-     :guard (and (type-integerp stype)
-                 (type-integer-listp dtypes))
+     :guard (and (type-nonchar-integerp stype)
+                 (type-nonchar-integer-listp dtypes))
      :returns (names symbol-listp)
      :parents nil
      (cond
@@ -994,8 +994,8 @@
 
    (define atc-integer-convs-return-names-loop-src-types ((stypes type-listp)
                                                           (dtypes type-listp))
-     :guard (and (type-integer-listp stypes)
-                 (type-integer-listp dtypes))
+     :guard (and (type-nonchar-integer-listp stypes)
+                 (type-nonchar-integer-listp dtypes))
      :returns (names symbol-listp)
      :parents nil
      (cond ((endp stypes) nil)
@@ -1010,15 +1010,15 @@
 (defval *atc-array-read-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C array read operations."
-  (atc-array-read-return-names-loop-array-types *integer-nonbool-nonchar-types*
-                                                *integer-nonbool-nonchar-types*)
+  (atc-array-read-return-names-loop-array-types *nonchar-integer-types**
+                                                *nonchar-integer-types**)
 
   :prepwork
 
   ((define atc-array-read-return-names-loop-index-types ((atype typep)
                                                          (itypes type-listp))
-     :guard (and (type-integerp atype)
-                 (type-integer-listp itypes))
+     :guard (and (type-nonchar-integerp atype)
+                 (type-nonchar-integer-listp itypes))
      :returns (names symbol-listp)
      :parents nil
      (cond
@@ -1033,8 +1033,8 @@
 
    (define atc-array-read-return-names-loop-array-types ((atypes type-listp)
                                                          (itypes type-listp))
-     :guard (and (type-integer-listp atypes)
-                 (type-integer-listp itypes))
+     :guard (and (type-nonchar-integer-listp atypes)
+                 (type-nonchar-integer-listp itypes))
      :returns (names symbol-listp)
      :parents nil
      (cond ((endp atypes) nil)
@@ -1050,15 +1050,15 @@
   :short "List of rewrite rules for the return types of
           models of C array write operations."
   (atc-array-write-return-names-loop-array-types
-   *integer-nonbool-nonchar-types*
-   *integer-nonbool-nonchar-types*)
+   *nonchar-integer-types**
+   *nonchar-integer-types**)
 
   :prepwork
 
   ((define atc-array-write-return-names-loop-index-types ((atype typep)
                                                           (itypes type-listp))
-     :guard (and (type-integerp atype)
-                 (type-integer-listp itypes))
+     :guard (and (type-nonchar-integerp atype)
+                 (type-nonchar-integer-listp itypes))
      :returns (names symbol-listp)
      :parents nil
      (cond
@@ -1073,8 +1073,8 @@
 
    (define atc-array-write-return-names-loop-array-types ((atypes type-listp)
                                                           (itypes type-listp))
-     :guard (and (type-integer-listp atypes)
-                 (type-integer-listp itypes))
+     :guard (and (type-nonchar-integer-listp atypes)
+                 (type-nonchar-integer-listp itypes))
      :returns (names symbol-listp)
      :parents nil
      (cond ((endp atypes) nil)
@@ -1151,14 +1151,14 @@
   (b* ((ops '(plus minus bitnot lognot)))
     (atc-integer-ops-1-type-presc-rules-loop-ops
      ops
-     *integer-nonbool-nonchar-types*))
+     *nonchar-integer-types**))
 
   :prepwork
 
   ((define atc-integer-ops-1-type-presc-rules-loop-types ((op symbolp)
                                                           (types type-listp))
      :guard (and (member-eq op '(plus minus bitnot lognot))
-                 (type-integer-listp types))
+                 (type-nonchar-integer-listp types))
      :returns (rules true-list-listp)
      :parents nil
      (cond
@@ -1172,7 +1172,7 @@
    (define atc-integer-ops-1-type-presc-rules-loop-ops ((ops symbol-listp)
                                                         (types type-listp))
      :guard (and (subsetp-eq ops '(plus minus bitnot lognot))
-                 (type-integer-listp types))
+                 (type-nonchar-integer-listp types))
      :returns (rule true-list-listp)
      :parents nil
      (cond
@@ -1192,8 +1192,8 @@
                   'bitand 'bitxor 'bitior)))
     (atc-integer-ops-2-type-presc-rules-loop-ops
      ops
-     *integer-nonbool-nonchar-types*
-     *integer-nonbool-nonchar-types*))
+     *nonchar-integer-types**
+     *nonchar-integer-types**))
 
   :prepwork
 
@@ -1205,8 +1205,8 @@
                                      'shl 'shr
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
-                 (type-integerp ltype)
-                 (type-integer-listp rtypes))
+                 (type-nonchar-integerp ltype)
+                 (type-nonchar-integer-listp rtypes))
      :returns (rules true-list-listp)
      :parents nil
      (cond
@@ -1230,8 +1230,8 @@
                                      'shl 'shr
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
-                 (type-integer-listp ltypes)
-                 (type-integer-listp rtypes))
+                 (type-nonchar-integer-listp ltypes)
+                 (type-nonchar-integer-listp rtypes))
      :returns (rules true-list-listp)
      :parents nil
      (cond ((endp ltypes) nil)
@@ -1250,8 +1250,8 @@
                                        'shl 'shr
                                        'lt 'gt 'le 'ge 'eq 'ne
                                        'bitand 'bitxor 'bitior))
-                 (type-integer-listp ltypes)
-                 (type-integer-listp rtypes))
+                 (type-nonchar-integer-listp ltypes)
+                 (type-nonchar-integer-listp rtypes))
      :returns (rules true-list-listp)
      :parents nil
      (cond ((endp ops) nil)
@@ -1269,16 +1269,16 @@
   :short "List of type prescription rules for the
           models of C integer conversions."
   (atc-integer-convs-type-presc-rules-loop-src-types
-   *integer-nonbool-nonchar-types*
-   *integer-nonbool-nonchar-types*)
+   *nonchar-integer-types**
+   *nonchar-integer-types**)
 
   :prepwork
 
   ((define atc-integer-convs-type-presc-rules-loop-dst-types
      ((stype typep)
       (dtypes type-listp))
-     :guard (and (type-integerp stype)
-                 (type-integer-listp dtypes))
+     :guard (and (type-nonchar-integerp stype)
+                 (type-nonchar-integer-listp dtypes))
      :returns (rules true-list-listp)
      :parents nil
      (cond
@@ -1297,8 +1297,8 @@
    (define atc-integer-convs-type-presc-rules-loop-src-types
      ((stypes type-listp)
       (dtypes type-listp))
-     :guard (and (type-integer-listp stypes)
-                 (type-integer-listp dtypes))
+     :guard (and (type-nonchar-integer-listp stypes)
+                 (type-nonchar-integer-listp dtypes))
      :returns (rules true-list-listp)
      :parents nil
      (cond ((endp stypes) nil)
@@ -1314,15 +1314,15 @@
   :short "List of type prescription rules for the
           models of C array read operations."
   (atc-array-read-type-presc-rules-loop-array-types
-   *integer-nonbool-nonchar-types*
-   *integer-nonbool-nonchar-types*)
+   *nonchar-integer-types**
+   *nonchar-integer-types**)
 
   :prepwork
 
   ((define atc-array-read-type-presc-rules-loop-index-types
      ((atype typep) (itypes type-listp))
-     :guard (and (type-integerp atype)
-                 (type-integer-listp itypes))
+     :guard (and (type-nonchar-integerp atype)
+                 (type-nonchar-integer-listp itypes))
      :returns (rules true-listp)
      :parents nil
      (cond
@@ -1336,8 +1336,8 @@
 
    (define atc-array-read-type-presc-rules-loop-array-types
      ((atypes type-listp) (itypes type-listp))
-     :guard (and (type-integer-listp atypes)
-                 (type-integer-listp itypes))
+     :guard (and (type-nonchar-integer-listp atypes)
+                 (type-nonchar-integer-listp itypes))
      :returns (rules true-listp)
      :parents nil
      (cond ((endp atypes) nil)
