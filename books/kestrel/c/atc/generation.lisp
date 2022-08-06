@@ -4488,7 +4488,7 @@
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
                 (reftype (type-pointer->to type))
-                ((unless (type-integerp reftype)) nil)
+                ((unless (type-nonchar-integerp reftype)) nil)
                 (reftype-array-length (pack (integer-type-to-fixtype reftype)
                                             '-array-length)))
              (list `(equal (,reftype-array-length ,theresult)
@@ -5366,7 +5366,7 @@
          (raise "Internal error: ~
                  the function ~x0 returns void and affects no variables."
                 fn)))
-       ((unless (or (type-integerp type)
+       ((unless (or (type-nonchar-integerp type)
                     (type-case type :void)))
         (acl2::value
          (raise "Internal error: ~
@@ -6608,7 +6608,7 @@
        (type (member-type->type memtype))
        (readers (defstruct-member-info->readers meminfo))
        (checkers (defstruct-member-info->checkers meminfo))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((unless (and (consp readers)
                            (endp (cdr readers))))
               (prog2$
@@ -6659,7 +6659,7 @@
          (raise "Internal error: member type ~x0." type)
          (mv nil nil nil)))
        (elemtype (type-array->of type))
-       ((unless (type-integerp elemtype))
+       ((unless (type-nonchar-integerp elemtype))
         (prog2$
          (raise "Internal error: array member element type ~x0." elemtype)
          (mv nil nil nil))))
@@ -6689,8 +6689,8 @@
                                              (checkers symbol-listp)
                                              (names-to-avoid symbol-listp)
                                              (wrld plist-worldp))
-     :guard (and (type-integerp elemtype)
-                 (type-integer-listp indextypes))
+     :guard (and (type-nonchar-integerp elemtype)
+                 (type-nonchar-integer-listp indextypes))
      :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                   (member-read-thms "A @(tsee symbol-listp).")
                   (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -6884,7 +6884,7 @@
        (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
        (writer-return-thm (car writer-return-thms))
        (checkers (defstruct-member-info->checkers meminfo))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((unless (and (consp writers)
                            (endp (cdr writers))))
               (prog2$
@@ -6995,7 +6995,7 @@
          (raise "Internal error: member type ~x0." type)
          (mv nil nil nil)))
        (elemtype (type-array->of type))
-       ((unless (type-integerp elemtype))
+       ((unless (type-nonchar-integerp elemtype))
         (prog2$
          (raise "Internal error: array member element type ~x0." elemtype)
          (mv nil nil nil))))
@@ -7031,8 +7031,8 @@
                                               (type-of-value-thm symbolp)
                                               (names-to-avoid symbol-listp)
                                               (wrld plist-worldp))
-     :guard (and (type-integerp elemtype)
-                 (type-integer-listp indextypes))
+     :guard (and (type-nonchar-integerp elemtype)
+                 (type-nonchar-integer-listp indextypes))
      :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                   (member-write-thms "A @(tsee symbol-listp).")
                   (updated-names-to-avoid "A @(tsee symbol-listp)."))

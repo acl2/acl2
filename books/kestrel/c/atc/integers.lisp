@@ -58,7 +58,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-type-to-fixtype ((type typep))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (fixtype symbolp)
   :short "Name of the fixtype of the values of a C integer type."
   :long
@@ -72,7 +72,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-values ((type typep))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate the model of the values of a C integer type."
 
@@ -217,7 +217,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-values-loop ((types type-listp))
-  :guard (type-integer-listp types)
+  :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the models of the values of some C integer types."
   (cond ((endp types) nil)
@@ -249,9 +249,9 @@
     (t nil))
   ///
 
-  (defret type-integerp-of-fixtype-to-integer-type
+  (defret type-nonchar-integerp-of-fixtype-to-integer-type
     (implies type
-             (type-integerp type)))
+             (type-nonchar-integerp type)))
 
   (defret type-arithmeticp-of-fixtype-to-integer-type
     (implies type

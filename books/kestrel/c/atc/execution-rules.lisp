@@ -726,8 +726,8 @@
 
   (define atc-array-length-write-rules-loop-itypes ((atype typep)
                                                     (itypes type-listp))
-    :guard (and (type-integerp atype)
-                (type-integer-listp itypes))
+    :guard (and (type-nonchar-integerp atype)
+                (type-nonchar-integer-listp itypes))
     :returns (names symbol-listp)
     :parents nil
     (cond ((endp itypes) nil)
@@ -744,8 +744,8 @@
 
   (define atc-array-length-write-rules-loop-atypes ((atypes type-listp)
                                                     (itypes type-listp))
-    :guard (and (type-integer-listp atypes)
-                (type-integer-listp itypes))
+    :guard (and (type-nonchar-integer-listp atypes)
+                (type-nonchar-integer-listp itypes))
     :returns (name symbol-listp)
     :parents nil
     (cond ((endp atypes) nil)
@@ -1368,8 +1368,8 @@
   :short "Code to generate the rules for @(tsee uaconvert-values)."
 
   (define atc-uaconvert-values-rules-gen ((ltype typep) (rtype typep))
-    :guard (and (type-integerp ltype)
-                (type-integerp rtype))
+    :guard (and (type-nonchar-integerp ltype)
+                (type-nonchar-integerp rtype))
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
@@ -1399,8 +1399,8 @@
 
   (define atc-uaconvert-values-rules-gen-loop-rtypes ((ltype typep)
                                                       (rtypes type-listp))
-    :guard (and (type-integerp ltype)
-                (type-integer-listp rtypes))
+    :guard (and (type-nonchar-integerp ltype)
+                (type-nonchar-integer-listp rtypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1412,8 +1412,8 @@
 
   (define atc-uaconvert-values-rules-gen-loop-ltypes ((ltypes type-listp)
                                                       (rtypes type-listp))
-    :guard (and (type-integer-listp ltypes)
-                (type-integer-listp rtypes))
+    :guard (and (type-nonchar-integer-listp ltypes)
+                (type-nonchar-integer-listp rtypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1455,8 +1455,8 @@
   :short "Code to generate the rules for executing array subscript expressions."
 
   (define atc-exec-arrsub-rules-gen ((atype typep) (itype typep))
-    :guard (and (type-integerp atype)
-                (type-integerp itype))
+    :guard (and (type-nonchar-integerp atype)
+                (type-nonchar-integerp itype))
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
@@ -1511,8 +1511,8 @@
 
   (define atc-exec-arrsub-rules-gen-loop-itypes ((atype typep)
                                                  (itypes type-listp))
-    :guard (and (type-integerp atype)
-                (type-integer-listp itypes))
+    :guard (and (type-nonchar-integerp atype)
+                (type-nonchar-integer-listp itypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1524,8 +1524,8 @@
 
   (define atc-exec-arrsub-rules-gen-loop-atypes ((atypes type-listp)
                                                  (itypes type-listp))
-    :guard (and (type-integer-listp atypes)
-                (type-integer-listp itypes))
+    :guard (and (type-nonchar-integer-listp atypes)
+                (type-nonchar-integer-listp itypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1560,7 +1560,7 @@
   :short "Code to generate the rules for executing unary operations."
 
   (define atc-exec-unary-rules-gen ((op unopp) (type typep))
-    :guard (type-integerp type)
+    :guard (type-nonchar-integerp type)
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
@@ -1604,7 +1604,7 @@
       (mv name event)))
 
   (define atc-exec-unary-rules-gen-loop-types ((op unopp) (types type-listp))
-    :guard (type-integer-listp types)
+    :guard (type-nonchar-integer-listp types)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1614,7 +1614,7 @@
       (mv (cons name names) (cons event events))))
 
   (define atc-exec-unary-rules-gen-loop-ops ((ops unop-listp) (types type-listp))
-    :guard (type-integer-listp types)
+    :guard (type-nonchar-integer-listp types)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1655,8 +1655,8 @@
   :short "Code to generate the rules for executing cast operations."
 
   (define atc-exec-cast-rules-gen ((dtype typep) (stype typep))
-    :guard (and (type-integerp dtype)
-                (type-integerp stype))
+    :guard (and (type-nonchar-integerp dtype)
+                (type-nonchar-integerp stype))
     :returns (mv (name symbolp) (event pseudo-event-formp))
     :parents nil
     (b* ((dfixtype (integer-type-to-fixtype dtype))
@@ -1697,8 +1697,8 @@
 
   (define atc-exec-cast-rules-gen-loop-stypes ((dtype typep)
                                                (stypes type-listp))
-    :guard (and (type-integerp dtype)
-                (type-integer-listp stypes))
+    :guard (and (type-nonchar-integerp dtype)
+                (type-nonchar-integer-listp stypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1711,8 +1711,8 @@
 
   (define atc-exec-cast-rules-gen-loop-dtypes ((dtypes type-listp)
                                                (stypes type-listp))
-    :guard (and (type-integer-listp dtypes)
-                (type-integer-listp stypes))
+    :guard (and (type-nonchar-integer-listp dtypes)
+                (type-nonchar-integer-listp stypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1750,8 +1750,8 @@
   (define atc-exec-binary-rules-gen-op-ltype-rtype ((op binopp)
                                                     (ltype typep)
                                                     (rtype typep))
-    :guard (and (type-integerp ltype)
-                (type-integerp rtype))
+    :guard (and (type-nonchar-integerp ltype)
+                (type-nonchar-integerp rtype))
     :returns (mv (name symbolp) (event pseudo-event-formp))
     :parents nil
     (b* ((lfixtype (integer-type-to-fixtype ltype))
@@ -1806,8 +1806,8 @@
   (define atc-exec-binary-rules-gen-op-ltype ((op binopp)
                                               (ltype typep)
                                               (rtypes type-listp))
-    :guard (and (type-integerp ltype)
-                (type-integer-listp rtypes))
+    :guard (and (type-nonchar-integerp ltype)
+                (type-nonchar-integer-listp rtypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1821,8 +1821,8 @@
   (define atc-exec-binary-rules-gen-op ((op binopp)
                                         (ltypes type-listp)
                                         (rtypes type-listp))
-    :guard (and (type-integer-listp ltypes)
-                (type-integer-listp rtypes))
+    :guard (and (type-nonchar-integer-listp ltypes)
+                (type-nonchar-integer-listp rtypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -1866,8 +1866,8 @@
   (define atc-exec-binary-rules-gen ((ops binop-listp)
                                      (ltypes type-listp)
                                      (rtypes type-listp))
-    :guard (and (type-integer-listp ltypes)
-                (type-integer-listp rtypes))
+    :guard (and (type-nonchar-integer-listp ltypes)
+                (type-nonchar-integer-listp rtypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -2406,8 +2406,8 @@
           assignments to array subscript expressions."
 
   (define atc-exec-expr-asg-arrsub-rules-gen ((atype typep) (itype typep))
-    :guard (and (type-integerp atype)
-                (type-integerp itype))
+    :guard (and (type-nonchar-integerp atype)
+                (type-nonchar-integerp itype))
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
@@ -2484,8 +2484,8 @@
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
                                                           (itypes type-listp))
-    :guard (and (type-integerp atype)
-                (type-integer-listp itypes))
+    :guard (and (type-nonchar-integerp atype)
+                (type-nonchar-integer-listp itypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
@@ -2498,8 +2498,8 @@
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-atypes ((atypes type-listp)
                                                           (itypes type-listp))
-    :guard (and (type-integer-listp atypes)
-                (type-integer-listp itypes))
+    :guard (and (type-nonchar-integer-listp atypes)
+                (type-nonchar-integer-listp itypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
