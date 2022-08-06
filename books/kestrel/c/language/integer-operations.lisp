@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "values")
+(include-book "static-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -110,3 +111,138 @@
              (equal (type-of-value val)
                     (type-fix type)))
     :hints (("Goal" :in-theory (enable type-of-value)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+
+; move
+(defrule value-integer-of-value-integer->get-when-type-of-value
+  (implies (and (value-integerp val)
+                (equal type (type-of-value val)))
+           (equal (value-integer (value-integer->get val) type)
+                  (value-fix val)))
+  :enable (value-integer
+           value-integer->get
+           type-of-value
+           value-integerp
+           value-unsigned-integerp
+           value-signed-integerp))
+
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+(define convert-integer-value ((val valuep) (type typep))
+  :guard (and (value-integerp val)
+              (type-nonchar-integerp type))
+  :returns (newval value-resultp)
+  :short "Convert an integer value to an integer type [C:6.3.1.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We extract the underlying mathematical (i.e. ACL2) integer from the value,
+     and we attempt to contruct an integer value of the new type from it.
+     If the new type is unsigned,
+     the mathematical integer is reduced
+     modulo one plus the maximum value of the unsigned type;
+     this always works, i.e. no error is ever returned.
+     If the new type is signed, there are two cases:
+     if the mathematical integer fits in the type,
+     we return a value of that type with that integer;
+     otherwise, we return an error.")
+   (xdoc::p
+    "We do not yet support conversions to
+     the @('_Bool') type and the plain @('char') type,
+     via the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (b* ((mathint (value-integer->get val)))
+    (if (type-unsigned-integerp type)
+        (value-integer (mod mathint (1+ (integer-type-max type)))
+                       type)
+      (value-integer mathint type)))
+  :hooks (:fix))
+
+
+
+
+
+(defrule valuep-of-convert-integer-value-of-unsigned-integer-type
+  (implies (type-unsigned-integerp type)
+           (valuep (convert-integer-value val type)))
+  :enable (convert-integer-value
+           value-integer
+           type-unsigned-integerp
+           integer-type-max
+           uchar-integerp-alt-def
+           ushort-integerp-alt-def
+           uint-integerp-alt-def
+           ulong-integerp-alt-def
+           ullong-integerp-alt-def)
+  :prep-books ((local (include-book "arithmetic-3/top" :dir :system))))
+
+
+;; (defrule valuep-of-convert-integer-value-when-type-of-value
+;;   (implies (and (value-signed-integerp val)
+;;                 (equal type (type-of-value val)))
+;;            (equal (convert-integer-value val type)
+;;                   (value-fix val)))
+;;   :enable (convert-integer-value
+;;            type-signed-integerp-of-type-of-signed-integer-value
+;;            type-unsigned-integerp-of-type-of-unsigned-integer-value))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+;; (define promote-value ((val valuep))
+;;   :returns (promoted-val
+;;             valuep
+;;             :hints (("Goal" :in-theory (enable
+;;                                         promote-type
+;;                                         ;; convert-integer-value
+;;                                         ;; value-integer
+;;                                         ;; value-integer->get
+;;                                         ;; value-integerp
+;;                                         ;; value-unsigned-integerp
+;;                                         ;; value-signed-integerp
+;;                                         ;; sint-integerp-alt-def
+;;                                         ;; slong-integerp-alt-def
+;;                                         ;; sint-min
+;;                                         ;; schar-integer-fix
+;;                                         ;; value-schar->get
+;;                                         ;; integer-type-max
+;;                                         ))))
+;;   :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
+;;   :long
+;;   (xdoc::topstring
+;;    (xdoc::p
+;;     "This is the dynamic counterpart of @(tsee promote-type).
+;;      See the documentation of that function for details.
+;;      Here we actually convert values;
+;;      we do not merely compute a promoted type.")
+;;    (xdoc::p
+;;     "We promote the type of the value,
+;;      obtaining the type of the new value.
+;;      If the starting value is an integer one,
+;;      in which case the promoted type is also an integer one,
+;;      we convert the value to the promoted type."))
+;;   (b* ((type (promote-type (type-of-value val))))
+;;     (if (value-integerp val)
+;;         (convert-integer-value val type)
+;;       (value-fix val)))
+;;   :hooks (:fix))

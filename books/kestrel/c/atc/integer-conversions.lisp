@@ -174,8 +174,8 @@
 
 (make-event
  `(progn ,@(atc-def-integer-conversions-loop-outer
-            *integer-nonbool-nonchar-types*
-            *integer-nonbool-nonchar-types*)))
+            *nonchar-integer-types**
+            *nonchar-integer-types**)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1222,7 +1222,7 @@
             more-checkers
             more-reader-return-thms
             more-writer-return-thms)
-        (defstruct-gen-array-member-ops-aux *integer-nonbool-nonchar-types*
+        (defstruct-gen-array-member-ops-aux *nonchar-integer-types**
           struct-tag struct-tag-p name elem-typep index-okp reader writer))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event

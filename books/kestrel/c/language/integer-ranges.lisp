@@ -67,7 +67,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define def-integer-range ((type typep))
-  :guard (type-integer-nonbool-nonchar-p type)
+  :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate fixtypes, functions, and theorems
           for ranges of integer types."
@@ -176,7 +176,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define def-integer-range-loop ((types type-listp))
-  :guard (type-integer-nonbool-nonchar-listp types)
+  :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate fixtypes, functions, and theorems
           for ranges of integer types."
@@ -188,7 +188,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(def-integer-range-loop *integer-nonbool-nonchar-types*)))
+ `(progn ,@(def-integer-range-loop *nonchar-integer-types**)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -566,7 +566,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-type-min ((type typep))
-  :guard (type-integer-nonbool-nonchar-p type)
+  :guard (type-nonchar-integerp type)
   :returns (min integerp)
   :short "Minimum mathematical integer value of an integer type."
   :long
@@ -587,13 +587,13 @@
         ((type-case type :sllong) (sllong-min))
         ((type-case type :ullong) 0)
         (t (prog2$ (impossible) 0)))
-  :guard-hints (("Goal" :in-theory (enable type-integer-nonbool-nonchar-p)))
+  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-type-max ((type typep))
-  :guard (type-integer-nonbool-nonchar-p type)
+  :guard (type-nonchar-integerp type)
   :returns (min integerp)
   :short "Maximum mathematical integer value of an integer type."
   :long
@@ -614,5 +614,5 @@
         ((type-case type :sllong) (sllong-max))
         ((type-case type :ullong) (ullong-max))
         (t (prog2$ (impossible) 0)))
-  :guard-hints (("Goal" :in-theory (enable type-integer-nonbool-nonchar-p)))
+  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp)))
   :hooks (:fix))
