@@ -568,6 +568,13 @@
              type-integerp
              type-unsigned-integerp
              type-signed-integerp
+             promote-type))
+
+  (defrule type-nonchar-integerp-of-uaconvert-types
+    (implies (and (type-nonchar-integerp type1)
+                  (type-nonchar-integerp type2))
+             (type-nonchar-integerp (uaconvert-types type1 type2)))
+    :enable (type-nonchar-integerp
              promote-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
