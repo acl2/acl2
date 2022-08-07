@@ -134,7 +134,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-arrays ((type typep))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate the core model of arrays of an integer type."
   :long
@@ -386,8 +386,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-arrays-indices ((etype typep) (itype typep))
-  :guard (and (type-integerp etype)
-              (type-integerp itype))
+  :guard (and (type-nonchar-integerp etype)
+              (type-nonchar-integerp itype))
   :returns (event pseudo-event-formp)
   :short "Event to generate the part of the model of arrays of an integer type
           that involves indices of an integer type."
@@ -495,8 +495,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-arrays-loop-inner ((etype typep) (itypes type-listp))
-  :guard (and (type-integerp etype)
-              (type-integer-listp itypes))
+  :guard (and (type-nonchar-integerp etype)
+              (type-nonchar-integer-listp itypes))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the array operations that involve indices,
           for a given array element type."
@@ -512,8 +512,8 @@
 
 (define atc-def-integer-arrays-loop-outer ((etypes type-listp)
                                            (itypes type-listp))
-  :guard (and (type-integer-listp etypes)
-              (type-integer-listp itypes))
+  :guard (and (type-nonchar-integer-listp etypes)
+              (type-nonchar-integer-listp itypes))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the model of arrays
           for the given array element types."

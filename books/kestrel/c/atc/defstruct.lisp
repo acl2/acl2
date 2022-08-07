@@ -985,7 +985,7 @@
                                           (struct-tag-fix symbolp)
                                           (name identp)
                                           (type typep))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (mv (event pseudo-event-formp)
                (reader symbolp)
                (writer symbolp)
@@ -1070,7 +1070,7 @@
                                         (name identp)
                                         (type typep)
                                         (size posp))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (mv (event pseudo-event-formp)
                (checkers symbol-listp)
                (readers symbol-listp)
@@ -1222,7 +1222,7 @@
             more-checkers
             more-reader-return-thms
             more-writer-return-thms)
-        (defstruct-gen-array-member-ops-aux *integer-nonbool-nonchar-types*
+        (defstruct-gen-array-member-ops-aux *nonchar-integer-types**
           struct-tag struct-tag-p name elem-typep index-okp reader writer))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event
@@ -1241,7 +1241,7 @@
                                                (index-okp symbolp)
                                                (reader symbolp)
                                                (writer symbolp))
-     :guard (type-integer-listp index-types)
+     :guard (type-nonchar-integer-listp index-types)
      :returns (mv (more-events pseudo-event-form-listp)
                   (more-readers symbol-listp)
                   (more-writers symbol-listp)
@@ -1329,7 +1329,7 @@
      but we will extend this to integer array members."))
   (b* ((name (member-type->name member))
        (type (member-type->type member))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((mv event
                   reader
                   writer
@@ -1349,7 +1349,7 @@
         (raise "Internal error: member type ~x0." type)
         (mv '(_) (make-defstruct-member-info :memtype member)))
        (elem-type (type-array->of type))
-       ((unless (type-integerp elem-type))
+       ((unless (type-nonchar-integerp elem-type))
         (raise "Internal error: member type ~x0." type)
         (mv '(_) (make-defstruct-member-info :memtype member)))
        (size (type-array->size type))

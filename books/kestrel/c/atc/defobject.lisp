@@ -447,7 +447,7 @@
     "These are the recognizer, initializer, and table event.
      They are put into one @(tsee progn) event."))
   (b* (((unless (and (type-case type :array)
-                     (type-integerp (type-array->of type))))
+                     (type-nonchar-integerp (type-array->of type))))
         (raise "Internal error: not integer array type ~x0." type)
         '(_))
        (fixtype (integer-type-to-fixtype (type-array->of type)))

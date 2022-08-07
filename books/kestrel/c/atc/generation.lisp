@@ -781,6 +781,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-objinfo-alist-to-recognizers
+  ((prec-objs atc-string-objinfo-alistp))
+  :returns (recognizers symbol-listp)
+  :short "Project the recognizers
+          out of an external object information alist."
+  (b* (((when (endp prec-objs)) nil)
+       (info (cdar prec-objs))
+       (recognizer (defobject-info->recognizer (atc-obj-info->defobject info)))
+       (more-recognizers
+        (atc-string-objinfo-alist-to-recognizers (cdr prec-objs))))
+    (cons recognizer more-recognizers)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-type-to-recognizer ((type typep) (wrld plist-worldp))
   :returns (recognizer symbolp)
   :short "ACL2 recognizer corresponding to a C type."
@@ -3006,7 +3020,7 @@
                               val var vars init-affect))
                    ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((er ?val :iferr irr)
+                   ((er & :iferr irr)
                     (atc-ensure-formals-not-lost vars
                                                  affect
                                                  typed-formals
@@ -3085,7 +3099,7 @@
                               val var vars rhs-affect))
                    ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((er ?val :iferr irr)
+                   ((er & :iferr irr)
                     (atc-ensure-formals-not-lost vars
                                                  affect
                                                  typed-formals
@@ -3156,7 +3170,7 @@
                         fn val))
              ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((er ? :iferr irr)
+             ((er & :iferr irr)
               (atc-ensure-formals-not-lost vars
                                            affect
                                            typed-formals
@@ -3580,7 +3594,7 @@
                         fn val))
              ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((er ? :iferr irr)
+             ((er & :iferr irr)
               (atc-ensure-formals-not-lost (list var)
                                            affect
                                            typed-formals
@@ -4225,6 +4239,7 @@
                                (typed-formals atc-symbol-type-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
                                (prec-tags atc-string-taginfo-alistp)
+                               (prec-objs atc-string-objinfo-alistp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
@@ -4248,7 +4263,7 @@
      "Calls of @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
       are known to return C values.")
     (xdoc::li
-     "Calls of arrays and structure readers and writers
+     "Calls of array and structure readers and writers
       are known to return C values.")
     (xdoc::li
      "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
@@ -4266,7 +4281,7 @@
     (xdoc::li
      "An @(tsee mv) returns C values,
       because either they are parameters or bound variables,
-      or terms that recursively return C values
+      or they are terms that recursively return C values
       (the latter case is for non-recursive functions
       that return a non-@('void') result
       and also affect arrays and structures)."))
@@ -4276,8 +4291,14 @@
      the definition of @('fn'),
      the return type theorems of @(tsee sint-dec-const) and related functions,
      the return type theorems for array and structure readers and writers,
-     and the theorems about the preceding functions;
-     we also add a @(':use') hint for the guard theorem of @('fn').
+     and the theorems about the preceding functions.
+     We also include the definitions of the recognizers
+     of the external objects that precede @('fn'),
+     which certainly include any external object used in @('fn'):
+     this is needed if @('fn') returns the external object,
+     because the guard uses its recognizer,
+     which implies but differs from a type predicate.
+     We also add a @(':use') hint for the guard theorem of @('fn').
      The theorems about structure readers and writers
      are taken from the alist of the preceding structure tags.")
    (xdoc::p
@@ -4313,7 +4334,7 @@
      Then we operate on the resulting alist,
      which forms all the results of the function
      with their names (and @('nil') for the result, if present).
-     The alist is never empty (an ACL2 function must always return something);
+     The alist is never empty (an ACL2 function must always return something).
      If the alist is a singleton,
      we generate assertions about the function call.
      If the list has multiple elements,
@@ -4338,8 +4359,7 @@
      Without this, some proofs fail with a subgoal saying that
      a function result is @('nil'), which is false.
      This seems to happen only with functions returning multiple results,
-     where the results in question have the form @('(mv-nth ...)');
-     perhaps single results are taken care by ACL2's tau system.
+     where the results in question have the form @('(mv-nth ...)').
      So we generate these non-@('nil') theorems only for multiple results.
      These theorems have to be rewrite rules:
      with type prescription rules,
@@ -4397,6 +4417,7 @@
                   *atc-array-length-write-rules*
                   ',(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
                   ',(atc-string-taginfo-alist-to-writer-return-thms prec-tags)
+                  ',(atc-string-objinfo-alist-to-recognizers prec-objs)
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
@@ -4488,7 +4509,7 @@
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
                 (reftype (type-pointer->to type))
-                ((unless (type-integerp reftype)) nil)
+                ((unless (type-nonchar-integerp reftype)) nil)
                 (reftype-array-length (pack (integer-type-to-fixtype reftype)
                                             '-array-length)))
              (list `(equal (,reftype-array-length ,theresult)
@@ -5366,7 +5387,7 @@
          (raise "Internal error: ~
                  the function ~x0 returns void and affects no variables."
                 fn)))
-       ((unless (or (type-integerp type)
+       ((unless (or (type-nonchar-integerp type)
                     (type-case type :void)))
         (acl2::value
          (raise "Internal error: ~
@@ -5405,6 +5426,7 @@
                                          typed-formals
                                          prec-fns
                                          prec-tags
+                                         prec-objs
                                          names-to-avoid
                                          wrld))
                  ((mv fn-correct-local-events
@@ -6437,6 +6459,7 @@
                                          typed-formals
                                          prec-fns
                                          prec-tags
+                                         prec-objs
                                          names-to-avoid
                                          wrld))
                  (loop-test (stmt-while->test loop-stmt))
@@ -6596,7 +6619,7 @@
      to calls of the readers.
      The generation of these theorems relies on the fact that
      the order of the readers and the checkers matches the order of
-     the types in @(tsee *integer-nonbool-nonchar-types*).
+     the types in @(tsee *nonchar-integer-types**).
      Note that the @(tsee defstruct-member-info)
      contains 11 readers and 11 checkers,
      where the first reader and checker operate on ACL2 integers,
@@ -6608,7 +6631,7 @@
        (type (member-type->type memtype))
        (readers (defstruct-member-info->readers meminfo))
        (checkers (defstruct-member-info->checkers meminfo))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((unless (and (consp readers)
                            (endp (cdr readers))))
               (prog2$
@@ -6659,7 +6682,7 @@
          (raise "Internal error: member type ~x0." type)
          (mv nil nil nil)))
        (elemtype (type-array->of type))
-       ((unless (type-integerp elemtype))
+       ((unless (type-nonchar-integerp elemtype))
         (prog2$
          (raise "Internal error: array member element type ~x0." elemtype)
          (mv nil nil nil))))
@@ -6668,7 +6691,7 @@
                                       fixer-recognizer-thm
                                       memname
                                       elemtype
-                                      *integer-nonbool-nonchar-types*
+                                      *nonchar-integer-types**
                                       (car readers)
                                       (car checkers)
                                       (cdr readers)
@@ -6689,8 +6712,8 @@
                                              (checkers symbol-listp)
                                              (names-to-avoid symbol-listp)
                                              (wrld plist-worldp))
-     :guard (and (type-integerp elemtype)
-                 (type-integer-listp indextypes))
+     :guard (and (type-nonchar-integerp elemtype)
+                 (type-nonchar-integer-listp indextypes))
      :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                   (member-read-thms "A @(tsee symbol-listp).")
                   (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -6870,7 +6893,7 @@
      to calls of the writers.
      The generation of these theorems relies on the fact that
      the order of the writers and the checkers matches the order of
-     the types in @(tsee *integer-nonbool-nonchar-types*).
+     the types in @(tsee *nonchar-integer-types**).
      Note that the @(tsee defstruct-member-info)
      contains 11 writers and 11 checkers,
      where the first writer and checker operate on ACL2 integers,
@@ -6884,7 +6907,7 @@
        (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
        (writer-return-thm (car writer-return-thms))
        (checkers (defstruct-member-info->checkers meminfo))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((unless (and (consp writers)
                            (endp (cdr writers))))
               (prog2$
@@ -6995,7 +7018,7 @@
          (raise "Internal error: member type ~x0." type)
          (mv nil nil nil)))
        (elemtype (type-array->of type))
-       ((unless (type-integerp elemtype))
+       ((unless (type-nonchar-integerp elemtype))
         (prog2$
          (raise "Internal error: array member element type ~x0." elemtype)
          (mv nil nil nil))))
@@ -7004,7 +7027,7 @@
                                        fixer-recognizer-thm
                                        memname
                                        elemtype
-                                       *integer-nonbool-nonchar-types*
+                                       *nonchar-integer-types**
                                        (car writers)
                                        (car checkers)
                                        (cdr writers)
@@ -7031,8 +7054,8 @@
                                               (type-of-value-thm symbolp)
                                               (names-to-avoid symbol-listp)
                                               (wrld plist-worldp))
-     :guard (and (type-integerp elemtype)
-                 (type-integer-listp indextypes))
+     :guard (and (type-nonchar-integerp elemtype)
+                 (type-nonchar-integer-listp indextypes))
      :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                   (member-write-thms "A @(tsee symbol-listp).")
                   (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -7702,10 +7725,10 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er ?val) (atc-gen-file ',tunit
-                                        ,output-file
-                                        ',pretty-printing
-                                        state)))
+          (b* (((er &) (atc-gen-file ',tunit
+                                     ,output-file
+                                     ',pretty-printing
+                                     state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event

@@ -434,13 +434,13 @@
              type-signed-integerp
              type-unsigned-integerp))
 
-  (defrule type-integer-nonbool-nonchar-p-of-type-of-value
-    (equal (type-integer-nonbool-nonchar-p (type-of-value val))
+  (defrule type-nonchar-integerp-of-type-of-value
+    (equal (type-nonchar-integerp (type-of-value val))
            (value-integerp val))
     :enable (value-integerp
              value-signed-integerp
              value-unsigned-integerp
-             type-integer-nonbool-nonchar-p)))
+             type-nonchar-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
