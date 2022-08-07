@@ -216,7 +216,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-1 ((type1 typep))
-  :guard (type-integerp type1)
+  :guard (type-nonchar-integerp type1)
   :returns (event pseudo-event-formp)
   :short "Event to generate the ACL2 models of
           the C integer operations that involve one integer type."
@@ -506,7 +506,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-1-loop ((types type-listp))
-  :guard (type-integer-listp types)
+  :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of the C integer operations
           that involve each one integer type from a list."
@@ -536,7 +536,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-2 ((type1 typep) (type2 typep))
-  :guard (and (type-integerp type1) (type-integerp type2))
+  :guard (and (type-nonchar-integerp type1)
+              (type-nonchar-integerp type2))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp)))
   :returns (event pseudo-event-formp)
   :short "Event to generate the ACL2 models of
@@ -1142,7 +1143,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-2-loop-same ((types type-listp))
-  :guard (type-integer-listp types)
+  :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of
           the C integer operations that involve
@@ -1155,8 +1156,8 @@
 
 (define atc-def-integer-operations-2-loop-inner ((type typep)
                                                  (types type-listp))
-  :guard (and (type-integerp type)
-              (type-integer-listp types))
+  :guard (and (type-nonchar-integerp type)
+              (type-nonchar-integer-listp types))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of
           the C integer operations that involve
@@ -1181,8 +1182,8 @@
 
 (define atc-def-integer-operations-2-loop-outer ((types type-listp)
                                                  (types1 type-listp))
-  :guard (and (type-integer-listp types)
-              (type-integer-listp types1))
+  :guard (and (type-nonchar-integer-listp types)
+              (type-nonchar-integer-listp types1))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of
           the C integer operations that involve

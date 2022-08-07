@@ -171,8 +171,9 @@
        in case proof generation is (temporarily) broken.")
      (xdoc::p
       "Currently this must be @('nil')
-       if the targets include @(tsee defobject) names.
-       Proof generation for external objects will be supported soon."))
+       if the targets include @(tsee defobject) names
+       and if some target functions write to those.
+       Proof generation for writing external objects will be supported soon."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
