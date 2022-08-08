@@ -50,6 +50,7 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/hints" :dir :system)
+(include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/htclient/top" :dir :system)
 (include-book "kestrel/json-parser/parse-json" :dir :system)
@@ -233,7 +234,7 @@
   `(mv-let (erp provedp state)
      (prove$ ,@args)
      (if erp
-         (prog2$ (cw "Syntax error in prove$ call (made by ~x0)." ,ctx)
+         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ,ctx)
                  (mv nil state))
        (mv provedp state))))
 
@@ -243,32 +244,34 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
            )
-  (b* (((mv erp state) (submit-event-helper include-book-form nil nil state))
-       ((when erp) (er hard? 'try-add-library "Event failed: ~x0." include-book-form) (mv erp nil state))
-       ;; Now see whether we can prove the theorem using the new include-book:
-       ;; ((mv erp state) (submit-event-helper
-       ;;                  (make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg)
-       ;;                  t nil state))
-       ((mv provedp state) (prove$-checked 'try-add-library
-                                           theorem-body
-                                           :hints theorem-hints
-                                           :otf-flg theorem-otf-flg))
-       (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%")))
-       ;; Undo the include-book
-       ;; ((mv erp & state)
-       ;;  (ubt!-ubu!-fn ':ubt ':x state)
-       ;;  )
-       (state (submit-event-quiet '(u) state))
-       ((when erp) (er hard? 'try-add-library "Failed to undo include-book.") (mv erp nil state))
-       )
-    (mv nil provedp state)))
+  (revert-world ;; Ensure the include-book gets undone
+   (b* (        ;; Try to include the recommended book:
+        ((mv erp state) (submit-event-helper include-book-form nil nil state))
+        ((when erp) (er hard? 'try-add-library "Event failed: ~x0." include-book-form) (mv erp nil state))
+        ;; Now see whether we can prove the theorem using the new include-book:
+        ;; ((mv erp ;todo: how to distinguish real errors?
+        ;;      state) (submit-event-helper
+        ;;                  `(encapsulate ()
+        ;;                     (local ,include-book-form)
+        ;;                     ,(make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg))
+        ;;                  t nil state))
+        ;; (provedp (not erp))
+        ((mv provedp state) (prove$-checked 'try-add-library
+                                            theorem-body
+                                            :hints theorem-hints
+                                            :otf-flg theorem-otf-flg))
+        (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
+     (mv nil provedp state))))
 
 ;; Returns (mv erp successp state).
-;; TODO: Don't try a hyp that is already present
+;; TODO: Don't try a hyp that is already present, or contradicts ones already present
 (defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (
+  (b* ((translatablep (translatable-termp hyp (w state)))
+       ((when (not translatablep))
+        (cw "FAIL (hyp not translatable: ~x0)~%" hyp) ;; TTODO: Include any necessary books first
+        (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
        ;;                  ;; TODO: Add the hyp more nicely:
@@ -283,10 +286,16 @@
 
 ;; Returns (mv erp successp state).
 ;; TODO: Don't enable if already enabled.
-(defun try-add-enable-hint (rule theorem-name theorem-body theorem-hints theorem-otf-flg state)
+(defun try-add-enable-hint (rule
+                            theorem-name ; can be the name of a defun, for use-lemma
+                            theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (;; Now see whether we can prove the theorem using the new hyp:
+  (b* (((when (not (or (getpropc rule 'unnormalized-body nil (w state))
+                       (getpropc rule 'theorem nil (w state)))))
+        (cw "FAIL (unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
+        (mv nil nil state))
+       ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
        ;;                  (make-thm-to-attempt theorem-body
        ;;                                       ;; todo: ensure this is nice:
@@ -306,7 +315,10 @@
 (defun try-add-disable-hint (rule theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (
+  (b* (((when (not (or (getpropc rule 'unnormalized-body nil (w state))
+                       (getpropc rule 'theorem nil (w state)))))
+        (cw "FAIL (Unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
+        (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
        ;;                  (make-thm-to-attempt theorem-body
@@ -327,7 +339,10 @@
 (defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (
+  (b* (((when (not (or (getpropc item 'unnormalized-body nil (w state))
+                       (getpropc item 'theorem nil (w state)))))
+        (cw "FAIL (unknown name: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
        ;;                  (make-thm-to-attempt theorem-body
@@ -438,7 +453,7 @@
        ((when erp)
         (er hard? 'advice-fn "Error parsing recommendations.")
         (mv erp nil state))
-       (- (cw "~%Parsed recs: ~X01" parsed-recommendations nil))
+       ;; (- (cw "~%Parsed recs: ~X01" parsed-recommendations nil))
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
        ((mv name body hints otf-flg)
         (if (eq 'thm (car most-recent-failed-theorem))
