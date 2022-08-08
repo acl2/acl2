@@ -1128,9 +1128,7 @@
                        (scope-list-fix scopes)))
        :enable (read-auto-var-aux
                 update-var-aux
-                omap::update-of-cdr-of-in-when-in)
-       :prep-lemmas
-       ())
+                omap::update-of-cdr-of-in-when-in))
      (defruled update-var-of-read-var-same-lemma
        (implies (and (compustatep compst)
                      (> (compustate-frames-number compst) 0)

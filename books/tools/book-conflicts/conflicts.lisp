@@ -1293,7 +1293,9 @@ add: (z<-y)
 	 (pseudo-conflict (cdr set) from))))
 |#
 
-(include-book "str/strtok" :dir :system)
+; Matt K. mod, 8/6/2022: Apparently this book has been moved.
+; (include-book "str/strtok" :dir :system)
+(include-book "std/strings/strtok" :dir :system)
 
 ;; If any other entry is in your from set,
 
