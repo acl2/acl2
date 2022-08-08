@@ -23,7 +23,10 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "numeric-lists"))
 
-(local (in-theory (disable member-equal)))
+(local (in-theory (disable member-equal
+                           consp-of-dargs-when-dag-exprp-iff ; why?
+                           consp-of-cdr-of-dargs-when-dag-exprp-iff ; why?
+                           )))
 
  ;can we deprecate this?  or split for var terms and all others - could just add term to the dag and use the main routine
 ;do we need both this and the version for a nodenum?
