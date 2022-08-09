@@ -453,6 +453,25 @@
     new-compst)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var-autop ((var identp) (compst compustatep))
+  :guard (> (compustate-frames-number compst) 0)
+  :returns (yes/no booleanp)
+  :short "Check if a variable is found in automatic storage."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This checks whether the variable is in the scopes of the top frame.
+     Thus, it only looks in the currently accessible (by variable names)
+     automatic storage; it does not look in other frames.")
+   (xdoc::p
+    "This predicate serves to establish, when negated,
+     that a variable is found in static storage, and not in automatic storage.
+     Rules for this process are given later."))
+  (var-in-scopes-p var (frame->scopes (top-frame compst)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-push-frame-rules
@@ -846,24 +865,43 @@
   (xdoc::topstring
    (xdoc::p
     "The theorems below about @(tsee read-var) are a bit different
-     because @(tsee read-var) does not return a state, but a value instead.
-     The first theorem turns @(tsee read-var) into @(tsee read-static-var)
+     because @(tsee read-var) does not return a state, but a value instead.")
+   (xdoc::p
+    "e first theorem turns @(tsee read-var) into @(tsee read-static-var)
      when we encounter @(tsee add-frame):
      since @(tsee add-frame) adds no variables in automatic storage,
-     the variable must be in static storage.
-     The second theorem skips over @(tsee enter-scope).
-     The third theorem
+     the variable must be in static storage.")
+   (xdoc::p
+    "The second theorem skips over @(tsee enter-scope).")
+   (xdoc::p
+    "The third theorem
      either returns the value of the encountered variable or skips over it,
-     based on whether the names coincide or not.
-     There is no theorem for @(tsee add-frame) because this situation
-     never happens during the symbolic execution.
-     The fourth theorem serves for variables read in loops
+     based on whether the names coincide or not.")
+   (xdoc::p
+    "The fourth theorem serves for variables read in loops
      that are declared outside the scope of the loop,
      i.e. that are represented as @(tsee update-var)s:
      if the two variables are the same, the value is returned;
      otherwise, we skip over the @(tsee update-var)
-     in search for the variable.
-     The fifth theorem serves to move past object updates."))
+     in search for the variable.")
+   (xdoc::p
+    "The fifth and sixth theorem describe the effect of @(tsee read-var)
+     when it encounters @(tsee update-static-var),
+     which happens with C loops
+     (not with C functions, because an @(tsee add-frame)
+     would have been encountered first,
+     turning @(tsee read-var) into @(tsee read-static-var)).
+     If the variable names differ, we skip over the @(tsee update-static-var).
+     If the variable names are the same,
+     the two functions cancel and we return the value,
+     but only if the variable is not found in automatic storage.")
+   (xdoc::p
+    "The seventh theorem serves to move past object updates.")
+   (xdoc::p
+    "The eight theorem turns @(tsee read-var) into @(tsee read-static-var)
+     when the variable is not found in automatic storage.
+     This is used in the proofs for loops,
+     which do not use the rule @('read-var-of-add-frame')."))
 
   (defruled read-var-of-add-frame
     (equal (read-var var (add-frame fun compst))
@@ -891,12 +929,11 @@
              compustate-frames-number))
 
   (defruled read-var-of-add-var
-    (implies (> (compustate-frames-number compst) 0)
-             (equal (read-var var (add-var var2 val compst))
-                    (if (equal (ident-fix var)
-                               (ident-fix var2))
-                        (value-fix val)
-                      (read-var var compst))))
+    (equal (read-var var (add-var var2 val compst))
+           (if (equal (ident-fix var)
+                      (ident-fix var2))
+               (value-fix val)
+             (read-var var compst)))
     :enable (read-var
              read-auto-var
              read-auto-var-aux
@@ -908,12 +945,11 @@
              top-frame))
 
   (defruled read-var-of-update-var
-    (implies (> (compustate-frames-number compst) 0)
-             (equal (read-var var (update-var var2 val2 compst))
-                    (if (equal (ident-fix var)
-                               (ident-fix var2))
-                        (value-fix val2)
-                      (read-var var compst))))
+    (equal (read-var var (update-var var2 val2 compst))
+           (if (equal (ident-fix var)
+                      (ident-fix var2))
+               (value-fix val2)
+             (read-var var compst)))
     :enable (read-var
              read-auto-var
              read-static-var
@@ -922,7 +958,8 @@
              pop-frame
              top-frame
              compustate-frames-number
-             var-in-scopes-p-when-read-auto-var-aux)
+             var-in-scopes-p-when-read-auto-var-aux
+             var-in-scopes-p)
     :cases ((var-in-scopes-p var
                              (frame->scopes (car (compustate->frames compst)))))
     :prep-lemmas
@@ -946,7 +983,7 @@
                 read-auto-var-aux
                 update-var-aux))))
 
-  (defruled read-var-of-update-static-var
+  (defruled read-var-of-update-static-var-different
     (implies (not (equal (ident-fix var)
                          (ident-fix var2)))
              (equal (read-var var (update-static-var var2 val compst))
@@ -956,6 +993,18 @@
              read-auto-var
              update-static-var
              top-frame))
+
+  (defruled read-var-of-update-static-var-same
+    (implies (not (var-autop var compst))
+             (equal (read-var var (update-static-var var val compst))
+                    (value-fix val)))
+    :enable (read-var
+             read-auto-var
+             read-static-var
+             var-autop
+             update-static-var
+             top-frame
+             var-in-scopes-p-when-valuep-of-read-auto-var-aux))
 
   (defruled read-var-of-update-object
     (implies (> (compustate-frames-number compst) 0)
@@ -968,13 +1017,24 @@
              top-frame
              compustate-frames-number))
 
+  (defruled read-var-to-read-static-var
+    (implies (not (var-autop var compst))
+             (equal (read-var var compst)
+                    (read-static-var var compst)))
+    :enable (var-autop
+             read-var
+             read-auto-var
+             var-in-scopes-p-when-read-auto-var-aux))
+
   (defval *atc-read-var-rules*
     '(read-var-of-add-frame
       read-var-of-enter-scope
       read-var-of-add-var
       read-var-of-update-var
-      read-var-of-update-static-var
-      read-var-of-update-object)))
+      read-var-of-update-static-var-different
+      read-var-of-update-static-var-same
+      read-var-of-update-object
+      read-var-to-read-static-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1849,6 +1909,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-var-autop-rules
+  :short "Rules about @(tsee var-autop)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These serve to discharge the @(tsee var-autop) hypothesis
+     in "
+    (xdoc::seetopic "atc-read-var-rules"
+                    "rule @('read-var-of-update-static-var-same')")
+    "."))
+
+  (defruled var-autop-of-add-frame
+    (not (var-autop var (add-frame fun compst)))
+    :enable (var-autop add-frame var-in-scopes-p))
+
+  (defruled var-autop-of-enter-scope
+    (equal (var-autop var (enter-scope compst))
+           (var-autop var compst))
+    :enable (var-autop enter-scope var-in-scopes-p))
+
+  (defruled var-autop-of-add-var
+    (equal (var-autop var (add-var var2 val compst))
+           (or (equal (ident-fix var)
+                      (ident-fix var2))
+               (var-autop var compst)))
+    :enable (var-autop add-var var-in-scopes-p))
+
+  (defruled var-autop-of-update-var
+    (equal (var-autop var (update-var var2 val compst))
+           (var-autop var compst))
+    :enable (var-autop
+             update-var
+             top-frame
+             push-frame)
+    :prep-lemmas
+    ((defrule lemma
+       (equal (var-in-scopes-p var (update-var-aux var2 val scopes))
+              (var-in-scopes-p var scopes))
+       :enable (var-in-scopes-p update-var-aux))))
+
+  (defruled var-autop-of-update-static-var
+    (equal (var-autop var (update-static-var var2 val compst))
+           (var-autop var compst))
+    :enable (var-autop update-static-var top-frame))
+
+  (defruled var-autop-of-update-object
+    (equal (var-autop var (update-object objdes obj compst))
+           (var-autop var compst))
+    :enable (var-autop update-object top-frame))
+
+  (defval *atc-var-autop-rules*
+    '(var-autop-of-add-frame
+      var-autop-of-enter-scope
+      var-autop-of-add-var
+      var-autop-of-update-var
+      var-autop-of-update-static-var
+      var-autop-of-update-object)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-compustate-frames-number-rules
   :short "Rules about @(tsee compustate-frames-number)."
   :long
@@ -1927,4 +2047,5 @@
           *atc-read-object-rules*
           *atc-update-object-rules*
           *atc-update-static-var-rules*
+          *atc-var-autop-rules*
           *atc-compustate-frames-number-rules*))
