@@ -1632,6 +1632,11 @@
              pop-frame
              top-frame))
 
+  (defruled update-object-of-update-static-var
+    (equal (update-object objdes obj (update-static-var var val compst))
+           (update-static-var var val (update-object objdes obj compst)))
+    :enable (update-object update-static-var))
+
   (defruled update-object-of-update-object-same
     (equal (update-object objdes obj (update-object objdes obj2 compst))
            (update-object objdes obj compst))
@@ -1696,6 +1701,7 @@
       update-object-of-enter-scope
       update-object-of-add-var
       update-object-of-update-var
+      update-object-of-update-static-var
       update-object-of-update-object-same
       update-object-of-update-object-less-symbol
       update-object-of-update-object-less-ident
