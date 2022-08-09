@@ -1830,6 +1830,15 @@
         an array subscripting expression;
         in that case, the index expression must be also pure."))
      (xdoc::p
+      "If the left-hand side is
+       an array subscripting expression where the array is a variable,
+       we treat the content of the variable similarly to @(tsee exec-ident):
+       if it is an array value, we return a pointer to it instead;
+       otherwise, we return the value unchanged.
+       The motivation for this is explained in @(tsee exec-ident);
+       it is due to our curently simplified (but correct, in our C subset)
+       treatment of arrays and pointer in our C dynamic semantics.")
+     (xdoc::p
       "We ensure that if the right-hand side expression is a function call,
        it returns a value (i.e. it is not @('void')).")
      (xdoc::p
@@ -1860,8 +1869,13 @@
               (sub (expr-arrsub->sub left)))
            (cond ((expr-case arr :ident)
                   (b* ((var (expr-ident->get arr))
-                       (ptr (read-var var compst))
-                       ((when (errorp ptr)) ptr)
+                       (val (read-var var compst))
+                       ((when (errorp val)) val)
+                       (ptr (if (value-case val :array)
+                                (make-value-pointer
+                                 :designator? (objdesign-variable var)
+                                 :reftype (value-array->elemtype val))
+                              val))
                        ((unless (value-case ptr :pointer))
                         (error (list :mistype-array
                                      :required :pointer

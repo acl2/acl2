@@ -2403,7 +2403,7 @@
 
 (defsection atc-exec-expr-asg-arrsub-rules-generation
   :short "Code to generate the rules for executing
-          assignments to array subscript expressions."
+          assignments to array subscripting expressions."
 
   (define atc-exec-expr-asg-arrsub-rules-gen ((atype typep) (itype typep))
     :guard (and (type-nonchar-integerp atype)
@@ -2438,9 +2438,15 @@
                  (equal arr (expr-arrsub->arr left))
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
+                 (equal var (expr-ident->get arr))
                  (not (zp limit))
-                 (equal ptr (read-var (expr-ident->get arr) compst))
-                 (valuep ptr)
+                 (equal arr-val (read-var var compst))
+                 (valuep arr-val)
+                 (equal ptr
+                        (if (value-case arr-val :array)
+                            (value-pointer (objdesign-variable var)
+                                           (value-array->elemtype arr-val))
+                          arr-val))
                  (value-case ptr :pointer)
                  (not (value-pointer-nullp ptr))
                  (equal (value-pointer->reftype ptr)
