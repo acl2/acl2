@@ -36,8 +36,6 @@
 ;; - (maybe) try to help clean up hyps (e.g., replacing a subsumed hyp when add-hyp strengthens one, maybe using tau)
 ;; - what else?
 
-;; TODO: Automatically try some of the pieces of advice
-
 ;; TODO: Incorporate cgen to try to see if the theorem is valid or not.
 
 ;; TODO: Why does getting advice take ~3 seconds?
