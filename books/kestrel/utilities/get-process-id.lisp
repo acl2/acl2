@@ -17,12 +17,6 @@
 
 (local (in-theory (disable boundp-global get-global put-global state-p1 w)))
 
-;move
-(defthm w-of-mv-nth-2-of-getenv$
-  (equal (w (mv-nth 2 (getenv$ str state)))
-         (w state))
-  :hints (("Goal" :in-theory (e/d (getenv$) (update-acl2-oracle)))))
-
 ; This is a stronger version of the built-in theorem
 ; UPDATE-ACL2-ORACLE-PRESERVES-STATE-P1. See also
 ; books/system/update-state.lisp.

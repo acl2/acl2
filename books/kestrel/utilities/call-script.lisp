@@ -14,21 +14,13 @@
 (local (include-book "state"))
 (local (include-book "read-acl2-oracle"))
 (local (include-book "w"))
+(local (include-book "getenv-dollar"))
 
 (defttag call-script)
-
-;move
-(in-theory (disable getenv$))
 
 (in-theory (disable mv-nth))
 
 (local (in-theory (disable state-p1)))
-
-;move
-(defthm state-p1-of-mv-nth-2-of-getenv$
-  (implies (state-p1 state)
-           (state-p1 (mv-nth 2 (getenv$ str state))))
-  :hints (("Goal" :in-theory (enable getenv$))))
 
 (local
  (defthm true-listp-of-acl2-oracle
