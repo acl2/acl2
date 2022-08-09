@@ -21,6 +21,8 @@
 
 (in-theory (disable mv-nth))
 
+(local (in-theory (disable state-p1)))
+
 ;move
 (defthm state-p1-of-mv-nth-2-of-getenv$
   (implies (state-p1 state)
