@@ -4843,7 +4843,8 @@
 (define atc-gen-cfun-final-compustate ((affect symbol-listp)
                                        (typed-formals atc-symbol-type-alistp)
                                        (subst symbol-symbol-alistp)
-                                       (compst-var symbolp))
+                                       (compst-var symbolp)
+                                       (prec-objs atc-string-objinfo-alistp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
           after the execution of a C function."
@@ -4861,7 +4862,8 @@
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
-     a nest of @(tsee write-object) calls.
+     a nest of @(tsee write-object) and @(tsee write-static-var) calls,
+     based on whether the affected object are in the heap or in static storage.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "The parameter @('affect') passed to this code
@@ -4877,7 +4879,11 @@
      each nested @(tsee write-object) call,
      which needs both a pointer and an array or structure;
      we distinguish between arrays and structures
-     via the types of the formals.")
+     via the types of the formals.
+     This is the case for arrays and structures in the heap;
+     for arrays in static storage,
+     we generate a call of @(tsee write-static-var),
+     and there are no pointers involved.")
    (xdoc::p
     "Note that, in the correctness theorem,
      the new array and structure variables are bound to
@@ -4894,12 +4900,21 @@
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
                formal type)))
-    `(write-object (value-pointer->designator ,(cdr (assoc-eq formal subst)))
-                   ,(add-suffix-to-fn formal "-NEW")
-                   ,(atc-gen-cfun-final-compustate (cdr affect)
-                                                   typed-formals
-                                                   subst
-                                                   compst-var)))
+    (if (consp (assoc-equal (symbol-name formal) prec-objs))
+        `(write-static-var (ident ,(symbol-name formal))
+                           ,(add-suffix-to-fn formal "-NEW")
+                           ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                           typed-formals
+                                                           subst
+                                                           compst-var
+                                                           prec-objs))
+      `(write-object (value-pointer->designator ,(cdr (assoc-eq formal subst)))
+                     ,(add-suffix-to-fn formal "-NEW")
+                     ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                     typed-formals
+                                                     subst
+                                                     compst-var
+                                                     prec-objs))))
   :prepwork
   ((defrulel lemma
      (implies (symbol-symbol-alistp x)
@@ -5091,7 +5106,8 @@
         (atc-gen-cfun-final-compustate affect
                                        typed-formals
                                        subst
-                                       compst-var))
+                                       compst-var
+                                       prec-objs))
        (concl `(equal (exec-fun (ident ,(symbol-name fn))
                                 (list ,@exec-fun-args)
                                 ,compst-var
