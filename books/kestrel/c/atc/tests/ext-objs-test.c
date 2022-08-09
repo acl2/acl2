@@ -5,5 +5,8 @@ int main(void) {
   printf("a = %d\n", a);
   int b = g();
   printf("b = %d\n", b);
+  h(2);
+  int a1 = f(2);
+  printf("a1 = %d\n", a1);
   return 0;
 }

@@ -156,11 +156,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |arr| |f| |arr2| |g$loop| |g| :output-file "ext-objs.c")
+(c::atc |arr| |f| |arr2| |g$loop| |g| |h| :output-file "ext-objs.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This will be merged with the one above when proof generation is extended.
-(c::atc |arr| |arr2| |f| |h| |i$loop| |i| |perm|
+(c::atc |arr| |arr2| |f| |i$loop| |i| |perm|
         :output-file "ext-objs-2.c"
         :proofs nil)
