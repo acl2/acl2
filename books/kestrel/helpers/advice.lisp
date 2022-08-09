@@ -412,6 +412,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp nil state).
+;; TODO: Support getting checkpoints from a defun, but then we'd have no body
+;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
+;; below).
 (defun advice-fn (n ; number of recommendations requested
                   verbose
                   server-url
