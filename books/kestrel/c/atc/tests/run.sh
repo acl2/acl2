@@ -36,4 +36,3 @@ set -e
 ./ops-diff-types
 ./structs
 ./ext-objs
-./ext-objs-2
