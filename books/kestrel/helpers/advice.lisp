@@ -282,6 +282,15 @@
        (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
+(defund name-that-can-be-enabled/disabledp (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (or (getpropc name 'unnormalized-body nil wrld)
+      (getpropc name 'theorem nil wrld)
+      (let ((alist (table-alist 'macro-aliases-table wrld)))
+        (and (alistp alist) ; should always be true
+             (assoc-eq name alist)))))
+
 ;; Returns (mv erp successp state).
 ;; TODO: Don't enable if already enabled.
 (defun try-add-enable-hint (rule
@@ -289,8 +298,7 @@
                             theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (or (getpropc rule 'unnormalized-body nil (w state))
-                       (getpropc rule 'theorem nil (w state)))))
+  (b* (((when (not (name-that-can-be-enabled/disabledp rule (w state))))
         (cw "FAIL (unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
@@ -313,8 +321,7 @@
 (defun try-add-disable-hint (rule theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (or (getpropc rule 'unnormalized-body nil (w state))
-                       (getpropc rule 'theorem nil (w state)))))
+  (b* (((when (not (name-that-can-be-enabled/disabledp rule (w state))))
         (cw "FAIL (Unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
