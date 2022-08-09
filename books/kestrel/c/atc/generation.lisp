@@ -5142,6 +5142,7 @@
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
@@ -5158,6 +5159,7 @@
                                ,@member-write-thms
                                ,@type-prescriptions-called
                                ,@type-prescriptions-struct-readers
+                               ,@extobj-recognizers
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm))
@@ -5981,6 +5983,7 @@
         (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
        (member-read-thms
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
@@ -5990,7 +5993,8 @@
                                ,@valuep-thms
                                ,@value-kind-thms
                                ,@struct-reader-return-thms
-                               ,@member-read-thms))
+                               ,@member-read-thms
+                               ,@extobj-recognizers))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@instantiation))
                  :expand :lambdas)))
@@ -6163,6 +6167,7 @@
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
@@ -6178,6 +6183,7 @@
                                ,@member-write-thms
                                ,@type-prescriptions-called
                                ,@type-prescriptions-struct-readers
+                               ,@extobj-recognizers
                                ,@result-thms
                                ,@correct-thms
                                ,@measure-thms))
@@ -6341,6 +6347,7 @@
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (append
@@ -6385,6 +6392,7 @@
                                      ,@correct-thms
                                      ,@measure-thms
                                      ,natp-of-measure-of-fn-thm
+                                     ,@extobj-recognizers
                                      ,correct-test-thm
                                      ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
