@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-output-channel!
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+(local (include-book "open-output-channel"))
+(local (include-book "kestrel/utilities/w" :dir :system))
+
 (in-theory (disable open-output-channel!
                     open-output-channel-p
                     open-output-channel-p1
@@ -17,6 +20,8 @@
 
 ;; Needed because we mention open-output-channel! in the theorems below.
 (defttag file-io!)
+
+(local (in-theory (disable w)))
 
 (defthm symbolp-of-mv-nth-0-of-open-output-channel!
   (symbolp (mv-nth 0 (open-output-channel! file-name typ state)))
@@ -53,3 +58,14 @@
                 (member type *file-types*))
            (state-p (mv-nth 1 (open-output-channel! fname type state))))
   :hints (("Goal" :in-theory (enable state-p))))
+
+(defthm w-of-mv-nth-1-of-open-output-channel!
+  (equal (w (mv-nth 1 (open-output-channel! file-name type state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable open-output-channel!))))
+
+(defthm not-equal-of-mv-nth-0-of-open-output-channel!-and-standard-co
+  (implies (state-p state)
+           (not (equal (mv-nth 0 (open-output-channel! file-name typ state))
+                       *standard-co*)))
+  :hints (("Goal" :in-theory (enable open-output-channel!))))

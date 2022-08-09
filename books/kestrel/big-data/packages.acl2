@@ -1,0 +1,11 @@
+; Portcullis commands for packages.lisp
+;
+; Copyright (C) 2022 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ld "workshops/1999/mu-calculus/book/packages.lsp" :dir :system)

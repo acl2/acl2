@@ -41,7 +41,7 @@
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
-(local (in-theory (disable state-p)))
+(local (in-theory (disable state-p w)))
 
 ;move
 (local
@@ -2265,6 +2265,13 @@
                           counterexamplep
                           state)))
 
+(defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-at-depth
+  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                base-filename
+                                                                print max-conflicts counterexamplep state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-at-depth))))
+
 ;binary search the range [min-depth, max-depth] to try to find a cut depth at which STP says valid
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, or :timedout.
 ;terminates because the difference in depths decreases
@@ -2330,6 +2337,15 @@
                                                   dag-array dag-len dag-parent-array
                                                   base-filename print max-conflicts
                                                   counterexamplep state))))))))
+
+(defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-aux
+  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-aux min-depth max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len
+                                                           dag-parent-array base-filename print max-conflicts counterexamplep state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-aux
+                                     ;; todo:
+                                     prove-node-disjunction-with-stp-at-depth
+                                     ))))
 
 ;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
@@ -2440,6 +2456,18 @@
                 ;todo: prove this can't happen:
                 (mv (er hard? 'prove-node-disjunction-with-stp "Bad result, ~x0, from prove-node-disjunction-with-stp-at-depth." result)
                     state)))))))))
+
+(defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp
+  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp disjuncts
+                                                       dag-array dag-len dag-parent-array
+                                                       base-filename
+                                                       print
+                                                       max-conflicts
+                                                       counterexamplep
+                                                       state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp
+                                     ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

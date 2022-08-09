@@ -35,6 +35,7 @@
 (include-book "../dag-size")
 (include-book "../dag-info")
 (include-book "../prune")
+(include-book "../prune-dag")
 (include-book "../print-levels")
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -130,7 +131,11 @@
          ((when (quotep dag-or-quote))
           (mv (erp-nil) dag-or-quote state))
          (dag dag-or-quote)
-         ;; Prune the DAG:
+         ;; Prune the DAG (TODO: think about these steps):
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-with-contexts dag state))
+         ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep)
          ((mv erp dag state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
                                            dag
@@ -173,6 +178,7 @@
                                     state))
                            (- (cw "~X01" dag nil))
                            (state (set-print-base-radix 10 state))
+                           (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
                            (- (cw ")~%")))
                         state))))
               (repeatedly-run (- steps-left steps-for-this-iteration)

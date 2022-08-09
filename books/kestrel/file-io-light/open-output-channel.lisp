@@ -25,6 +25,8 @@
                     mv-nth ;so that the rules below fire
                     ))
 
+(local (in-theory (disable add-pair ordered-symbol-alistp)))
+
 (defthm symbolp-of-mv-nth-0-of-open-output-channel
   (symbolp (mv-nth 0 (open-output-channel file-name typ state)))
   :hints (("Goal" :in-theory (enable open-output-channel))))
@@ -37,7 +39,8 @@
   :hints (("Goal" :in-theory (enable open-output-channel-p open-output-channel open-output-channel-p1 open-output-channels))))
 
 ;; See the guard of close-output-channel
-(defthm not-member-equal-of--mv-nth-0-of-open-output-channel
+;; todo: slow
+(defthm not-equal-of-mv-nth-0-of-open-output-channel-and-standard-co
   (implies (state-p state)
            (not (equal (mv-nth 0 (open-output-channel file-name typ state))
                        *standard-co*)))
@@ -45,3 +48,8 @@
                                      equal-of-intern-in-package-of-symbol
                                      explode-atom
                                      equal-of-append))))
+
+(defthm w-of-mv-nth-1-of-open-output-channel
+  (equal (w (mv-nth 1 (open-output-channel file-name type state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable open-output-channel))))

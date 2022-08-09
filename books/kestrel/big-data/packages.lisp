@@ -18,6 +18,10 @@
 
 ;; TODO: Why does including this book bring in rev?
 
+;; TODO: Bring in M5 package once modernized
+
+;; See also some packages brought in my packages.acl2
+
 (include-book "acl2s/portcullis" :dir :system)
 (include-book "build/portcullis" :dir :system)
 (include-book "centaur/4v-sexpr/portcullis" :dir :system)

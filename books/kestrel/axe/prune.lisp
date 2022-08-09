@@ -61,16 +61,16 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable lookup-with-default assoc-equal strip-cdrs))))
 
-(defund count-top-level-if-nest-leaves-in-rev-dag (rev-dag
-                                                   alist ; maps nodenums to the number of if-leaves they each represent
-                                                   )
+(defund count-top-level-if-branches-in-rev-dag (rev-dag
+                                                alist ; maps nodenums to the number of if-leaves they each represent
+                                                )
   (declare (xargs :guard (and (weak-dagp rev-dag)
                               (alistp alist)
                               (nat-listp (strip-cdrs alist)))
                   :guard-hints (("Goal" :in-theory (enable consp-of-cdr-of-dargs-when-dag-exprp-iff
                                                            consp-of-dargs-when-dag-exprp-iff)))))
   (if (not (mbt (consp rev-dag)))
-      (er hard? 'count-top-level-if-nest-leaves-in-rev-dag "Empty DAG.")
+      (er hard? 'count-top-level-if-branches-in-rev-dag "Empty DAG.")
     (let* ((entry (first rev-dag))
            (expr (cdr entry))
            (leaf-count (if (and (call-of 'if expr)
@@ -88,15 +88,15 @@
                          )))
       (if (endp (cdr rev-dag)) ; we've reached the top node
           leaf-count
-        (count-top-level-if-nest-leaves-in-rev-dag (cdr rev-dag)
-                                                   (if (< 1 leaf-count)
-                                                       ;; only store counts greater than 1:
-                                                       (acons (car expr) leaf-count alist)
-                                                     alist))))))
+        (count-top-level-if-branches-in-rev-dag (cdr rev-dag)
+                                                (if (< 1 leaf-count)
+                                                    ;; only store counts greater than 1:
+                                                    (acons (car entry) leaf-count alist)
+                                                  alist))))))
 
-(defund count-top-level-if-nest-leaves-in-dag (dag)
+(defund count-top-level-if-branches-in-dag (dag)
   (declare (xargs :guard (pseudo-dagp dag)))
-  (count-top-level-if-nest-leaves-in-rev-dag (reverse-list dag) nil))
+  (count-top-level-if-branches-in-rev-dag (reverse-list dag) nil))
 
 ;; Do not remove: justifies treatment of bool-fix below
 (thm (equal (boolif test x x) (bool-fix x)))

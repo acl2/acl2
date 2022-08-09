@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function princ$.
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "std/io/base" :dir :system)) ;for reasoning support
+(local (include-book "kestrel/utilities/w" :dir :system))
 
 (in-theory (disable princ$))
 
@@ -40,3 +41,8 @@
   :hints (("Goal" :use (:instance state-p1-of-princ$)
            :in-theory (e/d (open-output-channel-p)
                            (state-p1-of-princ$)))))
+
+(defthm w-of-princ$
+  (equal (w (princ$ x channel state))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (princ$) (w update-open-output-channels)))))

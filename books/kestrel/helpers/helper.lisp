@@ -993,7 +993,7 @@
 (defun h-fn (state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (help-with-fn (most-recent-theorem state) ;throws an error if there isn't one, TODO: What if the theorem is in an encapsulate?  Better to look for the checkpoints?
+  (help-with-fn (most-recent-failed-command *theorem-event-types* state) ;throws an error if there isn't one, TODO: What if the theorem is in an encapsulate?  Better to look for the checkpoints?
                 state))
 
 ;; Call this to get help with the most recent thm or defthm attempt.
