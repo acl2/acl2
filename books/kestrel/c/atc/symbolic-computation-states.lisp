@@ -1116,19 +1116,12 @@
                     compst1))
     :use (:instance update-var-of-read-var-same-lemma (compst compst1))
     :prep-lemmas
-    ((defrule omap::update-of-cdr-of-in-when-in
-       (implies (omap::in k m)
-                (equal (omap::update k (cdr (omap::in k m)) m)
-                       m))
-       :induct (omap::in k m)
-       :enable omap::in)
-     (defruled update-var-aux-of-read-auto-var-aux-same
+    ((defruled update-var-aux-of-read-auto-var-aux-same
        (implies (valuep (read-auto-var-aux var scopes))
                 (equal (update-var-aux var (read-auto-var-aux var scopes) scopes)
                        (scope-list-fix scopes)))
        :enable (read-auto-var-aux
-                update-var-aux
-                omap::update-of-cdr-of-in-when-in))
+                update-var-aux))
      (defruled update-var-of-read-var-same-lemma
        (implies (and (compustatep compst)
                      (> (compustate-frames-number compst) 0)
@@ -1525,15 +1518,7 @@
                     compst1))
     :enable (read-object
              update-object
-             objdesign->base-address
-             omap::update-of-cdr-of-in-when-in)
-    :prep-lemmas
-    ((defruled omap::update-of-cdr-of-in-when-in
-       (implies (consp (omap::in k m))
-                (equal (omap::update k (cdr (omap::in k m)) m)
-                       m))
-       :induct (omap::in k m)
-       :enable omap::in)))
+             objdesign->base-address))
 
   (defval *atc-update-object-rules*
     '(update-object-of-add-frame
