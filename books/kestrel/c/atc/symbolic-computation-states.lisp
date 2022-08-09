@@ -759,6 +759,15 @@
                 write-var-aux-okp
                 update-var-aux))))
 
+  (defruled write-var-okp-of-update-static-var
+    (implies (not (equal (ident-fix var)
+                         (ident-fix var2)))
+             (equal (write-var-okp var val (update-static-var var2 val2 compst))
+                    (write-var-okp var val compst)))
+    :enable (write-var-okp
+             update-static-var
+             top-frame))
+
   (defruled write-var-okp-of-update-object
     (equal (write-var-okp var val (update-object objdes obj compst))
            (write-var-okp var val compst))
@@ -824,6 +833,7 @@
       write-var-okp-of-enter-scope
       write-var-okp-of-add-var
       write-var-okp-of-update-var
+      write-var-okp-of-update-static-var
       write-var-okp-of-update-object
       write-var-okp-when-valuep-of-read-var
       (:e typep))))
@@ -936,6 +946,17 @@
                 read-auto-var-aux
                 update-var-aux))))
 
+  (defruled read-var-of-update-static-var
+    (implies (not (equal (ident-fix var)
+                         (ident-fix var2)))
+             (equal (read-var var (update-static-var var2 val compst))
+                    (read-var var compst)))
+    :enable (read-var
+             read-static-var
+             read-auto-var
+             update-static-var
+             top-frame))
+
   (defruled read-var-of-update-object
     (implies (> (compustate-frames-number compst) 0)
              (equal (read-var var (update-object objdes obj compst))
@@ -952,6 +973,7 @@
       read-var-of-enter-scope
       read-var-of-add-var
       read-var-of-update-var
+      read-var-of-update-static-var
       read-var-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1107,6 +1129,14 @@
              pop-frame)
     :disable omap::in-when-in-tail)
 
+  (defruled read-static-var-of-update-static-var
+    (equal (read-static-var var (update-static-var var2 val compst))
+           (if (equal (ident-fix var)
+                      (ident-fix var2))
+               (value-fix val)
+             (read-static-var var compst)))
+    :enable (read-static-var update-static-var))
+
   (defruled read-static-var-of-update-object
     (equal (read-static-var var (update-object objdes val compst))
            (read-static-var var compst))
@@ -1119,6 +1149,7 @@
       read-static-var-of-enter-scope
       read-static-var-of-add-var
       read-static-var-of-update-var
+      read-static-var-of-update-static-var
       read-static-var-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
