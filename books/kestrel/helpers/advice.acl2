@@ -167,4 +167,53 @@
                        *common-lisp-symbols-from-main-lisp-package*))
    '(PC PROGRAM PUSH POP RETURN REVERSE STEP ++)))
 
+;; TODO: Remove (from books/workshops/2002/manolios-kaufmann/support/finite-set-theory/certify.lsp):
+(defpkg "S"
+  (set-difference-equal
+   (union-eq '(PACK
+               ORDINARYP
+               <<
+               <<-IRREFLEXIVITY
+               <<-TRICHOTOMY
+               <<-MUTUAL-EXCLUSION
+               <<-TRANSITIVITY
+               FAST-<<-TRICHOTOMY
+               FAST-<<-MUTUAL-EXCLUSION
+               FAST-<<-TRANSITIVITY
+               FAST-<<-RULES
+               SLOW-<<-RULES
+               <<-RULES)
+             (union-eq *acl2-exports*
+                       *common-lisp-symbols-from-main-lisp-package*))
+   '(union intersection subsetp add-to-set functionp = apply)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Remove (from acl2/books/workshops/2000/ruiz/multiset/examples/newman/newman.acl2):
+
+(defconst *abstract-proofs-exports*
+  '(last-elt r-step direct operator elt1 elt2 r-step-p make-r-step
+	     first-of-proof last-of-proof steps-up steps-down steps-valley
+	     proof-before-valley proof-after-valley inverse-r-step inverse-proof
+	     local-peak-p proof-measure proof-before-peak proof-after-peak
+	     local-peak peak-element))
+
+(defconst *cnf-package-exports*
+  (union-eq *acl2-exports*
+	    (union-eq
+	     *common-lisp-symbols-from-main-lisp-package*
+	     *abstract-proofs-exports*)))
+
+(defpkg "NWM" (cons 'multiset-diff *cnf-package-exports*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Remove (from books/workshops/2002/cowles-flat/support/flat.acl2):
+
+(defpkg "FLAT"
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; cert-flags: ? T :TTAGS :ALL

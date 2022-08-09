@@ -36,8 +36,6 @@
 ;; - (maybe) try to help clean up hyps (e.g., replacing a subsumed hyp when add-hyp strengthens one, maybe using tau)
 ;; - what else?
 
-;; TODO: Automatically try some of the pieces of advice
-
 ;; TODO: Incorporate cgen to try to see if the theorem is valid or not.
 
 ;; TODO: Why does getting advice take ~3 seconds?
@@ -284,6 +282,15 @@
        (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
+(defund name-that-can-be-enabled/disabledp (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (or (getpropc name 'unnormalized-body nil wrld)
+      (getpropc name 'theorem nil wrld)
+      (let ((alist (table-alist 'macro-aliases-table wrld)))
+        (and (alistp alist) ; should always be true
+             (assoc-eq name alist)))))
+
 ;; Returns (mv erp successp state).
 ;; TODO: Don't enable if already enabled.
 (defun try-add-enable-hint (rule
@@ -291,8 +298,7 @@
                             theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (or (getpropc rule 'unnormalized-body nil (w state))
-                       (getpropc rule 'theorem nil (w state)))))
+  (b* (((when (not (name-that-can-be-enabled/disabledp rule (w state))))
         (cw "FAIL (unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
@@ -315,8 +321,7 @@
 (defun try-add-disable-hint (rule theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (or (getpropc rule 'unnormalized-body nil (w state))
-                       (getpropc rule 'theorem nil (w state)))))
+  (b* (((when (not (name-that-can-be-enabled/disabledp rule (w state))))
         (cw "FAIL (Unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
@@ -335,7 +340,7 @@
     (mv nil provedp state)))
 
 ;; Returns (mv erp successp state).
-;; TODO: Don't disable if already disabled.
+;; TODO: Do we need to guess a substitution for the :use hint?
 (defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
@@ -359,6 +364,17 @@
        (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
+;; Returns (mv erp successp state).
+;; TODO: We need more than a symbol
+(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg))
+  (if (symbolp item)
+      (prog2$ (cw "FAIL (need arguments of ~x0 to create :induct hint)~%" item)
+              (mv nil nil state))
+    ;; TODO: Flesh this out when ready:
+    (mv :unsupported-induct-hint nil state)))
+
 ;; Returns (mv erp result-bools state)
 (defun try-recommendations (recs
                             theorem-name ; may be :thm
@@ -373,17 +389,18 @@
       (mv nil (reverse result-bools-acc) state)
     (b* ((rec (first recs))
          (type (car rec))
-         (- (cw "~x0: " rec-num))
-         )
+         (object (cadr rec))
+         (- (cw "~x0: " rec-num)))
       (mv-let (erp successp state)
         (case type
-          (:add-library (try-add-library (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-hyp (try-add-hyp (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-enable-hint (try-add-enable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-disable-hint (try-add-disable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-use-hint (try-add-use-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-enable-hint (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-disable-hint (try-add-disable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:use-lemma (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (t (prog2$ (cw "UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))
         (if erp
@@ -395,6 +412,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp nil state).
+;; TODO: Support getting checkpoints from a defun, but then we'd have no body
+;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
+;; below).
 (defun advice-fn (n ; number of recommendations requested
                   verbose
                   server-url
@@ -411,7 +431,7 @@
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
-       (most-recent-failed-theorem (most-recent-failed-theorem state))
+       (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
        (most-recent-failed-theorem-goal (most-recent-failed-theorem-goal state))
        (untranslated-checkpoints (checkpoint-list-pretty t ; todo: consider non-top
@@ -456,12 +476,12 @@
        ;; (- (cw "~%Parsed recs: ~X01" parsed-recommendations nil))
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
        ((mv name body hints otf-flg)
-        (if (eq 'thm (car most-recent-failed-theorem))
-            (mv :thm
+        (if (member-eq (car most-recent-failed-theorem) '(thm rule))
+            (mv :thm ; no name
                 (cadr most-recent-failed-theorem)
                 (assoc-eq :hints (cddr most-recent-failed-theorem))
                 (assoc-eq :otf-flg (cddr most-recent-failed-theorem)))
-          ;; Must be a defthm:
+          ;; Must be a defthm, etc:
           (mv (cadr most-recent-failed-theorem)
               (caddr most-recent-failed-theorem)
               (assoc-eq :hints (cdddr most-recent-failed-theorem))
