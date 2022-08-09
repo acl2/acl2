@@ -4674,9 +4674,8 @@
      things are more similar to the case in which @('fn') is not recursive.
      The binding is with @(tsee read-static-var), i.e. the same.
      We generate a different hypothesis from all other cases:
-     the hypothesis is that @(tsee read-var) on the variable in question
-     rewrites to @(tsee read-static-var).
-     This amounts to say that the variable is in static storage.
+     the hypothesis is that the variable is not in automatic storage,
+     i.e. that it is found in static storage.
      This is necessary for theorems for C loops,
      because a @(tsee read-var) during execution cannot reach @(tsee add-frame)
      and be turned into @(tsee read-static-var) as done for C functions.
@@ -4734,8 +4733,7 @@
                    (list (cons formal formal-ptr))))
        (hyps (and pointerp
                   (if extobjp
-                      (list `(equal (read-var ,formal-id ,compst-var)
-                                    (read-static-var ,formal-id ,compst-var)))
+                      (list `(not (var-autop ,formal-id ,compst-var)))
                     (list `(valuep ,formal-ptr)
                           `(value-case ,formal-ptr :pointer)
                           `(not (value-pointer-nullp ,formal-ptr))
