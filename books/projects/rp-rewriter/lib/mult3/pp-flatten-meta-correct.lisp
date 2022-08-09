@@ -71,6 +71,161 @@
                  (sum-comm-1
                   sum-comm-2))))
 
+
+
+(local
+ (in-theory (disable floor len)))
+
+(local
+ (in-theory (disable +-IS-SUM
+                     FLOOR2-IF-F2
+                     mod2-is-m2)))
+
+(local
+ (encapsulate
+   nil
+
+   (local
+    (use-arith-5 t))
+
+   (defthm floor-len-is-less-than-len
+     (implies (and (natp len))
+              (<= (floor len 2) len)))
+
+   (defthm natp-len
+     (natp (len x)))
+
+   (defthmd dummy-arith-lemma-1
+     (implies (NOT (CONSP LST))
+              (equal (len lst) 0)))
+
+   (defthmd dummy-arith-lemma-2
+     (implies (and (<= SIZE (LEN LST))
+                   (case-split (consp lst)))
+              (equal (< (LEN (CDR LST)) (+ -1 SIZE)) nil)))))
+
+#|(local
+ (defthm rp-term-listp-cut-list-by-half
+   (implies (and (rp-term-listp lst)
+                 (<= size (len lst)))
+            (and (rp-term-listp (mv-nth 0 (cut-list-by-half lst size)))
+                 (rp-term-listp (mv-nth 1 (cut-list-by-half lst size)))))
+   :hints (("Goal"
+            :do-not-induct t
+            :induct (cut-list-by-half lst size)
+            :in-theory (e/d (rp-term-listp
+                             cut-list-by-half)
+                            ())))))|#
+
+#|(defthm rp-term-listp-merge-sorted-and$-lists
+  (implies (and (rp-term-listp lst1)
+                (rp-term-listp lst2))
+           (rp-term-listp (merge-sorted-and$-lists lst1 lst2)))
+  :hints (("Goal"
+           :induct (merge-sorted-and$-lists lst1 lst2)
+           :in-theory (e/d (merge-sorted-and$-lists) ()))))|#
+
+#|(local
+ (defthm rp-term-listp-sort-and$-list
+   (implies (rp-term-listp lst)
+            (rp-term-listp (sort-and$-list lst len)))
+   :hints (("Goal"
+            :in-theory (e/d (sort-and$-list) ())))))|#
+
+#|(local
+ (defthm rp-term-list-listp-merge-sorted-pp-lists
+   (implies (and (rp-term-list-listp (strip-cdrs lst1))
+                 (rp-term-list-listp (strip-cdrs lst2)))
+            (rp-term-list-listp
+             (strip-cdrs
+              (merge-sorted-pp-lists lst1 lst2))))
+   :hints (("Goal"
+            :induct (merge-sorted-pp-lists lst1 lst2)
+            :in-theory (e/d (merge-sorted-pp-lists) ())))))|#
+
+
+(local
+ (defthm RP-TERM-LIST-LISTP-of-STRIP-CDRS-lemma
+   (implies (RP-TERM-LIST-LISTP (STRIP-CDRS x))
+            (RP-TERM-LISTP (CDR (CADR x))))))
+
+#|(local
+ (defthm rp-term-list-listp-sort-pp-lists
+   (implies (rp-term-list-listp (strip-cdrs lst1))
+            (rp-term-list-listp (strip-cdrs
+                                 (sort-pp-lists lst1 len))))
+   :hints (("Goal"
+            ;;:induct (sort-pp-lists lst1 len)
+            ;;:do-not-induct t
+            :in-theory (e/d (RP-TERM-LIST-LISTP
+                             sort-pp-lists
+                             RP-TERM-LISTP)
+                            ())))))|#
+
+#|(local
+ (defthm rp-term-list-listp-and$-pp-lists-aux
+   (implies (and (rp-term-listp cur)
+                 (rp-term-list-listp (strip-cdrs lst2))
+                 (rp-term-list-listp (strip-cdrs acc)))
+            (rp-term-list-listp (strip-cdrs (and$-pp-lists-aux cur lst2 acc
+                                                               sign))))
+   :hints (("Goal"
+            :in-theory (e/d (and$-pp-lists-aux) ())))))|#
+
+#|(local
+ (defthm rp-term-list-listp-and$-pp-lists
+   (implies (and (rp-term-list-listp (strip-cdrs lst1))
+                 (rp-term-list-listp (strip-cdrs lst2))
+                 (rp-term-list-listp (strip-cdrs acc)))
+            (rp-term-list-listp (strip-cdrs (and$-pp-lists lst1 lst2 acc
+                                                           sign))))
+   :hints (("Goal"
+            :in-theory (e/d (and$-pp-lists) ())))))|#
+
+#|(Local
+ (defret rp-term-list-listp-pp-term-to-pp-lists
+   (implies (and (rp-termp term)
+                 (not too-large-p))
+            (rp-term-list-listp (strip-cdrs result)))
+   :fn pp-term-to-pp-lists
+   :hints (("Goal"
+            :in-theory (e/d (pp-term-to-pp-lists) ())))))|#
+
+
+
+
+
+#|(defthm rp-term-list-listp-strip-cdrs-sort-sum-meta-aux2
+  (implies (rp-termp term)
+           (rp-term-list-listp (strip-cdrs (mv-nth 1 (sort-sum-meta-aux2
+                                                      term)))))
+  :hints (("goal"
+           :in-theory (e/d (sort-sum-meta-aux2)
+                           ((:definition acl2::apply$-badgep)
+                            (:linear acl2::apply$-badgep-properties . 1)
+                            (:rewrite rp-termp-implies-cdr-listp)
+                            (:definition member-equal)
+                            (:rewrite rp-term-listp-is-true-listp)
+                            (:linear acl2::apply$-badgep-properties . 2)
+                            (:definition true-listp)
+                            (:rewrite is-if-rp-termp)
+                            ;;(:rewrite acl2::o-p-o-infp-car)
+                            (:rewrite is-rp-pseudo-termp)
+                            (:rewrite atom-rp-termp-is-symbolp)
+                            falist-consistent
+                            (:definition subsetp-equal))))))|#
+
+#|(defthm rp-termp-of-sort-sum-meta.result
+  (implies (rp-termp term)
+           (b* (((mv ?result ?dont-rw)
+                 (sort-sum-meta term)))
+             (rp-termp result)))
+  :rule-classes :rewrite
+  :hints (("Goal"
+           :in-theory (e/d (sort-sum-meta)
+                           ()))))|#
+
+
 (local
  (defthmd rp-evl-of-ex-from-rp-reverse
    (implies (syntaxp (atom x))
@@ -106,28 +261,7 @@
     (and (valid-sc-subterms (car lst) a)
          (valid-sc-subterms-lst (cdr lst) a))))
 
-(local
- (encapsulate
-   nil
 
-   (local
-    (use-arith-5 t))
-
-   (defthm floor-len-is-less-than-len
-     (implies (and (natp len))
-              (<= (floor len 2) len)))
-
-   (defthm natp-len
-     (natp (len x)))
-
-   (defthmd dummy-arith-lemma-1
-     (implies (NOT (CONSP LST))
-              (equal (len lst) 0)))
-
-   (defthmd dummy-arith-lemma-2
-     (implies (and (<= SIZE (LEN LST))
-                   (consp lst))
-              (equal (< (LEN (CDR LST)) (+ -1 SIZE)) nil)))))
 
 (local
  (defthm valid-sc-subterms-cut-list-by-half
@@ -139,8 +273,7 @@
             ;;          :do-not-induct t
             ;;            :induct (cut-list-by-half lst size)
             :in-theory (e/d (cut-list-by-half
-                             dummy-arith-lemma-2
-                             )
+                             dummy-arith-lemma-2)
                             (+-IS-SUM))))))
 
 (local
@@ -3666,7 +3799,8 @@
                                 and-list-to-binary-and
                                 rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
                                 rp-evlt-lst-of-cons)
-                               (ex-from-rp
+                               (IS-RP-OF-RP
+                                ex-from-rp
                                 (:type-prescription valid-sc)
                                 (:type-prescription mult-formula-checks)
                                 (:type-prescription binary-and)
@@ -3828,3 +3962,15 @@
   (rp-termp
   rp-term-listp
   valid-sc)))))||#)
+
+
+
+;; :i-am-here
+
+;; (defret pp-term-bind-correct
+;;   (defret pp-term-bind-correct
+;;     (implies (and valid
+;;                   (rp-termp term)
+;;                   (valid-sc term a)
+;;                   (
+   

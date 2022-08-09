@@ -59,6 +59,9 @@
 (local
  (in-theory (disable +-IS-SUM)))
 
+(local
+ (set-induction-depth-limit 1))
+
 (acl2::Defines
  search-for-c-with-hash
  (define search-for-c-with-hash (term hash-code (limit natp))
@@ -2661,22 +2664,6 @@
 
 ;;:i-am-here
 
-;; (define s-pattern0-reduce ((pp rp-termp)
-;;                            (c rp-termp))
-;;   :returns (mv (pp-res rp-termp :hyp (and (rp-termp pp)
-;;                                           (rp-termp c)))
-;;                (c-res rp-termp :hyp (and (rp-termp pp)
-;;                                          (rp-termp c)))
-;;                (reducedp booleanp))
-;;   (b* (((unless (valid-pp-p pp)) (mv ''nil ''nil nil))
-;;        (pp-lst (list-to-lst pp))
-;;        (c-lst (list-to-lst c))
-;;        ((mv c-lst compressed1)
-;;         (medw-compress-c-arg-lst c-lst nil (expt 2 30)))
-;;        ((mv c-lst compressed2)
-;;         (s-pattern0-reduce C-LST)))
-;;     (if (or compressed1 compressed2)
-;;         (mv (
 
 (define swap-c-lsts (c1-lst c2-lst enabled)
   :inline t
@@ -2831,7 +2818,6 @@
 
 ;;    ))
 
-(in-theory (enable PP-LST-TO-PP))
 
 (define c-of-1-merge ((single-c1 rp-termp)
                       (single-c2 rp-termp))
@@ -3660,7 +3646,7 @@
   (define recollect-pp ((pp rp-termp))
     :guard (recollectable-pp-p pp)
     :prepwork ((local
-                (defthm is-rp-of-rp
+                (defthm is-rp-of-rp-bitp
                   (is-rp `(rp 'bitp ,x))
                   :hints (("Goal"
                            :in-theory (e/d (is-rp) ()))))))
@@ -4522,10 +4508,11 @@
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((pp-term-p ABS-TERM-W/-SC)
       (b* (;;(abs-term (4vec->pp-term abs-term))
-           (pp-lst2 (pp-flatten abs-term-w/-sc negated
-                                :disabled (and (unpack-booth-later-enabled)
-                                               (not
-                                                (pp-is-a-part-of-radix8+-summation ABS-TERM-W/-SC)))))
+           (pp-lst2 (pp-flatten ;;pp-flatten-with-binds
+                     abs-term-w/-sc negated
+                     :disabled (and (unpack-booth-later-enabled)
+                                    (not
+                                     (pp-is-a-part-of-radix8+-summation ABS-TERM-W/-SC)))))
 
            (?pp-lst-orig pp-lst2)
            
@@ -4966,39 +4953,7 @@
                (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))))
           (& term)))
 
-       (& (and (or #|(search-for-c-with-hash result ''(6847164902991054420 . 6847164902991054420)
-                10)||#
-
-                #|(search-for-c-with-hash result ''(169123349075 . 169123349075)
-                10)||#
-
-                #|(search-for-c-with-hash result ''(791926217769956 . 791926217769956)
-                10)||#
-
-                (search-for-c-with-hash result ''(114101167586 . 114101167586)
-                                        20)
-
-                (search-for-c-with-hash result ''(45642793715 . 45642793715)
-                                        20)
-
-                #|(search-for-c-with-hash result ''(-439661027736439
-                . -439661027736439)
-                10)||#
-                #|(search-for-c-with-hash result ''(169139489625 . 169139489625)
-                100)||#
-                #|(search-for-c-with-hash result ''(440039570885521 . 440039570885521)
-                10)||#
-                #|(search-for-c-with-hash result ''(126184818255 . 126184818255)
-                10)||#
-                #|(search-for-c-with-hash result ''(726267644772690
-                . 726267644772690)
-                100000)||#)
-               (cw "---------------------------------------------
-found-c-with-hash-code:
-input term: ~p0
-result ~p1
- ~%"
-                   term result)))
+       
 
        )
     (mv result t)))

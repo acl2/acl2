@@ -287,4 +287,6 @@ Valid:~x8~%~%"
   (profile 'rp::c-pattern1-reduce)
   (profile 'rp::c-pattern2-reduce)
   (profile 'rp::c-pattern0-reduce)
+
+  (profile 'rp::4vec-branch-drop-r-case)
   )

@@ -881,7 +881,17 @@
         (binary-and-p term)
         (binary-xor-p term)
         (binary-?-p term)
-        (binary-not-p term)))
+        (binary-not-p term))
+    ///
+    (defthm binary-fnc-p-implies-fc
+      (implies (binary-fnc-p x)
+               (and (consp x)
+                    (true-listp x)
+                    (not (equal (car x) 'quote))
+                    (not (equal (car x) 'falist))
+                    (SYMBOLP (CAR x))
+                    (CAR x)))
+      :rule-classes :forward-chaining))
 
   (define bit-of-p (term)
     :inline t

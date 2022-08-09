@@ -66,7 +66,9 @@
   (if (atom pp-lst)
       nil
     (pp-sum-merge-aux (cond ((pp-term-p (car pp-lst))
-                             (pp-flatten (car pp-lst) nil))
+                             (pp-flatten ;;-with-binds
+                              (car pp-lst)
+                              nil))
                             ((or (and-list-p (car pp-lst))
                                  (--.p (car pp-lst))
                                  (bit-of-p (car pp-lst)))
