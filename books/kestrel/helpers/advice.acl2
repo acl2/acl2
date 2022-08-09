@@ -208,4 +208,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Remove (from books/workshops/2002/cowles-flat/support/flat.acl2):
+
+(defpkg "FLAT"
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; cert-flags: ? T :TTAGS :ALL
