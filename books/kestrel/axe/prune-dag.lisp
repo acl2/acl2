@@ -167,7 +167,7 @@
                               ;; print
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (true-listp dag-acc)
+                              (alistp dag-acc)
                               )
                   :guard-hints (("Goal" :expand (bounded-weak-dagp-aux dag dag-len)
                                  :do-not '(generalize eliminate-destructors)
@@ -179,17 +179,17 @@
            (nodenum (car entry))
            (expr (cdr entry)))
       (if (atom expr)
-          (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (cons expr dag-acc) state)
+          (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)
         (let ((fn (ffn-symb expr)))
           (case fn
-            (quote (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (cons expr dag-acc) state))
+            (quote (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))
             ((if myif)
              (b* (((when (not (consp (cdr (cdr (dargs expr))))))
                    (mv :bad-if-node nil state))
                   (context (aref1 'context-array context-array nodenum))
                   ((when (eq (false-context) context))
                    (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
-                   (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (cons `(id ,(darg2 expr)) dag-acc) state))
+                   (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(id ,(darg2 expr)) dag-acc) state))
                   ((mv erp result state)
                    (try-to-resolve-node-with-stp (darg1 expr) ; the test of the IF/MYIF
                                                  context      ; the assumptions
@@ -204,10 +204,10 @@
                           (if (eq result :false)
                               `(id ,(darg3 expr)) ; the IF/MYIF is equal to its else-branch
                             expr))))
-               (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (cons expr dag-acc) state)))
+               (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
             ;; todo: boolif and bvif?
             (t
-             (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (cons expr dag-acc) state))))))))
+             (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
 
 (defthm w-of-mv-nth-2-of-prune-dag-with-contexts-aux
   (equal (w (mv-nth 2 (prune-dag-with-contexts-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
