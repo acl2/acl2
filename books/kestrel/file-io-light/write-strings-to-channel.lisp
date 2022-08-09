@@ -49,3 +49,8 @@
   (implies (open-output-channel-p1 channel2 typ state)
            (open-output-channel-p1 channel2 typ (write-strings-to-channel strings channel state)))
   :hints (("Goal" :in-theory (enable write-strings-to-channel))))
+
+(defthm w-of-write-strings-to-channel
+  (equal (w (write-strings-to-channel strings channel state))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (write-strings-to-channel) (w)))))
