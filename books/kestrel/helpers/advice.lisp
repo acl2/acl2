@@ -428,7 +428,7 @@
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
-       (most-recent-failed-theorem (most-recent-failed-theorem state))
+       (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
        (most-recent-failed-theorem-goal (most-recent-failed-theorem-goal state))
        (untranslated-checkpoints (checkpoint-list-pretty t ; todo: consider non-top
@@ -473,12 +473,12 @@
        ;; (- (cw "~%Parsed recs: ~X01" parsed-recommendations nil))
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
        ((mv name body hints otf-flg)
-        (if (eq 'thm (car most-recent-failed-theorem))
-            (mv :thm
+        (if (member-eq (car most-recent-failed-theorem) '(thm rule))
+            (mv :thm ; no name
                 (cadr most-recent-failed-theorem)
                 (assoc-eq :hints (cddr most-recent-failed-theorem))
                 (assoc-eq :otf-flg (cddr most-recent-failed-theorem)))
-          ;; Must be a defthm:
+          ;; Must be a defthm, etc:
           (mv (cadr most-recent-failed-theorem)
               (caddr most-recent-failed-theorem)
               (assoc-eq :hints (cdddr most-recent-failed-theorem))

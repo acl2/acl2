@@ -70,7 +70,7 @@
                (cw "WARNING: This tool can not see the full command history.  Execute (adjust-ld-history t state) to enable that.")
                ))
        (state (set-print-case :downcase state)) ; make all printing downcase
-       (most-recent-failed-theorem (most-recent-failed-theorem state)) ; can this be a defrule?
+       (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state)) ; can this be a defrule?
        (theorem-type (car most-recent-failed-theorem))
        (body (if (eq 'thm theorem-type)
                  (second most-recent-failed-theorem)
