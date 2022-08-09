@@ -1865,14 +1865,7 @@
     :use (:instance update-static-var-of-read-static-var-same-lemma
                     (compst compst1))
     :prep-lemmas
-    ((defrule omap::update-of-cdr-of-in-when-in
-       (implies (omap::in k m)
-                (equal (omap::update k (cdr (omap::in k m)) m)
-                       m))
-       :induct (omap::in k m)
-       :enable omap::in
-       :disable omap::in-when-in-tail)
-     (defruled update-static-var-of-read-static-var-same-lemma
+    ((defruled update-static-var-of-read-static-var-same-lemma
        (implies (and (compustatep compst)
                      (valuep (read-static-var var compst)))
                 (equal (update-static-var var (read-static-var var compst) compst)
