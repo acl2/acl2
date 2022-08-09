@@ -6006,8 +6006,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
+                                       (typed-formals atc-symbol-type-alistp)
                                        (subst symbol-symbol-alistp)
-                                       (compst-var symbolp))
+                                       (compst-var symbolp)
+                                       (prec-objs atc-string-objinfo-alistp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
           after the execution of a C loop."
@@ -6024,7 +6026,9 @@
      and which have corresponding named variables and heap arrays
      in the computation state.
      The modified computation state is expressed as
-     a nest of @(tsee write-var) and @(tsee write-object) calls.
+     a nest of @(tsee write-var),
+     @(tsee write-static-var),
+     and @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "Note that, in the correctness theorem,
@@ -6036,18 +6040,34 @@
      because the names of the formals must be portable C identifiers."))
   (b* (((when (endp mod-vars)) compst-var)
        (mod-var (car mod-vars))
+       (type (cdr (assoc-eq mod-var typed-formals)))
+       ((when (not type))
+        (raise "Internal error: formal ~x0 not found." mod-var))
+       (ptrp (type-case type :pointer))
        (ptr (cdr (assoc-eq mod-var subst))))
-    (if ptr
-        `(write-object (value-pointer->designator ,ptr)
-                       ,(add-suffix-to-fn mod-var "-NEW")
-                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                       subst
-                                                       compst-var))
+    (if ptrp
+        (if (consp (assoc-equal (symbol-name mod-var) prec-objs))
+            `(write-static-var (ident ,(symbol-name mod-var))
+                               ,(add-suffix-to-fn mod-var "-NEW")
+                               ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                               typed-formals
+                                                               subst
+                                                               compst-var
+                                                               prec-objs))
+          `(write-object (value-pointer->designator ,ptr)
+                         ,(add-suffix-to-fn mod-var "-NEW")
+                         ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                         typed-formals
+                                                         subst
+                                                         compst-var
+                                                         prec-objs)))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                  typed-formals
                                                   subst
-                                                  compst-var)))))
+                                                  compst-var
+                                                  prec-objs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6107,7 +6127,11 @@
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
                         `(mv ,@affect-new)))
-       (final-compst (atc-gen-loop-final-compustate affect subst compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect
+                                                    typed-formals
+                                                    subst
+                                                    compst-var
+                                                    prec-objs))
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
@@ -6274,7 +6298,11 @@
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
                         `(mv ,@affect-new)))
-       (final-compst (atc-gen-loop-final-compustate affect subst compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect
+                                                    typed-formals
+                                                    subst
+                                                    compst-var
+                                                    prec-objs))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
                               (mv nil ,final-compst))))
