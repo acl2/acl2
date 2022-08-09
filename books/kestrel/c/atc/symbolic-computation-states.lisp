@@ -1518,15 +1518,7 @@
                     compst1))
     :enable (read-object
              update-object
-             objdesign->base-address
-             omap::update-of-cdr-of-in-when-conp-of-in)
-    :prep-lemmas
-    ((defruled omap::update-of-cdr-of-in-when-conp-of-in
-       (implies (consp (omap::in k m))
-                (equal (omap::update k (cdr (omap::in k m)) m)
-                       m))
-       :induct (omap::in k m)
-       :enable omap::in)))
+             objdesign->base-address))
 
   (defval *atc-update-object-rules*
     '(update-object-of-add-frame
