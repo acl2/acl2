@@ -173,6 +173,7 @@
                                     state))
                            (- (cw "~X01" dag nil))
                            (state (set-print-base-radix 10 state))
+                           (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
                            (- (cw ")~%")))
                         state))))
               (repeatedly-run (- steps-left steps-for-this-iteration)
