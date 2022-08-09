@@ -51,7 +51,7 @@
                                 (cadr entry-input)
                               entry-input)))
           (if (and (consp entry-input)
-                   (member-eq (car entry-input) '(thm defthm defthmd)) ;todo: support defrule? rule? verify-termination?  verify-guards? what about other kinds of proofs?
+                   (member-eq (car entry-input) '(thm defthm defthmd defrule defruled defrulel defruledl)) ;todo: rule? verify-termination?  verify-guards? what about other kinds of proofs?
                    (let ((results (ld-history-entry-results entry)))
                      (and (consp results) ; should have length 3
                           (first results) ; non-nil error means the theorem failed
@@ -81,9 +81,9 @@
     (if (not (true-listp form))
         (er hard? 'most-recent-failed-theorem-goal "Unexpected form for most-recent-failed-theorem: ~x0." form)
       (case (car form)
-        (thm (cadr form))
-        (defthm (caddr form))
-        (t (er hard? 'most-recent-failed-theorem-goal "Can't get the body of the event ~x0 (not a thm or defthm)." form))))))
+        ((thm rule) (cadr form))
+        ((defthm defthmd defrule defruled defrulel defruledl) (caddr form))
+        (t (er hard? 'most-recent-failed-theorem-goal "Can't get the body of the event ~x0 (not a recognized theorem form)." form))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
