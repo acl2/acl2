@@ -187,6 +187,13 @@
      according to the identifiers,
      which apply to proofs of theorems of C loops.")
    (xdoc::p
+    "Objects in static storage are treated similarly to objects in the heap.
+     Instead of @(tsee write-object) and @(tsee update-object),
+     we use @(tsee write-static-var) and @(tsee update-static-var).
+     In a canonical computation state,
+     we order @(tsee update-static-var) calls
+     before @(tsee update-object) calls.")
+   (xdoc::p
     "After introducing the ACL2 functions
      that represent the canonical symbolic computation states,
      we provide theorems expressing how
@@ -365,6 +372,28 @@
                                   (ident-fix var2))
                            (var-in-scopes-p var scopes))))
        :enable var-in-scopes-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define update-static-var ((var identp) (val valuep) (compst compustatep))
+  :returns (new-compst compustatep)
+  :short (xdoc::topstring
+          "Update a variable in static storage in a "
+          (xdoc::seetopic "atc-symbolic-computation-states"
+                          "canonical representation of computation states")
+          ".")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee update-var),
+     but for variables in static storage.
+     It is equivalent to @(tsee write-static-var)
+     when the latter does not return an error."))
+  (b* ((static (compustate->static compst))
+       (new-static (omap::update (ident-fix var) (value-fix val) static))
+       (new-compst (change-compustate compst :static new-static)))
+    new-compst)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -927,6 +956,106 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-write-static-var-rules
+  :short "Rules about @(tsee write-static-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are analogous to the ones for @(tsee write-var).
+     We introduce a predicate saying when @(tsee write-static-var)
+     is equivalent to @(tsee update-static-var),
+     and rules to show that the predicate holds.
+     The final rule states the equivalence."))
+
+  (define write-static-var-okp ((var identp) (val valuep) (compst compustatep))
+    :returns (yes/no booleanp)
+    :parents nil
+    (b* ((static (compustate->static compst))
+         (pair (omap::in (ident-fix var) static)))
+      (and (consp pair)
+           (equal (type-of-value (cdr pair))
+                  (type-of-value val))))
+    :hooks (:fix))
+
+  (defruled write-static-var-okp-of-add-frame
+    (equal (write-static-var-okp var val (add-frame fun compst))
+           (write-static-var-okp var val compst))
+    :enable (write-static-var-okp
+             add-frame
+             push-frame))
+
+  (defruled write-static-var-okp-of-enter-scope
+    (equal (write-static-var-okp var val (enter-scope compst))
+           (write-static-var-okp var val compst))
+    :enable (write-static-var-okp
+             enter-scope
+             push-frame
+             pop-frame))
+
+  (defruled write-static-var-okp-of-add-var
+    (equal (write-static-var-okp var val (add-var var2 val2 compst))
+           (write-static-var-okp var val compst))
+    :enable (write-static-var-okp
+             add-var
+             push-frame
+             pop-frame))
+
+  (defruled write-static-var-okp-of-update-var
+    (implies (not (equal (ident-fix var)
+                         (ident-fix var2)))
+             (equal (write-static-var-okp var val (update-var var2 val2 compst))
+                    (write-static-var-okp var val compst)))
+    :enable (write-static-var-okp
+             update-var
+             push-frame
+             pop-frame))
+
+  (defruled write-static-var-okp-of-update-static-var
+    (equal (write-static-var-okp var val (update-static-var var2 val2 compst))
+           (if (equal (ident-fix var)
+                      (ident-fix var2))
+               (equal (type-of-value val2)
+                      (type-of-value val))
+             (write-static-var-okp var val compst)))
+    :enable (write-static-var-okp
+             update-static-var))
+
+  (defruled write-static-var-okp-of-update-object
+    (equal (write-static-var-okp var val (update-object objdes obj compst))
+           (write-static-var-okp var val compst))
+    :enable (write-static-var-okp
+             update-object))
+
+  (defruled write-static-var-okp-when-valuep-of-read-static-var
+    (implies (and (syntaxp (symbolp compst))
+                  (equal old-val (read-static-var var compst))
+                  (valuep old-val))
+             (equal (write-static-var-okp var val compst)
+                    (equal (type-of-value val)
+                           (type-of-value old-val))))
+    :enable (write-static-var-okp
+             read-static-var))
+
+  (defruled write-static-var-to-update-static-var
+    (implies (write-static-var-okp var val compst)
+             (equal (write-static-var var val compst)
+                    (update-static-var var val compst)))
+    :enable (write-static-var
+             write-static-var-okp
+             update-static-var))
+
+  (defval *atc-write-static-var-rules*
+    '(write-static-var-okp-of-add-frame
+      write-static-var-okp-of-enter-scope
+      write-static-var-okp-of-add-var
+      write-static-var-okp-of-update-var
+      write-static-var-okp-of-update-static-var
+      write-static-var-okp-of-update-object
+      write-static-var-okp-when-valuep-of-read-static-var
+      write-static-var-to-update-static-var)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-read-static-var-rules
   :short "Rules about @(tsee read-static-var)."
   :long
@@ -1000,14 +1129,22 @@
   (xdoc::topstring
    (xdoc::p
     "The theorems about @(tsee update-var) push them into the states,
-     sometimes combining them into @(tsee add-var)s.
-     The first theorem pushes @(tsee update-var) into @(tsee enter-scope).
-     The second theorem combines @(tsee update-var) with @(tsee add-var)
-     if the variable is the same, otherwise it pushes @(tsee update-var) in.
-     There is no rule for @(tsee add-frame) because that does not happen.
-     The third theorem overwrites an @(tsee update-var)
-     with an @(tsee update-var) for the same variable.
-     The fourth theorem is used to arrange a nest of @(tsee update-var)s
+     sometimes combining them into @(tsee add-var)s.")
+   (xdoc::p
+    "The first theorem turns @(tsee update-var) into @(tsee update-static-var)
+     when reaching @(tsee add-frame):
+     at that point, there are no more accessible variables (by name)
+     in automatic storage.")
+   (xdoc::p
+    "The second theorem pushes @(tsee update-var) into @(tsee enter-scope).")
+   (xdoc::p
+    "The third theorem combines @(tsee update-var) with @(tsee add-var)
+     if the variable is the same, otherwise it pushes @(tsee update-var) in.")
+   (xdoc::p
+    "The fourth theorem overwrites an @(tsee update-var)
+     with an @(tsee update-var) for the same variable.")
+   (xdoc::p
+    "The fifth theorem is used to arrange a nest of @(tsee update-var)s
      in alphabetical order of the variable names:
      it swaps two @(tsee update-var)s when the outer one
      has an larger variable than the inner one.
@@ -1017,8 +1154,9 @@
      based on alphabetical order.
      Note the @(tsee syntaxp) hypotheses
      that require the identifiers (i.e. variable names)
-     to have the form described in @(see atc-identifier-rules).
-     Finally, the fifth theorem serves to simplify the case in which
+     to have the form described in @(see atc-identifier-rules).")
+   (xdoc::p
+    "Finally, the sixth theorem serves to simplify the case in which
      a variable is written with its current value;
      this case may occur when proving the base case of a loop.
      This theorem is phrased perhaps more generally than expected,
@@ -1030,11 +1168,22 @@
      where @('<other-compst>') is a term
      that is not just the @('compst') variable:
      the rule binds @('compst1') to that.
-     This fifth theorem has a @(tsee syntaxp) hypothesis
+     This theorem has a @(tsee syntaxp) hypothesis
      requiring the computation state argument of @(tsee read-var)
      to be a variable;
      this may not be actually necessary,
      but for now we include it just to make sure."))
+
+  (defruled update-var-of-add-frame
+    (equal (update-var var val (add-frame fun compst))
+           (add-frame fun (update-static-var var val compst)))
+    :enable (update-var
+             update-static-var
+             add-frame
+             push-frame
+             pop-frame
+             top-frame
+             var-in-scopes-p))
 
   (defruled update-var-of-enter-scope
     (equal (update-var var val (enter-scope compst))
@@ -1148,7 +1297,8 @@
                 not-var-in-scopes-p-when-not-read-auto-var-aux))))
 
   (defval *atc-update-var-rules*
-    '(update-var-of-enter-scope
+    '(update-var-of-add-frame
+      update-var-of-enter-scope
       update-var-of-add-var
       update-var-of-update-var-same
       update-var-of-update-var-less
@@ -1275,6 +1425,11 @@
              update-object
              objdesign->base-address))
 
+  (defruled write-object-of-objdesign-variable
+    (equal (write-object (objdesign-variable var) val compst)
+           (write-static-var var val compst))
+    :enable write-object)
+
   (defval *atc-write-object-rules*
     '(write-object-to-update-object
       write-object-okp-of-add-frame
@@ -1284,6 +1439,7 @@
       write-object-okp-of-update-object-same
       write-object-okp-of-update-object-disjoint
       write-object-okp-when-valuep-of-read-object
+      write-object-of-objdesign-variable
       object-disjointp-commutative
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
@@ -1548,6 +1704,114 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-update-static-var-rules
+  :short "Rules about @(tsee update-static-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are similar to the ones for
+     @(tsee update-var) and @(tsee update-object)."))
+
+  (defruled update-static-var-of-add-frame
+    (equal (update-static-var var val (add-frame fun compst))
+           (add-frame fun (update-static-var var val compst)))
+    :enable (update-static-var
+             add-frame
+             push-frame))
+
+  (defruled update-static-var-of-enter-scope
+    (equal (update-static-var var val (enter-scope compst))
+           (enter-scope (update-static-var var val compst)))
+    :enable (update-static-var
+             enter-scope
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-static-var-of-add-var
+    (equal (update-static-var var val (add-var var2 val2 compst))
+           (add-var var2 val2 (update-static-var var val compst)))
+    :enable (update-static-var
+             add-var
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-static-var-of-update-var
+    (implies (not (equal (ident-fix var)
+                         (ident-fix var2)))
+             (equal (update-static-var var val (update-var var2 val2 compst))
+                    (update-var var2 val2 (update-static-var var val compst))))
+    :enable (update-static-var
+             update-var
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-static-var-of-update-static-var-same
+    (equal (update-static-var var val (update-static-var var val2 compst))
+           (update-static-var var val compst))
+    :enable update-static-var)
+
+  (defruled update-static-var-of-update-static-var-less
+    (implies (and (syntaxp (and (consp var2)
+                                (eq (car var2) 'ident)
+                                (quotep (cadr var2))))
+                  (syntaxp (and (consp var)
+                                (eq (car var) 'ident)
+                                (quotep (cadr var))))
+                  (<< (ident-fix var2)
+                      (ident-fix var)))
+             (equal
+              (update-static-var var val (update-static-var var2 val2 compst))
+              (update-static-var var2 val2 (update-static-var var val compst))))
+    :rule-classes ((:rewrite :loop-stopper nil))
+    :enable (update-static-var
+             <<))
+
+  (defruled update-static-var-of-read-static-var-same
+    (implies (and (syntaxp (symbolp compst))
+                  (compustatep compst1)
+                  (valuep (read-static-var var compst))
+                  (equal (read-static-var var compst)
+                         (read-static-var var compst1)))
+             (equal (update-static-var var (read-static-var var compst) compst1)
+                    compst1))
+    :enable (update-static-var
+             read-static-var)
+    :disable omap::in-when-in-tail
+    :use (:instance update-static-var-of-read-static-var-same-lemma
+                    (compst compst1))
+    :prep-lemmas
+    ((defrule omap::update-of-cdr-of-in-when-in
+       (implies (omap::in k m)
+                (equal (omap::update k (cdr (omap::in k m)) m)
+                       m))
+       :induct (omap::in k m)
+       :enable omap::in
+       :disable omap::in-when-in-tail)
+     (defruled update-static-var-of-read-static-var-same-lemma
+       (implies (and (compustatep compst)
+                     (valuep (read-static-var var compst)))
+                (equal (update-static-var var (read-static-var var compst) compst)
+                       compst))
+       :enable (read-static-var
+                update-static-var
+                top-frame
+                push-frame
+                pop-frame))))
+
+  (defval *atc-update-static-var-rules*
+    '(update-static-var-of-add-frame
+      update-static-var-of-enter-scope
+      update-static-var-of-add-var
+      update-static-var-of-update-var
+      update-static-var-of-update-static-var-same
+      update-static-var-of-update-static-var-less
+      update-static-var-of-read-static-var-same)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-compustate-frames-number-rules
   :short "Rules about @(tsee compustate-frames-number)."
   :long
@@ -1585,6 +1849,16 @@
              top-frame
              var-in-scopes-p))
 
+  (defruled compustate-frames-number-of-update-static-var
+    (equal (compustate-frames-number (update-static-var var val compst))
+           (compustate-frames-number compst))
+    :enable (update-static-var
+             compustate-frames-number
+             push-frame
+             pop-frame
+             top-frame
+             var-in-scopes-p))
+
   (defruled compustate-frames-number-of-update-object
     (equal (compustate-frames-number (update-object objdes obj compst))
            (compustate-frames-number compst))
@@ -1596,6 +1870,7 @@
       compustate-frames-number-of-enter-scope-not-zero
       compustate-frames-number-of-add-var-not-zero
       compustate-frames-number-of-update-var
+      compustate-frames-number-of-update-static-var
       compustate-frames-number-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1608,9 +1883,11 @@
           *atc-create-var-rules*
           *atc-write-var-rules*
           *atc-read-var-rules*
+          *atc-write-static-var-rules*
           *atc-read-static-var-rules*
           *atc-update-var-rules*
           *atc-write-object-rules*
           *atc-read-object-rules*
           *atc-update-object-rules*
+          *atc-update-static-var-rules*
           *atc-compustate-frames-number-rules*))

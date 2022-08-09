@@ -301,6 +301,7 @@
      @('(read-var <ident> ...)'),
      @('(read-static-var <ident> ...)'),
      @('(write-var <ident> ...)'),
+     @('(write-static-var <ident> ...)'),
      @('(type-struct <ident>)'), and
      @('(exec-memberp ... <ident> ...)')."))
 
@@ -357,6 +358,12 @@
              (equal (write-var var val compst)
                     (write-var (ident (ident->name var)) val compst))))
 
+  (defruled write-static-var-of-const-identifier
+    (implies (and (syntaxp (quotep var))
+                  (identp var))
+             (equal (write-static-var var val compst)
+                    (write-static-var (ident (ident->name var)) val compst))))
+
   (defruled type-struct-of-const-identifier
     (implies (and (syntaxp (quotep tag))
                   (identp tag))
@@ -398,6 +405,7 @@
     read-var-of-const-identifier
     read-static-var-of-const-identifier
     write-var-of-const-identifier
+    write-static-var-of-const-identifier
     type-struct-of-const-identifier
     exec-memberp-of-const-identifier
     exec-arrsub-of-memberp-of-const-identifier))
@@ -1111,6 +1119,7 @@
     compustatep-of-enter-scope
     compustatep-of-add-var
     compustatep-of-update-var
+    compustatep-of-update-static-var
     compustatep-of-update-object
     compustatep-when-compustate-resultp-and-not-errorp
     compustate-resultp-of-write-var
