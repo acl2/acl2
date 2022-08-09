@@ -340,7 +340,7 @@
     (mv nil provedp state)))
 
 ;; Returns (mv erp successp state).
-;; TODO: Don't disable if already disabled.
+;; TODO: Do we need to guess a substitution for the :use hint?
 (defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
@@ -364,6 +364,17 @@
        (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
+;; Returns (mv erp successp state).
+;; TODO: We need more than a symbol
+(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg))
+  (if (symbolp item)
+      (prog2$ (cw "FAIL (need arguments of ~x0 to create :induct hint)~%" item)
+              (mv nil nil state))
+    ;; TODO: Flesh this out when ready:
+    (mv :unsupported-induct-hint nil state)))
+
 ;; Returns (mv erp result-bools state)
 (defun try-recommendations (recs
                             theorem-name ; may be :thm
@@ -378,17 +389,18 @@
       (mv nil (reverse result-bools-acc) state)
     (b* ((rec (first recs))
          (type (car rec))
-         (- (cw "~x0: " rec-num))
-         )
+         (object (cadr rec))
+         (- (cw "~x0: " rec-num)))
       (mv-let (erp successp state)
         (case type
-          (:add-library (try-add-library (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-hyp (try-add-hyp (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-enable-hint (try-add-enable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-disable-hint (try-add-disable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-use-hint (try-add-use-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-enable-hint (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-disable-hint (try-add-disable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint (cadr rec) theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:use-lemma (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (t (prog2$ (cw "UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))
         (if erp
