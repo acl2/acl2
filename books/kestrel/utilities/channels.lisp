@@ -40,6 +40,14 @@
        (stringp (caddr header))
        (integerp (cadddr header))))
 
+(defthm channel-headerp-of-list
+  (equal (channel-headerp (list a b c d))
+         (and (equal a :header)
+              (member-eq b *file-types*)
+              (stringp c)
+              (integerp d)))
+  :hints (("Goal" :in-theory (enable channel-headerp))))
+
 (defthmd stringp-of-caddr-when-channel-headerp
   (implies (channel-headerp header)
            (stringp (caddr header)))
@@ -54,6 +62,17 @@
   (implies (open-channel1 l)
            (typed-io-listp (cdr l) (cadr (car l))))
   :hints (("Goal" :in-theory (enable open-channel1))))
+
+(defthm typed-io-listp-of-revappend
+  (equal (typed-io-listp (revappend x y) typ)
+         (and (typed-io-listp (true-list-fix x) typ)
+              (typed-io-listp y typ)))
+  :hints (("Goal" :in-theory (enable typed-io-listp revappend true-list-fix))))
+
+(defthm typed-io-listp-of-character-becomes-character-listp
+  (equal (typed-io-listp x :character)
+         (character-listp x))
+  :hints (("Goal" :in-theory (enable character-listp typed-io-listp))))
 
 ;; matches better
 (defthm typed-io-listp-of-cdr-gen

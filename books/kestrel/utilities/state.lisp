@@ -56,6 +56,12 @@
   :hints (("Goal" :in-theory (enable update-file-clock))))
 
 ;; since the state is a true-list
+(defthm true-listp-of-update-global-table
+  (implies (true-listp st)
+           (true-listp (update-global-table x st)))
+  :hints (("Goal" :in-theory (enable update-global-table))))
+
+;; since the state is a true-list
 (defthm true-listp-of-update-read-files
   (implies (true-listp st)
            (true-listp (update-read-files x st)))
@@ -76,6 +82,12 @@
 (defthm len-of-update-file-clock
   (implies (state-p1 state)
            (equal (len (update-file-clock x state))
+                  (len state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm len-of-update-global-table
+  (implies (state-p1 state)
+           (equal (len (update-global-table x state))
                   (len state)))
   :hints (("Goal" :in-theory (enable state-p1))))
 
@@ -118,6 +130,11 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable state-p1))))
 
+(defthm writeable-files-p-of-writeable-files
+  (implies (state-p1 state)
+           (writeable-files-p (writeable-files state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
 
 
 ;; Read-over-write theorems for states (different fields)
@@ -146,6 +163,10 @@
   (equal (readable-files (update-file-clock x st))
          (readable-files st)))
 
+(defthm readable-files-of-update-global-table
+  (equal (readable-files (update-global-table x st))
+         (readable-files st)))
+
 (defthm big-clock-entry-of-update-open-input-channels
   (equal (big-clock-entry (update-open-input-channels x st))
          (big-clock-entry st)))
@@ -156,6 +177,10 @@
 
 (defthm big-clock-entry-of-update-file-clock
   (equal (big-clock-entry (update-file-clock x st))
+         (big-clock-entry st)))
+
+(defthm big-clock-entry-of-update-global-table
+  (equal (big-clock-entry (update-global-table x st))
          (big-clock-entry st)))
 
 (defthm writeable-files-of-update-open-input-channels
@@ -170,12 +195,20 @@
   (equal (writeable-files (update-file-clock x st))
          (writeable-files st)))
 
+(defthm writeable-files-of-update-global-table
+  (equal (writeable-files (update-global-table x st))
+         (writeable-files st)))
+
 (defthm file-clock-of-update-open-input-channels
   (equal (file-clock (update-open-input-channels x st))
          (file-clock st)))
 
 (defthm file-clock-of-update-open-output-channels
   (equal (file-clock (update-open-output-channels x st))
+         (file-clock st)))
+
+(defthm file-clock-of-update-global-table
+  (equal (file-clock (update-global-table x st))
          (file-clock st)))
 
 (defthm written-files-of-update-open-input-channels
@@ -214,6 +247,10 @@
   (equal (t-stack (update-file-clock x st))
          (t-stack st)))
 
+(defthm t-stack-of-update-global-table
+  (equal (t-stack (update-global-table x st))
+         (t-stack st)))
+
 (defthm 32-bit-integer-stack-of-update-open-input-channels
   (equal (32-bit-integer-stack (update-open-input-channels x st))
          (32-bit-integer-stack st)))
@@ -224,6 +261,10 @@
 
 (defthm 32-bit-integer-stack-of-update-file-clock
   (equal (32-bit-integer-stack (update-file-clock x st))
+         (32-bit-integer-stack st)))
+
+(defthm 32-bit-integer-stack-of-update-global-table
+  (equal (32-bit-integer-stack (update-global-table x st))
          (32-bit-integer-stack st)))
 
 (defthm user-stobj-alist1-of-update-open-input-channels
@@ -238,6 +279,10 @@
   (equal (user-stobj-alist1 (update-file-clock x st))
          (user-stobj-alist1 st)))
 
+(defthm user-stobj-alist1-of-update-global-table
+  (equal (user-stobj-alist1 (update-global-table x st))
+         (user-stobj-alist1 st)))
+
 (defthm acl2-oracle-of-update-open-input-channels
   (equal (acl2-oracle (update-open-input-channels x st))
          (acl2-oracle st)))
@@ -248,6 +293,10 @@
 
 (defthm acl2-oracle-of-update-file-clock
   (equal (acl2-oracle (update-file-clock x st))
+         (acl2-oracle st)))
+
+(defthm acl2-oracle-of-update-global-table
+  (equal (acl2-oracle (update-global-table x st))
          (acl2-oracle st)))
 
 (defthm read-files-of-update-open-input-channels
@@ -262,6 +311,10 @@
   (equal (read-files (update-file-clock x st))
          (read-files st)))
 
+(defthm read-files-of-update-global-table
+  (equal (read-files (update-global-table x st))
+         (read-files st)))
+
 (defthm open-output-channels-of-update-open-input-channels
   (equal (open-output-channels (update-open-input-channels x st))
          (open-output-channels st)))
@@ -270,8 +323,20 @@
   (equal (open-output-channels (update-file-clock x st))
          (open-output-channels st)))
 
+(defthm open-output-channels-of-update-global-table
+  (equal (open-output-channels (update-global-table x st))
+         (open-output-channels st)))
+
+(defthm open-output-channels-of-put-global
+  (equal (open-output-channels (put-global key value st))
+         (open-output-channels st)))
+
 (defthm open-input-channels-of-update-file-clock
   (equal (open-input-channels (update-file-clock x st))
+         (open-input-channels st)))
+
+(defthm open-input-channels-of-update-global-table
+  (equal (open-input-channels (update-global-table x st))
          (open-input-channels st)))
 
 (defthm open-input-channels-of-update-open-output-channels
@@ -288,6 +353,10 @@
 
 (defthm list-all-package-names-lst-of-update-file-clock
   (equal (list-all-package-names-lst (update-file-clock x st))
+         (list-all-package-names-lst st)))
+
+(defthm list-all-package-names-lst-of-update-global-table
+  (equal (list-all-package-names-lst (update-global-table x st))
          (list-all-package-names-lst st)))
 
 (defthm global-table-of-update-read-files
@@ -318,8 +387,16 @@
   (equal (written-files (update-read-files x st))
          (written-files st)))
 
+(defthm written-files-of-update-global-table
+  (equal (written-files (update-global-table x st))
+         (written-files st)))
+
 (defthm idates-of-update-read-files
   (equal (idates (update-read-files x st))
+         (idates st)))
+
+(defthm idates-of-update-global-table
+  (equal (idates (update-global-table x st))
          (idates st)))
 
 (defthm t-stack-of-update-read-files
@@ -356,6 +433,10 @@
 
 (defthm file-clock-of-update-file-clock
   (equal (file-clock (update-file-clock x state))
+         x))
+
+(defthm global-table-of-update-global-table
+  (equal (global-table (update-global-table x state))
          x))
 
 (defthm open-input-channels-of-update-open-input-channels
@@ -467,6 +548,33 @@
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   (true-listp)))))
 
+;state-p could call this
+(defun global-table-p (x)
+  (declare (xargs :guard t))
+  (and (ordered-symbol-alistp x)
+       (all-boundp *initial-global-table* x)
+       (plist-worldp (cdr (assoc 'current-acl2-world
+                                 x)))
+       (symbol-alistp (getpropc 'acl2-defaults-table
+                                'table-alist
+                                nil
+                                (cdr (assoc 'current-acl2-world
+                                            x))))
+       (timer-alistp (cdr (assoc 'timer-alist x)))
+       (known-package-alistp
+        (getpropc 'known-package-alist
+                  'global-value
+                  nil
+                  (cdr (assoc 'current-acl2-world
+                              x))))))
+
+(defthm state-p1-of-update-global-table
+  (implies (state-p1 state)
+           (equal (state-p1 (update-global-table x state))
+                  (global-table-p x)))
+  :hints (("Goal" :in-theory (e/d (state-p1)
+                                  (true-listp)))))
+
 (defthm state-p1-of-update-file-clock
   (implies (state-p1 state)
            (equal (state-p1 (update-file-clock x state))
@@ -562,3 +670,11 @@
   (implies (state-p1 state)
            (plist-worldp (w state)))
   :hints (("Goal" :in-theory (enable state-p1 w))))
+
+(defthm state-p1-of-put-global
+  (implies (and (state-p1 state)
+                (symbolp key)
+                (not (member-equal key '(current-acl2-world timer-alist))) ; todo
+                )
+           (state-p1 (put-global key value state)))
+  :hints (("Goal" :in-theory (enable put-global state-p1))))

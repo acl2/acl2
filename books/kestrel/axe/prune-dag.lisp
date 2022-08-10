@@ -120,9 +120,8 @@
                                          nodenum
                                          dag-array dag-len dag-parent-array
                                          base-filename print max-conflicts
-                                         nil         ;counterexamplep
-                                         state
-                                         ))
+                                         nil ; counterexamplep
+                                         state))
        ((when (eq *error* true-result))
         (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
@@ -178,34 +177,41 @@
     (let* ((entry (first dag))
            (nodenum (car entry))
            (expr (cdr entry)))
-      (if (atom expr)
+      (if (atom expr) ; variable (nothing to do):
           (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)
         (let ((fn (ffn-symb expr)))
           (case fn
+            ;; quoted constant (nothing to do):
             (quote (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))
             ((if myif)
              (b* (((when (not (consp (cdr (cdr (dargs expr))))))
-                   (mv :bad-if-node nil state))
+                   (mv :bad-if-arity nil state))
+                  ;; Get the context for this IF/MYIF node (note that its test node may appear in other contexts too):
                   (context (aref1 'context-array context-array nodenum))
                   ((when (eq (false-context) context))
                    (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
                    (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(id ,(darg2 expr)) dag-acc) state))
+                  ;; Try to resolve the IF test:
                   ((mv erp result state)
                    (try-to-resolve-node-with-stp (darg1 expr) ; the test of the IF/MYIF
                                                  context      ; the assumptions
                                                  dag-array dag-len dag-parent-array
-                                                 "PRUNE" ; todo: improveZ?
+                                                 "PRUNE" ; todo: improve?
                                                  print
                                                  max-conflicts
                                                  state))
                   ((when erp) (mv erp nil state))
+                  ;; We use a wrapper of ID here so as to ensure the node is
+                  ;; still legal (not a naked nodenum) and not change the node
+                  ;; numbering (calls to ID will later be removed by rewriting):
                   (expr (if (eq result :true)
                             `(id ,(darg2 expr)) ; the IF/MYIF is equal to its then-branch
                           (if (eq result :false)
                               `(id ,(darg3 expr)) ; the IF/MYIF is equal to its else-branch
+                            ;; Could not resolve the test:
                             expr))))
                (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
-            ;; todo: boolif and bvif?
+            ;; todo: add support for boolif and bvif?
             (t
              (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
 
@@ -235,7 +241,8 @@
                               (ilks-plist-worldp (w state)))
                   :verify-guards nil ; todo
                   :stobjs state))
-  (b* ((context-array (make-full-context-array-for-dag dag))
+  (b* ((- (cw "(Pruning DAG:~%"))
+       (context-array (make-full-context-array-for-dag dag))
        (dag-array (make-into-array 'dag-array dag))
        (dag-len (+ 1 (top-nodenum-of-dag dag)))
        (dag-parent-array (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array))
@@ -259,5 +266,6 @@
                                                    nil ; monitored-symbols
                                                    nil
                                                    nil))
-       ((when erp) (mv erp nil state)))
-     (mv (erp-nil) dag-or-quotep state)))
+       ((when erp) (mv erp nil state))
+       (- (cw "Done pruning DAG.)~%")))
+    (mv (erp-nil) dag-or-quotep state)))
