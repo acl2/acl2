@@ -697,7 +697,7 @@
              (- (cw "Done pruning DAG.)~%")))
           (mv nil result-dag state))
       (prog2$ (and (natp prune-branches)
-                   (cw "Note: Not pruning DAG because its size is over the limit of ~x0.~%" prune-branches))
+                   (cw "(Note: Not pruning with precise contexts (DAG size > ~x0).)~%" prune-branches))
               (mv nil dag state)))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
