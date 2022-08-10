@@ -10,19 +10,14 @@
 
 (in-package "ACL2")
 
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
 (local (include-book "kestrel/utilities/w" :dir :system))
+(local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "kestrel/utilities/explode-atom" :dir :system))
 
 (in-theory (disable princ$))
 
-(defthm open-output-channel-p-of-princ$
-  (implies (open-output-channel-p channel2 typ state)
-           (open-output-channel-p channel2 typ (princ$ x channel state)))
-  :hints (("Goal" :in-theory (enable open-output-channel-p
-                                     princ$
-                                     open-output-channel-p1
-                                     open-output-channels
-                                     open-output-channel-p))))
+(local (in-theory (disable state-p1 explode-atom open-output-channels open-output-channel-p1)))
 
 (defthm open-output-channel-p1-of-princ$-gen
   (implies (open-output-channel-p1 channel2 typ state)
@@ -30,17 +25,20 @@
   :hints (("Goal" :in-theory (enable open-output-channel-p
                                      princ$
                                      open-output-channel-p1
-                                     open-output-channels
+                                     ;open-output-channels
                                      open-output-channel-p))))
+
+(defthm open-output-channel-p-of-princ$
+  (implies (open-output-channel-p channel2 typ state)
+           (open-output-channel-p channel2 typ (princ$ x channel state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))
 
 (defthm state-p-of-princ$
   (implies (and (state-p state)
                 (symbolp channel)
                 (open-output-channel-p channel :character state))
            (state-p (princ$ x channel state)))
-  :hints (("Goal" :use (:instance state-p1-of-princ$)
-           :in-theory (e/d (open-output-channel-p)
-                           (state-p1-of-princ$)))))
+  :hints (("Goal" :in-theory (enable princ$ open-output-channel-p1))))
 
 (defthm w-of-princ$
   (equal (w (princ$ x channel state))
