@@ -40,6 +40,14 @@
        (stringp (caddr header))
        (integerp (cadddr header))))
 
+(defthm channel-headerp-of-list
+  (equal (channel-headerp (list a b c d))
+         (and (equal a :header)
+              (member-eq b *file-types*)
+              (stringp c)
+              (integerp d)))
+  :hints (("Goal" :in-theory (enable channel-headerp))))
+
 (defthmd stringp-of-caddr-when-channel-headerp
   (implies (channel-headerp header)
            (stringp (caddr header)))
