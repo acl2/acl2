@@ -111,3 +111,27 @@
              (equal (type-of-value val)
                     (type-fix type)))
     :hints (("Goal" :in-theory (enable type-of-value)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-integer-and-value-integer->get
+  :short "Theorems about @(tsee value-integer) and @(tsee value-integer->get)."
+
+  (defrule value-integer-of-value-integer->get-when-type-of-value
+    (implies (and (value-integerp val)
+                  (equal type (type-of-value val)))
+             (equal (value-integer (value-integer->get val) type)
+                    (value-fix val)))
+    :enable (value-integer
+             value-integer->get
+             value-integerp
+             value-unsigned-integerp
+             value-signed-integerp))
+
+  (defrule value-integer->get-of-value-integer
+    (b* ((val (value-integer int type)))
+      (implies (not (errorp val))
+               (equal (value-integer->get val)
+                      (ifix int))))
+    :enable (value-integer
+             value-integer->get)))
