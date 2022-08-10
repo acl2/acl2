@@ -168,12 +168,7 @@
      (xdoc::p
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
-       in case proof generation is (temporarily) broken.")
-     (xdoc::p
-      "Currently this must be @('nil')
-       if the targets include @(tsee defobject) names
-       and if some target functions write to those.
-       Proof generation for writing external objects will be supported soon."))
+       in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
