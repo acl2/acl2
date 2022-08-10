@@ -118,6 +118,11 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable state-p1))))
 
+(defthm writeable-files-p-of-writeable-files
+  (implies (state-p1 state)
+           (writeable-files-p (writeable-files state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
 
 
 ;; Read-over-write theorems for states (different fields)
