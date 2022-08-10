@@ -289,4 +289,9 @@ Valid:~x8~%~%"
   (profile 'rp::c-pattern0-reduce)
 
   (profile 'rp::4vec-branch-drop-r-case)
+
+  
+
+  (profile 'rp::pp-lst-orderedp)
+  (profile 'rp::pp-sum-sort-lst)
   )

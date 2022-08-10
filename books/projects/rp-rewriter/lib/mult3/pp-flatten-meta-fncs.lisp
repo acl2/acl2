@@ -1639,6 +1639,7 @@
                                (disabled 'nil))
   :returns (pp-lst)
   (b* (((when (or disabled
+                  (not (cons-count-compare term 20))
                   (not (mbt (and (pp-term-p term)
                                  (rp-termp term)
                                  t)))))

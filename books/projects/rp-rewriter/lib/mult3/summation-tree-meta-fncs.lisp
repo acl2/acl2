@@ -4265,16 +4265,69 @@
            (mv res-s-lst res-pp-lst res-c-lst valid)))))))
 
 
-(define pp-radix8+-fix-aux2 ((pp-lst rp-term-listp))
+(define count-repetitions-at-top (lst)
+  :returns (rep-count natp)
+  (if (atom lst)
+      0
+    (if (atom (cdr lst))
+        1
+      (if (equal (car lst) (cadr lst))
+          (1+ (count-repetitions-at-top (cdr lst)))
+        1)))
+  ///
+  (defret posp-of-<fn>
+    (implies (consp lst)
+             (posp rep-count)))
+  (defret rep-count-is-less-than-lst-len-for-<fn>
+    (<= rep-count (len lst))))
+
+(define repeat-s-sum-lst ((lst rp-term-listp)
+                          (rep-count natp))
+  :returns (res-lst rp-term-listp :hyp (rp-term-listp lst))
+  :verify-guards :after-returns
+  (if (zp rep-count)
+      nil
+    (s-sum-merge-aux lst (repeat-s-sum-lst lst (1- rep-count)))))
+
+(define repeat-pp-sum-lst ((lst rp-term-listp)
+                           (rep-count natp))
+  :returns (res-lst rp-term-listp :hyp (rp-term-listp lst))
+  :verify-guards :after-returns
+  (if (zp rep-count)
+      nil
+    (pp-sum-merge-aux lst (repeat-pp-sum-lst lst (1- rep-count)))))
+
+(local
+ (defthm rp-term-listp-of-nthcdr
+   (implies (and (rp-term-listp lst)
+                 (<= num (len lst)))
+            (rp-term-listp (nthcdr num lst)))
+   :hints (("Goal"
+            :in-theory (e/d (nthcdr len)
+                            ())))))
+
+#|(define pp-radix8+-fix-aux2 ((pp-lst rp-term-listp))
   :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+  :measure (len pp-lst)
+  :prepwork ((local
+              (defthm len-of-NTHCDR
+                (IMPLIES (and (CONSP PP-LST)
+                              (posp num)
+                              (<= num (len pp-lst)))
+                         (< (len (NTHCDR num PP-LST))
+                            (len PP-LST)))
+                :hints (("Goal"
+                         :in-theory (e/d (len nthcdr) ()))))))
+  :verify-guards :after-returns
   (if (atom pp-lst)
       (mv nil nil nil)
     (b* (((mv res-s-lst res-pp-lst res-c-lst valid)
           (pp-radix8+-fix-aux (car pp-lst)))
+
          ((mv rest-s-lst rest-pp-lst rest-c-lst)
-          (pp-radix8+-fix-aux2 (cdr pp-lst))))
+          (pp-radix8+-fix-aux2 (cdr pp-lst)))) ;;
       (if valid
           (mv (s-sum-merge-aux res-s-lst rest-s-lst)
               (pp-sum-merge-aux res-pp-lst rest-pp-lst)
@@ -4283,6 +4336,50 @@
             (cons-with-hint (car pp-lst)
                             rest-pp-lst
                             pp-lst)
+            rest-c-lst)))))|#
+
+(define pp-radix8+-fix-aux2 ((pp-lst rp-term-listp))
+  :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+  :measure (len pp-lst)
+  :prepwork ((local
+              (defthm len-of-NTHCDR
+                (IMPLIES (and (CONSP PP-LST)
+                              (posp num)
+                              (<= num (len pp-lst)))
+                         (< (len (NTHCDR num PP-LST))
+                            (len PP-LST)))
+                :hints (("Goal"
+                         :in-theory (e/d (len nthcdr) ()))))))
+  :verify-guards :after-returns
+  (if (atom pp-lst)
+      (mv nil nil nil)
+    (b* (((mv res-s-lst res-pp-lst res-c-lst valid)
+          (pp-radix8+-fix-aux (car pp-lst)))
+
+         (rep-count (count-repetitions-at-top pp-lst)) ;;
+         (res-s-lst (repeat-s-sum-lst res-s-lst rep-count))
+         (res-pp-lst (repeat-pp-sum-lst res-pp-lst rep-count))
+         (res-c-lst (repeat-s-sum-lst res-c-lst rep-count))
+
+         (next-args (nthcdr rep-count pp-lst))
+         ((mv rest-s-lst rest-pp-lst rest-c-lst)
+          (pp-radix8+-fix-aux2 next-args))) ;;
+      (if valid
+          (mv (s-sum-merge-aux res-s-lst rest-s-lst)
+              (pp-sum-merge-aux res-pp-lst rest-pp-lst)
+              (s-sum-merge-aux res-c-lst rest-c-lst))
+        (mv rest-s-lst
+            (cond ((equal rep-count 1)
+                   (cons-with-hint (car pp-lst)
+                                   rest-pp-lst
+                                   pp-lst))
+                  ((equal rest-pp-lst next-args)
+                   pp-lst)
+                  (t 
+                   (append (repeat rep-count (car pp-lst))
+                           rest-pp-lst)))
             rest-c-lst)))))
 
 (define pp-radix8+-fix ((pp-lst rp-term-listp))
@@ -4508,7 +4605,7 @@
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((pp-term-p ABS-TERM-W/-SC)
       (b* (;;(abs-term (4vec->pp-term abs-term))
-           (pp-lst2 (pp-flatten ;;pp-flatten-with-binds
+           (pp-lst2 (pp-flatten ;;-with-binds
                      abs-term-w/-sc negated
                      :disabled (and (unpack-booth-later-enabled)
                                     (not

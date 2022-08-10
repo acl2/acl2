@@ -70,6 +70,9 @@
 (local
  (in-theory (enable rp-trans trans-list)))
 
+(local
+ (set-induction-depth-limit 1))
+
 (create-regular-eval-lemma c 4 mult-formula-checks)
 (create-regular-eval-lemma s 3 mult-formula-checks)
 (create-regular-eval-lemma s-c-res 3 mult-formula-checks)
@@ -6285,6 +6288,116 @@
                             rp-evlt-of-ex-from-rp
                             rp-trans-lst)))))
 
+(local
+ (defthm dummy-multiply-merge-lemma
+   (equal (+ x (* count x))
+          (* (1+ count) x))))
+
+(defret repeat-s-sum-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (natp rep-count))
+           (equal (sum-list-eval res-lst a)
+                  (* rep-count
+                     (sum-list-eval lst a))))
+  :fn repeat-s-sum-lst
+  :hints (("Goal"
+           :in-theory (e/d (repeat-s-sum-lst
+                            sum
+                            rw-dir2)
+                           (rw-dir1
+                            +-IS-SUM)))))
+
+(defret repeat-s-sum-lst-valid-sc-subterms
+  (implies (valid-sc-subterms lst a)
+           (valid-sc-subterms res-lst a))
+  :fn repeat-s-sum-lst
+  :hints (("Goal"
+           :in-theory (e/d (repeat-s-sum-lst)
+                           ())))) 
+
+(defthm SUM-LIST-EVAL-of-repeat
+  (implies (natp x)
+           (equal (sum-list-eval (repeat x y) a)
+                  (* x (ifix (rp-evlt y a)))))
+  :hints (("Goal"
+           :in-theory (e/d (REPEAT
+                            sum
+                            rw-dir2)
+                           (+-IS-SUM
+                            rw-dir1)))))
+
+(local
+ (defthm COUNT-REPETITIONS-AT-TOP-correct-dummy-lemma
+   (implies (acl2-numberp z)
+            (equal (EQUAL (+ z a)
+                          (+ x (* (+ 1 y) a)))
+                   (EQUAL z
+                          (+ x (* y a)))))))
+
+(std::defretd COUNT-REPETITIONS-AT-TOP-correct
+  (equal (sum-list-eval lst a)
+         (sum (* rep-count (ifix (rp-evlt (car lst) a)))
+              (sum-list-eval (nthcdr rep-count lst) a))) 
+  :fn COUNT-REPETITIONS-AT-TOP
+  :hints (("Goal"
+           :induct (COUNT-REPETITIONS-AT-TOP lst)
+           :do-not-induct t
+           :in-theory (e/d (COUNT-REPETITIONS-AT-TOP
+                            sum)
+                           (+-IS-SUM)))))
+         
+(defret repeat-pp-sum-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (natp rep-count))
+           (equal (sum-list-eval res-lst a)
+                  (* rep-count
+                     (sum-list-eval lst a))))
+  :fn repeat-pp-sum-lst
+  :hints (("Goal"
+           :in-theory (e/d (repeat-pp-sum-lst
+                            sum
+                            rw-dir2)
+                           (rw-dir1
+                            +-IS-SUM)))))
+
+(defret repeat-pp-sum-lst-valid-sc-subterms
+  (implies (valid-sc-subterms lst a)
+           (valid-sc-subterms res-lst a))
+  :fn repeat-pp-sum-lst
+  :hints (("Goal"
+           :in-theory (e/d (repeat-pp-sum-lst)
+                           ()))))
+
+(local
+ (defthm dummy-sum-cancel-lemma3-1
+   (implies (integerp a)
+            (equal (equal (sum x y a) a)
+                   (equal (sum x y) 0)))
+   :hints (("Goal"
+            :in-theory (e/d (sum)
+                            (+-IS-SUM))))))
+
+(defthm valid-sc-subterm-of-nthcdr
+  (implies (and (valid-sc-subterms lst a)
+                (<= cnt (len lst)))
+           (valid-sc-subterms (nthcdr cnt lst) a))
+  :hints (("Goal"
+           :in-theory (e/d (sum rw-dir2) (+-IS-SUM rw-dir1)))))
+
+(local
+ (defthm collect-common-multiples
+   (implies (and (integerp a)
+                 (integerp x)
+                 (integerp y))
+            (equal (sum (* a x)
+                        (* a y))
+                   (* a (sum x y))))
+   :hints (("Goal"
+            :in-theory (e/d (sum)
+                            (+-IS-SUM))))))
+
 (defret pp-radix8+-fix-aux2-correct
   (implies (and (valid-sc-subterms pp-lst a)
                 (rp-evl-meta-extract-global-facts :state state)
@@ -6294,9 +6407,17 @@
                        (sum-list-eval res-c-lst a))
                   (sum-list-eval pp-lst a)))
   :fn pp-radix8+-fix-aux2
-  :hints (("Goal"
-           :in-theory (e/d (pp-radix8+-fix-aux2)
-                           (rp-trans
+  :hints (("Subgoal *1/5"
+           :use ((:instance COUNT-REPETITIONS-AT-TOP-correct
+                            (lst pp-lst))))
+          ("Subgoal *1/3"
+           :use ((:instance COUNT-REPETITIONS-AT-TOP-correct
+                            (lst pp-lst))))
+          ("Goal"
+           :in-theory (e/d (pp-radix8+-fix-aux2
+                            rw-dir2)
+                           (rw-dir1
+                            rp-trans
                             rp-evl-lst-of-cons
                             rp-evlt-lst-of-cons
                             rp-trans-lst-is-lst-when-list-is-absent
@@ -6311,6 +6432,14 @@
                              rp-trans-is-term-when-list-is-absent)
                             rp-evlt-of-ex-from-rp
                             rp-trans-lst)))))
+
+(defret rep-count-is-lte-lst-len-for-<fn>
+  (and (lte rep-count (len lst))
+       (not (gt rep-count (len lst))))
+  :fn COUNT-REPETITIONS-AT-TOP
+  :hints (("Goal"
+           :in-theory (e/d (rw-dir2 COUNT-REPETITIONS-AT-TOP)
+                           (rw-dir1)))))
 
 (defret pp-radix8+-fix-aux2-correct-singled-out
   (implies (and (valid-sc-subterms pp-lst a)
@@ -6335,8 +6464,12 @@
                 (valid-sc-subterms res-c-lst a)))
   :fn pp-radix8+-fix-aux2
   :hints (("Goal"
-           :in-theory (e/d (pp-radix8+-fix-aux2)
-                           (rp-trans
+           :in-theory (e/d (valid-sc-subterms
+                            pp-radix8+-fix-aux2      
+                            sum)
+                           (len
+                            +-IS-SUM
+                            rp-trans
                             rp-evl-lst-of-cons
                             rp-evlt-lst-of-cons
                             rp-trans-lst-is-lst-when-list-is-absent
