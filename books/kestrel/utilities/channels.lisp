@@ -63,6 +63,17 @@
            (typed-io-listp (cdr l) (cadr (car l))))
   :hints (("Goal" :in-theory (enable open-channel1))))
 
+(defthm typed-io-listp-of-revappend
+  (equal (typed-io-listp (revappend x y) typ)
+         (and (typed-io-listp (true-list-fix x) typ)
+              (typed-io-listp y typ)))
+  :hints (("Goal" :in-theory (enable typed-io-listp revappend true-list-fix))))
+
+(defthm typed-io-listp-of-character-becomes-character-listp
+  (equal (typed-io-listp x :character)
+         (character-listp x))
+  :hints (("Goal" :in-theory (enable character-listp typed-io-listp))))
+
 ;; matches better
 (defthm typed-io-listp-of-cdr-gen
   (implies (and (open-channel1 l)
