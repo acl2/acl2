@@ -2382,10 +2382,10 @@
        ;; Dig out individual disjuncts (this only preserves IFF):
        (disjunction (get-axe-disjunction-from-dag-items disjuncts 'dag-array dag-array dag-len))
        ((when (disjunction-is-truep disjunction))
-        (prog2$ (cw "(Note: Disjunction is obviously true.) Proved it.)~%")
+        (prog2$ (cw "(Note: Disjunction is obviously true. Proved it.)~%")
                 (mv *valid* state)))
        ((when (disjunction-is-falsep disjunction))
-        (prog2$ (cw "(Note: Disjunction is obviously false.) Failed to prove it.)~%")
+        (prog2$ (cw "(Note: Disjunction is obviously false. Failed to prove it.)~%")
                 (mv *invalid* state)))
        (disjuncts disjunction) ;; these are possibly-negated nodenums
 
@@ -2433,7 +2433,7 @@
                       (mv result state))
             (if (call-of *possible-counterexample* result) ;TODO: Pass this back?
                 ;; The goal is invalid.  Since we didn't cut anything out, the only thing to do is give up (any cut goals would be more general and would also be invalid)
-                (prog2$ (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename)
+                (prog2$ (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename) ; todo: what if untranslatable stuff was cut out that makes the goal valid?
                         (mv result state))
               (if (eq result *timedout*)
                   ;;STP timed out on the uncut case.  Now binary search for the right depth:
@@ -2446,14 +2446,15 @@
                     ;;todo: move printing to sub-function?
                     (if (eq result *error*)
                         (mv *error* state)
-                      (if (eq result *invalid*) ;TODO: is this possible?
-                          (mv *invalid* state)
-                        (if (eq result *valid*)
-                            (prog2$ (cw "STP proved ~s0.)~%" base-filename)
-                                    (mv *valid* state))
+                      (if (eq result *valid*)
+                          (prog2$ (cw "STP proved ~s0.)~%" base-filename)
+                                  (mv *valid* state))
+                        (if (eq result *invalid*) ;TODO: is this possible?
+                            (prog2$ (cw "STP failed to find a depth at which ~s0 would be valid.)~%" base-filename)
+                                    (mv *invalid* state))
                           (prog2$ (cw "STP failed to find a depth at which ~s0 would be valid.)~%" base-filename)
                                   (mv *timedout* state))))))
-                ;todo: prove this can't happen:
+                ;;todo: prove this can't happen:
                 (mv (er hard? 'prove-node-disjunction-with-stp "Bad result, ~x0, from prove-node-disjunction-with-stp-at-depth." result)
                     state)))))))))
 
@@ -2466,8 +2467,7 @@
                                                        counterexamplep
                                                        state)))
          (w state))
-  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp
-                                     ))))
+  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
