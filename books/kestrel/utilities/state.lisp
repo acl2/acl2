@@ -13,7 +13,6 @@
 ;; TODO: Organize this stuff, possibly moving some to other files
 ;; TODO: Name conflicts with std?
 ;; TODO: Add missing theorems here
-;; TODO: Disable all the state functions
 
 ;; See also books/system/update-state.lisp.
 
