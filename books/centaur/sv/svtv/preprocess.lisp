@@ -35,8 +35,21 @@
 
 (defxdoc defsvtv-phasewise
   :parents (svex-stvs)
-  :short "Alternative format for creating an SVTV."
-  :long "<p>A longstanding frustration with the SVTV user interface is that you
+  :short "(Deprecated in favor of @(see defsvtv$).)"
+  :long "<p>@('Defsvtv-phasewise') is a way of creating an SVTV -- see @(see
+svex-stvs). It uses an older workflow to create the SVTV object and thus is
+deprecated in favor of @(see defsvtv$-phasewise), which works similarly but
+uses the @(see svtv-data) stobj-based framework.  Its syntax is the same as
+@(see defsvtv$) using the @(':phases') argument rather than
+@(':inputs')/@(':outputs')/@(':overrides').</p>")
+
+(defxdoc defsvtv-phasewise
+  :parents (svex-stvs)
+  :short "(Deprecated) Alternative format for creating an SVTV."
+  :long "
+<p>This is deprecated in favor of @(see defsvtv$).</p>
+
+<p>A longstanding frustration with the SVTV user interface is that you
 need to insert the right number of underscores on each line before a cycle in
 which something happens.  When the sequencing changes, you need to then insert
 or delete the right number of underscores on multiple lines.</p>
@@ -48,7 +61,7 @@ right and easier to maintain.</p>
 <p>The input format looks like this:</p>
 
 @({
- (defsvtv-phasewise my-svtv
+ (defsvtv$-phasewise my-svtv
    :design *my-design*
    :parents ... :short ... :long ...
    :simplify t   ;; default
@@ -77,12 +90,12 @@ right and easier to maintain.</p>
      :outputs ((\"inst.subinst.interesting\" interesting8)))))
  })
 
-<p>The keyword options are the same as for @(see defsvtv), except that
+<p>The keyword options are the same as for @(see defsvtv$), except that
 @(':phases') replaces @(':inputs'), @(':overrides'), @(':outputs'),
 @(':internals'), and @(':labels').</p>
 
-<p>For now, defsvtv-phasewise is implemented by simply preprocessing it into a @(see
-defsvtv) form.  Perhaps later both forms will instead be different interfaces
+<p>For now, defsvtv$-phasewise is implemented by simply preprocessing it into a @(see
+defsvtv$) form.  Perhaps later both forms will instead be different interfaces
 to a shared backend.</p>
 
 <p>The format of the @(':phases') input is a list of individual phases, which are
@@ -548,6 +561,24 @@ means that test applies to subsequent phases and value is toggled.</p>")
             (svtv*-phaselist-collect-outputnames (cdr x)))))
 
 
+(define svtv*-phaselist-collect-labels ((x svtv*-phaselist-p))
+  :returns (label symbol-listp)
+  :prepwork ((local (defthm symbol-listp-of-repeat
+                      (implies (Symbolp x)
+                               (symbol-listp (repeat n x)))
+                      :hints(("Goal" :in-theory (enable repeat)))))
+             (local (defthm symbol-listp-of-append
+                      (implies (and (Symbol-listp x)
+                                    (symbol-listp y))
+                               (symbol-listp (append x y))))))
+  (if (Atom x)
+      nil
+    (b* (((svtv*-phase x1) (car x))
+         (delay-1 (1- x1.delay)))
+      (append (make-list delay-1 :initial-element 'acl2::?)
+              (cons (svtv*-phase->label (car x))
+                    (svtv*-phaselist-collect-labels (cdr x)))))))
+
       
 (define defsvtv*-phases-to-defsvtv-args ((x svtv*-phaselist-p))
   :prepwork ((local (Defthm string-listp-of-remove-duplicates
@@ -559,8 +590,9 @@ means that test applies to subsequent phases and value is toggled.</p>")
        (outputnames (acl2::hons-remove-dups (svtv*-phaselist-collect-outputnames x)))
        (inputs (svtv*-inputs-to-svtv-lines innames x nil))
        (overrides (svtv*-inputs-to-svtv-lines overridenames x t))
-       (outputs (svtv*-outputs-to-svtv-lines outputnames x)))
-    (list :inputs (list 'quote inputs) :overrides (list 'quote overrides) :outputs (list 'quote outputs))))
+       (outputs (svtv*-outputs-to-svtv-lines outputnames x))
+       (labels (svtv*-phaselist-collect-labels x)))
+    (list :inputs (list 'quote inputs) :overrides (list 'quote overrides) :outputs (list 'quote outputs) :labels (list 'quote labels))))
 
 (define maybe-keyword-arg ((name symbolp) (alist alistp))
   (b* ((look (assoc-eq name alist)))

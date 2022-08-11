@@ -48,7 +48,7 @@
 
 (defxdoc svex-decomp
   :parents (sv)
-  :short "Proving that a decomposition is equivalent to some whole."
+  :short "(Deprecated) Proving that a decomposition is equivalent to some whole."
   :long "<p>Here is an example, from \"svex/tutorial/boothpipe.lisp\", showing
 how to use @('svdecomp-hints') to prove a decomposition theorem:</p>
 
@@ -2769,5 +2769,5 @@ trigger on any of the following:</p>
 
 (defxdoc svdecomp-hints
   :parents (svex-decomp)
-  :short "Hint used for svex hardware model recomposition proofs -- see @(see
+  :short "(Deprecated) Hint used for svex hardware model recomposition proofs -- see @(see
           svex-decomp).")

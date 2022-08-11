@@ -125,14 +125,15 @@
               (svtv-data->cycle-fsm-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
-  :returns new-svtv-data
+  :returns (mv updated new-svtv-data)
   (if (and (equal (pipeline-setup-fix pipeline-setup)
                   (svtv-data->pipeline-setup svtv-data))
            (svtv-data->pipeline-validp svtv-data))
-      svtv-data
+      (mv nil svtv-data)
     (b* ((svtv-data (update-svtv-data->pipeline-validp nil svtv-data))
-         (svtv-data (update-svtv-data->pipeline-setup pipeline-setup svtv-data)))
-      (svtv-data-compute-pipeline svtv-data :simp simp)))
+         (svtv-data (update-svtv-data->pipeline-setup pipeline-setup svtv-data))
+         (svtv-data (svtv-data-compute-pipeline svtv-data :simp simp)))
+      (mv t svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
