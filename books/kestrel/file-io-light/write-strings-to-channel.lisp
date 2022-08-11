@@ -13,9 +13,7 @@
 (include-book "princ-dollar")
 (local (include-book "kestrel/utilities/state" :dir :system))
 
-(local (in-theory (disable state-p
-                           open-output-channel-p1
-                           open-output-channel-p)))
+(local (in-theory (disable open-output-channel-p1 open-output-channel-p)))
 
 ;; Returns state.
 (defund write-strings-to-channel (strings channel state)

@@ -17,12 +17,9 @@
 (local (include-book "kestrel/utilities/get-serialize-character" :dir :system))
 (local (include-book "open-output-channel"))
 
-(local (in-theory (disable state-p1 open-output-channel put-global
-                           open-output-channel!
+(local (in-theory (disable put-global
                            open-output-channel-p1
-                           open-output-channel-p
-                           true-listp
-                           get-serialize-character)))
+                           open-output-channel-p)))
 
 ;; Writes the OBJECTS to file FILENAME, overwriting its previous contents.
 ;; Returns (mv erp state).

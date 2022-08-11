@@ -28,10 +28,7 @@
                     mv-nth ;so that the rules below fire
                     ))
 
-(local (in-theory (disable add-pair ordered-symbol-alistp
-                           update-open-output-channels
-                           open-output-channels
-                           update-file-clock)))
+(local (in-theory (disable add-pair ordered-symbol-alistp)))
 
 ;move
 (defthmd not-member-equal-when-not-writable-file-listp1

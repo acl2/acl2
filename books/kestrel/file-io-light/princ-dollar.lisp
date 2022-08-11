@@ -17,7 +17,7 @@
 
 (in-theory (disable princ$))
 
-(local (in-theory (disable state-p1 explode-atom open-output-channels open-output-channel-p1)))
+(local (in-theory (disable open-output-channels open-output-channel-p1)))
 
 (defthm open-output-channel-p1-of-princ$-gen
   (implies (open-output-channel-p1 channel2 typ state)

@@ -17,9 +17,7 @@
 
 (defttag file-io!)
 
-(local (in-theory (disable state-p1 open-output-channel put-global
-                           open-output-channel!
-                           open-output-channel-p1)))
+(local (in-theory (disable open-output-channel-p1 put-global)))
 
 ;; Writes the OBJECTS to file FILENAME, overwriting its previous contents.
 ;; Returns (mv erp state).  The ttag is needed because this calls

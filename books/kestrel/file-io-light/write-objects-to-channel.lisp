@@ -13,7 +13,7 @@
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "print-object-dollar"))
 
-(local (in-theory (disable state-p1 open-output-channel-p open-output-channel-p1)))
+(local (in-theory (disable open-output-channel-p open-output-channel-p1)))
 
 ;; Write the elements of OBJECTS to CHANNEL.  Returns STATE.
 (defund write-objects-to-channel (objects channel state)
