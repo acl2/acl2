@@ -139,9 +139,9 @@ cgen-state"
         ;; and the third arg to init-cgen-state/event is supposed to
         ;; satisfy allowed-cgen-event-ctx-p
         ((equal ctx :undefined) t)
-        ((member-equal ctx 'acl2::(THM DEFTHM VERIFY-GUARDS)))
+        ((member-equal ctx '(acl2::THM acl2::DEFTHM acl2::VERIFY-GUARDS)))
         ((and (consp ctx)
-              (member-equal (car ctx) 'acl2::(DEFTHM VERIFY-GUARDS))) t)
+              (member-equal (car ctx) '(acl2::DEFTHM acl2::VERIFY-GUARDS))) t)
         ((and (consp ctx)
               (member-equal (car ctx)
                             (list "( VERIFY-GUARDS ~x0)" ))) t)
