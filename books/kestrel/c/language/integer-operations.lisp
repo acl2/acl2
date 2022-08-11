@@ -135,3 +135,35 @@
                       (ifix int))))
     :enable (value-integer
              value-integer->get)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define convert-integer-value ((val valuep) (type typep))
+  :guard (and (value-integerp val)
+              (type-nonchar-integerp type))
+  :returns (newval value-resultp)
+  :short "Convert an integer value to an integer type [C:6.3.1.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We extract the underlying mathematical (i.e. ACL2) integer from the value,
+     and we attempt to contruct an integer value of the new type from it.
+     If the new type is unsigned,
+     the mathematical integer is reduced
+     modulo one plus the maximum value of the unsigned type;
+     this always works, i.e. no error is ever returned.
+     If the new type is signed, there are two cases:
+     if the mathematical integer fits in the type,
+     we return a value of that type with that integer;
+     otherwise, we return an error.")
+   (xdoc::p
+    "We do not yet support conversions to the plain @('char') type;
+     this restriction is expressed by the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (b* ((mathint (value-integer->get val)))
+    (if (type-unsigned-integerp type)
+        (value-integer (mod mathint (1+ (integer-type-max type)))
+                       type)
+      (value-integer mathint type)))
+  :hooks (:fix))
