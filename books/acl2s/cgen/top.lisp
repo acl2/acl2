@@ -93,6 +93,10 @@
                   :stobjs (state)))
 ;        :sig ((any hints keyword-value-listp state) -> (mv erp any state))
   (b* ((ctx 'test?)
+       (debug-enable (acl2::f-get-global 'acl2::debugger-enable state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  :never
+                                  state))
 
        (cgen::cgen-state (cgen::make-cgen-state-fn form (cons :USER-DEFINED ctx)
                                                    override-defaults (w state)))
@@ -142,7 +146,9 @@
                   (cgen::cw? (and pts? (cgen::normal-output-flag vl))
                        "~%Test? succeeded. No counterexamples were found.~%")
                   (mv NIL state)))))
-
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  debug-enable
+                                  state))
        )
 
     (mv cts-found? '(value-triple :invisible) state )))
