@@ -769,6 +769,17 @@
   :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
 
+(defthm is-rp-of-rp
+    (implies (AND (SYMBOLP TYPE)
+                  (NOT (BOOLEANP TYPE))
+                  (NOT (EQUAL TYPE 'QUOTE))
+                  (NOT (EQUAL TYPE 'RP))
+                  (NOT (EQUAL TYPE 'LIST))
+                  (NOT (EQUAL TYPE 'FALIST)))
+             (is-rp `(rp ',type ,x)))
+    :hints (("Goal"
+             :in-theory (e/d (is-rp) ()))))
+
 (defthmd rule-syntaxp-implies
   (implies (and (rule-syntaxp rule :warning warning)
                 (not (rp-rule-metap rule)))

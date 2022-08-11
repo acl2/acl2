@@ -3965,12 +3965,3 @@
 
 
 
-;; :i-am-here
-
-;; (defret pp-term-bind-correct
-;;   (defret pp-term-bind-correct
-;;     (implies (and valid
-;;                   (rp-termp term)
-;;                   (valid-sc term a)
-;;                   (
-   

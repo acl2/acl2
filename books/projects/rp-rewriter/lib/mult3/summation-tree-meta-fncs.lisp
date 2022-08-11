@@ -41,6 +41,8 @@
 
 (include-book "pp-flatten-meta-fncs")
 
+(include-book "pp-flatten-with-binds-meta")
+
 (include-book "std/util/defines" :dir :system)
 
 (include-book "sum-merge-fncs")

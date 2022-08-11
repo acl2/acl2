@@ -831,16 +831,7 @@
      :hints (("Goal"
               :in-theory (e/d (is-rp) ())))))
 
-  (local
-   (defthm is-rp-of-rp
-     (NOT (IS-RP (LIST 'RP
-                       (LIST 'RP
-                             x
-                             y)
-                       z)))
-     :hints (("Goal"
-              :in-theory (e/d (is-rp) ())))))
-
+ 
   (local
    (defthm lemma17
      (implies (and (eval-and-all-nt (context-from-rp term nil) a)
