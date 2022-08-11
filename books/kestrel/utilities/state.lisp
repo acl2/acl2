@@ -35,6 +35,46 @@
                     boundp-global1
                     w))
 
+(deftheory state-field-accessors
+  '(open-input-channels
+    open-output-channels
+    global-table
+    t-stack
+    32-bit-integer-stack
+    big-clock-entry
+    idates
+    acl2-oracle
+    file-clock
+    readable-files
+    written-files
+    read-files
+    writeable-files
+    list-all-package-names-lst
+    user-stobj-alist1)
+  :redundant-okp t)
+
+(deftheory state-field-updaters
+  '(update-open-input-channels
+    update-open-output-channels
+    update-global-table
+    update-t-stack
+    update-32-bit-integer-stack
+    update-big-clock-entry
+    update-idates
+    update-acl2-oracle
+    update-file-clock
+    ;; update-readable-files
+    update-written-files
+    update-read-files
+    ;; update-writeable-files
+    update-list-all-package-names-lst
+    update-user-stobj-alist1)
+  :redundant-okp t)
+
+;; DISABLE the accessors and updaters of the fields of state:
+(in-theory (disable state-field-accessors
+                    state-field-updaters))
+
 (local (in-theory (disable assoc-equal nth update-nth)))
 
 ;; since the state is a true-list
@@ -71,31 +111,31 @@
   (implies (state-p1 state)
            (equal (len (update-open-input-channels x state))
                   (len state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+  :hints (("Goal" :in-theory (enable update-open-input-channels state-p1))))
 
 (defthm len-of-update-open-output-channels
   (implies (state-p1 state)
            (equal (len (update-open-output-channels x state))
                   (len state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+  :hints (("Goal" :in-theory (enable update-open-output-channels state-p1))))
 
 (defthm len-of-update-file-clock
   (implies (state-p1 state)
            (equal (len (update-file-clock x state))
                   (len state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+  :hints (("Goal" :in-theory (enable update-file-clock state-p1))))
 
 (defthm len-of-update-global-table
   (implies (state-p1 state)
            (equal (len (update-global-table x state))
                   (len state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+  :hints (("Goal" :in-theory (enable update-global-table state-p1))))
 
 (defthm len-of-update-read-files
   (implies (state-p1 state)
            (equal (len (update-read-files x state))
                   (len state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+  :hints (("Goal" :in-theory (enable update-read-files state-p1))))
 
 ;; Conjuncts of state-p
 
@@ -139,318 +179,326 @@
 
 ;; Read-over-write theorems for states (different fields)
 
-(defthm global-table-of-update-open-input-channels
-  (equal (global-table (update-open-input-channels x st))
-         (global-table st)))
-
-(defthm global-table-of-update-open-output-channels
-  (equal (global-table (update-open-output-channels x st))
-         (global-table st)))
-
-(defthm global-table-of-update-file-clock
-  (equal (global-table (update-file-clock x st))
-         (global-table st)))
-
-(defthm readable-files-of-update-open-input-channels
-  (equal (readable-files (update-open-input-channels x st))
-         (readable-files st)))
-
-(defthm readable-files-of-update-open-output-channels
-  (equal (readable-files (update-open-output-channels x st))
-         (readable-files st)))
-
-(defthm readable-files-of-update-file-clock
-  (equal (readable-files (update-file-clock x st))
-         (readable-files st)))
-
-(defthm readable-files-of-update-global-table
-  (equal (readable-files (update-global-table x st))
-         (readable-files st)))
-
-(defthm big-clock-entry-of-update-open-input-channels
-  (equal (big-clock-entry (update-open-input-channels x st))
-         (big-clock-entry st)))
-
-(defthm big-clock-entry-of-update-open-output-channels
-  (equal (big-clock-entry (update-open-output-channels x st))
-         (big-clock-entry st)))
-
-(defthm big-clock-entry-of-update-file-clock
-  (equal (big-clock-entry (update-file-clock x st))
-         (big-clock-entry st)))
-
-(defthm big-clock-entry-of-update-global-table
-  (equal (big-clock-entry (update-global-table x st))
-         (big-clock-entry st)))
-
-(defthm writeable-files-of-update-open-input-channels
-  (equal (writeable-files (update-open-input-channels x st))
-         (writeable-files st)))
-
-(defthm writeable-files-of-update-open-output-channels
-  (equal (writeable-files (update-open-output-channels x st))
-         (writeable-files st)))
-
-(defthm writeable-files-of-update-file-clock
-  (equal (writeable-files (update-file-clock x st))
-         (writeable-files st)))
-
-(defthm writeable-files-of-update-global-table
-  (equal (writeable-files (update-global-table x st))
-         (writeable-files st)))
-
-(defthm file-clock-of-update-open-input-channels
-  (equal (file-clock (update-open-input-channels x st))
-         (file-clock st)))
-
-(defthm file-clock-of-update-open-output-channels
-  (equal (file-clock (update-open-output-channels x st))
-         (file-clock st)))
-
-(defthm file-clock-of-update-global-table
-  (equal (file-clock (update-global-table x st))
-         (file-clock st)))
-
-(defthm written-files-of-update-open-input-channels
-  (equal (written-files (update-open-input-channels x st))
-         (written-files st)))
-
-(defthm written-files-of-update-open-output-channels
-  (equal (written-files (update-open-output-channels x st))
-         (written-files st)))
-
-(defthm written-files-of-update-file-clock
-  (equal (written-files (update-file-clock x st))
-         (written-files st)))
-
-(defthm idates-of-update-open-input-channels
-  (equal (idates (update-open-input-channels x st))
-         (idates st)))
-
-(defthm idates-of-update-open-output-channels
-  (equal (idates (update-open-output-channels x st))
-         (idates st)))
-
-(defthm idates-of-update-file-clock
-  (equal (idates (update-file-clock x st))
-         (idates st)))
-
-(defthm t-stack-of-update-open-input-channels
-  (equal (t-stack (update-open-input-channels x st))
-         (t-stack st)))
-
-(defthm t-stack-of-update-open-output-channels
-  (equal (t-stack (update-open-output-channels x st))
-         (t-stack st)))
-
-(defthm t-stack-of-update-file-clock
-  (equal (t-stack (update-file-clock x st))
-         (t-stack st)))
-
-(defthm t-stack-of-update-global-table
-  (equal (t-stack (update-global-table x st))
-         (t-stack st)))
-
-(defthm 32-bit-integer-stack-of-update-open-input-channels
-  (equal (32-bit-integer-stack (update-open-input-channels x st))
-         (32-bit-integer-stack st)))
-
-(defthm 32-bit-integer-stack-of-update-open-output-channels
-  (equal (32-bit-integer-stack (update-open-output-channels x st))
-         (32-bit-integer-stack st)))
-
-(defthm 32-bit-integer-stack-of-update-file-clock
-  (equal (32-bit-integer-stack (update-file-clock x st))
-         (32-bit-integer-stack st)))
-
-(defthm 32-bit-integer-stack-of-update-global-table
-  (equal (32-bit-integer-stack (update-global-table x st))
-         (32-bit-integer-stack st)))
-
-(defthm user-stobj-alist1-of-update-open-input-channels
-  (equal (user-stobj-alist1 (update-open-input-channels x st))
-         (user-stobj-alist1 st)))
-
-(defthm user-stobj-alist1-of-update-open-output-channels
-  (equal (user-stobj-alist1 (update-open-output-channels x st))
-         (user-stobj-alist1 st)))
-
-(defthm user-stobj-alist1-of-update-file-clock
-  (equal (user-stobj-alist1 (update-file-clock x st))
-         (user-stobj-alist1 st)))
-
-(defthm user-stobj-alist1-of-update-global-table
-  (equal (user-stobj-alist1 (update-global-table x st))
-         (user-stobj-alist1 st)))
-
-(defthm acl2-oracle-of-update-open-input-channels
-  (equal (acl2-oracle (update-open-input-channels x st))
-         (acl2-oracle st)))
-
-(defthm acl2-oracle-of-update-open-output-channels
-  (equal (acl2-oracle (update-open-output-channels x st))
-         (acl2-oracle st)))
-
-(defthm acl2-oracle-of-update-file-clock
-  (equal (acl2-oracle (update-file-clock x st))
-         (acl2-oracle st)))
-
-(defthm acl2-oracle-of-update-global-table
-  (equal (acl2-oracle (update-global-table x st))
-         (acl2-oracle st)))
-
-(defthm read-files-of-update-open-input-channels
-  (equal (read-files (update-open-input-channels x st))
-         (read-files st)))
-
-(defthm read-files-of-update-open-output-channels
-  (equal (read-files (update-open-output-channels x st))
-         (read-files st)))
-
-(defthm read-files-of-update-file-clock
-  (equal (read-files (update-file-clock x st))
-         (read-files st)))
-
-(defthm read-files-of-update-global-table
-  (equal (read-files (update-global-table x st))
-         (read-files st)))
-
-(defthm open-output-channels-of-update-open-input-channels
-  (equal (open-output-channels (update-open-input-channels x st))
-         (open-output-channels st)))
-
-(defthm open-output-channels-of-update-file-clock
-  (equal (open-output-channels (update-file-clock x st))
-         (open-output-channels st)))
-
-(defthm open-output-channels-of-update-global-table
-  (equal (open-output-channels (update-global-table x st))
-         (open-output-channels st)))
+(encapsulate ()
+  (local (in-theory (enable state-field-accessors state-field-updaters)))
+
+  (defthm global-table-of-update-open-input-channels
+    (equal (global-table (update-open-input-channels x st))
+           (global-table st)))
+
+  (defthm global-table-of-update-open-output-channels
+    (equal (global-table (update-open-output-channels x st))
+           (global-table st)))
+
+  (defthm global-table-of-update-file-clock
+    (equal (global-table (update-file-clock x st))
+           (global-table st)))
+
+  (defthm readable-files-of-update-open-input-channels
+    (equal (readable-files (update-open-input-channels x st))
+           (readable-files st)))
+
+  (defthm readable-files-of-update-open-output-channels
+    (equal (readable-files (update-open-output-channels x st))
+           (readable-files st)))
+
+  (defthm readable-files-of-update-file-clock
+    (equal (readable-files (update-file-clock x st))
+           (readable-files st)))
+
+  (defthm readable-files-of-update-global-table
+    (equal (readable-files (update-global-table x st))
+           (readable-files st)))
+
+  (defthm big-clock-entry-of-update-open-input-channels
+    (equal (big-clock-entry (update-open-input-channels x st))
+           (big-clock-entry st)))
+
+  (defthm big-clock-entry-of-update-open-output-channels
+    (equal (big-clock-entry (update-open-output-channels x st))
+           (big-clock-entry st)))
+
+  (defthm big-clock-entry-of-update-file-clock
+    (equal (big-clock-entry (update-file-clock x st))
+           (big-clock-entry st)))
+
+  (defthm big-clock-entry-of-update-global-table
+    (equal (big-clock-entry (update-global-table x st))
+           (big-clock-entry st)))
+
+  (defthm writeable-files-of-update-open-input-channels
+    (equal (writeable-files (update-open-input-channels x st))
+           (writeable-files st)))
+
+  (defthm writeable-files-of-update-open-output-channels
+    (equal (writeable-files (update-open-output-channels x st))
+           (writeable-files st)))
+
+  (defthm writeable-files-of-update-file-clock
+    (equal (writeable-files (update-file-clock x st))
+           (writeable-files st)))
+
+  (defthm writeable-files-of-update-global-table
+    (equal (writeable-files (update-global-table x st))
+           (writeable-files st)))
+
+  (defthm file-clock-of-update-open-input-channels
+    (equal (file-clock (update-open-input-channels x st))
+           (file-clock st)))
+
+  (defthm file-clock-of-update-open-output-channels
+    (equal (file-clock (update-open-output-channels x st))
+           (file-clock st)))
+
+  (defthm file-clock-of-update-global-table
+    (equal (file-clock (update-global-table x st))
+           (file-clock st)))
+
+  (defthm written-files-of-update-open-input-channels
+    (equal (written-files (update-open-input-channels x st))
+           (written-files st)))
+
+  (defthm written-files-of-update-open-output-channels
+    (equal (written-files (update-open-output-channels x st))
+           (written-files st)))
+
+  (defthm written-files-of-update-file-clock
+    (equal (written-files (update-file-clock x st))
+           (written-files st)))
+
+  (defthm idates-of-update-open-input-channels
+    (equal (idates (update-open-input-channels x st))
+           (idates st)))
+
+  (defthm idates-of-update-open-output-channels
+    (equal (idates (update-open-output-channels x st))
+           (idates st)))
+
+  (defthm idates-of-update-file-clock
+    (equal (idates (update-file-clock x st))
+           (idates st)))
+
+  (defthm t-stack-of-update-open-input-channels
+    (equal (t-stack (update-open-input-channels x st))
+           (t-stack st)))
+
+  (defthm t-stack-of-update-open-output-channels
+    (equal (t-stack (update-open-output-channels x st))
+           (t-stack st)))
+
+  (defthm t-stack-of-update-file-clock
+    (equal (t-stack (update-file-clock x st))
+           (t-stack st)))
+
+  (defthm t-stack-of-update-global-table
+    (equal (t-stack (update-global-table x st))
+           (t-stack st)))
+
+  (defthm 32-bit-integer-stack-of-update-open-input-channels
+    (equal (32-bit-integer-stack (update-open-input-channels x st))
+           (32-bit-integer-stack st)))
+
+  (defthm 32-bit-integer-stack-of-update-open-output-channels
+    (equal (32-bit-integer-stack (update-open-output-channels x st))
+           (32-bit-integer-stack st)))
+
+  (defthm 32-bit-integer-stack-of-update-file-clock
+    (equal (32-bit-integer-stack (update-file-clock x st))
+           (32-bit-integer-stack st)))
+
+  (defthm 32-bit-integer-stack-of-update-global-table
+    (equal (32-bit-integer-stack (update-global-table x st))
+           (32-bit-integer-stack st)))
+
+  (defthm user-stobj-alist1-of-update-open-input-channels
+    (equal (user-stobj-alist1 (update-open-input-channels x st))
+           (user-stobj-alist1 st)))
+
+  (defthm user-stobj-alist1-of-update-open-output-channels
+    (equal (user-stobj-alist1 (update-open-output-channels x st))
+           (user-stobj-alist1 st)))
+
+  (defthm user-stobj-alist1-of-update-file-clock
+    (equal (user-stobj-alist1 (update-file-clock x st))
+           (user-stobj-alist1 st)))
+
+  (defthm user-stobj-alist1-of-update-global-table
+    (equal (user-stobj-alist1 (update-global-table x st))
+           (user-stobj-alist1 st)))
+
+  (defthm acl2-oracle-of-update-open-input-channels
+    (equal (acl2-oracle (update-open-input-channels x st))
+           (acl2-oracle st)))
+
+  (defthm acl2-oracle-of-update-open-output-channels
+    (equal (acl2-oracle (update-open-output-channels x st))
+           (acl2-oracle st)))
+
+  (defthm acl2-oracle-of-update-file-clock
+    (equal (acl2-oracle (update-file-clock x st))
+           (acl2-oracle st)))
+
+  (defthm acl2-oracle-of-update-global-table
+    (equal (acl2-oracle (update-global-table x st))
+           (acl2-oracle st)))
+
+  (defthm read-files-of-update-open-input-channels
+    (equal (read-files (update-open-input-channels x st))
+           (read-files st)))
+
+  (defthm read-files-of-update-open-output-channels
+    (equal (read-files (update-open-output-channels x st))
+           (read-files st)))
+
+  (defthm read-files-of-update-file-clock
+    (equal (read-files (update-file-clock x st))
+           (read-files st)))
+
+  (defthm read-files-of-update-global-table
+    (equal (read-files (update-global-table x st))
+           (read-files st)))
+
+  (defthm open-output-channels-of-update-open-input-channels
+    (equal (open-output-channels (update-open-input-channels x st))
+           (open-output-channels st)))
+
+  (defthm open-output-channels-of-update-file-clock
+    (equal (open-output-channels (update-file-clock x st))
+           (open-output-channels st)))
+
+  (defthm open-output-channels-of-update-global-table
+    (equal (open-output-channels (update-global-table x st))
+           (open-output-channels st)))
+
+  (defthm open-output-channels-of-put-global
+    (equal (open-output-channels (put-global key value st))
+           (open-output-channels st)))
 
-(defthm open-output-channels-of-put-global
-  (equal (open-output-channels (put-global key value st))
-         (open-output-channels st)))
+  (defthm open-input-channels-of-update-file-clock
+    (equal (open-input-channels (update-file-clock x st))
+           (open-input-channels st)))
 
-(defthm open-input-channels-of-update-file-clock
-  (equal (open-input-channels (update-file-clock x st))
-         (open-input-channels st)))
+  (defthm open-input-channels-of-update-global-table
+    (equal (open-input-channels (update-global-table x st))
+           (open-input-channels st)))
 
-(defthm open-input-channels-of-update-global-table
-  (equal (open-input-channels (update-global-table x st))
-         (open-input-channels st)))
+  (defthm open-input-channels-of-update-open-output-channels
+    (equal (open-input-channels (update-open-output-channels x st))
+           (open-input-channels st)))
 
-(defthm open-input-channels-of-update-open-output-channels
-  (equal (open-input-channels (update-open-output-channels x st))
-         (open-input-channels st)))
+  (defthm list-all-package-names-lst-of-update-open-input-channels
+    (equal (list-all-package-names-lst (update-open-input-channels x st))
+           (list-all-package-names-lst st)))
 
-(defthm list-all-package-names-lst-of-update-open-input-channels
-  (equal (list-all-package-names-lst (update-open-input-channels x st))
-         (list-all-package-names-lst st)))
+  (defthm list-all-package-names-lst-of-update-open-output-channels
+    (equal (list-all-package-names-lst (update-open-output-channels x st))
+           (list-all-package-names-lst st)))
 
-(defthm list-all-package-names-lst-of-update-open-output-channels
-  (equal (list-all-package-names-lst (update-open-output-channels x st))
-         (list-all-package-names-lst st)))
+  (defthm list-all-package-names-lst-of-update-file-clock
+    (equal (list-all-package-names-lst (update-file-clock x st))
+           (list-all-package-names-lst st)))
 
-(defthm list-all-package-names-lst-of-update-file-clock
-  (equal (list-all-package-names-lst (update-file-clock x st))
-         (list-all-package-names-lst st)))
+  (defthm list-all-package-names-lst-of-update-global-table
+    (equal (list-all-package-names-lst (update-global-table x st))
+           (list-all-package-names-lst st)))
 
-(defthm list-all-package-names-lst-of-update-global-table
-  (equal (list-all-package-names-lst (update-global-table x st))
-         (list-all-package-names-lst st)))
+  (defthm list-all-package-names-lst-of-update-read-files
+    (equal (list-all-package-names-lst (update-read-files x st))
+           (list-all-package-names-lst st)))
 
-(defthm global-table-of-update-read-files
-  (equal (global-table (update-read-files x st))
-         (global-table st)))
+  (defthm global-table-of-update-read-files
+    (equal (global-table (update-read-files x st))
+           (global-table st)))
 
-(defthm global-table-of-update-open-output-channels
-  (equal (global-table (update-open-output-channels x st))
-         (global-table st)))
+  (defthm global-table-of-update-open-output-channels
+    (equal (global-table (update-open-output-channels x st))
+           (global-table st)))
 
-(defthm readable-files-of-update-read-files
-  (equal (readable-files (update-read-files x st))
-         (readable-files st)))
+  (defthm readable-files-of-update-read-files
+    (equal (readable-files (update-read-files x st))
+           (readable-files st)))
 
-(defthm big-clock-entry-of-update-read-files
-  (equal (big-clock-entry (update-read-files x st))
-         (big-clock-entry st)))
+  (defthm big-clock-entry-of-update-read-files
+    (equal (big-clock-entry (update-read-files x st))
+           (big-clock-entry st)))
 
-(defthm writeable-files-of-update-read-files
-  (equal (writeable-files (update-read-files x st))
-         (writeable-files st)))
+  (defthm writeable-files-of-update-read-files
+    (equal (writeable-files (update-read-files x st))
+           (writeable-files st)))
 
-(defthm file-clock-of-update-read-files
-  (equal (file-clock (update-read-files x st))
-         (file-clock st)))
+  (defthm file-clock-of-update-read-files
+    (equal (file-clock (update-read-files x st))
+           (file-clock st)))
 
-(defthm written-files-of-update-read-files
-  (equal (written-files (update-read-files x st))
-         (written-files st)))
+  (defthm written-files-of-update-read-files
+    (equal (written-files (update-read-files x st))
+           (written-files st)))
 
-(defthm written-files-of-update-global-table
-  (equal (written-files (update-global-table x st))
-         (written-files st)))
+  (defthm written-files-of-update-global-table
+    (equal (written-files (update-global-table x st))
+           (written-files st)))
 
-(defthm idates-of-update-read-files
-  (equal (idates (update-read-files x st))
-         (idates st)))
+  (defthm idates-of-update-read-files
+    (equal (idates (update-read-files x st))
+           (idates st)))
 
-(defthm idates-of-update-global-table
-  (equal (idates (update-global-table x st))
-         (idates st)))
+  (defthm idates-of-update-global-table
+    (equal (idates (update-global-table x st))
+           (idates st)))
 
-(defthm t-stack-of-update-read-files
-  (equal (t-stack (update-read-files x st))
-         (t-stack st)))
+  (defthm t-stack-of-update-read-files
+    (equal (t-stack (update-read-files x st))
+           (t-stack st)))
 
-(defthm 32-bit-integer-stack-of-update-read-files
-  (equal (32-bit-integer-stack (update-read-files x st))
-         (32-bit-integer-stack st)))
+  (defthm 32-bit-integer-stack-of-update-read-files
+    (equal (32-bit-integer-stack (update-read-files x st))
+           (32-bit-integer-stack st)))
 
-(defthm user-stobj-alist1-of-update-read-files
-  (equal (user-stobj-alist1 (update-read-files x st))
-         (user-stobj-alist1 st)))
+  (defthm user-stobj-alist1-of-update-read-files
+    (equal (user-stobj-alist1 (update-read-files x st))
+           (user-stobj-alist1 st)))
 
-(defthm acl2-oracle-of-update-read-files
-  (equal (acl2-oracle (update-read-files x st))
-         (acl2-oracle st)))
+  (defthm acl2-oracle-of-update-read-files
+    (equal (acl2-oracle (update-read-files x st))
+           (acl2-oracle st)))
 
-(defthm open-output-channels-of-update-read-files
-  (equal (open-output-channels (update-read-files x st))
-         (open-output-channels st)))
+  (defthm open-output-channels-of-update-read-files
+    (equal (open-output-channels (update-read-files x st))
+           (open-output-channels st)))
 
-(defthm open-input-channels-of-update-read-files
-  (equal (open-input-channels (update-read-files x st))
-         (open-input-channels st)))
+  (defthm open-input-channels-of-update-read-files
+    (equal (open-input-channels (update-read-files x st))
+           (open-input-channels st)))
 
 
-
-(defthm list-all-package-names-lst-of-update-read-files
-  (equal (list-all-package-names-lst (update-read-files x st))
-         (list-all-package-names-lst st)))
+  )
 
 ;; read-over-write rules (same field)
 
-(defthm file-clock-of-update-file-clock
-  (equal (file-clock (update-file-clock x state))
-         x))
+(encapsulate ()
+  (local (in-theory (enable state-field-accessors state-field-updaters)))
 
-(defthm global-table-of-update-global-table
-  (equal (global-table (update-global-table x state))
-         x))
+  (defthm file-clock-of-update-file-clock
+    (equal (file-clock (update-file-clock x state))
+           x))
 
-(defthm open-input-channels-of-update-open-input-channels
-  (equal (open-input-channels (update-open-input-channels x state))
-         x))
+  (defthm global-table-of-update-global-table
+    (equal (global-table (update-global-table x state))
+           x))
 
-(defthm open-output-channels-of-update-open-output-channels
-  (equal (open-output-channels (update-open-output-channels x state))
-         x))
+  (defthm open-input-channels-of-update-open-input-channels
+    (equal (open-input-channels (update-open-input-channels x state))
+           x))
 
-(defthm read-files-of-update-read-files
-  (equal (read-files (update-read-files x state))
-         x)
-  :hints (("Goal" :in-theory (enable read-files update-read-files))))
+  (defthm open-output-channels-of-update-open-output-channels
+    (equal (open-output-channels (update-open-output-channels x state))
+           x))
+
+  (defthm read-files-of-update-read-files
+    (equal (read-files (update-read-files x state))
+           x)
+    :hints (("Goal" :in-theory (enable read-files update-read-files))))
+  )
 
 (defthm file-clock-p-of-+-of-1
   (implies (file-clock-p x)
@@ -492,38 +540,7 @@
            (typed-io-listp (cdr (assoc-equal key readable-files)) typ))
   :hints (("Goal" :in-theory (enable readable-files-p member-equal assoc-equal))))
 
-;; DISABLE the accessors and updaters of the fields of state:
-(in-theory (disable open-input-channels
-                    open-output-channels
-                    global-table
-                    t-stack
-                    32-bit-integer-stack
-                    big-clock-entry
-                    idates
-                    acl2-oracle
-                    file-clock
-                    readable-files
-                    written-files
-                    read-files
-                    writeable-files
-                    list-all-package-names-lst
-                    user-stobj-alist1
-                    ;; updaters:
-                    update-open-input-channels
-                    update-open-output-channels
-                    update-global-table
-                    update-t-stack
-                    update-32-bit-integer-stack
-                    update-big-clock-entry
-                    update-idates
-                    update-acl2-oracle
-                    update-file-clock
-                    ;; update-readable-files
-                    update-written-files
-                    update-read-files
-                    ;; update-writeable-files
-                    update-list-all-package-names-lst
-                    update-user-stobj-alist1))
+
 
 ;move up?
 (defthm state-p1-of-update-open-input-channels
