@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function write-byte$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,8 @@
 
 (in-package "ACL2")
 
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
+(local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/channels" :dir :system))
 
 (defthm state-p1-of-write-byte$-alt
   (implies (and (state-p state)
@@ -20,13 +21,9 @@
                 (unsigned-byte-p 8 byte) ;this is what's different
                 )
            (state-p1 (write-byte$ byte channel state)))
-  :hints (("Goal" :use (:instance state-p1-of-write-byte$)
-           :in-theory (e/d (open-output-channel-p)
-                           (state-p1-of-write-byte$)))))
+  :hints (("Goal" :in-theory (enable write-byte$))))
 
 (defthm open-output-channel-p1-of-write-byte$-gen
   (implies (open-output-channel-p1 channel2 typ state)
            (open-output-channel-p1 channel2 typ (write-byte$ byte channel state)))
-  :hints (("Goal" :in-theory (enable write-byte$
-                                     open-output-channel-p1 ;todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable write-byte$))))

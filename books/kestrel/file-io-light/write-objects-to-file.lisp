@@ -13,8 +13,15 @@
 ;; TODO: Why does the resulting file always start with a blank line?
 
 (include-book "write-objects-to-channel")
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
 (local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "open-output-channel"))
+
+(local (in-theory (disable state-p1 open-output-channel put-global
+                           open-output-channel!
+                           open-output-channel-p1
+                           open-output-channel-p
+                           true-listp
+                           get-serialize-character)))
 
 ;move
 (local

@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a channel
 ;
-; Copyright (C) 2017-2021 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,9 +10,10 @@
 
 (in-package "ACL2")
 
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "print-object-dollar"))
+
+(local (in-theory (disable state-p1 open-output-channel-p open-output-channel-p1)))
 
 ;; Write the elements of OBJECTS to CHANNEL.  Returns STATE.
 (defund write-objects-to-channel (objects channel state)
@@ -39,4 +40,5 @@
                 (symbolp channel)
                 (state-p1 state))
            (state-p1 (write-objects-to-channel list channel state)))
-  :hints (("Goal" :in-theory (enable write-objects-to-channel))))
+  :hints (("Goal" :in-theory (enable write-objects-to-channel
+                                     open-output-channel-p))))

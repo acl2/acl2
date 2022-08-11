@@ -33,12 +33,20 @@
                                   ;   open-output-channels
                                      open-output-channel-p))))
 
+;; Avoids name clash with std
+(defthm state-p1-of-print-object$-alt
+  (implies (and (state-p state)
+                (open-output-channel-p channel :object state))
+           (equal (state-p1 (print-object$ x channel state))
+                  (symbolp channel)))
+  :hints (("Goal" :in-theory (enable print-object$))))
+
 (defthm state-p-of-print-object$
   (implies (and (state-p state)
                 (open-output-channel-p channel :object state))
            (equal (state-p (print-object$ x channel state))
                   (symbolp channel)))
-  :hints (("Goal" :in-theory (enable print-object$))))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm global-table-of-print-object$
   (equal (global-table (print-object$ x channel state))

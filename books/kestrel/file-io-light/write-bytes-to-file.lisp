@@ -11,7 +11,10 @@
 (in-package "ACL2")
 
 (include-book "write-bytes-to-channel")
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
+(local (include-book "open-output-channel"))
+(local (include-book "kestrel/utilities/channels" :dir :system))
+
+(local (in-theory (disable state-p)))
 
 ;; Writes the BYTES to file FILENAME, overwriting its previous contents.
 ;; Returns (mv erp state).
