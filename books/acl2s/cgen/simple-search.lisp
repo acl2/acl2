@@ -702,7 +702,8 @@ where
 (defun run-tests-with-timeout (vars test-outcomes% gcs% vl cgen-state state)
   (acl2::with-timeout1 
    (cget cgen-local-timeout)
-   (b* (;((mv rseed. state) ) (acl2::random$ defdata::*M31* state) ;Lets try CL's builtin random number generator
+   (b* ( ;((mv rseed. state) ) (acl2::random$ defdata::*M31* state)
+        ;;Lets try CL's builtin random number generator
         (rseed. (defdata::getseed state))
         (- (cw? (system-debug-flag vl)
                 "~|Cgen/Sysdebug/run-tests: starting SEED: ~x0 ~%" rseed.))
