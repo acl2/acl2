@@ -20,21 +20,6 @@
 (local (include-book "channels"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-;; Disable predicates on state components (TODO: Add more)
-(in-theory (disable open-channels-p
-                    ordered-symbol-alistp
-                    all-boundp
-                    32-bit-integer-listp
-                    file-clock-p
-                    read-files-p
-                    readable-files-p
-                    writeable-files-p
-                    written-files-p
-                    ;; so the rules below fire:
-                    boundp-global
-                    boundp-global1
-                    w))
-
 (deftheory state-field-accessors
   '(open-input-channels
     open-output-channels
@@ -71,11 +56,28 @@
     update-user-stobj-alist1)
   :redundant-okp t)
 
-;; DISABLE the accessors and updaters of the fields of state:
-(in-theory (disable state-field-accessors
-                    state-field-updaters))
+;; Disable predicates on state components (TODO: Add more)
+(in-theory (disable open-channels-p
+                    ordered-symbol-alistp
+                    all-boundp
+                    32-bit-integer-listp
+                    file-clock-p
+                    read-files-p
+                    readable-files-p
+                    writeable-files-p
+                    written-files-p
+                    ;; so the rules below fire:
+                    boundp-global
+                    boundp-global1
+                    w
+                    ;; Disable the accessors and updaters of the fields of state:
+                    state-field-accessors
+                    state-field-updaters
+                    ;; Disable the state predicates
+                    state-p
+                    state-p1))
 
-(local (in-theory (disable assoc-equal nth update-nth)))
+(local (in-theory (disable assoc-equal nth update-nth true-listp)))
 
 ;; since the state is a true-list
 (defthm true-listp-of-update-open-input-channels
@@ -370,6 +372,7 @@
     (equal (open-output-channels (update-global-table x st))
            (open-output-channels st)))
 
+;move?
   (defthm open-output-channels-of-put-global
     (equal (open-output-channels (put-global key value st))
            (open-output-channels st)))
@@ -550,6 +553,12 @@
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   ()))))
 
+(defthm state-p-of-update-open-input-channels
+  (implies (state-p state)
+           (equal (state-p (update-open-input-channels x state))
+                  (open-channels-p x)))
+  :hints (("Goal" :in-theory (enable state-p))))
+
 (defthm state-p1-of-update-open-output-channels
   (implies (state-p1 state)
            (equal (state-p1 (update-open-output-channels x state))
@@ -557,6 +566,12 @@
   :hints (("Goal" :in-theory (e/d (state-p1 ;UPDATE-OPEN-OUTPUT-CHANNELS
                                    )
                                   ()))))
+
+(defthm state-p-of-update-open-output-channels
+  (implies (state-p state)
+           (equal (state-p (update-open-output-channels x state))
+                  (open-channels-p x)))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm state-p1-of-update-read-files
   (implies (state-p1 state)
@@ -599,6 +614,12 @@
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   (true-listp)))))
 
+(defthm state-p-of-update-file-clock
+  (implies (state-p state)
+           (equal (state-p (update-file-clock x state))
+                  (file-clock-p x)))
+  :hints (("Goal" :in-theory (enable state-p))))
+
 (defthm read-files-p-of-cons
   (equal (read-files-p (cons item read-files))
          (and (read-file-listp1 item)
@@ -640,8 +661,6 @@
                 (state-p state))
            (state-p (close-input-channel channel state)))
   :hints (("Goal" :in-theory (enable state-p))))
-
-(local (in-theory (disable true-listp))) ;prevent induction
 
 (local
  (defthm assoc-equal-when-all-boundp
@@ -695,3 +714,11 @@
                 )
            (state-p1 (put-global key value state)))
   :hints (("Goal" :in-theory (enable put-global state-p1))))
+
+(defthm state-p-of-put-global
+  (implies (and (state-p state)
+                (symbolp key)
+                (not (member-equal key '(current-acl2-world timer-alist))) ; todo
+                )
+           (state-p (put-global key value state)))
+  :hints (("Goal" :in-theory (enable state-p))))

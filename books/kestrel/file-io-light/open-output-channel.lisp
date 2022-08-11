@@ -76,8 +76,13 @@
          (w state))
   :hints (("Goal" :in-theory (enable open-output-channel))))
 
+(defthm state-p1-of-mv-nth-1-of-open-output-channel
+  (implies (state-p1 state)
+           (state-p1 (mv-nth 1 (open-output-channel file-name type state))))
+  :hints (("Goal" :in-theory (enable open-output-channel
+                                     not-member-equal-when-not-writable-file-listp1))))
+
 (defthm state-p-of-mv-nth-1-of-open-output-channel
   (implies (state-p state)
            (state-p (mv-nth 1 (open-output-channel file-name type state))))
-  :hints (("Goal" :in-theory (enable open-output-channel
-                                     not-member-equal-when-not-writable-file-listp1))))
+  :hints (("Goal" :in-theory (enable state-p))))

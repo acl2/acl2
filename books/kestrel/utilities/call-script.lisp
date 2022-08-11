@@ -20,13 +20,11 @@
 
 (in-theory (disable mv-nth))
 
-(local (in-theory (disable state-p1)))
-
 (local
  (defthm true-listp-of-acl2-oracle
    (implies (state-p state)
             (true-listp (acl2-oracle state)))
-   :hints (("Goal" :in-theory (enable state-p1)))))
+   :hints (("Goal" :in-theory (enable state-p1 state-p)))))
 
 (local
  (defthm true-listp-of-cdr

@@ -35,7 +35,7 @@
 
 ;; Avoids name clash with std
 (defthm state-p1-of-print-object$-alt
-  (implies (and (state-p state)
+  (implies (and (state-p1 state)
                 (open-output-channel-p channel :object state))
            (equal (state-p1 (print-object$ x channel state))
                   (symbolp channel)))
