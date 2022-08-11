@@ -12,47 +12,14 @@
 
 (include-book "write-objects-to-channel")
 (local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/get-serialize-character-ttag" :dir :system))
 (local (include-book "open-output-channel-bang"))
 
 (defttag file-io!)
 
 (local (in-theory (disable state-p1 open-output-channel put-global
                            open-output-channel!
-                           open-output-channel-p1
-                           true-listp
-                           get-serialize-character)))
-
-;move
-(defthm get-serialize-character-of-put-global
-  (implies (not (equal key 'serialize-character))
-           (equal (get-serialize-character (put-global key value state))
-                  (get-serialize-character state)))
-  :hints (("Goal" :in-theory (enable get-serialize-character put-global
-                                     get-global
-                                     global-table
-                                     update-global-table))))
-
-;move, dup
-(defthm get-serialize-character-of-mv-nth-1-of-open-output-channel
-  (equal (get-serialize-character (mv-nth 1 (open-output-channel filename typ state)))
-         (get-serialize-character state))
-  :hints (("Goal" :in-theory (enable get-serialize-character open-output-channel
-                                     update-open-output-channels
-                                     get-global
-                                     global-table
-                                     update-file-clock))))
-
-(defthm get-serialize-character-of-mv-nth-1-of-open-output-channel!
-  (equal (get-serialize-character (mv-nth 1 (open-output-channel! filename typ state)))
-         (get-serialize-character state))
-  :hints (("Goal" :in-theory (enable ;get-serialize-character
-                                     open-output-channel!
-                                     update-open-output-channels
-                                     get-global
-                                     global-table
-                                     update-file-clock))))
-
-
+                           open-output-channel-p1)))
 
 ;; Writes the OBJECTS to file FILENAME, overwriting its previous contents.
 ;; Returns (mv erp state).  The ttag is needed because this calls
