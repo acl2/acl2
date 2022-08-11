@@ -6771,7 +6771,7 @@
     (check-sum-inc . nil)
     (update-iprint-ar-fal . nil)
 
-; Aset1-trusetd is an untouchable version of aset1 that we use in our source
+; Aset1-trusted is an untouchable version of aset1 that we use in our source
 ; code when we believe that there is no invariant-risk.  We could create
 ; similar trusted analogues of other built-ins mapped to t above.
 
