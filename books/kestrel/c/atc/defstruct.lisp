@@ -25,139 +25,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ shallow-structures
-  :parents (atc-shallow-embedding)
-  :short "A model of C structures in the shallow embedding."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since C structure types are user-defined,
-     we provide a macro @(tsee defstruct) to define
-     an ACL2 representation of a C structure type.
-     The user must call this macro
-     to introduce the structure types that the C code must use.")
-   (xdoc::p
-    "The @(tsee defstruct) macro takes as inputs
-     the name (i.e. tag [C:6.7.2.3]) of the structure type
-     and a sequence of members;
-     each member consists of a name and a designation of
-     an integer type or of a sized integer array type
-     (for now we only support members of these types).
-     The names of the structure type and of the members
-     must be symbols whose @(tsee symbol-name) is a portable ASCII identifier;
-     the members must have all different @(tsee symbol-name)s
-     (it is not enough for the symbols to be different).")
-   (xdoc::p
-    "The designation of each member type is one of")
-   (xdoc::ul
-    (xdoc::li "@('schar')")
-    (xdoc::li "@('uchar')")
-    (xdoc::li "@('sshort')")
-    (xdoc::li "@('ushort')")
-    (xdoc::li "@('sint')")
-    (xdoc::li "@('uint')")
-    (xdoc::li "@('slong')")
-    (xdoc::li "@('ulong')")
-    (xdoc::li "@('sllong')")
-    (xdoc::li "@('ullong')")
-    (xdoc::li "@('(schar <pos>)')")
-    (xdoc::li "@('(uchar <pos>)')")
-    (xdoc::li "@('(sshort <pos>)')")
-    (xdoc::li "@('(ushort <pos>)')")
-    (xdoc::li "@('(sint <pos>)')")
-    (xdoc::li "@('(uint <pos>)')")
-    (xdoc::li "@('(slong <pos>)')")
-    (xdoc::li "@('(ulong <pos>)')")
-    (xdoc::li "@('(sllong <pos>)')")
-    (xdoc::li "@('(ullong <pos>)')"))
-   (xdoc::p
-    "where @('<pos>') is a positive integer not exceeding @(tsee ullong-max).
-     That is, the type of a member of integer type is specified by
-     the name of the fixtype of the integer type,
-     while the type of a member of integer array type is specified by
-     the name of the fixtype of the integer type and a size;
-     the size must be representable as an integer constant
-     (i.e. not exceed @(tsee ullong-max),
-     which is the maximum integer representable as an integer constant).")
-   (xdoc::p
-    "Let @('<tag>') be the tag of the structure type.")
-   (xdoc::p
-    "The @(tsee defstruct) macro introduces:")
-   (xdoc::ul
-    (xdoc::li
-     "A recognizer @('struct-<tag>-p') for the structures.")
-    (xdoc::li
-     "A fixer @('struct-<tag>-fix') for the structures.")
-    (xdoc::li
-     "A fixtype @('struct-<tag>') for the structures."))
-   (xdoc::p
-    "For each member named @('<member>') of integer type,
-     the @(tsee defstruct) macro introduces:")
-   (xdoc::ul
-    (xdoc::li
-     "A reader @('struct-<tag>-read-<member>')
-      that returns the value of the member.")
-    (xdoc::li
-     "A writer @('struct-<tag>-write-<member>')
-      that updates the value of the member."))
-   (xdoc::p
-    "For each member named @('<member>') of integer array type,
-     the @(tsee defstruct) macro introduces:")
-   (xdoc::ul
-    (xdoc::li
-     "A checker @('struct-<tag>-<member>-index-okp)
-      that checks whether an ACL2 integer index
-      is within the range of the array.")
-    (xdoc::li
-     "A checker @('struct-<tag>-<member>-<type>-index-okp'),
-      for each @('<type>') that is the name of a fixtype of a C integer type,
-      that checks whether an index of the C integer type denoted by @('<type>')
-      is within the range of the array.")
-    (xdoc::li
-     "A reader @('struct-<tag>-read-<member>')
-      that returns the value of an element of the array,
-      where the element is indexed by an ACL2 integer.
-      This reader uses @('struct-<tag>-<member>-index-okp')
-      in the guard.")
-    (xdoc::li
-     "A reader @('struct-<tag>-read-<member>-<type>'),
-      for each @('<type>') that is the name of a fixtype of a C integer type,
-      that returns the value of an element of the array,
-      where the element is indexed by a C integer type denoted by @('<type>').
-      This reader has @('struct-<tag>-<member>-<type>-index-okp')
-      in the guard.")
-    (xdoc::li
-     "A writer @('struct-<tag>-write-<member>')
-      that updates the value of an element of the array,
-      where the element is indexed by an ACL2 integer.
-      This writer uses @('struct-<tag>-<member>-index-okp')
-      in the guard.")
-    (xdoc::li
-     "A writer @('struct-<tag>-write-<member>-<type>'),
-      for each @('<type>') that is the name of a fixtype of a C integer type,
-      that udpates the value of an element of the array,
-      where the element is indexed by a C integer type denoted by @('<type>').
-      This writer has @('struct-<tag>-<member>-<type>-index-okp')
-      in the guard."))
-   (xdoc::p
-    "C code shallowly embedded in ACL2 can use
-     the recognizers @('struct-<tag>-p') in guards
-     to specify structure types for parameters;
-     more precisely, pointers to structure types, for now.
-     That is, similarly to arrays, structures are in the heap,
-     and pointers to them are passed to the represented C functions,
-     which may side-effect those structures via the member writers,
-     which represent assignments to structure members
-     accessed via the C @('->') operator (not the @('.') operator).
-     C structures may also be passed around by value in general,
-     but initially we support only passing by pointer.
-     Note that C arrays may only be passed by pointers, in effect,
-     as arrays are not first-class entities in C,
-     but merely collections of contiguous objects,
-     normally accessed via pointers to the first object of the collections.")
-   (xdoc::p
-    "The @(tsee defstruct) macro also records, in an ACL2 table,
-     information about the shallowly embedded structures it defines."))
+(defxdoc+ defstruct-implementation
+  :parents (defstruct)
+  :short "Implementation of @(tsee defstruct)."
   :order-subtopics t
   :default-parent t)
 
@@ -1460,10 +1330,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ defstruct (&whole call &rest args)
-  :short "Define a shallowly embedded C structure."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(see shallow-structures)."))
-  `(make-event (defstruct-fn ',args ',call 'defstruct state)))
+(defsection defstruct-macro-implementtion
+  :short "Definition of @(tsee defstruct)."
+  (defmacro defstruct (&whole call &rest args)
+    `(make-event (defstruct-fn ',args ',call 'defstruct state))))
