@@ -137,7 +137,7 @@ prefix.</p>"
 (local (in-theory (disable bitops::logext-of-logand
                            bitops::logext-of-logior)))
 
-(defthm-signed-byte-p n08p-xr-rgf
+(defthm-signed-byte-p i64p-xr-rgf
   :hyp t
   :bound 64
   :concl (xr :rgf i x86)
@@ -532,7 +532,7 @@ are used to write natural numbers into the GPRs.</p>"
       :bound 64
       :concl (rr64 reg x86)
       :gen-linear t
-      :gen-type t))      
+      :gen-type t))
 
   (define wr64
     ((reg  :type (unsigned-byte  4))
@@ -1639,9 +1639,9 @@ values.</p>"
           (mbe :logic (n32 undefined-mask) :exec undefined-mask))
          ((the (unsigned-byte 32) input-rflags)
           (mbe :logic (n32 (rflags x86)) :exec (rflags x86))))
-    
-      (mbe 
-       :logic     
+
+      (mbe
+       :logic
        (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
                      (!flgi-undefined :cf x86)
                    (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))
