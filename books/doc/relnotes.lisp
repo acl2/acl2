@@ -162,6 +162,10 @@
     "Support has been added for
      external object definitions (i.e. global variables) of array types.")
 
+   (xdoc::p
+    "The user documentation of @(tsee c::defstruct)
+     has been extended and improved.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
