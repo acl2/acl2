@@ -6651,6 +6651,7 @@
 ; keyword argument pairs.
 
 (defun partition-rest-and-keyword-args1 (x)
+  (declare (xargs :guard (true-listp x)))
   (cond ((endp x) (mv nil nil))
         ((keywordp (car x))
          (mv nil x))
@@ -6664,6 +6665,9 @@
 ; We return t if keypart is ill-formed as noted below.  Otherwise, we
 ; return ((:keyn . vn) ... (:key1 . v1)).
 
+  (declare (xargs :guard (and (true-listp keypart)
+                              (true-listp keys)
+                              (alistp alist))))
   (cond ((endp keypart) alist)
         ((and (keywordp (car keypart))
               (consp (cdr keypart))
@@ -6688,6 +6692,8 @@
 ; even numbered element, if it binds the same keyword more than once,
 ; or if it binds a keyword other than those listed in keys.
 
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp keys))))
   (mv-let (rest keypart)
           (partition-rest-and-keyword-args1 x)
           (let ((alist (partition-rest-and-keyword-args2 keypart keys nil)))
