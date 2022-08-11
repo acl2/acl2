@@ -12,6 +12,8 @@
 
 (local (include-book "explode-nonnegative-integer"))
 
+(in-theory (disable explode-atom))
+
 (defthm character-listp-of-explode-atom
   (character-listp (explode-atom x print-base))
   :hints (("Goal" :in-theory (enable explode-atom))))
