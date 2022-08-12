@@ -45,7 +45,18 @@
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-signed-integerp
                                            value-unsigned-integerp)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule value-integer->get-bounds
+    (and (<= (integer-type-min (type-of-value val))
+             (value-integer->get val))
+         (<= (value-integer->get val)
+             (integer-type-max (type-of-value val))))
+    :rule-classes ((:linear :trigger-terms ((value-integer->get val))))
+    :enable (value-integer->get
+             integer-type-min
+             integer-type-max)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -504,3 +504,132 @@
              (equal (type-of-value x)
                     (type-pointer (value-pointer->reftype x))))
     :enable type-of-value))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-bridge-theorems
+  :short "Bridge theorems between
+          the deeply embedded integer values
+          and the shallowly embedded integer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The deeply embedded integer values are
+     a subset of the values of the fixtype @(tsee value).
+     The shallowly embedded ineger values are
+     the values of the fixtypes @(tsee uchar), @(tsee schar), etc.
+     These have the same representation,
+     and thus their constructors and destructors are equivelent.
+     Here we prove these equivalences, leaving them disabled by default;
+     they can be used to prove theorems that involve
+     relations between deep and shallow embedding."))
+
+  (defruled value-schar-to-schar
+    (equal (value-schar x)
+           (schar x))
+    :enable (value-schar schar))
+
+  (defruled value-uchar-to-uchar
+    (equal (value-uchar x)
+           (uchar x))
+    :enable (value-uchar uchar))
+
+  (defruled value-sshort-to-sshort
+    (equal (value-sshort x)
+           (sshort x))
+    :enable (value-sshort sshort))
+
+  (defruled value-ushort-to-ushort
+    (equal (value-ushort x)
+           (ushort x))
+    :enable (value-ushort ushort))
+
+  (defruled value-sint-to-sint
+    (equal (value-sint x)
+           (sint x))
+    :enable (value-sint sint))
+
+  (defruled value-uint-to-uint
+    (equal (value-uint x)
+           (uint x))
+    :enable (value-uint uint))
+
+  (defruled value-slong-to-slong
+    (equal (value-slong x)
+           (slong x))
+    :enable (value-slong slong))
+
+  (defruled value-ulong-to-ulong
+    (equal (value-ulong x)
+           (ulong x))
+    :enable (value-ulong ulong))
+
+  (defruled value-sllong-to-sllong
+    (equal (value-sllong x)
+           (sllong x))
+    :enable (value-sllong sllong))
+
+  (defruled value-ullong-to-ullong
+    (equal (value-ullong x)
+           (ullong x))
+    :enable (value-ullong ullong))
+
+  (defruled value-schar->get-to-schar->get
+    (implies (value-case x :schar)
+             (equal (value-schar->get x)
+                    (schar->get x)))
+    :enable (value-schar->get schar->get))
+
+  (defruled value-uchar->get-to-uchar->get
+    (implies (value-case x :uchar)
+             (equal (value-uchar->get x)
+                    (uchar->get x)))
+    :enable (value-uchar->get uchar->get))
+
+  (defruled value-sshort->get-to-sshort->get
+    (implies (value-case x :sshort)
+             (equal (value-sshort->get x)
+                    (sshort->get x)))
+    :enable (value-sshort->get sshort->get))
+
+  (defruled value-ushort->get-to-ushort->get
+    (implies (value-case x :ushort)
+             (equal (value-ushort->get x)
+                    (ushort->get x)))
+    :enable (value-ushort->get ushort->get))
+
+  (defruled value-sint->get-to-sint->get
+    (implies (value-case x :sint)
+             (equal (value-sint->get x)
+                    (sint->get x)))
+    :enable (value-sint->get sint->get))
+
+  (defruled value-uint->get-to-uint->get
+    (implies (value-case x :uint)
+             (equal (value-uint->get x)
+                    (uint->get x)))
+    :enable (value-uint->get uint->get))
+
+  (defruled value-slong->get-to-slong->get
+    (implies (value-case x :slong)
+             (equal (value-slong->get x)
+                    (slong->get x)))
+    :enable (value-slong->get slong->get))
+
+  (defruled value-ulong->get-to-ulong->get
+    (implies (value-case x :ulong)
+             (equal (value-ulong->get x)
+                    (ulong->get x)))
+    :enable (value-ulong->get ulong->get))
+
+  (defruled value-sllong->get-to-sllong->get
+    (implies (value-case x :sllong)
+             (equal (value-sllong->get x)
+                    (sllong->get x)))
+    :enable (value-sllong->get sllong->get))
+
+  (defruled value-ullong->get-to-ullong->get
+    (implies (value-case x :ullong)
+             (equal (value-ullong->get x)
+                    (ullong->get x)))
+    :enable (value-ullong->get ullong->get)))
