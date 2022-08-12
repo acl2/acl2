@@ -261,6 +261,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection bounds-of-integer-values
+  :short "Linear rules about the bounds of the integer values."
+
+  (defrule value-schar->get-bound
+    (and (<= (schar-min) (value-schar->get x))
+         (<= (value-schar->get x) (schar-max)))
+    :rule-classes :linear
+    :use schar-integerp-of-value-schar->get
+    :disable schar-integerp-of-value-schar->get
+    :enable schar-integerp-alt-def)
+
+  (defrule value-uchar->get-bound
+    (and (<= 0 (value-uchar->get x))
+         (<= (value-uchar->get x) (uchar-max)))
+    :rule-classes :linear
+    :use uchar-integerp-of-value-uchar->get
+    :disable uchar-integerp-of-value-uchar->get
+    :enable uchar-integerp-alt-def)
+
+  (defrule value-sshort->get-bound
+    (and (<= (sshort-min) (value-sshort->get x))
+         (<= (value-sshort->get x) (sshort-max)))
+    :rule-classes :linear
+    :use sshort-integerp-of-value-sshort->get
+    :disable sshort-integerp-of-value-sshort->get
+    :enable sshort-integerp-alt-def)
+
+  (defrule value-ushort->get-bound
+    (and (<= 0 (value-ushort->get x))
+         (<= (value-ushort->get x) (ushort-max)))
+    :rule-classes :linear
+    :use ushort-integerp-of-value-ushort->get
+    :disable ushort-integerp-of-value-ushort->get
+    :enable ushort-integerp-alt-def)
+
+  (defrule value-sint->get-bound
+    (and (<= (sint-min) (value-sint->get x))
+         (<= (value-sint->get x) (sint-max)))
+    :rule-classes :linear
+    :use sint-integerp-of-value-sint->get
+    :disable sint-integerp-of-value-sint->get
+    :enable sint-integerp-alt-def)
+
+  (defrule value-uint->get-bound
+    (and (<= 0 (value-uint->get x))
+         (<= (value-uint->get x) (uint-max)))
+    :rule-classes :linear
+    :use uint-integerp-of-value-uint->get
+    :disable uint-integerp-of-value-uint->get
+    :enable uint-integerp-alt-def)
+
+  (defrule value-slong->get-bound
+    (and (<= (slong-min) (value-slong->get x))
+         (<= (value-slong->get x) (slong-max)))
+    :rule-classes :linear
+    :use slong-integerp-of-value-slong->get
+    :disable slong-integerp-of-value-slong->get
+    :enable slong-integerp-alt-def)
+
+  (defrule value-ulong->get-bound
+    (and (<= 0 (value-ulong->get x))
+         (<= (value-ulong->get x) (ulong-max)))
+    :rule-classes :linear
+    :use ulong-integerp-of-value-ulong->get
+    :disable ulong-integerp-of-value-ulong->get
+    :enable ulong-integerp-alt-def)
+
+  (defrule value-sllong->get-bound
+    (and (<= (sllong-min) (value-sllong->get x))
+         (<= (value-sllong->get x) (sllong-max)))
+    :rule-classes :linear
+    :use sllong-integerp-of-value-sllong->get
+    :disable sllong-integerp-of-value-sllong->get
+    :enable sllong-integerp-alt-def)
+
+  (defrule value-ullong->get-bound
+    (and (<= 0 (value-ullong->get x))
+         (<= (value-ullong->get x) (ullong-max)))
+    :rule-classes :linear
+    :use ullong-integerp-of-value-ullong->get
+    :disable ullong-integerp-of-value-ullong->get
+    :enable ullong-integerp-alt-def))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum init-value
   :short "Fixtype of initializer values."
   :long
