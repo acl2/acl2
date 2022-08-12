@@ -340,7 +340,11 @@ format:</p>
     (:delay 4 ;; number of phases since last one listed
      :label q
      :inputs ((\"cntl\" cntl4 :hold t)) ;; will hold this value until end or until reassigned
-     :overrides ((\"inst.subinst.internalsig\" internal4)))
+     :overrides ((\"inst.subinst.internalsig\" internal4)
+                 ;; syntax for combined conditional override/output
+                 (\"inst.subinst.decompsig\" decompsig :cond decompsig-ovr :output decompsig)
+                 ;; old syntax for conditional override
+                 (\"inst.subinst.decompsig\" (testsig testsig-ovr))))
  
     ;; Phase 6:
     (:delay 2
@@ -405,19 +409,28 @@ constant.</p>
 <p>Note: Don\'t use the special symbol @('~'), which is what you'd use for
 @(':toggle') in the original @('defsvtv').</p>
 
-<p>The format for @(':overrides') is similar to that of inputs, except that
-its setting field can take one additional form:</p>
-@({
-  (value test)
- })
+<p>The format for @(':overrides') is similar to that of inputs, but adds two
+additional keyword variables:</p>
 
-<p>In this form both value and test may be either a 4vec constant or a
-variable (not a don't-care).  This indicates that the override occurs
-conditioned on the test being 1, and when test is 1, the signal is overridden
-to value. The @(':toggle') and @(':hold') keywords still apply: @(':hold')
-means that test and value both apply to subsequent phases, and @(':toggle')
-means that test applies to subsequent phases and value is toggled.</p>
+<ul>
+<li>@(':cond'), if specified, gives an override condition value (a variable or
+4vec constant), making this a conditional override.  This means bits of the
+signal corresponding to 1-bits of the override condition are overridden and
+take the value of the corresponding bits of the override value (@('setting')
+field).</li>
+<li>@(':output'), if specified, gives an output variable for the same signal.
+This output will be assigned the non-overridden value of the signal.</li>
+</ul>
 
+<p>The @('setting') field can also take one additional form @('(value test)'),
+which is another way of specifying a conditional override (this may not be used
+along with the @(':cond') keyword).  Here @('test') is the override condition
+and @('value') is the override value.</p>
+
+<p>The @(':toggle') and @(':hold') keywords still apply to overrides and
+conditional overrides: @(':hold') means that test and value both apply to
+subsequent phases, and @(':toggle') means that test applies to subsequent
+phases and value is toggled.</p>
 
 <h3>Legacy stimulus/sampling specification format</h3>
 

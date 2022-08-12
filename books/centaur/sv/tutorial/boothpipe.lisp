@@ -96,7 +96,7 @@
     (mv svdesign state)))
 
 (def-saved-event boothpipe-run
-  (defsvtv$-phasewise boothpipe-run
+  (defsvtv$ boothpipe-run
     ;; Set up our run of the module.
     :design *boothpipe*
     :cycle-phases (list (sv::make-svtv-cyclephase :constants '(("clk" . 0))
@@ -113,23 +113,14 @@
               (("minusb"          minusb)))
              (:label c2
               :overrides
-              (("pp01_c2[35:18]"  (pp0 pp0-ovr))
-               ("pp01_c2[17:0]"   (pp1 pp1-ovr))
-               ("pp23_c2[35:18]"  (pp2 pp2-ovr))
-               ("pp23_c2[17:0]"   (pp3 pp3-ovr))
-               ("pp45_c2[35:18]"  (pp4 pp4-ovr))
-               ("pp45_c2[17:0]"   (pp5 pp5-ovr))
-               ("pp67_c2[35:18]"  (pp6 pp6-ovr))
-               ("pp67_c2[17:0]"   (pp7 pp7-ovr)))
-              :outputs
-              (("pp01_c2[35:18]"  pp0)
-               ("pp01_c2[17:0]"   pp1)
-               ("pp23_c2[35:18]"  pp2)
-               ("pp23_c2[17:0]"   pp3)
-               ("pp45_c2[35:18]"  pp4)
-               ("pp45_c2[17:0]"   pp5)
-               ("pp67_c2[35:18]"  pp6)
-               ("pp67_c2[17:0]"   pp7)))
+              (("pp01_c2[35:18]" pp0 :cond pp0-ovr :output pp0)
+               ("pp01_c2[17:0]"  pp1 :cond pp1-ovr :output pp1)
+               ("pp23_c2[35:18]" pp2 :cond pp2-ovr :output pp2)
+               ("pp23_c2[17:0]"  pp3 :cond pp3-ovr :output pp3)
+               ("pp45_c2[35:18]" pp4 :cond pp4-ovr :output pp4)
+               ("pp45_c2[17:0]"  pp5 :cond pp5-ovr :output pp5)
+               ("pp67_c2[35:18]" pp6 :cond pp6-ovr :output pp6)
+               ("pp67_c2[17:0]"  pp7 :cond pp7-ovr :output pp7)))
              (:label c3
               :outputs
               (("o"              o))))
@@ -486,12 +477,23 @@ see that file and the comments in it.</p>
 <p>In the boothpipe example, the intermediate signals to split the pipeline on
 are the partial products @('pp0')...@('pp7').  We'll have one SVTV that says
 how to run the whole module, whether we're decomposing on the partial products
-or not.  This SVTV has an output signal for each of the partial products as
-well as a conditional override -- a pair such as @('(pp0 pp0-ovr)') where
-@('pp0') is the value with which to override the partial product, but this only
-happens when @('pp0-ovr') is set to non-zero values (bitwise).</p>
+or not.  For each of the partial products, this SVTV will both conditionally overrides the signal and provides an output signal that producess the un-overridden value:</p>
 
 @(`(:code ($ boothpipe-run))`)
+
+<p>Each entry in the @(':overrides') listed in the @('c2') phase gives the
+override value variable, override condition variable, and output variable for
+one of the partial products.  For example, the first entry:
+@({
+ ("pp01_c2[35:18]" pp0 :cond pp0-ovr :output pp0)
+ })
+says @('pp01_c2[35:18]') is overriden with the value of input variable @('pp0')
+when corresponding bits of input variable @('pp0-ovr') are set to 1.
+Additionally, output variable @('pp0') is assigned the un-overridden value of
+@('pp01_c2[35:18]').  Since input variables and output variables of SVTVs are
+treated as separate namespaces, it is OK (and somewhat conventional) for the
+override value (input) variable and corresponding output variable for the same
+signal to be the same.</p>
 
 <h4>Composing the Proof</h4>
 

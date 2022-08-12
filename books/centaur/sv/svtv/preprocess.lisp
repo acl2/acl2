@@ -75,7 +75,11 @@ right and easier to maintain.</p>
     (:delay 4 ;; number of phases since last one listed
      :label q
      :inputs ((\"cntl\" cntl4 :hold t)) ;; will hold this value until end or until reassigned
-     :overrides ((\"inst.subinst.internalsig\" internal4)))
+     :overrides ((\"inst.subinst.internalsig\" internal4)
+                 ;; syntax for combined conditional override/output
+                 (\"inst.subinst.decompsig\" decompsig :cond decompsig-ovr :output decompsig)
+                 ;; old syntax for conditional override
+                 (\"inst.subinst.decompsig\" (testsig testsig-ovr))))
  
     ;; Phase 6:
     (:delay 2
@@ -147,18 +151,28 @@ constant.</p>
 <p>Note: Don\'t use the special symbol @('~'), which is what you'd use for
 @(':toggle') in the original @('defsvtv').</p>
 
-<p>The format for @(':overrides') is similar to that of inputs, except that
-its setting field can take one additional form:</p>
-@({
-  (value test)
- })
+<p>The format for @(':overrides') is similar to that of inputs, but adds two
+additional keyword variables:</p>
 
-<p>In this form both value and test may be either a 4vec constant or a
-variable (not a don't-care).  This indicates that the override occurs
-conditioned on the test being 1, and when test is 1, the signal is overridden
-to value. The @(':toggle') and @(':hold') keywords still apply: @(':hold')
-means that test and value both apply to subsequent phases, and @(':toggle')
-means that test applies to subsequent phases and value is toggled.</p>")
+<ul>
+<li>@(':cond'), if specified, gives an override condition value (a variable or
+4vec constant), making this a conditional override.  This means bits of the
+signal corresponding to 1-bits of the override condition are overridden and
+take the value of the corresponding bits of the override value (@('setting')
+field).</li>
+<li>@(':output'), if specified, gives an output variable for the same signal.
+This output will be assigned the non-overridden value of the signal.</li>
+</ul>
+
+<p>The @('setting') field can also take one additional form @('(value test)'),
+which is another way of specifying a conditional override (this may not be used
+along with the @(':cond') keyword).  Here @('test') is the override condition
+and @('value') is the override value.</p>
+
+<p>The @(':toggle') and @(':hold') keywords still apply to overrides and
+conditional overrides: @(':hold') means that test and value both apply to
+subsequent phases, and @(':toggle') means that test applies to subsequent
+phases and value is toggled.</p>")
 
 (fty::defprod svtv*-input
   ((setting svtv-entry-p)
@@ -189,61 +203,116 @@ means that test applies to subsequent phases and value is toggled.</p>")
 
 (fty::defalist svtv*-output-alist :key-type stringp :val-type svtv-variable :true-listp t)
 
+(local (defthm alistp-of-extract-keywords
+         (implies (alistp acc)
+                  (alistp (mv-nth 0 (std::extract-keywords ctx keys args acc))))))
+
+(local (defthm svtv-entry-p-when-condoverride
+         (implies (svtv-condoverride-p x)
+                  (svtv-entry-p x))
+         :hints(("Goal" :in-theory (enable svtv-entry-p)))))
+
+(local (in-theory (disable std::extract-keywords
+                           assoc-equal
+                           set::sets-are-true-lists-cheap
+                           true-listp)))
+
 (define svtv*-parse-input (x overridep)
-  ;; :returns (singleton svtv*-input-alist-p)
-  :mode :program
+  :returns (mv (input-entry svtv*-input-alist-p)
+               (output-entry svtv*-output-alist-p))
+  ;; :mode :program
   (b* ((intype (if overridep "Override" "Input"))
        ((unless (true-listp x))
-        (raise "~s0 entries should be true-lists" intype))
-       ((unless (stringp (car x)))
-        (raise "~s0 entries should begin with signal names (strings) -- bad: ~x1" intype x))
-       ((unless (svtv-entry-p (second x)))
-        (raise "~s0 entries should have second elements that satisfy svtv-entry-p -- bad: ~x1" intype x))
-       ((unless (or overridep (not (svtv-condoverride-p (second x)))))
-        (raise "~s0 entries should not be conditional overrides -- bad: ~x1" intype x))
-       ((unless (cddr x))
-        (list (cons (car x) (make-svtv*-input :setting (second x)))))
-       ((mv kwd-alist extra) (std::extract-keywords 'svtv*-parse-input '(:toggle :hold) (cddr x) nil))
+        (raise "~s0 entries should be true-lists" intype)
+        (mv nil nil))
+       (signame (car x))
+       ((unless (stringp signame))
+        (raise "~s0 entries should begin with signal names (strings) -- bad: ~x1" intype x)
+        (mv nil nil))
+       (entry (second x))
+       ((unless (svtv-entry-p entry))
+        (raise "~s0 entries should have second elements that satisfy svtv-entry-p -- bad: ~x1" intype x)
+        (mv nil nil))
+       ((unless (or overridep (not (svtv-condoverride-p entry))))
+        (raise "~s0 entries should not be conditional overrides -- bad: ~x1" intype x)
+        (mv nil nil))
+       (rest (cddr x))
+       ((unless rest)
+        (mv (list (cons signame (make-svtv*-input :setting entry))) nil))
+       ((mv kwd-alist extra) (std::extract-keywords 'svtv*-parse-input
+                                                    (if overridep
+                                                        '(:toggle :hold :cond :output)
+                                                      '(:toggle :hold))
+                                                    (cddr x) nil))
        ((when extra)
-        (raise "~s0 entry contains extra junk: ~x1" intype x))
+        (raise "~s0 entry contains extra junk: ~x1" intype x)
+        (mv nil nil))
        ((when (and (assoc :toggle kwd-alist)
                    (assoc :hold kwd-alist)))
-        (raise "~s0 entry should not contain both :hold and :toggle: ~x1" intype x))
+        (raise "~s0 entry should not contain both :hold and :toggle: ~x1" intype x)
+        (mv nil nil))
        ((unless (booleanp (cdr (assoc :hold kwd-alist))))
-        (raise "~s0 entry ~x1: :hold value should be Boolean" intype x))
+        (raise "~s0 entry ~x1: :hold value should be Boolean" intype x)
+        (mv nil nil))
        ((unless (or (booleanp (cdr (assoc :toggle kwd-alist)))
                     (posp (cdr (assoc :toggle kwd-alist)))))
-        (raise "~s0 entry ~x1: :toggle value should be positive integer or Boolean" intype x))
+        (raise "~s0 entry ~x1: :toggle value should be positive integer or Boolean" intype x)
+        (mv nil nil))
        (toggle (if (cdr (assoc :hold kwd-alist))
                    0
                  (if (eq t (cdr (assoc :toggle kwd-alist)))
                      1
-                   (cdr (assoc :toggle kwd-alist))))))
-    (list (cons (car x) (make-svtv*-input :setting (second x) :toggle toggle)))))
+                   (cdr (assoc :toggle kwd-alist)))))
+       ((unless overridep)
+        (mv (list (cons signame (make-svtv*-input :setting entry :toggle toggle))) nil))
+       ;; Couple of extra things to check for overrides.
+       (cond (cdr (assoc :cond kwd-alist)))
+       ((unless (or (not cond)
+                    (svtv-baseentry-p entry)))
+        (raise "~s0: when using :cond keyword, value must be a valid svtv-baseentry -- bad: ~x1~%" intype x)
+        (mv nil nil))
+       ((unless (or (not cond)
+                    (svtv-baseentry-p cond)))
+        (raise "~s0: :cond keyword must be a valid svtv-baseentry -- bad: ~x1~%" intype x)
+        (mv nil nil))
+       (entry (if cond
+                  (make-svtv-condoverride :value entry :test cond)
+                entry))
+       (output (cdr (assoc :output kwd-alist)))
+       (input-result (list (cons signame (make-svtv*-input :setting entry :toggle toggle))))
+       ((unless output)
+        (mv input-result nil))
+       ((unless (svtv-variable-p output))
+        (raise "Output entries should have second elements that are variable names -- bad: ~x0" x)
+        (mv nil nil)))
+    (mv input-result (list (cons signame output)))))
+       
+       
+       
 
 (define svtv*-parse-inputs (x overridep)
-  :mode :program
+  :returns (mv (inputs svtv*-input-alist-p)
+               (outputs svtv*-output-alist-p))
   (if (atom x)
-      nil
-    (append (svtv*-parse-input (car x) overridep)
-            (svtv*-parse-inputs (cdr x) overridep))))
+      (mv nil nil)
+    (b* (((mv inputs1 outputs1) (svtv*-parse-input (car x) overridep))
+         ((mv inputs2 outputs2) (svtv*-parse-inputs (cdr x) overridep)))
+      (mv (append inputs1 inputs2)
+          (append outputs1 outputs2)))))
 
 (define svtv*-parse-output (x)
-  ;; :returns (singleton svtv*-input-alist-p
-  :mode :program
+  :returns (singleton svtv*-output-alist-p)
+                      ;; :mode :program
   (b* (((unless (true-listp x))
         (raise "Output entries should be true-lists"))
        ((unless (stringp (car x)))
         (raise "Output entries should begin with signal names (strings) -- bad: ~x0" x))
-       ((unless (and (symbolp (second x))
-                     (not (booleanp (second x)))
-                     (not (keywordp (second x)))
-                     (not (svtv-dontcare-p (second x)))))
+       ((unless (svtv-variable-p (second x)))
         (raise "Output entries should have second elements that are variable names -- bad: ~x0" x)))
     (list (cons (car x) (second x)))))
 
 (define svtv*-parse-outputs (x)
-  :mode :program
+  :returns (outputs svtv*-output-alist-p)
   (if (atom x)
       nil
     (append (svtv*-parse-output (car x))
@@ -263,39 +332,35 @@ means that test applies to subsequent phases and value is toggled.</p>")
 
 
 (define svtv*-parse-phase (x)
-  :mode :program
+  :returns (phase (iff (svtv*-phase-p phase) phase))
   (b* (((mv kwd-alist extra) (std::extract-keywords 'svtv*-parse-phase
                                                     '(:delay :label :inputs :overrides :outputs)
                                                     x nil))
        ((when extra)
         (raise "Extra non-keywords found in phase: ~x0" x))
        (delay (std::getarg :delay 1 kwd-alist))
-       ((unless (natp delay))
+       ((unless (posp delay))
         (raise "Delay must be a natural number: ~x0" x))
        (label (std::getarg :label :? kwd-alist))
        ((unless (symbolp label))
         (raise "Label must be a symbol: ~x0" x))
-       (inputs (svtv*-parse-inputs (cdr (assoc :inputs kwd-alist)) nil))
-       ((unless (svtv*-input-alist-p inputs))
-        (raise "Parsed inputs failed to be an svtv*-input-alist-p: ~x0" x))
-       (overrides (svtv*-parse-inputs (cdr (assoc :overrides kwd-alist)) t))
-       ((unless (svtv*-input-alist-p overrides))
-        (raise "Parsed overrides failed to be an svtv*-input-alist-p: ~x0" x))
-       (outputs (svtv*-parse-outputs (cdr (assoc :outputs kwd-alist))))
-       ((unless (svtv*-output-alist-p outputs))
-        (raise "Parsed outputs failed to be an svtv*-output-alist-p: ~x0" x)))
+       ((mv inputs &) (svtv*-parse-inputs (cdr (assoc :inputs kwd-alist)) nil))
+       ((mv overrides override-outputs) (svtv*-parse-inputs (cdr (assoc :overrides kwd-alist)) t))
+       (outputs (svtv*-parse-outputs (cdr (assoc :outputs kwd-alist)))))
     (make-svtv*-phase :delay delay
                       :label label
                       :inputs inputs
                       :overrides overrides
-                      :outputs outputs)))
+                      :outputs (append override-outputs outputs))))
 
 (define svtv*-parse-phases (x)
-  :mode :program
+  :Returns (phases svtv*-phaselist-p)
   (if (atom x)
       nil
-    (cons (svtv*-parse-phase (car x))
-          (svtv*-parse-phases (cdr x)))))
+    (b* ((phase (svtv*-parse-phase (car x))))
+      (and phase
+           (cons phase
+                 (svtv*-parse-phases (cdr x)))))))
 
 (define svtv*-phaselist-nphases ((x svtv*-phaselist-p))
   (if (atom x)
@@ -314,15 +379,17 @@ means that test applies to subsequent phases and value is toggled.</p>")
                       (implies (and (svtv*-input-alist-p x)
                                     (assoc k x))
                                (svtv*-input-p (cdr (assoc k x))))
-                      :hints(("Goal" :in-theory (enable svtv*-input-alist-p)))))
+                      :hints(("Goal" :in-theory (enable svtv*-input-alist-p assoc-equal)))))
              (local (defthm consp-assoc-equal-of-svtv*-input-alist-p-rw
                       (implies (and (svtv*-input-alist-p x)
                                     (assoc k x))
-                               (consp (assoc k x)))))
+                               (consp (assoc k x)))
+                      :hints(("Goal" :in-theory (enable assoc-equal)))))
              (local (defthm cdr-assoc-equal-of-svtv*-input-alist-p-rw
                       (implies (and (svtv*-input-alist-p x)
                                     (assoc k x))
-                               (cdr (assoc k x))))))
+                               (cdr (assoc k x)))
+                      :hints(("Goal" :in-theory (enable assoc-equal))))))
   :verify-guards nil
   (b* (((when (atom phases))
         (mv 1 nil nil))
@@ -481,7 +548,8 @@ means that test applies to subsequent phases and value is toggled.</p>")
   :prepwork ((local (defthm consp-assoc-equal-of-svtv*-output-alist-p-rw
                       (implies (and (svtv*-output-alist-p x)
                                     (assoc k x))
-                               (consp (assoc k x)))))
+                               (consp (assoc k x)))
+                      :hints(("Goal" :in-theory (enable assoc-equal)))))
              (local (defthm svtv-entry-p-when-svtv-variable-p
                       (implies (svtv-variable-p x)
                                (svtv-entry-p x))
@@ -492,7 +560,8 @@ means that test applies to subsequent phases and value is toggled.</p>")
                       (implies (and (svtv*-output-alist-p x)
                                     (assoc k x))
                                (svtv-entry-p (cdr (assoc k x))))
-                      :hints(("Goal" :in-theory (enable svtv*-output-alist-p))))))
+                      :hints(("Goal" :in-theory (enable svtv*-output-alist-p
+                                                        assoc-equal))))))
   (b* (((when (atom phases)) nil)
        ((svtv*-phase phase1) (car phases))
        (prefix (repeat (1- phase1.delay) '&))
