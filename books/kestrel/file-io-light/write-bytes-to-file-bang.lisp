@@ -14,6 +14,7 @@
 (local (include-book "open-output-channel-bang"))
 (local (include-book "kestrel/utilities/w" :dir :system))
 
+;; Needed because we call open-output-channel! below:
 (defttag file-io!)
 
 (local (in-theory (disable update-written-files

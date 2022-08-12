@@ -20,7 +20,7 @@
                     mv-nth
                     state-p1))
 
-;; Needed because we mention open-output-channel! in the theorems below.
+;; Needed because we mention open-output-channel! in the theorems below:
 (defttag file-io!)
 
 (local (in-theory (disable w
