@@ -14,6 +14,9 @@
 
 (include-book "kestrel/lists-light/reverse-list" :dir :system) ;make local?
 (include-book "bounded-nat-alists")
+(include-book "alen1")
+(include-book "compress1") ; make local?
+(include-book "compress11") ; make local?
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -44,6 +47,8 @@
 ;;;
 ;;; Normalize names (most of these functions ignore the name param)
 ;;;
+
+(local (in-theory (enable normalize-alen1-name)))
 
 (defthmd normalize-header-name
   (implies (syntaxp (not (equal name '':fake-name)))
@@ -272,41 +277,6 @@
   :hints (("Goal" :in-theory (e/d (array1p-rewrite)
                                   ()))))
 
-
-;;;
-;;; alen1
-;;;
-
-;; Get the length of a 1-d array.  We prefer this to (car (dimensions ...))
-;; because car in many cases get rewritten to a call of nth.
-(defund alen1 (name l)
-  (declare (xargs :guard (array1p name l)))
-  (car (dimensions name l)))
-
-(defthmd normalize-alen1-name
-  (implies (syntaxp (not (equal name '':fake-name)))
-           (equal (alen1 name l)
-                  (alen1 :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (alen1) ()))))
-
-(local (in-theory (enable normalize-alen1-name)))
-
-;todo: enable, but that changes the normal form
-(defthm alen1-intro
-  (equal (car (dimensions array-name array))
-         (alen1 array-name array))
-  :hints (("Goal" :in-theory (enable alen1))))
-
-(theory-invariant (incompatible (:rewrite alen1-intro) (:definition alen1)))
-
-;; (car (dimensions ..)) can arise from the guard of aref1 and can then be turned into (nth 0 (dimensions ...))
-(defthm alen1-intro2
-  (equal (nth 0 (dimensions array-name array))
-         (alen1 array-name array))
-  :hints (("Goal" :in-theory (e/d (alen1) (alen1-intro)))))
-
-(theory-invariant (incompatible (:rewrite alen1-intro2) (:definition alen1)))
-
 ;; Here we also introduce alen1
 (defthmd array1p-rewrite2
   (equal (array1p name l)
@@ -501,33 +471,7 @@
                 (true-listp x))
            (consp x)))
 
-(defthm equal-of-assoc-equal-same
-  (implies key
-           (iff (equal key (car (assoc-equal key array)))
-                (assoc-equal key array)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defthm header-of-compress1
-  (equal (header array-name (compress1 array-name array))
-         (header array-name array))
-  :hints (("Goal" :in-theory (e/d (compress1 compress11 dimensions header)
-                                  (dimensions-intro)))))
-
-(defthm maximum-length-of-compress1
-  (equal (maximum-length array-name (compress1 array-name array))
-         (maximum-length array-name array))
-  :hints (("Goal" :in-theory (e/d (compress1 compress11 maximum-length header)
-                                  ()))))
-
-(defthm dimensions-of-compress1
-  (equal (dimensions array-name (compress1 array-name array))
-         (dimensions array-name array))
-  :hints (("Goal" :in-theory (e/d (dimensions) (dimensions-intro)))))
-
-(defthm alen1-of-compress1
-  (equal (alen1 array-name (compress1 array-name array))
-         (alen1 array-name array))
-  :hints (("Goal" :in-theory (e/d (alen1) (alen1-intro alen1-intro2)))))
 
 (defthm dimensions-of-aset1
   (equal (dimensions array-name (aset1 array-name array n val))
@@ -554,51 +498,11 @@
          nil)
   :hints (("Goal" :in-theory (e/d (default) (default-intro)))))
 
-(defthm assoc-equal-of-header-and-compress11
-  (implies (and (integerp i)
-                (integerp n))
-           (equal (assoc-equal :header (compress11 name l i n default))
-                  nil))
-  :hints (("Goal" :in-theory (enable compress11))))
-
-(defthm header-of-compress11
-  (implies (integerp i)
-           (equal (header name (compress11 name2 array i n default))
-                 nil))
-  :hints (("Goal" :in-theory (enable compress11))))
-
-(defthm default-of-compress11
-  (implies (integerp i)
-           (equal (default name (compress11 name2 array i n default))
-                  nil))
-  :hints (("Goal" :in-theory (enable compress11))))
-
-;odd rhs
-(defthm default-of-compress1
-  (equal (default name (compress1 name2 l))
-         (if (or (equal (array-order (header name2 l)) '<)
-                 (equal (array-order (header name2 l)) '>))
-             (default name2 l)
-           (default name l)))
-  :hints (("Goal" :in-theory (e/d (compress1 default) (array-order default-intro)))))
-
 (defthm default-of-aset1
   (implies (integerp n)
            (equal (default array-name (aset1 array-name array n val))
                   (default array-name array)))
   :hints (("Goal" :in-theory (enable aset1))))
-
-(defthm alistp-of-compress11
-  (implies (alistp array)
-           (alistp (compress11 name array i n default)))
-  :hints (("Goal" :in-theory (enable compress11))))
-
-(defthm alistp-of-compress1
-  (implies (and (alistp array)
-                (consp (header array-name array)) ;why?
-                )
-           (alistp (compress1 array-name array)))
-  :hints (("Goal" :in-theory (enable compress1))))
 
 (defthm integerp-of-car-of-assoc-equal-when-bounded-integer-alistp
   (implies (and (bounded-integer-alistp array n)
@@ -653,7 +557,7 @@
          t)
   :hints (("Goal" :in-theory (enable bounded-integer-alistp))))
 
-(in-theory (disable array-order))
+(in-theory (disable array-order)) ; move
 
 (defthm bounded-integer-alistp-of-compress1
   (implies (and (bounded-integer-alistp array n)
