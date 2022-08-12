@@ -335,20 +335,6 @@
 
 ;; Note that bounded-integer-alistp is a bad name, because it allows a key of :header.
 
-(defthm car-of-assoc-equal-cheap
-  (implies (assoc-equal x alist)
-           (equal (car (assoc-equal x alist))
-                  x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
-
-(defthm car-of-assoc-equal-strong
-  (equal (car (assoc-equal x alist))
-         (if (assoc-equal x alist)
-             x
-           nil))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
-
 (defthm assoc-equal-of-compress11-when-too-small
   (implies (< index i)
            (equal (assoc-equal index (compress11 name l i n default))

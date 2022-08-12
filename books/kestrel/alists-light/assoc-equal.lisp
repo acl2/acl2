@@ -117,3 +117,17 @@
   (implies (alistp alist)
            (iff (< 0 (len (assoc-equal key alist)))
                 (assoc-equal key alist))))
+
+(defthm car-of-assoc-equal-cheap
+  (implies (assoc-equal x alist)
+           (equal (car (assoc-equal x alist))
+                  x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+(defthm car-of-assoc-equal-strong
+  (equal (car (assoc-equal x alist))
+         (if (assoc-equal x alist)
+             x
+           nil))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
