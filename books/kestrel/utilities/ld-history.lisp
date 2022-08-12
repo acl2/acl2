@@ -43,7 +43,8 @@
   (declare (xargs :guard (and (weak-ld-history-entry-list-p ld-history)
                               (symbol-listp event-types))))
   (if (endp ld-history)
-      (er hard? 'most-recent-failed-command-aux "Can't find a theorem in the history, which is ~x0" whole-ld-history) ; todo: print less, suggest keeping more history
+      ;; TODO: Only mention (adjust-ld-history t state) if it is not already done
+      (er hard? 'most-recent-failed-command-aux "Can't find a theorem in the history, which is ~x0.  Consider doing (adjust-ld-history t state) to save a longer history." whole-ld-history) ; todo: print less, suggest keeping more history
     (let* ((entry (first ld-history)))
       (if (ld-history-entry-error-flg entry) ; checks whether there was a translation error
           ;; Keep looking:
@@ -79,7 +80,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *theorem-event-types*
-  '(thm defthm defthmd defrule defruled defrulel defruledl))
+  '(thm
+    rule
+    defthm defthmd
+    defrule defruled defrulel defruledl))
 
 (defund most-recent-failed-theorem-goal (state)
   (declare (xargs :stobjs state
