@@ -130,6 +130,7 @@ cgen-state"
 
 ; make this attachable
 (defstub allowed-cgen-event-ctx-p (*) => *)
+
 (defun allowed-cgen-event-ctx-p-no-defun (ctx)
   (declare (xargs :guard t))
   (cond ((equal ctx "( THM ...)") t)
@@ -138,13 +139,14 @@ cgen-state"
         ;; and the third arg to init-cgen-state/event is supposed to
         ;; satisfy allowed-cgen-event-ctx-p
         ((equal ctx :undefined) t)
-        ((member-equal ctx '(ACL2::THM ACL2::DEFTHM ACL2::VERIFY-GUARDS)))
+        ((member-equal ctx '(acl2::THM acl2::DEFTHM acl2::VERIFY-GUARDS)))
         ((and (consp ctx)
-              (member-equal (car ctx) '(ACL2::DEFTHM ACL2::VERIFY-GUARDS))) t)
+              (member-equal (car ctx) '(acl2::DEFTHM acl2::VERIFY-GUARDS))) t)
         ((and (consp ctx)
-              (member-equal (car ctx) (list "( VERIFY-GUARDS ~x0)"))) t)
+              (member-equal (car ctx)
+                            (list "( VERIFY-GUARDS ~x0)" ))) t)
         (t nil)))
-  
+
 ;; (defun allowed-cgen-event-ctx-p-with-defun (ctx)
 ;;   (cond ((equal ctx "( THM ...)") t)
 ;;         ((member-eq ctx '(ACL2::THM ACL2::DEFTHM ACL2::VERIFY-GUARDS ACL2::DEFUN ACL2::DEFUNS)))
