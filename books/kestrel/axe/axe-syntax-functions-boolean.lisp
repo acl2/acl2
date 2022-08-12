@@ -20,19 +20,20 @@
 
 (defconst *syntactically-boolean-fns*
   '(not
+    equal
+    bvlt
+    boolif          ;new
+    booland boolor boolxor
+    bool-fix$inline ;new
     memberp
     unsigned-byte-p natp integerp rationalp acl2-numberp consp booleanp
     true-listp ;new
     iff        ;newer
-    equal
     <
-    bvlt sbvlt bvle sbvle
+    sbvlt bvle sbvle ; these may often be rewritten to bvlt
     unsigned-byte-p-forced
-    booland boolor boolxor
     all-unsigned-byte-p items-have-len all-true-listp all-all-unsigned-byte-p
     prefixp         ;new
-    bool-fix$inline ;new
-    boolif          ;new
     set::in ; maybe drop?
     ))
 
@@ -42,10 +43,7 @@
                              (and (natp nodenum-or-quotep)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
   (if (quotep nodenum-or-quotep)
-      (let ((val (unquote nodenum-or-quotep)))
-        (if (eq t val)
-            t
-          (eq nil val)))
+      (booleanp (unquote nodenum-or-quotep))
     (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
       (and (consp expr)
            (member-eq (ffn-symb expr) *syntactically-boolean-fns*)))))
