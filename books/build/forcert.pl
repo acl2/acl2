@@ -42,14 +42,8 @@ use File::Temp qw/ tempfile /;
 #       1. ACL2 is set to the desired ACL2 executable
 #       2. ACL2_ROOT is set to the main ACL2 directory, and
 #       3. the current directory is an acl2/books directory
-#
-#     If you wat to run forcert.pl on your modified files in your
-#     local git repository, first make sure you have the right list:
-#         git ls-files -m
-#     If that is what you want, you can do something like
-#         git ls-files -m | xargs forcert.pl -j80
-#
 
+# FOOTNOTES
 # (*1) "Aggregating books" are those with no significant content other than
 #      include-book forms and possibly some xdoc.  The problem with including
 #      aggregating books in the forward certification is that when they
@@ -57,10 +51,22 @@ use File::Temp qw/ tempfile /;
 #      including some in which the user may not be interested.
 #      If you would like to add some books to the default list, see
 #      *standard-aggregating-books* in books/kestrel/utilities/forcert.lisp
-
+#
 # (*2) Note, we can consider using a similar method of finding the acl2
 #      executable and the books directory as 'cert.pl' does.  That might be
 #      overly complicated for most users, though.
+
+# TIPS
+#     If you want to run forcert.pl on the modified files in your
+#     local git repository, first make sure you have the right list:
+#         git ls-files -m
+#     To see them all on one line (not as easy to read, but easy to remove
+#     things you don't want):
+#         git ls-files -m | xargs
+#     If that is what you want, you can do something like (change 8 to the
+#     number of cores you want to use):
+#         git ls-files -m | xargs forcert.pl -j8
+#
 
 
 ################################################################################
