@@ -6715,7 +6715,7 @@
              (hints `(("Goal"
                        :in-theory
                        '(exec-memberp
-                         not-errorp-when-valuep-rewrite
+                         not-errorp-when-valuep
                          value-resultp-when-valuep
                          value-result-fix-when-value-resultp
                          ,recognizer
@@ -6823,7 +6823,7 @@
                       exec-integer
                       ifix
                       integer-range-p
-                      not-errorp-when-valuep-rewrite
+                      not-errorp-when-valuep
                       value-fix-when-valuep
                       value-result-fix-when-value-resultp
                       value-resultp-when-valuep
@@ -7009,7 +7009,7 @@
              (hints `(("Goal"
                        :in-theory
                        '(exec-expr-asg
-                         not-errorp-when-valuep-rewrite
+                         not-errorp-when-valuep
                          valuep-when-ucharp
                          valuep-when-scharp
                          valuep-when-ushortp
@@ -7181,7 +7181,7 @@
                       exec-integer
                       value-struct-read
                       value-struct-write
-                      not-errorp-when-valuep-rewrite
+                      not-errorp-when-valuep
                       value-integerp
                       value-unsigned-integerp-alt-def
                       value-signed-integerp-alt-def
