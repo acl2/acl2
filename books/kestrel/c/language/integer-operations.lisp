@@ -336,4 +336,22 @@
                           valuep-of-convert-integer-value-from-uchar-to-sint
                           valuep-of-convert-integer-value-from-ushort-to-sint
                           not-errorp-when-valuep)
+                         ((:e type-sint))))))
+
+  (defruled type-of-value-of-promote-value
+    (equal (type-of-value (promote-value val))
+           (promote-type (type-of-value val)))
+    :hints (("Goal"
+             :in-theory (e/d
+                         (promote-type
+                          convert-integer-value-to-type-of-value
+                          valuep-of-convert-integer-value-to-unsigned
+                          valuep-of-convert-integer-value-from-schar-to-sint
+                          valuep-of-convert-integer-value-from-sshort-to-sint
+                          valuep-of-convert-integer-value-from-uchar-to-sint
+                          valuep-of-convert-integer-value-from-ushort-to-sint
+                          not-errorp-when-valuep
+                          value-integerp
+                          value-signed-integerp
+                          value-unsigned-integerp)
                          ((:e type-sint)))))))
