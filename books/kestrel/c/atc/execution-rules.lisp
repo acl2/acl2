@@ -257,66 +257,6 @@
      the rule for executing identifiers,
      in @(tsee atc-exec-ident-rules)."))
 
-  (defruled value-kind-when-scharp
-    (implies (scharp x)
-             (equal (value-kind x)
-                    :schar))
-    :enable (scharp value-kind))
-
-  (defruled value-kind-when-ucharp
-    (implies (ucharp x)
-             (equal (value-kind x)
-                    :uchar))
-    :enable (ucharp value-kind))
-
-  (defruled value-kind-when-sshortp
-    (implies (sshortp x)
-             (equal (value-kind x)
-                    :sshort))
-    :enable (sshortp value-kind))
-
-  (defruled value-kind-when-ushortp
-    (implies (ushortp x)
-             (equal (value-kind x)
-                    :ushort))
-    :enable (ushortp value-kind))
-
-  (defruled value-kind-when-sintp
-    (implies (sintp x)
-             (equal (value-kind x)
-                    :sint))
-    :enable (sintp value-kind))
-
-  (defruled value-kind-when-uintp
-    (implies (uintp x)
-             (equal (value-kind x)
-                    :uint))
-    :enable (uintp value-kind))
-
-  (defruled value-kind-when-slongp
-    (implies (slongp x)
-             (equal (value-kind x)
-                    :slong))
-    :enable (slongp value-kind))
-
-  (defruled value-kind-when-ulongp
-    (implies (ulongp x)
-             (equal (value-kind x)
-                    :ulong))
-    :enable (ulongp value-kind))
-
-  (defruled value-kind-when-sllongp
-    (implies (sllongp x)
-             (equal (value-kind x)
-                    :sllong))
-    :enable (sllongp value-kind))
-
-  (defruled value-kind-when-ullongp
-    (implies (ullongp x)
-             (equal (value-kind x)
-                    :ullong))
-    :enable (ullongp value-kind))
-
   (defval *atc-value-kind-rules*
     '(value-kind-when-scharp
       value-kind-when-ucharp
