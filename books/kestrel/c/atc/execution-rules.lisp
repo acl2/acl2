@@ -1230,7 +1230,7 @@
     (implies (scharp x)
              (equal (promote-value x)
                     (sint-from-schar x)))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-ucharp
     (implies (ucharp x)
@@ -1238,13 +1238,13 @@
                     (if (<= (uchar-max) (sint-max))
                         (sint-from-uchar x)
                       (uint-from-uchar x))))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-sshortp
     (implies (sshortp x)
              (equal (promote-value x)
                     (sint-from-sshort x)))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-ushortp
     (implies (ushortp x)
@@ -1252,43 +1252,43 @@
                     (if (<= (ushort-max) (sint-max))
                         (sint-from-ushort x)
                       (uint-from-ushort x))))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-sintp
     (implies (sintp x)
              (equal (promote-value x)
                     x))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-uintp
     (implies (uintp x)
              (equal (promote-value x)
                     x))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-slongp
     (implies (slongp x)
              (equal (promote-value x)
                     x))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-ulongp
     (implies (ulongp x)
              (equal (promote-value x)
                     x))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-sllongp
     (implies (sllongp x)
              (equal (promote-value x)
                     x))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defruled promote-value-when-ullongp
     (implies (ullongp x)
              (equal (promote-value x)
                     x))
-    :enable promote-value)
+    :enable promote-value-alt-def)
 
   (defval *atc-promote-value-rules*
     '(promote-value-when-scharp

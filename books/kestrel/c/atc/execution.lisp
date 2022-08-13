@@ -161,36 +161,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define promote-value ((val valuep))
-  :returns (promoted-val valuep)
-  :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
+(defsection promote-value-alt-def
+  :short "Alternate definition of @(tsee promote-value)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the dynamic counterpart of @(tsee promote-type).
-     See the documentation of that function for details.
-     Here we actually convert values;
-     we do not merely compute a promoted type."))
-  (b* ((val (value-fix val)))
-    (cond ((ucharp val) (if (<= (uchar-max) (sint-max))
-                            (sint-from-uchar val)
-                          (uint-from-uchar val)))
-          ((scharp val) (sint-from-schar val))
-          ((ushortp val) (if (<= (ushort-max) (sint-max))
-                             (sint-from-ushort val)
-                           (uint-from-ushort val)))
-          ((sshortp val) (sint-from-sshort val))
-          (t val)))
-  :guard-hints (("Goal" :in-theory (enable
-                                    sint-from-uchar-okp
-                                    sint-from-ushort-okp
-                                    uchar-integerp-alt-def
-                                    schar-integerp-alt-def
-                                    ushort-integerp-alt-def
-                                    sshort-integerp-alt-def
-                                    sint-integerp-alt-def)))
-  :hooks (:fix)
-  ///
+    "This is temporary, and will be removed eventually.
+     It is the old definition of @(tse promote-value),
+     dependent on the shallow embedding
+     rather than independent as it should be.")
+   (xdoc::p
+    "We also include a theorem that was part of the old @(tsee define).
+     That theorem may be also removed eventually."))
+
+  (defruled promote-value-alt-def
+    (equal (promote-value val)
+           (b* ((val (value-fix val)))
+             (cond ((ucharp val) (if (<= (uchar-max) (sint-max))
+                                     (sint-from-uchar val)
+                                   (uint-from-uchar val)))
+                   ((scharp val) (sint-from-schar val))
+                   ((ushortp val) (if (<= (ushort-max) (sint-max))
+                                      (sint-from-ushort val)
+                                    (uint-from-ushort val)))
+                   ((sshortp val) (sint-from-sshort val))
+                   (t val))))
+    :use (:instance lemma (val (value-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (valuep val)
+                (equal (promote-value val)
+                       (b* ((val (value-fix val)))
+                         (cond ((ucharp val) (if (<= (uchar-max) (sint-max))
+                                                 (sint-from-uchar val)
+                                               (uint-from-uchar val)))
+                               ((scharp val) (sint-from-schar val))
+                               ((ushortp val) (if (<= (ushort-max) (sint-max))
+                                                  (sint-from-ushort val)
+                                                (uint-from-ushort val)))
+                               ((sshortp val) (sint-from-sshort val))
+                               (t val)))))
+       :enable (promote-value
+                promote-type
+                convert-integer-value
+                value-integer
+                value-integer->get
+                integer-type-max
+                value-schar->get-to-schar->get
+                value-uchar->get-to-uchar->get
+                value-sshort->get-to-sshort->get
+                value-ushort->get-to-ushort->get
+                value-uint->get-to-uint->get
+                value-sint->get-to-sint->get
+                value-sint-to-sint
+                value-integerp
+                value-signed-integerp
+                value-unsigned-integerp
+                sint-from-uchar
+                sint-from-schar
+                sint-from-ushort
+                sint-from-sshort
+                sint-integerp-alt-def
+                scharp-when-valuep-and-kind-schar
+                ucharp-when-valuep-and-kind-uchar
+                sshortp-when-valuep-and-kind-sshort
+                ushortp-when-valuep-and-kind-ushort
+                sintp-when-valuep-and-kind-sint)
+       :prep-books
+       ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
 
   (defruled values-of-promote-value
     (implies (value-arithmeticp val)
@@ -201,16 +239,10 @@
                    (slongp pval)
                    (ullongp pval)
                    (sllongp pval))))
-    :enable (value-arithmeticp
+    :enable (promote-value-alt-def
+             value-arithmeticp
              value-realp
              value-integerp
-             value-unsigned-integerp-alt-def
-             value-signed-integerp-alt-def))
-
-  (defrule value-integerp-of-promote-value
-    (equal (value-integerp (promote-value val))
-           (value-integerp (value-fix val)))
-    :enable (value-integerp
              value-unsigned-integerp-alt-def
              value-signed-integerp-alt-def)))
 

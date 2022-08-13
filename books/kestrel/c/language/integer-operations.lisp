@@ -277,3 +277,63 @@
     :enable (value-integer
              value-integer->get
              sint-integerp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define promote-value ((val valuep))
+  :returns (promoted-val
+            valuep
+            :hints
+            (("Goal"
+              :cases ((equal (promote-type (type-of-value val))
+                             (type-of-value val)))
+              :in-theory (e/d
+                          (promote-type
+                           convert-integer-value-to-type-of-value
+                           valuep-of-convert-integer-value-to-unsigned
+                           valuep-of-convert-integer-value-from-schar-to-sint
+                           valuep-of-convert-integer-value-from-sshort-to-sint
+                           valuep-of-convert-integer-value-from-uchar-to-sint
+                           valuep-of-convert-integer-value-from-ushort-to-sint)
+                          ((:e type-sint))))))
+  :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee promote-type).
+     See the documentation of that function for details.
+     Here we actually convert values;
+     we do not merely compute a promoted type.")
+   (xdoc::p
+    "We promote the type of the value,
+     obtaining the type of the new value.
+     If the starting value is an integer one,
+     in which case the promoted type is also an integer one,
+     we convert the value to the promoted type.")
+   (xdoc::p
+    "This function never returns error:
+     promotion always works.
+     To show this, we need to show that @(tsee convert-integer-value)
+     never returns errors when used to promote values,
+     which we do via rules about @(tsee convert-integer-value)."))
+  (b* ((type (promote-type (type-of-value val))))
+    (if (value-integerp val)
+        (convert-integer-value val type)
+      (value-fix val)))
+  :hooks (:fix)
+  ///
+
+  (defrule value-integerp-of-promote-value
+    (equal (value-integerp (promote-value val))
+           (value-integerp (value-fix val)))
+    :hints (("Goal"
+             :in-theory (e/d
+                         (promote-type
+                          convert-integer-value-to-type-of-value
+                          valuep-of-convert-integer-value-to-unsigned
+                          valuep-of-convert-integer-value-from-schar-to-sint
+                          valuep-of-convert-integer-value-from-sshort-to-sint
+                          valuep-of-convert-integer-value-from-uchar-to-sint
+                          valuep-of-convert-integer-value-from-ushort-to-sint
+                          not-errorp-when-valuep)
+                         ((:e type-sint)))))))
