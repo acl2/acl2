@@ -200,6 +200,7 @@
     "kestrel/ethereum/top"
     "kestrel/hdwallet/top"
     "kestrel/number-theory/top"
+    "kestrel/utilities/system/terms"
     "kestrel/utilities/top"
     "kestrel/zcash/gadgets/top"
     "kestrel/zcash/top"

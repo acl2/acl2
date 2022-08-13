@@ -191,6 +191,8 @@
 (verify-termination-boot-strap set-fmt-hard-right-margin) ; and guards
 (verify-termination-boot-strap set-fmt-soft-right-margin) ; and guards
 
+(verify-termination-boot-strap bounded-integer-listp) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
