@@ -121,7 +121,14 @@
     (implies (not (errorp val))
              (equal (type-of-value val)
                     (type-fix type)))
-    :hints (("Goal" :in-theory (enable type-of-value)))))
+    :hints (("Goal" :in-theory (enable type-of-value))))
+
+  (defret value-integerp-of-value-integer
+    (implies (not (errorp val))
+             (value-integerp val))
+    :hints (("Goal" :in-theory (enable value-integerp
+                                       value-signed-integerp
+                                       value-unsigned-integerp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -211,6 +218,10 @@
     (implies (not (errorp newval))
              (equal (type-of-value newval)
                     (type-fix type))))
+
+  (defret value-integerp-of-convert-integer-value
+    (implies (not (errorp newval))
+             (value-integerp newval)))
 
   (defruled convert-integer-value-to-type-of-value
     (implies (and (value-integerp val)
