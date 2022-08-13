@@ -207,6 +207,11 @@
 
   (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
+  (defret type-of-value-of-convert-integer-value
+    (implies (not (errorp newval))
+             (equal (type-of-value newval)
+                    (type-fix type))))
+
   (defruled convert-integer-value-to-type-of-value
     (implies (and (value-integerp val)
                   (equal type (type-of-value val)))
