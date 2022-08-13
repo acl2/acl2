@@ -529,17 +529,17 @@
                      print-form)))))
 
 (defun bounded-integer-listp (i j lst)
-  ;; If i is a non-integer, then it's -infinity.
-  ;; If j is a non-integer, then it's +infinity.
-  (if (consp lst)
-      (and (integerp (car lst))
-           (if (integerp i)
-               (if (integerp j)
-                   (and (<= i (car lst))
-                        (<= (car lst) j))
-                 (<= i (car lst)))
-             (<= (car lst) j)))
-    (null lst)))
+  (declare (xargs :guard (and (integerp i)
+                              (or (integerp j)
+                                  (eq j 'infinity)))))
+  (cond
+   ((consp lst)
+    (and (integerp (car lst))
+         (<= i (car lst))
+         (or (eq j 'infinity)
+             (<= (car lst) j))
+         (bounded-integer-listp i j (cdr lst))))
+   (t (null lst))))
 
 (defun fetch-term-and-cl (term addr cl)
   ;; Returns the subterm of TERM at address ADDR paired with a list
