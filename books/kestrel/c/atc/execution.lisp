@@ -167,7 +167,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is temporary, and will be removed eventually.
-     It is the old definition of @(tse promote-value),
+     It is the old definition of @(tsee promote-value),
      dependent on the shallow embedding
      rather than independent as it should be.")
    (xdoc::p
