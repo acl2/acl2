@@ -39,9 +39,15 @@ use File::Temp qw/ tempfile /;
 #     are ignored unless "--agg" is specified. (*1)
 #
 #     Current requirements for running this script (*2):
-#     1. ACL2 is set to the desired ACL2 executable
-#     2. ACL2_ROOT is set to the main ACL2 directory, and
-#     3. the current directory is an acl2/books directory
+#       1. ACL2 is set to the desired ACL2 executable
+#       2. ACL2_ROOT is set to the main ACL2 directory, and
+#       3. the current directory is an acl2/books directory
+#
+#     If you wat to run forcert.pl on your modified files in your
+#     local git repository, first make sure you have the right list:
+#         git ls-files -m
+#     If that is what you want, you can do something like
+#         git ls-files -m | xargs forcert.pl -j80
 #
 
 # (*1) "Aggregating books" are those with no significant content other than
