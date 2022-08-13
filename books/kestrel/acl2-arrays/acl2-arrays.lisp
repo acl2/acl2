@@ -15,6 +15,9 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system) ;make local?
 (include-book "bounded-nat-alists")
 (include-book "alen1")
+(include-book "aset1")
+(include-book "default")
+(include-book "dimensions") ; make local?
 (include-book "compress1") ; make local?
 (include-book "compress11") ; make local?
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
@@ -62,7 +65,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (default name l)
                   (default :fake-name l)))
-  :hints (("Goal" :in-theory (enable default))))
+  :hints (("Goal" :in-theory (e/d (default) (default-intro)))))
 
 (local (in-theory (enable normalize-default-name)))
 
@@ -78,7 +81,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (dimensions name l)
                   (dimensions :fake-name l)))
-  :hints (("Goal" :in-theory (enable dimensions))))
+  :hints (("Goal" :in-theory (e/d (dimensions) (dimensions-intro)))))
 
 (local (in-theory (enable normalize-dimensions-name)))
 
@@ -128,7 +131,7 @@
                   (aref1 :fake-name l n)))
   :hints (("Goal" :in-theory (enable aref1))))
 
-;; (local (in-theory (enable normalize-aref1-name)))
+(local (in-theory (enable normalize-aref1-name)))
 
 (defthmd normalize-aset1-name
   (implies (syntaxp (not (equal name '':fake-name)))
@@ -136,7 +139,7 @@
                   (aset1 :fake-name l n val)))
   :hints (("Goal" :in-theory (enable aset1))))
 
-;; (local (in-theory (enable normalize-aset1-name)))
+(local (in-theory (enable normalize-aset1-name)))
 
 (defthmd normalize-aset2-name
   (implies (syntaxp (not (equal name '':fake-name)))
@@ -161,7 +164,7 @@
                        (array1p :fake-name l))))
   :hints (("Goal" :in-theory (enable array1p))))
 
-;; (local (in-theory (enable normalize-array1p-name)))
+(local (in-theory (enable normalize-array1p-name)))
 
 (defthmd normalize-array2p-name
   (implies (syntaxp (not (equal name '':fake-name)))
@@ -200,7 +203,7 @@
                     (<= maximum-length *maximum-positive-32-bit-integer*)
                     (bounded-integer-alistp l len)))))))
   :hints (("Goal" :in-theory (e/d (array1p header dimensions maximum-length)
-                                  ()))))
+                                  (dimensions-intro)))))
 
 
 ;; ;;;
@@ -215,67 +218,6 @@
 
 (theory-invariant (incompatible (:rewrite header-intro) (:definition header)))
 
-;;;
-;;; default-intro
-;;;
-
-;; We prefer a call to the function DEFAULT instead of its expanded form,
-;; but some functions use the expanded form directly, so we use this rule to
-;; convert things into our normal form.
-(defthm default-intro
-  (equal (cadr (assoc-keyword :default (cdr (header name l))))
-         (default name l))
-  :hints (("Goal" :in-theory (enable default))))
-
-(theory-invariant (incompatible (:rewrite default-intro) (:definition default)))
-
-;;;
-;;; default-intro2
-;;;
-
-;; This one also collapses the call to header
-;; Unfortunately, this has a free variable in the RHS.
-(defthmd default-intro2
-  (equal (cadr (assoc-keyword :default (cdr (ASSOC-EQUAL :HEADER L))))
-         (default name l))
-  :hints (("Goal" :in-theory (e/d (default header) (default-intro)))))
-
-(theory-invariant (incompatible (:rewrite default-intro2) (:definition default)))
-
-
-;;;
-;;; dimensions-intro
-;;;
-
-;; We prefer a call to the function DIMENSIONS instead of its expanded form,
-;; but some functions use the expanded form directly, so we use this rule to
-;; convert things into our normal form.
-(defthm dimensions-intro
-  (equal (cadr (assoc-keyword :dimensions (cdr (header name l))))
-         (dimensions name l))
-  :hints (("Goal" :in-theory (enable dimensions))))
-
-(theory-invariant (incompatible (:rewrite dimensions-intro) (:definition dimensions)))
-
-;;;
-;;; dimensions-intro2
-;;;
-
-;; This one also collapses the call to header
-;; Unfortunately, this has a free variable in the RHS.
-(defthmd dimensions-intro2
-  (equal (cadr (assoc-keyword :dimensions (cdr (assoc-equal :header l))))
-         (dimensions name l))
-  :hints (("Goal" :in-theory (e/d (dimensions header) (dimensions-intro)))))
-
-(theory-invariant (incompatible (:rewrite dimensions-intro2) (:definition dimensions)))
-
-(defthm true-listp-of-dimensions
-  (implies (array1p array-name array)
-           (true-listp (dimensions array-name array)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (e/d (array1p-rewrite)
-                                  ()))))
 
 ;; Here we also introduce alen1
 (defthmd array1p-rewrite2
@@ -300,7 +242,6 @@
                     (bounded-integer-alistp l len)))))))
   :hints (("Goal" :in-theory (e/d (array1p-rewrite)
                                   ()))))
-
 
 (defthm header-when-array1p
   (implies (array1p name2 l)
@@ -350,13 +291,6 @@
 ;;   (implies (alistp x)
 ;;            (alistp (reverse-list x)))
 ;;   :hints (("Goal" :in-theory (enable reverse-list))))
-
-(defthm default-of-cons
-  (equal (default name (cons a x))
-         (if (equal :header (car a))
-             (cadr (assoc-keyword :default (cdr a)))
-           (default name x)))
-  :hints (("Goal" :in-theory (e/d (default header) (default-intro)))))
 
 (defthm maximum-length-of-cons
   (equal (maximum-length name (cons a x))
@@ -430,14 +364,6 @@
            (header array-name alist)))
   :hints (("Goal" :in-theory (enable header))))
 
-(defthm dimensions-of-cons
-  (equal (dimensions array-name (cons entry alist))
-         (if (eq :header (car entry))
-             (cadr (assoc-keyword :dimensions (cdr entry)))
-           (dimensions array-name alist)))
-  :hints (("Goal" :in-theory (e/d (dimensions)
-                                  (dimensions-intro)))))
-
 (defthm alen1-of-cons
   (equal (alen1 array-name (cons entry alist))
          (if (eq :header (car entry))
@@ -448,23 +374,11 @@
 
 ;has more stuff wrapped up...
 
-
-
-
 ;can be expensive?
 (defthmd consp-when-true-listp-and-non-nil
   (implies (and x ;limit?
                 (true-listp x))
            (consp x)))
-
-
-
-(defthm dimensions-of-aset1
-  (equal (dimensions array-name (aset1 array-name array n val))
-         (if (eq :header n)
-             (cadr (assoc-keyword :dimensions val))
-           (dimensions array-name array)))
-  :hints (("Goal" :in-theory (enable aset1))))
 
 (defthm alen1-of-aset1
   (equal (alen1 array-name (aset1 array-name array n val))
@@ -478,17 +392,6 @@
   (equal (header name nil)
          nil)
   :hints (("Goal" :in-theory (enable header))))
-
-(defthm default-of-nil
-  (equal (default name nil)
-         nil)
-  :hints (("Goal" :in-theory (e/d (default) (default-intro)))))
-
-(defthm default-of-aset1
-  (implies (integerp n)
-           (equal (default array-name (aset1 array-name array n val))
-                  (default array-name array)))
-  :hints (("Goal" :in-theory (enable aset1))))
 
 (defthm integerp-of-car-of-assoc-equal-when-bounded-integer-alistp
   (implies (and (bounded-integer-alistp array n)
@@ -1286,7 +1189,7 @@
                             ARRAY-ORDER
                             make-into-array-with-len
                             ;;aref1
-                            ) (array1p)))))
+                            ) (array1p NORMALIZE-AREF1-NAME)))))
 
 ;Consider adding an option to reuse an existing array if large enough (well, compress1 now does that internally)?
 ; The length of the resulting array is one more than the max key in the alist, unless the alist is empty, in which case the length is 1.
@@ -1319,7 +1222,7 @@
                 )
            (equal (array1p array-name (make-into-array array-name alist))
                   t))
-  :hints (("Goal" :in-theory (enable array1p compress1 make-into-array))))
+  :hints (("Goal" :in-theory (e/d (array1p compress1 make-into-array) (normalize-array1p-name)))))
 
 (defthm aref1-of-make-into-array
   (implies (and (bounded-natp-alistp alist 2147483646)
