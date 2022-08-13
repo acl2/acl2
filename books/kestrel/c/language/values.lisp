@@ -192,10 +192,9 @@
 (defsection value-result-theorems
   :extension value-result
 
-  (defrule not-errorp-when-valuep
+  (defruled not-errorp-when-valuep
     (implies (valuep x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable (valuep
              errorp))
 
@@ -218,10 +217,9 @@
 (defsection value-list-result-theorems
   :extension value-list-result
 
-  (defrule not-errorp-when-value-listp
+  (defruled not-errorp-when-value-listp
     (implies (value-listp x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable errorp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,10 +251,9 @@
 (defsection value-option-result-theorems
   :extension value-option
 
-  (defrule not-errorp-when-value-optionp
+  (defruled not-errorp-when-value-optionp
     (implies (value-optionp x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable value-optionp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -605,9 +602,8 @@
 (defsection init-value-result-theorems
   :extension init-value-result
 
-  (defrule not-errorp-when-init-valuep
+  (defruled not-errorp-when-init-valuep
     (implies (init-valuep x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable (init-valuep
              errorp)))

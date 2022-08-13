@@ -121,7 +121,14 @@
     (implies (not (errorp val))
              (equal (type-of-value val)
                     (type-fix type)))
-    :hints (("Goal" :in-theory (enable type-of-value)))))
+    :hints (("Goal" :in-theory (enable type-of-value))))
+
+  (defret value-integerp-of-value-integer
+    (implies (not (errorp val))
+             (value-integerp val))
+    :hints (("Goal" :in-theory (enable value-integerp
+                                       value-signed-integerp
+                                       value-unsigned-integerp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,10 +178,180 @@
     "We do not yet support conversions to the plain @('char') type;
      this restriction is expressed by the guard.
      However, we prefer to keep the name of this function more general,
-     in anticipation for extending it to those two types."))
+     in anticipation for extending it to those two types.")
+   (xdoc::p
+    "We prove a theorem showing that converting a value to its type
+     is a no-op, i.e. it leaves the value unchanged.")
+   (xdoc::p
+    "We prove a theorem saying that conversions to unsigned types
+     never yields errors.")
+   (xdoc::p
+    "We also prove two theorems saying that
+     converting signed @('char')s and signed @('short')s
+     to signed @('int')s
+     never yields errors,
+     as well as two theorems saying that
+     converting unsigned @('char')s and unsigned @('short')s
+     to signed @('int')s,
+     provided the range of the latter
+     includes the ranges of the former,
+     never yields errors.")
+   (xdoc::p
+    "These last four theorems are relevant to
+     the use of integer conversions in @(tsee promote-value),
+     to show that that function never yields errors;
+     however, they are more general theorems about integer conversions.
+     Also the first two theorems mentioned above
+     are in fact relevant to showing that @(tsee promote-value) yields no error,
+     but they are clearly more general in nature."))
   (b* ((mathint (value-integer->get val)))
     (if (type-unsigned-integerp type)
         (value-integer (mod mathint (1+ (integer-type-max type)))
                        type)
       (value-integer mathint type)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
+  (defret type-of-value-of-convert-integer-value
+    (implies (not (errorp newval))
+             (equal (type-of-value newval)
+                    (type-fix type))))
+
+  (defret value-integerp-of-convert-integer-value
+    (implies (not (errorp newval))
+             (value-integerp newval)))
+
+  (defruled convert-integer-value-to-type-of-value
+    (implies (and (value-integerp val)
+                  (equal type (type-of-value val)))
+             (equal (convert-integer-value val type)
+                    (value-fix val)))
+    :enable (value-integerp
+             value-signed-integerp
+             value-unsigned-integerp
+             integer-type-max
+             value-integer->get
+             value-integer))
+
+  (defruled valuep-of-convert-integer-value-to-unsigned
+    (implies (type-unsigned-integerp type)
+             (valuep (convert-integer-value val type)))
+    :enable (convert-integer-value
+             value-integer
+             type-unsigned-integerp
+             integer-type-max
+             uchar-integerp-alt-def
+             ushort-integerp-alt-def
+             uint-integerp-alt-def
+             ulong-integerp-alt-def
+             ullong-integerp-alt-def))
+
+  (defruled valuep-of-convert-integer-value-from-schar-to-sint
+    (implies (value-case val :schar)
+             (valuep (convert-integer-value val (type-sint))))
+    :enable (value-integer
+             value-integer->get
+             sint-integerp-alt-def))
+
+  (defruled valuep-of-convert-integer-value-from-sshort-to-sint
+    (implies (value-case val :sshort)
+             (valuep (convert-integer-value val (type-sint))))
+    :enable (value-integer
+             value-integer->get
+             sint-integerp-alt-def))
+
+  (defruled valuep-of-convert-integer-value-from-uchar-to-sint
+    (implies (and (value-case val :uchar)
+                  (<= (uchar-max) (sint-max)))
+             (valuep (convert-integer-value val (type-sint))))
+    :enable (value-integer
+             value-integer->get
+             sint-integerp-alt-def))
+
+  (defruled valuep-of-convert-integer-value-from-ushort-to-sint
+    (implies (and (value-case val :ushort)
+                  (<= (ushort-max) (sint-max)))
+             (valuep (convert-integer-value val (type-sint))))
+    :enable (value-integer
+             value-integer->get
+             sint-integerp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define promote-value ((val valuep))
+  :returns (promoted-val
+            valuep
+            :hints
+            (("Goal"
+              :cases ((equal (promote-type (type-of-value val))
+                             (type-of-value val)))
+              :in-theory (e/d
+                          (promote-type
+                           convert-integer-value-to-type-of-value
+                           valuep-of-convert-integer-value-to-unsigned
+                           valuep-of-convert-integer-value-from-schar-to-sint
+                           valuep-of-convert-integer-value-from-sshort-to-sint
+                           valuep-of-convert-integer-value-from-uchar-to-sint
+                           valuep-of-convert-integer-value-from-ushort-to-sint)
+                          ((:e type-sint))))))
+  :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee promote-type).
+     See the documentation of that function for details.
+     Here we actually convert values;
+     we do not merely compute a promoted type.")
+   (xdoc::p
+    "We promote the type of the value,
+     obtaining the type of the new value.
+     If the starting value is an integer one,
+     in which case the promoted type is also an integer one,
+     we convert the value to the promoted type.")
+   (xdoc::p
+    "This function never returns error:
+     promotion always works.
+     To show this, we need to show that @(tsee convert-integer-value)
+     never returns errors when used to promote values,
+     which we do via rules about @(tsee convert-integer-value)."))
+  (b* ((type (promote-type (type-of-value val))))
+    (if (value-integerp val)
+        (convert-integer-value val type)
+      (value-fix val)))
+  :hooks (:fix)
+  ///
+
+  (defrule value-integerp-of-promote-value
+    (equal (value-integerp (promote-value val))
+           (value-integerp (value-fix val)))
+    :hints (("Goal"
+             :in-theory (e/d
+                         (promote-type
+                          convert-integer-value-to-type-of-value
+                          valuep-of-convert-integer-value-to-unsigned
+                          valuep-of-convert-integer-value-from-schar-to-sint
+                          valuep-of-convert-integer-value-from-sshort-to-sint
+                          valuep-of-convert-integer-value-from-uchar-to-sint
+                          valuep-of-convert-integer-value-from-ushort-to-sint
+                          not-errorp-when-valuep)
+                         ((:e type-sint))))))
+
+  (defruled type-of-value-of-promote-value
+    (equal (type-of-value (promote-value val))
+           (promote-type (type-of-value val)))
+    :hints (("Goal"
+             :in-theory (e/d
+                         (promote-type
+                          convert-integer-value-to-type-of-value
+                          valuep-of-convert-integer-value-to-unsigned
+                          valuep-of-convert-integer-value-from-schar-to-sint
+                          valuep-of-convert-integer-value-from-sshort-to-sint
+                          valuep-of-convert-integer-value-from-uchar-to-sint
+                          valuep-of-convert-integer-value-from-ushort-to-sint
+                          not-errorp-when-valuep
+                          value-integerp
+                          value-signed-integerp
+                          value-unsigned-integerp)
+                         ((:e type-sint)))))))

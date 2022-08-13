@@ -722,17 +722,6 @@
              (equal (value-result-fix x)
                     x)))
 
-  (defruled not-errorp-when-valuep-rewrite
-    (implies (valuep x)
-             (not (errorp x)))
-    :enable (errorp
-             valuep))
-
-  (defruled not-errorp-when-value-listp-rewrite
-    (implies (value-listp x)
-             (not (errorp x)))
-    :enable errorp)
-
   (defruled not-errorp-when-scopep
     (implies (scopep x)
              (not (errorp x)))
@@ -829,8 +818,6 @@
     not-zp-of-limit-variable
     not-zp-of-limit-minus-const
     value-result-fix-when-valuep
-    not-errorp-when-valuep-rewrite
-    not-errorp-when-value-listp-rewrite
     not-errorp-when-scopep
     not-errorp-when-scope-listp
     not-errorp-when-schar-arrayp
@@ -1150,7 +1137,9 @@
     sllongp-of-sllong
     ullongp-of-ullong
     value-fix-when-valuep
-    value-list-fix-of-cons))
+    value-list-fix-of-cons
+    not-errorp-when-valuep
+    not-errorp-when-value-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
