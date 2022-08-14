@@ -19,7 +19,8 @@
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
-(include-book "std/io/read-file-bytes" :dir :system)
+(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system) ;for logext, todo: reduce
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "kestrel/typed-lists-light/bytes-to-printable-string" :dir :system)
@@ -640,27 +641,25 @@
        ) ;todo: Can we somehow check that all bytes are used?
     (reverse pe)))
 
-;; Parse a file that is known to be a PE executable.  Returns (mv
-;; contents state) where contents in an alist representing the
-;; contents of the PE executable.
-(defun parse-pe-file (filename state)
-  (declare (xargs :stobjs state
-                  :verify-guards nil
-                  :guard (stringp filename)))
-  (b* (((mv existsp state)
-        (file-existsp filename state))
-       ((when (not existsp))
-        (progn$ (cw "ERROR in parse-for-pe-file: File does not exist: ~x0." filename)
-                (exit 1) ;return non-zero exit status
-                (mv t state)))
-       ((mv bytes state)
-        (read-file-bytes filename state))
-       ((when (not (consp bytes))) ;I've seen this be a string error message
-        (prog2$ (er hard 'parse-pe-file "Failed to read any bytes from file: ~x0.  Result: ~x1" filename bytes)
-                (mv t state)))
-       ;; Parse the bytes read:
-       (parsed-pe-file (parse-pe-file-bytes bytes)))
-    (mv parsed-pe-file state)))
+;; ;; Parse a file that is known to be a PE executable.  Returns (mv
+;; ;; erp contents state) where contents in an alist representing the
+;; ;; contents of the PE executable.
+;; (defun parse-pe-file (filename state)
+;;   (declare (xargs :stobjs state
+;;                   :verify-guards nil
+;;                   :guard (stringp filename)))
+;;   (b* (((mv existsp state) (file-existsp filename state))
+;;        ((when (not existsp))
+;;         (progn$ (cw "ERROR in parse-for-pe-file: File does not exist: ~x0." filename)
+;;                 (exit 1) ;return non-zero exit status ; todo: do we want this (not that below we don't exist)
+;;                 (mv :file-does-not-exist nil state)))
+;;        ((mv erp bytes state) (read-file-into-byte-list filename state))
+;;        ((when erp)
+;;         (er hard 'parse-pe-file "Failed to read any bytes from file: ~x0." filename)
+;;         (mv erp nil state))
+;;        ;; Parse the bytes read:
+;;        (parsed-pe-file (parse-pe-file-bytes bytes)))
+;;     (mv nil parsed-pe-file state)))
 
 ;dup
 (defund my-all-equal (x lst)
