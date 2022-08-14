@@ -47,3 +47,18 @@
            (dimensions array-name alist)))
   :hints (("Goal" :in-theory (e/d (dimensions)
                                   (dimensions-intro)))))
+
+(defthm natp-of-nth-of-0-and-dimensions-when-array1p
+  (implies (array1p array-name array)
+           (natp (nth 0 (dimensions array-name array))))
+  :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))
+
+(defthm rationalp-of-nth-of-0-and-dimensions-when-array1p
+  (implies (array1p array-name array)
+           (rationalp (nth 0 (dimensions array-name array))))
+  :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))
+
+(defthm consp-of-dimensions-when-array1p
+  (implies (array1p dag-array-name dag-array)
+           (consp (dimensions dag-array-name dag-array)))
+  :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))

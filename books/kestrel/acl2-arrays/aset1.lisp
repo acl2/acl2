@@ -30,3 +30,11 @@
            (equal (default array-name (aset1 array-name array n val))
                   (default array-name array)))
   :hints (("Goal" :in-theory (enable aset1))))
+
+(defthm array1p-of-aset1-simple
+  (implies (and (natp index)
+                (< index (car (dimensions array-name array))) ; same as (< index (alen1 array-name array))
+                (array1p array-name array))
+           (array1p array-name (aset1 array-name array index val)))
+  :hints (("Goal" :in-theory (e/d (aset1 dimensions)
+                                  (dimensions-intro)))))

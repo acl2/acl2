@@ -13,7 +13,9 @@
 (in-package "ACL2")
 
 (local (include-book "compress11"))
+(local (include-book "bounded-integer-alistp"))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 (in-theory (disable compress1))
 
@@ -59,3 +61,18 @@
                 )
            (alistp (compress1 array-name array)))
   :hints (("Goal" :in-theory (enable compress1))))
+
+(defthm bounded-integer-alistp-of-compress1
+  (implies (and (bounded-integer-alistp array n)
+                (natp n) ;drop?
+                )
+           (iff (bounded-integer-alistp (compress1 array-name array) n)
+                (header array-name array)                 ;why?
+                ))
+  :hints (("Goal" :in-theory (enable compress1 ;bounded-integer-alistp
+                                     ))))
+
+(defthm array1p-of-compress1
+  (implies (array1p array-name l)
+           (array1p array-name (compress1 array-name l)))
+  :hints (("Goal" :in-theory (enable array1p compress1 header))))

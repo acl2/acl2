@@ -53,3 +53,44 @@
   (equal (alen1 array-name (compress1 array-name array))
          (alen1 array-name array))
   :hints (("Goal" :in-theory (e/d (alen1) (alen1-intro alen1-intro2)))))
+
+(defthm integerp-of-alen1-gen
+  (implies (array1p array-name2 array) ;array-name2 is a free var
+           (integerp (alen1 array-name array)))
+  :hints (("Goal" :in-theory (e/d (alen1) (alen1-intro alen1-intro2)))))
+
+;; no free vars
+(defthm integerp-of-alen1
+  (implies (array1p array-name array)
+           (integerp (alen1 array-name array)))
+  :hints (("Goal" :in-theory (disable array1p))))
+
+(defthm posp-of-alen1
+  (implies (array1p array-name2 array) ; array-name2 is a free var
+           (posp (alen1 array-name array)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (alen1 array1p) (alen1-intro alen1-intro2)))))
+
+;; ;todo: why is posp-of-alen1 above not sufficient?
+;; (defthm alen1-type
+;;   (implies (array1p name l)
+;;            (posp (alen1 name l)))
+;;   :rule-classes :type-prescription)
+
+;; (defthm natp-of-alen1
+;;   (implies (array1p name l)
+;;            (natp (alen1 name l))))
+
+(defthm alen1-of-cons
+  (equal (alen1 array-name (cons entry alist))
+         (if (eq :header (car entry))
+             (car (cadr (assoc-keyword :dimensions (cdr entry))))
+           (alen1 array-name alist)))
+  :hints (("Goal" :in-theory (e/d (alen1)
+                                  (alen1-intro alen1-intro2)))))
+
+(defthm rationalp-of-alen1-when-array1p
+  (implies (array1p array-name array)
+           (rationalp (alen1 array-name array)))
+  :hints (("Goal" :use (:instance integerp-of-alen1)
+           :in-theory (disable integerp-of-alen1))))
