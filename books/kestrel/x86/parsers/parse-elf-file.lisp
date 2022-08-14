@@ -233,6 +233,7 @@
                                 (cons symbol-table-entry acc)
                                 bytes)))))
 
+;; Returns an alist mapping section names to lists of bytes.
 (defun extract-elf-sections (section-header-table all-bytes acc)
   (if (endp section-header-table)
       (reverse acc)
@@ -324,12 +325,18 @@
 
 ;; todo: move this stuff?:
 
+(defun get-elf-section-bytes (section-name parsed-elf)
+  (lookup-equal-safe section-name (lookup-eq-safe :sections parsed-elf)))
+
 ;; Get the code from the .text section:
 (defun get-elf-code (parsed-elf)
-  (lookup-equal-safe ".text" (lookup-eq-safe :sections parsed-elf)))
+  (get-elf-section-bytes ".text" parsed-elf))
+
+(defun get-elf-section-address (section-name parsed-elf)
+  (lookup-eq-safe :addr (get-elf-section-header section-name (lookup-eq-safe :section-header-table parsed-elf))))
 
 (defun get-elf-code-address (parsed-elf)
-  (lookup-eq-safe :addr (get-elf-section-header ".text" (lookup-eq-safe :section-header-table parsed-elf))))
+  (get-elf-section-address ".text" parsed-elf))
 
 (defun get-elf-symbol-address (name symbol-table)
   (if (endp symbol-table)
