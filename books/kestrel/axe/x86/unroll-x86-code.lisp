@@ -62,7 +62,9 @@
   (member-eq type '(:pe-32
                     :pe-64
                     :mach-o-32
-                    :mach-o-64)))
+                    :mach-o-64
+                    :elf-32
+                    :elf-64)))
 
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
 (deftheory 32-bit-reg-rules
@@ -260,19 +262,26 @@
                                                                text-offset
                                                                x86)
                                   assumptions)
-                          (if (eq :mach-o-32 executable-type)
-                              (append (gen-standard-assumptions-mach-o-32 target
+                          (if (eq :elf-64 executable-type)
+                              (cons `(standard-assumptions-elf-64 ',target
+                                                                  ',parsed-executable
+                                                                  ',stack-slots
+                                                                  text-offset
+                                                                  x86)
+                                    assumptions)
+                            (if (eq :mach-o-32 executable-type)
+                                (append (gen-standard-assumptions-mach-o-32 target
+                                                                            parsed-executable
+                                                                            stack-slots)
+                                        assumptions)
+                              (if (eq :pe-32 executable-type)
+                                  ;; todo: try without expanding this:
+                                  (append (gen-standard-assumptions-pe-32 target
                                                                           parsed-executable
                                                                           stack-slots)
-                                      assumptions)
-                            (if (eq :pe-32 executable-type)
-                                ;; todo: try without expanding this:
-                                (append (gen-standard-assumptions-pe-32 target
-                                                                        parsed-executable
-                                                                        stack-slots)
-                                        assumptions)
-                              (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                      assumptions)))))))
+                                          assumptions)
+                                (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
+                                        assumptions))))))))
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
        (- (and print (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))

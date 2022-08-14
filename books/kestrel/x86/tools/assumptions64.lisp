@@ -168,3 +168,20 @@
                                 (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
                                 stack-slots-needed
                                 x86))
+
+(defun standard-assumptions-elf-64 (subroutine-name
+                                    parsed-elf
+                                    stack-slots-needed
+                                    text-offset
+                                    x86)
+  (declare (xargs :stobjs x86
+                  :verify-guards nil ;todo
+                  ))
+  (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
+        (text-section-address (acl2::get-elf-code-address parsed-elf))
+        (subroutine-address (acl2::subroutine-address-elf subroutine-name parsed-elf)))
+    (standard-assumptions-core-64 text-section-bytes
+                                  text-offset
+                                  (- subroutine-address text-section-address)
+                                  stack-slots-needed
+                                  x86)))

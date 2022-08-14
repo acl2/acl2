@@ -19,7 +19,7 @@
 
 ;; Returns (mv erp contents) where contents in an alist representing
 ;; the contents of the executable (exact format depends on the type of
-;; the executable).  todo: don't pass in state?
+;; the executable).  TODO: Pass back errors?
 (defun parse-executable-bytes (bytes
                                filename ; only used in error messages
                                )
@@ -33,8 +33,8 @@
        ((mv magic-number &) (parse-u32 bytes)))
     (if (eq magic-number *elf-magic-number*)
         (prog2$ (cw "ELF file detected.~%")
-                (mv t
-                    (er hard? 'parse-executable-bytes "ELF files are not yet supported by this tool.")))
+                (mv nil ;no error
+                    (parse-elf-file-bytes bytes)))
       (if (member magic-number (strip-cars *mach-o-magic-numbers*))
           (prog2$ (cw "Mach-O file detected.~%")
                   (mv nil ;no error
