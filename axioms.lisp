@@ -14121,6 +14121,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-file$
     set-bad-lisp-consp-memoize
     retract-stobj-tables
+    get-cpu-time get-real-time
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
   ))
@@ -20300,21 +20301,28 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (update-idates (cdr (idates state-state)) state-state)))
 
 #-acl2-loop-only
-(defun get-internal-time ()
-  (if (f-get-global 'get-internal-time-as-realtime *the-live-state*)
-      (get-internal-real-time)
-    #-gcl
-    (get-internal-run-time)
-    #+gcl
-    (multiple-value-bind
-     (top child)
+(declaim (inline our-get-internal-run-time))
+
+#-acl2-loop-only
+(defun our-get-internal-run-time ()
+  #-gcl
+  (get-internal-run-time)
+  #+gcl
+  (multiple-value-bind
+   (top child)
 
 ; Note that binding two variables here is OK, as per CL HyperSpec, even if
 ; get-internal-run-time returns more than two values.  Starting around
 ; mid-October 2013, GCL 2.6.10pre returns four values.
 
-     (get-internal-run-time)
-     (+ top child))))
+   (get-internal-run-time)
+   (+ top child)))
+
+#-acl2-loop-only
+(defun get-internal-time ()
+  (if (f-get-global 'get-internal-time-as-realtime *the-live-state*)
+      (get-internal-real-time)
+    (our-get-internal-run-time)))
 
 (defun read-run-time (state-state)
   (declare (xargs :guard (state-p1 state-state)))
@@ -29003,3 +29011,32 @@ Lisp definition."
         (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
       (count-keys (cdr al)))))
 
+(defun get-cpu-time (state)
+
+; We define this function and get-real-time much like we define read-run-time.
+; Logically, they are the same, using the oracle field of the state.  In raw
+; Lisp, this one uses the runtime, also known as cpu time.
+
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (cond ((live-state-p state) ; handle like read-run-time
+         (return-from get-cpu-time
+                      (mv (/ (our-get-internal-run-time)
+                             internal-time-units-per-second)
+                          state))))
+  (read-run-time state))
+
+(defun get-real-time (state)
+
+; We define this function and get-cpu-time much like we define read-run-time.
+; Logically, they are the same, using the oracle field of the state.  In raw
+; Lisp, this one uses the real time.
+
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (cond ((live-state-p state) ; handle like read-run-time
+         (return-from get-real-time
+                      (mv (/ (get-internal-real-time)
+                             internal-time-units-per-second)
+                          state))))
+  (read-run-time state))
