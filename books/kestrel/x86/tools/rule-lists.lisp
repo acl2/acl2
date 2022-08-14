@@ -1072,6 +1072,7 @@
      standard-assumptions-core-64
      standard-state-assumption-32
      standard-assumptions-mach-o-64
+     standard-assumptions-elf-64
      standard-assumptions-pe-64
      bytes-loaded-at-address-64
      ;; Mach-O stuff:
@@ -1113,6 +1114,17 @@
      acl2::lookup-pe-symbol-base-2
      acl2::lookup-pe-symbol-unroll
      acl2::subroutine-address-within-text-section-pe-64
+     ;; ELF stuff:
+     acl2::lookup-equal-safe
+     acl2::subroutine-address-elf
+     acl2::get-elf-code
+     acl2::get-elf-code-address
+     acl2::get-elf-section-header-base-1
+     acl2::get-elf-section-header-base-2
+     acl2::get-elf-section-header-unroll
+     acl2::get-elf-symbol-address-base-1
+     acl2::get-elf-symbol-address-base-2
+     acl2::get-elf-symbol-address-unroll
 
      ;;     read64
 ;     read-becomes-mv-nth-1-of-rb
