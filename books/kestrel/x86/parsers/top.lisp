@@ -1,7 +1,7 @@
 ; Top book for x86 binary parsing sub-library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 (include-book "parser-utils")
 (include-book "parse-pe-file")
 (include-book "parse-mach-o-file")
-(include-book "parse-elf-file") ; just a placeholder
+(include-book "parse-elf-file")
 (include-book "parse-executable")
 
 (include-book "mach-o-tools")
