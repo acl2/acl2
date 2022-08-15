@@ -5,92 +5,55 @@
 ; This utility provides necessary function definitions, but not macro
 ; definitions.
 
+; Possible future enhancements include the following.
+
+; - Collect up function symbols from keyword arguments of defattach.
+
+; - Consider trying to ensure that the defattach events go through -- could be
+;   very difficult since we would need to re-create the theory in which they
+;   were processed, and some rules might have been local -- or at least improve
+;   the error message when they fail.
+
+; - When a defattach event specifies attachment to f of g, and that is
+;   overridden by a later defattach event, then no longer accumulate g into the
+;   supporters.
+
+; - Perhaps support keyword arguments in with-supporters-after that are
+;   supported in with-supporters.
+
+; - Potential loose ends include loop$ expressions, picking up symbols inside
+;   quoted lambdas and lambda$ objects, flet calls (in
+;   collect-constants-and-macros-1), guards for non-trivial encapsulates
+;   when signatures length exceeds 1 (see supporters-of-1), and handling of
+;   ruler-extenders in locally included book (not sure how to do that).
+
+; - Not much explicit attention has been paid to default hints and
+;   override-hints.  Handling of tables might cover them, but these haven't
+;   been tested in with-supporters-test-{sub|top}.lisp.
+
 (in-package "ACL2")
 
 (program)
 (set-state-ok t)
 
-(defun macroexpand-till-event-1 (form names ctx wrld state-vars)
-
-; See macroexpand-till-event.  Here, names is (primitive-event-macros).
-
-  (cond ((or (atom form)
-             (not (symbolp (car form)))
-             (atom (cdr form)))
-         (mv 'bad-shape form))
-        ((eq (car form) 'local)
-         (mv-let
-          (erp result)
-          (macroexpand-till-event-1 (cadr form) names ctx wrld state-vars)
-          (cond (erp (mv erp result))
-                (t (mv nil (list 'local result))))))
-        ((member-eq (car form) names)
-         (mv nil form))
-        (t (let ((body (getprop (car form) 'macro-body nil 'current-acl2-world
-                                wrld)))
-             (cond (body (mv-let
-                          (erp new)
-                          (macroexpand1-cmp form ctx wrld state-vars)
-                          (cond (erp (mv 'expansion-error (cons erp new)))
-                                (t (macroexpand-till-event-1 new names ctx wrld
-                                                             state-vars)))))
-                   (t (mv 'not-macro form)))))))
-
-(defun macroexpand-till-event (form state)
-
-; Returns (mv erp result), where (mv nil x) for non-nil x indicates that form
-; expanded to the event x, and otherwise there is an error.
-
-  (let ((ctx 'macroexpand-till-event))
-    (mv-let (erp result)
-            (macroexpand-till-event-1 form
-                                      (primitive-event-macros)
-                                      ctx
-                                      (w state)
-                                      (default-state-vars t))
-            (case erp
-              (bad-shape (er soft ctx
-                             "Macroexpansion of ~x0 produced oddly-shaped form:~|~x1"
-                             form result))
-              (expansion-error (cmp-to-error-triple (mv (car result) (cdr result))))
-              (not-macro (er soft ctx
-                             "Macroexpansion of ~x0 produced non-event form:~|~x1"
-                             form result))
-              (otherwise (value result))))))
-
-(defun new-fns (names n wrld acc)
+(defun fns-with-abs-ev-between (names min max wrld acc)
 
 ; Return a list of all symbols in names whose absolute-event-number property
-; has value greater than n.
+; has value greater than min and at most max.
 
-  (cond ((endp names) acc)
-        (t (new-fns (cdr names)
-                    n
-                    wrld
-                    (cond ((> (getprop (car names) 'absolute-event-number 0
-                                       'current-acl2-wrld wrld)
-                              n)
-                           (cons (car names) acc))
-                          (t acc))))))
+  (cond
+   ((endp names) acc)
+   (t (fns-with-abs-ev-between
+       (cdr names)
+       min max
+       wrld
+       (let ((k (getpropc (car names) 'absolute-event-number 0 wrld)))
+         (cond ((and (< min k)
+                     (<= k max))
+                (cons (car names) acc))
+               (t acc)))))))
 
-(defun sort-supporting-fns-alist (fns alist wrld)
-  (cond ((endp fns) alist)
-        (t (sort-supporting-fns-alist
-            (cdr fns)
-            (cons (cons (getprop (car fns) 'absolute-event-number 0
-                                 'current-acl2-wrld wrld)
-                        (car fns))
-                  alist)
-            wrld))))
-
-(defun sort-supporting-fns (fns wrld)
-
-; Sort fns in order of introduction in the given world.
-
-  (let ((alist (sort-supporting-fns-alist fns nil wrld)))
-    (strip-cdrs (merge-sort-car-< alist))))
-
-(defun instantiable-ancestors-with-guards (fns wrld ans)
+(defun instantiable-ancestors-with-guards/measures (fns wrld ans)
 
 ; See ACL2 source function instantiable-ancestors, from which this is derived.
 ; However, in this case we also include function symbols from guards in the
@@ -99,16 +62,21 @@
   (cond
    ((null fns) ans)
    ((member-eq (car fns) ans)
-    (instantiable-ancestors-with-guards (cdr fns) wrld ans))
+    (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans))
    (t
     (let* ((ans1 (cons (car fns) ans))
            (imm (immediate-instantiable-ancestors (car fns) wrld ans1))
-           (guard (getprop (car fns) 'guard nil 'current-acl2-world wrld))
-           (imm+guard-fns (if guard
-                              (all-fnnames1 nil guard imm)
-                            imm))
-           (ans2 (instantiable-ancestors-with-guards imm+guard-fns wrld ans1)))
-      (instantiable-ancestors-with-guards (cdr fns) wrld ans2)))))
+           (guard (getpropc (car fns) 'guard nil wrld))
+           (just (getpropc (car fns) 'justification nil wrld))
+           (measure (and just (access justification just :measure)))
+           (imm1 (if guard
+                     (all-fnnames1 nil guard imm)
+                   imm))
+           (imm2 (if measure
+                     (all-fnnames1 nil measure imm1)
+                   imm1))
+           (ans2 (instantiable-ancestors-with-guards/measures imm2 wrld ans1)))
+      (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans2)))))
 
 (defun macro-names-from-aliases (names macro-aliases acc)
   (cond ((endp names) acc)
@@ -119,469 +87,678 @@
               (cond (pair (cons (car pair) acc))
                     (t acc)))))))
 
-(defun supporting-fns (lst ev-names acc-names n macro-aliases wrld state)
+(defun get-event+ (name wrld)
 
-; Lst is initially a list of events, but macro names can be added to it as we
-; recur.  Initially ev-names and acc-names is nil.  We return all functions
-; with absolute-event-number exceeding n that support events in the given list
-; of events, where wrld is (w state).
+; This variant of get-event (defined in the ACL2 sources) returns (mv n ev)
+; where ev is the event and n is its absolute-event-number, and returns (mv nil
+; nil) if the event is not found.
 
-  (cond ((endp lst) (value (sort-supporting-fns
-                            (set-difference-eq acc-names ev-names)
-                            wrld)))
-        (t (er-let* ((ev (if (consp (car lst))
-                             (macroexpand-till-event (car lst) state)
-                           (value nil)))
-                     (name (value (if (symbolp (car lst))
-                                      (car lst)
-                                    (and (consp ev)
-                                         (consp (cdr ev))
-                                         (symbolp (cadr ev))
-                                         (cadr ev))))))
-             (cond
-              ((or (null name)
-                   (member-eq name acc-names))
-               (supporting-fns (cdr lst) ev-names acc-names n macro-aliases
-                               wrld state))
-              (t
-               (let* ((formula (or (getprop name 'macro-body nil
-                                            'current-acl2-world wrld)
-                                   (formula name nil wrld)))
-                      (guard (getprop name 'guard nil 'current-acl2-world
-                                      wrld))
-                      (new-names
-                       (and formula ; non-nil if guard is non-nil
-                            (new-fns (instantiable-ancestors-with-guards
-                                      (new-fns
-                                       (all-fnnames1 nil
-                                                     formula
-                                                     (and guard
-                                                          (all-fnnames guard)))
-                                       n wrld nil)
-                                      wrld
-                                      nil)
-                                     n wrld nil))))
-                 (supporting-fns
-; Collect names of new macros that might be ancestral in the bodies.
-                  (macro-names-from-aliases new-names
-                                            macro-aliases
-                                            (cdr lst))
-                  (if ev
-                      (cons name ev-names)
-                    ev-names)
-                  (append new-names (if ev acc-names (cons name acc-names)))
-                  n macro-aliases wrld state))))))))
+  (let ((index (getpropc name 'absolute-event-number nil wrld)))
+    (cond (index (mv index
+                     (access-event-tuple-form
+                      (cddr (car (lookup-world-index 'event index wrld))))))
+          (t (mv nil nil)))))
 
-(defun get-events (names ctx wrld state)
-  (cond ((endp names) (value nil))
-        ((null (getprop (car names) 'absolute-event-number nil
-                        'current-acl2-world wrld))
-         (er soft ctx
-             "The symbol ~x0 does not name an event."
-             (car names)))
-        (t (let ((ev (get-event (car names) wrld)))
-             (cond ((or (atom ev)
-                        (eq (car ev) 'ENTER-BOOT-STRAP-MODE))
-                    (er soft ctx
-                        "The symbol ~x0 appears to name a built-in event."
-                        (car names)))
-                   (t (er-let* ((rest (get-events (cdr names) ctx wrld state)))
-                        (value (cons ev rest)))))))))
+(mutual-recursion
 
-(defmacro with-supporters (local-event &rest events)
-  (mv-let
-    (names events)
-    (cond ((not (and (true-listp local-event)
-                     (eq (car local-event) 'local)
-                     (consp (cdr local-event))
-                     (null (cddr local-event))))
-           (mv (er hard 'with-supporters
-                   "The first argument of ~x0 should be of the form (LOCAL ~
-                    ...), but that argument is ~x1."
-                   'with-supporters local-event)
-               nil))
-          ((eq (car events) :names)
-           (cond ((null (cdr events))
-                  (mv (er hard 'with-supporters
-                          "No argument was supplied for :NAMES!")
-                      nil))
-                 ((not (symbol-listp (cadr events)))
-                  (mv (er hard 'with-supporters
-                          "The value of :NAMES must be a list of symbols, ~
-                           which ~x0 is not."
-                          (cadr events))
-                      nil))
-                 (t (mv (cadr events) (cddr events)))))
-          ((atom (car events))
-           (mv (er hard 'with-supporters
-                   "An event must be a cons, but your first event was ~x0. ~
-                    Perhaps you intended to use :NAMES?" (car events))
-               nil))
-          ((member-eq :names (cdr events))
-           (mv (er hard 'with-supporters
-                   "The :NAMES keyword of WITH-SUPPORTERS must appear ~
-                    immediately after the (initial) LOCAL event.")
-               nil))
-          (t (mv nil events)))
-    `(make-event
-      (let ((num (max-absolute-event-number (w state))))
+(defun collect-constants-and-macros-1 (form acc wrld state-vars)
 
-; Below, we remove LOCAL from local-event for the make-event expansion, and we
-; use std::defredundant-fn rather than what might seem more elegant,
-; std::defredundant.  These changes are necessary in order for defredundant to
-; work when including uncertified books or, more generally, when state global
-; 'ld-skip-proofsp has value 'include-book.  Before 2/18/2022 we did not have
-; these changes, and Eric Smith pointed out that the form (include-book
-; "projects/x86isa/machine/instructions/fp/base" :dir :system) fails when
-; "base" is uncertified, because of a failed call of with-supporters in that
-; uncertified book.
+; We make a reasonable effort to accumulate into acc all macros called and
+; constants encountered in the expansion of form.
 
-        (er-progn (progn ,(cadr local-event) ,@events)
-                  (er-let* ((fns (supporting-fns ',events nil nil num
-                                                 (macro-aliases (w state))
-                                                 (w state)
-                                                 state))
-                            (named-events
-                             (get-events (sort-supporting-fns ',names (w state))
-                                         'with-supporters
-                                         (w state)
-                                         state)))
-                    (value
-                     (list* 'encapsulate
-                            ()
-                            ',local-event
-                            (append
-                             named-events
-                             (cons (std::defredundant-fn fns nil state)
-                                   ',events))))))))))
-
-(defmacro with-supporters-after (name &rest events)
-  (declare (xargs :guard (symbolp name)))
-  `(make-event
-    (let ((num (getprop ',name 'absolute-event-number nil
-                        'current-acl2-world (w state))))
+  (cond
+   ((booleanp form) acc)
+   ((defined-constant form wrld) (cons form acc))
+   ((not (true-listp form)) acc)
+   ((member-eq (car form) '(quote lambda$)) acc)
+   ((eq (car form) 'let)
+    (let ((bindings (cadr form)))
+      (collect-constants-and-macros-lst
+       (and (doublet-listp bindings) ; could fail if under macro call
+            (strip-cadrs bindings))
+       (collect-constants-and-macros-1 (car (last form)) acc wrld state-vars)
+       wrld state-vars)))
+   ((eq (car form) 'stobj-let)
+    (collect-constants-and-macros-lst (cdddr form) acc wrld state-vars))
+   ((and (consp (car form))
+         (eq (caar form) 'lambda)
+         (true-listp (car form)))
+    (collect-constants-and-macros-1
+     (car (last (car form))) ; lambda-body
+     (collect-constants-and-macros-lst (cdr form) acc wrld state-vars)
+     wrld state-vars))
+   ((getpropc (car form) 'macro-body nil wrld)
+    (mv-let (erp expansion)
+      (macroexpand1-cmp form 'some-ctx wrld state-vars)
       (cond
-       ((null num)
+       (erp acc) ; impossible?
+       (t (collect-constants-and-macros-1 expansion (cons (car form) acc)
+                                          wrld state-vars)))))
+   (t (collect-constants-and-macros-lst (cdr form) acc wrld state-vars))))
+
+(defun collect-constants-and-macros-lst (lst acc wrld state-vars)
+  (cond ((endp lst) acc)
+        (t (collect-constants-and-macros-1
+            (car lst)
+            (collect-constants-and-macros-lst (cdr lst) acc wrld state-vars)
+            wrld state-vars))))
+)
+
+(defun guard-from-event (ev wrld)
+
+; This is based on source function guard-raw.  But here we pass in the event,
+; which could be a defmacro call, not just a defun[x] call.  The result is the
+; original, untranslated guard if one is supplied, else nil.
+
+  (mv-let
+    (dcls guard)
+    (dcls-guard-raw-from-def (cdr ev) wrld)
+    (declare (ignore dcls))
+    guard))
+
+(mutual-recursion
+
+(defun collect-constants-and-macros-ev (ev acc wrld state-vars)
+
+; Ev is an embedded event form stored in an event-tuple of wrld.  This function
+; attempts to collect all names occurring during the expansion of ev as
+; constants or macros.  It may collect too few or too many, and it can surely
+; be improved (e.g., by looking inside :corollary fields of rule-classes).  But
+; it's something.
+
+; We skip encapsulate, since our overarching algorithm already picks up its
+; subsidiary events.
+
+  (assert$
+   (true-listp ev)
+   (case (car ev)
+     ((defun defund defun-nx defund-nx ; variants of defun in mutual-recursion
+             defmacro)
+      (let* ((guard (guard-from-event ev wrld))
+             (acc
+              (if guard
+                  (collect-constants-and-macros-1 guard acc wrld state-vars)
+                acc)))
+        (collect-constants-and-macros-1 (car (last ev)) acc wrld state-vars)))
+     (defchoose
+      (collect-constants-and-macros-1 (car (last ev)) acc wrld state-vars))
+     (mutual-recursion
+      (collect-constants-and-macros-ev-lst (cdr ev) acc wrld state-vars))
+     ((defthm defaxiom defconst deftheory)
+      (collect-constants-and-macros-1 (caddr ev) acc wrld state-vars))
+     (defchoose
+       (collect-constants-and-macros-1 (nth 4 ev) acc wrld state-vars))
+     (table (collect-constants-and-macros-lst (cddr ev) acc wrld state-vars))
+     (otherwise acc))))
+
+(defun collect-constants-and-macros-ev-lst (ev-lst acc wrld state-vars)
+  (cond
+   ((endp ev-lst) acc)
+   (t (collect-constants-and-macros-ev
+       (car ev-lst)
+       (collect-constants-and-macros-ev-lst (cdr ev-lst) acc wrld state-vars)
+       wrld state-vars))))
+)
+
+(mutual-recursion
+
+(defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars)
+  (cond ((endp defs) nil)
+        (t (append (supporters-of-1 (car defs) min max macro-aliases wrld
+                                    state-vars)
+                   (supporters-of-1-lst (cdr defs) min max macro-aliases wrld
+                                        state-vars)))))
+
+(defun supporters-of-1 (ev min max macro-aliases wrld state-vars)
+
+ ; Make a reasonable attempt to return all function, macro, and constant
+ ; symbols that support ev.
+
+  (cond
+   ((and (consp ev) ; always true?
+         (eq (car ev) 'mutual-recursion))
+    (supporters-of-1-lst (cdr ev) min max macro-aliases wrld state-vars))
+   (t
+    (let* ((non-trivial-encapsulate-p
+
+; In this case, the non-local events inside the encapsulate get their own
+; event-landmarks so we don't need to handle them here.
+
+            (and (consp ev) ; always true?
+                 (eq (car ev) 'encapsulate)
+                 (cadr ev)))
+           (name (if non-trivial-encapsulate-p
+                     (let ((sig (car (cadr ev))))
+                       (if (symbolp (car sig)) ; old-style signature
+                           (car sig)
+                         (caar sig)))
+                   (and (consp ev)          ; always true?
+                        (consp (cdr ev))    ; always true?
+                        (symbolp (cadr ev))
+                        (cadr ev)))))
+      (and name
+           (let* ((formula
+                   (if non-trivial-encapsulate-p
+                       (mv-let (name2 x)
+                         (constraint-info name wrld)
+                         (cond
+                          ((unknown-constraints-p x) *t*) ; incomplete!
+                          (name2 (conjoin x))
+                          (t x)))
+                     (or (getpropc name 'macro-body nil wrld)
+                         (formula name nil wrld))))
+                  (guard ; incomplete for encapsulate if more than 1 signature
+                   (getpropc name 'guard nil wrld))
+                  (attachment-prop (attachment-alist name wrld))
+                  (attachment-alist (and (not (eq (car attachment-prop)
+                                                  :attachment-disallowed))
+                                         attachment-prop))
+                  (new-fns
+                   (and (or formula ; non-nil if guard is non-nil
+                            attachment-alist)
+                        (fns-with-abs-ev-between
+                         (instantiable-ancestors-with-guards/measures
+                          (fns-with-abs-ev-between
+                           (all-fnnames1
+                            nil
+                            formula ; OK even if formula=nil (treated as var)
+                            (and (or guard attachment-alist)
+                                 (all-fnnames1
+                                  nil
+                                  guard
+                                  (append (strip-cars attachment-alist)
+                                          (strip-cdrs attachment-alist)))))
+                           min max wrld nil)
+                          wrld
+                          nil)
+                         min max wrld nil)))
+                  (new-names
+                   (if non-trivial-encapsulate-p
+                       (collect-constants-and-macros-1 formula new-fns wrld
+                                                       state-vars)
+                     (collect-constants-and-macros-ev
+                      ev new-fns wrld state-vars))))
+             (macro-names-from-aliases new-fns macro-aliases new-names)))))))
+)
+
+(defun supporters-of-rec (lst fal min max macro-aliases ctx wrld state-vars)
+
+; Each element of lst is either a symbol or a pair (n . ev) where ev is an
+; event and n is its absolute-event-number.  Fal is a fast-alist that is nil at
+; the top level.  We extend fal with triples (n ev . fns) where ev is an event
+; with absolute event number n and fns is a list of function symbols introduced
+; by ev.  We do this for each event ev that supports events based on lst
+; (either events in lst or definitions of names in lst).
+
+  (cond
+   ((endp lst) fal)
+   (t
+    (let ((constraint-lst
+           (and (symbolp (car lst))
+                (getpropc (car lst) 'constraint-lst nil wrld))))
+      (cond
+       ((and constraint-lst
+             (symbolp constraint-lst))
+
+; We are looking at a defun in an encapsulate that is not one that
+; (conceptually) can be moved before or after that encapsulate (as described in
+; the "Structured Theory" paper).  We leave it to the encapsulate to deal with
+; it, since that defun might reference functions constrained in the encapsulate
+; that have a later absolute-event-number.  So, we simply replace the current
+; function symbol with the one it references.
+
+        (supporters-of-rec (cons constraint-lst (cdr lst))
+                           fal min max macro-aliases ctx wrld
+                           state-vars))
+       (t
+        (mv-let (n ev)
+          (if (symbolp (car lst))
+              (get-event+ (car lst) wrld)
+            (mv (caar lst) (cdar lst)))
+          (cond
+           ((null n) ; hence (symbolp (car lst))
+            (er hard ctx
+                "The name ~x0 is not defined, yet it was expected to be."
+                (car lst)))
+           ((hons-get n fal)
+            (supporters-of-rec (cdr lst)
+                               fal min max macro-aliases ctx wrld state-vars))
+           (t
+            (let ((fns (supporters-of-1 ev min max macro-aliases wrld
+                                        state-vars)))
+              (supporters-of-rec (append fns (cdr lst))
+                                 (hons-acons n (cons ev fns) fal)
+                                 min max macro-aliases ctx wrld
+                                 state-vars)))))))))))
+
+(defun adjust-defun-for-symbol-class (ev wrld)
+
+; See adjust-ev-for-symbol-class.  This is the special case when ev is a defun
+; event (or defund etc.).
+
+  (flet ((add-dcl-to-defun
+          (dcl ev)                           ; ev is (defun ...)
+          `(,(car ev) ,(cadr ev) ,(caddr ev) ; defun[d][nx] name formals
+            (declare ,dcl)
+            ,@(cdddr ev))))
+    (case (symbol-class (cadr ev) wrld)
+      (:program
+; Avoid sensitivity to default-defun-mode.
+       (add-dcl-to-defun '(xargs :mode :program) ev))
+      (:ideal
+; Avoid sensitivity to default-defun-mode and verify-guards-eagerness.
+       (add-dcl-to-defun '(xargs :mode :logic :verify-guards nil) ev))
+      (otherwise ; :common-lisp-compliant
+
+; This case is a bit tricky.  Suppose we are defining f and that before
+; including the book at issue, f was defined simply as (defun f (x) x).  Now
+; suppose the book contains the form (verify-guards f).  Then we need that
+; verify-guards form here, rather than simply adding declaring :verify-guards
+; t, which ACL2 would not accept.  It seems simplest just to include a
+; verify-guards event.
+
+       `(progn ,ev
+               (verify-guards ,(cadr ev)))))))
+
+(defun adjust-ev-for-symbol-class (ev wrld)
+
+; Ev is an event, as returned by get-event, that comes from a locally-included
+; book.  We will be evaluating ev without including that book, after evaluating
+; events that support ev.  We want to ensure that its symbol-class in that
+; future state will be the same as it was when we locally included the book.
+; We return a possibly modified event that provides that guarantee.  So we
+; return an event that is a version of ev with that property.
+
+  (case (car ev)
+    (defchoose
+
+; Defchoose is skipped in :program mode.  So the original event was executed in
+; ;logic mode and we want that to happen here, too.
+
+      `(encapsulate () (logic) ,ev))
+    ((defun defund defun-nx defund-nx) ; variants of defun in mutual-recursion
+     (adjust-defun-for-symbol-class ev wrld))
+    (mutual-recursion
+     (let ((def1 (adjust-defun-for-symbol-class (cadr ev) wrld)))
+       (if (eq (car def1) 'progn) ; (progn & (verify-guards &))
+           `(progn ,ev ,(caddr def1))
+         `(mutual-recursion
+           ,def1
+           ,@(cddr ev)))))
+    (otherwise ev)))
+
+(defun events-from-supporters-fal (pairs min max wrld)
+;;; !! Maybe redo with accumulator.
+
+; Each element of pairs is of the form (n ev . &) where ev is an event, and
+; pairs is sorted by car in increasing order.  We collect suitably-adjusted
+; cadrs from pairs until a car exceeds max.
+
+  (cond
+   ((endp pairs) nil)
+   (t
+    (let ((pair (car pairs)))
+      (cond
+       ((or (<= (car pair) min)
+;;; !! Move this test up as termination test, I think.
+            (< max (car pair)))
+        (events-from-supporters-fal (cdr pairs) min max wrld))
+       (t
+        (cons (adjust-ev-for-symbol-class (cadr pair) wrld)
+              (events-from-supporters-fal (cdr pairs) min max wrld))))))))
+
+(defun get-defattach-event-fn (ev)
+
+; Ev is a defattach event.  Return (mv fs gs), where fs is lists the functions
+; attached in ev and gs lists the functions to which the fs are attached.
+
+  (case-match ev
+    (('defattach (f . &) . &)
+     f)
+    (('defattach f &)
+     f)
+    (& nil)))
+
+(defun defattach-event-lst (wrld fns min max acc seen)
+
+; Wrld is a list of triples, most recent first.  Fns is a list of function
+; symbols, and we want to pick up every defattach event that attaches to any of
+; those.
+
+;;; !! Are we closed -- maybe, given how fns is produced.
+
+  (let ((trip (car wrld)))
+    (cond
+     ((and (eq (car trip) 'event-landmark)
+           (eq (cadr trip) 'global-value))
+      (cond
+       ((< (access-event-tuple-number (cddr trip)) min)
+        acc)
+       ((or (> (access-event-tuple-number (cddr trip)) max)
+            (not (eq (car (access-event-tuple-form (cddr trip))) 'defattach)))
+        (defattach-event-lst (cdr wrld) fns min max acc seen))
+       (t
+        (let* ((ev (access-event-tuple-form (cddr trip)))
+               (fn (get-defattach-event-fn ev)))
+          (cond
+           ((and fn
+                 (not (member-eq fn seen))
+                 (member-eq fn fns))
+            (defattach-event-lst (cdr wrld) fns min max
+              (cons ev acc)
+              (cons fn seen)))
+           (t (defattach-event-lst (cdr wrld) fns min max acc seen)))))))
+     (t (defattach-event-lst (cdr wrld) fns min max acc seen)))))
+
+(defun supporters-of (lst min max ctx wrld state-vars)
+
+; Each element of lst is either a symbol or a pair (n . ev) where ev is an
+; event and n is its absolute-event-number.  We return a pair (evs . fns) where
+; evs contains all such events except that some are suitably adjusted (see
+; adjust-ev-for-symbol-class), and fns lists of names supporting these events
+; including function symbols, constant symbols, and macro names.
+
+  (let* ((fal (supporters-of-rec lst nil min max
+                                 (macro-aliases wrld)
+                                 ctx wrld state-vars))
+         (x (merge-sort-car-< (fast-alist-free fal)))
+         (fns (append-lst (strip-cddrs x))))
+    (cons (append? (events-from-supporters-fal x min max wrld)
+                   (defattach-event-lst wrld fns min max nil nil))
+          fns)))
+
+(defun table-info-after-k (names wrld k evs table-guard-fns)
+
+; Accumulate into evs the most recent table event for each name in names (or
+; all names other than the two skipped, as mentioned below, if names is :all)
+; having absolute-event-number property greater than k.  Except, the "most
+; recent" restriction does not apply to table guard events.  Also, accumulate
+; into table-guard-fns all function symbols occurring in those table guards.
+
+; We skip the acl2-defaults-table, as we should for our purposes since that
+; table's events are local to a book.
+
+; We also skip the xdoc table, since it may be awkward to maintain invariants.
+; Without that exception, we saw an error, "HARD ACL2 ERROR in XDOC-EXTEND:
+; Topic FAST-<< wasn't found."
+
+  (let ((trip (car wrld)))
+    (cond
+     ((and (eq (car trip) 'event-landmark)
+           (eq (cadr trip) 'global-value))
+      (cond
+       ((<= (access-event-tuple-number (cddr trip)) k)
+        (mv evs table-guard-fns))
+       (t (let* ((ev (access-event-tuple-form (cddr trip)))
+                 (evs (case-match ev
+                        (('table name nil nil :guard &)
+                         (cond
+                          ((eq name 'pe-table)
+
+; The extend-pe-table event generates a call of (table pe-table ...) that
+; causes an error if the name doesn't have an absolute-event-number.  This can
+; heppen if that name isn't among the supporters.  Our solution here is to skip
+; pe-table events.  If this is a problem we can perhaps pass in all supporters
+; and make sure the name is among them.
+
+                           evs)
+                          ((or (eq names :all)
+                               (member-eq name names))
+                           (cons ev evs))
+                          (t evs)))
+                        (('table name . &)
+                         (cond
+                          ((eq name 'pe-table) ; see comment on pe-table above
+                           evs)
+                          ((and (not (member-eq name ; see comment above
+                                                '(acl2-defaults-table
+                                                  xdoc)))
+                                (or (eq names :all)
+                                    (member-eq name names))
+                                (not (assoc-eq-cadr name evs)))
+                           (cons ev evs))
+                          (t evs)))
+                        (& evs))))
+            (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
+     ((and (eq (cadr trip) 'table-guard)
+           (not (eq (cddr trip) *acl2-property-unbound*)))
+      (table-info-after-k names (cdr wrld) k evs
+                          (all-fnnames1 nil (cddr trip) table-guard-fns)))
+     (t (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
+
+(defun supporters-in-theory-event (fns ens wrld disables)
+  (cond ((endp fns)
+         (and disables
+              `(in-theory (disable ,@disables))))
+        (t (supporters-in-theory-event (cdr fns) ens wrld
+                                       (append
+                                        (disabledp-fn (car fns) ens wrld)
+                                        disables)))))
+
+(defmacro wsa-er (str &rest args)
+  `(mv (er hard 'with-supporters ,str ,@args)
+       nil nil nil nil))
+
+(defconst *with-supporters-with-output-default*
+  '(:off :all :on (error)))
+
+(defun with-supporters-args (events names tables show with-output
+                                    with-output-p)
+
+; We return (mv names tables events), where the input events optionally starts
+; with :names and/or :tables.  An error occurs if this parse fails.
+
+  (cond ((null events)
+         (mv names
+             tables
+             show
+             (if with-output-p
+                 with-output
+               '(:off :all :on error))
+             nil))
+        ((eq (car events) :names)
+         (cond ((null (cdr events))
+                (wsa-er "No argument was supplied for :NAMES."))
+               ((not (symbol-listp (cadr events)))
+                (wsa-er "The value of :NAMES must be a list of symbols, which ~
+                         ~x0 is not."
+                        (cadr events)))
+               (t (with-supporters-args (cddr events)
+                                        (cadr events)
+                                        tables show with-output
+                                        with-output-p))))
+        ((eq (car events) :tables)
+         (cond ((null (cdr events))
+                (wsa-er "No argument was supplied for :TABLES."))
+               ((not (or (eq (cadr events) :all)
+                         (symbol-listp (cadr events))))
+                (wsa-er "The value of :TABLES must be :ALL or a list of ~
+                         symbols, but ~x0 is neither."
+                        (cadr events)))
+               (t (with-supporters-args (cddr events)
+                                        names
+                                        (cadr events)
+                                        show with-output with-output-p))))
+        ((eq (car events) :show)
+         (cond ((null (cdr events))
+                (wsa-er "No argument was supplied for :SHOW."))
+               ((not (member-eq (cadr events) '(t nil :only)))
+                (wsa-er "The value of :SHOW must be Boolean or :ONLY, but ~
+                         ~x0 is not."
+                        (cadr events)))
+               (t (with-supporters-args (cddr events)
+                                        names tables
+                                        (cadr events)
+                                        with-output with-output-p))))
+        ((eq (car events) :with-output)
+         (cond ((null (cdr events))
+                (wsa-er "No argument was supplied for :WITH-OUTPUT."))
+               ((not (keyword-value-listp (cadr events)))
+                (wsa-er "The value of :WITH-OUTPUT must satisfy ~x0, but ~x1 ~
+                         does not."
+                        'keyword-value-listp
+                        (cadr events)))
+               (t (with-supporters-args (cddr events)
+                                        names tables show
+                                        (cadr events) t))))
+        ((atom (car events))
+         (wsa-er "An event must be a cons, but your first event was ~x0. ~
+                  Perhaps you intended to use :NAMES."
+                 (car events)))
+        ((or (member-eq :names events)
+             (member-eq :tables events)
+             (member-eq :show events)
+             (member-eq :with-output events))
+         (wsa-er 'with-supporters
+                 "The :NAMES, and :TABLES keywords of WITH-SUPPORTERS must ~
+                  appear immediately after the (initial) LOCAL event."))
+        (t (mv names tables show
+               (if with-output-p
+                   with-output
+                 '(:off :all :on error))
+               events))))
+
+(defun event-pairs-after (k wrld acc)
+
+; Accumulate into acc all pairs (n . ev) for events ev stored in wrld with
+; absolute-event-number n exceeding k.  The extended acc is returned, which
+; puts the accumulated pairs in ascending order by car.
+
+  (let ((trip (car wrld)))
+    (cond ((and (eq (car trip) 'event-landmark)
+                (eq (cadr trip) 'global-value))
+           (let ((n (access-event-tuple-number (cddr trip))))
+             (cond ((<= n k) acc)
+                   (t (event-pairs-after k
+                                         (cdr wrld)
+                                         (cons (cons n (access-event-tuple-form
+                                                        (cddr trip)))
+                                               acc))))))
+          (t (event-pairs-after k (cdr wrld) acc)))))
+
+(defun with-supporters-fn (local-event rest)
+  (cond
+   ((not (and (true-listp local-event)
+              (eq (car local-event) 'local)
+              (consp (cdr local-event))
+              (null (cddr local-event))))
+    (er hard 'with-supporters
+        "The first argument of ~x0 should be of the form (LOCAL ...), but ~
+         that argument is ~x1."
+        'with-supporters local-event))
+   ((member-eq :names (cdr (member-eq :names rest)))
+    (er hard 'with-supporters
+        "A :NAMES argument may not occur more than once in a call of ~x0."
+        'with-supporters))
+   (t
+    (mv-let (names tables show with-output events)
+      (with-supporters-args rest nil nil nil nil nil)
+      (let* ((form
+              `(let ((min (max-absolute-event-number (w state)))
+                     (ctx 'with-supporters))
+                 (er-progn
+                  ,(cadr local-event)
+                  (let* ((wrld (w state))
+                         (max (max-absolute-event-number wrld)))
+                    (mv-let (table-evs fns1)
+                      (table-info-after-k ',tables wrld min nil nil)
+                      (er-progn
+                       (progn ,@events)
+                       (let* ((wrld (w state))
+                              (event-pairs
+
+; Since events might include macro calls, calls of progn, etc., we seed our
+; call of supporters-of using events taken directly from the world.  An
+; alternate approach would be to call macroexpand1-cmp repeatedly until
+; reaching an event, but note that this way we also have the corresponding
+; absolute event numbers in hand.
+
+                               (event-pairs-after max wrld nil))
+                              (extras/fns
+                               (supporters-of (append fns1
+                                                      ',names
+                                                      event-pairs)
+                                              min max ctx wrld
+                                              (default-state-vars t)))
+                              (extras (car extras/fns))
+                              (fns (cdr extras/fns))
+                              (in-theory-event
+                               (supporters-in-theory-event
+                                fns (ens state) wrld nil))
+                              (ev
+                               (list*
+                                'encapsulate
+                                ()
+                                ',local-event
+                                '(set-enforce-redundancy t)
+                                '(SET-BOGUS-DEFUN-HINTS-OK T)
+                                '(SET-BOGUS-MUTUAL-RECURSION-OK T)
+                                '(SET-IRRELEVANT-FORMALS-OK T)
+                                '(SET-IGNORE-OK T)
+                                (append extras
+                                        table-evs
+                                        (and in-theory-event
+                                             (list in-theory-event))
+                                        (cons '(set-enforce-redundancy nil)
+                                              ',events))))
+                              ,@(and with-output
+                                     `((ev (cons 'with-output
+                                                 (append ',with-output
+                                                         (list ev)))))))
+                         ,(case show
+                            (:only
+                             '(value (list 'value-triple (list 'quote ev))))
+                            ((t)
+                             '(pprogn
+                               (fms "Expansion of with-supporters call:~|~x0~|"
+                                    (list (cons #\0 ev))
+                                    (standard-co state) state nil)
+                               (value ev)))
+                            ((nil) '(value ev))
+                            (otherwise (er hard 'with-supporters
+                                           "Illegal value of :show, ~x0"
+                                           show)))))))))))
+        (if with-output
+            `(make-event (with-output! ,@with-output ,form))
+          `(make-event ,form)))))))
+
+(defmacro with-supporters (local-event &rest rest)
+  (with-supporters-fn local-event rest))
+
+(defun with-supporters-after-fn (name events)
+  `(make-event
+    (let ((min (getprop ',name 'absolute-event-number nil
+                        'current-acl2-world (w state)))
+          (max (max-absolute-event-number (w state))))
+      (cond
+       ((null min)
         (er soft 'with-supporters
             "The symbol ~x0 does not seem to be the name of an event."
             ',name))
-       (t (er-progn (progn ,@events)
-                    (er-let* ((fns (supporting-fns ',events nil nil num
-                                                   (macro-aliases (w state))
-                                                   (w state)
-                                                   state)))
-                      (value (list* 'progn
-                                    `(std::defredundant
-                                       :names ,fns)
-                                    ',events)))))))))
+       (t (er-progn
+           (progn ,@events)
+           (let* ((wrld (w state))
+                  (event-pairs (event-pairs-after max wrld nil))
+                  (extras/fns
+                   (supporters-of event-pairs min max 'with-supporters-after
+                                  wrld (default-state-vars t)))
+                  (extras (car extras/fns))
+                  (fns (cdr extras/fns))
+                  (in-theory-event
+                   (supporters-in-theory-event
+                    fns (ens state) (w state) nil)))
+             (value (list* 'progn
+                           '(set-enforce-redundancy t)
+                           '(SET-BOGUS-DEFUN-HINTS-OK T)
+                           '(SET-BOGUS-MUTUAL-RECURSION-OK T)
+                           '(SET-IRRELEVANT-FORMALS-OK T)
+                           '(SET-IGNORE-OK T)
+                           (append extras
+                                   (and in-theory-event
+                                        (list in-theory-event))
+                                   (cons '(set-enforce-redundancy nil)
+                                         ',events)))))))))))
 
-(defxdoc with-supporters
-  :parents (macro-libraries)
-  :short "Automatically define necessary redundant definitions from @(see
-          local)ly included books"
-  :long
-  "<p>When @(see local) @(tsee include-book) forms are used in support of
-  definitions and theorems, the resulting book or @(tsee encapsulate) event may
-  be ill-formed because of missing definitions.  The macro,
-  @('with-supporters'), is intended to avoid this problem.  See also @(tsee
-  with-supporters-after) for a related utility.</p>
-
-  <p>General forms:</p>
-
-  @({
-  (with-supporters local-event event-1 ... event-k)
-  })
-
-  @({
-  (with-supporters local-event
-                   :names (name-1 ... name-m)
-                   event-1 ... event-k)
-  })
-
-  <p>where @('local-event') and each event @('event-i') and (if supplied)
-  @('name-i') are @(see events) and @('local-event') is of the form @('(local
-  <event>)').  The effect is the same as</p>
-
-  @({((encapsulate () local-event EXTRA event-1 ... event-k)})
-
-  <p>where @('EXTRA') is a sequence of events that includes the following, in
-  an attempt to re-create the environment produced by @('local-event') in order
-  to process each @('event-i') during the second pass of the @(tsee
-  encapsulate) event.</p>
-
-  <ul>
-
-  <li>function definitions</li>
-
-  <li>definitions of macros that are aliases for additional functions being
-  defined; see @(see macro-aliases-table)</li>
-
-  <li>@(tsee in-theory) events so that the rules introduced by the @('EXTRA')
-  definitions are suitably enable or disabled</li>
-
-  <li>If @(':names') is supplied, then the first events in @('EXTRA') are the
-  events named by the @('name-i'), in order.</li>
-
-  </ul>
-
-  <p>We now illustrate with examples, starting with one that does not use the
-  @(':names') keyword.</p>
-
-  <p>Consider the following event.</p>
-
-  @({
-  (encapsulate
-   ()
-   (local (include-book \"std/lists/duplicity\" :dir :system))
-   (defthm duplicity-append
-     (equal (duplicity a (append x y))
-            (+ (duplicity a x) (duplicity a y)))))
-  })
-
-  <p>This event fails because the function @('duplicity') is defined in the
-  locally included book, and hence that function is undefined when the above
-  @(tsee defthm) form is processed during the second pass of the @(tsee
-  encapsulate) event.  (Recall that @(see local) events are skipped during that
-  pass; see @(see encapsulate).)</p>
-
-  <p>One solution is to move the @('include-book') form so that it appears
-  non-locally in front of the @('encapsulate') event.  But we may not want to
-  include other @(see events) from that book, out of concern that rules defined
-  in that book could affect our proof development.</p>
-
-  <p>A more suitable solution may thus be to use the macro,
-  @('with-supporters'), in place of @('encapsulate'), as follows.</p>
-
-  @({
-  (with-supporters
-   (local (include-book \"std/lists/duplicity\" :dir :system))
-   (defthm duplicity-append
-     (equal (duplicity a (append x y))
-            (+ (duplicity a x) (duplicity a y)))))
-  })
-
-  <p>That macro determines automatically that the function @('duplicity') needs
-  to be defined, so it generates an @('encapsulate') event like the original
-  one above but with the definition of @('duplicity') added non-locally.  In
-  this example, @('duplicity') is actually defined in terms of another
-  function, @('duplicity-exec'), so its definition is needed as well.  The
-  generated event is initially as follows.</p>
-
-  @({
-  (encapsulate
-   ()
-   (local (include-book \"std/lists/duplicity\"
-                        :dir :system))
-   (std::defredundant
-     :names (duplicity-exec duplicity))
-   (defthm duplicity-append
-     (equal (duplicity a (append x y))
-            (+ (duplicity a x) (duplicity a y)))))
-  })
-
-  <p>Notice that @('with-supporters') is implemented using the macro @(tsee
-  std::defredundant).  (Also see @(see redundant-events).)  When the call above
-  of @('std::defredundant') is expanded, the result is essentially as follows.
-  Note that @(tsee in-theory) events are generated in an attempt to set the
-  enable/disable status of each rule introduced by each function to match the
-  status after the original @('include-book') event.</p>
-
-  @({
-  (encapsulate
-   ()
-   (set-enforce-redundancy t)
-   (defun duplicity-exec (a x n)
-     (declare (xargs :mode :logic :verify-guards t))
-     (declare (xargs :measure (:? x)))
-     (declare (xargs :guard (natp n)))
-     (if (atom x)
-         n
-       (duplicity-exec a (cdr x)
-                       (if (equal (car x) a) (+ 1 n) n))))
-   (in-theory (e/d ((:type-prescription duplicity-exec)
-                    (:executable-counterpart duplicity-exec))
-                   ((:induction duplicity-exec)
-                    (:definition duplicity-exec))))
-   (defun duplicity (a x)
-     (declare (xargs :mode :logic :verify-guards t))
-     (declare (xargs :measure (:? x)))
-     (declare (xargs :guard t))
-     (mbe :logic (cond ((atom x) 0)
-                       ((equal (car x) a)
-                        (+ 1 (duplicity a (cdr x))))
-                       (t (duplicity a (cdr x))))
-          :exec (duplicity-exec a x 0)))
-   (in-theory (e/d ((:type-prescription duplicity)
-                    (:executable-counterpart duplicity))
-                   ((:induction duplicity)
-                    (:definition duplicity)))))
-
-  })
-
-  <p>For a second example, consider the following form from the @(see
-  community-books), file @('tools/with-supporters-test-top.lisp').</p>
-
-  @({
-  (with-supporters
-   (local (include-book \"with-supporters-test-sub\"))
-   :names (mac1 mac1-fn)
-   (defun h2 (x)
-     (g3 x)))
-  })
-
-  <p>Here are the events in the locally included book.</p>
-
-  @({
-  (defun mac1-fn (x)
-    x)
-
-  (defmacro mac1 (x)
-    (mac1-fn x))
-
-  (defun g1 (x)
-    (declare (xargs :guard t))
-    (mac1 x))
-
-  (defun mac2-fn-b (x)
-    x)
-
-  (defun mac2-fn (x)
-    (mac2-fn-b x))
-
-  (defmacro mac2 (x)
-    (mac2-fn x))
-
-  (add-macro-alias mac2 g2)
-
-  (defun g2 (x)
-    (declare (xargs :guard (g1 x)))
-    (mac2 x))
-
-  (defun g3 (x)
-    (g2 x))
-  })
-
-  <p>Notice that @('g3') in the top-level book calls @('g2'), whose @(see
-  guard) mentions @('g1').  Now although @('g1') calls the macro @('mac1'),
-  @('with-supporters') is not clever enough to notice this, because it tracks
-  dependencies using translated terms (see @(see term)), for which macros have
-  been expanded away.  Thus, macros like @('mac1'), as well as functions used
-  in their definitions (like @('mac1-fn')), must be specified explicitly.
-  This specification is made with @(':names (mac1 mac1-fn)') in the call of
-  @('with-supporters') above.</p>
-
-  <p>There is an exception to this required use of the @(':names') keyword
-  argument: macros that are aliases for functions that support the events.
-  Returning to our example, notice that @('g3') is defined using the function
-  @('g2'), which in turn calls the macro, @('mac2').  So we might expect, as
-  described for @('mac1') above, that @('mac2') must be included in
-  @(':names').  But fortunately, @('mac2') is a macro alias for a function that
-  supports the definition of @('h2') specified in the call of
-  @('with-supporters'): @('g2') supports that definition and @('mac2') is a
-  macro alias for @('g2').  Thus @('mac2') and its supporting function
-  @('mac2-fn') are added to the list of generated events (called @('EXTRA'),
-  above).</p>
-
-  <p>In summary, the above call of @('with-supporters') generates the following
-  event.</p>
-
-  @({
-  (ENCAPSULATE NIL
-                (LOCAL (INCLUDE-BOOK \"with-supporters-test-sub\"))
-                (DEFUN MAC1-FN (X) X)
-                (DEFMACRO MAC1 (X) (MAC1-FN X))
-                (STD::DEFREDUNDANT G1 MAC2-FN-B MAC2-FN MAC2 G2 G3)
-                (DEFUN H2 (X) (G3 X)))
-  })
-
-  <p>As in the first example, @('std::defredundant') generates definitions for
-  the indicated names.</p>")
-
-(defxdoc with-supporters-after
-  :parents (macro-libraries)
-  :short "Automatically define necessary redundant definitions from after a
-  specified event"
-  :long
-  "<p>When @(see local) @(tsee include-book) forms are used in support of
-  definitions and theorems, the resulting book or @(tsee encapsulate) event may
-  be ill-formed because of missing definitions.  The macro,
-  @('with-supporters-after'), is intended to avoid this problem.</p>
-
-  <p>See @(tsee with-supporters) for a related utility.  (However,
-  @('with-supporters-after') does not support the @(':names') argument; that
-  should be straightforward to add, if needed.)  The documentation below
-  assumes familiarity with @('with-supporters').</p>
-
-  <p>General form:</p>
-
-  @({(with-supporters-after name event-1 ... event-k)})
-
-  <p>where @('name') is the name of an event and @('event-i') are @(see
-  events).  The effect is the same as</p>
-
-  @({((encapsulate () EXTRA event-1 ... event-k)})
-
-  <p>where @('EXTRA') includes redundant definitions of functions introduced
-  after @('name'), as necessary, in order to avoid undefined function errors
-  when processing this @(tsee encapsulate) event.  (As with
-  @('with-supporters'), @('EXTRA') may also include macro aliases and their
-  supporters; see @(see with-supporters) for details.)  @('EXTRA') also
-  includes @(see in-theory) events so that the rules introduced by the
-  @('EXTRA') definitions are suitably enable or disabled.  Consider the
-  following example.</p>
-
-  @({
-  (in-package \"ACL2\")
-
-  (include-book \"tools/with-supporters\" :dir :system)
-
-  (deflabel my-label)
-
-  (local (include-book \"std/lists/duplicity\" :dir :system))
-
-  (with-supporters-after
-   my-label
-   (defthm duplicity-append
-     (equal (duplicity a (append x y))
-            (+ (duplicity a x) (duplicity a y)))))
-  })
-
-  <p>The form above is equivalent to the following.  Again, see @(tsee
-  with-supporters) for relevant background.  Note that the present macro, like
-  that one, is also implemented using the macro @(tsee std::defredundant).</p>
-
-  @({
-  (progn
-   (encapsulate
-    ()
-    (set-enforce-redundancy t)
-    (logic)
-    (defun duplicity-exec (a x n)
-      (declare (xargs :mode :logic :verify-guards t))
-      (declare (xargs :measure (:? x)))
-      (declare (xargs :guard (natp n)))
-      (if (atom x)
-          n
-          (duplicity-exec a (cdr x)
-                          (if (equal (car x) a) (+ 1 n) n))))
-    (in-theory (e/d ((:type-prescription duplicity-exec)
-                     (:executable-counterpart duplicity-exec))
-                    ((:induction duplicity-exec)
-                     (:definition duplicity-exec))))
-    (defun duplicity (a x)
-      (declare (xargs :mode :logic :verify-guards t))
-      (declare (xargs :measure (:? x)))
-      (declare (xargs :guard t))
-      (mbe :logic (cond ((atom x) 0)
-                        ((equal (car x) a)
-                         (+ 1 (duplicity a (cdr x))))
-                        (t (duplicity a (cdr x))))
-           :exec (duplicity-exec a x 0)))
-    (in-theory (e/d ((:type-prescription duplicity)
-                     (:executable-counterpart duplicity))
-                    ((:induction duplicity)
-                     (:definition duplicity)))))
-   (defthm duplicity-append
-     (equal (duplicity a (append x y))
-            (+ (duplicity a x) (duplicity a y)))))
-  })")
+(defmacro with-supporters-after (name &rest events)
+  (declare (xargs :guard (symbolp name)))
+  (with-supporters-after-fn name events))
