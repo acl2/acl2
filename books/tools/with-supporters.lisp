@@ -14,10 +14,6 @@
 ;   were processed, and some rules might have been local -- or at least improve
 ;   the error message when they fail.
 
-; - When a defattach event specifies attachment to f of g, and that is
-;   overridden by a later defattach event, then no longer accumulate g into the
-;   supporters.
-
 ; - Perhaps support keyword arguments in with-supporters-after that are
 ;   supported in with-supporters.
 
@@ -30,6 +26,9 @@
 ; - Not much explicit attention has been paid to default hints and
 ;   override-hints.  Handling of tables might cover them, but these haven't
 ;   been tested in with-supporters-test-{sub|top}.lisp.
+
+; - Perhaps improve defattach-event-lst, as indicated in its comment about the
+;   "seen" argument.
 
 (in-package "ACL2")
 
@@ -387,25 +386,23 @@
            ,@(cddr ev)))))
     (otherwise ev)))
 
-(defun events-from-supporters-fal (pairs min max wrld)
-;;; !! Maybe redo with accumulator.
+(defun events-from-supporters-fal (pairs min max wrld acc)
 
 ; Each element of pairs is of the form (n ev . &) where ev is an event, and
 ; pairs is sorted by car in increasing order.  We collect suitably-adjusted
 ; cadrs from pairs until a car exceeds max.
 
   (cond
-   ((endp pairs) nil)
+   ((or (endp pairs)
+        (< max (caar pairs)))
+    (reverse acc))
+   ((<= (car (car pairs)) min)
+    (events-from-supporters-fal (cdr pairs) min max wrld acc))
    (t
-    (let ((pair (car pairs)))
-      (cond
-       ((or (<= (car pair) min)
-;;; !! Move this test up as termination test, I think.
-            (< max (car pair)))
-        (events-from-supporters-fal (cdr pairs) min max wrld))
-       (t
-        (cons (adjust-ev-for-symbol-class (cadr pair) wrld)
-              (events-from-supporters-fal (cdr pairs) min max wrld))))))))
+    (events-from-supporters-fal
+     (cdr pairs) min max wrld
+     (cons (adjust-ev-for-symbol-class (cadr (car pairs)) wrld)
+           acc)))))
 
 (defun get-defattach-event-fn (ev)
 
@@ -422,17 +419,20 @@
 (defun defattach-event-lst (wrld fns min max acc seen)
 
 ; Wrld is a list of triples, most recent first.  Fns is a list of function
-; symbols, and we want to pick up every defattach event that attaches to any of
-; those.
-
-;;; !! Are we closed -- maybe, given how fns is produced.
+; symbols.  Accumulate into acc every defattach event with
+; absolute-event-number in the half-open interval (min,max] that attaches to
+; any function symbol in fns.  At the top level, acc is nil; the events are
+; returned with the oldest first (reverse order from wrld).  Seen accumulates
+; the "key" (first) function symbol from each set of defattach events -- this
+; may not be perfect since a later defattach event may have a different key
+; but still attach to the same function.
 
   (let ((trip (car wrld)))
     (cond
      ((and (eq (car trip) 'event-landmark)
            (eq (cadr trip) 'global-value))
       (cond
-       ((< (access-event-tuple-number (cddr trip)) min)
+       ((<= (access-event-tuple-number (cddr trip)) min)
         acc)
        ((or (> (access-event-tuple-number (cddr trip)) max)
             (not (eq (car (access-event-tuple-form (cddr trip))) 'defattach)))
@@ -463,7 +463,7 @@
                                  ctx wrld state-vars))
          (x (merge-sort-car-< (fast-alist-free fal)))
          (fns (append-lst (strip-cddrs x))))
-    (cons (append? (events-from-supporters-fal x min max wrld)
+    (cons (append? (events-from-supporters-fal x min max wrld nil)
                    (defattach-event-lst wrld fns min max nil nil))
           fns)))
 
