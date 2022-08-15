@@ -17,6 +17,7 @@
 (local (include-book "compress1"))
 (local (include-book "dimensions"))
 (local (include-book "default"))
+(local (include-book "header"))
 
 (defthm dimensions-of-aset1
   (equal (dimensions array-name (aset1 array-name array n val))
@@ -36,5 +37,11 @@
                 (< index (car (dimensions array-name array))) ; same as (< index (alen1 array-name array))
                 (array1p array-name array))
            (array1p array-name (aset1 array-name array index val)))
-  :hints (("Goal" :in-theory (e/d (aset1 dimensions)
-                                  (dimensions-intro)))))
+  :hints (("Goal" :in-theory (e/d (aset1 dimensions header)
+                                  (dimensions-intro header-intro)))))
+
+(defthm header-of-aset1
+  (implies (integerp n) ;gen?
+           (equal (header name (aset1 name l n val))
+                  (header name l)))
+  :hints (("Goal" :in-theory (enable aset1))))
