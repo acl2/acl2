@@ -242,24 +242,27 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
            )
-  (revert-world ;; Ensure the include-book gets undone
-   (b* (        ;; Try to include the recommended book:
-        ((mv erp state) (submit-event-helper include-book-form nil nil state))
-        ((when erp) (er hard? 'try-add-library "Event failed: ~x0." include-book-form) (mv erp nil state))
-        ;; Now see whether we can prove the theorem using the new include-book:
-        ;; ((mv erp ;todo: how to distinguish real errors?
-        ;;      state) (submit-event-helper
-        ;;                  `(encapsulate ()
-        ;;                     (local ,include-book-form)
-        ;;                     ,(make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg))
-        ;;                  t nil state))
-        ;; (provedp (not erp))
-        ((mv provedp state) (prove$-checked 'try-add-library
-                                            theorem-body
-                                            :hints theorem-hints
-                                            :otf-flg theorem-otf-flg))
-        (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
-     (mv nil provedp state))))
+  (if (not (consp include-book-form)) ; can be "Other"
+      (prog2$ (cw "FAIL (ill-formed library recommendation: ~x0)~%" include-book-form)
+              (mv nil nil state))
+    (revert-world ;; Ensure the include-book gets undone
+     (b* (        ;; Try to include the recommended book:
+          ((mv erp state) (submit-event-helper include-book-form nil nil state))
+          ((when erp) (er hard? 'try-add-library "Event failed: ~x0." include-book-form) (mv erp nil state))
+          ;; Now see whether we can prove the theorem using the new include-book:
+          ;; ((mv erp ;todo: how to distinguish real errors?
+          ;;      state) (submit-event-helper
+          ;;                  `(encapsulate ()
+          ;;                     (local ,include-book-form)
+          ;;                     ,(make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg))
+          ;;                  t nil state))
+          ;; (provedp (not erp))
+          ((mv provedp state) (prove$-checked 'try-add-library
+                                              theorem-body
+                                              :hints theorem-hints
+                                              :otf-flg theorem-otf-flg))
+          (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
+       (mv nil provedp state)))))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
@@ -283,13 +286,22 @@
     (mv nil provedp state)))
 
 (defund name-that-can-be-enabled/disabledp (name wrld)
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp wrld))))
+  (declare (xargs :guard (and ;; (symbolp name)
+                          (plist-worldp wrld))))
+  (let ((name (if (symbolp name)
+                  name
+                (if (and (consp name) ; might be (:rewrite foo) or (:rewrite foo . 1)
+                         (eq :rewrite (car name))
+                         (consp (cdr name))
+                         (cadr name)
+                         (symbolp (cadr name)))
+                    (cadr name)
+                  (er hard? 'name-that-can-be-enabled/disabledp "Unknown kind of name: ~x0.")))))
   (or (getpropc name 'unnormalized-body nil wrld)
       (getpropc name 'theorem nil wrld)
       (let ((alist (table-alist 'macro-aliases-table wrld)))
         (and (alistp alist) ; should always be true
-             (assoc-eq name alist)))))
+             (assoc-eq name alist))))))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Don't enable if already enabled.
@@ -365,6 +377,29 @@
     (mv nil provedp state)))
 
 ;; Returns (mv erp successp state).
+(defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (((when (not (translatable-term-listp item (w state))))
+        (cw "FAIL (terms not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (mv nil nil state))
+       ;; Now see whether we can prove the theorem using the new hyp:
+       ;; ((mv erp state) (submit-event-helper
+       ;;                  (make-thm-to-attempt theorem-body
+       ;;                                       ;; todo: ensure this is nice:
+       ;;                                       (cons `("Goal" :cases ,item)
+       ;;                                             theorem-hints)
+       ;;                                       theorem-otf-flg)
+       ;;                  t nil state))
+       ((mv provedp state) (prove$-checked 'try-add-cases-hint
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           :hints (cons `("Goal" :cases ,item) theorem-hints)
+                                           :otf-flg theorem-otf-flg))
+       (- (if provedp (cw "SUCCESS: Add :cases hint ~x0~%" item) (cw "FAIL~%"))))
+    (mv nil provedp state)))
+
+;; Returns (mv erp successp state).
 ;; TODO: We need more than a symbol
 (defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
@@ -398,6 +433,7 @@
           (:add-enable-hint (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-disable-hint (try-add-disable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           ;; same as for try-add-enable-hint above:
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:use-lemma (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))

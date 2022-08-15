@@ -19,6 +19,7 @@
 (include-book "aset1")
 (include-book "default")
 (include-book "dimensions")
+(include-book "header")
 (include-book "compress1")
 (include-book "compress11")
 (include-book "aref1-list")

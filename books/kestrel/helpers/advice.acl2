@@ -216,4 +216,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Remove (from books/workshops/2006/cowles-gamboa-euclid/Euclid/certify.lsp):
+
+(defconst *import-symbols*
+  (set-difference-eq
+   (union-eq *acl2-exports*
+	     *common-lisp-symbols-from-main-lisp-package*)
+     '(null + * - < = / commutativity-of-* associativity-of-*
+	    commutativity-of-+ associativity-of-+ distributivity)))
+
+(defpkg "FLD"
+  *import-symbols*)
+
+(defpkg "FUTER"
+  *import-symbols*)
+
+(defpkg "FUMON"
+  (union-eq *import-symbols*
+	    '(FLD::fdp FUTER::terminop)))
+
+(defpkg "FUPOL"
+  (union-eq *import-symbols*
+	    '(FUTER::naturalp FUTER::terminop FUMON::monomio FUMON::coeficiente
+			    FUMON::termino FUMON::monomiop)))
+
+(defpkg "FUNPOL"
+  (set-difference-eq *import-symbols*
+		     '(rem)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Remove (from books/models/jvm/guard-verified-m1/script.lsp)
+
+(defpkg "M1"
+  (set-difference-eq (union-eq *acl2-exports*
+                               *common-lisp-symbols-from-main-lisp-package*)
+                     '(push pop pc program step)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; cert-flags: ? T :TTAGS :ALL

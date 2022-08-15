@@ -17,6 +17,7 @@
 (include-book "alen1")
 (include-book "aset1")
 (include-book "default")
+(include-book "header")
 (include-book "bounded-integer-alistp")
 (include-book "dimensions") ; make local?
 (include-book "compress1") ; make local?
@@ -207,20 +208,6 @@
   :hints (("Goal" :in-theory (e/d (array1p header dimensions maximum-length)
                                   (dimensions-intro)))))
 
-
-;; ;;;
-;; ;;; header-intro
-;; ;;;
-
-;; Unfortunately, this has a free variable in the RHS.
-(defthmd header-intro
-  (equal (assoc-equal :header l)
-         (header name l))
-  :hints (("Goal" :in-theory (enable header))))
-
-(theory-invariant (incompatible (:rewrite header-intro) (:definition header)))
-
-
 ;; Here we also introduce alen1
 (defthmd array1p-rewrite2
   (equal (array1p name l)
@@ -245,21 +232,6 @@
   :hints (("Goal" :in-theory (e/d (array1p-rewrite)
                                   ()))))
 
-(defthm header-when-array1p
-  (implies (array1p name2 l)
-           (header name l))
-  :hints (("Goal" :in-theory (e/d (array1p-rewrite dimensions) (dimensions-intro)))))
-
-(defthm consp-of-header-when-array1p
-  (implies (array1p name2 l)
-           (consp (header name l)))
-  :hints (("Goal" :in-theory (e/d (array1p-rewrite dimensions) (dimensions-intro)))))
-
-(defthmd keyword-value-listp-of-cdr-of-header-when-array1p
-  (implies (array1p array-name array)
-           (keyword-value-listp (cdr (header array-name array))))
-  :hints (("Goal" :in-theory (enable array1p header))))
-
 (defthm alistp-of-reverse-list
   (equal (alistp (reverse-list x))
          (alistp (true-list-fix x)))
@@ -276,11 +248,6 @@
              (cadr (assoc-keyword :maximum-length (cdr a)))
            (maximum-length name x)))
   :hints (("Goal" :in-theory (enable maximum-length header))))
-
-(defthm equal-of-header-and-car-of-header
-  (iff (equal :header (car (header array-name array)))
-       (header array-name array))
-  :hints (("Goal" :in-theory (enable header))))
 
 (defthm assoc-equal-of-reverse-list-iff
   (implies (or (alistp x)
@@ -320,13 +287,6 @@
                                      assoc-equal-when-assoc-equal-of-reverse-list))))
 
 
-(defthm header-of-cons
-  (equal (header array-name (cons entry alist))
-         (if (eq :header (car entry))
-             entry
-           (header array-name alist)))
-  :hints (("Goal" :in-theory (enable header))))
-
 ;can be expensive?
 (defthmd consp-when-true-listp-and-non-nil
   (implies (and x ;limit?
@@ -341,18 +301,7 @@
   :hints (("Goal" :in-theory (e/d (alen1)
                                   (alen1-intro alen1-intro2)))))
 
-(defthm header-of-nil
-  (equal (header name nil)
-         nil)
-  :hints (("Goal" :in-theory (enable header))))
-
 (in-theory (disable array-order)) ; move
-
-(defthm consp-of-header
-  (implies (array1p name array)
-           (consp (header name array)))
-  :hints (("Goal" :in-theory (e/d (array1p-rewrite dimensions header)
-                                  (dimensions-intro)))))
 
 (defthm array1p-of-aset1
   (implies (and (natp index)
@@ -782,12 +731,6 @@
 ;;          (assoc-equal :header array))
 ;;   :hints (("Goal" :in-theory (e/d (compress1) ()))))
 
-(defthm header-of-aset1
-  (implies (integerp n) ;gen?
-           (equal (header name (aset1 name l n val))
-                  (header name l)))
-  :hints (("Goal" :in-theory (enable aset1))))
-
 (defthm array1p-forward-to-<=-of-alen1
   (implies (array1p array-name array)
            (<= (alen1 array-name array)
@@ -886,8 +829,6 @@
                   (if (equal index1 index2)
                       (aref1 array-name (aset1 array-name array index2 val2) read-index)
                     (aref1 array-name (aset1 array-name (aset1 array-name array index2 val2) index1 val1) read-index)))))
-
-
 
 (defthm array1p-of-cons-of-header-and-nil
   (equal (array1p array-name
