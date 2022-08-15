@@ -1,4 +1,4 @@
-; Use with-supporters to just get the code of the Axe Basic Rewriter
+; Use with-supporters to just get the code of the Basic Axe Rewriter
 ;
 ; Copyright (C) 2022 Kestrel Institute
 ;
