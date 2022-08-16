@@ -7,6 +7,7 @@
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,7 +34,7 @@
 
 (theory-invariant (incompatible (:rewrite dimensions-intro2) (:definition dimensions)))
 
-(defthm true-listp-of-dimensions
+(defthm true-listp-of-dimensions-when-array1p
   (implies (array1p array-name array)
            (true-listp (dimensions array-name array)))
   :rule-classes (:rewrite :type-prescription)
@@ -48,11 +49,19 @@
   :hints (("Goal" :in-theory (e/d (dimensions)
                                   (dimensions-intro)))))
 
+(defthm posp-of-car-of-dimensions-when-array1p
+  (implies (array1p array-name array)
+           (posp (car (dimensions array-name array))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))
+
+;; In case we are turning car into nth of 0
 (defthm natp-of-nth-of-0-and-dimensions-when-array1p
   (implies (array1p array-name array)
            (natp (nth 0 (dimensions array-name array))))
   :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))
 
+;; In case we are turning car into nth of 0
 (defthm rationalp-of-nth-of-0-and-dimensions-when-array1p
   (implies (array1p array-name array)
            (rationalp (nth 0 (dimensions array-name array))))
