@@ -205,7 +205,9 @@
    (xdoc::p
     "This is used to generate portions of documentation strings
      in the generated parsing functions.
-     Not all the ABNF elements are supported."))
+     We print numeric notations in decimal base;
+     the abstract syntax has no information about the base.
+     Prose elements are supported."))
 
   (define def-parse-print-element ((elem elementp))
     :returns (string acl2::stringp)
@@ -224,7 +226,17 @@
                             "%s\""
                             (char-val-sensitive->get elem.get)
                             "\""))
-     :num-val (prog2$ (raise "Printing of ~x0 not supported." elem.get) "")
+     :num-val (num-val-case
+               elem.get
+               :direct (str::cat
+                        "%d"
+                        (def-parse-print-num-val-direct-numbers
+                          (num-val-direct->get elem.get)))
+               :range (str::cat
+                       "%d"
+                       (str::nat-to-dec-string (num-val-range->min elem.get))
+                       "-"
+                       (str::nat-to-dec-string (num-val-range->max elem.get))))
      :prose-val (prog2$ (raise "Printing of ~x0 not supported." elem.get) ""))
     :measure (element-count elem))
 
@@ -265,7 +277,17 @@
                     ""
                   (str::nat-to-dec-string (nati-finite->get range.max)))
                 (def-parse-print-element rep.element)))
-    :measure (repetition-count rep)))
+    :measure (repetition-count rep))
+
+  :prepwork
+  ((define def-parse-print-num-val-direct-numbers ((nats nat-listp))
+     :returns (string acl2::stringp)
+     (cond ((endp nats) "")
+           ((endp (cdr nats)) (str::nat-to-dec-string (car nats)))
+           (t (str::cat
+               (str::nat-to-dec-string (car nats))
+               "."
+               (def-parse-print-num-val-direct-numbers (cdr nats))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

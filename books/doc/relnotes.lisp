@@ -127,6 +127,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "The parsing generation tools have been slightly improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
 
    (xdoc::p
