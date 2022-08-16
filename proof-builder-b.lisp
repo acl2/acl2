@@ -528,19 +528,6 @@
                        `(without-evisc ,print-form)
                      print-form)))))
 
-(defun bounded-integer-listp (i j lst)
-  (declare (xargs :guard (and (integerp i)
-                              (or (integerp j)
-                                  (eq j 'infinity)))))
-  (cond
-   ((consp lst)
-    (and (integerp (car lst))
-         (<= i (car lst))
-         (or (eq j 'infinity)
-             (<= (car lst) j))
-         (bounded-integer-listp i j (cdr lst))))
-   (t (null lst))))
-
 (defun fetch-term-and-cl (term addr cl)
   ;; Returns the subterm of TERM at address ADDR paired with a list
   ;; containing the tests governing that occurrence of the subterm plus
