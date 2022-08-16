@@ -1117,6 +1117,8 @@
      ;; ELF stuff:
      acl2::lookup-equal-safe
      acl2::subroutine-address-elf
+     acl2::get-elf-section-address
+     acl2::get-elf-section-bytes
      acl2::get-elf-code
      acl2::get-elf-code-address
      acl2::get-elf-section-header-base-1
