@@ -302,7 +302,12 @@
   :key-type alternation
   :val-type acl2::symbol
   :true-listp t
-  :pred alternation-symbol-alistp)
+  :pred alternation-symbol-alistp
+  ///
+
+  (defrule symbolp-of-cdr-of-assoc-equal-when-alternation-symbol-alistp
+    (implies (alternation-symbol-alistp alist)
+             (acl2::symbolp (cdr (assoc-equal key alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
