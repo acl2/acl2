@@ -29,7 +29,7 @@
    (xdoc::p
     "These functions may be be useful when writing
      @(tsee fty::defresult)-based parsers for
-     languages specified via ABNF grammar.
+     languages specified via ABNF grammars.
      These functions take lists of natural numbers as inputs
      and return two outputs:
      (i) a @(tsee fty::defresult) value (e.g. tree or error)
