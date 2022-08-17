@@ -400,8 +400,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define promote-type ((type typep))
+  :guard (type-arithmeticp type)
   :returns (promoted-type typep)
-  :short "Apply the integer promotions to a type [C:6.3.1.1/2]."
+  :short "Apply the integer promotions to an arithmetic type [C:6.3.1.1/2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -433,6 +434,16 @@
     (t (type-fix type)))
   :hooks (:fix)
   ///
+
+  (defret type-promoted-arithmeticp-of-promote-type
+    (type-promoted-arithmeticp promoted-type)
+    :hyp (type-arithmeticp type)
+    :hints (("Goal" :in-theory (enable type-promoted-arithmeticp
+                                       type-arithmeticp
+                                       type-realp
+                                       type-integerp
+                                       type-unsigned-integerp
+                                       type-signed-integerp))))
 
   (defrule type-integerp-of-promote-type
     (equal (type-integerp (promote-type type))
@@ -594,7 +605,17 @@
   (if (type-case type :array)
       (type-pointer (type-array->of type))
     (type-fix type))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule type-arithmeticp-of-apconvert-type
+    (equal (type-arithmeticp (apconvert-type type))
+           (type-arithmeticp type))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -882,6 +903,8 @@
                               :required :scalar
                               :supplied (type-fix arg-type))))))
     (t (error (impossible))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

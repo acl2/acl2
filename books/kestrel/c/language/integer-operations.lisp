@@ -281,6 +281,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define promote-value ((val valuep))
+  :guard (value-arithmeticp val)
   :returns (promoted-val
             valuep
             :hints

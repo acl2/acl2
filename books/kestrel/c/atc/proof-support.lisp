@@ -861,7 +861,9 @@
               (resfixtype (integer-type-to-fixtype restype))
               (respred (pack resfixtype 'p)))
            (cons (pack respred '-of- op '- argfixtype)
-                 (atc-integer-ops-1-return-names-loop-types op (cdr types)))))))
+                 (atc-integer-ops-1-return-names-loop-types op (cdr types))))))
+     :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                              type-realp))))
 
    (define atc-integer-ops-1-return-names-loop-ops ((ops symbol-listp)
                                                     (types type-listp))
