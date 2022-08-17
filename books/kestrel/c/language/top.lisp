@@ -25,6 +25,7 @@
 (include-book "static-semantics")
 (include-book "values")
 (include-book "integer-operations")
+(include-book "arithmetic-operations")
 (include-book "pointer-operations")
 (include-book "array-operations")
 (include-book "structure-operations")
