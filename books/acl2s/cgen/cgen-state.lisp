@@ -311,7 +311,7 @@ cgen-state"
          ;(rationalp end-time)
          (pseudo-termp user-supplied-term)
          (not (eq :undefined displayed-goal))
-         (or (member-eq top-ctx '(:user-defined test?))
+         (or (member-eq top-ctx '(:user-defined test? acl2::itest? acl2s::itest?))
              (not (null top-ctx))); (allowed-cgen-event-ctx-p top-ctx))
          (cgen-params-p params)
 
