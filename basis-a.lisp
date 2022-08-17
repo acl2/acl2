@@ -1217,8 +1217,27 @@
                   (null null-iprint-fal))
              result)))
 
+(defun bounded-integer-listp (i j lst)
+  (declare (xargs :guard (and (integerp i)
+                              (or (integerp j)
+                                  (eq j 'infinity)))))
+  (cond
+   ((consp lst)
+    (and (integerp (car lst))
+         (<= i (car lst))
+         (or (eq j 'infinity)
+             (<= (car lst) j))
+         (bounded-integer-listp i j (cdr lst))))
+   (t (null lst))))
+
 (defun aset1-lst (name alist ar)
   (declare (xargs :guard (eqlable-alistp alist))) ; really nat-alistp
+  (declare (xargs :guard
+                  (and (alistp alist)
+                       (array1p name ar)
+                       (bounded-integer-listp 0
+                                              (- (car (dimensions name ar)) 1)
+                                              (strip-cars alist)))))
   (cond ((endp alist)
          ar)
         (t (aset1-lst name

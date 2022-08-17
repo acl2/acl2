@@ -58,20 +58,21 @@ an existing fast alist like @('make-fal').</p>"
                        (cdar al)
                        (make-fal (cdr al) name))))))
 
-(defmacro ansfl (x y)
+(defsection ansfl
+  :parents (fast-alists)
+  :short "@('(ANSFL X Y)') returns the single value @('X') after first flushing
+          the fast hash table backing for @('Y'), if @('Y') is a fast alist."
+  :long "<p>Thus</p>
+         @({(ANSFL X Y) = X})
+         <p>@('X') must be a form that returns a single value.</p>"
 
-  "(ANSFL x y) returns the single value X after first flushing
-  the fast hash table backing for Y, if Y is a fast alist.  Thus
+  (defmacro ansfl (x y)
 
-     (ANSFL X Y) = X
-
-  X must be a form that returns a single value."
-
-  `((lambda (ansfl-do-not-use-elsewhere1 ansfl-do-not-use-elsewhere2)
-      (declare (ignore ansfl-do-not-use-elsewhere2))
-      ansfl-do-not-use-elsewhere1)
-    ,x
-    (flush-hons-get-hash-table-link ,y)))
+    `((lambda (ansfl-do-not-use-elsewhere1 ansfl-do-not-use-elsewhere2)
+        (declare (ignore ansfl-do-not-use-elsewhere2))
+        ansfl-do-not-use-elsewhere1)
+      ,x
+      (flush-hons-get-hash-table-link ,y))))
 
 
 ; [Jared]: Removing ansfl1 since I think we don't use it?
@@ -194,38 +195,53 @@ an existing fast alist like @('make-fal').</p>"
                (hons (car x)
                      (hons-binary-append (cdr x) y)))))
 
-(defmacro hons-append (x y &rest rst)
-  "APPEND using HONS instead of CONS"
-  (xxxjoin 'hons-binary-append (cons x (cons y rst))))
+(defsection hons-append
+  :parents (fast-alists append)
+  :short "APPEND using HONS instead of CONS"
 
-(defn hons-revappend (x y)
-  "REVAPPEND using HONS instead of CONS"
-  (mbe :logic (revappend x y)
-       :exec (if (atom x)
-                 y
-               (hons-revappend (cdr x) (hons (car x) y)))))
+  (defmacro hons-append (x y &rest rst)
+    (xxxjoin 'hons-binary-append (cons x (cons y rst)))))
 
-(defn hons-reverse (x)
-  "REVERSE using HONS instead of CONS"
-  (mbe :logic (reverse x)
-       :exec (if (stringp x)
-                 (reverse x)
-               (hons-revappend x nil))))
+(defsection hons-revappend
+  :parents (fast-alists revappend)
+  :short "REVAPPEND using HONS instead of CONS"
 
-(defmacro hons-list (&rest x)
-  "(LIST ...) using HONS instead of CONS"
-  (if (atom x)
-      nil
-    (list 'hons (car x) (cons 'hons-list (cdr x)))))
+  (defn hons-revappend (x y)
+    (mbe :logic (revappend x y)
+         :exec (if (atom x)
+                   y
+                 (hons-revappend (cdr x) (hons (car x) y))))))
 
-(defmacro hons-list* (&rest x)
-  "(LIST* ...) using HONS instead of CONS"
-  (cond ((atom x)
-         x)
-        ((atom (cdr x))
-         (car x))
-        (t
-         (list 'hons (car x) (cons 'hons-list* (cdr x))))))
+(defsection hons-reverse
+  :parents (fast-alists reverse)
+  :short "REVERSE using HONS instead of CONS"
+
+  (defn hons-reverse (x)
+    (mbe :logic (reverse x)
+         :exec (if (stringp x)
+                   (reverse x)
+                 (hons-revappend x nil)))))
+
+(defsection hons-list
+  :parents (fast-alists list)
+  :short "(LIST ...) using HONS instead of CONS"
+
+  (defmacro hons-list (&rest x)
+    (if (atom x)
+        nil
+      (list 'hons (car x) (cons 'hons-list (cdr x))))))
+
+(defsection hons-list*
+  :parents (fast-alists list*)
+  :short "(LIST* ...) using HONS instead of CONS"
+
+  (defmacro hons-list* (&rest x)
+    (cond ((atom x)
+           x)
+          ((atom (cdr x))
+           (car x))
+          (t
+           (list 'hons (car x) (cons 'hons-list* (cdr x)))))))
 
 (defsection hons-make-list
   :parents (fast-alists make-list)
@@ -244,33 +260,39 @@ an existing fast alist like @('make-fal').</p>"
 
 ; LIST OPERATIONS USING HONS-EQUAL -----------------------------------------
 
-(defn hons-member-equal (x y)
-  "MEMBER-EQUAL using HONS-EQUAL for each equality check"
+(defsection hons-member-equal
+  :parents (fast-alists member-equal)
+  :short "MEMBER-EQUAL using HONS-EQUAL for each equality check"
+
+  (defn hons-member-equal (x y)
 
 ; [Jared]: BOZO this is exactly the same as gentle-member-equal.  Why duplicate
 ; it?  Well, maybe gentle-member-equal should actually be changed to use equal,
 ; and this function should be left alone.
 
-  (mbe :logic (member-equal x y)
-       :exec (cond ((atom y) nil)
-                   ((hons-equal x (car y)) y)
-                   (t (hons-member-equal x (cdr y))))))
+    (mbe :logic (member-equal x y)
+         :exec (cond ((atom y) nil)
+                     ((hons-equal x (car y)) y)
+                     (t (hons-member-equal x (cdr y)))))))
 
 
 
 
 ; FAST DUPLICATE CHECKING AND REMOVAL --------------------------------------
 
-(defn hons-dups-p1 (l tab)
-  "Basic duplicates check; table is a fast alist that associates already-seen
-   elements with t."
-  (cond ((atom l)
-         (ansfl nil tab))
-        ((hons-get (car l) tab)
-         (ansfl l tab))
-        (t
-         (hons-dups-p1 (cdr l)
-                       (hons-acons (car l) t tab)))))
+(defsection hons-dups-p1
+  :parents (fast-alists)
+  :short "Basic duplicates check; table is a fast alist that associates
+          already-seen elements with t."
+
+  (defn hons-dups-p1 (l tab)
+    (cond ((atom l)
+           (ansfl nil tab))
+          ((hons-get (car l) tab)
+           (ansfl l tab))
+          (t
+           (hons-dups-p1 (cdr l)
+                         (hons-acons (car l) t tab))))))
 
 (encapsulate nil
   (local (defthm hons-assoc-equal-hons-put-list-t
@@ -841,4 +863,3 @@ tree argument, @('x'), contains large, shared structures.</li>
 (defstub fail (x y)
 ; [Jared]: find a better place for this?
   t)
-
