@@ -2250,7 +2250,10 @@
                                            ))
        ((when erp) (mv :error state))
        (- (and (eq print :verbose)
-               (cw "disjuncts in query: ~x0.~% cut-nodenum-type-alist: ~x1. ~%" disjuncts-to-include-in-query cut-nodenum-type-alist))))
+               (cw "disjuncts in query: ~x0.~% cut-nodenum-type-alist: ~x1. ~%" disjuncts-to-include-in-query cut-nodenum-type-alist)))
+       ((when (not (consp disjuncts-to-include-in-query)))
+        (cw "Note: No disjuncts. Not calling STP.~%")
+        (mv :invalid state)))
     ;;won't the disjuncts be the same for every depth?
     (prove-query-with-stp (translate-disjunction disjuncts-to-include-in-query)
                           (if depth-limit (concatenate 'string "at depth " (nat-to-string depth-limit)) "on uncut goal")
