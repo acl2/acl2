@@ -164,8 +164,9 @@
       ,@(if debug '(:on :all :summary-on :all) '(:off :all :summary-off :all))
       ,@(if debug nil (list :on 'comment))
       :gag-mode ,(not debug)
-     (make-event
-      (test?-fn ',form ',hints ',kwd-val-lst state)))))
+      (make-event
+       (revert-world
+        (test?-fn ',form ',hints ',kwd-val-lst state))))))
 
 (defxdoc acl2::cgen
   :parents (acl2::debugging acl2::acl2-sedan acl2::testing-utilities)
