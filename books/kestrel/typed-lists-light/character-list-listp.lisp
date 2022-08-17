@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "std/lists/flatten" :dir :system)
+
 (defund character-list-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -23,13 +25,24 @@
               (character-list-listp x)))
   :hints (("Goal" :in-theory (enable character-list-listp))))
 
-(defthm character-list-listp-forward-to-true-listp
+(defthm character-list-listp-forward-to-true-list-listp
   (implies (character-list-listp x)
-           (true-listp x))
+           (true-list-listp x))
   :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable character-list-listp))))
+
+(defthm true-list-listp-when-character-list-listp
+  (implies (character-list-listp x)
+           (true-list-listp x))
   :hints (("Goal" :in-theory (enable character-list-listp))))
 
 (defthm true-listp-when-character-list-listp
   (implies (character-list-listp x)
            (true-listp x))
   :hints (("Goal" :in-theory (enable character-list-listp))))
+
+(defthm character-listp-of-flatten
+  (implies (character-list-listp x)
+           (character-listp (flatten x)))
+  :hints (("Goal" :in-theory (enable character-list-listp)))
+  :rule-classes :type-prescription)
