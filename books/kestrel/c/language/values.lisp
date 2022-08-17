@@ -417,6 +417,24 @@
       (value-case val :pointer))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-promoted-arithmeticp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is a promoted arithmetic value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, an arithmetic value whose type is a "
+    (xdoc::seetopic "type-promoted-arithmeticp"
+                    "promoted arithmetic type")))
+  (and (value-arithmeticp val)
+       (not (value-case val :schar))
+       (not (value-case val :uchar))
+       (not (value-case val :sshort))
+       (not (value-case val :ushort)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-of-value ((val valuep))
@@ -515,6 +533,22 @@
              type-integerp
              type-signed-integerp
              type-unsigned-integerp))
+
+  (defrule type-promoted-arithmeticp-of-type-of-value
+    (equal (type-promoted-arithmeticp (type-of-value val))
+           (value-promoted-arithmeticp val))
+    :enable (value-promoted-arithmeticp
+             value-arithmeticp
+             value-realp
+             value-integerp
+             value-unsigned-integerp
+             value-signed-integerp
+             type-promoted-arithmeticp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
 
   (defrule type-nonchar-integerp-of-type-of-value
     (equal (type-nonchar-integerp (type-of-value val))
