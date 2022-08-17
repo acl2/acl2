@@ -664,13 +664,36 @@
    (xdoc::p
     "We also generate linear rules about the remaining input.
      These are needed to prove the termination of recursive functions
-     that call this function."))
-  (b* ((parse-rulename  (acl2::packn-pos (list fn-name
-                                               '-
-                                               (str::upcase-string rulename))
-                                         fn-name))
+     that call this function.")
+   (xdoc::p
+    "If every concatenation in the alternation that defined the rule name
+     is nullable (i.e. can expand to the empty string of natural numbers),
+     then the strict inequality linear rule should not be generated;
+     otherwise, it should be generated.
+     For now we do a very simple and partial test for nullability,
+     namely whether the alternation consists of a single concatenation
+     of a single repetition with `*`:
+     clearly, this is nullable.
+     We will extend this eventually;
+     the ABNF library should eventually contain operations
+     to determine whether grammar rules are nullable,
+     using the well-known algorithms found in the literature."))
+  (b* ((parse-rulename (acl2::packn-pos (list fn-name
+                                              '-
+                                              (str::upcase-string rulename))
+                                        fn-name))
        (alt (lookup-rulename (rulename rulename) grammar))
-       (order (or order (integers-from-to 1 (len alt)))))
+       (order (or order (integers-from-to 1 (len alt))))
+       (nullablep (and (consp alt)
+                       (not (consp (cdr alt)))
+                       (b* ((conc (car alt)))
+                         (and (consp conc)
+                              (not (consp (cdr conc)))
+                              (b* ((rep (car conc)))
+                                (equal (repetition->range rep)
+                                       (make-repeat-range
+                                        :min 0
+                                        :max (nati-infinity)))))))))
     `(define ,parse-rulename ((input nat-listp))
        :returns (mv (tree tree-resultp)
                     (rest-input nat-listp))
@@ -690,12 +713,14 @@
          (<= (len rest-input)
              (len input))
          :rule-classes :linear)
-       (defret ,(acl2::packn-pos (list 'len-of- parse-rulename '-<)
-                                 parse-rulename)
-         (implies (not (reserrp tree))
-                  (< (len rest-input)
-                     (len input)))
-         :rule-classes :linear))))
+       ,@(and
+          (not nullablep)
+          `((defret ,(acl2::packn-pos (list 'len-of- parse-rulename '-<)
+                                      parse-rulename)
+              (implies (not (reserrp tree))
+                       (< (len rest-input)
+                          (len input)))
+              :rule-classes :linear))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -718,7 +743,13 @@
    (xdoc::p
     "We also generate linear rules about the remaining input.
      These are needed to prove the termination of recursive functions
-     that call this function."))
+     that call this function.")
+   (xdoc::p
+    "If the alternation is nullable,
+     we should not generate the strict inequality linear rule:
+     see discussion in @(tsee def-parse-gen-function-for-rulename).
+     However, for now we do not support that here,
+     i.e. we implicitly assume that the alternation is not nullable."))
   (b* ((parse-group (cdr (assoc-equal alt group-fns)))
        (order (or order (integers-from-to 1 (len alt)))))
     `(define ,parse-group ((input nat-listp))
@@ -770,8 +801,12 @@
      we succeed and return a tree without branches.")
    (xdoc::p
     "We also generate a linear rule about the remaining input.
-     These are needed to prove the termination of recursive functions
-     that call this function."))
+     This is needed to prove the termination of recursive functions
+     that call this function.")
+   (xdoc::p
+    "Since an option is always nullable,
+     we do not generate the string inequality linear rule:
+     see discussion in @(tsee def-parse-gen-function-for-rulename)."))
   (b* ((parse-option (cdr (assoc-equal alt option-fns)))
        (order (or order (integers-from-to 1 (len alt)))))
     `(define ,parse-option ((input nat-listp))
