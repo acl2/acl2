@@ -363,6 +363,8 @@ eg:n/a")
         (hypotheses-val A)
         )
        (hyp-vals (and (verbose-stats-flag vl) (hyp-val-list A)))
+       (- (cw? (system-debug-flag vl) 
+               "~|Cgen/Sysdebug/run-single: not vacuous ?: ~x0~%" |not vacuous ?|))
        (- (cw? (and (system-debug-flag vl)
                     (not |not vacuous ?|)) 
                "~|Cgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals)))
@@ -618,6 +620,7 @@ where
              (declare (ignorable sampling-method N i)) ;in case ord-vs is nil
              (declare (type (unsigned-byte 31) seed.))
              (declare (xargs :verify-guards nil
+                             ;; :mode :logic ;New defdata has program-mode enumerators -- Sep 1 2014
                              :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014
                              :guard (and (member-eq sampling-method
                                                     '(:random :uniform-random :be))
@@ -629,7 +632,9 @@ where
                                          (and ,@(make-guard-var-assoc-eq
                                                  (strip-cars v-cs%-alst)
                                                  'BE.)))
-                             :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))))
+                             :guard-hints (("Goal" :in-theory (disable
+                                                               unsigned-byte-p)))
+                             ))
              ,(make-next-sigma_mv-let v-cs%-alst '() N i use-fixers-p vl wrld
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
                                       `(B* ,(append partial-A fixer-bindings elim-bindings)
@@ -642,6 +647,7 @@ where
                                               seed. BE.))))
            (defun next-sigma-current-gv (sampling-method N i seed. BE.)
              (declare (xargs :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014
+                             ;;:mode :logic ;New defdata has program-mode enumerators -- Sep 1 2014
                              :guard T :verify-guards ,(not programp)))
 ;(declare (type (unsigned-byte 31) seed.))
              (ec-call (next-sigma-current sampling-method N i seed. BE.))))))
