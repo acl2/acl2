@@ -327,6 +327,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-promoted-arithmeticp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a promoted arithmetic type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, an arithmetic type that is promoted,
+     in the sense that applying integer promotions [C:6.3.1.1/2] to it
+     would leave the type unchanged.
+     This means that the type is not
+     a (signed, unsigned, or plain) @('char') type
+     or a (signed or unsigned) @('short') type."))
+  (and (type-arithmeticp type)
+       (not (type-case type :char))
+       (not (type-case type :schar))
+       (not (type-case type :uchar))
+       (not (type-case type :sshort))
+       (not (type-case type :ushort)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-nonchar-integerp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a (supported) type is an integer type
