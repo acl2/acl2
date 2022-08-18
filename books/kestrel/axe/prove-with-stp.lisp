@@ -163,7 +163,7 @@
                 (mv-nth 0 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))
            (assoc-equal var (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc))))
   :hints (("Goal" :use (:instance unify-tree-with-any-dag-node-no-wrap-binds-all)
-           :in-theory (e/d (assoc-equal-iff)
+           :in-theory (e/d (assoc-equal-iff-member-equal-of-strip-cars)
                            (unify-tree-with-any-dag-node-no-wrap-binds-all)))))
 
 ;... a lot of work looks needed here

@@ -284,7 +284,7 @@
                 (consp keys)
                 (alistp a))
            (assoc-equal (car keys) a))
-  :hints (("Goal" :in-theory (enable ASSOC-EQUAL-IFF))))
+  :hints (("Goal" :in-theory (enable assoc-equal-iff-member-equal-of-strip-cars))))
 
 (defthm alists-equiv-on-of-pairlis$-of-map-lookup-equal
   (implies (and (alistp a)

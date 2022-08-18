@@ -91,19 +91,33 @@
                     (assoc-equal x alist2))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-;; matches std
+;; Better than the version in std.
 ;; Can help when assoc-equal-type cannot fire due to the hyps needing rewriting to be relieved.
-(defthm consp-of-assoc-equal
-  (implies (alistp alist)
+(defthm consp-of-assoc-equal-gen
+  (implies (or (alistp alist)
+               key)
            (iff (consp (assoc-equal key alist))
                 (assoc-equal key alist)))
   :hints (("Goal" :in-theory (enable alistp assoc-equal))))
 
-(defthmd assoc-equal-iff
-  (implies (alistp alist)
+;; Not sure which normal form is better
+(defthmd assoc-equal-iff-member-equal-of-strip-cars
+  (implies (or (alistp alist)
+               key)
            (iff (assoc-equal key alist)
                 (member-equal key (strip-cars alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; Not sure which normal form is better
+(defthmd member-equal-of-strip-cars-iff-assoc-equal
+  (implies (or (alistp alist)
+               key)
+           (iff (member-equal key (strip-cars alist))
+                (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+(theory-invariant (incompatible (:rewrite assoc-equal-iff-member-equal-of-strip-cars)
+                                (:rewrite member-equal-of-strip-cars-iff-assoc-equal)))
 
 (defthm assoc-equal-type
   (implies (or x ;if X is nil, and ALIST contains an atom, ASSOC-EQUAL might return that atom
