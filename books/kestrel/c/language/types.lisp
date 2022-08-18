@@ -316,6 +316,15 @@
   (type-realp type)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-arithmetic-listp (x)
+  :guard (type-listp x)
+  (type-arithmeticp x)
+  ///
+  (fty::deffixequiv type-arithmetic-listp
+    :args ((x type-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-scalarp ((type typep))
