@@ -131,7 +131,7 @@ design and variable-name is a symbol.</p>
 
 <p>The format for @(':inputs') is a list of entries of the form:</p>
 @({
- (signal-name setting [ :hold t-or-nil | :toggle nphases ])
+ (signal-name setting [ :hold t-or-nphases | :toggle nphases ])
  })
 <p>Setting can be one of:</p>
 <ul>
@@ -140,8 +140,12 @@ design and variable-name is a symbol.</p>
 <li>a variable, i.e. any other non-Boolean, non-keyword symbol.</li>
 </ul>
 
-<p>The @(':hold') keyword, if set to t, indicates that this assignment is
-valid for all subsequent phases until the same signal is set again.</p>
+<p>The @(':hold') keyword, if set to t, indicates that this assignment is valid
+for all subsequent phases until the same signal is set again. If it is set to a
+number, it is held for that number of additional phases or until it is set
+again. I.e., @(':hold 0') would be the same as @(':hold nil') (but isn't
+allowed), @(':hold 1') means hold for a total of two phases -- the current
+one (which this entry would affect without the hold) and one additional.</p>
 
 <p>The @(':toggle') keyword, if set to t or a positive integer @('nphases'),
 indicates that the signal will be held and toggled every @('nphases') phases,
@@ -160,8 +164,13 @@ additional keyword variables:</p>
 signal corresponding to 1-bits of the override condition are overridden and
 take the value of the corresponding bits of the override value (@('setting')
 field).</li>
-<li>@(':output'), if specified, gives an output variable for the same signal.
-This output will be assigned the non-overridden value of the signal.</li>
+
+<li>@(':output'), if specified, gives an output variable for the same signal at
+the given time.  This output will be assigned the non-overridden value of the
+signal.  This syntactic convenience supports the recommended method for
+decomposition proofs; see @(see def-svtv-override-fact).  The @(':hold') and
+@(':toggle') options don't apply to the output, in that it is only sampled at
+the phase in which it is declared.</li>
 </ul>
 
 <p>The @('setting') field can also take one additional form @('(value test)'),
@@ -176,8 +185,11 @@ phases and value is toggled.</p>")
 
 (fty::defprod svtv*-input
   ((setting svtv-entry-p)
-   ;; note: toggle of 0 means hold
-   (toggle maybe-natp :rule-classes :type-prescription))
+   (toggle maybe-posp :rule-classes :type-prescription)
+   ;; Hold NIL means don't hold
+   ;; Hold 0 means hold forever.
+   ;; Hold N (posp) means hold N additional cycles.
+   (hold maybe-natp :rule-classes :type-prescription))
   :layout :list)
 
 (fty::defalist svtv*-input-alist :key-type stringp :val-type svtv*-input :true-listp t)
@@ -251,20 +263,22 @@ phases and value is toggled.</p>")
                    (assoc :hold kwd-alist)))
         (raise "~s0 entry should not contain both :hold and :toggle: ~x1" intype x)
         (mv nil nil))
-       ((unless (booleanp (cdr (assoc :hold kwd-alist))))
-        (raise "~s0 entry ~x1: :hold value should be Boolean" intype x)
+       ((unless (or (booleanp (cdr (assoc :hold kwd-alist)))
+                    (posp (cdr (assoc :hold kwd-alist)))))
+        (raise "~s0 entry ~x1: :hold value should be positive integer or Boolean" intype x)
         (mv nil nil))
        ((unless (or (booleanp (cdr (assoc :toggle kwd-alist)))
                     (posp (cdr (assoc :toggle kwd-alist)))))
         (raise "~s0 entry ~x1: :toggle value should be positive integer or Boolean" intype x)
         (mv nil nil))
-       (toggle (if (cdr (assoc :hold kwd-alist))
+       (toggle (if (eq t (cdr (assoc :toggle kwd-alist)))
+                   1
+                 (cdr (assoc :toggle kwd-alist))))
+       (hold   (if (eq t (cdr (assoc :hold kwd-alist)))
                    0
-                 (if (eq t (cdr (assoc :toggle kwd-alist)))
-                     1
-                   (cdr (assoc :toggle kwd-alist)))))
+                 (cdr (assoc :hold kwd-alist))))
        ((unless overridep)
-        (mv (list (cons signame (make-svtv*-input :setting entry :toggle toggle))) nil))
+        (mv (list (cons signame (make-svtv*-input :setting entry :toggle toggle :hold hold))) nil))
        ;; Couple of extra things to check for overrides.
        (cond (cdr (assoc :cond kwd-alist)))
        ((unless (or (not cond)
@@ -279,7 +293,7 @@ phases and value is toggled.</p>")
                   (make-svtv-condoverride :value entry :test cond)
                 entry))
        (output (cdr (assoc :output kwd-alist)))
-       (input-result (list (cons signame (make-svtv*-input :setting entry :toggle toggle))))
+       (input-result (list (cons signame (make-svtv*-input :setting entry :toggle toggle :hold hold))))
        ((unless output)
         (mv input-result nil))
        ((unless (svtv-variable-p output))
@@ -321,18 +335,18 @@ phases and value is toggled.</p>")
 
 
 (fty::defprod svtv*-phase
-  ((delay posp :default 1 :rule-classes :type-prescription)
-   (label symbolp :default 'acl2::? :rule-classes :type-prescription)
+  ((label symbolp :default 'acl2::? :rule-classes :type-prescription)
    (inputs svtv*-input-alist-p)
    (overrides svtv*-input-alist-p)
    (outputs svtv*-output-alist-p))
   :layout :list)
 
-(fty::deflist svtv*-phaselist :elt-type svtv*-phase)
+(fty::deflist svtv*-phaselist :elt-type svtv*-phase :true-listp t)
+
 
 
 (define svtv*-parse-phase (x)
-  :returns (phase (iff (svtv*-phase-p phase) phase))
+  :returns (phases  svtv*-phaselist-p)
   (b* (((mv kwd-alist extra) (std::extract-keywords 'svtv*-parse-phase
                                                     '(:delay :label :inputs :overrides :outputs)
                                                     x nil))
@@ -347,28 +361,24 @@ phases and value is toggled.</p>")
        ((mv inputs &) (svtv*-parse-inputs (cdr (assoc :inputs kwd-alist)) nil))
        ((mv overrides override-outputs) (svtv*-parse-inputs (cdr (assoc :overrides kwd-alist)) t))
        (outputs (svtv*-parse-outputs (cdr (assoc :outputs kwd-alist)))))
-    (make-svtv*-phase :delay delay
-                      :label label
-                      :inputs inputs
-                      :overrides overrides
-                      :outputs (append override-outputs outputs))))
+    (append (repeat (1- delay) (make-svtv*-phase))
+            (list (make-svtv*-phase ;; :delay delay
+                   :label label
+                   :inputs inputs
+                   :overrides overrides
+                   :outputs (append override-outputs outputs))))))
 
 (define svtv*-parse-phases (x)
   :Returns (phases svtv*-phaselist-p)
   (if (atom x)
       nil
-    (b* ((phase (svtv*-parse-phase (car x))))
-      (and phase
-           (cons phase
-                 (svtv*-parse-phases (cdr x)))))))
+    (b* ((phases (svtv*-parse-phase (car x))))
+      (append phases
+              (svtv*-parse-phases (cdr x))))))
 
 (define svtv*-phaselist-nphases ((x svtv*-phaselist-p))
-  (if (atom x)
-      0
-    (+ (svtv*-phase->delay (car x))
-       (svtv*-phaselist-nphases (cdr x)))))
+  (len x))
 
-;; fix phase numbering blah
 (define svtv*-input-signal-find-next-phase ((name stringp)
                                             (phases svtv*-phaselist-p)
                                             (overridep))
@@ -397,9 +407,9 @@ phases and value is toggled.</p>")
        (alist (if overridep phase1.overrides phase1.inputs))
        (look (assoc-equal (acl2::str-fix name) alist))
        ((when look)
-        (mv phase1.delay (cdr look) (svtv*-phaselist-fix (cdr phases))))
+        (mv 1 (cdr look) (svtv*-phaselist-fix (cdr phases))))
        ((mv rest-phases entry suffix) (svtv*-input-signal-find-next-phase name (cdr phases) overridep)))
-    (mv (+ phase1.delay rest-phases) entry suffix))
+    (mv (+ 1 rest-phases) entry suffix))
   ///
   (verify-guards svtv*-input-signal-find-next-phase)
 
@@ -481,8 +491,12 @@ phases and value is toggled.</p>")
        ((when (zp nphases)) nil)
        ((when (svtv-dontcare-p entry.setting))
         (repeat nphases entry.setting))
-       ((when (eql entry.toggle 0))
-        (repeat nphases entry.setting))
+       ((when entry.hold)
+        (if (eql entry.hold 0)
+            (repeat nphases entry.setting)
+          (b* ((reps (min nphases (+ 1 entry.hold))))
+            (append (repeat reps entry.setting)
+                    (repeat (- nphases reps) '&)))))
        ((unless entry.toggle)
         (cons entry.setting (repeat (1- nphases) '&)))
        ;; toggle is positive
@@ -564,9 +578,9 @@ phases and value is toggled.</p>")
                                                         assoc-equal))))))
   (b* (((when (atom phases)) nil)
        ((svtv*-phase phase1) (car phases))
-       (prefix (repeat (1- phase1.delay) '&))
+       ; (prefix (repeat (1- phase1.delay) '&))
        (entry (or (cdr (assoc-equal (acl2::str-fix name) phase1.outputs)) '&)))
-    (append prefix (cons entry (svtv*-output-to-svtv-line-entries name (cdr phases)))))
+    (cons entry (svtv*-output-to-svtv-line-entries name (cdr phases))))
   ///
   (defret len-of-<fn>
     (equal (len entries)
@@ -642,11 +656,11 @@ phases and value is toggled.</p>")
                                (symbol-listp (append x y))))))
   (if (Atom x)
       nil
-    (b* (((svtv*-phase x1) (car x))
-         (delay-1 (1- x1.delay)))
-      (append (make-list delay-1 :initial-element 'acl2::?)
-              (cons (svtv*-phase->label (car x))
-                    (svtv*-phaselist-collect-labels (cdr x)))))))
+    (b* (((svtv*-phase x1) (car x)))
+      ;;    (delay-1 (1- x1.delay)))
+      ;; (append (make-list delay-1 :initial-element 'acl2::?)
+      (cons (svtv*-phase->label (car x))
+            (svtv*-phaselist-collect-labels (cdr x))))))
 
       
 (define defsvtv*-phases-to-defsvtv-args ((x svtv*-phaselist-p))
@@ -693,38 +707,74 @@ phases and value is toggled.</p>")
 (defmacro defsvtv-phasewise (name &rest args)
   (defsvtv-phasewise-fn name args))
 
-      
+
+;; Functions for programmatic manipulation of a phaselist.
+
+(define nth-phase ((n natp) (x svtv*-phaselist-p))
+  :returns (phase svtv*-phase-p)
+  (mbe :logic (svtv*-phase-fix (nth n x))
+       :exec (if (< n (len x))
+                 (nth n x)
+               (make-svtv*-phase :label nil))))
+
+(define update-nth-phase ((n natp) (phase svtv*-phase-p) (x svtv*-phaselist-p))
+  :returns (new-x svtv*-phaselist-p)
+  :prepwork ((local (defthm update-nth-when-out-of-bound
+                      (implies (< (len x) (nfix n))
+                               (equal (update-nth n v x)
+                                      (append x (repeat (- (nfix n) (len x)) nil) (list v))))
+                      :hints(("Goal" :in-theory (e/d (repeat)
+                                                     (acl2::equal-of-append-repeat)))))))
+  (mbe :logic (svtv*-phaselist-fix (update-nth n phase x))
+       :exec (if (<= n (len x))
+                 (update-nth n phase x)
+               (append x (repeat (- n (len x)) (make-svtv*-phase :label nil)) (list phase))))
+
+  ///
+  (local (include-book "std/lists/nth" :dir :System))
+  
+  (defthm nth-phase-of-update-nth-phase
+    (equal (nth-phase m (update-nth-phase n phase x))
+           (if (equal (nfix n) (nfix m))
+               (svtv*-phase-fix phase)
+             (nth-phase m x)))
+    :hints(("Goal" :in-theory (enable nth-phase)))))
+
+
+
 
 #||
 
-:trans1 (defsvtv-phasewise my-svtv
-          :design *my-design*
-          :parents (foo) :short "..." :long "..."
-          :simplify t   ;; default
-          :phases
-          (;; Phase 0:
-           (:label p
-            :inputs (("clk" 0 :toggle 1)  ;; will toggle each phase until end or until reassigned
-                     ("start" 1))
-            :outputs (("out0" out0)))
+:trans1  (defsvtv-phasewise my-svtv
+   :design *my-design*
+   ;; :parents ... :short ... :long ...
+   :simplify t   ;; default
+   :phases
+   (;; Phase 0:
+    (:label p
+     :inputs (("clk" 0 :toggle 1)  ;; will toggle each phase until end or until reassigned
+              ("start" 1)))
 
-           ;; Phase 4:
-           (:delay 4 ;; number of phases since last one listed
-            :label q
-            :inputs (("cntl" cntl4 :hold t)) ;; will hold this value until end or until reassigned
-            :overrides (("inst.subinst.internalsig" internal4))
-            :outputs (("out4" out4)))
-           
-           ;; Phase 6:
-           (:delay 2
-            :label r
-            :inputs (("late" late6))
-            :outputs (("early" early6)))
-           
-           ;; Phase 8:
-           (:delay 2
-            :label s
-            :inputs (("cntl" _) ("latelate" ll)) ;; release previous held value
-            :outputs (("inst.subinst.interesting" interesting8)))))
+    ;; Phase 4:
+    (:delay 4 ;; number of phases since last one listed
+     :label q
+     :inputs (("cntl" cntl4 :hold t)) ;; will hold this value until end or until reassigned
+     :overrides (("inst.subinst.internalsig" internal4)
+                 ;; syntax for combined conditional override/output
+                 ("inst.subinst.decompsig" decompsig :cond decompsig-ovr :output decompsig)
+                 ;; old syntax for conditional override
+                 ("inst.subinst.decompsig" (testsig testsig-ovr))))
+ 
+    ;; Phase 6:
+    (:delay 2
+     :label r
+     :inputs (("late" late6))
+     :outputs (("early" early6)))
+ 
+    ;; Phase 8:
+    (:delay 2
+     :label s
+     :inputs (("cntl" _)) ;; release previous held value
+     :outputs (("inst.subinst.interesting" interesting8)))))
 
 ||#
