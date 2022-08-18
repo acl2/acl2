@@ -184,8 +184,81 @@
        (cs% (change cs% defdata-type typ)))
    (put-assoc-eq v cs% v-cs%-alst.)))
 
+(defun process-return-last (term)
+  (declare (xargs :mode :logic
+                  :guard (pseudo-termp term)))
+  (case-match term
+    (('return-last . x) (process-return-last (car (last x))))
+    (& term)))
 
+(defs  ;;might be mut-rec, but right now I assume tht I wont encounter
+       ;;AND and OR like if expressions, and hence dont need the
+       ;;mutually-recursive counterpart of v-cs%-alist-from-term. TODO
+  (v-cs%-alist-from-term. (term vl wrld ans.)
+  (decl :sig ((pseudo-term fixnum plist-world  symbol-cs%-alist)
+              ->
+              symbol-cs%-alist)
+        :doc "helper to collect-constraints")
+  (declare (xargs :verify-guards nil))
+;Invariant: ans. is an alist thats in the order given by dependency analysis
+  (f* ((add-constraints... () (put-additional-constraints. fvars term ans.))
+; [2015-04-16 Thu] add support for membership
+       (add-eq/mem-constraint... (t1) (if (membership-relationp R wrld)
+                                          (put-member-constraint. x t1 vl ans.)
+                                        (add-eq-constraint... t1)))
+       (add-eq-constraint... (t1) (if (acl2::equivalence-relationp R wrld)
+                                      (if (symbolp t1)
+                                          (put-var-eq-constraint. x t1 vl wrld ans.)
+                                        (put-eq-constraint. x t1 vl ans.))
+                                    (add-constraints...))))
 
+   (b* ((fvars (all-vars term)))
+
+    (case-match term
+
+;the following is a rare case (I found it when the conclusion is nil
+;and its negation is 'T
+      (('quote c) (declare (ignore c))  ans.) ;ignore quoted constant terms
+
+;TODO possible field variable (i.e f is a getter/selector)
+; Note that term cannot have a lambda applicaton/let, so the car of the term is
+; always a function symbol if term is a consp.
+      ((P (f . &)) (declare (ignore P f))  (add-constraints...))
+
+;x has to be an atom below, otherwise, we would have caught that case above.
+      (('not x)      (put-eq-constraint. x ''nil vl ans.))
+
+      ((P x) (declare (ignore P x))
+       (b* ((term (defdata::expand-lambda term))
+            (term (process-return-last term))
+            ((list P x) term)
+            (tname (defdata::is-type-predicate P wrld))
+            ((cons & cs%) (assoc-eq x ans.))
+            (- (cw? (system-debug-flag vl)
+                    "~| x: ~x0, ans.: ~x1, cs%: ~x2, P: ~x3, tname: ~x4~|"
+                    x ans. cs% P tname))
+            (curr-typ (access cs% defdata-type))
+            (smaller-typ (meet tname curr-typ vl wrld )))
+         (if tname
+             (if (not (eq smaller-typ curr-typ))
+                 (put-defdata-type. x smaller-typ vl ans.)
+               ans.)
+           (add-constraints...))))
+      
+      ((R (f . &) (g . &)) (declare (ignore R f g)) (add-constraints...))
+
+;x has to be an atom below, otherwise, we would have caught that case
+;above.
+      ((R x ('quote c))    (add-eq/mem-constraint... (kwote c)))
+      ((R ('quote c) x)    (add-eq-constraint... (kwote c)))
+      ((R x (f . args))    (add-eq/mem-constraint... (acl2::cons-term f args)))
+      ((R (f . args) x)    (add-eq-constraint... (acl2::cons-term f args)))
+      ((R x y)             (add-eq/mem-constraint... y))
+
+      ;; has to be a (R t1 t2 ...) or atomic term
+      (&                   (add-constraints...)))))))
+
+#|
 (defs  ;;might be mut-rec, but right now I assume tht I wont encounter
        ;;AND and OR like if expressions, and hence dont need the
        ;;mutually-recursive counterpart of v-cs%-alist-from-term. TODO
@@ -247,7 +320,7 @@
 
       ;; has to be a (R t1 t2 ...) or atomic term
       (&                   (add-constraints...)))))))
-
+|#
 
 (def v-cs%-alist-from-terms. (terms vl wrld ans.)
   (decl :sig ((pseudo-term-listp fixnum plist-worldp symbol-cs%-alist)

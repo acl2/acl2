@@ -811,9 +811,11 @@ Use :simple search strategy to find counterexamples and witnesses.
        (concl-val-defuns (make-conclusion-val-defuns concl vars mv-sig-alist programp))
 ;       [2015-04-07 Tue]
 ;       Order of hyps is important -- Values of each hyp is stored in seq
+       (- (cw? (system-debug-flag vl) ".1~%"))
        (hyp-val-list-defuns (make-hyp-val-list-defuns hyps vars mv-sig-alist programp))
        
 
+       (- (cw? (system-debug-flag vl) ".2~%"))
        ;;[2016-04-03 Sun] Added support for fixers
        ((mv erp fxr-res state)
         (if (cget use-fixers)
@@ -821,8 +823,10 @@ Use :simple search strategy to find counterexamples and witnesses.
             (b* ((eq-hyps (filter-var-eq-hyps (reify-type-alist-hyps type-alist))))
               (fixer-arrangement (union-equal eq-hyps hyps) concl vl ctx state))
           (value (list nil nil))))
+       (- (cw? (system-debug-flag vl) ".3~%"))
        ((list fixer-bindings additional-fxr-hyps) fxr-res)
        
+       (- (cw? (system-debug-flag vl) ".4~%"))
        ((when erp)
         (prog2$ 
            (cw? (and (normal-output-flag vl) (cget use-fixers))
@@ -833,9 +837,13 @@ Use :simple search strategy to find counterexamples and witnesses.
        (- (cw? (and (verbose-stats-flag vl) additional-fxr-hyps)
                "~|Cgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
        
+       (- (cw? (system-debug-flag vl) ".5~%"))
        (acl2-vt-dlist (var-types-alist-from-acl2-type-alist type-alist vars '()))
+       (- (cw? (system-debug-flag vl) ".6~%"))
        ((mv erp top+-vt-dlist) (meet-type-alist acl2-vt-dlist (cget top-vt-alist) vl (w state)))
+       (- (cw? (system-debug-flag vl) ".7~%"))
        (top+-vt-dlist (if erp (make-weakest-type-alist vars) top+-vt-dlist))
+       (- (cw? (system-debug-flag vl) ".8~%"))
        ((mv erp next-sigma-defuns disp-enum-alist)
         (make-next-sigma-defuns (union-equal additional-fxr-hyps hyps) concl
 ;(append new-fxr-vars vars)  Compute it again afresh [2016-10-29 Sat]
@@ -847,15 +855,19 @@ Use :simple search strategy to find counterexamples and witnesses.
                                 0
                                 (cget use-fixers)
                                 vl state))
+       (- (cw? (system-debug-flag vl) ".9~%"))
        ((when erp)
         (prog2$ 
            (cw? (normal-output-flag vl)
                 "~|Cgen/Error: Couldn't determine enumerators. Skip searching ~x0.~|" name)
            (mv t (list nil test-outcomes% gcs%) state)))
 
+       (- (cw? (system-debug-flag vl) ".10~%"))
        ;;[2016-04-25 Mon] record these for later printing in vacuous-stats
        (fxr-elim-bindings (append fixer-bindings elim-bindings))
+       (- (cw? (system-debug-flag vl) ".11~%"))
        (test-outcomes% (change test-outcomes% disp-enum-alist disp-enum-alist))
+       (- (cw? (system-debug-flag vl) ".12~%"))
        (test-outcomes% (change test-outcomes% elim-bindings fxr-elim-bindings))
        
        (- (cw? (system-debug-flag vl) 
@@ -868,13 +880,16 @@ Use :simple search strategy to find counterexamples and witnesses.
        
 ; print form if origin was :incremental
        (cl (clausify-hyps-concl hyps concl))
+       (- (cw? (system-debug-flag vl) ".13~%"))
        (pform (acl2::prettyify-clause cl nil (w state)))
        (- (cw? (and incremental-flag? (verbose-flag vl)) 
                "~| incrementally on ~x0 under assignment ~x1~%" pform (append partial-A elim-bindings)))
 
        ;;initialize temp result
+       (- (cw? (system-debug-flag vl) ".14~%"))
        ((er &) (assign ss-temp-result :init))
 
+       (- (cw? (system-debug-flag vl) ".15~%"))
        (call-form   
         `(acl2::state-global-let*
 ; :none is almost half as slow!!!  TODO: Do testing in two phases. First check
