@@ -17,7 +17,7 @@
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/computation-states")
 (include-book "../language/function-environments")
-(include-book "../language/arithmetic-operations")
+(include-book "../language/operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
