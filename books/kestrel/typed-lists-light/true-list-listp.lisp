@@ -10,6 +10,12 @@
 
 (in-package "ACL2")
 
+(defthm true-list-listp-forward-to-true-listp
+  (implies (true-list-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable character-list-listp))))
+
 (defthm true-list-listp-of-append
   (equal (true-list-listp (append x y))
          (and (true-list-listp (true-list-fix x))
