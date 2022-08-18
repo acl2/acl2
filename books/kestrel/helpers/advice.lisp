@@ -36,6 +36,12 @@
 ;; - (maybe) try to help clean up hyps (e.g., replacing a subsumed hyp when add-hyp strengthens one, maybe using tau)
 ;; - what else?
 
+;; TODO: All a time limit for trying recommendations and keep trying more and
+;; more until that limit is reached
+
+;; TODO: Group recommendations that need the same supporting book to be
+;; included, to avoid re-including the same book later.
+
 ;; TODO: Incorporate cgen to try to see if the theorem is valid or not.
 
 ;; TODO: Why does getting advice take ~3 seconds?
@@ -49,12 +55,16 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/utilities/read-string" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/htclient/top" :dir :system)
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages tha might arise are known
 (include-book "std/io/read-string" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
+
+(defconst *step-limit* 100000)
 
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
@@ -163,6 +173,135 @@
     ("add-use-hint" . :add-use-hint)
     ("use-lemma" . :use-lemma)))
 
+(defun parsed-json-array-listp (x)
+  (declare (xargs :guard t))
+  (if (not (consp x))
+      (null x)
+    (and (parsed-json-arrayp (first x))
+         (parsed-json-array-listp (rest x)))))
+
+;move
+(defund parsed-json-array->values (array)
+  (declare (xargs :guard (parsed-json-arrayp array)
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
+  (cadr array) ; strip the :array
+  )
+
+;move
+(defund parsed-json-object->pairs (object)
+  (declare (xargs :guard (parsed-json-objectp object)
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
+  (cadr object) ; strip the :object
+  )
+
+(defthm alistp-of-parsed-json-object->pairs
+  (implies (and (state-p state)
+                (parsed-json-objectp book-map))
+           (alistp (parsed-json-object->pairs book-map)))
+  :hints (("Goal" :in-theory (enable parsed-json-object->pairs
+                                     parsed-json-objectp))))
+
+;; Returns (mv erp lists)
+(defun json-arrays-to-lists (arrays acc)
+  (declare (xargs :guard (and (parsed-json-array-listp arrays)
+                              (true-listp acc))))
+  (if (endp arrays)
+      (mv nil (reverse acc))
+    (let ((array (first arrays)))
+      (if (not (parsed-json-arrayp array)) ;drop?
+          (mv t nil)
+        (json-arrays-to-lists (rest arrays)
+                              (cons (parsed-json-array->values array)
+                                    acc))))))
+
+;; Returns (mv erp form state).
+(defun parse-include-book (string state)
+  (declare (xargs :guard (stringp string)
+                  :stobjs state))
+  (b* (((mv erp form state) (read-string-as-single-item string state)) ; todo: what about packages?
+       ((when erp) (mv :error-parsing-include-book nil state))
+       ((when (not (and (consp form)
+                        (consp (cdr form))
+                        (eq 'include-book (car form))
+                        (stringp (cadr form))
+                        ;; incomplete check, as there may be a :dir
+                        )))
+        (mv :error-parsing-include-book nil state)))
+    (mv nil form state)))
+
+;; Returns (mv erp list state).
+(defund parse-book-map-info-list (list acc state)
+  (declare (xargs :guard (and (string-listp list)
+                              (true-listp acc))
+                  :stobjs state))
+  (if (endp list)
+      (mv nil (reverse acc) state)
+    (let ((item (first list)))
+      (if (equal item ":BUILTIN")
+          (parse-book-map-info-list (rest list)
+                                     (cons :builtin acc)
+                                     state)
+        ;; otherwise, it should be an include-book:
+        (b* (((mv erp include-book-form state)
+              (parse-include-book item state))
+             ((when erp) (mv erp nil state)))
+          (parse-book-map-info-list (rest list)
+                                     (cons include-book-form acc)
+                                     state))))))
+
+(defthm true-listp-of-mv-nth-1-of-parse-book-map-info-list
+  (implies (true-listp acc)
+           (true-listp (mv-nth 1 (parse-book-map-info-list list acc state))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable parse-book-map-info-list))))
+
+;; Returns (mv erp lists state) where each of the LISTS is a list of include-book forms, or the special value :builtin.
+(defun parse-book-map-info-lists (lists acc state)
+  (declare (xargs :guard (and (string-list-listp lists)
+                              (true-listp acc))
+                  :stobjs state))
+  (if (endp lists)
+      (mv nil (reverse acc) state)
+    (b* (((mv erp list state) (parse-book-map-info-list (first lists) acc state))
+         ((when erp) (mv erp nil state))
+         ((when (and (member-eq :builtin list)
+                     (not (= 1 (len list)))))
+          (er hard? 'parse-book-map-info-lists "Bad book-map-info: ~x0." (first lists))
+          (mv t nil state))
+         (list (if (member-eq :builtin list)
+                   :builtin
+                 list)))
+      (parse-book-map-info-lists (rest lists) (cons list acc) state))))
+
+(defthm true-listp-of-mv-nth-1-of-parse-book-map-info-lists
+  (implies (true-listp acc)
+           (true-listp (mv-nth 1 (parse-book-map-info-lists lists acc state))))
+  :rule-classes :type-prescription)
+
+;; returns (mv erp parsed-book-map state)
+(defun parse-book-map (book-map state)
+  (declare (xargs :stobjs state
+;                  :verify-guards nil ; todo
+                  ))
+  (if (not (parsed-json-objectp book-map))
+      (mv :ill-formed-book-map nil state)
+    (b* ((dict (parsed-json-object->pairs book-map)) ; strip the :object
+         (keys (strip-cars dict))
+         ((when (not (string-listp keys))) (mv :ill-formed-book-map nil state))
+         (vals (strip-cdrs dict))
+         ((when (not (parsed-json-array-listp vals))) (mv :ill-formed-book-map nil state))
+         ((mv erp syms state) (read-strings-as-single-symbols keys nil state))
+         ((when erp) (mv erp nil state))
+         ((mv erp lists) (json-arrays-to-lists vals nil))
+         ((when erp) (mv erp nil state))
+         ((when (not (string-list-listp lists))) (mv :ill-formed-book-map nil state))
+         ((mv erp
+              book-lists-for-keys ; each is a list of include-book-forms or :builtin
+              state)
+          (parse-book-map-info-lists lists nil state))
+         ((when erp) (mv erp nil state)))
+      (mv nil (pairlis$ syms book-lists-for-keys) state))))
+
 ;; Returns (mv erp parsed-recommendation state).
 (defun parse-recommendation (rec state)
   (declare (xargs :guard t
@@ -171,10 +310,15 @@
   (if (not (parsed-json-objectp rec))
       (progn$ (er hard? 'parse-recommendation "Bad rec: ~x0." rec)
               (mv :bad-rec nil state))
-    (b* ((dict (cadr rec)) ; strip the :object
+    (b* ((dict (parsed-json-object->pairs rec)) ; strip the :object
          (type (lookup-equal "type" dict))
          (object (lookup-equal "object" dict))
          (confidence (lookup-equal "confidence" dict))
+         (book-map (lookup-equal "book_map" dict))
+         ((mv erp book-map state) (parse-book-map book-map state))
+         ((when erp)
+          (er hard? 'parse-recommendation "Bad book map in rec: ~x0." rec)
+          (mv :bad-rec nil state))
          (confidence-percent (floor (* (rfix confidence) 100) 1))
          (res (assoc-equal type *rec-to-symbol-alist*))
          ((when (not res))
@@ -184,16 +328,12 @@
          ((when (not (stringp object)))
           (er hard? 'parse-recommendation "Non-string object: ~x0" object)
           (mv :bad-rec nil state))
-         ((mv erp objects state) (read-string object)) ; todo: what about packages?
+         ((mv erp parsed-object state) (read-string-as-single-item object state)) ; todo: what about packages?
          ((when erp)
-          (er hard? 'parse-recommendation "Error parsing recommended action: ~x0." object)
-          (mv :parse-error nil state))
-         ((when (not (= 1 (len objects))))
-          (er hard? 'parse-recommendation "Parsing recommended action, ~x0, yielded more than 1 object." object)
-          (mv :bad-rec nil state))
-         (object (first objects)))
+          (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
+          (mv :parse-error nil state)))
       (mv nil ; no error
-          (list type-keyword object confidence-percent)
+          (list type-keyword parsed-object confidence-percent book-map)
           state))))
 
 ;; Returns (mv erp parsed-recommendations state).
@@ -220,7 +360,6 @@
 
 ;; TODO: Think about THM vs DEFTHM
 ;; TODO: May need to include a book for some rec to be legal
-;; TODO: Use a step-limit on proof attempts
 
 (defun make-thm-to-attempt (body hints otf-flg)
   `(thm ,body
@@ -236,6 +375,62 @@
                  (mv nil state))
        (mv provedp state))))
 
+;; Calls prove$ but first does an include-book, which is undone after the prove$
+;; Returns (mv erp provedp state).
+(defun prove$-with-include-book (ctx body include-book-form
+                                 ;; args to prove$:
+                                 hints otf-flg step-limit
+                                 state)
+  (declare (xargs :stobjs state :mode :program))
+  (revert-world ;; ensures the include-book gets undone
+   (b* (;; Try to include the recommended book:
+        ((mv erp state) (submit-event-helper include-book-form nil nil state))
+        ((when erp) ; can happen if there is a name clash
+         (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+         (mv nil ; not considering this an error, since if there is a name clash we want to try the other recommendations
+             nil state))
+        ;; Now see whether we can prove the theorem using the new include-book:
+        ;; ((mv erp ;todo: how to distinguish real errors?
+        ;;      state) (submit-event-helper
+        ;;                  `(encapsulate ()
+        ;;                     (local ,include-book-form)
+        ;;                     ,(make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg))
+        ;;                  t nil state))
+        ;; (provedp (not erp))
+        ((mv provedp state) (prove$-checked ctx
+                                            body
+                                            :hints hints
+                                            :otf-flg otf-flg
+                                            :step-limit step-limit)))
+     (mv nil provedp state))))
+
+;; Returns (mv erp successful-include-book-form-or-nil state)
+(defun try-prove$-with-include-books (ctx
+                                      body
+                                      include-book-forms
+                                      ;; args to prove$:
+                                      hints otf-flg step-limit
+                                      state)
+  (declare (xargs :stobjs state :mode :program))
+  (if (endp include-book-forms)
+      (mv nil nil state)
+    (b* ((form (first include-book-forms))
+         (- (cw "  Trying with ~x0.~%" form))
+         ((mv erp provedp state)
+          (prove$-with-include-book ctx body
+                                    form
+                                    ;; args to prove$:
+                                    hints otf-flg step-limit
+                                    state))
+         ((when erp) (mv erp nil state))
+         ((when provedp) (mv nil form state)))
+      (try-prove$-with-include-books ctx
+                                     body
+                                     (rest include-book-forms)
+                                     ;; args to prove$:
+                                     hints otf-flg step-limit
+                                     state))))
+
 ;; Returns (mv erp successp state).
 ;; TODO: Skip if library already included
 (defun try-add-library (include-book-form theorem-name theorem-body theorem-hints theorem-otf-flg state)
@@ -245,24 +440,11 @@
   (if (not (consp include-book-form)) ; can be "Other"
       (prog2$ (cw "FAIL (ill-formed library recommendation: ~x0)~%" include-book-form)
               (mv nil nil state))
-    (revert-world ;; Ensure the include-book gets undone
-     (b* (        ;; Try to include the recommended book:
-          ((mv erp state) (submit-event-helper include-book-form nil nil state))
-          ((when erp) (er hard? 'try-add-library "Event failed: ~x0." include-book-form) (mv erp nil state))
-          ;; Now see whether we can prove the theorem using the new include-book:
-          ;; ((mv erp ;todo: how to distinguish real errors?
-          ;;      state) (submit-event-helper
-          ;;                  `(encapsulate ()
-          ;;                     (local ,include-book-form)
-          ;;                     ,(make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg))
-          ;;                  t nil state))
-          ;; (provedp (not erp))
-          ((mv provedp state) (prove$-checked 'try-add-library
-                                              theorem-body
-                                              :hints theorem-hints
-                                              :otf-flg theorem-otf-flg))
-          (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
-       (mv nil provedp state)))))
+    (b* (((mv erp provedp state)
+          (prove$-with-include-book 'try-add-library theorem-body include-book-form theorem-hints theorem-otf-flg *step-limit* state))
+         ((when erp) (mv erp nil state))
+         (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
+      (mv nil provedp state))))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
@@ -281,7 +463,8 @@
        ((mv provedp state) (prove$-checked 'try-add-hyp
                                            `(implies ,hyp ,theorem-body)
                                            :hints theorem-hints
-                                           :otf-flg theorem-otf-flg))
+                                           :otf-flg theorem-otf-flg
+                                           :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
@@ -306,27 +489,36 @@
 ;; Returns (mv erp successp state).
 ;; TODO: Don't enable if already enabled.
 (defun try-add-enable-hint (rule
+                            book-map
                             theorem-name ; can be the name of a defun, for use-lemma
                             theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (name-that-can-be-enabled/disabledp rule (w state))))
-        (cw "FAIL (unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
-        (mv nil nil state))
-       ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (submit-event-helper
-       ;;                  (make-thm-to-attempt theorem-body
-       ;;                                       ;; todo: ensure this is nice:
-       ;;                                       (enable-runes-in-hints theorem-hints (list rule))
-       ;;                                       theorem-otf-flg)
-       ;;                  t nil state))
-       ((mv provedp state) (prove$-checked 'try-add-enable-hint
-                                           theorem-body
-                                           ;; todo: ensure this is nice:
-                                           :hints (enable-runes-in-hints theorem-hints (list rule))
-                                           :otf-flg theorem-otf-flg))
-       (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "FAIL~%"))))
-    (mv nil provedp state)))
+  (b* (;; ((when (not (name-that-can-be-enabled/disabledp rule (w state))))
+       ;;  (cw "FAIL (unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
+       ;;  (mv nil nil state))
+       (book-map-keys (strip-cars book-map))
+       ((when (not (equal book-map-keys (list rule))))
+        ;; throw an error?
+        (mv :bad-book-map nil state))
+       (books-to-try (lookup-eq rule book-map)))
+    (if (eq :builtin books-to-try)
+        (b* (((mv provedp state)
+              (prove$-checked 'try-add-enable-hint
+                              theorem-body
+                              ;; todo: ensure this is nice:
+                              :hints (enable-runes-in-hints theorem-hints (list rule))
+                              :otf-flg theorem-otf-flg
+                              :step-limit *step-limit*))
+             (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "FAIL~%"))))
+          (mv nil provedp state))
+      (b* (((mv erp successful-include-book-form-or-nil state)
+            (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try theorem-hints theorem-otf-flg *step-limit* state))
+           ((when erp) (mv erp nil state))
+           (- (if successful-include-book-form-or-nil
+                  (cw "SUCCESS: Include ~x0 and enable ~x1~%" successful-include-book-form-or-nil rule)
+                (cw "FAIL~%"))))
+        (mv nil (if successful-include-book-form-or-nil t nil) state)))))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Don't disable if already disabled.
@@ -347,7 +539,8 @@
                                            theorem-body
                                            ;; todo: ensure this is nice:
                                            :hints (disable-runes-in-hints theorem-hints (list rule))
-                                           :otf-flg theorem-otf-flg))
+                                           :otf-flg theorem-otf-flg
+                                           :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Disable ~x0~%" rule) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
@@ -372,8 +565,41 @@
                                            theorem-body
                                            ;; todo: ensure this is nice:
                                            :hints (cons `("Goal" :use ,item) theorem-hints)
-                                           :otf-flg theorem-otf-flg))
+                                           :otf-flg theorem-otf-flg
+                                           :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "FAIL~%"))))
+    (mv nil provedp state)))
+
+;; Returns (mv erp successp state).
+(defun try-add-expand-hint (item ; the thing to expand
+                            theorem-name theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (((when (eq 'other item))
+        (cw "FAIL (ignoring recommendation to expand \"Other\")~%")
+        (mv nil nil state))
+       ((when (symbolp item)) ; todo: eventually remove this case
+        (cw "FAIL (ignoring illegal recommendation to expand a symbol)~%")
+        (mv nil nil state))
+       ;; todo: can it be a single term?:
+       ((when (not (translatable-term-listp item (w state))))
+        (cw "FAIL (term not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (mv nil nil state))
+       ;; Now see whether we can prove the theorem using the new hyp:
+       ;; ((mv erp state) (submit-event-helper
+       ;;                  (make-thm-to-attempt theorem-body
+       ;;                                       ;; todo: ensure this is nice:
+       ;;                                       (cons `("Goal" :expand ,item)
+       ;;                                             theorem-hints)
+       ;;                                       theorem-otf-flg)
+       ;;                  t nil state))
+       ((mv provedp state) (prove$-checked 'try-add-expand-hint
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           :hints (cons `("Goal" :expand ,item) theorem-hints)
+                                           :otf-flg theorem-otf-flg
+                                           :step-limit *step-limit*))
+       (- (if provedp (cw "SUCCESS: Add :expand hint ~x0~%" item) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
 ;; Returns (mv erp successp state).
@@ -395,7 +621,8 @@
                                            theorem-body
                                            ;; todo: ensure this is nice:
                                            :hints (cons `("Goal" :cases ,item) theorem-hints)
-                                           :otf-flg theorem-otf-flg))
+                                           :otf-flg theorem-otf-flg
+                                           :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add :cases hint ~x0~%" item) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
@@ -425,18 +652,22 @@
     (b* ((rec (first recs))
          (type (car rec))
          (object (cadr rec))
+         ;; (confidence-percent (caddr rec))
+         (book-map (cadddr rec))
          (- (cw "~x0: " rec-num)))
       (mv-let (erp successp state)
         (case type
+          ;; TODO: Pass the book-map to all who can use it:
           (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-enable-hint (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-enable-hint (try-add-enable-hint object book-map theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-disable-hint (try-add-disable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           ;; same as for try-add-enable-hint above:
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:use-lemma (try-add-enable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:use-lemma (try-add-enable-hint object book-map theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (t (prog2$ (cw "UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))
         (if erp
@@ -454,11 +685,13 @@
 (defun advice-fn (n ; number of recommendations requested
                   verbose
                   server-url
+                  debug
                   state)
   (declare (xargs :guard (and (natp n)
                               (booleanp verbose)
                               (checkpoint-list-guard t ;top-p
-                                                state))
+                                                     state)
+                              (booleanp debug))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
@@ -497,19 +730,21 @@
        ((when erp)
         (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
         (mv erp nil state))
+       (- (and debug (cw "Raw JSON POST response: ~X01~%" post-response nil)))
        ;; (- (cw "Info returned from recommendation server: ~X01~%" post-response nil))
        ((mv erp parsed-json) (parse-string-as-json post-response))
-       (semi-parsed-recommendations (cadr parsed-json)) ; strip the :array
+       (semi-parsed-recommendations (parsed-json-array->values parsed-json))
+       (- (and debug (cw "After JSON parsing: ~X01~%" semi-parsed-recommendations nil)))
        ((when erp)
         (er hard? 'advice-fn "Error parsing JSON.")
         (mv erp nil state))
        ;; (- (cw "Parsed info returned from recommendation server: ~X01~%" parsed-recommendations nil))
-       (state (show-recommendations semi-parsed-recommendations state))
        ((mv erp parsed-recommendations state) (parse-recommendations semi-parsed-recommendations state))
        ((when erp)
         (er hard? 'advice-fn "Error parsing recommendations.")
         (mv erp nil state))
-       ;; (- (cw "~%Parsed recs: ~X01" parsed-recommendations nil))
+       (- (and debug (cw "Parsed recommendations: ~X01~%" parsed-recommendations nil)))
+       (state (show-recommendations semi-parsed-recommendations state))
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
        ((mv name body hints otf-flg)
         (if (member-eq (car most-recent-failed-theorem) '(thm rule))
@@ -533,8 +768,8 @@
     (mv nil ;(erp-nil)
         '(value-triple :invisible) state)))
 
-(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil))
-  `(make-event-quiet (advice-fn ,n ,verbose ,server-url state)))
+(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil))
+  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug state)))
 
 ;; Example:
 ;; (acl2s-defaults :set testing-enabled nil) ; turn off testing

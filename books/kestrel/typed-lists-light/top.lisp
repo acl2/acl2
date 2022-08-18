@@ -23,6 +23,7 @@
 (include-book "true-list-listp")
 
 (include-book "character-list-listp")
+(include-book "string-list-listp")
 
 (include-book "all-true-listp")
 (include-book "all-natp")

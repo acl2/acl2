@@ -99,8 +99,9 @@
                 (natp n))
            (equal (bvchop n (* k x))
                   (* k (bvchop (- n (+ -1 (integer-length k))) x))))
-  :hints (("Goal" :use (:instance bvchop-shift-gen (m (+ -1 (integer-length k))))
-           :in-theory (e/d (power-of-2p)( bvchop-shift-gen)))))
+  :hints (("Goal" ;:use (:instance bvchop-shift-gen (m (+ -1 (integer-length k))))
+           :in-theory (e/d (power-of-2p)(;bvchop-shift-gen
+                                         )))))
 
 (defthm bvchop-of-expt-alt
   (implies (and (syntaxp (quotep k)) ;new
@@ -110,8 +111,9 @@
                   (if (<= size1 (lg k))
                       0
                     k)))
+  ;; The :use hint included just for speed:
   :hints (("Goal" :use (:instance bvchop-of-expt (size2 (lg k)))
-           :in-theory (e/d (power-of-2p lg) ( bvchop-of-expt)))))
+           :in-theory (e/d (power-of-2p lg) (bvchop-of-expt)))))
 
 (defthm equal-of-slice-and-constant-extend-when-bvchop-known
   (implies (and (syntaxp (and (quotep high)
@@ -157,11 +159,10 @@
 (defthmd logapp-recollect-from-shift
   (implies (and (integerp x)
                 (<= 0 n))
-           (equal (* X (EXPT 2 N))
-                  (LOGAPP N 0 X)))
-  :hints (("Goal" :in-theory (enable logapp))))
+           (equal (* x (expt 2 n))
+                  (logapp n 0 x))))
 
-(theory-invariant (incompatible (:definition logapp ) (:rewrite LOGAPP-RECOLLECT-FROM-SHIFT)))
+(theory-invariant (incompatible (:definition logapp) (:rewrite logapp-recollect-from-shift)))
 
 (defthm logext-of-logtail
   (implies (and (natp n)
