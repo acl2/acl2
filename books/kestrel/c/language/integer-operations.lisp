@@ -219,6 +219,25 @@
              (equal (type-of-value newval)
                     (type-fix type))))
 
+  (local
+   (defret value-kind-of-convert-integer-value-lemma
+     (implies (not (errorp newval))
+              (equal (value-kind newval)
+                     (type-kind type)))
+     :hyp (typep type)
+     :rule-classes nil
+     :hints (("Goal"
+              :use type-of-value-of-convert-integer-value
+              :in-theory (disable type-of-value-of-convert-integer-value
+                                  convert-integer-value)))))
+
+  (defret value-kind-of-convert-integer-value
+    (implies (not (errorp newval))
+             (equal (value-kind newval)
+                    (type-kind type)))
+    :hints (("Goal" :use (:instance value-kind-of-convert-integer-value-lemma
+                                    (type (type-fix type))))))
+
   (defret value-integerp-of-convert-integer-value
     (implies (not (errorp newval))
              (value-integerp newval)))
@@ -355,4 +374,46 @@
                           value-integerp
                           value-signed-integerp
                           value-unsigned-integerp)
+                         ((:e type-sint))))))
+
+  (defret value-promoted-arithmeticp-of-promote-value
+    (value-promoted-arithmeticp promoted-val)
+    :hyp (value-arithmeticp val)
+    :hints (("Goal"
+             :in-theory (e/d
+                         (promote-type
+                          convert-integer-value-to-type-of-value
+                          valuep-of-convert-integer-value-to-unsigned
+                          valuep-of-convert-integer-value-from-schar-to-sint
+                          valuep-of-convert-integer-value-from-sshort-to-sint
+                          valuep-of-convert-integer-value-from-uchar-to-sint
+                          valuep-of-convert-integer-value-from-ushort-to-sint
+                          not-errorp-when-valuep
+                          value-promoted-arithmeticp
+                          value-arithmeticp
+                          value-realp
+                          value-integerp
+                          value-signed-integerp
+                          value-unsigned-integerp)
                          ((:e type-sint)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plus-integer-value ((val valuep))
+  :guard (and (value-integerp val)
+              (value-promoted-arithmeticp val))
+  :returns (resval value-resultp)
+  :short "Apply unary @('+') to an integer value [C:6.5.3.3/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the value has been already promoted,
+     so we put that restriction in the guard.")
+   (xdoc::p
+    "Since the value is already promoted,
+     this function returns the value unchanged.
+     We introduce this function mainly for uniformity with other operations,
+     despite it being trivial in a way."))
+  (value-fix val)
+  :hooks (:fix))

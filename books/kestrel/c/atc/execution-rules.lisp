@@ -1507,7 +1507,9 @@
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (op-kind (unop-kind op))
-         (exec-op (pack 'exec- op-kind))
+         (exec-op (if (eq op-kind :plus)
+                      'plus-value
+                    (pack 'exec- op-kind)))
          (name (pack exec-op '-when- pred))
          (op-type (pack op-kind '- fixtype))
          (op-type-okp (and (unop-case op :minus)

@@ -23,3 +23,19 @@
   :short "Operations on C values."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plus-value ((val valuep))
+  :returns (resval value-resultp)
+  :short "Apply unary @('+') to a value [C:6.5.3.3/1] [C:6.5.3.3/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the value is not arithmetic."))
+  (if (value-arithmeticp val)
+      (plus-arithmetic-value val)
+    (error (list :plus-mistype
+                 :required :arithmetic
+                 :supplied (value-fix val))))
+  :hooks (:fix))

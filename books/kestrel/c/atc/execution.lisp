@@ -248,30 +248,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-plus ((arg valuep))
-  :returns (result value-resultp)
-  :short "Execute unary plus [C:6.5.3.3/1] [C:6.5.3.3/2]."
-  (b* ((arg (value-fix arg))
-       ((unless (value-arithmeticp arg))
-        (error (list :mistype-plus
-                     :required :arithmetic
-                     :supplied arg)))
-       (val (promote-value arg)))
-    (cond ((uintp val) (plus-uint val))
-          ((sintp val) (plus-sint val))
-          ((ulongp val) (plus-ulong val))
-          ((slongp val) (plus-slong val))
-          ((ullongp val) (plus-ullong val))
-          ((sllongp val) (plus-sllong val))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :in-theory (enable value-arithmeticp
-                                    value-realp
-                                    value-integerp
-                                    value-unsigned-integerp-alt-def
-                                    value-signed-integerp-alt-def)
-                 :use (:instance values-of-promote-value (val arg))))
-  :hooks (:fix))
+(defsection plus-value-alt-def
+  :short "Alternative definition of @(tsee plus-value)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is temporary, and will be removed eventually.
+     It is the old definition of @(tsee plus-value),
+     dependent on the shallow embedding
+     rather than independent as it should be."))
+
+  (defrule plus-value-alt-def
+    (equal (plus-value arg)
+           (b* ((arg (value-fix arg))
+                ((unless (value-arithmeticp arg))
+                 (error (list :plus-mistype
+                              :required :arithmetic
+                              :supplied arg)))
+                (val (promote-value arg)))
+             (cond ((uintp val) (plus-uint val))
+                   ((sintp val) (plus-sint val))
+                   ((ulongp val) (plus-ulong val))
+                   ((slongp val) (plus-slong val))
+                   ((ullongp val) (plus-ullong val))
+                   ((sllongp val) (plus-sllong val))
+                   (t (error (impossible))))))
+    :enable (plus-value
+             plus-arithmetic-value
+             plus-integer-value
+             plus-uint
+             plus-sint
+             plus-ulong
+             plus-slong
+             plus-ullong
+             plus-sllong)
+    :use (:instance values-of-promote-value (val arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -371,7 +382,7 @@
     (unop-case op
                :address (error :todo)
                :indir (error :todo)
-               :plus (exec-plus arg)
+               :plus (plus-value arg)
                :minus (exec-minus arg)
                :bitnot (exec-bitnot arg)
                :lognot (exec-lognot arg)))
