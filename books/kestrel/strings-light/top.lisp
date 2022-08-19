@@ -21,3 +21,4 @@
 (include-book "parse-binary-digits")
 (include-book "parse-decimal-digits")
 (include-book "string-ends-inp")
+(include-book "string-starts-withp")
