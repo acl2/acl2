@@ -18,11 +18,13 @@
     (and (character-listp (car x))
          (character-list-listp (cdr x)))))
 
-(defthm character-list-listp-forward-to-true-listp
-  (implies (character-list-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable character-list-listp))))
+;; Not needed since we have character-list-listp-forward-to-true-list-listp,
+;; and then true-list-listp-forward-to-true-listp (built-in) will fire.
+;; (defthm character-list-listp-forward-to-true-listp
+;;   (implies (character-list-listp x)
+;;            (true-listp x))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable character-list-listp))))
 
 (defthm character-list-listp-forward-to-true-list-listp
   (implies (character-list-listp x)
