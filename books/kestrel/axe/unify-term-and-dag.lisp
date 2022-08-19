@@ -25,15 +25,10 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 ;(local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;dup
-(local
- (defthm assoc-equal-iff
-  (implies (alistp alist)
-           (iff (assoc-equal key alist)
-                (memberp key (strip-cars alist))))
-  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal)))))
+(local (in-theory (enable assoc-equal-iff-member-equal-of-strip-cars)))
 
 (mutual-recursion
 

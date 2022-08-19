@@ -1,4 +1,4 @@
-; An assistant to help find simple proofs
+; A utility to find subterms that are function calls
 ;
 ; Copyright (C) 2022 Kestrel Institute
 ;

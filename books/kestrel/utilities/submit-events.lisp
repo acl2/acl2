@@ -93,6 +93,7 @@
                                                       '(prove warning event summary observation))))
             (mv-let (erp result state)
               ;;this magic incantation comes from :doc with-output:
+              ;; TODO: Does this stuff get undone?:
               (state-global-let*
                ((inhibit-output-lst
                  (union-eq (f-get-global 'inhibit-output-lst state)
