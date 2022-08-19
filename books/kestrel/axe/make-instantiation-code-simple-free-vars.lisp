@@ -23,12 +23,15 @@
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
+;dup, needed for the proofs?
 (defthmd assoc-equal-iff-member-equal-of-strip-cars
-  (implies (alistp alist)
+  (implies (or (alistp alist)
+               key)
            (iff (assoc-equal key alist)
                 (member-equal key (strip-cars alist))))
-  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal))))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
 
 ;move
 (defthm set-difference-equal-of-union-equal-arg1
