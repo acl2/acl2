@@ -20,6 +20,6 @@
 (include-book "reverse")
 (include-book "parse-binary-digits")
 (include-book "parse-decimal-digits")
-(include-book "string-ends-inp")
+(include-book "string-ends-withp")
 (include-book "string-starts-withp")
 (include-book "add-prefix-to-strings")

@@ -18,15 +18,15 @@
 ;; TODO: Consider giving this a name that includes 'suffix'
 ;; TODO: What order should the arguments be in?
 ;; TODO: Define an analogous operation on lists and call it here?
-(defund string-ends-inp (str suffix)
+(defund string-ends-withp (str suffix)
   (declare (xargs :guard (and (stringp str)
                               (stringp suffix))))
   (let ((strchars (coerce str 'list))
         (suffixchars (coerce suffix 'list)))
     (prefixp (reverse suffixchars) (reverse strchars))))
 
-;; (string-ends-inp "foo.cert" ".cert")
-;; (string-ends-inp ".cert" ".cert")
-;; (not (string-ends-inp "rt" ".cert"))
-;; (not (string-ends-inp "foo.bert" ".cert"))
-;; (not (string-ends-inp "foo" ".cert"))
+;; (string-ends-withp "foo.cert" ".cert")
+;; (string-ends-withp ".cert" ".cert")
+;; (not (string-ends-withp "rt" ".cert"))
+;; (not (string-ends-withp "foo.bert" ".cert"))
+;; (not (string-ends-withp "foo" ".cert"))
