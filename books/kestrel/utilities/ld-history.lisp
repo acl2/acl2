@@ -41,10 +41,12 @@
                                         whole-ld-history ; just for the error message
                                         event-types)
   (declare (xargs :guard (and (weak-ld-history-entry-list-p ld-history)
+                              (true-listp whole-ld-history)
                               (symbol-listp event-types))))
   (if (endp ld-history)
-      ;; TODO: Only mention (adjust-ld-history t state) if it is not already done
-      (er hard? 'most-recent-failed-command-aux "Can't find a theorem in the history, which is ~x0.  Consider doing (adjust-ld-history t state) to save a longer history." whole-ld-history) ; todo: print less, suggest keeping more history
+      (if (consp (rest whole-ld-history)) ; attempt to check whether we are keeping the whole history
+          (er hard? 'most-recent-failed-command-aux "Can't find a theorem in the ld-history, which contains ~x0 commands." (len whole-ld-history))
+        (er hard? 'most-recent-failed-command-aux "Can't find a theorem in the ld-history, which has length ~x0.  Consider doing (adjust-ld-history t state) to save full histories." (len whole-ld-history)))
     (let* ((entry (first ld-history)))
       (if (ld-history-entry-error-flg entry) ; checks whether there was a translation error
           ;; Keep looking:
@@ -75,7 +77,9 @@
                               (boundp-global 'ld-history state)
                               (weak-ld-history-entry-list-p (get-global 'ld-history state)))))
   (let ((ld-history (ld-history state)))
-    (most-recent-failed-command-aux ld-history ld-history event-types)))
+    (if (endp ld-history)
+        (er hard? 'most-recent-failed-command "Can't find a theorem in the history, which is empty!")
+      (most-recent-failed-command-aux ld-history ld-history event-types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

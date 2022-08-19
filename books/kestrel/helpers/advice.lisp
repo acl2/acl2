@@ -262,11 +262,11 @@
                   :stobjs state))
   (if (endp lists)
       (mv nil (reverse acc) state)
-    (b* (((mv erp list state) (parse-book-map-info-list (first lists) acc state))
+    (b* (((mv erp list state) (parse-book-map-info-list (first lists) nil state))
          ((when erp) (mv erp nil state))
          ((when (and (member-eq :builtin list)
                      (not (= 1 (len list)))))
-          (er hard? 'parse-book-map-info-lists "Bad book-map-info: ~x0." (first lists))
+          (er hard? 'parse-book-map-info-lists "Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list)
           (mv t nil state))
          (list (if (member-eq :builtin list)
                    :builtin
@@ -302,10 +302,9 @@
          ((when erp) (mv erp nil state)))
       (mv nil (pairlis$ syms book-lists-for-keys) state))))
 
-;; Returns (mv erp parsed-recommendation state).
+;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
 (defun parse-recommendation (rec state)
-  (declare (xargs :guard t
-                  :stobjs state
+  (declare (xargs :stobjs state
                   :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
   (if (not (parsed-json-objectp rec))
       (progn$ (er hard? 'parse-recommendation "Bad rec: ~x0." rec)
@@ -317,8 +316,9 @@
          (book-map (lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (er hard? 'parse-recommendation "Bad book map in rec: ~x0." rec)
-          (mv :bad-rec nil state))
+          (cw "WARNING: Bad book map in rec: ~x0.~%" rec)
+          (mv nil ; supressing this error for now
+              :none state))
          (confidence-percent (floor (* (rfix confidence) 100) 1))
          (res (assoc-equal type *rec-to-symbol-alist*))
          ((when (not res))
@@ -346,7 +346,11 @@
       (mv nil (reverse acc) state)
     (b* (((mv erp parsed-recommendation state) (parse-recommendation (first recs) state))
          ((when erp) (mv erp nil state)))
-      (parse-recommendations-aux (rest recs) (cons parsed-recommendation acc) state))))
+      (parse-recommendations-aux (rest recs)
+                                 (if (eq :none parsed-recommendation)
+                                     acc
+                                   (cons parsed-recommendation acc))
+                                 state))))
 
 ;; Returns (mv erp parsed-recommendations state).
 (defun parse-recommendations (recs state)
@@ -415,7 +419,7 @@
   (if (endp include-book-forms)
       (mv nil nil state)
     (b* ((form (first include-book-forms))
-         (- (cw "  Trying with ~x0.~%" form))
+         ;; (- (cw "  Trying with ~x0.~%" form))
          ((mv erp provedp state)
           (prove$-with-include-book ctx body
                                     form
