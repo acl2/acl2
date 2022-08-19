@@ -22,3 +22,4 @@
 (include-book "parse-decimal-digits")
 (include-book "string-ends-inp")
 (include-book "string-starts-withp")
+(include-book "add-prefix-to-strings")
