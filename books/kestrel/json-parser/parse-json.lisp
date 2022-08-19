@@ -1043,7 +1043,7 @@
             (parsed-json-valuep (cdr entry))
             (parsed-json-object-pairsp (rest val))))))
 
- ;; Recognize a parsed JSON object (in JSON parlance, and "object" is a map
+ ;; Recognize a parsed JSON object (in JSON parlance, an "object" is a map
  ;; from keys to values).
  (defund parsed-json-objectp (val)
    (declare (xargs :guard t
