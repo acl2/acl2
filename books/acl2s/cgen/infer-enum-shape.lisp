@@ -230,11 +230,10 @@
 
       ((P x) (declare (ignore P x))
        (b* ((term (defdata::expand-lambda term))
-            (term (process-return-last term))
-            ;; Matt suggested remove-guard-holders, but that is a
-            ;; program mode function, so I'll avoid using it, unless
-            ;; needed. 
-            ;; (term (remove-guard-holders term wrld))
+            ;; (term (process-return-last term))
+            ;; Matt suggested remove-guard-holders-weak, which I am
+            ;; now using in lieu of process-return-last.
+            (term (acl2::remove-guard-holders-weak term t))
             ((list P x) term)
             (tname (defdata::is-type-predicate P wrld))
             ((cons & cs%) (assoc-eq x ans.))
