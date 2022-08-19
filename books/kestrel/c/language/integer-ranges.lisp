@@ -572,8 +572,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we exclude the @('_Bool') and the plain @('char') type,
-     via the guard.
+    "For now we exclude the plain @('char') type, via the guard.
      However, we prefer to keep the name of this function more general,
      in anticipation for extending it to those two types."))
   (cond ((type-case type :schar) (schar-min))
@@ -599,8 +598,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we exclude the @('_Bool') and the plain @('char') type,
-     via the guard.
+    "For now we exclude the plain @('char') type, via the guard.
      However, we prefer to keep the name of this function more general,
      in anticipation for extending it to those two types."))
   (cond ((type-case type :schar) (schar-max))
@@ -615,4 +613,20 @@
         ((type-case type :ullong) (ullong-max))
         (t (prog2$ (impossible) 0)))
   :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-rangep ((mathint integerp) (type typep))
+  :guard (type-nonchar-integerp type)
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is in the range of an integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Fot now we exclude the plain @('char') type, via the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (and (<= (integer-type-min type) (ifix mathint))
+       (<= (ifix mathint) (integer-type-max type)))
   :hooks (:fix))
