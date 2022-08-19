@@ -1615,10 +1615,6 @@
      We also need open @('u...-mod') to expose the @(tsee mod)
      in the shallowly embedded conversions to unsigned type,
      thus matching the @(tsee mod) in @(tsee convert-integer-value).
-     The executable counterparts of the maximum values of the unsigned types
-     serve to match the quoted integers that result
-     from the executable counterpart of @(tsee integer-type-max)
-     that is used in @(tsee convert-integer-value).
      We open the @('<dst>-integerp') functions
      to show that the ACL2 integer is in range,
      i.e. that @(tsee convert-integer-value) does not return an error;
@@ -1661,54 +1657,57 @@
          (formula `(implies ,hyps
                             (equal (exec-cast ',dtyname x)
                                    ,rhs)))
-         (hints `(:enable (exec-cast
-                           convert-integer-value
-                           value-integer
-                           value-integer->get
-                           value-schar-to-schar
-                           value-uchar-to-uchar
-                           value-sshort-to-sshort
-                           value-ushort-to-ushort
-                           value-sint-to-sint
-                           value-uint-to-uint
-                           value-slong-to-slong
-                           value-ulong-to-ulong
-                           value-sllong-to-sllong
-                           value-ullong-to-ullong
-                           value-schar->get-to-schar->get
-                           value-uchar->get-to-uchar->get
-                           value-sshort->get-to-sshort->get
-                           value-ushort->get-to-ushort->get
-                           value-sint->get-to-sint->get
-                           value-uint->get-to-uint->get
-                           value-slong->get-to-slong->get
-                           value-ulong->get-to-ulong->get
-                           value-sllong->get-to-sllong->get
-                           value-ullong->get-to-ullong->get
-                           (:e uchar-max)
-                           (:e ushort-max)
-                           (:e uint-max)
-                           (:e ulong-max)
-                           (:e ullong-max)
-                           uchar-mod
-                           ushort-mod
-                           uint-mod
-                           ulong-mod
-                           ullong-mod
-                           schar-integerp-alt-def
-                           uchar-integerp-alt-def
-                           sshort-integerp-alt-def
-                           ushort-integerp-alt-def
-                           sint-integerp-alt-def
-                           uint-integerp-alt-def
-                           slong-integerp-alt-def
-                           ulong-integerp-alt-def
-                           sllong-integerp-alt-def
-                           ullong-integerp-alt-def
-                           ,@(and (not (equal dtype stype))
-                                  (list dtype-from-stype))
-                           ,@(and guardp
-                                  (list dtype-from-stype-okp)))))
+         (hints `(:enable
+                  (exec-cast
+                   convert-integer-value
+                   value-integer
+                   value-integer->get
+                   integer-type-rangep
+                   integer-type-min
+                   integer-type-max
+                   value-schar-to-schar
+                   value-uchar-to-uchar
+                   value-sshort-to-sshort
+                   value-ushort-to-ushort
+                   value-sint-to-sint
+                   value-uint-to-uint
+                   value-slong-to-slong
+                   value-ulong-to-ulong
+                   value-sllong-to-sllong
+                   value-ullong-to-ullong
+                   value-schar->get-to-schar->get
+                   value-uchar->get-to-uchar->get
+                   value-sshort->get-to-sshort->get
+                   value-ushort->get-to-ushort->get
+                   value-sint->get-to-sint->get
+                   value-uint->get-to-uint->get
+                   value-slong->get-to-slong->get
+                   value-ulong->get-to-ulong->get
+                   value-sllong->get-to-sllong->get
+                   value-ullong->get-to-ullong->get
+                   uchar-mod
+                   ushort-mod
+                   uint-mod
+                   ulong-mod
+                   ullong-mod
+                   schar-integerp-alt-def
+                   uchar-integerp-alt-def
+                   sshort-integerp-alt-def
+                   ushort-integerp-alt-def
+                   sint-integerp-alt-def
+                   uint-integerp-alt-def
+                   slong-integerp-alt-def
+                   ulong-integerp-alt-def
+                   sllong-integerp-alt-def
+                   ullong-integerp-alt-def
+                   ,@(and (not (equal dtype stype))
+                          (list dtype-from-stype))
+                   ,@(and guardp
+                          (list dtype-from-stype-okp)))
+                  :disable
+                  ((:e integer-type-rangep)
+                   (:e integer-type-max)
+                   (:e integer-type-min))))
          (event `(defruled ,name
                    ,formula
                    ,@hints)))

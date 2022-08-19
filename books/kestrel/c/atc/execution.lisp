@@ -206,6 +206,8 @@
                 convert-integer-value
                 value-integer
                 value-integer->get
+                integer-type-rangep
+                integer-type-min
                 integer-type-max
                 value-schar->get-to-schar->get
                 value-uchar->get-to-uchar->get

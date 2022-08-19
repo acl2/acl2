@@ -88,72 +88,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-integer ((int integerp) (type typep))
-  :guard (type-integerp type)
-  :returns (val value-resultp)
+(define value-integer ((mathint integerp) (type typep))
+  :guard (and (type-nonchar-integerp type)
+              (integer-type-rangep mathint type))
+  :returns (val valuep)
   :short "Turn a mathematical (i.e. ACL2) integer into a C integer value."
   :long
   (xdoc::topstring
    (xdoc::p
     "The type of the C integer value is passed as parameter to this function.")
    (xdoc::p
-    "If the type is plain @('char'), we return an error for now,
+    "We exclude the plain @('char') type for now,
      because our model of values does not yet include plain @('char').")
    (xdoc::p
-    "If the integer is not in the range representable by the type,
-     we return an error."))
-  (b* ((int (ifix int)))
-    (type-case type
-               :void (error (impossible))
-               :char (error :char-not-supported)
-               :uchar (if (uchar-integerp int)
-                          (value-uchar int)
-                        (error (list :uchar-out-of-range int)))
-               :schar (if (schar-integerp int)
-                          (value-schar int)
-                        (error (list :schar-out-of-range int)))
-               :ushort (if (ushort-integerp int)
-                           (value-ushort int)
-                         (error (list :ushort-out-of-range int)))
-               :sshort (if (sshort-integerp int)
-                           (value-sshort int)
-                         (error (list :sshort-out-of-range int)))
-               :uint (if (uint-integerp int)
-                         (value-uint int)
-                       (error (list :uint-out-of-range int)))
-               :sint (if (sint-integerp int)
-                         (value-sint int)
-                       (error (list :sint-out-of-range int)))
-               :ulong (if (ulong-integerp int)
-                          (value-ulong int)
-                        (error (list :ulong-out-of-range int)))
-               :slong (if (slong-integerp int)
-                          (value-slong int)
-                        (error (list :slong-out-of-range int)))
-               :ullong (if (ullong-integerp int)
-                           (value-ullong int)
-                         (error (list :ullong-out-of-range int)))
-               :sllong (if (sllong-integerp int)
-                           (value-sllong int)
-                         (error (list :sllong-out-of-range int)))
-               :pointer (error (impossible))
-               :struct (error (impossible))
-               :array (error (impossible))))
-  :guard-hints (("Goal" :in-theory (enable type-integerp
-                                           type-unsigned-integerp
-                                           type-signed-integerp)))
+    "We require, in the guard, the integer to be representable
+     in the range of the integer type."))
+  (b* ((mathint (ifix mathint)))
+    (case (type-kind type)
+      (:uchar (value-uchar mathint))
+      (:schar (value-schar mathint))
+      (:ushort (value-ushort mathint))
+      (:sshort (value-sshort mathint))
+      (:uint (value-uint mathint))
+      (:sint (value-sint mathint))
+      (:ulong (value-ulong mathint))
+      (:slong (value-slong mathint))
+      (:ullong (value-ullong mathint))
+      (:sllong (value-sllong mathint))
+      (t (prog2$ (impossible) (ec-call (value-uchar :irrelevant))))))
+  :guard-hints (("Goal" :in-theory (enable integer-type-rangep
+                                           integer-type-min
+                                           integer-type-max
+                                           uchar-integerp-alt-def
+                                           schar-integerp-alt-def
+                                           ushort-integerp-alt-def
+                                           sshort-integerp-alt-def
+                                           uint-integerp-alt-def
+                                           sint-integerp-alt-def
+                                           ulong-integerp-alt-def
+                                           slong-integerp-alt-def
+                                           ullong-integerp-alt-def
+                                           sllong-integerp-alt-def
+                                           type-nonchar-integerp)))
   :hooks (:fix)
   ///
 
   (defret type-of-value-of-value-integer
-    (implies (not (errorp val))
-             (equal (type-of-value val)
-                    (type-fix type)))
-    :hints (("Goal" :in-theory (enable type-of-value))))
+    (equal (type-of-value val)
+           (type-fix type))
+    :hyp (type-nonchar-integerp type)
+    :hints (("Goal" :in-theory (enable type-of-value
+                                       type-nonchar-integerp))))
+
+  (defret value-kind-of-value-integer
+    (equal (value-kind val)
+           (type-kind type))
+    :hyp (type-nonchar-integerp type)
+    :hints (("Goal" :in-theory (enable type-nonchar-integerp))))
 
   (defret value-integerp-of-value-integer
-    (implies (not (errorp val))
-             (value-integerp val))
+    (value-integerp val)
     :hints (("Goal" :in-theory (enable value-integerp
                                        value-signed-integerp
                                        value-unsigned-integerp)))))
@@ -175,12 +169,36 @@
              value-signed-integerp))
 
   (defrule value-integer->get-of-value-integer
-    (b* ((val (value-integer int type)))
-      (implies (not (errorp val))
+    (b* ((val (value-integer mathint type)))
+      (implies (and (type-nonchar-integerp type)
+                    (integer-type-rangep mathint type))
                (equal (value-integer->get val)
-                      (ifix int))))
+                      (ifix mathint))))
     :enable (value-integer
-             value-integer->get)))
+             value-integer->get
+             integer-type-rangep
+             integer-type-min
+             integer-type-max
+             uchar-integer-fix
+             schar-integer-fix
+             ushort-integer-fix
+             sshort-integer-fix
+             uint-integer-fix
+             sint-integer-fix
+             ulong-integer-fix
+             slong-integer-fix
+             ullong-integer-fix
+             sllong-integer-fix
+             uchar-integerp-alt-def
+             schar-integerp-alt-def
+             ushort-integerp-alt-def
+             sshort-integerp-alt-def
+             uint-integerp-alt-def
+             sint-integerp-alt-def
+             ulong-integerp-alt-def
+             slong-integerp-alt-def
+             ullong-integerp-alt-def
+             sllong-integerp-alt-def)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,38 +251,27 @@
      are in fact relevant to showing that @(tsee promote-value) yields no error,
      but they are clearly more general in nature."))
   (b* ((mathint (value-integer->get val)))
-    (if (type-unsigned-integerp type)
-        (value-integer (mod mathint (1+ (integer-type-max type)))
-                       type)
-      (value-integer mathint type)))
+    (cond ((type-unsigned-integerp type)
+           (value-integer (mod mathint (1+ (integer-type-max type)))
+                          type))
+          ((integer-type-rangep mathint type) (value-integer mathint type))
+          (t (error (list :out-of-range (value-fix val) (type-fix type))))))
+  :prepwork ((local (include-book "kestrel/arithmetic-light/mod" :dir :system)))
+  :guard-hints (("Goal" :in-theory (enable integer-type-rangep)))
   :hooks (:fix)
   ///
-
-  (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
   (defret type-of-value-of-convert-integer-value
     (implies (not (errorp newval))
              (equal (type-of-value newval)
-                    (type-fix type))))
-
-  (local
-   (defret value-kind-of-convert-integer-value-lemma
-     (implies (not (errorp newval))
-              (equal (value-kind newval)
-                     (type-kind type)))
-     :hyp (typep type)
-     :rule-classes nil
-     :hints (("Goal"
-              :use type-of-value-of-convert-integer-value
-              :in-theory (disable type-of-value-of-convert-integer-value
-                                  convert-integer-value)))))
+                    (type-fix type)))
+    :hyp (type-nonchar-integerp type))
 
   (defret value-kind-of-convert-integer-value
-    (implies (not (errorp newval))
+    (implies (and (not (errorp newval))
+                  (type-nonchar-integerp type))
              (equal (value-kind newval)
-                    (type-kind type)))
-    :hints (("Goal" :use (:instance value-kind-of-convert-integer-value-lemma
-                                    (type (type-fix type))))))
+                    (type-kind type))))
 
   (defret value-integerp-of-convert-integer-value
     (implies (not (errorp newval))
@@ -275,55 +282,45 @@
                   (equal type (type-of-value val)))
              (equal (convert-integer-value val type)
                     (value-fix val)))
-    :enable (value-integerp
-             value-signed-integerp
-             value-unsigned-integerp
-             integer-type-max
-             value-integer->get
-             value-integer))
+    :enable (value-unsigned-integerp
+             integer-type-rangep
+             integer-type-min
+             integer-type-max))
 
   (defruled valuep-of-convert-integer-value-to-unsigned
     (implies (type-unsigned-integerp type)
-             (valuep (convert-integer-value val type)))
-    :enable (convert-integer-value
-             value-integer
-             type-unsigned-integerp
-             integer-type-max
-             uchar-integerp-alt-def
-             ushort-integerp-alt-def
-             uint-integerp-alt-def
-             ulong-integerp-alt-def
-             ullong-integerp-alt-def))
+             (valuep (convert-integer-value val type))))
 
   (defruled valuep-of-convert-integer-value-from-schar-to-sint
     (implies (value-case val :schar)
              (valuep (convert-integer-value val (type-sint))))
-    :enable (value-integer
-             value-integer->get
-             sint-integerp-alt-def))
+    :disable ((:e type-sint))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
 
   (defruled valuep-of-convert-integer-value-from-sshort-to-sint
     (implies (value-case val :sshort)
              (valuep (convert-integer-value val (type-sint))))
-    :enable (value-integer
-             value-integer->get
-             sint-integerp-alt-def))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
 
   (defruled valuep-of-convert-integer-value-from-uchar-to-sint
     (implies (and (value-case val :uchar)
                   (<= (uchar-max) (sint-max)))
              (valuep (convert-integer-value val (type-sint))))
-    :enable (value-integer
-             value-integer->get
-             sint-integerp-alt-def))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
 
   (defruled valuep-of-convert-integer-value-from-ushort-to-sint
     (implies (and (value-case val :ushort)
                   (<= (ushort-max) (sint-max)))
              (valuep (convert-integer-value val (type-sint))))
-    :enable (value-integer
-             value-integer->get
-             sint-integerp-alt-def)))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -401,7 +398,8 @@
                           not-errorp-when-valuep
                           value-integerp
                           value-signed-integerp
-                          value-unsigned-integerp)
+                          value-unsigned-integerp
+                          type-nonchar-integerp)
                          ((:e type-sint))))))
 
   (defret value-promoted-arithmeticp-of-promote-value
@@ -422,7 +420,8 @@
                           value-realp
                           value-integerp
                           value-signed-integerp
-                          value-unsigned-integerp)
+                          value-unsigned-integerp
+                          type-nonchar-integerp)
                          ((:e type-sint)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
