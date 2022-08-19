@@ -617,7 +617,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-rangep ((mathint integerp) (type typep))
+(define integer-type-rangep ((mathint integerp) (type typep))
   :guard (type-nonchar-integerp type)
   :returns (yes/no booleanp)
   :short "Check if a mathematical integer is in the range of an integer type."
