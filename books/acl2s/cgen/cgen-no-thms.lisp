@@ -5,6 +5,9 @@
 
 (in-package "ACL2S")
 (deflabel pre-cgen)
+(set-tau-auto-mode nil)
 (include-book "top")
+(set-tau-auto-mode t)
 (in-theory (universal-theory 'pre-cgen))
-
+; This takes too long.
+; (regenerate-tau-database)
