@@ -178,33 +178,46 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; If a book mainly just has include-book forms in it, with possibly
-;; an xdoc topic as well
-;; (and if it is not included by other non-aggregating books (*1))
+;; an xdoc topic as well, and especially if the books it includes
+;; are diverse in nature (*1), and if the book itself
+;; is not included by other non-aggregating books (*2)
 ;; then it is probably not the sort of book that we want to
 ;; certify in advance, because it could drag in a lot of other books
 ;; that we might not be interested in.
-;; (*1) it is usually not a good idea to do include-book of an aggregating
+;; ----
+;; (*1) By "diverse in nature", we mean that a focused specific proof attempt
+;;      is unlikely to need all the books.  A small number of focused books
+;;      grouped together with a "top" book is not enough to make the "top"
+;;      book considered "aggregating".
+;; (*2) it is usually not a good idea to do include-book of an aggregating
 ;;      book but sometimes it could be.  This case is probably not handled
 ;;      properly here and could use more attention.
+;;
+;; Some notes on candidate aggregating books:
+;; * centaur/fty/top  - although it is focused, it brings in "visitor", that
+;;   few people use, but it doesn't bring in very much.  Probably should
+;;   not be an aggregating book.
+;; * xdoc/top - this doesn't bring in too much and it is included all over,
+;;   as one would expect.  Probably should not be an aggregating book.
 
 (defconst *standard-aggregating-books*
   '("doc/top"
     "kestrel/top"
     "kestrel/doc"
     "kestrel/crypto/attachments/top"
-    "kestrel/crypto/ecdsa/top"
-    "kestrel/crypto/keccak/top"
-    "kestrel/crypto/mimc/top"
     "kestrel/crypto/top"
     "kestrel/ethereum/semaphore/top"
     "kestrel/ethereum/top"
-    "kestrel/hdwallet/top"
     "kestrel/number-theory/top"
     "kestrel/utilities/system/terms"
     "kestrel/utilities/top"
     "kestrel/zcash/gadgets/top"
     "kestrel/zcash/top"
     "quicklisp/top"
+    "std/lists/top"
+    "std/typed-lists/top"
+    "std/util/top"
+    "top"
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
