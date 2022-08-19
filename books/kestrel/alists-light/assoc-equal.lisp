@@ -1,11 +1,12 @@
 ; A lightweight book about the built-in function assoc-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,6 +115,12 @@
                key)
            (iff (member-equal key (strip-cars alist))
                 (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; Note: No hyp about alistp
+(defthmd member-equal-of-strip-cars-when-assoc-equal
+  (implies (assoc-equal key alist)
+           (member-equal key (strip-cars alist)))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 (theory-invariant (incompatible (:rewrite assoc-equal-iff-member-equal-of-strip-cars)
