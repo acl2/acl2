@@ -347,8 +347,24 @@
           (lookup-eq-safe :value entry) ; assumes it is not a relocatable file
         (get-elf-symbol-address name (rest symbol-table))))))
 
+(defun get-names-from-elf-symbol-table (symbol-table acc)
+  (if (endp symbol-table)
+      (reverse acc)
+    (let* ((entry (first symbol-table))
+           (name (lookup-eq-safe :name entry)))
+      (get-names-from-elf-symbol-table (rest symbol-table)
+                                       (if (stringp name) ; skips :no-name
+                                           (cons name acc)
+                                         acc)))))
+
 (defopeners get-elf-symbol-address)
+
+(defun get-elf-symbol-table (parsed-elf)
+  (lookup-eq-safe :symbol-table parsed-elf))
 
 ;; Throws an error if not found
 (defun subroutine-address-elf (name parsed-elf)
-  (get-elf-symbol-address name (lookup-eq-safe :symbol-table parsed-elf)))
+  (get-elf-symbol-address name (get-elf-symbol-table parsed-elf)))
+
+(defun get-all-elf-symbols (parsed-elf)
+  (get-names-from-elf-symbol-table (get-elf-symbol-table parsed-elf) nil))

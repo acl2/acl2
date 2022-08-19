@@ -1078,6 +1078,7 @@
      ;; Mach-O stuff:
      acl2::get-mach-o-code
      acl2::subroutine-address-mach-o
+     acl2::get-mach-o-symbol-table
      acl2::get-mach-o-code-address
      acl2::get-mach-o-section-base-1
      acl2::get-mach-o-section-base-2
@@ -1117,6 +1118,7 @@
      ;; ELF stuff:
      acl2::lookup-equal-safe
      acl2::subroutine-address-elf
+     acl2::get-elf-symbol-table
      acl2::get-elf-section-address
      acl2::get-elf-section-bytes
      acl2::get-elf-code

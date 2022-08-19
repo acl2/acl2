@@ -127,15 +127,35 @@
           entry
         (get-symbol-entry-mach-o subroutine-name text-section-number (rest symbol-table))))))
 
+(defun get-names-from-mach-o-symbol-table (text-section-number symbol-table acc)
+  (if (endp symbol-table)
+      (reverse acc)
+    (let* ((entry (first symbol-table))
+           (name (lookup-eq-safe :string entry))
+           (n-sect (lookup-eq-safe :n-sect entry)))
+      (if (eql n-sect text-section-number)
+          (get-names-from-mach-o-symbol-table text-section-number (rest symbol-table) (cons name acc))
+        (get-names-from-mach-o-symbol-table text-section-number (rest symbol-table) acc)))))
+
+;; this is for the text section
+(defun get-mach-o-symbol-table (mach-o)
+  (let* ((load-commands (acl2::lookup-eq-safe :cmds mach-o))
+         (symbol-table-load-command (get-mach-o-load-command :LC_SYMTAB load-commands))
+         (symbol-table (lookup-eq-safe :syms symbol-table-load-command)))
+    symbol-table))
+
 ;; Get the starting address of the subroutine called subroutine-name
 ;; in the __Text,__text section of, MACH-O, which should be a parsed
 ;; Mach-O executable.
 (defun subroutine-address-mach-o (subroutine-name mach-o)
   (let* ((text-section-number (get-text-section-number-mach-o mach-o))
-         (load-commands (acl2::lookup-eq-safe :cmds mach-o))
-         (symbol-table-load-command (get-mach-o-load-command :LC_SYMTAB load-commands))
-         (symbol-table (lookup-eq-safe :syms symbol-table-load-command))
+         (symbol-table (get-mach-o-symbol-table mach-o))
          (symbol-entry (get-symbol-entry-mach-o subroutine-name text-section-number symbol-table)))
     (if (not symbol-entry)
         (er hard? 'get-start-address "No symbol table entry found for ~x0." subroutine-name)
       (lookup-eq-safe :N-VALUE symbol-entry))))
+
+;; this is for the text section
+(defun get-all-mach-o-symbols (parsed-mach-o)
+  (let ((text-section-number (get-text-section-number-mach-o parsed-mach-o)))
+    (get-names-from-mach-o-symbol-table text-section-number (get-mach-o-symbol-table parsed-mach-o) nil)))
