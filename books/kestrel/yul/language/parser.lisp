@@ -840,8 +840,7 @@
     (implies (not (reserrp ast-node))
              (< (len tokens-after-path)
                 (len tokens)))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable not-reserrp-when-pathp)))))
+    :rule-classes :linear))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -990,7 +989,6 @@
       :rule-classes :linear
       :fn parse-*-comma-expression)
     :hints (("Goal"
-             :in-theory (enable not-reserrp-when-expressionp not-reserrp-when-funcallp)
              :expand ((parse-*-comma-expression tokens)
                       (parse-function-call tokens))))
     )
@@ -1104,7 +1102,6 @@
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Note:
@@ -1113,7 +1110,6 @@
 
 ;; assignment = path ":=" expression
 ;;            / path 1*( "," path ) ":=" function-call
-
 
 (define parse-*-comma-path ((tokens abnf::tree-listp))
   :returns (mv (result-asts path-listp) (tokens-after-paths abnf::tree-listp))
@@ -1137,12 +1133,12 @@
   :verify-guards nil
   ///
   (verify-guards parse-*-comma-path)
-  (defret len-of-parse-*-comma-path-<
+  (defret len-of-parse-*-comma-path-<=
     (<= (len tokens-after-paths)
         (len tokens))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable not-reserrp-when-pathp))))
-  )
+    :hints (("Goal" :in-theory (enable not-reserrp-when-pathp)))))
+
 ;; consider having theorems that say
 ;; (implies (null result-asts) (= (len tokens-after-paths) (len tokens)))
 ;; and
@@ -1181,9 +1177,7 @@
   (defret len-of-parse-assignment-statement-<
     (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
-    :rule-classes :linear)
-  )
-
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
