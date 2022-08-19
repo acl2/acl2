@@ -19,6 +19,34 @@
 (defxdoc+ integer-operations
   :parents (language)
   :short "Operations on C integers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The following remarks apply to intger operations in general
+     (not to all of them, but to most of them),
+     and are thus factored here instead of being repeated
+     in the documentation for all the operations to which the remarks apply.
+     Operations on unsigned integers are always well-defined,
+     because if the exact mathematical result does not fit in the type,
+     it is reduced modulo one plus the maximum integer of the type
+     [C:6.2.5/9].
+     In contrast, operations on signed integers are not necessarily well-defined
+     when the exact mathematical result does not fit in the type [C:6.5/5].
+     [C] could be clearer on this point,
+     but it seems that it allows implementations that silently wrap around
+     as well as implementations that trap on overflow,
+     as suggested by the example in [C:5.1.2.3//15],
+     as well as by the wording in [C:H.2.2/1].
+     Note also that [C:3.4.3] says that integer overflow is
+     an example of undefined behavior,
+     but this should be taken to mean signed integer overflow,
+     given that [C:6.2.5/9] says that unsigned operations do not overflow
+     (due to the modular reduction mentioned above).
+     So for now we regard as an error
+     the situation of a signed result that does not fit in the type,
+     given that [C] does not prescribe what should happen in this case;
+     in the future, we may extend our model with a parameterization
+     over the specifics of how this situation is handled."))
   :order-subtopics t
   :default-parent t)
 
@@ -168,9 +196,9 @@
      and we attempt to contruct an integer value of the new type from it.
      If the new type is unsigned,
      the mathematical integer is reduced
-     modulo one plus the maximum value of the unsigned type;
+     modulo one plus the maximum value of the unsigned type [C:6.3.1.3/2];
      this always works, i.e. no error is ever returned.
-     If the new type is signed, there are two cases:
+     If the new type is signed, there are two cases [C:6.3.1.3/3]:
      if the mathematical integer fits in the type,
      we return a value of that type with that integer;
      otherwise, we return an error.")
