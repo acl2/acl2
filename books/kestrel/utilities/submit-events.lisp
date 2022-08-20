@@ -74,26 +74,35 @@
     (prog2$ (print-event-with-elision (first events))
             (print-events-with-elision (rest events)))))
 
-;Returns (mv erp state) where erp is non-nil if the event failed
-;throws an error if the event fails
-;TODO: Consider using PSO to print proof output only upon failure.
+;; Returns (mv erp state) where erp is non-nil if the event failed.
+;; Throws an error if the event fails and THROW-ERRORP is non-nil.
+;; TODO: Consider using PSO to print proof output only upon failure.
 (defun submit-event-helper (event print throw-errorp state)
-  (declare (xargs :mode :program ;; because we call trans-eval-error-triple
-                  :guard (member-eq print '(nil :brief :verbose))
+  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
+                              (booleanp throw-errorp))
+                  :mode :program ;; because we call trans-eval-error-triple
                   :stobjs state))
   (progn$ (and print (cw "(Submitting event:~%")) ;todo: it would be nice print the event name (if there is one) or to say "event 3 of 9" or whatever
           (and print
                (if (eq :verbose print)
-                   (cw "~x0" event)
+                   (cw "~X01" event nil)
                  (print-event-with-elision event)))
-          (let ( ;; TODO: Think about this:
-                ;; todo: inhibit more output if print is nil?
-                (additional-output-types-to-inhibit (if (eq print :verbose)
-                                                        nil
-                                                      '(prove warning event summary observation))))
+          (let ((additional-output-types-to-inhibit
+                 (if (eq print :verbose)
+                     nil ; don't inhibit anything
+                   (if (eq print t)
+                       '(observation prove proof-builder proof-tree) ; inhibit unneeded stuff
+                     (if (eq print :brief)
+                         ;; inhibit all but important output:
+                         '( ;; error
+                           warning
+                           ;; warning!
+                           observation prove proof-builder event history summary proof-tree comment)
+                       ;; print must be nil, so inhibit everything:
+                       '(error warning warning! observation prove proof-builder event history summary proof-tree comment))))))
             (mv-let (erp result state)
               ;;this magic incantation comes from :doc with-output:
-              ;; TODO: Does this stuff get undone?:
+              ;; These globals get unset after the call of trans-eval-error-triple
               (state-global-let*
                ((inhibit-output-lst
                  (union-eq (f-get-global 'inhibit-output-lst state)
