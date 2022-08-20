@@ -14,6 +14,8 @@
 (include-book "values")
 (include-book "static-semantics")
 
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ integer-operations
@@ -217,7 +219,6 @@
                           type))
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range (value-fix val) (type-fix type))))))
-  :prepwork ((local (include-book "kestrel/arithmetic-light/mod" :dir :system)))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep)))
   :hooks (:fix)
   ///
@@ -453,7 +454,6 @@
                           type))
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range mathint (type-fix type))))))
-  :prepwork ((local (include-book "kestrel/arithmetic-light/mod" :dir :system)))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep)))
   :hooks (:fix))
 
