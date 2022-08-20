@@ -223,12 +223,14 @@
                 sint-from-schar
                 sint-from-ushort
                 sint-from-sshort
-                sint-integerp-alt-def
                 scharp-when-valuep-and-kind-schar
                 ucharp-when-valuep-and-kind-uchar
                 sshortp-when-valuep-and-kind-sshort
                 ushortp-when-valuep-and-kind-ushort
-                sintp-when-valuep-and-kind-sint)
+                sintp-when-valuep-and-kind-sint
+                )
+       :disable ((:e integer-type-max)
+                 (:e integer-type-min))
        :prep-books
        ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
 
@@ -288,31 +290,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-minus ((arg valuep))
-  :returns (result value-resultp)
-  :short "Execute unary minus [C:6.5.3.3/1] [C:6.5.3.3/3]."
-  (b* ((arg (value-fix arg))
-       ((unless (value-arithmeticp arg))
-        (error (list :mistype-minus
-                     :required :arithmetic
-                     :supplied arg)))
-       (val (promote-value arg))
-       (err (error (list :undefined-minus arg))))
-    (cond ((uintp val) (minus-uint val))
-          ((sintp val) (if (minus-sint-okp val) (minus-sint val) err))
-          ((ulongp val) (minus-ulong val))
-          ((slongp val) (if (minus-slong-okp val) (minus-slong val) err))
-          ((ullongp val) (minus-ullong val))
-          ((sllongp val) (if (minus-sllong-okp val) (minus-sllong val) err))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :in-theory (enable value-arithmeticp
-                                    value-realp
-                                    value-integerp
-                                    value-unsigned-integerp-alt-def
-                                    value-signed-integerp-alt-def)
-                 :use (:instance values-of-promote-value (val arg))))
-  :hooks (:fix))
+(defsection minus-value-alt-def
+  :short "Alternative definition of @(tsee minus-value)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is temporary, and will be removed eventually.
+     It is the old definition of @(tsee plus-value),
+     dependent on the shallow embedding
+     rather than independent as it should be."))
+
+  (defrule minus-value-alt-def
+    (equal (minus-value arg)
+           (b* ((arg (value-fix arg))
+                ((unless (value-arithmeticp arg))
+                 (error (list :minus-mistype
+                              :required :arithmetic
+                              :supplied arg)))
+                (val (promote-value arg))
+                (err (error (list :undefined-minus val))))
+             (cond ((uintp val) (minus-uint val))
+                   ((sintp val) (if (minus-sint-okp val)
+                                    (minus-sint val)
+                                  err))
+                   ((ulongp val) (minus-ulong val))
+                   ((slongp val) (if (minus-slong-okp val)
+                                     (minus-slong val)
+                                   err))
+                   ((ullongp val) (minus-ullong val))
+                   ((sllongp val) (if (minus-sllong-okp val)
+                                      (minus-sllong val)
+                                    err))
+                   (t (error (impossible))))))
+    :enable (minus-value
+             minus-arithmetic-value
+             minus-integer-value
+             result-integer-value
+             value-integer->get
+             value-integer
+             value-sint->get-to-sint->get
+             value-uint->get-to-uint->get
+             value-slong->get-to-slong->get
+             value-ulong->get-to-ulong->get
+             value-sllong->get-to-sllong->get
+             value-ullong->get-to-ullong->get
+             value-sint-to-sint
+             value-uint-to-uint
+             value-slong-to-slong
+             value-ulong-to-ulong
+             value-sllong-to-sllong
+             value-ullong-to-ullong
+             minus-sint
+             minus-uint
+             minus-slong
+             minus-ulong
+             minus-sllong
+             minus-ullong
+             minus-sint-okp
+             minus-slong-okp
+             minus-sllong-okp
+             sint-integerp-alt-def
+             uint-integerp-alt-def
+             slong-integerp-alt-def
+             ulong-integerp-alt-def
+             sllong-integerp-alt-def
+             ullong-integerp-alt-def
+             uint-mod
+             ulong-mod
+             ullong-mod
+             value-unsigned-integerp-alt-def
+             integer-type-rangep
+             integer-type-min
+             integer-type-max)
+    :disable ((:e integer-type-min)
+              (:e integer-type-max))
+    :use (:instance values-of-promote-value (val arg))
+    :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -385,7 +438,7 @@
                :address (error :todo)
                :indir (error :todo)
                :plus (plus-value arg)
-               :minus (exec-minus arg)
+               :minus (minus-value arg)
                :bitnot (exec-bitnot arg)
                :lognot (exec-lognot arg)))
   :hooks (:fix))

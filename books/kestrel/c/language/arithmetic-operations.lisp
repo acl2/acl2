@@ -41,3 +41,24 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define minus-arithmetic-value ((val valuep))
+  :guard (value-arithmeticp val)
+  :returns (resval value-resultp)
+  :short "Apply unary @('-') to an arithmetic value [C:6.5.3.3/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We promote the operand
+     and then we apply the operation on the integer.
+     In our current formalization,
+     integers are the only arithmetic value.
+     This ACL2 function will be extended with more cases
+     if/when we extend out model with non-integer arithmetic value."))
+  (b* ((val (promote-value val)))
+    (minus-integer-value val))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp)))
+  :hooks (:fix))

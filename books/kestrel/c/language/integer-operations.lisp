@@ -19,34 +19,6 @@
 (defxdoc+ integer-operations
   :parents (language)
   :short "Operations on C integers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The following remarks apply to intger operations in general
-     (not to all of them, but to most of them),
-     and are thus factored here instead of being repeated
-     in the documentation for all the operations to which the remarks apply.
-     Operations on unsigned integers are always well-defined,
-     because if the exact mathematical result does not fit in the type,
-     it is reduced modulo one plus the maximum integer of the type
-     [C:6.2.5/9].
-     In contrast, operations on signed integers are not necessarily well-defined
-     when the exact mathematical result does not fit in the type [C:6.5/5].
-     [C] could be clearer on this point,
-     but it seems that it allows implementations that silently wrap around
-     as well as implementations that trap on overflow,
-     as suggested by the example in [C:5.1.2.3//15],
-     as well as by the wording in [C:H.2.2/1].
-     Note also that [C:3.4.3] says that integer overflow is
-     an example of undefined behavior,
-     but this should be taken to mean signed integer overflow,
-     given that [C:6.2.5/9] says that unsigned operations do not overflow
-     (due to the modular reduction mentioned above).
-     So for now we regard as an error
-     the situation of a signed result that does not fit in the type,
-     given that [C] does not prescribe what should happen in this case;
-     in the future, we may extend our model with a parameterization
-     over the specifics of how this situation is handled."))
   :order-subtopics t
   :default-parent t)
 
@@ -82,8 +54,7 @@
          (<= (value-integer->get val)
              (integer-type-max (type-of-value val))))
     :rule-classes ((:linear :trigger-terms ((value-integer->get val))))
-    :enable (value-integer->get
-             integer-type-min
+    :enable (integer-type-min
              integer-type-max)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,16 +150,6 @@
              integer-type-rangep
              integer-type-min
              integer-type-max
-             uchar-integer-fix
-             schar-integer-fix
-             ushort-integer-fix
-             sshort-integer-fix
-             uint-integer-fix
-             sint-integer-fix
-             ulong-integer-fix
-             slong-integer-fix
-             ullong-integer-fix
-             sllong-integer-fix
              uchar-integerp-alt-def
              schar-integerp-alt-def
              ushort-integerp-alt-def
@@ -426,6 +387,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define result-integer-value ((mathint integerp) (type typep))
+  :guard (type-nonchar-integerp type)
+  :returns (val value-resultp)
+  :short "Calculate the integer value result of an operation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This applies to most (but not all) integer operations,
+     and thus it is factored in this ACL2 function.")
+   (xdoc::p
+    "Operations on unsigned integers are always well-defined,
+     because if the exact mathematical result does not fit in the type,
+     it is reduced modulo one plus the maximum integer of the type
+     [C:6.2.5/9].
+     In contrast, operations on signed integers are not necessarily well-defined
+     when the exact mathematical result does not fit in the type [C:6.5/5].
+     [C] could be clearer on this point,
+     but it seems that it allows implementations that silently wrap around
+     as well as implementations that trap on overflow,
+     as suggested by the example in [C:5.1.2.3//15],
+     as well as by the wording in [C:H.2.2/1].
+     Note also that [C:3.4.3] says that integer overflow is
+     an example of undefined behavior,
+     but this should be taken to mean signed integer overflow,
+     given that [C:6.2.5/9] says that unsigned operations do not overflow
+     (due to the modular reduction mentioned above).
+     So for now we regard as an error
+     the situation of a signed result that does not fit in the type,
+     given that [C] does not prescribe what should happen in this case;
+     in the future, we may extend our model with a parameterization
+     over the specifics of how this situation is handled.")
+   (xdoc::p
+    "We define most of the integer operations to
+     obtain the mathematical integers from the operands,
+     combine them according to the specifics of the operation,
+     and then turning the resulting mathematical integer into an integer value.
+     This ACL2 function serves to accomplish the last step.
+     The type of the result,
+     which is also the type of the operand(s)
+     (after the usual arithmetic conversions [C:6.3.1.8] for binary operations),
+     is passed as argument to this ACL2 function,
+     along with the mathematical integer of the result.
+     We return a value or an error,
+     according to the criteria explained above.")
+   (xdoc::p
+    "Note that this is the same calculation
+     done in @(tsee convert-integet-value)
+     after obtaining the mathematical integer from the starting value.
+     So we could use this function
+     in the definition of @(tsee convert-integet-value),
+     but we prefer to keep them separate because
+     in the future we may parameterize our C dynamic semantics
+     on the choice of whether overflowing signed arithmetic
+     should be an error (as it is now)
+     or silently wrap around,
+     or cause a trap (traps may have to be modeled explicitly).
+     Since integer conversions are described separately
+     from other integer operations in [C],
+     the behavior of integer conversions and other integer operations
+     could be parameterized differently."))
+  (b* ((mathint (ifix mathint)))
+    (cond ((type-unsigned-integerp type)
+           (value-integer (mod mathint (1+ (integer-type-max type)))
+                          type))
+          ((integer-type-rangep mathint type) (value-integer mathint type))
+          (t (error (list :out-of-range mathint (type-fix type))))))
+  :prepwork ((local (include-book "kestrel/arithmetic-light/mod" :dir :system)))
+  :guard-hints (("Goal" :in-theory (enable integer-type-rangep)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define plus-integer-value ((val valuep))
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
@@ -443,4 +476,29 @@
      We introduce this function mainly for uniformity with other operations,
      despite it being trivial in a way."))
   (value-fix val)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define minus-integer-value ((val valuep))
+  :guard (and (value-integerp val)
+              (value-promoted-arithmeticp val))
+  :returns (resval value-resultp)
+  :short "Apply unary @('-') to an integer value [C:6.5.3.3/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the value has been already promoted,
+     so we put that restriction in the guard.")
+   (xdoc::p
+    "The type of the result is the (promoted) type of the operand [C:6.5.3.3/3],
+     so it is the same type as the input value of this ACL2 function.
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function."))
+  (b* ((mathint (value-integer->get val))
+       (result (- mathint))
+       (resval (result-integer-value result (type-of-value val)))
+       ((when (errorp resval)) (error (list :undefined-minus (value-fix val)))))
+    resval)
   :hooks (:fix))
