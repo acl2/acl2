@@ -1226,69 +1226,91 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
+  (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
+  (local (in-theory (e/d (promote-value
+                          promote-type
+                          convert-integer-value
+                          value-integer
+                          value-integer->get
+                          integer-type-rangep
+                          integer-type-min
+                          integer-type-max
+                          value-schar->get-to-schar->get
+                          value-uchar->get-to-uchar->get
+                          value-sshort->get-to-sshort->get
+                          value-ushort->get-to-ushort->get
+                          value-uint->get-to-uint->get
+                          value-sint->get-to-sint->get
+                          value-sint-to-sint
+                          value-integerp
+                          value-signed-integerp
+                          value-unsigned-integerp
+                          sint-from-uchar
+                          sint-from-schar
+                          sint-from-ushort
+                          sint-from-sshort
+                          scharp-when-valuep-and-kind-schar
+                          ucharp-when-valuep-and-kind-uchar
+                          sshortp-when-valuep-and-kind-sshort
+                          ushortp-when-valuep-and-kind-ushort
+                          sintp-when-valuep-and-kind-sint)
+                         ((:e integer-type-max)
+                          (:e integer-type-min)))))
+
   (defruled promote-value-when-scharp
     (implies (scharp x)
              (equal (promote-value x)
-                    (sint-from-schar x)))
-    :enable promote-value-alt-def)
+                    (sint-from-schar x))))
 
   (defruled promote-value-when-ucharp
     (implies (ucharp x)
              (equal (promote-value x)
                     (if (<= (uchar-max) (sint-max))
                         (sint-from-uchar x)
-                      (uint-from-uchar x))))
-    :enable promote-value-alt-def)
+                      (uint-from-uchar x)))))
 
   (defruled promote-value-when-sshortp
     (implies (sshortp x)
              (equal (promote-value x)
-                    (sint-from-sshort x)))
-    :enable promote-value-alt-def)
+                    (sint-from-sshort x))))
 
   (defruled promote-value-when-ushortp
     (implies (ushortp x)
              (equal (promote-value x)
                     (if (<= (ushort-max) (sint-max))
                         (sint-from-ushort x)
-                      (uint-from-ushort x))))
-    :enable promote-value-alt-def)
+                      (uint-from-ushort x)))))
 
   (defruled promote-value-when-sintp
     (implies (sintp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-uintp
     (implies (uintp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-slongp
     (implies (slongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-ulongp
     (implies (ulongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-sllongp
     (implies (sllongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-ullongp
     (implies (ullongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defval *atc-promote-value-rules*
     '(promote-value-when-scharp
