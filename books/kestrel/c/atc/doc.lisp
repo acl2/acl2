@@ -125,7 +125,7 @@
       (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
       " @('(opt-name1 opt-value1 opt-name2 opt-value2 ...)')
        where each @('opt-namek') is a keyword among the ones described below,
-       and each @('opt-value1') is one of the allowed values
+       and each @('opt-valuek') is one of the allowed values
        for the corresponding keyword as described below.")
      (xdoc::p
       "The following pretty-printing options are supported:")
