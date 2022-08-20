@@ -143,7 +143,7 @@
       A pure expression term is an ACL2 term that represent
       a C pure expression that may involve variables.
       A constant expression term is an ACL2 term that represents
-      a C constant expressions [C:6.6],
+      a C constant expression [C:6.6],
       which does not involve variables.
       Since there are no variables involved,
       the notion of constant expression term is defined
@@ -203,7 +203,7 @@
        applied to a value of the type indicated by the name of the function.
        The guard verification requirement ensures that
        the operator yields a well-defined result.
-       These functions covers all the C unary operators
+       These functions cover all the C unary operators
        (using the nomenclature in [C]).")
      (xdoc::li
       "A call of a function @('<op>-<type1>-<type2>')
@@ -246,7 +246,7 @@
        applied to values of the types indicated by the name of the function.
        The guard verification requirement ensures that
        the operator yields a well-defined result.
-       These functions covers all the C strict pure binary operators;
+       These functions cover all the C strict pure binary operators;
        the non-strict operators @('&&') and @('||'),
        and the non-pure operators @('='), @('+='), etc.,
        are represented differently.")

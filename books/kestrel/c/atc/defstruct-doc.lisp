@@ -35,9 +35,9 @@
       a shallowly embedded ACL2 representation of a C structure type.
       The user must call this macro
       to introduce the structure types that the C code must use.
-      The macro specifies the names and the members,
+      The macro specifies the name and the members,
       where each member is specified by a name and a type.
-      The macro record the information about the structure type in a table,
+      The macro records the information about the structure type in a table,
       and generates functions to operate on the structure type,
       along with some theorems.")
 
@@ -138,8 +138,8 @@
      (xdoc::p
       "where @('<pos>') is a positive integer not exceeding @(tsee ullong-max).
        The first ten specify C integer types:
-       each is the name of an ACL2 fixtype that models a C integer types,
-       and specifies the corresponding C intger type.
+       each is the name of an ACL2 fixtype that models a C integer type,
+       and specifies the corresponding C integer type.
        The other ten specify C integer array types:
        each consists of
        the name of an ACL2 fixtype that models a C integer type,
@@ -240,7 +240,7 @@
       "There is one such checker for every member
        whose name is @('<member>')
        and whose type is an array type,
-       and for every choide of an integer type @('<type>') for the index.")
+       and for every choice of an integer type @('<type>') for the index.")
      (xdoc::p
       "The checker has the form")
      (xdoc::codeblock
@@ -311,7 +311,7 @@
       "This reader converts the C integer index to an ACL2 integer index
        and calls the reader @('struct-<tag>-read-<member>') above."))
 
-    (xdoc::p
+    (xdoc::desc
      "@('struct-<tag>-write-<member>')"
      (xdoc::p
       "Writer for an array member of the structure type,
@@ -339,7 +339,7 @@
       "This writer is used by the ones that operate on
        indices of C integer types below."))
 
-    (xdoc::p
+    (xdoc::desc
      "@('struct-<tag>-write-<member>-<type>')"
      (xdoc::p
       "Writer for an array member of the structure type,

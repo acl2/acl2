@@ -23,7 +23,7 @@
 ;; - skip use-lemma when the rule is already enabled
 ;; - (maybe) skip use-lemma when the rule had nothing to do with the goal
 ;; - skip add-enable-hint when the rule is already enabled
-;; - skip add-disable-hint when the rule is already disabled
+;; - skip add-disable-hint when the rule is already disabled (or not present?)
 ;; - skip add-hyp when the hyp is already there
 ;; - add-skip hyp when the hyp would contradict the existing assumptions (together satisfiable together)
 ;; - skip add-hyp when cgen can falsify the theorem even with the hyp
@@ -34,6 +34,7 @@
 ;; - avoid anything except add-hyp when cgen can falsify the theorem (can't possibly fix the problem)
 ;; - (maybe) try to avoid theory-invariant warnings
 ;; - (maybe) try to help clean up hyps (e.g., replacing a subsumed hyp when add-hyp strengthens one, maybe using tau)
+;; - avoid both add-enable-hint and use-lemma of the same rule
 ;; - what else?
 
 ;; TODO: All a time limit for trying recommendations and keep trying more and
@@ -69,6 +70,55 @@
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
 
+;move
+(defthm parsed-json-object-pairsp-forward-to-alistp
+  (implies (parsed-json-object-pairsp pairs)
+           (alistp pairs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
+
+;; Recognize a list of parsed json-arrays.
+(defun parsed-json-array-listp (x)
+  (declare (xargs :guard t))
+  (if (not (consp x))
+      (null x)
+    (and (parsed-json-arrayp (first x))
+         (parsed-json-array-listp (rest x)))))
+
+;move
+(defund parsed-json-array->values (array)
+  (declare (xargs :guard (parsed-json-arrayp array)
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
+  (cadr array) ; strip the :array
+  )
+
+;move
+(defund parsed-json-object->pairs (object)
+  (declare (xargs :guard (parsed-json-objectp object)
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
+  (cadr object) ; strip the :object
+  )
+
+(defthm alistp-of-parsed-json-object->pairs
+  (implies (and (state-p state)
+                (parsed-json-objectp book-map))
+           (alistp (parsed-json-object->pairs book-map)))
+  :hints (("Goal" :in-theory (enable parsed-json-object->pairs
+                                     parsed-json-objectp))))
+
+;; Returns (mv erp lists)
+(defun json-arrays-to-lists (arrays acc)
+  (declare (xargs :guard (and (parsed-json-array-listp arrays)
+                              (true-listp acc))))
+  (if (endp arrays)
+      (mv nil (reverse acc))
+    (let ((array (first arrays)))
+      (if (not (parsed-json-arrayp array)) ;drop?
+          (mv t nil)
+        (json-arrays-to-lists (rest arrays)
+                              (cons (parsed-json-array->values array)
+                                    acc))))))
+
 ;; (defun untranslate-list (terms iff-flg wrld)
 ;;   (declare (xargs :mode :program))
 ;;   (if (endp terms)
@@ -90,13 +140,6 @@
     (acons (concatenate 'string "checkpoint_" (nat-to-string current-number))
            (fms-to-string "~X01" (acons #\0  (first checkpoints) (acons #\1 nil nil)))
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
-
-;move
-(defthm parsed-json-object-pairsp-forward-to-alistp
-  (implies (parsed-json-object-pairsp pairs)
-           (alistp pairs))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
 
 (defun show-recommendation (rec num)
   (declare (xargs :guard (posp num)
@@ -173,46 +216,7 @@
     ("add-use-hint" . :add-use-hint)
     ("use-lemma" . :use-lemma)))
 
-(defun parsed-json-array-listp (x)
-  (declare (xargs :guard t))
-  (if (not (consp x))
-      (null x)
-    (and (parsed-json-arrayp (first x))
-         (parsed-json-array-listp (rest x)))))
 
-;move
-(defund parsed-json-array->values (array)
-  (declare (xargs :guard (parsed-json-arrayp array)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
-  (cadr array) ; strip the :array
-  )
-
-;move
-(defund parsed-json-object->pairs (object)
-  (declare (xargs :guard (parsed-json-objectp object)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
-  (cadr object) ; strip the :object
-  )
-
-(defthm alistp-of-parsed-json-object->pairs
-  (implies (and (state-p state)
-                (parsed-json-objectp book-map))
-           (alistp (parsed-json-object->pairs book-map)))
-  :hints (("Goal" :in-theory (enable parsed-json-object->pairs
-                                     parsed-json-objectp))))
-
-;; Returns (mv erp lists)
-(defun json-arrays-to-lists (arrays acc)
-  (declare (xargs :guard (and (parsed-json-array-listp arrays)
-                              (true-listp acc))))
-  (if (endp arrays)
-      (mv nil (reverse acc))
-    (let ((array (first arrays)))
-      (if (not (parsed-json-arrayp array)) ;drop?
-          (mv t nil)
-        (json-arrays-to-lists (rest arrays)
-                              (cons (parsed-json-array->values array)
-                                    acc))))))
 
 ;; Returns (mv erp form state).
 (defun parse-include-book (string state)
