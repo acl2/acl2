@@ -138,7 +138,7 @@
      (xdoc::p
       "where @('<pos>') is a positive integer not exceeding @(tsee ullong-max).
        The first ten specify C integer types:
-       each is the name of an ACL2 fixtype that models a C integer types,
+       each is the name of an ACL2 fixtype that models a C integer type,
        and specifies the corresponding C integer type.
        The other ten specify C integer array types:
        each consists of
@@ -240,7 +240,7 @@
       "There is one such checker for every member
        whose name is @('<member>')
        and whose type is an array type,
-       and for every choide of an integer type @('<type>') for the index.")
+       and for every choice of an integer type @('<type>') for the index.")
      (xdoc::p
       "The checker has the form")
      (xdoc::codeblock
