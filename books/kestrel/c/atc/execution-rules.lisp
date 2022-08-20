@@ -14,6 +14,7 @@
 (include-book "execution")
 (include-book "arrays")
 
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1226,8 +1227,6 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
-  (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-
   (local (in-theory (e/d (promote-value
                           promote-type
                           convert-integer-value
@@ -1653,7 +1652,6 @@
       `(progn
          (defsection atc-exec-unary-rules
            :short "Rules for executing unary operations"
-           (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
            ,@events
            (defval *atc-exec-unary-rules*
              '(,@names
@@ -1826,7 +1824,6 @@
       `(progn
          (defsection atc-exec-cast-rules
            :short "Rules for executing casts."
-           (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
            ,@events
            (defval *atc-exec-cast-rules*
              '(,@names)))))))
