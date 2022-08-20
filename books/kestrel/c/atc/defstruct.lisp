@@ -335,7 +335,7 @@
                              either one of the symbols in ~&0, ~
                              or a doublet (ELEM SIZE) ~
                              where ELEM is one of the symbols in ~&0
-                             and SIZE is a positive intger.
+                             and SIZE is a positive integer.
                              The second component of ~x1 ~
                              is a symbol, but not among ~&0."
                             typelist
@@ -349,7 +349,7 @@
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
                            where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           and SIZE is a positive integer.
                            The second component of ~x1 ~
                            is neither a symbol nor a doublet."
                           typelist
@@ -364,7 +364,7 @@
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
                            where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           and SIZE is a positive integer.
                            The second component of ~x1 is a doublet, ~
                            but its first component is not a symbol."
                           typelist
@@ -378,7 +378,7 @@
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
                            where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           and SIZE is a positive integer.
                            The second component of ~x1 is a doublet, ~
                            but its first component is not ~
                            one of the symbols in ~&0."
@@ -392,7 +392,7 @@
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
                            where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           and SIZE is a positive integer.
                            The second component of ~x1 is a doublet, ~
                            but its second component is not a positive integer."
                           typelist
@@ -405,7 +405,7 @@
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
                            where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           and SIZE is a positive integer.
                            The second component of ~x1 is a doublet, ~
                            its second component is a positive integer, ~
                            but it exceeds ~x2, ~
