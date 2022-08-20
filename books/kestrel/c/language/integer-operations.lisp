@@ -434,10 +434,10 @@
      according to the criteria explained above.")
    (xdoc::p
     "Note that this is the same calculation
-     done in @(tsee convert-integet-value)
+     done in @(tsee convert-integer-value)
      after obtaining the mathematical integer from the starting value.
      So we could use this function
-     in the definition of @(tsee convert-integet-value),
+     in the definition of @(tsee convert-integer-value),
      but we prefer to keep them separate because
      in the future we may parameterize our C dynamic semantics
      on the choice of whether overflowing signed arithmetic
