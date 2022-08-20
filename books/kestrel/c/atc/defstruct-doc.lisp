@@ -311,7 +311,7 @@
       "This reader converts the C integer index to an ACL2 integer index
        and calls the reader @('struct-<tag>-read-<member>') above."))
 
-    (xdoc::p
+    (xdoc::desc
      "@('struct-<tag>-write-<member>')"
      (xdoc::p
       "Writer for an array member of the structure type,
@@ -339,7 +339,7 @@
       "This writer is used by the ones that operate on
        indices of C integer types below."))
 
-    (xdoc::p
+    (xdoc::desc
      "@('struct-<tag>-write-<member>-<type>')"
      (xdoc::p
       "Writer for an array member of the structure type,
