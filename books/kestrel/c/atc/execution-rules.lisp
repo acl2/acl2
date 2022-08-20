@@ -1529,16 +1529,27 @@
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (op-kind (unop-kind op))
-         (exec-op (if (member-eq op-kind '(:plus :minus))
-                      (pack op-kind '-value-alt-def)
-                    (pack 'exec- op-kind)))
-         (name (pack exec-op '-when- pred))
+         (op-value (if (member-eq op-kind '(:plus :minus))
+                       (pack op-kind '-value)
+                     (pack 'exec- op-kind)))
+         (op-arithmetic-value (pack op-kind '-arithmetic-value))
+         (op-integer-value (pack op-kind '-integer-value))
+         (name (pack op-value '-when- pred))
          (op-type (pack op-kind '- fixtype))
          (op-type-okp (and (unop-case op :minus)
                            (member-eq (type-kind type)
-                                      '(:schar :sshort :sint :slong :sllong
-                                        :uchar :ushort))
+                                      '(:schar
+                                        :sshort
+                                        :sint
+                                        :slong
+                                        :sllong
+                                        :uchar
+                                        :ushort))
                            (pack op-type '-okp)))
+         (promotedp (and (member-eq op-kind
+                                    '(:plus :minus :bitnot))
+                         (member-eq (type-kind type)
+                                    '(:schar :uchar :sshort :ushort))))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                      (equal op (,(pack 'unop- op-kind)))
                      (,pred x)
@@ -1547,24 +1558,65 @@
          (formula `(implies ,hyps
                             (equal (exec-unary op x)
                                    (,op-type x))))
+         (enables (if (member-eq op-kind '(:plus :minus))
+                      `(exec-unary
+                        ,op-value
+                        ,op-arithmetic-value
+                        ,op-integer-value
+                        ,op-type
+                        ,@(and promotedp
+                               (list (pack op-kind '-sint)))
+                        ,@(and op-type-okp
+                               (list op-type-okp))
+                        ,@(and op-type-okp
+                               promotedp
+                               (list (pack op-kind '-sint-okp)))
+                        ,@*atc-promote-value-rules*
+                        result-integer-value
+                        value-integer->get
+                        value-integer
+                        value-sint->get-to-sint->get
+                        value-uint->get-to-uint->get
+                        value-slong->get-to-slong->get
+                        value-ulong->get-to-ulong->get
+                        value-sllong->get-to-sllong->get
+                        value-ullong->get-to-ullong->get
+                        value-sint-to-sint
+                        value-uint-to-uint
+                        value-slong-to-slong
+                        value-ulong-to-ulong
+                        value-sllong-to-sllong
+                        value-ullong-to-ullong
+                        sint-integerp-alt-def
+                        uint-integerp-alt-def
+                        slong-integerp-alt-def
+                        ulong-integerp-alt-def
+                        sllong-integerp-alt-def
+                        ullong-integerp-alt-def
+                        uint-mod
+                        ulong-mod
+                        ullong-mod
+                        value-unsigned-integerp-alt-def
+                        integer-type-rangep
+                        integer-type-min
+                        integer-type-max)
+                    `(exec-unary
+                      ,op-value
+                      ,@(and (member-eq op-kind '(:bitnot))
+                             (member-eq (type-kind type)
+                                        '(:schar :uchar :sshort :ushort))
+                             (list op-type))
+                      ,@*atc-promote-value-rules*
+                      ,@(and op-type-okp
+                             (member-equal op (list (unop-bitnot)))
+                             (member-eq (type-kind type)
+                                        '(:schar :uchar :sshort :ushort))
+                             (list op-type-okp)))))
          (event `(defruled ,name
                    ,formula
-                   :enable (exec-unary
-                            ,exec-op
-                            ,@(and (member-eq op-kind
-                                              '(:plus :minus :bitnot))
-                                   (member-eq (type-kind type)
-                                              '(:schar :uchar :sshort :ushort))
-                                   (list op-type))
-                            ,@*atc-promote-value-rules*
-                            ,@(and op-type-okp
-                                   (member-equal op
-                                                 (list (unop-plus)
-                                                       (unop-minus)
-                                                       (unop-bitnot)))
-                                   (member-eq (type-kind type)
-                                              '(:schar :uchar :sshort :ushort))
-                                   (list op-type-okp))))))
+                   :enable ,enables
+                   :disable ((:e integer-type-min)
+                             (:e integer-type-max)))))
       (mv name event)))
 
   (define atc-exec-unary-rules-gen-loop-types ((op unopp) (types type-listp))
@@ -1601,6 +1653,7 @@
       `(progn
          (defsection atc-exec-unary-rules
            :short "Rules for executing unary operations"
+           (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
            ,@events
            (defval *atc-exec-unary-rules*
              '(,@names
