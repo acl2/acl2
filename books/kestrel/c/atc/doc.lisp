@@ -107,8 +107,7 @@
      (xdoc::p
       "This must be an ACL2 string that is a file path.
        The path may be absolute,
-       or relative to
-       the " (xdoc::seetopic "cbd" "current working directory") ".")
+       or relative to the current working directory.")
      (xdoc::p
       "The directory must exist.
        The file may or may not exist:
