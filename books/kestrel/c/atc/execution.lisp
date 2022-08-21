@@ -17,7 +17,7 @@
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/computation-states")
 (include-book "../language/function-environments")
-(include-book "../language/arithmetic-operations")
+(include-book "../language/operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,147 +161,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection promote-value-alt-def
-  :short "Alternate definition of @(tsee promote-value)."
+(defruled values-of-promote-value
+  :short "Theorem about the possible promoted arithmetic values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is temporary, and will be removed eventually.
-     It is the old definition of @(tsee promote-value),
-     dependent on the shallow embedding
-     rather than independent as it should be.")
-   (xdoc::p
-    "We also include a theorem that was part of the old @(tsee define).
-     That theorem may be also removed eventually."))
-
-  (defruled promote-value-alt-def
-    (equal (promote-value val)
-           (b* ((val (value-fix val)))
-             (cond ((ucharp val) (if (<= (uchar-max) (sint-max))
-                                     (sint-from-uchar val)
-                                   (uint-from-uchar val)))
-                   ((scharp val) (sint-from-schar val))
-                   ((ushortp val) (if (<= (ushort-max) (sint-max))
-                                      (sint-from-ushort val)
-                                    (uint-from-ushort val)))
-                   ((sshortp val) (sint-from-sshort val))
-                   (t val))))
-    :use (:instance lemma (val (value-fix val)))
-    :prep-lemmas
-    ((defruled lemma
-       (implies (valuep val)
-                (equal (promote-value val)
-                       (b* ((val (value-fix val)))
-                         (cond ((ucharp val) (if (<= (uchar-max) (sint-max))
-                                                 (sint-from-uchar val)
-                                               (uint-from-uchar val)))
-                               ((scharp val) (sint-from-schar val))
-                               ((ushortp val) (if (<= (ushort-max) (sint-max))
-                                                  (sint-from-ushort val)
-                                                (uint-from-ushort val)))
-                               ((sshortp val) (sint-from-sshort val))
-                               (t val)))))
-       :enable (promote-value
-                promote-type
-                convert-integer-value
-                value-integer
-                value-integer->get
-                integer-type-max
-                value-schar->get-to-schar->get
-                value-uchar->get-to-uchar->get
-                value-sshort->get-to-sshort->get
-                value-ushort->get-to-ushort->get
-                value-uint->get-to-uint->get
-                value-sint->get-to-sint->get
-                value-sint-to-sint
-                value-integerp
-                value-signed-integerp
-                value-unsigned-integerp
-                sint-from-uchar
-                sint-from-schar
-                sint-from-ushort
-                sint-from-sshort
-                sint-integerp-alt-def
-                scharp-when-valuep-and-kind-schar
-                ucharp-when-valuep-and-kind-uchar
-                sshortp-when-valuep-and-kind-sshort
-                ushortp-when-valuep-and-kind-ushort
-                sintp-when-valuep-and-kind-sint)
-       :prep-books
-       ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
-
-  (defruled values-of-promote-value
-    (implies (value-arithmeticp val)
-             (b* ((pval (promote-value val)))
-               (or (uintp pval)
-                   (sintp pval)
-                   (ulongp pval)
-                   (slongp pval)
-                   (ullongp pval)
-                   (sllongp pval))))
-    :enable (promote-value-alt-def
-             value-arithmeticp
-             value-realp
-             value-integerp
-             value-unsigned-integerp-alt-def
-             value-signed-integerp-alt-def)))
+    "This rule provides relates
+     the definition of value promotion in the deep embedding
+     and the shallow embedding recognizers of integer values.
+     This rule is used in certain proofs that relate aspects of
+     the deep embedding and the shallow embedding,
+     but we should no longer need it at some point,
+     after we reformulate all of the C dynamic semantics
+     solely in terms of the deep embedding,
+     without reference to the shallow embedding."))
+  (implies (value-arithmeticp val)
+           (b* ((pval (promote-value val)))
+             (or (uintp pval)
+                 (sintp pval)
+                 (ulongp pval)
+                 (slongp pval)
+                 (ullongp pval)
+                 (sllongp pval))))
+  :use (:instance lemma (val (value-fix val)))
+  :prep-lemmas
+  ((defruled lemma
+     (implies (and (valuep val)
+                   (value-arithmeticp val))
+              (b* ((pval (promote-value val)))
+                (or (uintp pval)
+                    (sintp pval)
+                    (ulongp pval)
+                    (slongp pval)
+                    (ullongp pval)
+                    (sllongp pval))))
+     :enable (promote-value
+              promote-type
+              convert-integer-value
+              value-integer
+              value-integer->get
+              integer-type-rangep
+              integer-type-min
+              integer-type-max
+              value-schar->get-to-schar->get
+              value-uchar->get-to-uchar->get
+              value-sshort->get-to-sshort->get
+              value-ushort->get-to-ushort->get
+              value-uint->get-to-uint->get
+              value-sint->get-to-sint->get
+              value-sint-to-sint
+              value-uint-to-uint
+              sint-from-uchar
+              sint-from-schar
+              sint-from-ushort
+              sint-from-sshort
+              scharp-when-valuep-and-kind-schar
+              ucharp-when-valuep-and-kind-uchar
+              sshortp-when-valuep-and-kind-sshort
+              ushortp-when-valuep-and-kind-ushort
+              sintp-when-valuep-and-kind-sint
+              value-arithmeticp
+              value-realp
+              value-integerp
+              value-unsigned-integerp-alt-def
+              value-signed-integerp-alt-def)
+     :disable ((:e integer-type-max)
+               (:e integer-type-min))
+     :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-plus ((arg valuep))
-  :returns (result value-resultp)
-  :short "Execute unary plus [C:6.5.3.3/1] [C:6.5.3.3/2]."
-  (b* ((arg (value-fix arg))
-       ((unless (value-arithmeticp arg))
-        (error (list :mistype-plus
-                     :required :arithmetic
-                     :supplied arg)))
-       (val (promote-value arg)))
-    (cond ((uintp val) (plus-uint val))
-          ((sintp val) (plus-sint val))
-          ((ulongp val) (plus-ulong val))
-          ((slongp val) (plus-slong val))
-          ((ullongp val) (plus-ullong val))
-          ((sllongp val) (plus-sllong val))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :in-theory (enable value-arithmeticp
-                                    value-realp
-                                    value-integerp
-                                    value-unsigned-integerp-alt-def
-                                    value-signed-integerp-alt-def)
-                 :use (:instance values-of-promote-value (val arg))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-minus ((arg valuep))
-  :returns (result value-resultp)
-  :short "Execute unary minus [C:6.5.3.3/1] [C:6.5.3.3/3]."
-  (b* ((arg (value-fix arg))
-       ((unless (value-arithmeticp arg))
-        (error (list :mistype-minus
-                     :required :arithmetic
-                     :supplied arg)))
-       (val (promote-value arg))
-       (err (error (list :undefined-minus arg))))
-    (cond ((uintp val) (minus-uint val))
-          ((sintp val) (if (minus-sint-okp val) (minus-sint val) err))
-          ((ulongp val) (minus-ulong val))
-          ((slongp val) (if (minus-slong-okp val) (minus-slong val) err))
-          ((ullongp val) (minus-ullong val))
-          ((sllongp val) (if (minus-sllong-okp val) (minus-sllong val) err))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :in-theory (enable value-arithmeticp
-                                    value-realp
-                                    value-integerp
-                                    value-unsigned-integerp-alt-def
-                                    value-signed-integerp-alt-def)
-                 :use (:instance values-of-promote-value (val arg))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-bitnot ((arg valuep))
   :returns (result value-resultp)
@@ -371,8 +299,8 @@
     (unop-case op
                :address (error :todo)
                :indir (error :todo)
-               :plus (exec-plus arg)
-               :minus (exec-minus arg)
+               :plus (plus-value arg)
+               :minus (minus-value arg)
                :bitnot (exec-bitnot arg)
                :lognot (exec-lognot arg)))
   :hooks (:fix))

@@ -14,6 +14,7 @@
 (include-book "execution")
 (include-book "arrays")
 
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1226,69 +1227,89 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
+  (local (in-theory (e/d (promote-value
+                          promote-type
+                          convert-integer-value
+                          value-integer
+                          value-integer->get
+                          integer-type-rangep
+                          integer-type-min
+                          integer-type-max
+                          value-schar->get-to-schar->get
+                          value-uchar->get-to-uchar->get
+                          value-sshort->get-to-sshort->get
+                          value-ushort->get-to-ushort->get
+                          value-uint->get-to-uint->get
+                          value-sint->get-to-sint->get
+                          value-sint-to-sint
+                          value-integerp
+                          value-signed-integerp
+                          value-unsigned-integerp
+                          sint-from-uchar
+                          sint-from-schar
+                          sint-from-ushort
+                          sint-from-sshort
+                          scharp-when-valuep-and-kind-schar
+                          ucharp-when-valuep-and-kind-uchar
+                          sshortp-when-valuep-and-kind-sshort
+                          ushortp-when-valuep-and-kind-ushort
+                          sintp-when-valuep-and-kind-sint)
+                         ((:e integer-type-max)
+                          (:e integer-type-min)))))
+
   (defruled promote-value-when-scharp
     (implies (scharp x)
              (equal (promote-value x)
-                    (sint-from-schar x)))
-    :enable promote-value-alt-def)
+                    (sint-from-schar x))))
 
   (defruled promote-value-when-ucharp
     (implies (ucharp x)
              (equal (promote-value x)
                     (if (<= (uchar-max) (sint-max))
                         (sint-from-uchar x)
-                      (uint-from-uchar x))))
-    :enable promote-value-alt-def)
+                      (uint-from-uchar x)))))
 
   (defruled promote-value-when-sshortp
     (implies (sshortp x)
              (equal (promote-value x)
-                    (sint-from-sshort x)))
-    :enable promote-value-alt-def)
+                    (sint-from-sshort x))))
 
   (defruled promote-value-when-ushortp
     (implies (ushortp x)
              (equal (promote-value x)
                     (if (<= (ushort-max) (sint-max))
                         (sint-from-ushort x)
-                      (uint-from-ushort x))))
-    :enable promote-value-alt-def)
+                      (uint-from-ushort x)))))
 
   (defruled promote-value-when-sintp
     (implies (sintp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-uintp
     (implies (uintp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-slongp
     (implies (slongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-ulongp
     (implies (ulongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-sllongp
     (implies (sllongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defruled promote-value-when-ullongp
     (implies (ullongp x)
              (equal (promote-value x)
-                    x))
-    :enable promote-value-alt-def)
+                    x)))
 
   (defval *atc-promote-value-rules*
     '(promote-value-when-scharp
@@ -1507,14 +1528,27 @@
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (op-kind (unop-kind op))
-         (exec-op (pack 'exec- op-kind))
-         (name (pack exec-op '-when- pred))
+         (op-value (if (member-eq op-kind '(:plus :minus))
+                       (pack op-kind '-value)
+                     (pack 'exec- op-kind)))
+         (op-arithmetic-value (pack op-kind '-arithmetic-value))
+         (op-integer-value (pack op-kind '-integer-value))
+         (name (pack op-value '-when- pred))
          (op-type (pack op-kind '- fixtype))
          (op-type-okp (and (unop-case op :minus)
                            (member-eq (type-kind type)
-                                      '(:schar :sshort :sint :slong :sllong
-                                        :uchar :ushort))
+                                      '(:schar
+                                        :sshort
+                                        :sint
+                                        :slong
+                                        :sllong
+                                        :uchar
+                                        :ushort))
                            (pack op-type '-okp)))
+         (promotedp (and (member-eq op-kind
+                                    '(:plus :minus :bitnot))
+                         (member-eq (type-kind type)
+                                    '(:schar :uchar :sshort :ushort))))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                      (equal op (,(pack 'unop- op-kind)))
                      (,pred x)
@@ -1523,24 +1557,65 @@
          (formula `(implies ,hyps
                             (equal (exec-unary op x)
                                    (,op-type x))))
+         (enables (if (member-eq op-kind '(:plus :minus))
+                      `(exec-unary
+                        ,op-value
+                        ,op-arithmetic-value
+                        ,op-integer-value
+                        ,op-type
+                        ,@(and promotedp
+                               (list (pack op-kind '-sint)))
+                        ,@(and op-type-okp
+                               (list op-type-okp))
+                        ,@(and op-type-okp
+                               promotedp
+                               (list (pack op-kind '-sint-okp)))
+                        ,@*atc-promote-value-rules*
+                        result-integer-value
+                        value-integer->get
+                        value-integer
+                        value-sint->get-to-sint->get
+                        value-uint->get-to-uint->get
+                        value-slong->get-to-slong->get
+                        value-ulong->get-to-ulong->get
+                        value-sllong->get-to-sllong->get
+                        value-ullong->get-to-ullong->get
+                        value-sint-to-sint
+                        value-uint-to-uint
+                        value-slong-to-slong
+                        value-ulong-to-ulong
+                        value-sllong-to-sllong
+                        value-ullong-to-ullong
+                        sint-integerp-alt-def
+                        uint-integerp-alt-def
+                        slong-integerp-alt-def
+                        ulong-integerp-alt-def
+                        sllong-integerp-alt-def
+                        ullong-integerp-alt-def
+                        uint-mod
+                        ulong-mod
+                        ullong-mod
+                        value-unsigned-integerp-alt-def
+                        integer-type-rangep
+                        integer-type-min
+                        integer-type-max)
+                    `(exec-unary
+                      ,op-value
+                      ,@(and (member-eq op-kind '(:bitnot))
+                             (member-eq (type-kind type)
+                                        '(:schar :uchar :sshort :ushort))
+                             (list op-type))
+                      ,@*atc-promote-value-rules*
+                      ,@(and op-type-okp
+                             (member-equal op (list (unop-bitnot)))
+                             (member-eq (type-kind type)
+                                        '(:schar :uchar :sshort :ushort))
+                             (list op-type-okp)))))
          (event `(defruled ,name
                    ,formula
-                   :enable (exec-unary
-                            ,exec-op
-                            ,@(and (member-eq op-kind
-                                              '(:plus :minus :bitnot))
-                                   (member-eq (type-kind type)
-                                              '(:schar :uchar :sshort :ushort))
-                                   (list op-type))
-                            ,@*atc-promote-value-rules*
-                            ,@(and op-type-okp
-                                   (member-equal op
-                                                 (list (unop-plus)
-                                                       (unop-minus)
-                                                       (unop-bitnot)))
-                                   (member-eq (type-kind type)
-                                              '(:schar :uchar :sshort :ushort))
-                                   (list op-type-okp))))))
+                   :enable ,enables
+                   :disable ((:e integer-type-min)
+                             (:e integer-type-max)))))
       (mv name event)))
 
   (define atc-exec-unary-rules-gen-loop-types ((op unopp) (types type-listp))
@@ -1613,10 +1688,6 @@
      We also need open @('u...-mod') to expose the @(tsee mod)
      in the shallowly embedded conversions to unsigned type,
      thus matching the @(tsee mod) in @(tsee convert-integer-value).
-     The executable counterparts of the maximum values of the unsigned types
-     serve to match the quoted integers that result
-     from the executable counterpart of @(tsee integer-type-max)
-     that is used in @(tsee convert-integer-value).
      We open the @('<dst>-integerp') functions
      to show that the ACL2 integer is in range,
      i.e. that @(tsee convert-integer-value) does not return an error;
@@ -1659,54 +1730,57 @@
          (formula `(implies ,hyps
                             (equal (exec-cast ',dtyname x)
                                    ,rhs)))
-         (hints `(:enable (exec-cast
-                           convert-integer-value
-                           value-integer
-                           value-integer->get
-                           value-schar-to-schar
-                           value-uchar-to-uchar
-                           value-sshort-to-sshort
-                           value-ushort-to-ushort
-                           value-sint-to-sint
-                           value-uint-to-uint
-                           value-slong-to-slong
-                           value-ulong-to-ulong
-                           value-sllong-to-sllong
-                           value-ullong-to-ullong
-                           value-schar->get-to-schar->get
-                           value-uchar->get-to-uchar->get
-                           value-sshort->get-to-sshort->get
-                           value-ushort->get-to-ushort->get
-                           value-sint->get-to-sint->get
-                           value-uint->get-to-uint->get
-                           value-slong->get-to-slong->get
-                           value-ulong->get-to-ulong->get
-                           value-sllong->get-to-sllong->get
-                           value-ullong->get-to-ullong->get
-                           (:e uchar-max)
-                           (:e ushort-max)
-                           (:e uint-max)
-                           (:e ulong-max)
-                           (:e ullong-max)
-                           uchar-mod
-                           ushort-mod
-                           uint-mod
-                           ulong-mod
-                           ullong-mod
-                           schar-integerp-alt-def
-                           uchar-integerp-alt-def
-                           sshort-integerp-alt-def
-                           ushort-integerp-alt-def
-                           sint-integerp-alt-def
-                           uint-integerp-alt-def
-                           slong-integerp-alt-def
-                           ulong-integerp-alt-def
-                           sllong-integerp-alt-def
-                           ullong-integerp-alt-def
-                           ,@(and (not (equal dtype stype))
-                                  (list dtype-from-stype))
-                           ,@(and guardp
-                                  (list dtype-from-stype-okp)))))
+         (hints `(:enable
+                  (exec-cast
+                   convert-integer-value
+                   value-integer
+                   value-integer->get
+                   integer-type-rangep
+                   integer-type-min
+                   integer-type-max
+                   value-schar-to-schar
+                   value-uchar-to-uchar
+                   value-sshort-to-sshort
+                   value-ushort-to-ushort
+                   value-sint-to-sint
+                   value-uint-to-uint
+                   value-slong-to-slong
+                   value-ulong-to-ulong
+                   value-sllong-to-sllong
+                   value-ullong-to-ullong
+                   value-schar->get-to-schar->get
+                   value-uchar->get-to-uchar->get
+                   value-sshort->get-to-sshort->get
+                   value-ushort->get-to-ushort->get
+                   value-sint->get-to-sint->get
+                   value-uint->get-to-uint->get
+                   value-slong->get-to-slong->get
+                   value-ulong->get-to-ulong->get
+                   value-sllong->get-to-sllong->get
+                   value-ullong->get-to-ullong->get
+                   uchar-mod
+                   ushort-mod
+                   uint-mod
+                   ulong-mod
+                   ullong-mod
+                   schar-integerp-alt-def
+                   uchar-integerp-alt-def
+                   sshort-integerp-alt-def
+                   ushort-integerp-alt-def
+                   sint-integerp-alt-def
+                   uint-integerp-alt-def
+                   slong-integerp-alt-def
+                   ulong-integerp-alt-def
+                   sllong-integerp-alt-def
+                   ullong-integerp-alt-def
+                   ,@(and (not (equal dtype stype))
+                          (list dtype-from-stype))
+                   ,@(and guardp
+                          (list dtype-from-stype-okp)))
+                  :disable
+                  ((:e integer-type-rangep)
+                   (:e integer-type-max)
+                   (:e integer-type-min))))
          (event `(defruled ,name
                    ,formula
                    ,@hints)))
@@ -1750,7 +1824,6 @@
       `(progn
          (defsection atc-exec-cast-rules
            :short "Rules for executing casts."
-           (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
            ,@events
            (defval *atc-exec-cast-rules*
              '(,@names)))))))
