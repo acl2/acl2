@@ -13,38 +13,11 @@
 
 (include-book "kestrel/c/atc/atc" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!)))
 
+(include-book "defstruct") ; reuse these DEFSTRUCTs
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Some examples to test code generation for structuress.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Some shallowly embedded structure types, also to test DEFSTRUCT.
-
-(c::defstruct |point2D|
-              (|x| c::sint)
-              (|y| c::sint))
-
-(c::defstruct |point3D|
-              (|x| c::slong)
-              (|y| c::slong)
-              (|z| c::slong))
-
-(c::defstruct |integers|
-              (|uchar| c::uchar)
-              (|schar| c::schar)
-              (|ushort| c::ushort)
-              (|sshort| c::sshort)
-              (|uint| c::uint)
-              (|sint| c::sint)
-              (|ulong| c::ulong)
-              (|slong| c::slong)
-              (|ullong| c::ullong)
-              (|sllong| c::sllong))
-
-(c::defstruct |scalar_and_array|
-              (|scalar| c::sint)
-              (|aggreg| (c::uchar 10)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
