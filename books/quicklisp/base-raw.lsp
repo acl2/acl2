@@ -107,3 +107,4 @@
 (load-system-from-acl2-quicklisp-bundle "uiop")
 
 (load-system-from-acl2-quicklisp-bundle "dexador")
+(load-system-from-acl2-quicklisp-bundle "zippy")
