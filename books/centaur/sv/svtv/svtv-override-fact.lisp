@@ -527,7 +527,7 @@ keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').</li>
 <li>@(':no-lemmas') says to skip the initial override theorem and monotonicity lemma
 and tries to prove the final theorem directly, with the hints given by the user.</li>
 
-<li>@(':no-integerp) says to skip proving @('integerp') of each output in the
+<li>@(':no-integerp') says to skip proving @('integerp') of each output in the
 initial override theorem.  The @(':enable') option typically must be used to
 provide additional rules for the final theorem to show that the lemma implies
 the outputs are integers.</li>
