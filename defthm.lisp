@@ -11586,7 +11586,12 @@
                                              :displayed-goal term
                                              :otf-flg otf-flg)
                                   hints ens wrld ctx state)))
-            (value nil)))))))
+
+            (pprogn
+; Set accumulated-ttree to the ttree returned by prove, as is done in
+; install-event; see the comment there.
+             (f-put-global 'accumulated-ttree ttree state)
+             (value nil))))))))
    (pprogn (io? prove nil state
                 nil
                 (fms (if (ld-skip-proofsp state)
