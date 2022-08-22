@@ -3420,6 +3420,9 @@ a)
                               (:rewrite rp-evl-of-rp-equal-loosesubterms)
                               (:type-prescription is-rp-loose$inline)
                               rp-evlt-of-apply-bindings-to-evl
+                              rp-evlt-of-apply-bindings-to-evl-when-list-is-not-present
+                              rp-apply-bindings-to-evlt
+                              rp-apply-bindings-subterms-to-evlt-lst
                               (:rewrite
                                rp-ex-counterpart-is-term-not-quotep)
                               rp-trans

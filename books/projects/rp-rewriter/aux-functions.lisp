@@ -1695,7 +1695,10 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
             term)
            ((and (equal (car term) 'list))
             (trans-list (rp-trans-lst (cdr term))))
-           ((and (is-falist term))
+           ((and (equal (car term) 'falist) ;; not using is-falist so that I
+                 ;; can prove (equal (rp-trans (rp-trans x)) (rp-trans x)). 
+                 (consp (cdr term))
+                 (consp (cddr term)))
             (rp-trans (caddr term)))
            (t (cons-with-hint (car term)
                               (rp-trans-lst (cdr term))
