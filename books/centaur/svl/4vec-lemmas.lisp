@@ -1312,10 +1312,22 @@
                              acl2::logapp)))))
 
 (defthm natp-4vec-concat
-  (implies (and (natp x)
+  (implies (and (integerp x)
                 (natp y)
                 (natp s))
            (natp (4vec-concat s x y)))
+  :hints (("goal"
+           :cases ((natp s))
+           :in-theory (e/d (4vec-concat
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER)
+                           (acl2::logapp)))))
+
+(defthm integerp-4vec-concat
+  (implies (and (integerp x)
+                (integerp y)
+                (natp s))
+          (integerp (4vec-concat s x y)))
   :hints (("goal"
            :cases ((natp s))
            :in-theory (e/d (4vec-concat
