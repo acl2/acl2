@@ -12,7 +12,9 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/world" :dir :system) ; todo: reduce, for fn-recursive-partners
+(include-book "kestrel/world-light/fn-definedp" :dir :system)
+(include-book "kestrel/world-light/function-symbolsp" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
@@ -60,7 +62,8 @@
 
 (defun filter-defined-fns (fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (function-symbolsp fns wrld))))
   (if (endp fns)
       nil
     (let ((fn (first fns)))
