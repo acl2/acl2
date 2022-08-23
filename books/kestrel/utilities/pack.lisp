@@ -13,6 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
+(include-book "nat-to-string")
 (local (include-book "coerce"))
 (local (include-book "explode-nonnegative-integer"))
 (local (include-book "explode-atom"))
@@ -22,28 +23,7 @@
 ;; See also the built-in functions add-suffix and add-suffix-to-fn, which are
 ;; less general than pack$ but may suffice for many uses.
 
-;dup?
-;Convert the natural N into a base-10 string representation.
-;; todo: remove the check since we have a guard
-(defund nat-to-string (n)
-  (declare (type (integer 0 *) n))
-  (if (not (mbt (natp n))) ;drop this?:
-      (prog2$ (hard-error 'nat-to-string "Argument must be a natural, but we got ~x0." (acons #\0 n nil))
-              "ERROR IN NAT-TO-STRING")
-    (coerce (explode-nonnegative-integer n 10 nil) 'string)))
 
-;; NAT-TO-STRING is essentially injective
-(defthm equal-of-nat-to-string-and-nat-to-string
-  (implies (and (natp n1)
-                (natp n2))
-           (equal (equal (nat-to-string n1)
-                         (nat-to-string n2))
-                  (equal n1 n2)))
-  :hints (("Goal" :in-theory (enable nat-to-string))))
-
-(defthm stringp-of-nat-to-string
-  (stringp (nat-to-string x))
-  :hints (("Goal" :in-theory (enable nat-to-string))))
 
 ;;
 ;; pack (making a symbol from pieces: other symbols, strings, and natural numbers)
