@@ -11,8 +11,7 @@
 
 (in-package "C")
 
-(include-book "arithmetic-operations")
-(include-book "pointer-operations")
+(include-book "scalar-operations")
 (include-book "array-operations")
 (include-book "structure-operations")
 
