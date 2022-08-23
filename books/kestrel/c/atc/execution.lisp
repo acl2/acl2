@@ -231,39 +231,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-lognot ((arg valuep))
-  :returns (result value-resultp)
-  :short "Execute unary lognot [C:6.5.3.3/1] [C:6.5.3.3/5]."
-  (b* ((arg (value-fix arg))
-       ((unless (value-scalarp arg))
-        (error (list :mistype-lognot
-                     :required :scalar
-                     :supplied arg))))
-    (cond ((ucharp arg) (lognot-uchar arg))
-          ((scharp arg) (lognot-schar arg))
-          ((ushortp arg) (lognot-ushort arg))
-          ((sshortp arg) (lognot-sshort arg))
-          ((uintp arg) (lognot-uint arg))
-          ((sintp arg) (lognot-sint arg))
-          ((ulongp arg) (lognot-ulong arg))
-          ((slongp arg) (lognot-slong arg))
-          ((ullongp arg) (lognot-ullong arg))
-          ((sllongp arg) (lognot-sllong arg))
-          ((value-case arg :pointer) (sint-from-boolean
-                                      (value-pointer-nullp arg)))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :in-theory (enable value-scalarp
-                                    value-arithmeticp
-                                    value-realp
-                                    value-integerp
-                                    value-unsigned-integerp-alt-def
-                                    value-signed-integerp-alt-def)
-                 :use (:instance values-of-promote-value (val arg))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-unary ((op unopp) (arg value-resultp))
   :returns (result value-resultp)
   :short "Execute a unary operation."
@@ -275,7 +242,7 @@
                :plus (plus-value arg)
                :minus (minus-value arg)
                :bitnot (bitnot-value arg)
-               :lognot (exec-lognot arg)))
+               :lognot (lognot-value arg)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

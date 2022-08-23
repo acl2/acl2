@@ -21,3 +21,17 @@
   :short "Operations on C scalar values."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lognot-scalar-value ((val valuep))
+  :guard (value-scalarp val)
+  :returns (resval valuep)
+  :short "Apply @('!') to a scalar value [C:6.5.3.3/5]."
+  (cond ((value-integerp val) (lognot-integer-value val))
+        ((value-case val :pointer) (lognot-pointer-value val))
+        (t (ec-call (value-fix (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable value-scalarp
+                                           value-arithmeticp
+                                           value-realp)))
+  :hooks (:fix))

@@ -509,7 +509,7 @@
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
   :returns (resval value-resultp)
-  :short "Apply unary @('~') to an integer value [C:6.5.3.3/4]."
+  :short "Apply @('~') to an integer value [C:6.5.3.3/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -587,3 +587,21 @@
                                        (:e slong-max)
                                        (:e sllong-min)
                                        (:e sllong-max))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lognot-integer-value ((val valuep))
+  :guard (value-integerp val)
+  :returns (resval valuep)
+  :short "Apply @('!') to an integer value [C:6.5.3.3/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This always returns an @('int') (never an error), either 0 or 1.
+     It is equivalent to comparing the integer for equality to 0,
+     which in our curren model is equivalent to
+     whether the integer value is 0 or not."))
+  (if (equal (value-integer->get val) 0)
+      (value-sint 1)
+    (value-sint 0))
+  :hooks (:fix))

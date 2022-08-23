@@ -47,7 +47,7 @@
            (not objdes))
     :enable value-pointer-nullp))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-pointer->designator ((ptr valuep))
   :guard (and (value-case ptr :pointer)
@@ -63,3 +63,20 @@
     (equal (value-pointer->designator (value-pointer designator type))
            (objdesign-fix designator))
     :enable value-pointer->designator))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lognot-pointer-value ((val valuep))
+  :guard (value-case val :pointer)
+  :returns (resval valuep)
+  :short "Apply @('!') to a pointer value [C:6.5.3.3/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This always returns an @('int') (never an error), either 0 or 1.
+     It is equivalent to comparing the pointer for equality to 0,
+     i.e. to check whether the pointer is null or not."))
+  (if (value-pointer-nullp val)
+      (value-sint 1)
+    (value-sint 0))
+  :hooks (:fix))

@@ -1428,10 +1428,11 @@
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (op-kind (unop-kind op))
-         (op-value (if (member-eq op-kind '(:plus :minus :bitnot))
-                       (pack op-kind '-value)
-                     (pack 'exec- op-kind)))
-         (op-arithmetic-value (and (not (unop-case op :bitnot))
+         (op-value (pack op-kind '-value))
+         (op-scalar-value (and (unop-case op :lognot)
+                               (pack op-kind '-scalar-value)))
+         (op-arithmetic-value (and (or (unop-case op :plus)
+                                       (unop-case op :minus))
                                    (pack op-kind '-arithmetic-value)))
          (op-integer-value (pack op-kind '-integer-value))
          (name (pack op-value '-when- pred))
@@ -1458,64 +1459,63 @@
          (formula `(implies ,hyps
                             (equal (exec-unary op x)
                                    (,op-type x))))
-         (enables (if (member-eq op-kind '(:plus :minus :bitnot))
-                      `(exec-unary
-                        ,op-value
-                        ,@(and op-arithmetic-value
-                               (list op-arithmetic-value))
-                        ,op-integer-value
-                        ,op-type
-                        ,@(and promotedp
-                               (list (pack op-kind '-sint)))
-                        ,@(and op-type-okp
-                               (list op-type-okp))
-                        ,@(and op-type-okp
-                               promotedp
-                               (list (pack op-kind '-sint-okp)))
-                        ,@*atc-promote-value-rules*
-                        result-integer-value
-                        value-integer->get
-                        value-integer
-                        value-sint->get-to-sint->get
-                        value-uint->get-to-uint->get
-                        value-slong->get-to-slong->get
-                        value-ulong->get-to-ulong->get
-                        value-sllong->get-to-sllong->get
-                        value-ullong->get-to-ullong->get
-                        value-sint-to-sint
-                        value-uint-to-uint
-                        value-slong-to-slong
-                        value-ulong-to-ulong
-                        value-sllong-to-sllong
-                        value-ullong-to-ullong
-                        sint-integerp-alt-def
-                        uint-integerp-alt-def
-                        slong-integerp-alt-def
-                        ulong-integerp-alt-def
-                        sllong-integerp-alt-def
-                        ullong-integerp-alt-def
-                        uint-mod
-                        ulong-mod
-                        ullong-mod
-                        value-unsigned-integerp-alt-def
-                        integer-type-rangep
-                        integer-type-min
-                        integer-type-max
-                        ,@(and (unop-case op :bitnot)
-                               `((:e sint-min)
-                                 (:e sint-max)
-                                 (:e slong-min)
-                                 (:e slong-max)
-                                 (:e sllong-min)
-                                 (:e sllong-max))))
-                    `(exec-unary
-                      ,op-value
-                      ,@*atc-promote-value-rules*
-                      ,@(and op-type-okp
-                             (member-equal op (list (unop-bitnot)))
-                             (member-eq (type-kind type)
-                                        '(:schar :uchar :sshort :ushort))
-                             (list op-type-okp)))))
+         (enables `(exec-unary
+                    ,op-value
+                    ,@(and op-scalar-value
+                           (list op-scalar-value))
+                    ,@(and op-arithmetic-value
+                           (list op-arithmetic-value))
+                    ,op-integer-value
+                    ,op-type
+                    ,@(and promotedp
+                           (list (pack op-kind '-sint)))
+                    ,@(and op-type-okp
+                           (list op-type-okp))
+                    ,@(and op-type-okp
+                           promotedp
+                           (list (pack op-kind '-sint-okp)))
+                    ,@*atc-promote-value-rules*
+                    result-integer-value
+                    value-integer->get
+                    value-integer
+                    value-sint->get-to-sint->get
+                    value-uint->get-to-uint->get
+                    value-slong->get-to-slong->get
+                    value-ulong->get-to-ulong->get
+                    value-sllong->get-to-sllong->get
+                    value-ullong->get-to-ullong->get
+                    value-sint-to-sint
+                    value-uint-to-uint
+                    value-slong-to-slong
+                    value-ulong-to-ulong
+                    value-sllong-to-sllong
+                    value-ullong-to-ullong
+                    sint-integerp-alt-def
+                    uint-integerp-alt-def
+                    slong-integerp-alt-def
+                    ulong-integerp-alt-def
+                    sllong-integerp-alt-def
+                    ullong-integerp-alt-def
+                    uint-mod
+                    ulong-mod
+                    ullong-mod
+                    value-unsigned-integerp-alt-def
+                    integer-type-rangep
+                    integer-type-min
+                    integer-type-max
+                    ,@(and (unop-case op :bitnot)
+                           `((:e sint-min)
+                             (:e sint-max)
+                             (:e slong-min)
+                             (:e slong-max)
+                             (:e sllong-min)
+                             (:e sllong-max)))
+                    ,@(and (unop-case op :lognot)
+                           `(sint-from-boolean
+                             value-schar->get-to-schar->get
+                             value-uchar->get-to-uchar->get
+                             value-sshort->get-to-sshort->get
+                             value-ushort->get-to-ushort->get))))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
