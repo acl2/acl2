@@ -20,9 +20,7 @@
 ;; the most recent event.
 
 ;; TODO: Add filtering of unhelpful recommendations:
-;; - skip use-lemma when the rule is already enabled
 ;; - (maybe) skip use-lemma when the rule had nothing to do with the goal
-;; - skip add-enable-hint when the rule is already enabled
 ;; - skip add-disable-hint when the rule is already disabled (or not present?)
 ;; - skip add-hyp when the hyp is already there
 ;; - add-skip hyp when the hyp would contradict the existing assumptions (together satisfiable together)
@@ -69,6 +67,26 @@
 
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
+
+
+;move
+(defund name-that-can-be-enabled/disabledp (name wrld)
+  (declare (xargs :guard (and ;; (symbolp name)
+                          (plist-worldp wrld))))
+  (let ((name (if (symbolp name)
+                  name
+                (if (and (consp name) ; might be (:rewrite foo) or (:rewrite foo . 1)
+                         (eq :rewrite (car name))
+                         (consp (cdr name))
+                         (cadr name)
+                         (symbolp (cadr name)))
+                    (cadr name)
+                  (er hard? 'name-that-can-be-enabled/disabledp "Unknown kind of name: ~x0.")))))
+  (or (getpropc name 'unnormalized-body nil wrld)
+      (getpropc name 'theorem nil wrld) ;todo: what if it has :rule-classes nil?
+      (let ((alist (table-alist 'macro-aliases-table wrld)))
+        (and (alistp alist) ; should always be true
+             (assoc-eq name alist))))))
 
 ;move
 (defthm parsed-json-object-pairsp-forward-to-alistp
@@ -215,8 +233,6 @@
     ("add-nonlinearp-hint" . :add-nonlinearp-hint)
     ("add-use-hint" . :add-use-hint)
     ("use-lemma" . :use-lemma)))
-
-
 
 ;; Returns (mv erp form state).
 (defun parse-include-book (string state)
@@ -386,6 +402,7 @@
 ;; Calls prove$ but first does an include-book, which is undone after the prove$
 ;; Returns (mv erp provedp state).
 (defun prove$-with-include-book (ctx body include-book-form
+                                     name-to-check ; we ensure this exists after the include-book, or nil
                                  ;; args to prove$:
                                  hints otf-flg step-limit
                                  state)
@@ -396,6 +413,11 @@
         ((when erp) ; can happen if there is a name clash
          (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
          (mv nil ; not considering this an error, since if there is a name clash we want to try the other recommendations
+             nil state))
+        ((when (and name-to-check
+                    (not (name-that-can-be-enabled/disabledp name-to-check (w state)))))
+         (cw "NOTE: After including ~x0, ~x1 is still not defined.~%" (cadr include-book-form) name-to-check)
+         (mv nil ; suppress error
              nil state))
         ;; Now see whether we can prove the theorem using the new include-book:
         ;; ((mv erp ;todo: how to distinguish real errors?
@@ -412,10 +434,13 @@
                                             :step-limit step-limit)))
      (mv nil provedp state))))
 
-;; Returns (mv erp successful-include-book-form-or-nil state)
+;; Try to prove BODY after submitting each of the INCLUDE-BOOK-FORMS (separately).
+;; Returns (mv erp successful-include-book-form-or-nil state).
+;; TODO: Don't return erp if we will always suppress errors.
 (defun try-prove$-with-include-books (ctx
                                       body
                                       include-book-forms
+                                      name-to-check
                                       ;; args to prove$:
                                       hints otf-flg step-limit
                                       state)
@@ -424,17 +449,20 @@
       (mv nil nil state)
     (b* ((form (first include-book-forms))
          ;; (- (cw "  Trying with ~x0.~%" form))
-         ((mv erp provedp state)
+         ((mv & ; erp ; suppress errors from prove$-with-include-book (TODO: Why?)
+              provedp state)
           (prove$-with-include-book ctx body
                                     form
+                                    name-to-check
                                     ;; args to prove$:
                                     hints otf-flg step-limit
                                     state))
-         ((when erp) (mv erp nil state))
+         ;; ((when erp) (mv erp nil state))
          ((when provedp) (mv nil form state)))
       (try-prove$-with-include-books ctx
                                      body
                                      (rest include-book-forms)
+                                     name-to-check
                                      ;; args to prove$:
                                      hints otf-flg step-limit
                                      state))))
@@ -449,7 +477,7 @@
       (prog2$ (cw "FAIL (ill-formed library recommendation: ~x0)~%" include-book-form)
               (mv nil nil state))
     (b* (((mv erp provedp state)
-          (prove$-with-include-book 'try-add-library theorem-body include-book-form theorem-hints theorem-otf-flg *step-limit* state))
+          (prove$-with-include-book 'try-add-library theorem-body include-book-form nil theorem-hints theorem-otf-flg *step-limit* state))
          ((when erp) (mv erp nil state))
          (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
       (mv nil provedp state))))
@@ -476,73 +504,119 @@
        (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
     (mv nil provedp state)))
 
-(defund name-that-can-be-enabled/disabledp (name wrld)
-  (declare (xargs :guard (and ;; (symbolp name)
-                          (plist-worldp wrld))))
-  (let ((name (if (symbolp name)
-                  name
-                (if (and (consp name) ; might be (:rewrite foo) or (:rewrite foo . 1)
-                         (eq :rewrite (car name))
-                         (consp (cdr name))
-                         (cadr name)
-                         (symbolp (cadr name)))
-                    (cadr name)
-                  (er hard? 'name-that-can-be-enabled/disabledp "Unknown kind of name: ~x0.")))))
-  (or (getpropc name 'unnormalized-body nil wrld)
-      (getpropc name 'theorem nil wrld)
-      (let ((alist (table-alist 'macro-aliases-table wrld)))
-        (and (alistp alist) ; should always be true
-             (assoc-eq name alist))))))
+;; Returns all disabled runes associate with NAME.
+;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
+(defun disabled-runes (name ens wrld)
+  (declare (xargs :mode :program))
+  (disabledp-fn name ens wrld))
+
+;; (defun known-namep (sym wrld)
+;;   (declare (xargs :guard (and (symbolp sym)
+;;                               (plist-worldp wrld))))
+;;   (or (function-symbolp sym wrld)
+;;        (getprop sym 'theorem nil 'current-acl2-world wrld)))
+
 
 ;; Returns (mv erp successp state).
-;; TODO: Don't enable if already enabled.
-(defun try-add-enable-hint (rule
-                            book-map
-                            theorem-name ; can be the name of a defun, for use-lemma
-                            theorem-body theorem-hints theorem-otf-flg state)
-  (declare (xargs :stobjs state :mode :program)
-           (ignore theorem-name))
-  (b* (;; ((when (not (name-that-can-be-enabled/disabledp rule (w state))))
-       ;;  (cw "FAIL (unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
-       ;;  (mv nil nil state))
-       (book-map-keys (strip-cars book-map))
-       ((when (not (equal book-map-keys (list rule))))
-        ;; throw an error?
-        (mv :bad-book-map nil state))
-       (books-to-try (lookup-eq rule book-map)))
-    (if (eq :builtin books-to-try)
-        (b* (((mv provedp state)
+;; TODO: Avoid theory-invariant violations from enabling.
+(defun try-add-enable-hint (rule ; the rule to try enabling
+                            book-map ; info on where the rule may be found
+                            theorem-body
+                            theorem-hints
+                            theorem-otf-flg
+                            state)
+  (declare (xargs :stobjs state :mode :program))
+  (let ((wrld (w state)))
+    (if (function-symbolp rule wrld)
+        ;; It's a function in the current world:
+        (b* ((fn rule)
+             ((when (not (logicp fn wrld)))
+              (cw "SKIP (Can't enable ~x0. Not in :logic mode.)~%" fn)
+              (mv nil nil state))
+             ((when (not (and
+                              ;; (defined-functionp fn wrld) ;todo
+                              )))
+              (cw "SKIP (Can't enable ~x0. No body.)~%" fn)
+              (mv nil nil state))
+             ;; TODO: Consider whether to enable, say the :type-prescription rule
+             (rune `(:definition ,fn))
+             ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
+             ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
+              (cw "SKIP (~x0 is already enabled.)~%" fn)
+              (mv nil nil state))
+             ;; FN exists and just needs to be enabled:
+             (new-hints (enable-runes-in-hints theorem-hints (list fn))) ;; todo: ensure this is nice
+             ((mv provedp state)
               (prove$-checked 'try-add-enable-hint
                               theorem-body
-                              ;; todo: ensure this is nice:
-                              :hints (enable-runes-in-hints theorem-hints (list rule))
+                              :hints new-hints
+                              :otf-flg theorem-otf-flg
+                              :step-limit *step-limit*))
+             (- (if provedp (cw "SUCCESS: Enable ~x0~%" fn) (cw "FAIL~%"))))
+          (mv nil provedp state))
+      (if (not (eq :no-body (getpropc rule 'theorem :no-body wrld))) ;todo: how to just check if the property is set?
+          ;; It's a theorem in the current world:
+        (b* (;; TODO: Consider whether to enable, say the :type-prescription rule
+             (rune `(:rewrite ,rule))
+             ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
+             ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
+              (cw "SKIP (~x0 is already enabled.)~%" rule)
+              (mv nil nil state))
+             ;; RULE exists and just needs to be enabled:
+             (new-hints (enable-runes-in-hints theorem-hints (list rule))) ;; todo: ensure this is nice
+             ((mv provedp state)
+              (prove$-checked 'try-add-enable-hint
+                              theorem-body
+                              :hints new-hints
                               :otf-flg theorem-otf-flg
                               :step-limit *step-limit*))
              (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "FAIL~%"))))
           (mv nil provedp state))
-      (b* (((mv erp successful-include-book-form-or-nil state)
-            (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try theorem-hints theorem-otf-flg *step-limit* state))
-           ((when erp) (mv erp nil state))
-           (- (if successful-include-book-form-or-nil
-                  (cw "SUCCESS: Include ~x0 and enable ~x1~%" successful-include-book-form-or-nil rule)
-                (cw "FAIL~%"))))
-        (mv nil (if successful-include-book-form-or-nil t nil) state)))))
+        ;; RULE is not currently known, so try to find where it is defined:
+        (b* ((book-map-keys (strip-cars book-map))
+             ((when (not (equal book-map-keys (list rule))))
+              (cw "WARNING: Bad book map, ~X01, for ~x2.~%" book-map nil rule)
+              (mv :bad-book-map nil state))
+             (books-to-try (lookup-eq rule book-map))
+             ((when (eq :builtin books-to-try))
+              (er hard? 'try-add-enable-hint "~x0 does not seem to be built-in, contrary to the book-map.")
+              (mv :bad-book-info nil state))
+             ;; todo: check for empty books-to-try, or is that already checked?
+             (num-books-to-try-orig (len books-to-try))
+             ;; (- (and (< 1 num-books-to-try)
+             ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-books-to-try rule books-to-try nil)))
+             (books-to-try (if (< 3 num-books-to-try-orig)
+                               (take 3 books-to-try)
+                             books-to-try))
+             ;; todo: ensure this is nice:
+             (new-hints (enable-runes-in-hints theorem-hints (list rule))))
+          ;; Not built-in, so we'll have to try finding the rule in a book:
+          ;; TODO: Would be nice to not bother if it is a definition that we don't have.
+          (b* (;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
+               ((mv erp successful-include-book-form-or-nil state)
+                (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule new-hints theorem-otf-flg *step-limit* state))
+               ((when erp) (mv erp nil state))
+               (provedp (if successful-include-book-form-or-nil t nil))
+               (- (if provedp
+                      (cw "SUCCESS: Include ~x0 and enable ~x1.~%" successful-include-book-form-or-nil rule)
+                    (if (< 3 num-books-to-try-orig)
+                        ;; todo: try more if we didn't find it?:
+                        (cw "FAIL (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
+                      (cw "FAIL~%")))))
+            (mv nil provedp state)))))))
 
 ;; Returns (mv erp successp state).
-;; TODO: Don't disable if already disabled.
-(defun try-add-disable-hint (rule theorem-name theorem-body theorem-hints theorem-otf-flg state)
-  (declare (xargs :stobjs state :mode :program)
-           (ignore theorem-name))
-  (b* (((when (not (name-that-can-be-enabled/disabledp rule (w state))))
-        (cw "FAIL (Unknown name: ~x0)~%" rule) ;; TTODO: Include any necessary books first
+(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
+        (cw "SKIP (Not disabling catch-all: ~x0)~%" rule)
         (mv nil nil state))
-       ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (submit-event-helper
-       ;;                  (make-thm-to-attempt theorem-body
-       ;;                                       ;; todo: ensure this is nice:
-       ;;                                       (disable-runes-in-hints theorem-hints (list rule))
-       ;;                                       theorem-otf-flg)
-       ;;                  t nil state))
+       ((when (not (name-that-can-be-enabled/disabledp rule (w state))))
+        (cw "SKIP (Not disabling unknown name: ~x0)~%" rule) ;; For now, we don't try to including the book that brings in the thing to disable!
+        (mv nil nil state))
+       ((when (disabledp-fn rule (ens-maybe-brr state) (w state)))
+        (cw "SKIP (Not disabling since already disabled: ~x0)~%" rule)
+        (mv nil nil state))
        ((mv provedp state) (prove$-checked 'try-add-disable-hint
                                            theorem-body
                                            ;; todo: ensure this is nice:
@@ -557,9 +631,12 @@
 (defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (or (getpropc item 'unnormalized-body nil (w state))
+  (b* (((when (eq item 'other))
+        (cw "SKIP (Unknown name: ~x0)~%" item)
+        (mv nil nil state))
+       ((when (not (or (getpropc item 'unnormalized-body nil (w state))
                        (getpropc item 'theorem nil (w state)))))
-        (cw "FAIL (unknown name: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (cw "FAIL (Unknown name: ~x0)~%" item) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
@@ -668,14 +745,14 @@
           ;; TODO: Pass the book-map to all who can use it:
           (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-enable-hint (try-add-enable-hint object book-map theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-disable-hint (try-add-disable-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg state))
+          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg state))
           (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
           (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          ;; same as for try-add-enable-hint above:
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:use-lemma (try-add-enable-hint object book-map theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          ;; same as for try-add-enable-hint above:
+          (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg state))
           (t (prog2$ (cw "UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))
         (if erp
