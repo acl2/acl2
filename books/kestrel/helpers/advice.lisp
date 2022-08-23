@@ -750,11 +750,13 @@
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
-  (b* (((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
+  (b* (;; Get server info:
+       ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
+       ;; Get most recent failed theorem and checkpoints:
        (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
        (most-recent-failed-theorem-goal (most-recent-failed-theorem-goal state))
@@ -775,31 +777,34 @@
                (cw "Checkpoints in query: ~X01.)~%" untranslated-checkpoints nil)))
        ;; (printed-checkpoints (fms-to-string "~X01" (acons #\0 untranslated-checkpoints
        ;;                                                   (acons #\1 nil nil))))
-       (post-data (acons "n" (nat-to-string n)
-                         (make-numbered-checkpoint-entries 0 untranslated-checkpoints)))
-       ;; (- (cw "POST data to be sent: ~X01.~%" post-data nil))
+       ;; Send query to server:
        (- (cw "Asking server for recommendations on ~x0 ~s1...~%"
               (len untranslated-checkpoints)
               (if (< 1 (len untranslated-checkpoints)) "checkpoints" "checkpoint")))
+       (post-data (acons "n" (nat-to-string n)
+                         (make-numbered-checkpoint-entries 0 untranslated-checkpoints)))
+       ;; (- (cw "POST data to be sent: ~X01.~%" post-data nil))
        ((mv erp post-response state) (htclient::post server-url post-data state))
        ((when erp)
         (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
         (mv erp nil state))
        (- (and debug (cw "Raw JSON POST response: ~X01~%" post-response nil)))
-       ;; (- (cw "Info returned from recommendation server: ~X01~%" post-response nil))
+       ;; Parse the JSON:
        ((mv erp parsed-json) (parse-string-as-json post-response))
-       (semi-parsed-recommendations (parsed-json-array->values parsed-json))
-       (- (and debug (cw "After JSON parsing: ~X01~%" semi-parsed-recommendations nil)))
        ((when erp)
         (er hard? 'advice-fn "Error parsing JSON.")
         (mv erp nil state))
-       ;; (- (cw "Parsed info returned from recommendation server: ~X01~%" parsed-recommendations nil))
+       (semi-parsed-recommendations (parsed-json-array->values parsed-json))
+       (- (and debug (cw "After JSON parsing: ~X01~%" semi-parsed-recommendations nil)))
+       ;; Parse the individual strings in the recs:
        ((mv erp parsed-recommendations state) (parse-recommendations semi-parsed-recommendations state))
        ((when erp)
         (er hard? 'advice-fn "Error parsing recommendations.")
         (mv erp nil state))
        (- (and debug (cw "Parsed recommendations: ~X01~%" parsed-recommendations nil)))
+       ;; Print the recommendations (for now): ;; TODO: Show the parsed ones here?
        (state (show-recommendations semi-parsed-recommendations state))
+       ;; Try the recommendations:
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
        ((mv name body hints otf-flg)
         (if (member-eq (car most-recent-failed-theorem) '(thm rule))
@@ -814,13 +819,13 @@
               (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
        (state (widen-margins state))
        ((mv erp
-            & ; result-bools ; todo: use
+            & ; result-bools ; todo: use this, and make it richer
             state) (try-recommendations parsed-recommendations name body hints otf-flg 1 nil state))
        (state (unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations.")
         (mv erp nil state)))
-    (mv nil ;(erp-nil)
+    (mv nil ; no error
         '(value-triple :invisible) state)))
 
 (defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil))
