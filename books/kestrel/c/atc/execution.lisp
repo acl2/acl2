@@ -229,33 +229,6 @@
                (:e integer-type-min))
      :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-bitnot ((arg valuep))
-  :returns (result value-resultp)
-  :short "Execute bitwise complement [C:6.5.3.3/1] [C:6.5.3.3/4]."
-  (b* ((arg (value-fix arg))
-       ((unless (value-integerp arg))
-        (error (list :mistype-bitnot
-                     :required :integer
-                     :supplied arg)))
-       (val (promote-value arg)))
-    (cond ((uintp val) (bitnot-uint val))
-          ((sintp val) (bitnot-sint val))
-          ((ulongp val) (bitnot-ulong val))
-          ((slongp val) (bitnot-slong val))
-          ((ullongp val) (bitnot-ullong val))
-          ((sllongp val) (bitnot-sllong val))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :in-theory (enable value-arithmeticp
-                                    value-realp
-                                    value-integerp
-                                    value-unsigned-integerp-alt-def
-                                    value-signed-integerp-alt-def)
-                 :use (:instance values-of-promote-value (val arg))))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-lognot ((arg valuep))
@@ -301,7 +274,7 @@
                :indir (error :todo)
                :plus (plus-value arg)
                :minus (minus-value arg)
-               :bitnot (exec-bitnot arg)
+               :bitnot (bitnot-value arg)
                :lognot (exec-lognot arg)))
   :hooks (:fix))
 

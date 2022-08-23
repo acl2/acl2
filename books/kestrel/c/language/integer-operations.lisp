@@ -502,3 +502,88 @@
        ((when (errorp resval)) (error (list :undefined-minus (value-fix val)))))
     resval)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bitnot-integer-value ((val valuep))
+  :guard (and (value-integerp val)
+              (value-promoted-arithmeticp val))
+  :returns (resval value-resultp)
+  :short "Apply unary @('~') to an integer value [C:6.5.3.3/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the value has been already promoted,
+     so we put that restriction in the guard.")
+   (xdoc::p
+    "The result is obtained by complementing each bit of the operand
+     [C:6.5.3.3/4].
+     Thus, the result must have the same type as the operand.")
+   (xdoc::p
+    "We calculate the result
+     via @(tsee lognot) followed by @(tsee result-integer-value),
+     which works for both signed and unsigned operands,
+     as explained below.")
+   (xdoc::p
+    "For a signed integer of @('n') bits,
+     the result of @(tsee lognot) is a signed integer of @('n') bits:
+     i.e. the following is a theorem")
+   (xdoc::codeblock
+    "(implies (signed-byte-p n x)"
+    "         (signed-byte-p n (lognot x)))")
+   (xdoc::p
+    "which can be proved, for example,
+     by including @('[books]/kestrel/arithmetic-light/expt.lisp').")
+   (xdoc::p
+    "Thus, applying @(tsee result-integer-value) never yields an error
+     when applied to the result @(tsee lognot),
+     and just wraps the ACL2 integer into a C integer of the appropriate type.")
+   (xdoc::p
+    "For an unsigned integer of @('n') bits,
+     @(tsee lognot) returns a negative result (of @('n') bits)
+     if the high (i.e. sign) bit of the operand is set.
+     In this case, to fit into the range of an unsigned C integer,
+     we need to turn the negative integer
+     into the non-negative one that has the same low @('n') bits,
+     and @(tsee result-integer-value) does that;
+     note that @(tsee mod) is equivalent to @(tsee acl2::loghead),
+     as can be seen in the definition of the latter.")
+   (xdoc::p
+    "Because the result of the signed operation is always in range,
+     and the unsigned operation never causes errors in general,
+     this operation never causes errors.
+     So we prove an additional theorem saying that
+     this operation always returns a value.
+     But we need a hypothesis implied by the guard for this to hold.
+     We keep the @(':returns') type broader (i.e. @(tsee value-resultp))
+     but unconditional, for consistency with other operations."))
+  (b* ((mathint (value-integer->get val))
+       (result (lognot mathint))
+       (resval (result-integer-value result (type-of-value val))))
+    resval)
+  :hooks (:fix)
+  ///
+
+  (defret valuep-of-bitnot-integer-value
+    (valuep resval)
+    :hyp (value-integerp val)
+    :hints (("Goal" :in-theory (enable result-integer-value
+                                       integer-type-rangep
+                                       integer-type-max
+                                       integer-type-min
+                                       lognot
+                                       value-integerp
+                                       value-unsigned-integerp
+                                       value-signed-integerp
+                                       value-integer->get
+                                       (:e schar-min)
+                                       (:e schar-max)
+                                       (:e sshort-min)
+                                       (:e sshort-max)
+                                       (:e sint-min)
+                                       (:e sint-max)
+                                       (:e slong-min)
+                                       (:e slong-max)
+                                       (:e sllong-min)
+                                       (:e sllong-max))))))
