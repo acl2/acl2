@@ -55,6 +55,7 @@
 (include-book "syntheto/top")
 (include-book "unicode-light/top")
 (include-book "utilities/top")
+(include-book "world-light/top")
 (include-book "x86/top")
 (include-book "yul/top")
 (include-book "zcash/top")

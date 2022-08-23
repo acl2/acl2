@@ -17,6 +17,7 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "legal-variable-listp")
+(include-book "kestrel/world-light/fn-definedp" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 ;; TODO: Change some of these to just take wrld instead of state.
@@ -30,8 +31,6 @@
 (defthm alistp-of-getprops
   (alistp (getprops key world-name w))
   :hints (("Goal" :in-theory (enable symbol<))))
-
-;; TODO: Add a check for a primitive function (using *primitive-formals-and-guards*)
 
 ;; Returns the body (as a translated term) of NAME, which should be a function.
 ;ffixme any time we lookup unnormalized-body (here and elsewhere) consider what happens when we try to lookup the body of a primitive..  fixme and what about a constrained function?
@@ -51,23 +50,13 @@
           (er hard? 'fn-body  "Body of function ~x0 is not a pseudo-term !" name)
         body))))
 
-;; Check whether NAME is a defined function.
-(defund fn-definedp (name wrld)
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp wrld))))
-  (let ((body (getpropc name 'unnormalized-body nil wrld)))
-    (if (not body)
-        nil                         ;; function is not defined
-      (if (not (pseudo-termp body)) ;todo: not sure this check is appropriate here
-          (er hard? 'fn-definedp "Function ~x0's body is not a pseudo-termp (it's ~x1).~%" name body)
-        t))))
-
 (defun all-fn-definedp (names wrld)
   (declare (xargs :guard (and (symbol-listp names)
                               (plist-worldp wrld))))
   (if (atom names)
       t
-    (and (fn-definedp (first names) wrld)
+    (and (function-symbolp (first names) wrld) ; todo, move to guard
+         (fn-definedp (first names) wrld)
          (all-fn-definedp (rest names) wrld))))
 
 ;Happens to be true even if FN is not defined, because hard-error returns nil, which is a pseudo-term
@@ -341,7 +330,8 @@
   (if (endp fns)
       nil
     (let ((fn (first fns)))
-      (if (and (fn-definedp fn (w state))
+      (if (and (function-symbolp fn (w state)) ; todo: move to guard
+               (fn-definedp fn (w state))
                (null (fn-formals fn (w state))))
           (cons fn (filter-0ary-fns (rest fns) state))
         (filter-0ary-fns (rest fns) state)))))
@@ -407,7 +397,8 @@
                               (plist-worldp wrld))))
   (if (endp names)
       t
-    (and (or (fn-definedp (first names) wrld)
+    (and (or (and (function-symbolp (first names) wrld)
+                  (fn-definedp (first names) wrld))
              (defthm-body (first names) wrld))
          (ensure-all-theoremsp (rest names) wrld))))
 

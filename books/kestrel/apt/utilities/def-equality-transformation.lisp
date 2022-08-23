@@ -30,7 +30,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/library-wrappers/my-make-flag" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/untranslated-terms/rename-functions" :dir :system)
 (include-book "kestrel/utilities/ruler-extenders" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system) ;for get-body-from-event
@@ -86,7 +86,7 @@
                               (symbol-listp parents)
                               (macro-arg-descriptionsp transform-specific-arg-descriptions)
                               (plist-worldp wrld))))
-  (b* (((when (not (fn-definedp function-body-transformer wrld)))
+  (b* (((when (not (defined-functionp function-body-transformer wrld)))
         (er hard? 'def-equality-transformation-fn "The function body transformer, ~x0, is not a defined function." function-body-transformer))
        (transform-specific-arg-names (append transform-specific-required-args
                                              (strip-cars transform-specific-keyword-args-and-defaults)))
