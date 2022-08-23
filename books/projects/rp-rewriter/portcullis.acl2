@@ -1,4 +1,4 @@
-(include-book "std/strings/istrprefixp" :dir :system)
+;; (include-book "std/strings/istrprefixp" :dir :system)
 
 (include-book "centaur/meta/def-formula-checks" :dir :system)
 
