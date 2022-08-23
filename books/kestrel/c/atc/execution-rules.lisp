@@ -1428,10 +1428,11 @@
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (op-kind (unop-kind op))
-         (op-value (if (member-eq op-kind '(:plus :minus))
+         (op-value (if (member-eq op-kind '(:plus :minus :bitnot))
                        (pack op-kind '-value)
                      (pack 'exec- op-kind)))
-         (op-arithmetic-value (pack op-kind '-arithmetic-value))
+         (op-arithmetic-value (and (not (unop-case op :bitnot))
+                                   (pack op-kind '-arithmetic-value)))
          (op-integer-value (pack op-kind '-integer-value))
          (name (pack op-value '-when- pred))
          (op-type (pack op-kind '- fixtype))
@@ -1457,10 +1458,11 @@
          (formula `(implies ,hyps
                             (equal (exec-unary op x)
                                    (,op-type x))))
-         (enables (if (member-eq op-kind '(:plus :minus))
+         (enables (if (member-eq op-kind '(:plus :minus :bitnot))
                       `(exec-unary
                         ,op-value
-                        ,op-arithmetic-value
+                        ,@(and op-arithmetic-value
+                               (list op-arithmetic-value))
                         ,op-integer-value
                         ,op-type
                         ,@(and promotedp
@@ -1498,13 +1500,16 @@
                         value-unsigned-integerp-alt-def
                         integer-type-rangep
                         integer-type-min
-                        integer-type-max)
+                        integer-type-max
+                        ,@(and (unop-case op :bitnot)
+                               `((:e sint-min)
+                                 (:e sint-max)
+                                 (:e slong-min)
+                                 (:e slong-max)
+                                 (:e sllong-min)
+                                 (:e sllong-max))))
                     `(exec-unary
                       ,op-value
-                      ,@(and (member-eq op-kind '(:bitnot))
-                             (member-eq (type-kind type)
-                                        '(:schar :uchar :sshort :ushort))
-                             (list op-type))
                       ,@*atc-promote-value-rules*
                       ,@(and op-type-okp
                              (member-equal op (list (unop-bitnot)))
@@ -2798,6 +2803,7 @@
                   (equal var (mv-nth 0 var+tyname+init))
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
+                  init
                   (equal type (tyname-to-type tyname))
                   (not (type-case type :array))
                   (equal ival+compst1

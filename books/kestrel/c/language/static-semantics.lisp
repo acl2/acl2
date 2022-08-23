@@ -1586,7 +1586,8 @@
                           (funtab fun-tablep)
                           (vartab var-tablep)
                           (tagenv tag-envp)
-                          (constp booleanp))
+                          (constp booleanp)
+                          (initp booleanp))
   :returns (new-vartab var-table-resultp)
   :short "Check an object declaration."
   :long
@@ -1595,11 +1596,18 @@
     "We ensure that the type is not @('void'),
      because the type must be complete [C:6.7/7],
      and @('void') is incomplete [C:6.2.5/19].
-     We also ensure that the initializer type matches the declared type.
-     The @('constp') flag controls whether
-     we also require the initializer to be constant or not.
-     We return the updated variable table."))
-  (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init declon))
+     We also ensure that the initializer type matches the declared type,
+     if the initializer is present.")
+   (xdoc::p
+    "The @('constp') flag controls whether
+     we require the initializer, if present, to be constant or not.
+     If the initializer is absent, the test passes.")
+   (xdoc::p
+    "The @('initp') flag controls whether
+     we require the initializer to be present.")
+   (xdoc::p
+    "We return the updated variable table."))
+  (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init declon))
        (wf (check-tyname tyname tagenv))
        ((when (errorp wf)) (error (list :declon-error-type wf)))
        (wf (check-ident var))
@@ -1607,6 +1615,11 @@
        (type (tyname-to-type tyname))
        ((when (type-case type :void))
         (error (list :declon-error-type-void (obj-declon-fix declon))))
+       ((when (not init?))
+        (if initp
+            (error (list :declon-initializer-required (obj-declon-fix declon)))
+          (var-table-add-var var type vartab)))
+       (init init?)
        (init-type (check-initer init funtab vartab tagenv constp))
        ((when (errorp init-type))
         (error (list :declon-error-init init-type)))
@@ -1674,7 +1687,8 @@
    (xdoc::p
     "For a block item that is a declaration,
      we check the (object) declaration,
-     without requiring the initializer to be constant.
+     requiring the initializer
+     but without requiring it to be constant.
      We return the singleton set with @('void'),
      because a declaration never returns a value
      and proceeds with the next block item.")
@@ -1805,7 +1819,7 @@
     (block-item-case
      item
      :declon
-     (b* ((vartab (check-obj-declon item.get funtab vartab tagenv nil))
+     (b* ((vartab (check-obj-declon item.get funtab vartab tagenv nil t))
           ((when (errorp vartab)) (error (list :declon-error vartab))))
        (make-stmt-type :return-types (set::insert (type-void) nil)
                        :variables vartab))
@@ -2106,8 +2120,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For object declarations, we require the initializers to be constant
-     [C:6.7.9/4].")
+    "For object declarations,
+     we require the initializer to be constant if present [C:6.7.9/4],
+     without requiring it to be present.")
    (xdoc::p
     "If successful, we return updated
      function table, variable table, and tag environment."))
@@ -2119,7 +2134,7 @@
                                         :vars (var-table-fix vartab)
                                         :tags (tag-env-fix tagenv)))
    :obj-declon (b* ((vartab
-                     (check-obj-declon ext.get funtab vartab tagenv t))
+                     (check-obj-declon ext.get funtab vartab tagenv t nil))
                     ((when (errorp vartab)) vartab))
                  (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
                                             :vars vartab

@@ -44,7 +44,7 @@
 
 (define minus-value ((val valuep))
   :returns (resval value-resultp)
-  :short "Apply unary @('-') to a value [C:6.5.3.3/1] [C:6.5.3.3/2]."
+  :short "Apply unary @('-') to a value [C:6.5.3.3/1] [C:6.5.3.3/3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -54,4 +54,23 @@
     (error (list :minus-mistype
                  :required :arithmetic
                  :supplied (value-fix val))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bitnot-value ((val valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('~') to a value [C:6.5.3.3/1] [C:6.5.3.3/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the value is not integer.
+     If it is integer, we promote it and then we flip its bits."))
+  (if (value-integerp val)
+      (bitnot-integer-value (promote-value val))
+    (error (list :bitnot-mistype
+                 :required :integer
+                 :supplied (value-fix val))))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp)))
   :hooks (:fix))

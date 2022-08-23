@@ -229,33 +229,6 @@
                (:e integer-type-min))
      :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-bitnot ((arg valuep))
-  :returns (result value-resultp)
-  :short "Execute bitwise complement [C:6.5.3.3/1] [C:6.5.3.3/4]."
-  (b* ((arg (value-fix arg))
-       ((unless (value-integerp arg))
-        (error (list :mistype-bitnot
-                     :required :integer
-                     :supplied arg)))
-       (val (promote-value arg)))
-    (cond ((uintp val) (bitnot-uint val))
-          ((sintp val) (bitnot-sint val))
-          ((ulongp val) (bitnot-ulong val))
-          ((slongp val) (bitnot-slong val))
-          ((ullongp val) (bitnot-ullong val))
-          ((sllongp val) (bitnot-sllong val))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :in-theory (enable value-arithmeticp
-                                    value-realp
-                                    value-integerp
-                                    value-unsigned-integerp-alt-def
-                                    value-signed-integerp-alt-def)
-                 :use (:instance values-of-promote-value (val arg))))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-lognot ((arg valuep))
@@ -301,7 +274,7 @@
                :indir (error :todo)
                :plus (plus-value arg)
                :minus (minus-value arg)
-               :bitnot (exec-bitnot arg)
+               :bitnot (bitnot-value arg)
                :lognot (exec-lognot arg)))
   :hooks (:fix))
 
@@ -2011,7 +1984,7 @@
      (xdoc::p
       "If the block item is a declaration,
        we ensure it is a variable (not a structure type) declaration,
-       then we execute the expression,
+       then we execute the initializer (which we require),
        then we add the variable to the top scope of the top frame.
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
@@ -2026,10 +1999,13 @@
       (block-item-case
        item
        :declon
-       (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
+       (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init item.get))
             (type (tyname-to-type tyname))
             ((when (type-case type :array))
              (mv (error :unsupported-local-array) (compustate-fix compst)))
+            ((when (not init?))
+             (mv (error :unsupported-no-initializer) (compustate-fix compst)))
+            (init init?)
             ((mv ival compst) (exec-initer init compst fenv (1- limit)))
             ((when (errorp ival)) (mv ival compst))
             (val (init-value-to-value type ival))
