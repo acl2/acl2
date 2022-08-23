@@ -2803,6 +2803,7 @@
                   (equal var (mv-nth 0 var+tyname+init))
                   (equal tyname (mv-nth 1 var+tyname+init))
                   (equal init (mv-nth 2 var+tyname+init))
+                  init
                   (equal type (tyname-to-type tyname))
                   (not (type-case type :array))
                   (equal ival+compst1
