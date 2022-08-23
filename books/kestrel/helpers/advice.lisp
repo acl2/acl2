@@ -385,7 +385,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Think about THM vs DEFTHM
-;; TODO: May need to include a book for some rec to be legal
 
 (defun make-thm-to-attempt (body hints otf-flg)
   `(thm ,body
@@ -471,6 +470,8 @@
 
 ;; Returns (mv erp successp state).
 ;; TODO: Skip if library already included
+;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
+;; TODO: Try any upcoming enable or use-lemma recs that (may) need this library:
 (defun try-add-library (include-book-form theorem-name theorem-body theorem-hints theorem-otf-flg state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
