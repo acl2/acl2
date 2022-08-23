@@ -90,43 +90,9 @@
         (and (alistp alist) ; should always be true
              (assoc-eq name alist))))))
 
-;move
-(defthm parsed-json-object-pairsp-forward-to-alistp
-  (implies (parsed-json-object-pairsp pairs)
-           (alistp pairs))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
-
-;; Recognize a list of parsed json-arrays.
-(defun parsed-json-array-listp (x)
-  (declare (xargs :guard t))
-  (if (not (consp x))
-      (null x)
-    (and (parsed-json-arrayp (first x))
-         (parsed-json-array-listp (rest x)))))
-
-;move
-(defund parsed-json-array->values (array)
-  (declare (xargs :guard (parsed-json-arrayp array)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
-  (cadr array) ; strip the :array
-  )
-
-;move
-(defund parsed-json-object->pairs (object)
-  (declare (xargs :guard (parsed-json-objectp object)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
-  (cadr object) ; strip the :object
-  )
-
-(defthm alistp-of-parsed-json-object->pairs
-  (implies (and (state-p state)
-                (parsed-json-objectp book-map))
-           (alistp (parsed-json-object->pairs book-map)))
-  :hints (("Goal" :in-theory (enable parsed-json-object->pairs
-                                     parsed-json-objectp))))
 
 ;; Returns (mv erp lists)
+;; Map parsed-json-array->values over a list.
 (defun json-arrays-to-lists (arrays acc)
   (declare (xargs :guard (and (parsed-json-array-listp arrays)
                               (true-listp acc))))

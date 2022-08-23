@@ -76,6 +76,18 @@
               (parsed-json-object-pairsp pairs)))
   :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
 
+(defthm parsed-json-object-pairsp-forward-to-alistp
+  (implies (parsed-json-object-pairsp pairs)
+           (alistp pairs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
+
+(defthm parsed-json-valuesp-forward-to-true-listp
+  (implies (parsed-json-valuesp values)
+           (true-listp values))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable parsed-json-valuesp))))
+
 (defthm parsed-json-object-pairsp-of-revappend
   (implies (and (parsed-json-object-pairsp x)
                 (parsed-json-object-pairsp acc))
@@ -87,3 +99,45 @@
                 (parsed-json-valuesp acc))
            (parsed-json-valuesp (revappend x acc)))
   :hints (("Goal" :in-theory (enable parsed-json-valuesp revappend))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Access the values in a parsed-json-array
+(defund parsed-json-array->values (array)
+  (declare (xargs :guard (parsed-json-arrayp array)
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
+  (cadr array) ; strip the :array
+  )
+
+(defthm true-listp-of-parsed-json-array->values
+  (implies (and (state-p state)
+                (parsed-json-arrayp book-map))
+           (true-listp (parsed-json-array->values book-map)))
+  :hints (("Goal" :in-theory (enable parsed-json-array->values
+                                     parsed-json-arrayp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Access the name/value pairs (an alist) in a parsed-json-object
+(defund parsed-json-object->pairs (object)
+  (declare (xargs :guard (parsed-json-objectp object)
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
+  (cadr object) ; strip the :object
+  )
+
+(defthm alistp-of-parsed-json-object->pairs
+  (implies (and (state-p state)
+                (parsed-json-objectp book-map))
+           (alistp (parsed-json-object->pairs book-map)))
+  :hints (("Goal" :in-theory (enable parsed-json-object->pairs
+                                     parsed-json-objectp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognize a list of parsed json-arrays.
+(defun parsed-json-array-listp (x)
+  (declare (xargs :guard t))
+  (if (not (consp x))
+      (null x)
+    (and (parsed-json-arrayp (first x))
+         (parsed-json-array-listp (rest x)))))
