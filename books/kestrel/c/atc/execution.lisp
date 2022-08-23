@@ -2011,7 +2011,7 @@
      (xdoc::p
       "If the block item is a declaration,
        we ensure it is a variable (not a structure type) declaration,
-       then we execute the expression,
+       then we execute the initializer (which we require),
        then we add the variable to the top scope of the top frame.
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
@@ -2026,10 +2026,13 @@
       (block-item-case
        item
        :declon
-       (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
+       (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init item.get))
             (type (tyname-to-type tyname))
             ((when (type-case type :array))
              (mv (error :unsupported-local-array) (compustate-fix compst)))
+            ((when (not init?))
+             (mv (error :unsupported-no-initializer) (compustate-fix compst)))
+            (init init?)
             ((mv ival compst) (exec-initer init compst fenv (1- limit)))
             ((when (errorp ival)) (mv ival compst))
             (val (init-value-to-value type ival))
