@@ -47,6 +47,8 @@
 
 ;; TODO: Allow doing :rec <n> to try recommendation <n>
 
+;; TODO: Consider trying the advice on the checkpoint(s), not just the goal.
+
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system) ; todo reduce, for nat-to-string
 (include-book "kestrel/utilities/ld-history" :dir :system)
@@ -593,6 +595,7 @@
           ;; Not built-in, so we'll have to try finding the rule in a book:
           ;; TODO: Would be nice to not bother if it is a definition that we don't have.
           (b* (;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
+               ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
                ((mv erp successful-include-book-form-or-nil state)
                 (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule new-hints theorem-otf-flg *step-limit* state))
                ((when erp) (mv erp nil state))
