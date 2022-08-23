@@ -70,7 +70,8 @@
       This is currently a list of C expressions,
       because the object is always an array.
       In the future, this may be generalized to other kinds of initializers.
-      The length of the list must match the size of the array type,
+      This list is empty to represent an external object without initializer;
+      otherwise, the length of the list matches the size of the array type,
       but this invariant is not captured in this fixtype currently.")
     (xdoc::li
      "The name of the recognizer of the possible values of the object.
@@ -383,9 +384,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We ensure that it is a list
-     of terms that appropriately represent expressions,
-     and that the length of the list matches the size of the array type"))
+    "We ensure that it is either @('nil'),
+     or a list of terms that appropriately represent expressions,
+     and that the length of the list (if not @('nil')) matches
+     the (positive) size of the array type."))
   (b* (((er &)
         (acl2::ensure-value-is-true-list$ init
                                           (msg "The :INIT input ~x0" init)
@@ -393,6 +395,7 @@
                                           nil))
        ((unless (type-case type :array))
         (acl2::value (raise "Internal error: not array type ~x0." type)))
+       ((when (endp init)) (acl2::value nil))
        ((unless (equal (len init) (type-array->size type)))
         (er-soft+ ctx t nil
                   "The number ~x0 of elements of the :INIT input ~
@@ -457,6 +460,7 @@
        (type-arrayp (pack fixtype '-arrayp))
        (type-array-length (pack fixtype '-array-length))
        (type-array-of (pack fixtype '-array-of))
+       (type-dec-const (pack fixtype '-dec-const))
        (recognizer-event
         `(define ,recognizer-name (x)
            :returns (yes/no booleanp)
@@ -465,7 +469,9 @@
        (initializer-event
         `(define ,initializer-name ()
            :returns (object ,recognizer-name)
-           (,type-array-of (list ,@init))))
+           (,type-array-of ,(if (consp init)
+                                `(list ,@init)
+                              `(repeat ,size (,type-dec-const 0))))))
        (info (make-defobject-info :name-ident name-ident
                                   :name-symbol name
                                   :type type

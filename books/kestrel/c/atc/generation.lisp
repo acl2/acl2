@@ -7397,9 +7397,10 @@
        (type (defobject-info->type info))
        (exprs (defobject-info->init info))
        ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
+       (initer? (if (consp exprs) (initer-list exprs) nil))
        (declon (make-obj-declon :tyspec tyspec
                                 :declor declor
-                                :init? (initer-list exprs)))
+                                :init? initer?))
        (info (atc-obj-info info))
        (prec-objs (acons (str-fix name)
                          info
