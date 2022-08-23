@@ -49,6 +49,10 @@
 
 ;; TODO: Consider trying the advice on the checkpoint(s), not just the goal.
 
+;; TODO: Print times to try the recs.  Keep track of which gives the quickest proof.
+
+;; TODO: Avoid including books that are known to be slow?
+
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system) ; todo reduce, for nat-to-string
 (include-book "kestrel/utilities/ld-history" :dir :system)
@@ -291,8 +295,10 @@
       (mv nil (pairlis$ syms book-lists-for-keys) state))))
 
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
-(defun parse-recommendation (rec state)
-  (declare (xargs :stobjs state
+(defun parse-recommendation (rec rec-num state)
+  (declare (xargs :guard (and (parsed-json-valuep rec)
+                              (natp rec-num))
+                  :stobjs state
                   :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
   (if (not (parsed-json-objectp rec))
       (progn$ (er hard? 'parse-recommendation "Bad rec: ~x0." rec)
@@ -319,34 +325,38 @@
          ((mv erp parsed-object state) (read-string-as-single-item object state)) ; todo: what about packages?
          ((when erp)
           (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
-          (mv :parse-error nil state)))
+          (mv :parse-error nil state))
+         (name (concatenate 'string "ML" (nat-to-string rec-num)))
+         )
       (mv nil ; no error
-          (list type-keyword parsed-object confidence-percent book-map)
+          (list name type-keyword parsed-object confidence-percent book-map)
           state))))
 
 ;; Returns (mv erp parsed-recommendations state).
-(defun parse-recommendations-aux (recs acc state)
+(defun parse-recommendations-aux (recs rec-num acc state)
   (declare (xargs :guard (and (parsed-json-valuesp recs)
+                              (natp rec-num)
                               (true-listp acc))
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (enable parsed-json-valuesp)))))
   (if (endp recs)
       (mv nil (reverse acc) state)
-    (b* (((mv erp parsed-recommendation state) (parse-recommendation (first recs) state))
+    (b* (((mv erp parsed-recommendation state) (parse-recommendation (first recs) rec-num state))
          ((when erp) (mv erp nil state)))
       (parse-recommendations-aux (rest recs)
+                                 (+ 1 rec-num)
                                  (if (eq :none parsed-recommendation)
-                                     acc
+                                     acc ; omit bad rec
                                    (cons parsed-recommendation acc))
                                  state))))
 
 ;; Returns (mv erp parsed-recommendations state).
 (defun parse-recommendations (recs state)
-  (declare (xargs :guard (parsed-json-arrayp recs)
+  (declare (xargs :guard (parsed-json-valuesp recs)
                   :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))
-                  :verify-guards nil ; todo
+;                  :verify-guards nil ; todo
                   :stobjs state))
-  (parse-recommendations-aux recs nil state))
+  (parse-recommendations-aux recs 1 nil state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -698,18 +708,18 @@
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
-                            rec-num
-                            result-bools-acc
+                            result-acc
                             state)
   (declare (xargs :stobjs state :mode :program))
   (if (endp recs)
-      (mv nil (reverse result-bools-acc) state)
+      (mv nil (reverse result-acc) state)
     (b* ((rec (first recs))
-         (type (car rec))
-         (object (cadr rec))
-         ;; (confidence-percent (caddr rec))
-         (book-map (cadddr rec))
-         (- (cw "~x0: " rec-num)))
+         (name (car rec))
+         (type (cadr rec))
+         (object (caddr rec))
+         ;; (confidence-percent (cadddr rec))
+         (book-map (car (cddddr rec)))
+         (- (cw "~s0: " name)))
       (mv-let (erp successp state)
         (case type
           ;; TODO: Pass the book-map to all who can use it:
@@ -727,8 +737,8 @@
                      (mv t nil state))))
         (if erp
             (mv erp nil state)
-          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg (+ 1 rec-num)
-                               (cons successp result-bools-acc)
+          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg
+                               (cons (list name successp) result-acc)
                                state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -819,8 +829,8 @@
               (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
        (state (widen-margins state))
        ((mv erp
-            & ; result-bools ; todo: use this, and make it richer
-            state) (try-recommendations parsed-recommendations name body hints otf-flg 1 nil state))
+            & ; result-acc ; todo: use this, and make it richer
+            state) (try-recommendations parsed-recommendations name body hints otf-flg nil state))
        (state (unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations.")
