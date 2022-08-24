@@ -1098,7 +1098,11 @@
                                   (let ((state (show-successful-recommendations successful-recs state)))
                                     state)))
                 (prog2$ (cw "~%NO PROOF FOUND~%~%")
-                        state))))
+                        state)))
+       ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
+       ;; TODO: Can we restore the old gag state saved?
+       (state (f-put-global 'gag-state-saved nil state))
+       )
     (mv nil ; no error
         '(value-triple :invisible) state)))
 
