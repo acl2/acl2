@@ -49,6 +49,8 @@
 
 ;; TODO: Print times to try the recs.  Keep track of which gives the quickest proof.
 
+;; TODO: Turn off redef (if not), to avoid prompts when including books with name clashes
+
 ;; TODO: Avoid including books that are known to be slow?
 
 (include-book "kestrel/utilities/checkpoints" :dir :system)
@@ -241,6 +243,10 @@
         (coerce (rest chars) 'string)
       str)))
 
+(defmacro fms-to-string-no-margin (&rest args)
+  `(fms-to-string ,@args :fmt-control-alist '((fmt-soft-right-margin . 10000)
+                                              (fmt-hard-right-margin . 10000))))
+
 (defun show-successful-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)
                   :mode :program))
@@ -251,17 +257,17 @@
          ;; (book-map (car (nth 4 rec)))
          (pre-commands (nth 5 rec))
          (english-rec (case type
-                        (:add-cases-hint (fms-to-string ":cases ~x0" (acons #\0 object nil)))
-                        (:add-disable-hint (fms-to-string "disabling ~x0" (acons #\0 object nil)))
-                        (:add-do-not-hint (fms-to-string ":do-not ~x0" (acons #\0 object nil)))
+                        (:add-cases-hint (fms-to-string-no-margin ":cases ~x0" (acons #\0 object nil)))
+                        (:add-disable-hint (fms-to-string-no-margin "disabling ~x0" (acons #\0 object nil)))
+                        (:add-do-not-hint (fms-to-string-no-margin ":do-not ~x0" (acons #\0 object nil)))
                         ;; Same handling for both:
-                        ((:add-enable-hint :use-lemma) (fms-to-string "enabling ~x0" (acons #\0 object nil)))
-                        (:add-expand-hint (fms-to-string ":expand ~x0" (acons #\0 object nil)))
-                        (:add-hyp (fms-to-string "adding the hyp ~x0" (acons #\0 object nil)))
-                        (:add-induct-hint (fms-to-string ":induct ~x0" (acons #\0 object nil)))
-                        (:add-library (fms-to-string "~x0" (acons #\0 object nil)))
-                        (:add-nonlinearp-hint (fms-to-string ":nonlinearp ~x0" (acons #\0 object nil)))
-                        (:add-use-hint (fms-to-string ":use ~x0" (acons #\0 object nil)))))
+                        ((:add-enable-hint :use-lemma) (fms-to-string-no-margin "enabling ~x0" (acons #\0 object nil)))
+                        (:add-expand-hint (fms-to-string-no-margin ":expand ~x0" (acons #\0 object nil)))
+                        (:add-hyp (fms-to-string-no-margin "adding the hyp ~x0" (acons #\0 object nil)))
+                        (:add-induct-hint (fms-to-string-no-margin ":induct ~x0" (acons #\0 object nil)))
+                        (:add-library (fms-to-string-no-margin "~x0" (acons #\0 object nil)))
+                        (:add-nonlinearp-hint (fms-to-string-no-margin ":nonlinearp ~x0" (acons #\0 object nil)))
+                        (:add-use-hint (fms-to-string-no-margin ":use ~x0" (acons #\0 object nil)))))
          (english-rec (drop-initial-newline english-rec)) ; work around problem with fms-to-string
          )
     (if pre-commands
@@ -495,7 +501,7 @@
              nil state))
         ((when (and name-to-check
                     (not (name-that-can-be-enabled/disabledp name-to-check (w state)))))
-         (cw "NOTE: After including ~x0, ~x1 is still not defined.~%" (cadr include-book-form) name-to-check)
+         ;; (cw "NOTE: After including ~x0, ~x1 is still not defined.~%" (cadr include-book-form) name-to-check) ;; todo: add debug arg
          (mv nil ; suppress error
              nil state))
         ;; Now see whether we can prove the theorem using the new include-book:
@@ -732,22 +738,46 @@
              (new-hints (enable-runes-in-hints theorem-hints (list rule))))
           ;; Not built-in, so we'll have to try finding the rule in a book:
           ;; TODO: Would be nice to not bother if it is a definition that we don't have.
-          (b* (;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
+          (b* ( ;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
                ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
                ((mv erp successful-include-book-form-or-nil state)
                 (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule new-hints theorem-otf-flg *step-limit* state))
                ((when erp) (mv erp nil state))
                (provedp (if successful-include-book-form-or-nil t nil))
-               (- (if provedp
-                      (cw "SUCCESS: Include ~x0 and enable ~x1.~%" successful-include-book-form-or-nil rule)
-                    (if (< 3 num-books-to-try-orig)
-                        ;; todo: try more if we didn't find it?:
-                        (cw "FAIL (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
-                      (cw "FAIL~%")))))
+               ((when (not provedp))
+                (if (< 3 num-books-to-try-orig)
+                    ;; todo: try more if we didn't find it?:
+                    (cw "FAIL (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
+                  (cw "FAIL~%"))
+                (mv nil nil state))
+               ;; We proved it with an include-book and an enable hint.  Now
+               ;; try again but without the enable hint (maybe the include-book is enough):
+               ((mv erp provedp-with-no-hint state)
+                (prove$-with-include-book 'try-add-enable-hint
+                                          theorem-body
+                                          successful-include-book-form-or-nil ; won't be nil
+                                          nil ; name-to-check (no need to check this again)
+                                          ;; args to prove$:
+                                          theorem-hints ; original hints, not new-hints
+                                          theorem-otf-flg
+                                          *step-limit* ; or base this on how many steps were taken when it succeeded
+                                          state))
+               ((when erp) (mv erp nil state))
+               (- (if provedp-with-no-hint
+                      (cw "SUCCESS: Include ~x0.~%" successful-include-book-form-or-nil)
+                    (cw "SUCCESS: Include ~x0 and enable ~x1.~%" successful-include-book-form-or-nil rule)
+                    )))
             (mv nil
-                (if provedp
-                    (update-pre-commands rec (list successful-include-book-form-or-nil))
-                  nil)
+                ;; todo: we could even try to see if a smaller library would work
+                (if provedp-with-no-hint
+                    (list (nth 0 rec) ;name (ok to keep the same name, i guess)
+                          :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                          successful-include-book-form-or-nil
+                          (nth 3 rec) ; not very meaningful now
+                          (nth 4 rec) ; not very meaningful now
+                          nil ; pre-commands (always none for :add-library)
+                          )
+                  (update-pre-commands rec (list successful-include-book-form-or-nil)))
                 state)))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
