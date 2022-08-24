@@ -62,6 +62,7 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/htclient/top" :dir :system)
 (include-book "kestrel/json-parser/parse-json" :dir :system)
@@ -153,7 +154,27 @@
            (fms-to-string "~X01" (acons #\0  (first checkpoints) (acons #\1 nil nil)))
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
+;; todo: strengthen
+(defun recommendationp (rec)
+  (declare (xargs :guard t))
+  (and (true-listp rec)
+       (= 5 (len rec))
+       (stringp (first rec)) ; name
+       (keywordp (second rec)) ;type
+       ;; (caddr rec) ; object
+       (rationalp (cadddr rec)) ; confidence-percent
+       ;; (car (cddddr rec)) ; book-map
+       ))
+
+(defun recommendation-listp (recs)
+  (declare (xargs :guard t))
+  (if (atom recs)
+      (null recs)
+    (and (recommendationp (first recs))
+         (recommendation-listp (rest recs)))))
+
 (defun show-recommendation (rec)
+  (declare (xargs :guard (recommendationp rec)))
   (let* ((name (car rec))
          (type (cadr rec))
          (object (caddr rec))
@@ -163,8 +184,7 @@
     (cw "~s0: Try ~x1 with ~x2 (conf: ~x3%).~%" name type object (floor confidence-percent 1))))
 
 (defun show-recommendations-aux (recs)
-  (declare (xargs ;; :guard (parsed-json-valuesp recs)
-            ))
+  (declare (xargs :guard (recommendation-listp recs)))
   (if (endp recs)
       nil
     (prog2$ (show-recommendation (first recs))
@@ -702,7 +722,14 @@
                             theorem-otf-flg
                             result-acc
                             state)
-  (declare (xargs :stobjs state :mode :program))
+  (declare (xargs :guard (and (recommendation-listp recs)
+                              (symbolp theorem-name)
+                              (pseudo-termp theorem-body)
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (true-listp result-acc))
+            :mode :program
+            :stobjs state))
   (if (endp recs)
       (mv nil (reverse result-acc) state)
     (b* ((rec (first recs))
@@ -735,6 +762,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun make-enable-recs-aux (names num)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (posp num))))
+  (if (endp names)
+      nil
+    (cons (list (concatenate 'string "E" (nat-to-string num))
+                :add-enable-hint
+                (first names) ; the name to enable
+                0            ; confidence percentage (TODO: allow unknown)
+                nil ; book map ; todo: indicate that the name must be present?
+                )
+          (make-enable-recs-aux (rest names) (+ 1 num)))))
+
+(local
+ (defthm recommendation-listp-of-make-enable-recs-aux
+   (implies (symbol-listp names)
+            (recommendation-listp (make-enable-recs-aux names num)))))
+
+(defun make-enable-recs (formula wrld)
+  (declare (xargs :guard (and (pseudo-termp formula)
+                              (plist-worldp wrld))))
+  (let ((fns-to-try-enabling (defined-fns-in-term formula wrld)))
+    (make-enable-recs-aux fns-to-try-enabling 1)))
+
+(local
+ (defthm recommendation-listp-of-make-enable-recs
+   (implies (pseudo-termp formula)
+            (recommendation-listp (make-enable-recs formula wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
 ;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
@@ -760,6 +818,17 @@
         (mv :no-server nil state))
        ;; Get most recent failed theorem and checkpoints:
        (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state))
+       ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
+        (if (member-eq (car most-recent-failed-theorem) '(thm rule))
+            (mv :thm ; no name
+                (cadr most-recent-failed-theorem)
+                (assoc-eq :hints (cddr most-recent-failed-theorem))
+                (assoc-eq :otf-flg (cddr most-recent-failed-theorem)))
+          ;; Must be a defthm, etc:
+          (mv (cadr most-recent-failed-theorem)
+              (caddr most-recent-failed-theorem)
+              (assoc-eq :hints (cdddr most-recent-failed-theorem))
+              (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
        (most-recent-failed-theorem-goal (most-recent-failed-theorem-goal state))
        (untranslated-checkpoints (checkpoint-list-pretty t ; todo: consider non-top
@@ -799,30 +868,23 @@
        (semi-parsed-recommendations (parsed-json-array->values parsed-json))
        (- (and debug (cw "After JSON parsing: ~X01~%" semi-parsed-recommendations nil)))
        ;; Parse the individual strings in the recs:
-       ((mv erp parsed-recommendations state) (parse-recommendations semi-parsed-recommendations state))
+       ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations state))
        ((when erp)
         (er hard? 'advice-fn "Error parsing recommendations.")
         (mv erp nil state))
-       (- (and debug (cw "Parsed recommendations: ~X01~%" parsed-recommendations nil)))
+       (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil)))
+       ;; Make some other recs:
+       (enable-recommendations (make-enable-recs theorem-body (w state)))
+       (recommendations (append enable-recommendations
+                                ml-recommendations))
        ;; Print the recommendations (for now):
-       (state (show-recommendations parsed-recommendations state))
+       (state (show-recommendations recommendations state))
        ;; Try the recommendations:
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
-       ((mv name body hints otf-flg)
-        (if (member-eq (car most-recent-failed-theorem) '(thm rule))
-            (mv :thm ; no name
-                (cadr most-recent-failed-theorem)
-                (assoc-eq :hints (cddr most-recent-failed-theorem))
-                (assoc-eq :otf-flg (cddr most-recent-failed-theorem)))
-          ;; Must be a defthm, etc:
-          (mv (cadr most-recent-failed-theorem)
-              (caddr most-recent-failed-theorem)
-              (assoc-eq :hints (cdddr most-recent-failed-theorem))
-              (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
        (state (widen-margins state))
        ((mv erp
             & ; result-acc ; todo: use this, and make it richer
-            state) (try-recommendations parsed-recommendations name body hints otf-flg nil state))
+            state) (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg nil state))
        (state (unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations.")
