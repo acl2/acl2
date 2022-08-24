@@ -868,17 +868,19 @@
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 (defun make-enable-recs (formula wrld)
   (declare (xargs :guard (and (pseudo-termp formula)
-                              (plist-worldp wrld))))
-  (let ((fns-to-try-enabling (set-difference-eq (defined-fns-in-term formula wrld)
-                                                ;; Don't bother wasting time with trying to enable implies
-                                                ;; (I suppose we coud try it if implies is disabled):
-                                                '(implies))))
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let* ((translated-formula (translate-term formula 'make-enable-recs wrld))
+         (fns-to-try-enabling (set-difference-eq (defined-fns-in-term translated-formula wrld)
+                                                 ;; Don't bother wasting time with trying to enable implies
+                                                 ;; (I suppose we coud try it if implies is disabled):
+                                                 '(implies))))
     (make-enable-recs-aux fns-to-try-enabling 1)))
 
-(local
- (defthm recommendation-listp-of-make-enable-recs
-   (implies (pseudo-termp formula)
-            (recommendation-listp (make-enable-recs formula wrld)))))
+;; (local
+;;  (defthm recommendation-listp-of-make-enable-recs
+;;    (implies (pseudo-termp formula)
+;;             (recommendation-listp (make-enable-recs formula wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
