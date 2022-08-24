@@ -2279,6 +2279,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; create-s-instance lemmas
 
+;; m2-of-bitp
+(defthm bitp-of-rp-evlt-of-binary-fnc-p/and-listp/bit-of-p
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (or (binary-fnc-p term)
+                    (binary-fnc-p (ex-from-rp term))
+                    (bit-of-p term)
+                    (bit-of-p (ex-from-rp term))
+                    (and-list-p term)
+                    (and-list-p (ex-from-rp term))))
+           (and (bitp (rp-evlt term a))
+                (bitp (rp-evlt (ex-from-rp term) a))))
+  :hints (("Goal"
+           :in-theory (e/d* (regular-eval-lemmas
+                             BINARY-FNC-P
+                             regular-eval-lemmas-with-ex-from-rp)
+                            (ex-from-rp)))))
+
 (defret create-s-instance-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -2296,7 +2314,8 @@
   :fn create-s-instance
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d (create-s-instance
+           :in-theory (e/d (or* binary-fnc-p
+                            create-s-instance
                             m2-of-bitp
                             bitp-implies-integerp
                             valid-sc-single-step

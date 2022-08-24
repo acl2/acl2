@@ -2649,7 +2649,12 @@
                            (unquote-all (list-to-lst c))))
                nil))
           ((and (equal c ''nil)
-                (case-match pp (('list ('and-list & &)) t)))
+                (case-match pp (('list e)
+                                (b* ((e-ex (ex-from-rp$ e)))
+                                  (or* (and-list-p e-ex)
+                                       (bit-of-p e-ex)
+                                       (binary-fnc-p e-ex)
+                                       (has-bitp-rp e))))))
            (mv nil (list (cadr pp)) nil))
           ((and (equal pp ''nil)
                 (case-match c
