@@ -20,3 +20,8 @@
     (if (not (function-symbolsp fns wrld))
         (er hard? 'defined-fns-in-term "At least one of the functions is not in the world: ~x0." fns)
       (filter-defined-fns fns wrld))))
+
+(defthm symbol-listp-of-defined-fns-in-term
+  (implies (pseudo-termp term)
+           (symbol-listp (defined-fns-in-term term wrld)))
+  :hints (("Goal" :in-theory (enable defined-fns-in-term))))

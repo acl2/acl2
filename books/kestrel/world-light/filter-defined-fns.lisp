@@ -14,7 +14,7 @@
 (include-book "function-symbolsp")
 
 ;; Given a list of functions in WRLD, keep the defined ones.
-(defun filter-defined-fns (fns wrld)
+(defund filter-defined-fns (fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld)
                               (function-symbolsp fns wrld))))
@@ -24,3 +24,8 @@
       (if (fn-definedp fn wrld)
           (cons fn (filter-defined-fns (rest fns) wrld))
         (filter-defined-fns (rest fns) wrld)))))
+
+(defthm symbol-listp-of-filter-defined-fns
+  (implies (symbol-listp fns)
+           (symbol-listp (filter-defined-fns fns wrld)))
+  :hints (("Goal" :in-theory (enable filter-defined-fns))))
