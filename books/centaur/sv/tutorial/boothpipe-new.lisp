@@ -100,32 +100,43 @@
     (mv svdesign state)))
 
 (def-saved-event boothpipe-run
-  (defsvtv$ boothpipe-run
+  (defsvtv$-phasewise boothpipe-run
     ;; Set up our run of the module.
     :design *boothpipe*
-    :labels         '(c0   c1 c1  c2 c2 c3 c3)
-    :inputs '(("en"   en)
-              ("clk"  0   ~)
-              ("a"    a   _)
-              ("b"    b   _))
-    :overrides '(("pp01_c2[35:18]"    _   _   _   _   (pp0 pp0-ovr)  _)
-                 ("pp01_c2[17:0]"     _   _   _   _   (pp1 pp1-ovr)  _)
-                 ("pp23_c2[35:18]"    _   _   _   _   (pp2 pp2-ovr)  _)
-                 ("pp23_c2[17:0]"     _   _   _   _   (pp3 pp3-ovr)  _)
-                 ("pp45_c2[35:18]"    _   _   _   _   (pp4 pp4-ovr)  _)
-                 ("pp45_c2[17:0]"     _   _   _   _   (pp5 pp5-ovr)  _)
-                 ("pp67_c2[35:18]"    _   _   _   _   (pp6 pp6-ovr)  _)
-                 ("pp67_c2[17:0]"     _   _   _   _   (pp7 pp7-ovr)  _))
-    :internals '(("minusb" _   _   minusb)
-                 ("pp01_c2[35:18]"    _   _   _   _   pp0)
-                 ("pp01_c2[17:0]"     _   _   _   _   pp1)
-                 ("pp23_c2[35:18]"    _   _   _   _   pp2)
-                 ("pp23_c2[17:0]"     _   _   _   _   pp3)
-                 ("pp45_c2[35:18]"    _   _   _   _   pp4)
-                 ("pp45_c2[17:0]"     _   _   _   _   pp5)
-                 ("pp67_c2[35:18]"    _   _   _   _   pp6)
-                 ("pp67_c2[17:0]"     _   _   _   _   pp7))
-    :outputs '(("o"   _   _   _   _   _   _   o))
+    :cycle-phases (list (sv::make-svtv-cyclephase :constants '(("clk" . 0))
+                                                  :inputs-free t
+                                                  :outputs-captured t)
+                        (sv::make-svtv-cyclephase :constants '(("clk" . 1))))
+    :phases ((:label c0
+              :inputs
+              (("en"              en :hold t)
+               ("a"               a)
+               ("b"               b)))
+             (:label c1
+              :outputs
+              (("minusb"          minusb)))
+             (:label c2
+              :overrides
+              (("pp01_c2[35:18]"  (pp0 pp0-ovr))
+               ("pp01_c2[17:0]"   (pp1 pp1-ovr))
+               ("pp23_c2[35:18]"  (pp2 pp2-ovr))
+               ("pp23_c2[17:0]"   (pp3 pp3-ovr))
+               ("pp45_c2[35:18]"  (pp4 pp4-ovr))
+               ("pp45_c2[17:0]"   (pp5 pp5-ovr))
+               ("pp67_c2[35:18]"  (pp6 pp6-ovr))
+               ("pp67_c2[17:0]"   (pp7 pp7-ovr)))
+              :outputs
+              (("pp01_c2[35:18]"  pp0)
+               ("pp01_c2[17:0]"   pp1)
+               ("pp23_c2[35:18]"  pp2)
+               ("pp23_c2[17:0]"   pp3)
+               ("pp45_c2[35:18]"  pp4)
+               ("pp45_c2[17:0]"   pp5)
+               ("pp67_c2[35:18]"  pp6)
+               ("pp67_c2[17:0]"   pp7)))
+             (:label c3
+              :outputs
+              (("o"              o))))
     :parents (decomposition-proofs) ;; xdoc stuff, not needed
     ))
 

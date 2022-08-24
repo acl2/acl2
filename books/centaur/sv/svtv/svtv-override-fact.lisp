@@ -45,6 +45,7 @@
    lemma-defthm
    lemma-args
    no-lemmas
+   no-integerp
    hints
    rule-classes
    pkg-sym))
@@ -116,7 +117,7 @@
                    (<override-vals> . (list . ,(svtv-ovfact-var-alist-termlist x.override-vars)))
                    (<outputs-list> . ,x.output-vars))
      :splice-alist `((<outputs> . ,x.output-vars)
-                     (<integerp-concls> . ,(svtv-ovfact-integerp-conclusions x))
+                     (<integerp-concls> . ,(if x.no-integerp nil (svtv-ovfact-integerp-conclusions x)))
                      (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :pkg-sym x.pkg-sym)))
@@ -289,7 +290,8 @@
                                     (:REWRITE SVEX-ENV-LOOKUP-WHEN-INTEGERP-AND-<<=)
                                     (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
                                     (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
-                                    <enable>)))))))
+                                    <enable>))
+                      . <hints>)))))
     (acl2::template-subst
      template
      :atom-alist
@@ -393,6 +395,7 @@
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
          no-lemmas
+         no-integerp
          hints
          rule-classes
          (pkg-sym name))
@@ -435,6 +438,7 @@
        :lemma-args lemma-args
        :hints hints
        :no-lemmas no-lemmas
+       :no-integerp no-integerp
        :rule-classes rule-classes
        :pkg-sym pkg-sym)))))
 
@@ -523,8 +527,13 @@ keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').</li>
 <li>@(':no-lemmas') says to skip the initial override theorem and monotonicity lemma
 and tries to prove the final theorem directly, with the hints given by the user.</li>
 
-<li>@(':hints') are hints for the final theorem, only used if @(':no-lemmas')
-is set.</li>
+<li>@(':no-integerp') says to skip proving @('integerp') of each output in the
+initial override theorem.  The @(':enable') option typically must be used to
+provide additional rules for the final theorem to show that the lemma implies
+the outputs are integers.</li>
+
+<li>@(':hints') are hints for the final theorem, used by themselves if @(':no-lemmas')
+is set and in addition to the automatically provided hints if not.</li>
 
 <li>@(':rule-classes') gives the rule classes of the theorem proved.</li>
 

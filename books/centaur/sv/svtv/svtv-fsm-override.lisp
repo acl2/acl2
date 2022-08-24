@@ -44,10 +44,31 @@
 (local (in-theory (disable acl2::alist-keys-member-hons-assoc-equal)))
 
 
+(defxdoc svtv-decomposition
+  :parents (svex-stvs)
+  :short "Umbrella topic for the recommended method for proof by decomposition using SVTVs."
+  :long "<p>The recommended method for proof by decomposition using @(see SVTV)s follows the following flow:</p>
 
+<ol>
 
+<li>Define your SVTV using @(see defsvtv$-phasewise) or @(see defsvtv$).  Each
+cutpoint signal should have an output variable sampled at the appropriate phase
+as well as conditional override (value/test) variables set at the same
+phase. Do not set the @(':monotonify') option to NIL (default T).</li>
 
+<li>Immediately after the @('defsvtv$') event, export the contents of the
+@('svtv-data') stobj to an ACL2 object using @(see def-svtv-data-export).</li>
 
+<li>Use @(see def-svtv-override-thms) to automatically prove certain important
+properties of the SVTV and its conditional overrides.</li>
+
+<li>Use @(see def-svtv-override-fact) to prove theorems about the decomposed components (cuts) within the SVTV.</li>
+
+<li>Use standard ACL2 rewriting involving the theorems proved in step 4 to prove the top-level theorem.</li>
+
+</ol>
+
+<p>The @(see sv-tutorial) has a section on @(see decomposition-proofs) that illustrates this flow further.</p>")
 
 
 (define pipeline-run ((setup pipeline-setup-p)
