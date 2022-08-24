@@ -359,9 +359,10 @@
   (define calculate-s-hash ((pp rp-termp)
                             (c rp-termp))
     :returns (hash-code integerp)
-    (* (hash-coef)
-       (+ (* 3 (calculate-pp-hash pp))
-          (* 7 (get-hash-code-of-c c)))))
+    (loghead 128
+             (* (hash-coef)
+                (+ (* 3 (calculate-pp-hash pp))
+                   (* 7 (get-hash-code-of-c c))))))
 
   (local
    (defthm integerp-of-+and*
@@ -380,7 +381,8 @@
       (cons (logapp 8 (len (list-to-lst pp))
                     (logapp 8 (len (list-to-lst c))
                             (loghead 40 (ash (* (hash-coef) (+ hash-code-base
-                                                               s-hash-codes1)) -40))))
+                                                               s-hash-codes1))
+                                             -40))))
             (loghead 59 (* (hash-coef) (+ hash-code-base s-hash-codes2)))
             ))))
 
@@ -4607,7 +4609,7 @@
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((pp-term-p ABS-TERM-W/-SC)
       (b* (;;(abs-term (4vec->pp-term abs-term))
-           (pp-lst2 (pp-flatten ;;-with-binds
+           (pp-lst2 (pp-flatten-with-binds
                      abs-term-w/-sc negated
                      :disabled (and (unpack-booth-later-enabled)
                                     (not

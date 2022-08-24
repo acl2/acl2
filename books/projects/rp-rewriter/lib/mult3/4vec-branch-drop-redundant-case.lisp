@@ -26,6 +26,8 @@
 
 (include-book "pp-flatten-meta-fncs")
 
+(include-book "pp-flatten-with-binds-meta")
+
 (include-book "sum-merge-fncs")
 
 (include-book "centaur/sv/svex/4vec" :dir :system)
@@ -75,7 +77,8 @@
             (not (integerp x)))))))
 
 (define 4vec-branch-drop-r-case-aux ((term rp-termp)
-                                     (met-cases pp-term-p))
+                                     (met-cases (and (pp-term-p met-cases)
+                                                     (rp-termp met-cases))))
   :verify-guards nil
   :measure (cons-count term)
   :hints (("Goal"
@@ -99,7 +102,8 @@
        (b* (((unless (and (sv::4vec-p x)
                           (not (integerp x))))
              (mv ''nil nil nil))
-            (met-cases (pp-flatten met-cases nil)))
+            (met-cases (pp-flatten-with-binds
+                        met-cases nil)))
          (if (equal met-cases (list ''1))
              (mv ''0 t t)
            (mv ''nil nil nil))))
@@ -243,6 +247,22 @@
            :in-theory (e/d () (pp-flatten-correct))))))
 
 (local
+ (defret pp-flatten-with-binds-correct-with-sum-list-eval
+  (implies (and (mult-formula-checks state)
+                (pp-term-p term)
+                (booleanp signed)
+                (valid-sc term a)
+                (rp-evl-meta-extract-global-facts))
+           (equal (sum-list-eval pp-lst a)
+                  (if signed
+                      (-- (rp-evlt term a))
+                    (rp-evlt term a))))
+  :fn pp-flatten-with-binds
+  :hints (("Goal"
+           :use ((:instance pp-flatten-with-binds-correct))
+           :in-theory (e/d () (pp-flatten-with-binds-correct))))))
+
+(local
  (defthm 4VEC-?*-cond-lemma1
    (implies (equal (ifix test) 1)
             (equal (sv::4vec-?* (-- test) then else)
@@ -299,7 +319,24 @@
                              (sign nil)
                              (disabled nil)))
             :in-theory (e/d ()
-                            (pp-flatten-correct)))))) 
+                            (pp-flatten-correct))))))
+
+(local
+ (defthmd when-pp-flatten-with-binds-is-1
+   (implies (and (valid-sc term a)
+                 (pp-term-p term)
+                 (rp-evl-meta-extract-global-facts :state state)
+                 (4vec-branch-formula-checks state)
+                 (EQUAL (PP-FLATTEN-WITH-BINDS term NIL :DISABLED nil)
+                        (list ''1)))
+            (equal (rp-evlt term a)
+                   1))
+   :hints (("Goal"
+            :use ((:instance pp-flatten-with-binds-correct
+                             (signed nil)
+                             (disabled nil)))
+            :in-theory (e/d ()
+                            (pp-flatten-with-binds-correct))))))
 
 
 (local
@@ -332,9 +369,13 @@
   :fn 4vec-branch-drop-r-case-aux
   :hints (("subgoal *1/7"
            :use ((:instance when-pp-flatten-is-1
+                            (term met-cases))
+                 (:instance when-pp-flatten-with-binds-is-1
                             (term met-cases))))
           ("subgoal *1/8"
            :use ((:instance when-pp-flatten-is-1
+                            (term met-cases))
+                 (:instance when-pp-flatten-with-binds-is-1
                             (term met-cases))))
           
           ("goal"

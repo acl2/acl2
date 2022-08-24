@@ -152,6 +152,15 @@
 (def-rp-rule m2-is-bitp
   (bitp (m2 x)))
 
+(def-rp-rule m2-is-integerp
+  (integerp (m2 x)))
+
+(def-rp-rule m2-is-natp
+  (natp (m2 x)))
+
+(def-rp-rule f2-is-integerp
+  (integerp (f2 x)))
+
 ;; (def-rp-rule binary-xor-1-of-s
 ;;   (equal (binary-xor 1 (s hash-code pp c/d))
 ;;          (s-spec (list 1 (s hash-code pp c/d))))

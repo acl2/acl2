@@ -38,7 +38,7 @@
 (in-package "RP")
 
 (include-book "fnc-defs")
- 
+
 (include-book "sum-merge-fncs")
 
 (local
@@ -119,47 +119,17 @@
                (pp-p term))
            (and (pp-term-p (cadr term) :strict strict)))
           ((or (bit-of-p term)
+               (bit-fix-p term)
                (equal term ''1)
                (equal term ''0))
            t)
           (t (and (has-bitp-rp orig)
-                      
+
                   (or (not strict)
                       (atom term)
                       (single-s-p term)
                       (single-c-p term)
                       (single-s-c-res-p term)))))))
-
-      ;; (('binary-and x y)
-      ;;  (and (pp-term-p x)
-      ;;       (pp-term-p y)))
-      ;; (('binary-or x y)
-      ;;  (and (pp-term-p x)
-      ;;       (pp-term-p y)))
-      ;; (('binary-xor x y)
-      ;;  (and (pp-term-p x)
-      ;;       (pp-term-p y)))
-      ;; (('binary-? x y z)
-      ;;  (and (pp-term-p x) ;
-      ;;       (pp-term-p y) ;
-      ;;       (pp-term-p z)))
-      ;; ;; (('adder-and x y)
-      ;; ;;  (and (pp-term-p x) ;
-      ;; ;;       (pp-term-p y)))
-      ;; ;; (('adder-or x y)
-      ;; ;;  (and (pp-term-p x) ;
-      ;; ;;       (pp-term-p y)))
-      ;; (('binary-not x)
-      ;;  (and (pp-term-p x)))
-      ;; (('pp x)
-      ;;  (and (pp-term-p x)))
-      ;; (('bit-of & &) t)
-      ;; (''1 t)
-      ;; (''0 t)
-      ;; (& (and (pp-has-bitp-rp orig)
-      ;;         (not (include-fnc term 's-c-res))
-      ;;         (not (include-fnc term 'c))
-      ;;         (not (include-fnc term 's)))))))
 
 (define pp-term-list-p (lst &key (strict 'nil))
   (if (atom lst)
@@ -821,6 +791,8 @@
           ((pp-p term)
            (pp-term-to-pp-lists (cadr term) sign))
           ((bit-of-p term)
+           (mv (list (cons sign (list term))) nil))
+          ((bit-fix-p term)
            (mv (list (cons sign (list term))) nil))
           ((equal term ''1)
            (mv (list (cons sign (list term))) nil))

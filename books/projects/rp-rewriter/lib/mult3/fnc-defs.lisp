@@ -52,6 +52,13 @@
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 
+(local
+ (fetch-new-events
+  (include-book "arithmetic-5/top" :dir :system)
+  use-arith-5
+  :disabled t))
+
+
 (progn
   (define binary-sum (x y)
     (+ (ifix x)
@@ -96,6 +103,19 @@
        2)
   :returns (res integerp)
   ///
+
+  (local
+   (use-arith-5 t))
+  
+  (defret bitp-of-s
+    (bitp res)
+    :hints (("Goal"
+             :in-theory (e/d () (mod)))))
+  (defret natp-of-s
+    (natp res))
+
+  (add-rp-rule bitp-of-s)
+  (add-rp-rule natp-of-s)
   (add-rp-rule integerp-of-s))
 
 (define c (hash-code s pp c)
@@ -954,6 +974,15 @@
                (case-match term (('bit-of & &) t)))
       :rule-classes :forward-chaining))
 
+  (define bit-fix-p (term)
+    :inline t
+    (case-match term (('bit-fix &) t))
+    ///
+    (defthm bit-fix-p-implies-fc
+      (implies (bit-fix-p term)
+               (case-match term (('bit-fix &) t)))
+      :rule-classes :forward-chaining))
+
   (define adder-or-p (term)
     :inline t
     (case-match term (('adder-or & &) t))
@@ -1318,4 +1347,5 @@
        bit-concat
        ;;sv::4vec-fix
        svl::bits
+       
        ))))
