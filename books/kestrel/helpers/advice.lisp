@@ -74,6 +74,28 @@
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
 
+(defun widen-margins (state)
+  (declare (xargs :stobjs state
+                  :mode :program ; todo
+                  ))
+  (let* ((old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
+         (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
+         ;; save the old values for later restoration:
+         (state (f-put-global 'old-fmt-hard-right-margin old-fmt-hard-right-margin state))
+         (state (f-put-global 'old-fmt-soft-right-margin old-fmt-soft-right-margin state))
+         ;; Change the margins
+         (state (set-fmt-hard-right-margin 210 state))
+         (state (set-fmt-soft-right-margin 200 state)))
+    state))
+
+(defun unwiden-margins (state)
+  (declare (xargs :stobjs state
+                  :mode :program ; todo
+                  ))
+  ;; Restore the margins:
+  (let* ((state (set-fmt-hard-right-margin (f-get-global 'old-fmt-hard-right-margin state) state))
+         (state (set-fmt-soft-right-margin (f-get-global 'old-fmt-soft-right-margin state) state)))
+    state))
 
 ;move
 (defund name-that-can-be-enabled/disabledp (name wrld)
@@ -131,62 +153,32 @@
            (fms-to-string "~X01" (acons #\0  (first checkpoints) (acons #\1 nil nil)))
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
-(defun show-recommendation (rec num)
-  (declare (xargs :guard (posp num)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
-  (if (not (parsed-json-objectp rec))
-      (er hard? 'show-recommendation "Bad rec: ~x0." rec)
-    (let* ((dict (cadr rec)) ; strip the :object
-           (type (lookup-equal "type" dict))
-           (object (lookup-equal "object" dict))
-           (confidence (lookup-equal "confidence" dict))
-           (confidence-percent (floor (* (rfix confidence) 100) 1)))
-      (cw "~c0 Try ~s1 with ~s2 (conf: ~x3%).~%" (cons num 2) type object confidence-percent))))
+(defun show-recommendation (rec)
+  (let* ((name (car rec))
+         (type (cadr rec))
+         (object (caddr rec))
+         (confidence-percent (cadddr rec))
+         ;; (book-map (car (cddddr rec)))
+         )
+    (cw "~s0: Try ~x1 with ~x2 (conf: ~x3%).~%" name type object (floor confidence-percent 1))))
 
-(defun show-recommendations-aux (recs num)
-  (declare (xargs :guard (and (parsed-json-valuesp recs)
-                              (posp num))
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-valuesp)))))
+(defun show-recommendations-aux (recs)
+  (declare (xargs ;; :guard (parsed-json-valuesp recs)
+            ))
   (if (endp recs)
       nil
-    (prog2$ (show-recommendation (first recs) num)
-            (show-recommendations-aux (rest recs) (+ 1 num)))))
-
-(defun widen-margins (state)
-  (declare (xargs :stobjs state
-                  :mode :program ; todo
-                  ))
-  (let* ((old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
-         (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
-         ;; save the old values for later restoration:
-         (state (f-put-global 'old-fmt-hard-right-margin old-fmt-hard-right-margin state))
-         (state (f-put-global 'old-fmt-soft-right-margin old-fmt-soft-right-margin state))
-         ;; Change the margins
-         (state (set-fmt-hard-right-margin 210 state))
-         (state (set-fmt-soft-right-margin 200 state)))
-    state))
-
-(defun unwiden-margins (state)
-  (declare (xargs :stobjs state
-                  :mode :program ; todo
-                  ))
-  ;; Restore the margins:
-  (let* ((state (set-fmt-hard-right-margin (f-get-global 'old-fmt-hard-right-margin state) state))
-         (state (set-fmt-soft-right-margin (f-get-global 'old-fmt-soft-right-margin state) state)))
-    state))
+    (prog2$ (show-recommendation (first recs))
+            (show-recommendations-aux (rest recs)))))
 
 ;; Returns state
 ;; TODO: Redo to handle parsed recs
 ;; TODO: Add ability to show only the ones that helped
 (defun show-recommendations (recs state)
-  (declare (xargs :guard (parsed-json-valuesp recs)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))
-                  :verify-guards nil ; todo
-                  :mode :program ;todo
+  (declare (xargs :mode :program ;todo
                   :stobjs state))
   (let ((state (widen-margins state)))
     (progn$ (cw "~%RECOMMENDATIONS:~%")
-            (show-recommendations-aux recs 1) ;; strip the :array
+            (show-recommendations-aux recs)
             (let ((state (unwiden-margins state)))
               state))))
 
@@ -313,7 +305,7 @@
           (cw "WARNING: Bad book map in rec: ~x0.~%" rec)
           (mv nil ; supressing this error for now
               :none state))
-         (confidence-percent (floor (* (rfix confidence) 100) 1))
+         (confidence-percent (floor (* (rfix confidence) 10000) 100)) ; 2 digits after the decimal point
          (res (assoc-equal type *rec-to-symbol-alist*))
          ((when (not res))
           (er hard? 'parse-recommendation "Unknown recommendation type: ~x0." type)
@@ -812,8 +804,8 @@
         (er hard? 'advice-fn "Error parsing recommendations.")
         (mv erp nil state))
        (- (and debug (cw "Parsed recommendations: ~X01~%" parsed-recommendations nil)))
-       ;; Print the recommendations (for now): ;; TODO: Show the parsed ones here?
-       (state (show-recommendations semi-parsed-recommendations state))
+       ;; Print the recommendations (for now):
+       (state (show-recommendations parsed-recommendations state))
        ;; Try the recommendations:
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
        ((mv name body hints otf-flg)
