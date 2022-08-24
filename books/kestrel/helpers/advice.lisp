@@ -586,7 +586,13 @@
                             rec
                             state)
   (declare (xargs :stobjs state :mode :program))
-  (let ((wrld (w state)))
+  (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
+        (cw "SKIP (Not disabling catch-all: ~x0)~%" rule)
+        (mv nil nil state))
+       ((when (keywordp rule))
+        (cw "SKIP (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
+        (mv nil nil state))
+       (wrld (w state)))
     (if (function-symbolp rule wrld)
         ;; It's a function in the current world:
         (b* ((fn rule)
@@ -675,6 +681,9 @@
   (declare (xargs :stobjs state :mode :program))
   (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
         (cw "SKIP (Not disabling catch-all: ~x0)~%" rule)
+        (mv nil nil state))
+       ((when (keywordp rule))
+        (cw "SKIP (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
        ((when (not (name-that-can-be-enabled/disabledp rule (w state))))
         (cw "SKIP (Not disabling unknown name: ~x0)~%" rule) ;; For now, we don't try to including the book that brings in the thing to disable!
