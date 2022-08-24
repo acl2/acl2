@@ -41,9 +41,9 @@
               :slong val.get
               :ullong val.get
               :sllong val.get
-              :pointer (prog2$ (impossible) 0)
-              :array (prog2$ (impossible) 0)
-              :struct (prog2$ (impossible) 0))
+              :pointer (ifix (impossible))
+              :array (ifix (impossible))
+              :struct (ifix (impossible)))
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-signed-integerp
                                            value-unsigned-integerp)))
@@ -88,7 +88,7 @@
       (:slong (value-slong mathint))
       (:ullong (value-ullong mathint))
       (:sllong (value-sllong mathint))
-      (t (prog2$ (impossible) (ec-call (value-uchar :irrelevant))))))
+      (t (value-fix (impossible)))))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep
                                            integer-type-min
                                            integer-type-max
@@ -121,6 +121,7 @@
 
   (defret value-integerp-of-value-integer
     (value-integerp val)
+    :hyp (type-nonchar-integerp type)
     :hints (("Goal" :in-theory (enable value-integerp
                                        value-signed-integerp
                                        value-unsigned-integerp)))))
@@ -237,7 +238,8 @@
 
   (defret value-integerp-of-convert-integer-value
     (implies (not (errorp newval))
-             (value-integerp newval)))
+             (value-integerp newval))
+    :hyp (type-nonchar-integerp type))
 
   (defruled convert-integer-value-to-type-of-value
     (implies (and (value-integerp val)
@@ -342,7 +344,8 @@
                           valuep-of-convert-integer-value-from-sshort-to-sint
                           valuep-of-convert-integer-value-from-uchar-to-sint
                           valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep)
+                          not-errorp-when-valuep
+                          type-nonchar-integerp)
                          ((:e type-sint))))))
 
   (defruled type-of-value-of-promote-value
@@ -509,7 +512,7 @@
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
   :returns (resval value-resultp)
-  :short "Apply unary @('~') to an integer value [C:6.5.3.3/4]."
+  :short "Apply @('~') to an integer value [C:6.5.3.3/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -587,3 +590,21 @@
                                        (:e slong-max)
                                        (:e sllong-min)
                                        (:e sllong-max))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lognot-integer-value ((val valuep))
+  :guard (value-integerp val)
+  :returns (resval valuep)
+  :short "Apply @('!') to an integer value [C:6.5.3.3/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This always returns an @('int') (never an error), either 0 or 1.
+     It is equivalent to comparing the integer for equality to 0,
+     which in our curren model is equivalent to
+     whether the integer value is 0 or not."))
+  (if (equal (value-integer->get val) 0)
+      (value-sint 1)
+    (value-sint 0))
+  :hooks (:fix))
