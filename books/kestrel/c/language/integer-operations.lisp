@@ -41,9 +41,9 @@
               :slong val.get
               :ullong val.get
               :sllong val.get
-              :pointer (prog2$ (impossible) 0)
-              :array (prog2$ (impossible) 0)
-              :struct (prog2$ (impossible) 0))
+              :pointer (ifix (impossible))
+              :array (ifix (impossible))
+              :struct (ifix (impossible)))
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-signed-integerp
                                            value-unsigned-integerp)))
@@ -88,7 +88,7 @@
       (:slong (value-slong mathint))
       (:ullong (value-ullong mathint))
       (:sllong (value-sllong mathint))
-      (t (prog2$ (impossible) (ec-call (value-uchar :irrelevant))))))
+      (t (value-fix (impossible)))))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep
                                            integer-type-min
                                            integer-type-max
@@ -121,6 +121,7 @@
 
   (defret value-integerp-of-value-integer
     (value-integerp val)
+    :hyp (type-nonchar-integerp type)
     :hints (("Goal" :in-theory (enable value-integerp
                                        value-signed-integerp
                                        value-unsigned-integerp)))))
@@ -237,7 +238,8 @@
 
   (defret value-integerp-of-convert-integer-value
     (implies (not (errorp newval))
-             (value-integerp newval)))
+             (value-integerp newval))
+    :hyp (type-nonchar-integerp type))
 
   (defruled convert-integer-value-to-type-of-value
     (implies (and (value-integerp val)
@@ -342,7 +344,8 @@
                           valuep-of-convert-integer-value-from-sshort-to-sint
                           valuep-of-convert-integer-value-from-uchar-to-sint
                           valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep)
+                          not-errorp-when-valuep
+                          type-nonchar-integerp)
                          ((:e type-sint))))))
 
   (defruled type-of-value-of-promote-value
