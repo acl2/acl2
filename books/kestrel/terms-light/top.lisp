@@ -53,3 +53,4 @@
 (include-book "replace-term-with-term")
 (include-book "count-occurrences-in-term")
 (include-book "no-nils-in-termp")
+(include-book "all-fnnames1")
