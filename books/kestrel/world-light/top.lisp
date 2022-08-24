@@ -19,3 +19,6 @@
 (include-book "defined-functionp")
 
 (include-book "function-symbolsp")
+
+(include-book "filter-defined-fns")
+(include-book "defined-fns-in-term")
