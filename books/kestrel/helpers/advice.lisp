@@ -54,7 +54,7 @@
 ;; TODO: Avoid including books that are known to be slow?
 
 (include-book "kestrel/utilities/checkpoints" :dir :system)
-(include-book "kestrel/utilities/pack" :dir :system) ; todo reduce, for nat-to-string
+(include-book "kestrel/utilities/nat-to-string" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
