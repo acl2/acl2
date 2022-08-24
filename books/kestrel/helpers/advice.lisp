@@ -64,11 +64,11 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
-(include-book "kestrel/htclient/top" :dir :system)
+(include-book "kestrel/htclient/post" :dir :system)
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages tha might arise are known
-(include-book "std/io/read-string" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (defconst *step-limit* 100000)
 
@@ -780,10 +780,14 @@
    (implies (symbol-listp names)
             (recommendation-listp (make-enable-recs-aux names num)))))
 
+;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 (defun make-enable-recs (formula wrld)
   (declare (xargs :guard (and (pseudo-termp formula)
                               (plist-worldp wrld))))
-  (let ((fns-to-try-enabling (defined-fns-in-term formula wrld)))
+  (let ((fns-to-try-enabling (set-difference-eq (defined-fns-in-term formula wrld)
+                                                ;; Don't bother wasting time with trying to enable implies
+                                                ;; (I suppose we coud try it if implies is disabled):
+                                                '(implies))))
     (make-enable-recs-aux fns-to-try-enabling 1)))
 
 (local
