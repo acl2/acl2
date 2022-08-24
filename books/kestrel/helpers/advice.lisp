@@ -22,25 +22,24 @@
 ;; TODO: Add filtering of unhelpful recommendations:
 ;; - (maybe) skip use-lemma when the rule had nothing to do with the goal
 ;; - skip add-disable-hint when the rule is already disabled (or not present?)
-;; - skip add-hyp when the hyp is already there
 ;; - skip add-hyp when cgen can falsify the theorem even with the hyp
-;; - (maybe) skip a hyp that is implied by the existing hyps (low probability of working)
 ;; - skip add-library when already present
 ;; - skip :hints that are already present or subsumed by ones already present
 ;; - (maybe) skip :hints that conflict with ones already present (e.g., :induct, enable vs and explicit disable)
 ;; - avoid anything except add-hyp when cgen can falsify the theorem (can't possibly fix the problem)
-;; - (maybe) try to avoid theory-invariant warnings
+;; - (maybe) try to avoid theory-invariant errors/warnings
 ;; - (maybe) try to help clean up hyps (e.g., replacing a subsumed hyp when add-hyp strengthens one, maybe using tau)
 ;; - avoid both add-enable-hint and use-lemma of the same rule
 ;; - what else?
 
-;; TODO: All a time limit for trying recommendations and keep trying more and
-;; more until that limit is reached
+;; TODO: Maybe add a time limit for trying recommendations and keep trying more and
+;; more until that limit is reached.
 
 ;; TODO: Group recommendations that need the same supporting book to be
 ;; included, to avoid re-including the same book later.
 
-;; TODO: Incorporate cgen to try to see if the theorem is valid or not.
+;; TODO: Incorporate cgen to try to see if the theorem is valid or not.  If not
+;; valid, only add-hyp can help.
 
 ;; TODO: Why does getting advice take ~3 seconds?
 
@@ -71,6 +70,14 @@
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
+;; ;; Returns all disabled runes associate with NAME.
+;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
+;; (defun disabled-runes (name ens wrld)
+;;   (declare (xargs :mode :program))
+;;   (disabledp-fn name ens wrld))
+
+(defconst *step-limit* 100000)
+
 ;; If NAME is a macro-alias, return what it represents.  Otherwise, return NAME.
 (defund handle-macro-alias (name wrld)
   (declare (xargs :guard (plist-worldp wrld)))
@@ -85,8 +92,6 @@
                   (cdr res)
                 (er hard? 'handle-macro-alias "Bad macro aliases table."))
             name))))))
-
-(defconst *step-limit* 100000)
 
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
@@ -473,8 +478,10 @@
 
 ;; Calls prove$ but first does an include-book, which is undone after the prove$
 ;; Returns (mv erp provedp state).
-(defun prove$-with-include-book (ctx body include-book-form
-                                     name-to-check ; we ensure this exists after the include-book, or nil
+(defun prove$-with-include-book (ctx
+                                 formula
+                                 include-book-form
+                                 name-to-check ; we ensure this exists after the include-book, or nil
                                  ;; args to prove$:
                                  hints otf-flg step-limit
                                  state)
@@ -500,17 +507,17 @@
         ;;                  t nil state))
         ;; (provedp (not erp))
         ((mv provedp state) (prove$-checked ctx
-                                            body
+                                            formula
                                             :hints hints
                                             :otf-flg otf-flg
                                             :step-limit step-limit)))
      (mv nil provedp state))))
 
-;; Try to prove BODY after submitting each of the INCLUDE-BOOK-FORMS (separately).
+;; Try to prove FORMULA after submitting each of the INCLUDE-BOOK-FORMS (separately).
 ;; Returns (mv erp successful-include-book-form-or-nil state).
 ;; TODO: Don't return erp if we will always suppress errors.
 (defun try-prove$-with-include-books (ctx
-                                      body
+                                      formula
                                       include-book-forms
                                       name-to-check
                                       ;; args to prove$:
@@ -523,7 +530,7 @@
          ;; (- (cw "  Trying with ~x0.~%" form))
          ((mv & ; erp ; suppress errors from prove$-with-include-book (TODO: Why?)
               provedp state)
-          (prove$-with-include-book ctx body
+          (prove$-with-include-book ctx formula
                                     form
                                     name-to-check
                                     ;; args to prove$:
@@ -532,7 +539,7 @@
          ;; ((when erp) (mv erp nil state))
          ((when provedp) (mv nil form state)))
       (try-prove$-with-include-books ctx
-                                     body
+                                     formula
                                      (rest include-book-forms)
                                      name-to-check
                                      ;; args to prove$:
@@ -640,19 +647,6 @@
                                            :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
     (mv nil (if provedp rec nil) state)))
-
-;; Returns all disabled runes associate with NAME.
-;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
-(defun disabled-runes (name ens wrld)
-  (declare (xargs :mode :program))
-  (disabledp-fn name ens wrld))
-
-;; (defun known-namep (sym wrld)
-;;   (declare (xargs :guard (and (symbolp sym)
-;;                               (plist-worldp wrld))))
-;;   (or (function-symbolp sym wrld)
-;;        (getprop sym 'theorem nil 'current-acl2-world wrld)))
-
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Avoid theory-invariant violations from enabling.
