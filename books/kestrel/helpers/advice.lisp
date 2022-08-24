@@ -53,15 +53,19 @@
 
 ;; TODO: Avoid including books that are known to be slow?
 
+;; TODO: Untranslate before printing (e.g., hyps)?
+
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/nat-to-string" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
-(include-book "kestrel/utilities/hints" :dir :system) ; todo: slow
+(include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
-;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/htclient/post" :dir :system) ; todo: slow
@@ -232,6 +236,29 @@
     (progn$ (show-recommendations-aux recs)
             (let ((state (unwiden-margins state)))
               state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun advice-option-fn (option-name rest-args wrld)
+  (if (not (member-eq option-name '(:successes)))
+      (er hard? 'advice-option-fn "Unknown option: ~x0." option-name)
+    (if (consp rest-args)
+        ;; It's a set:
+        (let ((option-val (first rest-args)))
+          `(table advice-options ,option-name ,option-val))
+      ;; It's a get:
+      (let* ((table-alist (table-alist 'advice-options wrld))
+             (res (assoc-eq option-name table-alist)))
+        (if res
+            (prog2$ (cw "~x0~%" (cdr res))
+                    '(value-triple :invisible))
+          ;;todo: just use nil?:
+          (er hard? 'advice-option-fn "Unknown option: ~x0." option-name))))))
+
+(defmacro advice-option (option-name &rest rest-args)
+  `(make-event-quiet (advice-option-fn ,option-name ',rest-args (w state))))
+
+(advice-option :successes 3) ; stop after 3 successes
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1122,7 +1149,7 @@
               (if (< 1 (len untranslated-checkpoints)) "checkpoints" "checkpoint")))
        (post-data (acons "n" (nat-to-string n)
                          (make-numbered-checkpoint-entries 0 untranslated-checkpoints)))
-       ;; (- (cw "POST data to be sent: ~X01.~%" post-data nil))
+       (- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state) (htclient::post server-url post-data state))
        ((when erp)
         (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
