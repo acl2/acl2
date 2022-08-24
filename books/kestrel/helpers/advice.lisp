@@ -110,8 +110,8 @@
          (state (f-put-global 'old-fmt-hard-right-margin old-fmt-hard-right-margin state))
          (state (f-put-global 'old-fmt-soft-right-margin old-fmt-soft-right-margin state))
          ;; Change the margins
-         (state (set-fmt-hard-right-margin 210 state))
-         (state (set-fmt-soft-right-margin 200 state)))
+         (state (set-fmt-hard-right-margin 410 state))
+         (state (set-fmt-soft-right-margin 400 state)))
     state))
 
 (defun unwiden-margins (state)
@@ -190,7 +190,7 @@
        ;; (nth 2 rec) ; object
        (rationalp (nth 3 rec)) ; confidence-percent
        ;; (nth 4 rec) ; book-map
-       ;; this (poossibly) gets populated when we try the rec:
+       ;; this (possibly) gets populated when we try the rec:
        (let ((pre-commands (nth 5 rec))) ; todo: consider :unknown until we decide if any include-books are needed
          (true-listp pre-commands))))
 
@@ -267,7 +267,9 @@
                         (:add-induct-hint (fms-to-string-no-margin ":induct ~x0" (acons #\0 object nil)))
                         (:add-library (fms-to-string-no-margin "~x0" (acons #\0 object nil)))
                         (:add-nonlinearp-hint (fms-to-string-no-margin ":nonlinearp ~x0" (acons #\0 object nil)))
-                        (:add-use-hint (fms-to-string-no-margin ":use ~x0" (acons #\0 object nil)))))
+                        (:add-use-hint (fms-to-string-no-margin ":use ~x0" (acons #\0 object nil)))
+                        (:exact-hints (fms-to-string-no-margin ":hints ~x0" (acons #\0 object nil)))
+                        (t (er hard? 'show-successful-recommendation "Unknown rec type: ~x0." type))))
          (english-rec (drop-initial-newline english-rec)) ; work around problem with fms-to-string
          )
     (if pre-commands
@@ -902,6 +904,17 @@
     ;; TODO: Flesh this out when ready:
     (mv :unsupported-induct-hint nil state)))
 
+(defun try-exact-hints (item theorem-body theorem-otf-flg rec state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((mv provedp state) (prove$-checked 'try-exact-hints
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           :hints item
+                                           :otf-flg theorem-otf-flg
+                                           :step-limit *step-limit*))
+       (- (if provedp (cw "SUCCESS: Add :hints ~x0~%" item) (cw "FAIL~%"))))
+    (mv nil (if provedp rec nil) state)))
+
 ;; Returns (mv erp successful-recs state)
 (defun try-recommendations (recs
                             theorem-name ; may be :thm
@@ -940,6 +953,7 @@
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
           ;; same as for try-add-enable-hint above:
           (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg rec state))
+          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg rec state))
           (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))
         (if erp
@@ -987,6 +1001,53 @@
 ;;  (defthm recommendation-listp-of-make-enable-recs
 ;;    (implies (pseudo-termp formula)
 ;;             (recommendation-listp (make-enable-recs formula wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; not looking at anything but the type and object
+(defun rec-presentp (type object recs)
+  (if (endp recs)
+      nil
+    (let ((rec (first recs)))
+      (if (and (eq type (nth 1 rec))
+               (equal object (nth 2 rec)))
+          t
+        (rec-presentp type object (rest recs))))))
+
+;; Look for hints in theorems in the history
+;; Returns a rec, or nil.
+(defun make-rec-from-history-command (cmd num seen-recs)
+  (and (consp cmd) ; todo: strip local?  what else an we harvest hints from?
+       (member-eq (ffn-symb cmd) '(defthm defthmd))
+       (let ((res (assoc-keyword :hints (rest (rest (fargs cmd))))))
+         (and res
+              (let ((hints (cadr res)))
+                (and (not (rec-presentp :exact-hints hints seen-recs))
+                     ;; make a new rec:
+                     (list (concatenate 'string "H" (nat-to-string num))
+                           :exact-hints ; new kind of rec, to replace all hints
+                           (cadr res)
+                           0
+                           nil
+                           nil)))))))
+
+(defun make-recs-from-history-aux (cmds num acc)
+  (if (endp cmds)
+      (reverse acc)
+    (let* ((cmd (first cmds))
+           (maybe-rec (make-rec-from-history-command cmd num acc))
+           (acc (if maybe-rec (cons maybe-rec acc) acc))
+           (num (if maybe-rec (+ 1 num) num)))
+      (make-recs-from-history-aux (rest cmds) num acc))))
+
+;; Returns (mv erp val state).
+(defun make-recs-from-history (state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (b* (((mv erp cmds state) (get-command-sequence-fn 1 :max state))
+       ((when erp) (mv erp nil state)))
+    (mv nil (make-recs-from-history-aux cmds 1 nil) state)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1072,7 +1133,10 @@
        (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil)))
        ;; Make some other recs:
        (enable-recommendations (make-enable-recs theorem-body (w state)))
+       ((mv erp historical-recommendations state) (make-recs-from-history state))
+       ((when erp) (mv erp nil state))
        (recommendations (append enable-recommendations
+                                historical-recommendations
                                 ml-recommendations))
        ;; Print the recommendations (for now):
        (-  (cw "~%RECOMMENDATIONS TO TRY:~%"))
