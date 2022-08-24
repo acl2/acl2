@@ -58,15 +58,15 @@
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
-(include-book "kestrel/utilities/hints" :dir :system)
+(include-book "kestrel/utilities/hints" :dir :system) ; todo: slow
 (include-book "kestrel/utilities/translate" :dir :system)
-(include-book "kestrel/utilities/read-string" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
+;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
-(include-book "kestrel/htclient/post" :dir :system)
+(include-book "kestrel/htclient/post" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
-(include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages tha might arise are known
+(include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
 (include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
