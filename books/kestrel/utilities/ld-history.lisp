@@ -45,8 +45,8 @@
                               (symbol-listp event-types))))
   (if (endp ld-history)
       (if (consp (rest whole-ld-history)) ; attempt to check whether we are keeping the whole history
-          (er hard? 'most-recent-failed-command-aux "Can't find a theorem in the ld-history, which contains ~x0 commands." (len whole-ld-history))
-        (er hard? 'most-recent-failed-command-aux "Can't find a theorem in the ld-history, which has length ~x0.  Consider doing (adjust-ld-history t state) to save full histories." (len whole-ld-history)))
+          (er hard? 'most-recent-failed-command-aux "Can't find a failed theorem in the ld-history, which contains ~x0 commands." (len whole-ld-history))
+        (er hard? 'most-recent-failed-command-aux "Can't find a failed theorem in the ld-history, which has length ~x0.  Consider doing (adjust-ld-history t state) to save full histories." (len whole-ld-history)))
     (let* ((entry (first ld-history)))
       (if (ld-history-entry-error-flg entry) ; checks whether there was a translation error
           ;; Keep looking:
