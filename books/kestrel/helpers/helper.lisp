@@ -13,6 +13,7 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "kestrel/utilities/world" :dir :system) ; todo: reduce, for fn-recursive-partners
+(include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/fn-definedp" :dir :system)
 (include-book "kestrel/world-light/function-symbolsp" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
@@ -60,16 +61,6 @@
 ;;; Library stuff
 ;;;
 
-(defun filter-defined-fns (fns wrld)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (plist-worldp wrld)
-                              (function-symbolsp fns wrld))))
-  (if (endp fns)
-      nil
-    (let ((fn (first fns)))
-      (if (fn-definedp fn wrld)
-          (cons fn (filter-defined-fns (rest fns) wrld))
-        (filter-defined-fns (rest fns) wrld)))))
 
 ;dup?
 ;; Looks up all the KEYS in the ALIST, returning a list of the results (or nils, for absent keys).
@@ -730,8 +721,7 @@
        (parents (raw-problem->parents prob))
        (old-techniques (raw-problem->old-techniques prob))
        (subterms (find-all-fn-call-subterms formula nil))
-       (fns (all-fnnames formula)) ; todo: keep only defined ones?
-       (defined-fns (filter-defined-fns fns wrld))
+       (defined-fns (defined-fns-in-term formula wrld))
        (defined-rec-fns (filter-rec-fns defined-fns wrld))
        (defined-non-rec-fns (set-difference-eq defined-fns defined-rec-fns))
        ;; TODO: Consider using alternate definition rules for fns
