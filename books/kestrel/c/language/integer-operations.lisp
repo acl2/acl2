@@ -263,9 +263,58 @@
              integer-type-min
              integer-type-max))
 
+  (defruled valuep-of-convert-integer-value-from-schar-to-slong
+    (implies (value-case val :schar)
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-schar-to-sllong
+    (implies (value-case val :schar)
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
   (defruled valuep-of-convert-integer-value-from-sshort-to-sint
     (implies (value-case val :sshort)
              (valuep (convert-integer-value val (type-sint))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sshort-to-slong
+    (implies (value-case val :sshort)
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sshort-to-sllong
+    (implies (value-case val :sshort)
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sint-to-slong
+    (implies (value-case val :sint)
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sint-to-sllong
+    (implies (value-case val :sint)
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-slong-to-sllong
+    (implies (value-case val :slong)
+             (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max))
@@ -278,10 +327,58 @@
              integer-type-min
              integer-type-max))
 
+  (defruled valuep-of-convert-integer-value-from-uchar-to-slong
+    (implies (and (value-case val :uchar)
+                  (<= (uchar-max) (slong-max)))
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-uchar-to-sllong
+    (implies (and (value-case val :uchar)
+                  (<= (uchar-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
   (defruled valuep-of-convert-integer-value-from-ushort-to-sint
     (implies (and (value-case val :ushort)
                   (<= (ushort-max) (sint-max)))
              (valuep (convert-integer-value val (type-sint))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-ushort-to-slong
+    (implies (and (value-case val :ushort)
+                  (<= (ushort-max) (slong-max)))
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-ushort-to-sllong
+    (implies (and (value-case val :ushort)
+                  (<= (ushort-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-uint-to-sllong
+    (implies (and (value-case val :uint)
+                  (<= (uint-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-uint-to-slong
+    (implies (and (value-case val :uint)
+                  (<= (uint-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max)))
@@ -318,7 +415,13 @@
      obtaining the type of the new value.
      If the starting value is an integer one,
      in which case the promoted type is also an integer one,
-     we convert the value to the promoted type.")
+     we convert the value to the promoted type.
+     The other case, i.e. that the starting value is not an integer one,
+     cannot happens under the guard,
+     given that in our current model
+     all the arithmetic values are integer values.
+     But if/when we extend our model with more arithmetic values,
+     then this code does not have to change.")
    (xdoc::p
     "This function never returns error:
      promotion always works.
