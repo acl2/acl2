@@ -148,14 +148,17 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,<type>-mod ((x integerp))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Reduce modularly ACL2 integers to values of "
-                           type-string
-                           ".")
-         (,<type> (mod (ifix x) (1+ (,<type>-max))))
-         :guard-hints (("Goal" :in-theory (enable ,<type>-integerp-alt-def)))
-         :hooks (:fix))
+       ,@(and
+          (not signedp)
+          `((define ,<type>-mod ((x integerp))
+              :returns (result ,<type>p)
+              :short ,(str::cat "Reduce modularly ACL2 integers to values of "
+                                type-string
+                                ".")
+              (,<type> (mod (ifix x) (1+ (,<type>-max))))
+              :guard-hints (("Goal"
+                             :in-theory (enable ,<type>-integerp-alt-def)))
+              :hooks (:fix))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

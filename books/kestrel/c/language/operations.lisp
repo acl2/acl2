@@ -11,8 +11,7 @@
 
 (in-package "C")
 
-(include-book "arithmetic-operations")
-(include-book "pointer-operations")
+(include-book "scalar-operations")
 (include-book "array-operations")
 (include-book "structure-operations")
 
@@ -73,4 +72,20 @@
                  :supplied (value-fix val))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lognot-value ((val valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('!') to a value [C:6.5.3.3/1] [C:6.5.3.3/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the value is not scalar."))
+  (if (value-scalarp val)
+      (lognot-scalar-value val)
+    (error (list :lognot-mistype
+                 :required :scalar
+                 :supplied (value-fix val))))
   :hooks (:fix))
