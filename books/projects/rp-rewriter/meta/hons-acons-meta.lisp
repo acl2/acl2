@@ -50,6 +50,8 @@
 
 (include-book "../meta-rule-macros")
 
+(include-book "centaur/meta/def-formula-checks" :dir :system)
+
 (local
  (in-theory (enable falist-consistent)))
 
