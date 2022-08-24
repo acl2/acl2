@@ -1014,39 +1014,49 @@
           t
         (rec-presentp type object (rest recs))))))
 
-;; Look for hints in theorems in the history
-;; Returns a rec, or nil.
-(defun make-rec-from-history-command (cmd num seen-recs)
-  (and (consp cmd) ; todo: strip local?  what else an we harvest hints from?
-       (member-eq (ffn-symb cmd) '(defthm defthmd))
-       (let ((res (assoc-keyword :hints (rest (rest (fargs cmd))))))
-         (and res
-              (let ((hints (cadr res)))
-                (and (not (rec-presentp :exact-hints hints seen-recs))
-                     ;; make a new rec:
-                     (list (concatenate 'string "H" (nat-to-string num))
-                           :exact-hints ; new kind of rec, to replace all hints
-                           (cadr res)
-                           0
-                           nil
-                           nil)))))))
+(mutual-recursion
+ ;; Look for hints in theorems in the history
+ ;; Returns a list of recs.
+ (defun make-recs-from-event (event num seen-recs)
+   (if (not (consp event))
+       (er hard? 'make-rec-from-event "Unexpected command: ~x0." event)
+     (if (eq 'local (ffn-symb event)) ; (local e1)
+         (make-recs-from-event (farg1 event) num seen-recs)
+       (if (eq 'encapsulate (ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
+           (make-recs-from-events (rest (fargs event)) num seen-recs)
+         (if (eq 'progn (ffn-symb event)) ; (progn e1 e2 ...)
+             (make-recs-from-events (fargs event) num seen-recs)
+           (and (consp event) ; todo: strip local?  what else can we harvest hints from?
+                (member-eq (ffn-symb event) '(defthm defthmd))
+                (let ((res (assoc-keyword :hints (rest (rest (fargs event))))))
+                  (and res
+                       (let ((hints (cadr res)))
+                         (and (not (rec-presentp :exact-hints hints seen-recs))
+                              ;; make a new rec:
+                              (list
+                               (list (concatenate 'string "H" (nat-to-string num))
+                                     :exact-hints ; new kind of rec, to replace all hints
+                                     (cadr res)
+                                     0
+                                     nil
+                                     nil))))))))))))
 
-(defun make-recs-from-history-aux (cmds num acc)
-  (if (endp cmds)
-      (reverse acc)
-    (let* ((cmd (first cmds))
-           (maybe-rec (make-rec-from-history-command cmd num acc))
-           (acc (if maybe-rec (cons maybe-rec acc) acc))
-           (num (if maybe-rec (+ 1 num) num)))
-      (make-recs-from-history-aux (rest cmds) num acc))))
+ (defun make-recs-from-events (events num acc)
+   (if (endp events)
+       (reverse acc)
+     (let* ((event (first events))
+            (recs (make-recs-from-event event num acc))
+            (acc (append recs acc))
+            (num (+ (len recs) num)))
+       (make-recs-from-events (rest events) num acc)))))
 
 ;; Returns (mv erp val state).
 (defun make-recs-from-history (state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* (((mv erp cmds state) (get-command-sequence-fn 1 :max state))
+  (b* (((mv erp events state) (get-command-sequence-fn 1 :max state))
        ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-history-aux cmds 1 nil) state)))
+    (mv nil (make-recs-from-events events 1 nil) state)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
