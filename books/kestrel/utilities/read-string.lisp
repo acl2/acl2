@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "std/io/read-string" :dir :system)
+(include-book "std/io/read-string-light" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Returns (mv erp item state).
@@ -18,7 +18,7 @@
   (declare (xargs :guard (stringp string)
                   :stobjs state))
   (mv-let (erp objects state)
-    (read-string string)
+    (read-string-light-fn string state)
     (if erp
         (mv erp nil state)
       (if (not (consp objects))
