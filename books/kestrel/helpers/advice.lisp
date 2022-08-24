@@ -69,11 +69,15 @@
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
 (include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/utilities/coerce" :dir :system))
 
 (defconst *step-limit* 100000)
 
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
+
+(in-theory (disable str::coerce-to-list-removal)) ;todo
 
 (defun widen-margins (state)
   (declare (xargs :stobjs state
@@ -158,13 +162,15 @@
 (defun recommendationp (rec)
   (declare (xargs :guard t))
   (and (true-listp rec)
-       (= 5 (len rec))
-       (stringp (first rec)) ; name
-       (keywordp (second rec)) ;type
-       ;; (caddr rec) ; object
-       (rationalp (cadddr rec)) ; confidence-percent
-       ;; (car (cddddr rec)) ; book-map
-       ))
+       (= 6 (len rec))
+       (stringp (nth 0 rec)) ; name
+       (keywordp (nth 1 rec)) ;type
+       ;; (nth 2 rec) ; object
+       (rationalp (nth 3 rec)) ; confidence-percent
+       ;; (nth 4 rec) ; book-map
+       ;; this (poossibly) gets populated when we try the rec:
+       (let ((pre-commands (nth 5 rec))) ; todo: consider :unknown until we decide if any include-books are needed
+         (true-listp pre-commands))))
 
 (defun recommendation-listp (recs)
   (declare (xargs :guard t))
@@ -173,13 +179,19 @@
     (and (recommendationp (first recs))
          (recommendation-listp (rest recs)))))
 
+(defund update-pre-commands (rec pre-commands)
+  (declare (xargs :guard (recommendationp rec)))
+  (append (take 5 rec)
+          (list pre-commands)))
+
 (defun show-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)))
-  (let* ((name (car rec))
-         (type (cadr rec))
-         (object (caddr rec))
-         (confidence-percent (cadddr rec))
-         ;; (book-map (car (cddddr rec)))
+  (let* ((name (nth 0 rec))
+         (type (nth 1 rec))
+         (object (nth 2 rec))
+         (confidence-percent (nth 3 rec))
+         ;; (book-map (car (nth 4 rec)))
+         ;; (pre-commands (nth 5 rec)) ; not present at this point
          )
     (cw "~s0: Try ~x1 with ~x2 (conf: ~x3%).~%" name type object (floor confidence-percent 1))))
 
@@ -190,15 +202,70 @@
     (prog2$ (show-recommendation (first recs))
             (show-recommendations-aux (rest recs)))))
 
-;; Returns state
-;; TODO: Redo to handle parsed recs
-;; TODO: Add ability to show only the ones that helped
+;; Returns state.
 (defun show-recommendations (recs state)
   (declare (xargs :mode :program ;todo
                   :stobjs state))
   (let ((state (widen-margins state)))
-    (progn$ (cw "~%RECOMMENDATIONS:~%")
-            (show-recommendations-aux recs)
+    (progn$ (show-recommendations-aux recs)
+            (let ((state (unwiden-margins state)))
+              state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund drop-initial-newline (str)
+  (declare (xargs :guard (stringp str)))
+  (let ((chars (coerce str 'list)))
+    (if (and (consp chars)
+             (eql #\newline (first chars)))
+        (coerce (rest chars) 'string)
+      str)))
+
+(defun show-successful-recommendation (rec)
+  (declare (xargs :guard (recommendationp rec)
+                  :mode :program))
+  (let* ((name (nth 0 rec))
+         (type (nth 1 rec))
+         (object (nth 2 rec))
+         ;; (confidence-percent (nth 3 rec))
+         ;; (book-map (car (nth 4 rec)))
+         (pre-commands (nth 5 rec))
+         (english-rec (case type
+                        (:add-cases-hint (fms-to-string ":cases ~x0" (acons #\0 object nil)))
+                        (:add-disable-hint (fms-to-string "disabling ~x0" (acons #\0 object nil)))
+                        (:add-do-not-hint (fms-to-string ":do-not ~x0" (acons #\0 object nil)))
+                        ;; Same handling for both:
+                        ((:add-enable-hint :use-lemma) (fms-to-string "enabling ~x0" (acons #\0 object nil)))
+                        (:add-expand-hint (fms-to-string ":expand ~x0" (acons #\0 object nil)))
+                        (:add-hyp (fms-to-string "adding the hyp ~x0" (acons #\0 object nil)))
+                        (:add-induct-hint (fms-to-string ":induct ~x0" (acons #\0 object nil)))
+                        (:add-library (fms-to-string "~x0" (acons #\0 object nil)))
+                        (:add-nonlinearp-hint (fms-to-string ":nonlinearp ~x0" (acons #\0 object nil)))
+                        (:add-use-hint (fms-to-string ":use ~x0" (acons #\0 object nil)))))
+         (english-rec (drop-initial-newline english-rec)) ; work around problem with fms-to-string
+         )
+    (if pre-commands
+        (if (consp (cdr pre-commands))
+            ;; More than one pre-command:
+            (cw "~s0: Try ~s1, after doing ~&2.~%" name english-rec pre-commands)
+          ;; Exactly one pre-command:
+          (cw "~s0: Try ~s1, after doing ~x2.~%" name english-rec (first pre-commands)))
+      (cw "~s0: Try ~s1.~%" name english-rec))))
+
+(defun show-successful-recommendations-aux (recs)
+  (declare (xargs :mode :program))
+  (declare (xargs :guard (recommendation-listp recs)))
+  (if (endp recs)
+      nil
+    (prog2$ (show-successful-recommendation (first recs))
+            (show-successful-recommendations-aux (rest recs)))))
+
+;; Returns state.
+(defun show-successful-recommendations (recs state)
+  (declare (xargs :mode :program ;todo
+                  :stobjs state))
+  (let ((state (widen-margins state)))
+    (progn$ (show-successful-recommendations-aux recs)
             (let ((state (unwiden-margins state)))
               state))))
 
@@ -260,7 +327,7 @@
   :hints (("Goal" :in-theory (enable parse-book-map-info-list))))
 
 ;; Returns (mv erp lists state) where each of the LISTS is a list of include-book forms, or the special value :builtin.
-(defun parse-book-map-info-lists (lists acc state)
+(defund parse-book-map-info-lists (lists acc state)
   (declare (xargs :guard (and (string-list-listp lists)
                               (true-listp acc))
                   :stobjs state))
@@ -280,7 +347,8 @@
 (defthm true-listp-of-mv-nth-1-of-parse-book-map-info-lists
   (implies (true-listp acc)
            (true-listp (mv-nth 1 (parse-book-map-info-lists lists acc state))))
-  :rule-classes :type-prescription)
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable parse-book-map-info-lists))))
 
 ;; returns (mv erp parsed-book-map state)
 (defun parse-book-map (book-map state)
@@ -307,7 +375,7 @@
       (mv nil (pairlis$ syms book-lists-for-keys) state))))
 
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
-(defun parse-recommendation (rec rec-num state)
+(defund parse-recommendation (rec rec-num state)
   (declare (xargs :guard (and (parsed-json-valuep rec)
                               (natp rec-num))
                   :stobjs state
@@ -460,7 +528,7 @@
 ;; TODO: Skip if library already included
 ;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
 ;; TODO: Try any upcoming enable or use-lemma recs that (may) need this library:
-(defun try-add-library (include-book-form theorem-name theorem-body theorem-hints theorem-otf-flg state)
+(defun try-add-library (include-book-form theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
            )
@@ -471,11 +539,11 @@
           (prove$-with-include-book 'try-add-library theorem-body include-book-form nil theorem-hints theorem-otf-flg *step-limit* state))
          ((when erp) (mv erp nil state))
          (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
-      (mv nil provedp state))))
+      (mv nil (if provedp rec nil) state))))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
-(defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg state)
+(defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* ((translatablep (translatable-termp hyp (w state)))
@@ -493,7 +561,7 @@
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
-    (mv nil provedp state)))
+    (mv nil (if provedp rec nil) state)))
 
 ;; Returns all disabled runes associate with NAME.
 ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
@@ -508,13 +576,14 @@
 ;;        (getprop sym 'theorem nil 'current-acl2-world wrld)))
 
 
-;; Returns (mv erp successp state).
+;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Avoid theory-invariant violations from enabling.
 (defun try-add-enable-hint (rule ; the rule to try enabling
                             book-map ; info on where the rule may be found
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
+                            rec
                             state)
   (declare (xargs :stobjs state :mode :program))
   (let ((wrld (w state)))
@@ -544,7 +613,7 @@
                               :otf-flg theorem-otf-flg
                               :step-limit *step-limit*))
              (- (if provedp (cw "SUCCESS: Enable ~x0~%" fn) (cw "FAIL~%"))))
-          (mv nil provedp state))
+          (mv nil (if provedp rec nil) state))
       (if (not (eq :no-body (getpropc rule 'theorem :no-body wrld))) ;todo: how to just check if the property is set?
           ;; It's a theorem in the current world:
         (b* (;; TODO: Consider whether to enable, say the :type-prescription rule
@@ -562,7 +631,7 @@
                               :otf-flg theorem-otf-flg
                               :step-limit *step-limit*))
              (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "FAIL~%"))))
-          (mv nil provedp state))
+          (mv nil (if provedp rec nil) state))
         ;; RULE is not currently known, so try to find where it is defined:
         (b* ((book-map-keys (strip-cars book-map))
              ((when (not (equal book-map-keys (list rule))))
@@ -595,10 +664,14 @@
                         ;; todo: try more if we didn't find it?:
                         (cw "FAIL (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
                       (cw "FAIL~%")))))
-            (mv nil provedp state)))))))
+            (mv nil
+                (if provedp
+                    (update-pre-commands rec (list successful-include-book-form-or-nil))
+                  nil)
+                state)))))))
 
-;; Returns (mv erp successp state).
-(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg state)
+;; Returns (mv erp maybe-successful-rec state).
+(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
         (cw "SKIP (Not disabling catch-all: ~x0)~%" rule)
@@ -616,11 +689,11 @@
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Disable ~x0~%" rule) (cw "FAIL~%"))))
-    (mv nil provedp state)))
+    (mv nil (if provedp rec nil) state)))
 
-;; Returns (mv erp successp state).
+;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Do we need to guess a substitution for the :use hint?
-(defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
+(defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (eq item 'other))
@@ -645,11 +718,11 @@
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "FAIL~%"))))
-    (mv nil provedp state)))
+    (mv nil (if provedp rec nil) state)))
 
-;; Returns (mv erp successp state).
+;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-expand-hint (item ; the thing to expand
-                            theorem-name theorem-body theorem-hints theorem-otf-flg state)
+                            theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (eq 'other item))
@@ -677,10 +750,10 @@
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add :expand hint ~x0~%" item) (cw "FAIL~%"))))
-    (mv nil provedp state)))
+    (mv nil (if provedp rec nil) state)))
 
-;; Returns (mv erp successp state).
-(defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
+;; Returns (mv erp maybe-successful-rec state).
+(defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (not (translatable-term-listp item (w state))))
@@ -701,37 +774,37 @@
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
        (- (if provedp (cw "SUCCESS: Add :cases hint ~x0~%" item) (cw "FAIL~%"))))
-    (mv nil provedp state)))
+    (mv nil (if provedp rec nil) state)))
 
-;; Returns (mv erp successp state).
+;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: We need more than a symbol
-(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg state)
+(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program)
-           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg))
+           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg rec))
   (if (symbolp item)
-      (prog2$ (cw "FAIL (need arguments of ~x0 to create :induct hint)~%" item)
+      (prog2$ (cw "SKIP (need arguments of ~x0 to create :induct hint)~%" item)
               (mv nil nil state))
     ;; TODO: Flesh this out when ready:
     (mv :unsupported-induct-hint nil state)))
 
-;; Returns (mv erp result-bools state)
+;; Returns (mv erp successful-recs state)
 (defun try-recommendations (recs
                             theorem-name ; may be :thm
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
-                            result-acc
+                            successful-recs
                             state)
   (declare (xargs :guard (and (recommendation-listp recs)
                               (symbolp theorem-name)
                               (pseudo-termp theorem-body)
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
-                              (true-listp result-acc))
+                              (true-listp successful-recs))
             :mode :program
             :stobjs state))
   (if (endp recs)
-      (mv nil (reverse result-acc) state)
+      (mv nil (reverse successful-recs) state)
     (b* ((rec (first recs))
          (name (car rec))
          (type (cadr rec))
@@ -739,25 +812,27 @@
          ;; (confidence-percent (cadddr rec))
          (book-map (car (cddddr rec)))
          (- (cw "~s0: " name)))
-      (mv-let (erp successp state)
+      (mv-let (erp maybe-successful-rec state)
         (case type
           ;; TODO: Pass the book-map to all who can use it:
-          (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg state))
-          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg state))
-          (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
-          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg state))
+          (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg state))
-          (t (prog2$ (cw "UNHANDLED rec type ~x0.~%" type)
+          (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg rec state))
+          (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))
         (if erp
             (mv erp nil state)
           (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg
-                               (cons (list name successp) result-acc)
+                               (if maybe-successful-rec
+                                   (cons maybe-successful-rec successful-recs)
+                                 successful-recs)
                                state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -772,6 +847,7 @@
                 (first names) ; the name to enable
                 0            ; confidence percentage (TODO: allow unknown)
                 nil ; book map ; todo: indicate that the name must be present?
+                nil ; no pre-commands
                 )
           (make-enable-recs-aux (rest names) (+ 1 num)))))
 
@@ -882,17 +958,30 @@
        (recommendations (append enable-recommendations
                                 ml-recommendations))
        ;; Print the recommendations (for now):
+       (-  (cw "~%RECOMMENDATIONS TO TRY:~%"))
        (state (show-recommendations recommendations state))
        ;; Try the recommendations:
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
        (state (widen-margins state))
        ((mv erp
-            & ; result-acc ; todo: use this, and make it richer
-            state) (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg nil state))
+            successful-recs ; result-acc ; todo: use this, and make it richer
+            state)
+        (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg nil state))
        (state (unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations.")
-        (mv erp nil state)))
+        (mv erp nil state))
+       (num-recs (len recommendations))
+       (num-successful-recs (len successful-recs))
+       (state (if (posp num-successful-recs)
+                  (progn$ (if (< 1 num-successful-recs)
+                              (cw "~%PROOF FOUND (~x0 successful recommendations out of ~x1):~%" num-successful-recs num-recs)
+                            (cw "~%PROOF FOUND (1 successful RECOMMENDATION out of ~x0):~%" num-recs))
+                          (prog2$ (cw "~%SUCCESSFUL RECOMMENDATIONS:~%")
+                                  (let ((state (show-successful-recommendations successful-recs state)))
+                                    state)))
+                (prog2$ (cw "~%NO PROOF FOUND~%~%")
+                        state))))
     (mv nil ; no error
         '(value-triple :invisible) state)))
 
