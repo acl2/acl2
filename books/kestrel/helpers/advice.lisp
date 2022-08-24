@@ -23,7 +23,6 @@
 ;; - (maybe) skip use-lemma when the rule had nothing to do with the goal
 ;; - skip add-disable-hint when the rule is already disabled (or not present?)
 ;; - skip add-hyp when the hyp is already there
-;; - add-skip hyp when the hyp would contradict the existing assumptions (together satisfiable together)
 ;; - skip add-hyp when cgen can falsify the theorem even with the hyp
 ;; - (maybe) skip a hyp that is implied by the existing hyps (low probability of working)
 ;; - skip add-library when already present
@@ -72,6 +71,21 @@
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
+;; If NAME is a macro-alias, return what it represents.  Otherwise, return NAME.
+(defund handle-macro-alias (name wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (if (not (symbolp name)) ; possible?
+      name
+    (let* ((macro-aliases-table (table-alist 'macro-aliases-table wrld)))
+      (if (not (alistp macro-aliases-table))
+          (er hard? 'handle-macro-alias "Bad macro aliases table.")
+        (let ((res (assoc-eq name macro-aliases-table)))
+          (if res
+              (if (symbolp (cdr res))
+                  (cdr res)
+                (er hard? 'handle-macro-alias "Bad macro aliases table."))
+            name))))))
+
 (defconst *step-limit* 100000)
 
 (local (in-theory (disable state-p
@@ -106,15 +120,16 @@
 (defund name-that-can-be-enabled/disabledp (name wrld)
   (declare (xargs :guard (and ;; (symbolp name)
                           (plist-worldp wrld))))
-  (let ((name (if (symbolp name)
-                  name
-                (if (and (consp name) ; might be (:rewrite foo) or (:rewrite foo . 1)
-                         (eq :rewrite (car name))
-                         (consp (cdr name))
-                         (cadr name)
-                         (symbolp (cadr name)))
-                    (cadr name)
-                  (er hard? 'name-that-can-be-enabled/disabledp "Unknown kind of name: ~x0.")))))
+  (let* ((name (if (symbolp name)
+                   name
+                 (if (and (consp name) ; might be (:rewrite foo) or (:rewrite foo . 1)
+                          (eq :rewrite (car name))
+                          (consp (cdr name))
+                          (cadr name)
+                          (symbolp (cadr name)))
+                     (cadr name)
+                   (er hard? 'name-that-can-be-enabled/disabledp "Unknown kind of name: ~x0."))))
+         (name (handle-macro-alias name wrld)))
   (or (getpropc name 'unnormalized-body nil wrld)
       (getpropc name 'theorem nil wrld) ;todo: what if it has :rule-classes nil?
       (let ((alist (table-alist 'macro-aliases-table wrld)))
@@ -541,6 +556,54 @@
          (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
       (mv nil (if provedp rec nil) state))))
 
+;; TODO: Handle LET and MV-LET and nested implies and ...
+(defun formula-hyp-simple (formula ;; untranslated
+                           )
+  (if (and (consp formula)
+           (eq 'implies (ffn-symb formula)))
+      (second formula)
+    *t*))
+
+(mutual-recursion
+ (defun get-conjuncts-of-uterm (uterm ;; untranslated
+                                )
+   (if (not (consp uterm))
+       (list uterm)
+     (if (eq 'and (ffn-symb uterm))
+         (get-conjuncts-of-uterms (fargs uterm))
+       (if (and (eq 'if (ffn-symb uterm)) ; (if <x> <y> nil) is (and <x> <y>)
+                (or (equal nil (farg3 uterm))
+                    (equal *nil* (farg3 uterm))))
+           (union-equal (get-conjuncts-of-uterm (farg1 uterm))
+                        (get-conjuncts-of-uterm (farg2 uterm)))
+         (list uterm)))))
+ (defun get-conjuncts-of-uterms (uterms ;; untranslated
+                                 )
+   (if (endp uterms)
+       nil
+     (union-eq (get-conjuncts-of-uterm (first uterms))
+               (get-conjuncts-of-uterms (rest uterms))))))
+
+;; Returns (mv contradictp state).
+(defund provably-contradictoryp (ctx formula state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (prove$-checked ctx
+                  `(not ,formula)
+                  :hints nil ; todo: use the theorem-hints? ;todo: don't induct?
+                  :otf-flg nil
+                  :step-limit *step-limit*))
+
+;; Returns (mv impliedp state).
+(defund provably-impliesp (ctx x y state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (prove$-checked ctx
+                  `(implies ,x ,y)
+                  :hints nil ; todo: use the theorem-hints? ;todo: don't induct?
+                  :otf-flg nil
+                  :step-limit *step-limit*))
+
 ;; Returns (mv erp successp state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
 (defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
@@ -549,6 +612,21 @@
   (b* ((translatablep (translatable-termp hyp (w state)))
        ((when (not translatablep))
         (cw "FAIL (hyp not translatable: ~x0)~%" hyp) ;; TTODO: Include any necessary books first
+        (mv nil nil state))
+       (existing-hyp (formula-hyp-simple theorem-body))
+       (existing-hyp-conjunts (get-conjuncts-of-uterm existing-hyp))
+       ((when (member-equal hyp existing-hyp-conjunts))
+        (cw "SKIP (hyp ~x0 is already present)~%" hyp)
+        (mv nil nil state))
+       ((mv impliedp state)
+        (provably-impliesp 'try-add-hyp existing-hyp hyp state))
+       ((when impliedp)
+        (cw "SKIP (hyp ~x0 is implied by existing hyps)~%" hyp)
+        (mv nil nil state))
+       ((mv contradictp state)
+        (provably-contradictoryp 'try-add-hyp `(and ,hyp ,existing-hyp) state))
+       ((when contradictp)
+        (cw "SKIP (hyp ~x0 would contradict existing hyps)~%" hyp)
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
@@ -592,7 +670,9 @@
        ((when (keywordp rule))
         (cw "SKIP (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
-       (wrld (w state)))
+       (wrld (w state))
+       (rule (handle-macro-alias rule wrld)) ; TODO: Handle the case of a macro-alias we don't know about
+       )
     (if (function-symbolp rule wrld)
         ;; It's a function in the current world:
         (b* ((fn rule)
@@ -645,7 +725,7 @@
               (mv :bad-book-map nil state))
              (books-to-try (lookup-eq rule book-map))
              ((when (eq :builtin books-to-try))
-              (er hard? 'try-add-enable-hint "~x0 does not seem to be built-in, contrary to the book-map.")
+              (er hard? 'try-add-enable-hint "~x0 does not seem to be built-in, contrary to the book-map." rule)
               (mv :bad-book-info nil state))
              ;; todo: check for empty books-to-try, or is that already checked?
              (num-books-to-try-orig (len books-to-try))
@@ -688,6 +768,7 @@
        ((when (not (name-that-can-be-enabled/disabledp rule (w state))))
         (cw "SKIP (Not disabling unknown name: ~x0)~%" rule) ;; For now, we don't try to including the book that brings in the thing to disable!
         (mv nil nil state))
+       (rule (handle-macro-alias rule (w state))) ; TODO: Handle the case of a macro-alias we don't know about
        ((when (disabledp-fn rule (ens-maybe-brr state) (w state)))
         (cw "SKIP (Not disabling since already disabled: ~x0)~%" rule)
         (mv nil nil state))
@@ -723,6 +804,7 @@
        ((mv provedp state) (prove$-checked 'try-add-use-hint
                                            theorem-body
                                            ;; todo: ensure this is nice:
+                                           ;; todo: also disable the item, if appropriate
                                            :hints (cons `("Goal" :use ,item) theorem-hints)
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
