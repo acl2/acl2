@@ -20,7 +20,7 @@
 
 ;; TODO: Bring in M5 package once modernized
 
-;; See also some packages brought in my packages.acl2
+;; See also some packages brought in by packages.acl2
 
 (include-book "acl2s/portcullis" :dir :system)
 (include-book "build/portcullis" :dir :system)
