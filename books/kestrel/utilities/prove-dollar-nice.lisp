@@ -45,10 +45,10 @@
     ;; Step-limit reached is not an error, so this makes it not print an error
     ;; message:
     (with-output! :off :all ; silence TABLE-FN
-      (TABLE-FN 'INHIBIT-ER-SOFT-TABLE
+      (TABLE-FN 'INHIBIT-ER-TABLE
                 (list "step-limit" nil)
                 STATE
-                '(TABLE INHIBIT-ER-SOFT-TABLE "step-limit" nil)))
+                '(TABLE INHIBIT-ER-TABLE "step-limit" nil)))
     (if time-limit ;awkward, due to how prove$ handles time-limit
         (prove$ term
                 :hints hints
