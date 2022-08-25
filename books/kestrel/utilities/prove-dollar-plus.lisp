@@ -23,6 +23,7 @@
                    instructions
                    otf-flg
                    step-limit ; don't support time-limit because that's not portable
+                   print
                    state)
   (declare (xargs :guard (and (booleanp otf-flg)
                               (or (natp step-limit)
@@ -44,14 +45,14 @@
              (prover-steps (or prover-steps 0)))
         (if val
             ;; proved:
-            (progn$ (cw "Proved it in ~x0 steps.~%" prover-steps)
+            (progn$ (and print (cw "Proved it in ~x0 steps.~%" prover-steps))
                     (mv nil t nil state))
           ;; failed to prove:
           (if (not (natp prover-steps))
               ;; negative prover-steps means reached the step limit
-              (progn$ (cw "Failed to prove (step limit of ~x0 reached).~%" step-limit)
+              (progn$ (and print (cw "Failed to prove (step limit of ~x0 reached).~%" step-limit))
                       (mv nil nil :step-limit-reached state))
-            (progn$ (cw "Failed to prove (unknown reason).~%" prover-steps)
+            (progn$ (and print (cw "Failed to prove (unknown reason).~%" prover-steps))
                     (mv nil nil :unknown state))))))))
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
@@ -61,8 +62,10 @@
                    (hints 'nil)
                    (instructions 'nil)
                    (otf-flg 'nil)
-                   (step-limit 'nil))
-  `(prove$+-fn ,term ,hints ,instructions ,otf-flg ,step-limit state))
+                   (step-limit 'nil)
+                   (print 't) ; todo: change default to nil?
+                   )
+  `(prove$+-fn ,term ,hints ,instructions ,otf-flg ,step-limit ,print state))
 
 ;; Tests:
 ;; (prove$+ '(equal (car (cons x y)) x))
