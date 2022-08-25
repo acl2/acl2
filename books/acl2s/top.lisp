@@ -17,5 +17,3 @@
 ;(include-book "projects/smtlink/examples/basictypes" :dir :system :ttags :all)
 (include-book "acl2s/sorting/sorting" :dir :system :ttags :all)
 (include-book "acl2s/match" :dir :system :ttags :all)
-(include-book "acl2s/interface/top" :dir :system)
-(include-book "acl2s/interface/acl2s-utils/top" :dir :system)

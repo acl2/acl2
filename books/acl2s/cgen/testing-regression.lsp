@@ -182,6 +182,13 @@
  (thm (equal (rev1 (rev1 x)) x))
  )
 
+(acl2s-defaults :set testing-enabled :on-failure)
+;(trace$ cgen::compute-event-ctx cgen::allowed-cgen-event-ctx-p cgen::init-cgen-state/event)
+;(acl2s-defaults :set verbosity-level 5)
+(must-fail
+ (thm (equal (rev1 (rev1 x)) x))
+ )
+
 
 (acl2s-defaults :set testing-enabled :naive)
 ;Modify the conjecture, add the type hypothesis
