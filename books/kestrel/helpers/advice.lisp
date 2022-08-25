@@ -404,11 +404,11 @@
       (mv nil (reverse acc) state)
     (b* (((mv erp list state) (parse-book-map-info-list (first lists) nil state))
          ((when erp) (mv erp nil state))
-         ((when (and (member-eq :builtin list)
-                     (not (= 1 (len list)))))
-          ;;(er hard? 'parse-book-map-info-lists "Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list)
-          (cw "WARNING: Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list)
-          (mv t nil state))
+         (- (and (member-eq :builtin list)
+                 (not (= 1 (len list)))
+                 ;; (er hard? 'parse-book-map-info-lists "Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list)
+                 ;; (cw "WARNING: Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list) ;todo: put back
+                 ))
          (list (if (member-eq :builtin list)
                    :builtin
                  list)))
@@ -465,7 +465,7 @@
          (book-map (lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (cw "WARNING: Bad book map in rec: ~x0.~%" rec)
+          (cw "WARNING: When parsing book map: ~s0.~%" erp)
           (mv nil ; supressing this error for now
               :none state))
          (confidence (rfix confidence)) ; for guards
