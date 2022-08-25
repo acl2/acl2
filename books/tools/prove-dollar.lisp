@@ -195,6 +195,7 @@
  General Form:
  (prove$ term                    ; any term (translated or not)
          &key
+         catch-hard-error        ; default t
          hints                   ; default nil
          ignore-ok               ; default t
          instructions            ; default nil
@@ -222,11 +223,15 @@
  @('skip-proofs') is not @(':same') then proofs take place if and only if the
  value of @('skip-proofs') is not @('nil'), as though @('(set-ld-skip-proofsp
  state)') were evaluated immediately preceding evaluation of the @('prove$')
- call.  Finally, the value of @('prover-error-output-off') must be either
- @('t'), which represents the list @('(\"Failure\" \"Step-limit\")'), or a list
- of strings; error messages arising during the proof whose type is one of these
- strings is to be suppressed, as though @(tsee set-inhibit-er) had been
- executed on these strings.</p>
+ call.  The value of @('prover-error-output-off') must be either @('t'), which
+ represents the list @('(\"Failure\" \"Step-limit\")'), or a list of strings;
+ error messages arising during the proof whose type is one of these strings is
+ to be suppressed, as though @(tsee set-inhibit-er) had been executed on these
+ strings.  Finally, the value of @('catch-hard-error') is @('t') by default,
+ which causes hard errors from the prover &mdash; in particular, when there is
+ a stack overflow in the rewriter &mdash; to be treated as ordinary proof
+ failures; also, it suppresses the general error message from a hard error and
+ it suppresses the error message from rewriter stack overflows.</p>
 
  <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)').  If
  there is a syntax error (so-called ``translation error'') in the given term,
