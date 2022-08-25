@@ -208,7 +208,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled value-signed-integerp-alt-def
-  :short "Alternative definition of @(tsee value-signed-integerp)."
+  :short "Alternative definition of @(tsee value-signed-integerp),
+          in terms of the shallow embedding's integer value recognizers."
   (equal (value-signed-integerp val)
          (b* ((val (value-fix val)))
            (or (scharp val)
@@ -238,7 +239,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled value-unsigned-integerp-alt-def
-  :short "Alternative definition of @(tsee value-unsigned-integerp)."
+  :short "Alternative definition of @(tsee value-unsigned-integerp),
+          in terms of the shallow embedding's integer value recognizers."
   (equal (value-unsigned-integerp val)
          (b* ((val (value-fix val)))
            (or (ucharp val)
