@@ -435,25 +435,61 @@
   :hooks (:fix)
   ///
 
-  (defret type-promoted-arithmeticp-of-promote-type
-    (type-promoted-arithmeticp promoted-type)
-    :hyp (type-arithmeticp type)
-    :hints (("Goal" :in-theory (enable type-promoted-arithmeticp
-                                       type-arithmeticp
-                                       type-realp
-                                       type-integerp
-                                       type-unsigned-integerp
-                                       type-signed-integerp))))
+  (defrule type-arithmeticp-of-promote-type
+    (equal (type-arithmeticp (promote-type type))
+           (type-arithmeticp type))
+    :enable (promote-type
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
+
+  (defrule type-promoted-arithmeticp-of-promote-type
+    (equal (type-promoted-arithmeticp (promote-type type))
+           (type-arithmeticp type))
+    :enable (type-promoted-arithmeticp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
 
   (defrule type-integerp-of-promote-type
     (equal (type-integerp (promote-type type))
            (type-integerp type))
-    :enable (type-integerp type-unsigned-integerp type-signed-integerp))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
 
   (defrule type-nonchar-integerp-of-promote-type
     (implies (type-nonchar-integerp type)
              (type-nonchar-integerp (promote-type type)))
-    :enable type-nonchar-integerp))
+    :enable type-nonchar-integerp)
+
+  (defruled promote-type-when-not-type-integerp
+    (implies (not (type-integerp type))
+             (equal (promote-type type)
+                    (type-fix type)))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
+
+  (defrule type-kind-of-promote-type-not-schar
+    (not (equal (type-kind (promote-type type))
+                :schar)))
+
+  (defrule type-kind-of-promote-type-not-uchar
+    (not (equal (type-kind (promote-type type))
+                :uchar)))
+
+  (defrule type-kind-of-promote-type-not-sshort
+    (not (equal (type-kind (promote-type type))
+                :sshort)))
+
+  (defrule type-kind-of-promote-type-not-ushort
+    (not (equal (type-kind (promote-type type))
+                :ushort))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,30 +579,16 @@
   :hooks (:fix)
   ///
 
-  (defruled uaconvert-types-when-same
-    (implies (and (type-arithmeticp type1)
-                  (type-arithmeticp type2)
-                  (type-equiv type1 type2))
-             (equal (uaconvert-types type1 type2)
-                    (promote-type type1)))
-    :enable (type-arithmeticp
+  (defrule type-arithmeticp-of-uaconvert-types
+    (equal (type-arithmeticp (uaconvert-types type1 type2))
+           (and (type-arithmeticp type1)
+                (type-arithmeticp type2)))
+    :enable (promote-type
+             type-arithmeticp
              type-realp
              type-integerp
-             type-signed-integerp
              type-unsigned-integerp
-             promote-type))
-
-  (defruled uaconvert-types-symmetry
-    (implies (and (type-arithmeticp type1)
-                  (type-arithmeticp type2))
-             (equal (uaconvert-types type1 type2)
-                    (uaconvert-types type2 type1)))
-    :enable (type-arithmeticp
-             type-realp
-             type-integerp
-             type-signed-integerp
-             type-unsigned-integerp
-             promote-type))
+             type-signed-integerp))
 
   (defrule type-integerp-of-uaconvert-types
     (implies (and (type-arithmeticp type1)
@@ -574,19 +596,63 @@
              (equal (type-integerp (uaconvert-types type1 type2))
                     (and (type-integerp type1)
                          (type-integerp type2))))
-    :enable (type-arithmeticp
+    :enable (promote-type
+             type-arithmeticp
              type-realp
              type-integerp
              type-unsigned-integerp
-             type-signed-integerp
-             promote-type))
+             type-signed-integerp))
 
-  (defrule type-nonchar-integerp-of-uaconvert-types
-    (implies (and (type-nonchar-integerp type1)
-                  (type-nonchar-integerp type2))
-             (type-nonchar-integerp (uaconvert-types type1 type2)))
-    :enable (type-nonchar-integerp
-             promote-type)))
+  (defret type-nonchar-integerp-of-uaconvert-types
+    (type-nonchar-integerp type)
+    :hyp (and (type-integerp type1)
+              (type-integerp type2))
+    :hints (("Goal" :in-theory (enable promote-type
+                                       type-integerp
+                                       type-unsigned-integerp
+                                       type-signed-integerp))))
+
+
+  (defrule type-kind-of-uaconvert-types-not-schar
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :schar)))
+
+  (defrule type-kind-of-uaconvert-types-not-uchar
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :uchar)))
+
+  (defrule type-kind-of-uaconvert-types-not-sshort
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :sshort)))
+
+  (defrule type-kind-of-uaconvert-types-not-ushort
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :ushort)))
+
+  (defruled uaconvert-types-when-same
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2)
+                  (type-equiv type1 type2))
+             (equal (uaconvert-types type1 type2)
+                    (promote-type type1)))
+    :enable (promote-type
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
+
+  (defruled uaconvert-types-symmetry
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2))
+             (equal (uaconvert-types type1 type2)
+                    (uaconvert-types type2 type1)))
+    :enable (promote-type
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
