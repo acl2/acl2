@@ -53,15 +53,19 @@
 
 ;; TODO: Avoid including books that are known to be slow?
 
+;; TODO: Untranslate before printing (e.g., hyps)?
+
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/nat-to-string" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
-(include-book "kestrel/utilities/hints" :dir :system) ; todo: slow
+(include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
-;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/htclient/post" :dir :system) ; todo: slow
@@ -177,7 +181,7 @@
   (if (endp checkpoints)
       nil
     (acons (concatenate 'string "checkpoint_" (nat-to-string current-number))
-           (fms-to-string "~X01" (acons #\0  (first checkpoints) (acons #\1 nil nil)))
+           (fms-to-string "~X01" (acons #\0 (first checkpoints) (acons #\1 nil nil)))
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
 ;; todo: strengthen
@@ -232,6 +236,29 @@
     (progn$ (show-recommendations-aux recs)
             (let ((state (unwiden-margins state)))
               state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun advice-option-fn (option-name rest-args wrld)
+  (if (not (member-eq option-name '(:successes)))
+      (er hard? 'advice-option-fn "Unknown option: ~x0." option-name)
+    (if (consp rest-args)
+        ;; It's a set:
+        (let ((option-val (first rest-args)))
+          `(table advice-options ,option-name ,option-val))
+      ;; It's a get:
+      (let* ((table-alist (table-alist 'advice-options wrld))
+             (res (assoc-eq option-name table-alist)))
+        (if res
+            (prog2$ (cw "~x0~%" (cdr res))
+                    '(value-triple :invisible))
+          ;;todo: just use nil?:
+          (er hard? 'advice-option-fn "Unknown option: ~x0." option-name))))))
+
+(defmacro advice-option (option-name &rest rest-args)
+  `(make-event-quiet (advice-option-fn ,option-name ',rest-args (w state))))
+
+(advice-option :successes 3) ; stop after 3 successes
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -365,7 +392,8 @@
          ((when erp) (mv erp nil state))
          ((when (and (member-eq :builtin list)
                      (not (= 1 (len list)))))
-          (er hard? 'parse-book-map-info-lists "Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list)
+          ;;(er hard? 'parse-book-map-info-lists "Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list)
+          (cw "WARNING: Bad book-map-info: ~x0, which parsed to ~x1." (first lists) list)
           (mv t nil state))
          (list (if (member-eq :builtin list)
                    :builtin
@@ -1061,6 +1089,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; from Matt K:
+(defun clausify-term (term wrld)
+  (declare (xargs :mode :program))
+  (let* ((term (expand-some-non-rec-fns '(implies) term wrld))
+         (term (remove-guard-holders term wrld)))
+    (clausify term nil t (sr-limit wrld))))
+
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
 ;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
@@ -1084,7 +1119,7 @@
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
-       ;; Get most recent failed theorem and checkpoints:
+       ;; Get most recent failed theorem:
        (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state))
        ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
         (if (member-eq (car most-recent-failed-theorem) '(thm rule))
@@ -1098,31 +1133,29 @@
               (assoc-eq :hints (cdddr most-recent-failed-theorem))
               (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
-       (most-recent-failed-theorem-goal (most-recent-failed-theorem-goal state))
-       (untranslated-checkpoints (checkpoint-list-pretty t ; todo: consider non-top
-                                                         state))
-       ((when (eq :unavailable untranslated-checkpoints))
+       ;; Get the checkpoints from the failed attempt:
+       (checkpoint-clauses (checkpoint-list ;-pretty
+                            t               ; todo: consider non-top
+                            state))
+       ((when (eq :unavailable checkpoint-clauses))
         (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
         (mv :no-checkpoints nil state))
+       (wrld (w state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
-       (untranslated-checkpoints (if (equal untranslated-checkpoints '(<goal>))
-                                     (list most-recent-failed-theorem-goal) ; todo: flatten ANDs in this?
-                                   untranslated-checkpoints))
-       ;; ;; todo: eventually, don't do this:
-       ;; (untranslated-checkpoints (untranslate-list-list translated-checkpoints
-       ;;                                                  t ; iff-flg ; todo: think about this
-       ;;                                                  (w state)))
-       (- (and verbose
-               (cw "Checkpoints in query: ~X01.)~%" untranslated-checkpoints nil)))
-       ;; (printed-checkpoints (fms-to-string "~X01" (acons #\0 untranslated-checkpoints
-       ;;                                                   (acons #\1 nil nil))))
+       (checkpoint-clauses (if (equal checkpoint-clauses '((<goal>)))
+                               (clausify-term (translate-term (most-recent-failed-theorem-goal state)
+                                                              'advice-fn
+                                                              wrld)
+                                              wrld)
+                             checkpoint-clauses))
+       (- (and verbose (cw "Checkpoints in query: ~X01.)~%" checkpoint-clauses nil)))
        ;; Send query to server:
        (- (cw "Asking server for recommendations on ~x0 ~s1...~%"
-              (len untranslated-checkpoints)
-              (if (< 1 (len untranslated-checkpoints)) "checkpoints" "checkpoint")))
+              (len checkpoint-clauses)
+              (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
        (post-data (acons "n" (nat-to-string n)
-                         (make-numbered-checkpoint-entries 0 untranslated-checkpoints)))
-       ;; (- (cw "POST data to be sent: ~X01.~%" post-data nil))
+                         (make-numbered-checkpoint-entries 0 checkpoint-clauses)))
+       (- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state) (htclient::post server-url post-data state))
        ((when erp)
         (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
@@ -1142,7 +1175,7 @@
         (mv erp nil state))
        (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil)))
        ;; Make some other recs:
-       (enable-recommendations (make-enable-recs theorem-body (w state)))
+       (enable-recommendations (make-enable-recs theorem-body wrld))
        ((mv erp historical-recommendations state) (make-recs-from-history state))
        ((when erp) (mv erp nil state))
        (recommendations (append enable-recommendations
