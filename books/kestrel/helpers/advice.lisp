@@ -63,6 +63,7 @@
 (include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
+(include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -277,7 +278,7 @@
 (defun show-successful-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)
                   :mode :program))
-  (let* ((name (nth 0 rec))
+  (let* (;; (name (nth 0 rec))
          (type (nth 1 rec))
          (object (nth 2 rec))
          ;; (confidence-percent (nth 3 rec))
@@ -302,18 +303,20 @@
     (if pre-commands
         (if (consp (cdr pre-commands))
             ;; More than one pre-command:
-            (cw "~s0: Try ~s1, after doing ~&2~%" name english-rec pre-commands)
+            (cw "~s0, after doing ~&1~%" english-rec pre-commands)
           ;; Exactly one pre-command:
-          (cw "~s0: Try ~s1, after doing ~x2~%" name english-rec (first pre-commands)))
-      (cw "~s0: Try ~s1~%" name english-rec))))
+          (cw "~s0, after doing ~x1~%" english-rec (first pre-commands)))
+      (cw "~s0~%" english-rec))))
 
 (defun show-successful-recommendations-aux (recs)
   (declare (xargs :mode :program))
   (declare (xargs :guard (recommendation-listp recs)))
   (if (endp recs)
       nil
-    (prog2$ (show-successful-recommendation (first recs))
-            (show-successful-recommendations-aux (rest recs)))))
+    (let ((rec (first recs)))
+      (progn$ (cw "~S0: " (nth 0 rec))
+              (show-successful-recommendation rec)
+              (show-successful-recommendations-aux (rest recs))))))
 
 ;; Returns state.
 (defun show-successful-recommendations (recs state)
@@ -503,14 +506,27 @@
         ,@(and hints `(:hints ,hints))
         ,@(and otf-flg `(:otf-flg .otf-flg))))
 
-;; Returns (mv provedp state)
-(defmacro prove$-checked (ctx &rest args)
-  `(mv-let (erp provedp state)
-     (prove$ ,@args)
-     (if erp
-         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ,ctx)
-                 (mv nil state))
-       (mv provedp state))))
+;; Returns (mv provedp state).  Does not propagate any errors back.
+(defund prove$-no-error (ctx term hints otf-flg step-limit state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (mv-let (erp provedp state)
+    (prove$ term :hints hints :otf-flg otf-flg :step-limit step-limit)
+    (if erp
+        (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
+                (mv nil state))
+      (mv provedp state))))
+
+;; Returns (mv provedp failure-info state).
+(defund prove$-no-error-with-failure-info (ctx term hints otf-flg step-limit state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (mv-let (erp provedp failure-info state)
+    (prove$+ term :hints hints :otf-flg otf-flg :step-limit step-limit :print nil)
+    (if erp
+        (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
+                (mv nil nil state))
+      (mv provedp failure-info state))))
 
 ;; Calls prove$ but first does an include-book, which is undone after the prove$
 ;; Returns (mv erp provedp state).
@@ -542,11 +558,12 @@
         ;;                     ,(make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg))
         ;;                  t nil state))
         ;; (provedp (not erp))
-        ((mv provedp state) (prove$-checked ctx
-                                            formula
-                                            :hints hints
-                                            :otf-flg otf-flg
-                                            :step-limit step-limit)))
+        ((mv provedp state) (prove$-no-error ctx
+                                             formula
+                                             hints
+                                             otf-flg
+                                             step-limit
+                                             state)))
      (mv nil provedp state))))
 
 ;; Try to prove FORMULA after submitting each of the INCLUDE-BOOK-FORMS (separately).
@@ -582,11 +599,21 @@
                                      hints otf-flg step-limit
                                      state))))
 
+(defun cw-failure-message (snippet failure-info)
+  (if (eq failure-info :step-limit-reached) ; update this is other kinds of failure-info become supported
+      (cw "fail (~s0: step limit reached)~%" snippet)
+    (cw "fail (~s0)~%" snippet)))
+
+(defun cw-success-message (rec)
+  (declare (xargs :mode :program)) ; todo
+  (prog2$ (cw "SUCCESS: ")
+          (show-successful-recommendation rec)))
+
 ;; Returns (mv erp successp state).
 ;; TODO: Skip if library already included
 ;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
 ;; TODO: Try any upcoming enable or use-lemma recs that (may) need this library:
-(defun try-add-library (include-book-form theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
+(defun try-add-library (include-book-form theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
            )
@@ -597,9 +624,9 @@
         (cw "fail (ill-formed library recommendation: ~x0)~%" include-book-form)
         (mv nil nil state))
        ((mv erp provedp state)
-        (prove$-with-include-book 'try-add-library theorem-body include-book-form nil theorem-hints theorem-otf-flg *step-limit* state))
+        (prove$-with-include-book 'try-add-library theorem-body include-book-form nil theorem-hints theorem-otf-flg step-limit state))
        ((when erp) (mv erp nil state))
-       (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "fail (library didn't help)~%"))))
+       (- (if provedp (cw-success-message rec) (cw "fail (library didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; TODO: Handle LET and MV-LET and nested implies and ...
@@ -634,25 +661,27 @@
 (defund provably-contradictoryp (ctx formula state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (prove$-checked ctx
-                  `(not ,formula)
-                  :hints nil ; todo: use the theorem-hints? ;todo: don't induct?
-                  :otf-flg nil
-                  :step-limit *step-limit*))
+  (prove$-no-error ctx
+                   `(not ,formula)
+                   nil ; todo: use the theorem-hints? ;todo: don't induct?
+                   nil
+                   *step-limit*
+                   state))
 
 ;; Returns (mv impliedp state).
 (defund provably-impliesp (ctx x y state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (prove$-checked ctx
-                  `(implies ,x ,y)
-                  :hints nil ; todo: use the theorem-hints? ;todo: don't induct?
-                  :otf-flg nil
-                  :step-limit *step-limit*))
+  (prove$-no-error ctx
+                   `(implies ,x ,y)
+                   nil ; todo: use the theorem-hints? ;todo: don't induct?
+                   nil
+                   *step-limit*
+                   state))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
-(defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
+(defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* ((translatablep (translatable-termp hyp (w state)))
@@ -679,21 +708,26 @@
        ;;                  ;; TODO: Add the hyp more nicely:
        ;;                  (make-thm-to-attempt `(implies ,hyp ,theorem-body) theorem-hints theorem-otf-flg)
        ;;                  t nil state))
-       ((mv provedp state) (prove$-checked 'try-add-hyp
-                                           `(implies ,hyp ,theorem-body)
-                                           :hints theorem-hints
-                                           :otf-flg theorem-otf-flg
-                                           :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "fail (hyp didn't help)~%"))))
+       ((mv provedp failure-info state) (prove$-no-error-with-failure-info
+                                         'try-add-hyp
+                                         `(implies ,hyp ,theorem-body)
+                                         theorem-hints
+                                         theorem-otf-flg
+                                         step-limit
+                                         state))
+       (- (if provedp
+              (cw-success-message rec)
+            (cw-failure-message "add hyp didn't help" failure-info))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Avoid theory-invariant violations from enabling.
-(defun try-add-enable-hint (rule ; the rule to try enabling
+(defun try-add-enable-hint (rule     ; the rule to try enabling
                             book-map ; info on where the rule may be found
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
+                            step-limit
                             rec
                             state)
   (declare (xargs :stobjs state :mode :program))
@@ -713,8 +747,8 @@
               (cw "skip (Can't enable ~x0. Not in :logic mode.)~%" fn)
               (mv nil nil state))
              ((when (not (and
-                              ;; (defined-functionp fn wrld) ;todo
-                              )))
+                          ;; (defined-functionp fn wrld) ;todo
+                          )))
               (cw "skip (Can't enable ~x0. No body.)~%" fn)
               (mv nil nil state))
              ;; TODO: Consider whether to enable, say the :type-prescription rule
@@ -726,31 +760,33 @@
              ;; FN exists and just needs to be enabled:
              (new-hints (enable-runes-in-hints theorem-hints (list fn))) ;; todo: ensure this is nice
              ((mv provedp state)
-              (prove$-checked 'try-add-enable-hint
-                              theorem-body
-                              :hints new-hints
-                              :otf-flg theorem-otf-flg
-                              :step-limit *step-limit*))
-             (- (if provedp (cw "SUCCESS: Enable ~x0~%" fn) (cw "fail (enable didn't help)~%"))))
+              (prove$-no-error 'try-add-enable-hint
+                               theorem-body
+                               new-hints
+                               theorem-otf-flg
+                               step-limit
+                               state))
+             (- (if provedp (cw-success-message rec) (cw "fail (enabling function ~x0 didn't help)~%" fn))))
           (mv nil (if provedp rec nil) state))
       (if (not (eq :no-body (getpropc rule 'theorem :no-body wrld))) ;todo: how to just check if the property is set?
           ;; It's a theorem in the current world:
-        (b* (;; TODO: Consider whether to enable, say the :type-prescription rule
-             (rune `(:rewrite ,rule))
-             ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
-             ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
-              (cw "skip (~x0 is already enabled.)~%" rule)
-              (mv nil nil state))
-             ;; RULE exists and just needs to be enabled:
-             (new-hints (enable-runes-in-hints theorem-hints (list rule))) ;; todo: ensure this is nice
-             ((mv provedp state)
-              (prove$-checked 'try-add-enable-hint
-                              theorem-body
-                              :hints new-hints
-                              :otf-flg theorem-otf-flg
-                              :step-limit *step-limit*))
-             (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "fail (enable didn't help)~%"))))
-          (mv nil (if provedp rec nil) state))
+          (b* ( ;; TODO: Consider whether to enable, say the :type-prescription rule
+               (rune `(:rewrite ,rule))
+               ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
+               ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
+                (cw "skip (~x0 is already enabled.)~%" rule)
+                (mv nil nil state))
+               ;; RULE exists and just needs to be enabled:
+               (new-hints (enable-runes-in-hints theorem-hints (list rule))) ;; todo: ensure this is nice
+               ((mv provedp state)
+                (prove$-no-error 'try-add-enable-hint
+                                 theorem-body
+                                 new-hints
+                                 theorem-otf-flg
+                                 step-limit
+                                 state))
+               (- (if provedp (cw-success-message rec) (cw "fail (enabling rule ~x0 didn't help)~%" rule))))
+            (mv nil (if provedp rec nil) state))
         ;; RULE is not currently known, so try to find where it is defined:
         (b* ((book-map-keys (strip-cars book-map))
              ((when (not (equal book-map-keys (list rule))))
@@ -781,7 +817,7 @@
                 (if (< 3 num-books-to-try-orig)
                     ;; todo: try more if we didn't find it?:
                     (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
-                  (cw "fail (enable didn't help)~%"))
+                  (cw "fail (enabling ~x0 didn't help)~%" rule))
                 (mv nil nil state))
                ;; We proved it with an include-book and an enable hint.  Now
                ;; try again but without the enable hint (maybe the include-book is enough):
@@ -793,28 +829,26 @@
                                           ;; args to prove$:
                                           theorem-hints ; original hints, not new-hints
                                           theorem-otf-flg
-                                          *step-limit* ; or base this on how many steps were taken when it succeeded
+                                          step-limit ; or base this on how many steps were taken when it succeeded
                                           state))
                ((when erp) (mv erp nil state))
-               (- (if provedp-with-no-hint
-                      (cw "SUCCESS: Include ~x0.~%" successful-include-book-form-or-nil)
-                    (cw "SUCCESS: Include ~x0 and enable ~x1.~%" successful-include-book-form-or-nil rule)
-                    )))
+               ;; todo: we could even try to see if a smaller library would work
+               (rec (if provedp-with-no-hint
+                        (list (nth 0 rec) ;name (ok to keep the same name, i guess)
+                              :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                              successful-include-book-form-or-nil
+                              (nth 3 rec) ; not very meaningful now
+                              (nth 4 rec) ; not very meaningful now
+                              nil ; pre-commands (always none for :add-library)
+                              )
+                      (update-pre-commands rec (list successful-include-book-form-or-nil))))
+               (- (cw-success-message rec)))
             (mv nil
-                ;; todo: we could even try to see if a smaller library would work
-                (if provedp-with-no-hint
-                    (list (nth 0 rec) ;name (ok to keep the same name, i guess)
-                          :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                          successful-include-book-form-or-nil
-                          (nth 3 rec) ; not very meaningful now
-                          (nth 4 rec) ; not very meaningful now
-                          nil ; pre-commands (always none for :add-library)
-                          )
-                  (update-pre-commands rec (list successful-include-book-form-or-nil)))
+                rec
                 state)))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg rec state)
+(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
         (cw "skip (Not disabling catch-all: ~x0)~%" rule)
@@ -829,18 +863,19 @@
        ((when (disabledp-fn rule (ens-maybe-brr state) (w state)))
         (cw "skip (Not disabling since already disabled: ~x0)~%" rule)
         (mv nil nil state))
-       ((mv provedp state) (prove$-checked 'try-add-disable-hint
-                                           theorem-body
-                                           ;; todo: ensure this is nice:
-                                           :hints (disable-runes-in-hints theorem-hints (list rule))
-                                           :otf-flg theorem-otf-flg
-                                           :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Disable ~x0~%" rule) (cw "fail (disable didn't help)~%"))))
+       ((mv provedp state) (prove$-no-error 'try-add-disable-hint
+                                            theorem-body
+                                            ;; todo: ensure this is nice:
+                                            (disable-runes-in-hints theorem-hints (list rule))
+                                            theorem-otf-flg
+                                            step-limit
+                                            state))
+       (- (if provedp (cw-success-message rec) (cw "fail (disable didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-;; TODO: Do we need to guess a substitution for the :use hint?
-(defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
+;; TODO: Do we need to guess a substitution for the :use hint?  The change the rec before returning...
+(defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (eq item 'other))
@@ -848,7 +883,7 @@
         (mv nil nil state))
        ((when (not (or (getpropc item 'unnormalized-body nil (w state))
                        (getpropc item 'theorem nil (w state)))))
-        (cw "skip (unknown name: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (cw "skip (unknown name to :use : ~x0)~%" item) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
@@ -858,19 +893,20 @@
        ;;                                             theorem-hints)
        ;;                                       theorem-otf-flg)
        ;;                  t nil state))
-       ((mv provedp state) (prove$-checked 'try-add-use-hint
-                                           theorem-body
-                                           ;; todo: ensure this is nice:
-                                           ;; todo: also disable the item, if appropriate
-                                           :hints (cons `("Goal" :use ,item) theorem-hints)
-                                           :otf-flg theorem-otf-flg
-                                           :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "fail (:use hint didn't help)~%"))))
+       ((mv provedp state) (prove$-no-error 'try-add-use-hint
+                                            theorem-body
+                                            ;; todo: ensure this is nice:
+                                            ;; todo: also disable the item, if appropriate
+                                            (cons `("Goal" :use ,item) theorem-hints)
+                                            theorem-otf-flg
+                                            step-limit
+                                            state))
+       (- (if provedp (cw-success-message rec) (cw "fail (:use hint of ~x0 didn't help)~%" item))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-expand-hint (item ; the thing to expand
-                            theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
+                            theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (eq 'other item))
@@ -891,17 +927,18 @@
        ;;                                             theorem-hints)
        ;;                                       theorem-otf-flg)
        ;;                  t nil state))
-       ((mv provedp state) (prove$-checked 'try-add-expand-hint
-                                           theorem-body
-                                           ;; todo: ensure this is nice:
-                                           :hints (cons `("Goal" :expand ,item) theorem-hints)
-                                           :otf-flg theorem-otf-flg
-                                           :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :expand hint ~x0~%" item) (cw "fail (:expand hint didn't help)~%"))))
+       ((mv provedp state) (prove$-no-error 'try-add-expand-hint
+                                            theorem-body
+                                            ;; todo: ensure this is nice:
+                                            (cons `("Goal" :expand ,item) theorem-hints)
+                                            theorem-otf-flg
+                                            step-limit
+                                            state))
+       (- (if provedp (cw-success-message rec) (cw "fail (:expand hint didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
+(defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (not (translatable-term-listp item (w state))))
@@ -915,35 +952,38 @@
        ;;                                             theorem-hints)
        ;;                                       theorem-otf-flg)
        ;;                  t nil state))
-       ((mv provedp state) (prove$-checked 'try-add-cases-hint
-                                           theorem-body
-                                           ;; todo: ensure this is nice:
-                                           :hints (cons `("Goal" :cases ,item) theorem-hints)
-                                           :otf-flg theorem-otf-flg
-                                           :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :cases hint ~x0~%" item) (cw "fail (:cases hint didn't help)~%"))))
+       ((mv provedp state) (prove$-no-error 'try-add-cases-hint
+                                            theorem-body
+                                            ;; todo: ensure this is nice:
+                                            (cons `("Goal" :cases ,item) theorem-hints)
+                                            theorem-otf-flg
+                                            step-limit
+                                            state))
+       (- (if provedp (cw-success-message rec) (cw "fail (:cases hint didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: We need more than a symbol
-(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg rec state)
+(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
-           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg rec))
+           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec))
   (if (symbolp item)
       (prog2$ (cw "skip (need arguments of ~x0 to create :induct hint)~%" item)
               (mv nil nil state))
     ;; TODO: Flesh this out when ready:
     (mv :unsupported-induct-hint nil state)))
 
-(defun try-exact-hints (hints theorem-body theorem-otf-flg rec state)
+(defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program))
-  (b* (((mv provedp state) (prove$-checked 'try-exact-hints
+  (b* (((mv provedp failure-info state)
+        (prove$-no-error-with-failure-info 'try-exact-hints
                                            theorem-body
                                            ;; todo: ensure this is nice:
-                                           :hints hints
-                                           :otf-flg theorem-otf-flg
-                                           :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :hints ~x0~%" hints) (cw "fail (:hints didn't help)~%"))))
+                                           hints
+                                           theorem-otf-flg
+                                           step-limit
+                                           state))
+       (- (if provedp (cw-success-message rec) (cw-failure-message ":hints didn't help" failure-info))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp successful-recs state)
@@ -952,6 +992,7 @@
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
+                            step-limit
                             successful-recs
                             state)
   (declare (xargs :guard (and (recommendation-listp recs)
@@ -974,22 +1015,22 @@
       (mv-let (erp maybe-successful-rec state)
         (case type
           ;; TODO: Pass the book-map to all who can use it:
-          (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
-          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
-          (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg rec state))
-          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg rec state))
-          (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
-          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
-          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
-          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg rec state))
+          (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg rec state))
-          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg rec state))
+          (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec state))
           (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))
         (if erp
             (mv erp nil state)
-          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg
+          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg step-limit
                                (if maybe-successful-rec
                                    (cons maybe-successful-rec successful-recs)
                                  successful-recs)
@@ -1107,16 +1148,21 @@
                   verbose
                   server-url
                   debug
+                  step-limit
                   state)
   (declare (xargs :guard (and (natp n)
                               (booleanp verbose)
                               (checkpoint-list-guard t ;top-p
                                                      state)
-                              (booleanp debug))
+                              (booleanp debug)
+                              (or (eq :auto step-limit)
+                                  (eq nil step-limit)
+                                  (natp step-limit)))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
-  (b* (;; Get server info:
+  (b* ((step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+       ;; Get server info:
        ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
        ((when (not (stringp server-url)))
@@ -1137,29 +1183,37 @@
               (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
        ;; Get the checkpoints from the failed attempt:
-       (checkpoint-clauses (checkpoint-list ;-pretty
-                            t               ; todo: consider non-top
-                            state))
-       ((when (eq :unavailable checkpoint-clauses))
+       (raw-checkpoint-clauses (checkpoint-list ;-pretty
+                                t               ; todo: consider non-top
+                                state))
+       ((when (eq :unavailable raw-checkpoint-clauses))
         (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
         (mv :no-checkpoints nil state))
        (wrld (w state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
-       (checkpoint-clauses (if (equal checkpoint-clauses '((<goal>)))
+       ;; TODO: Or use :otf-flg to get the real checkpoints?
+       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((<goal>)))
                                (clausify-term (translate-term (most-recent-failed-theorem-goal state)
                                                               'advice-fn
                                                               wrld)
                                               wrld)
-                             checkpoint-clauses))
+                             raw-checkpoint-clauses))
        (- (and verbose (cw "Checkpoints in query: ~X01.)~%" checkpoint-clauses nil)))
        ;; Send query to server:
-       (- (cw "Asking server for recommendations on ~x0 ~s1...~%"
-              (len checkpoint-clauses)
-              (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
-       (post-data (acons "n" (nat-to-string n)
-                         (make-numbered-checkpoint-entries 0 checkpoint-clauses)))
-       (- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
-       ((mv erp post-response state) (htclient::post server-url post-data state))
+       ((mv erp post-response state)
+        (if (zp n)
+            (prog2$ (cw "Not asking server for recommendations since n=0.")
+                    (mv nil
+                        "[]" ; empty list of recommendations
+                        state))
+          (b* ((- (cw "Asking server for ~x0 recommendations on ~x1 ~s2...~%"
+                      n
+                      (len checkpoint-clauses)
+                      (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
+               (post-data (acons "n" (nat-to-string n)
+                                 (make-numbered-checkpoint-entries 0 checkpoint-clauses)))
+               (- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil))))
+            (htclient::post server-url post-data state))))
        ((when erp)
         (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
         (mv erp nil state))
@@ -1193,7 +1247,7 @@
        ((mv erp
             successful-recs ; result-acc ; todo: use this, and make it richer
             state)
-        (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg nil state))
+        (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg step-limit nil state))
        (state (unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations.")
@@ -1211,13 +1265,36 @@
                         state)))
        ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
        ;; TODO: Can we restore the old gag state saved?
-       (state (f-put-global 'gag-state-saved nil state))
-       )
-    (mv nil ; no error
+       ;;(state (f-put-global 'gag-state-saved nil state))
+
+       ;; Try to ensure the checkpoints are restored, in case the tool is run again:
+       (state
+        (b* ((new-raw-checkpoint-clauses (checkpoint-list ;-pretty
+                                          t ; todo: consider non-top
+                                          state))
+             ((when (equal new-raw-checkpoint-clauses raw-checkpoint-clauses))
+              state ; no need to do anything
+              )
+             ((mv provedp state)
+              (prove$-no-error 'advice-fn theorem-body theorem-hints theorem-otf-flg
+                               nil ; step-limit
+                               state))
+             ((when provedp) ; surprising!
+              (cw "Tried the theorem again and it worked!")
+              state)
+             (new-raw-checkpoint-clauses (checkpoint-list ;-pretty
+                                          t ; todo: consider non-top
+                                          state))
+             ((when (not (equal new-raw-checkpoint-clauses raw-checkpoint-clauses)))
+              (cw "Clearing checkpoints since we failed to restore them.~%")
+              (let ((state (f-put-global 'gag-state-saved nil state)))
+                state)))
+          state)))
+       (mv nil ; no error
         '(value-triple :invisible) state)))
 
-(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil))
-  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug state)))
+(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto))
+  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit state)))
 
 ;; Example:
 ;; (acl2s-defaults :set testing-enabled nil) ; turn off testing
