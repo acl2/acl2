@@ -106,25 +106,25 @@
   :hooks (:fix)
   ///
 
-  (defret type-of-value-of-value-integer
-    (equal (type-of-value val)
-           (type-fix type))
-    :hyp (type-nonchar-integerp type)
-    :hints (("Goal" :in-theory (enable type-of-value
-                                       type-nonchar-integerp))))
+  (defrule type-of-value-of-value-integer
+    (implies (type-nonchar-integerp type)
+             (equal (type-of-value (value-integer mathint type))
+                    (type-fix type)))
+    :enable (type-of-value
+             type-nonchar-integerp))
 
-  (defret value-kind-of-value-integer
-    (equal (value-kind val)
-           (type-kind type))
-    :hyp (type-nonchar-integerp type)
-    :hints (("Goal" :in-theory (enable type-nonchar-integerp))))
+  (defrule value-kind-of-value-integer
+    (implies (type-nonchar-integerp type)
+             (equal (value-kind (value-integer mathint type))
+                    (type-kind type)))
+    :enable type-nonchar-integerp)
 
-  (defret value-integerp-of-value-integer
-    (value-integerp val)
-    :hyp (type-nonchar-integerp type)
-    :hints (("Goal" :in-theory (enable value-integerp
-                                       value-signed-integerp
-                                       value-unsigned-integerp)))))
+  (defrule value-integerp-of-value-integer
+    (implies (type-nonchar-integerp type)
+             (value-integerp (value-integer mathint type)))
+    :enable (value-integerp
+             value-signed-integerp
+             value-unsigned-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,21 +387,11 @@
 
 (define promote-value ((val valuep))
   :guard (value-arithmeticp val)
-  :returns (promoted-val
-            valuep
-            :hints
-            (("Goal"
-              :cases ((equal (promote-type (type-of-value val))
-                             (type-of-value val)))
-              :in-theory (e/d
-                          (promote-type
-                           convert-integer-value-to-type-of-value
-                           valuep-of-convert-integer-value-to-unsigned
-                           valuep-of-convert-integer-value-from-schar-to-sint
-                           valuep-of-convert-integer-value-from-sshort-to-sint
-                           valuep-of-convert-integer-value-from-uchar-to-sint
-                           valuep-of-convert-integer-value-from-ushort-to-sint)
-                          ((:e type-sint))))))
+  :returns (promoted-val valuep
+                         :hints
+                         (("Goal"
+                           :in-theory
+                           (enable promote-value-not-error-lemma))))
   :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
   :long
   (xdoc::topstring
@@ -432,65 +422,55 @@
     (if (value-integerp val)
         (convert-integer-value val type)
       (value-fix val)))
-  :hooks (:fix)
-  ///
 
-  (defrule value-integerp-of-promote-value
-    (equal (value-integerp (promote-value val))
-           (value-integerp (value-fix val)))
-    :hints (("Goal"
-             :in-theory (e/d
-                         (promote-type
-                          convert-integer-value-to-type-of-value
-                          valuep-of-convert-integer-value-to-unsigned
-                          valuep-of-convert-integer-value-from-schar-to-sint
-                          valuep-of-convert-integer-value-from-sshort-to-sint
-                          valuep-of-convert-integer-value-from-uchar-to-sint
-                          valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep
-                          type-nonchar-integerp)
-                         ((:e type-sint))))))
+  :prepwork
+  ((defruled promote-value-not-error-lemma
+     (implies (value-integerp val)
+              (valuep
+               (convert-integer-value val
+                                      (promote-type (type-of-value val)))))
+     :enable (promote-type
+              convert-integer-value-to-type-of-value
+              valuep-of-convert-integer-value-to-unsigned
+              valuep-of-convert-integer-value-from-schar-to-sint
+              valuep-of-convert-integer-value-from-sshort-to-sint
+              valuep-of-convert-integer-value-from-uchar-to-sint
+              valuep-of-convert-integer-value-from-ushort-to-sint)
+     :disable ((:e type-sint))))
+
+  :hooks (:fix)
+
+  ///
 
   (defruled type-of-value-of-promote-value
     (equal (type-of-value (promote-value val))
            (promote-type (type-of-value val)))
-    :hints (("Goal"
-             :in-theory (e/d
-                         (promote-type
-                          convert-integer-value-to-type-of-value
-                          valuep-of-convert-integer-value-to-unsigned
-                          valuep-of-convert-integer-value-from-schar-to-sint
-                          valuep-of-convert-integer-value-from-sshort-to-sint
-                          valuep-of-convert-integer-value-from-uchar-to-sint
-                          valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep
-                          value-integerp
-                          value-signed-integerp
-                          value-unsigned-integerp
-                          type-nonchar-integerp)
-                         ((:e type-sint))))))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep
+             promote-type-when-not-type-integerp))
 
-  (defret value-promoted-arithmeticp-of-promote-value
-    (value-promoted-arithmeticp promoted-val)
-    :hyp (value-arithmeticp val)
-    :hints (("Goal"
-             :in-theory (e/d
-                         (promote-type
-                          convert-integer-value-to-type-of-value
-                          valuep-of-convert-integer-value-to-unsigned
-                          valuep-of-convert-integer-value-from-schar-to-sint
-                          valuep-of-convert-integer-value-from-sshort-to-sint
-                          valuep-of-convert-integer-value-from-uchar-to-sint
-                          valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep
-                          value-promoted-arithmeticp
-                          value-arithmeticp
-                          value-realp
-                          value-integerp
-                          value-signed-integerp
-                          value-unsigned-integerp
-                          type-nonchar-integerp)
-                         ((:e type-sint)))))))
+  (defrule value-arithmeticp-of-promote-value
+    (equal (value-arithmeticp (promote-value val))
+           (value-arithmeticp val))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep
+             value-arithmeticp
+             value-realp))
+
+  (defrule value-promoted-arithmeticp-of-promote-value
+    (equal (value-promoted-arithmeticp (promote-value val))
+           (value-arithmeticp val))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep
+             value-promoted-arithmeticp
+             value-arithmeticp
+             value-realp))
+
+  (defrule value-integerp-of-promote-value
+    (equal (value-integerp (promote-value val))
+           (value-integerp val))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
