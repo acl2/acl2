@@ -22,7 +22,7 @@
 
 ; Hack for cert.pl ;
 
-(include-book "acl2s/cgen/cgen-no-thms.lisp")
-(include-book "acl2s/cgen/defthm-support-for-on-failure.lisp")
+(include-book "acl2s/cgen/cgen-no-thms" :dir :system)
+(include-book "acl2s/cgen/defthm-support-for-on-failure" :dir :system)
 
 |#
