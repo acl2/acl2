@@ -2726,6 +2726,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun hard-error (ctx str alist)
 
+; Str is often a fmt string to print with respect to alist.  But it may also be
+; a cons pair (summary . str), where str is as above and summary is a string
+; that could be a key of inhibit-er-table.
+
 ; This function returns nil -- when it returns.  However, the implementation
 ; usually signals a hard error, which is sound since it is akin to running out
 ; of stack or some other resource problem.
@@ -2784,7 +2788,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; this would be a BAD IDEA.  But error-fms only prints stuff that was created
 ; earlier (and passed in via alist).
 
-    (let ((state *the-live-state*))
+    (let ((state *the-live-state*)
+          (summary (if (consp str) (car str) nil))
+          (str (if (consp str) (cdr str) str)))
       (cond
        (*hard-error-is-error*
         (hard-error-is-error ctx str alist))
@@ -2795,7 +2801,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 :test #'eq)))
           (let ((*standard-output* *error-output*)
                 (*wormholep* nil))
-            (error-fms t ctx nil str alist state)))
+            (error-fms t ctx summary str alist state)))
 
 ; Once upon a time hard-error took a throw-flg argument and did the
 ; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
@@ -14152,7 +14158,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     logic er deflabel mv-let program value-triple
     set-body comp set-bogus-defun-hints-ok
     dmr-stop defpkg set-measure-function
-    set-inhibit-warnings! set-inhibit-er-soft! defthm mv
+    set-inhibit-warnings! set-inhibit-er! defthm mv
     f-big-clock-negative-p reset-prehistory
     mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
@@ -22573,37 +22579,37 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(local (toggle-inhibit-warning! ,str)))
 
 #-acl2-loop-only
-(defmacro set-inhibit-er-soft! (&rest x)
+(defmacro set-inhibit-er! (&rest x)
   (declare (ignore x))
   nil)
 
-(table inhibit-er-soft-table nil nil
+(table inhibit-er-table nil nil
        :guard
        (stringp key))
 
 #+acl2-loop-only
-(defmacro set-inhibit-er-soft! (&rest lst)
+(defmacro set-inhibit-er! (&rest lst)
   (declare (xargs :guard (string-listp lst)))
   `(with-output
      :off (event summary)
-     (progn (table inhibit-er-soft-table nil ',(pairlis$ lst nil) :clear)
+     (progn (table inhibit-er-table nil ',(pairlis$ lst nil) :clear)
             (value-triple ',lst))))
 
-(defmacro set-inhibit-er-soft (&rest lst)
-  `(local (set-inhibit-er-soft! ,@lst)))
+(defmacro set-inhibit-er (&rest lst)
+  `(local (set-inhibit-er! ,@lst)))
 
-(defmacro toggle-inhibit-er-soft! (str)
-  `(table inhibit-er-soft-table
+(defmacro toggle-inhibit-er! (str)
+  `(table inhibit-er-table
           nil
           (let ((inhibited-er-soft
-                 (table-alist 'inhibit-er-soft-table world)))
+                 (table-alist 'inhibit-er-table world)))
             (cond ((assoc-string-equal ',str inhibited-er-soft)
                    (remove1-assoc-string-equal ',str inhibited-er-soft))
                   (t (acons ',str nil inhibited-er-soft))))
           :clear))
 
-(defmacro toggle-inhibit-er-soft (str)
-  `(local (toggle-inhibit-er-soft! ,str)))
+(defmacro toggle-inhibit-er (str)
+  `(local (toggle-inhibit-er! ,str)))
 
 (defmacro set-inhibit-output-lst (lst)
 
