@@ -302,10 +302,10 @@
     (if pre-commands
         (if (consp (cdr pre-commands))
             ;; More than one pre-command:
-            (cw "~s0: Try ~s1, after doing ~&2.~%" name english-rec pre-commands)
+            (cw "~s0: Try ~s1, after doing ~&2~%" name english-rec pre-commands)
           ;; Exactly one pre-command:
-          (cw "~s0: Try ~s1, after doing ~x2.~%" name english-rec (first pre-commands)))
-      (cw "~s0: Try ~s1.~%" name english-rec))))
+          (cw "~s0: Try ~s1, after doing ~x2~%" name english-rec (first pre-commands)))
+      (cw "~s0: Try ~s1~%" name english-rec))))
 
 (defun show-successful-recommendations-aux (recs)
   (declare (xargs :mode :program))
@@ -590,14 +590,17 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
            )
-  (if (not (consp include-book-form)) ; can be "Other"
-      (prog2$ (cw "FAIL (ill-formed library recommendation: ~x0)~%" include-book-form)
-              (mv nil nil state))
-    (b* (((mv erp provedp state)
-          (prove$-with-include-book 'try-add-library theorem-body include-book-form nil theorem-hints theorem-otf-flg *step-limit* state))
-         ((when erp) (mv erp nil state))
-         (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "FAIL~%"))))
-      (mv nil (if provedp rec nil) state))))
+  (b* (((when (eq 'other include-book-form)) ; todo: can this happen, or could it be (include-book other)?
+        (cw "skip (can't include catch-all library ~x0)~%" include-book-form)
+        (mv nil nil state))
+       ((when (not (consp include-book-form)))
+        (cw "fail (ill-formed library recommendation: ~x0)~%" include-book-form)
+        (mv nil nil state))
+       ((mv erp provedp state)
+        (prove$-with-include-book 'try-add-library theorem-body include-book-form nil theorem-hints theorem-otf-flg *step-limit* state))
+       ((when erp) (mv erp nil state))
+       (- (if provedp (cw "SUCCESS: ~x0~%" include-book-form) (cw "fail (library didn't help)~%"))))
+    (mv nil (if provedp rec nil) state)))
 
 ;; TODO: Handle LET and MV-LET and nested implies and ...
 (defun formula-hyp-simple (formula ;; untranslated
@@ -654,22 +657,22 @@
            (ignore theorem-name))
   (b* ((translatablep (translatable-termp hyp (w state)))
        ((when (not translatablep))
-        (cw "FAIL (hyp not translatable: ~x0)~%" hyp) ;; TTODO: Include any necessary books first
+        (cw "fail (hyp not translatable: ~x0)~%" hyp) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        (existing-hyp (formula-hyp-simple theorem-body))
        (existing-hyp-conjunts (get-conjuncts-of-uterm existing-hyp))
        ((when (member-equal hyp existing-hyp-conjunts))
-        (cw "SKIP (hyp ~x0 is already present)~%" hyp)
+        (cw "skip (hyp ~x0 is already present)~%" hyp)
         (mv nil nil state))
        ((mv impliedp state)
         (provably-impliesp 'try-add-hyp existing-hyp hyp state))
        ((when impliedp)
-        (cw "SKIP (hyp ~x0 is implied by existing hyps)~%" hyp)
+        (cw "skip (hyp ~x0 is implied by existing hyps)~%" hyp)
         (mv nil nil state))
        ((mv contradictp state)
         (provably-contradictoryp 'try-add-hyp `(and ,hyp ,existing-hyp) state))
        ((when contradictp)
-        (cw "SKIP (hyp ~x0 would contradict existing hyps)~%" hyp)
+        (cw "skip (hyp ~x0 would contradict existing hyps)~%" hyp)
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
@@ -681,7 +684,7 @@
                                            :hints theorem-hints
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "FAIL~%"))))
+       (- (if provedp (cw "SUCCESS: Add hyp ~x0~%" hyp) (cw "fail (hyp didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -695,10 +698,10 @@
                             state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
-        (cw "SKIP (Not disabling catch-all: ~x0)~%" rule)
+        (cw "skip (Not disabling catch-all: ~x0)~%" rule)
         (mv nil nil state))
        ((when (keywordp rule))
-        (cw "SKIP (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
+        (cw "skip (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
        (wrld (w state))
        (rule (handle-macro-alias rule wrld)) ; TODO: Handle the case of a macro-alias we don't know about
@@ -707,18 +710,18 @@
         ;; It's a function in the current world:
         (b* ((fn rule)
              ((when (not (logicp fn wrld)))
-              (cw "SKIP (Can't enable ~x0. Not in :logic mode.)~%" fn)
+              (cw "skip (Can't enable ~x0. Not in :logic mode.)~%" fn)
               (mv nil nil state))
              ((when (not (and
                               ;; (defined-functionp fn wrld) ;todo
                               )))
-              (cw "SKIP (Can't enable ~x0. No body.)~%" fn)
+              (cw "skip (Can't enable ~x0. No body.)~%" fn)
               (mv nil nil state))
              ;; TODO: Consider whether to enable, say the :type-prescription rule
              (rune `(:definition ,fn))
              ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
              ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
-              (cw "SKIP (~x0 is already enabled.)~%" fn)
+              (cw "skip (~x0 is already enabled.)~%" fn)
               (mv nil nil state))
              ;; FN exists and just needs to be enabled:
              (new-hints (enable-runes-in-hints theorem-hints (list fn))) ;; todo: ensure this is nice
@@ -728,7 +731,7 @@
                               :hints new-hints
                               :otf-flg theorem-otf-flg
                               :step-limit *step-limit*))
-             (- (if provedp (cw "SUCCESS: Enable ~x0~%" fn) (cw "FAIL~%"))))
+             (- (if provedp (cw "SUCCESS: Enable ~x0~%" fn) (cw "fail (enable didn't help)~%"))))
           (mv nil (if provedp rec nil) state))
       (if (not (eq :no-body (getpropc rule 'theorem :no-body wrld))) ;todo: how to just check if the property is set?
           ;; It's a theorem in the current world:
@@ -736,7 +739,7 @@
              (rune `(:rewrite ,rule))
              ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
              ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
-              (cw "SKIP (~x0 is already enabled.)~%" rule)
+              (cw "skip (~x0 is already enabled.)~%" rule)
               (mv nil nil state))
              ;; RULE exists and just needs to be enabled:
              (new-hints (enable-runes-in-hints theorem-hints (list rule))) ;; todo: ensure this is nice
@@ -746,7 +749,7 @@
                               :hints new-hints
                               :otf-flg theorem-otf-flg
                               :step-limit *step-limit*))
-             (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "FAIL~%"))))
+             (- (if provedp (cw "SUCCESS: Enable ~x0~%" rule) (cw "fail (enable didn't help)~%"))))
           (mv nil (if provedp rec nil) state))
         ;; RULE is not currently known, so try to find where it is defined:
         (b* ((book-map-keys (strip-cars book-map))
@@ -777,8 +780,8 @@
                ((when (not provedp))
                 (if (< 3 num-books-to-try-orig)
                     ;; todo: try more if we didn't find it?:
-                    (cw "FAIL (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
-                  (cw "FAIL~%"))
+                    (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
+                  (cw "fail (enable didn't help)~%"))
                 (mv nil nil state))
                ;; We proved it with an include-book and an enable hint.  Now
                ;; try again but without the enable hint (maybe the include-book is enough):
@@ -814,17 +817,17 @@
 (defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
-        (cw "SKIP (Not disabling catch-all: ~x0)~%" rule)
+        (cw "skip (Not disabling catch-all: ~x0)~%" rule)
         (mv nil nil state))
        ((when (keywordp rule))
-        (cw "SKIP (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
+        (cw "skip (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
        ((when (not (name-that-can-be-enabled/disabledp rule (w state))))
-        (cw "SKIP (Not disabling unknown name: ~x0)~%" rule) ;; For now, we don't try to including the book that brings in the thing to disable!
+        (cw "skip (Not disabling unknown name: ~x0)~%" rule) ;; For now, we don't try to including the book that brings in the thing to disable!
         (mv nil nil state))
        (rule (handle-macro-alias rule (w state))) ; TODO: Handle the case of a macro-alias we don't know about
        ((when (disabledp-fn rule (ens-maybe-brr state) (w state)))
-        (cw "SKIP (Not disabling since already disabled: ~x0)~%" rule)
+        (cw "skip (Not disabling since already disabled: ~x0)~%" rule)
         (mv nil nil state))
        ((mv provedp state) (prove$-checked 'try-add-disable-hint
                                            theorem-body
@@ -832,7 +835,7 @@
                                            :hints (disable-runes-in-hints theorem-hints (list rule))
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Disable ~x0~%" rule) (cw "FAIL~%"))))
+       (- (if provedp (cw "SUCCESS: Disable ~x0~%" rule) (cw "fail (disable didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -841,11 +844,11 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (eq item 'other))
-        (cw "SKIP (Unknown name: ~x0)~%" item)
+        (cw "skip (skipping catch-all: ~x0)~%" item)
         (mv nil nil state))
        ((when (not (or (getpropc item 'unnormalized-body nil (w state))
                        (getpropc item 'theorem nil (w state)))))
-        (cw "FAIL (Unknown name: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (cw "skip (unknown name: ~x0)~%" item) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
@@ -862,7 +865,7 @@
                                            :hints (cons `("Goal" :use ,item) theorem-hints)
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "FAIL~%"))))
+       (- (if provedp (cw "SUCCESS: Add :use hint ~x0~%" item) (cw "fail (:use hint didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -871,14 +874,14 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (eq 'other item))
-        (cw "FAIL (ignoring recommendation to expand \"Other\")~%")
+        (cw "fail (ignoring recommendation to expand \"Other\")~%")
         (mv nil nil state))
        ((when (symbolp item)) ; todo: eventually remove this case
-        (cw "FAIL (ignoring illegal recommendation to expand a symbol)~%")
+        (cw "fail (ignoring illegal recommendation to expand a symbol)~%")
         (mv nil nil state))
        ;; todo: can it be a single term?:
        ((when (not (translatable-term-listp item (w state))))
-        (cw "FAIL (term not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (cw "fail (term not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
@@ -894,7 +897,7 @@
                                            :hints (cons `("Goal" :expand ,item) theorem-hints)
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :expand hint ~x0~%" item) (cw "FAIL~%"))))
+       (- (if provedp (cw "SUCCESS: Add :expand hint ~x0~%" item) (cw "fail (:expand hint didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -902,7 +905,7 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (not (translatable-term-listp item (w state))))
-        (cw "FAIL (terms not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
+        (cw "fail (terms not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (submit-event-helper
@@ -918,7 +921,7 @@
                                            :hints (cons `("Goal" :cases ,item) theorem-hints)
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :cases hint ~x0~%" item) (cw "FAIL~%"))))
+       (- (if provedp (cw "SUCCESS: Add :cases hint ~x0~%" item) (cw "fail (:cases hint didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -927,20 +930,20 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name theorem-body theorem-hints theorem-otf-flg rec))
   (if (symbolp item)
-      (prog2$ (cw "SKIP (need arguments of ~x0 to create :induct hint)~%" item)
+      (prog2$ (cw "skip (need arguments of ~x0 to create :induct hint)~%" item)
               (mv nil nil state))
     ;; TODO: Flesh this out when ready:
     (mv :unsupported-induct-hint nil state)))
 
-(defun try-exact-hints (item theorem-body theorem-otf-flg rec state)
+(defun try-exact-hints (hints theorem-body theorem-otf-flg rec state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((mv provedp state) (prove$-checked 'try-exact-hints
                                            theorem-body
                                            ;; todo: ensure this is nice:
-                                           :hints item
+                                           :hints hints
                                            :otf-flg theorem-otf-flg
                                            :step-limit *step-limit*))
-       (- (if provedp (cw "SUCCESS: Add :hints ~x0~%" item) (cw "FAIL~%"))))
+       (- (if provedp (cw "SUCCESS: Add :hints ~x0~%" hints) (cw "fail (:hints didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp successful-recs state)
@@ -1200,7 +1203,7 @@
        (state (if (posp num-successful-recs)
                   (progn$ (if (< 1 num-successful-recs)
                               (cw "~%PROOF FOUND (~x0 successful recommendations out of ~x1):~%" num-successful-recs num-recs)
-                            (cw "~%PROOF FOUND (1 successful RECOMMENDATION out of ~x0):~%" num-recs))
+                            (cw "~%PROOF FOUND (1 successful recommendation out of ~x0):~%" num-recs))
                           (prog2$ (cw "~%SUCCESSFUL RECOMMENDATIONS:~%")
                                   (let ((state (show-successful-recommendations successful-recs state)))
                                     state)))
