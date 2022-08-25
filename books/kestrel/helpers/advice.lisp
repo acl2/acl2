@@ -264,26 +264,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *option-names* '(:max-wins))
+
+;; Returns (mv presentp val)
+(defun get-advice-option (option-name wrld)
+  (let* ((table-alist (table-alist 'advice-options wrld))
+         (res (assoc-eq option-name table-alist)))
+    (if res (mv t (cdr res)) (mv nil nil))))
+
+;; Returns the value of the option.  Throws an error if not set.
+(defun get-advice-option! (option-name wrld)
+  (mv-let (presentp val)
+    (get-advice-option option-name wrld)
+    (if (not presentp)
+        (er hard? 'get-advice-option! "Option value not set: ~x0." option-name)
+      val)))
+
 (defun advice-option-fn (option-name rest-args wrld)
-  (if (not (member-eq option-name '(:successes)))
+  (if (not (member-eq option-name *option-names*))
       (er hard? 'advice-option-fn "Unknown option: ~x0." option-name)
     (if (consp rest-args)
         ;; It's a set:
         (let ((option-val (first rest-args)))
           `(table advice-options ,option-name ,option-val))
       ;; It's a get:
-      (let* ((table-alist (table-alist 'advice-options wrld))
-             (res (assoc-eq option-name table-alist)))
-        (if res
-            (prog2$ (cw "~x0~%" (cdr res))
-                    '(value-triple :invisible))
-          ;;todo: just use nil?:
-          (er hard? 'advice-option-fn "Unknown option: ~x0." option-name))))))
+      (let ((val (get-advice-option! option-name wrld)))
+        (prog2$ (cw "~x0~%" val)
+                '(value-triple :invisible))))))
 
+;; Examples:
+;; (advice-option <name>) ;; print the value of the given option
+;; (advice-option <name> <val>) ;; set the value of the given option
 (defmacro advice-option (option-name &rest rest-args)
   `(make-event-quiet (advice-option-fn ,option-name ',rest-args (w state))))
 
-(advice-option :successes 3) ; stop after 3 successes
+(advice-option :max-wins nil) ; don't limit the number of successes before we stop trying recs
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1014,6 +1029,7 @@
                             theorem-hints
                             theorem-otf-flg
                             step-limit
+                            max-wins
                             successful-recs
                             state)
   (declare (xargs :guard (and (recommendation-listp recs)
@@ -1024,7 +1040,9 @@
                               (true-listp successful-recs))
             :mode :program
             :stobjs state))
-  (if (endp recs)
+  (if (or (endp recs)
+          (and (natp max-wins)
+               (<= max-wins (len successful-recs))))
       (mv nil (reverse successful-recs) state)
     (b* ((rec (first recs))
          (name (car rec))
@@ -1051,7 +1069,7 @@
                      (mv t nil state))))
         (if erp
             (mv erp nil state)
-          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg step-limit
+          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins
                                (if maybe-successful-rec
                                    (cons maybe-successful-rec successful-recs)
                                  successful-recs)
@@ -1161,15 +1179,47 @@
          (term (remove-guard-holders term wrld)))
     (clausify term nil t (sr-limit wrld))))
 
+;; compares the type and object fields
+(defund same-recp (rec1 rec2)
+  (and (equal (nth 1 rec1) (nth 1 rec2))
+       (equal (nth 2 rec1) (nth 2 rec2))))
+
+;; Remove all members of RECS that are the same as REC (wrt type and object)
+(defun remove-duplicate-rec (rec recs acc)
+  (if (endp recs)
+      (reverse acc)
+    (if (same-recp rec (first recs))
+        (remove-duplicate-rec rec (rest recs) acc)
+      (remove-duplicate-rec rec (rest recs) (cons (first recs) acc)))))
+
+(local
+ (defthm len-of-remove-duplicate-rec-linear
+   (<= (len (remove-duplicate-rec rec recs acc))
+       (+ (len recs) (len acc)))
+   :rule-classes :linear))
+
+;; Keeps the first of each set of duplicates
+(defun remove-duplicate-recs (recs acc)
+  (declare (xargs :measure (len recs)))
+  (if (endp recs)
+      (reverse acc)
+    (let* ((rec (first recs))
+           (reduced-rest (remove-duplicate-rec rec (rest recs) nil)))
+      (remove-duplicate-recs reduced-rest
+                             (cons rec acc)))))
+
+
+
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
 ;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
 ;; below).
-(defun advice-fn (n ; number of recommendations requested
+(defun advice-fn (n ; number of recommendations from ML requested
                   verbose
                   server-url
                   debug
                   step-limit
+                  max-wins
                   state)
   (declare (xargs :guard (and (natp n)
                               (booleanp verbose)
@@ -1178,11 +1228,17 @@
                               (booleanp debug)
                               (or (eq :auto step-limit)
                                   (eq nil step-limit)
-                                  (natp step-limit)))
+                                  (natp step-limit))
+                              (or (eq :auto max-wins)
+                                  (null max-wins)
+                                  (natp max-wins)))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
-  (b* ((step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+  (b* ((wrld (w state))
+       ;; Elaborate options:
+       (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+       (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        ;; Get server info:
        ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
@@ -1210,7 +1266,6 @@
        ((when (eq :unavailable raw-checkpoint-clauses))
         (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
         (mv :no-checkpoints nil state))
-       (wrld (w state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
        (checkpoint-clauses (if (equal raw-checkpoint-clauses '((<goal>)))
@@ -1259,6 +1314,7 @@
        (recommendations (append enable-recommendations
                                 historical-recommendations
                                 ml-recommendations))
+       ;; (num-recs (len recommendations))
        ;; Print the recommendations (for now):
        (-  (cw "~%RECOMMENDATIONS TO TRY:~%"))
        (state (show-recommendations recommendations state))
@@ -1268,19 +1324,26 @@
        ((mv erp
             successful-recs ; result-acc ; todo: use this, and make it richer
             state)
-        (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg step-limit nil state))
+        (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins nil state))
        (state (unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations.")
         (mv erp nil state))
-       (num-recs (len recommendations))
-       (num-successful-recs (len successful-recs))
+       (successful-recs-no-dupes (remove-duplicate-recs successful-recs nil))
+       (removed-count (- (len successful-recs) (len successful-recs-no-dupes)))
+       (- (and (posp removed-count)
+               (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
+                   (if (< 1 removed-count) "recommendations were" "recommendation was"))))
+       (num-successful-recs (len successful-recs-no-dupes))
+       (max-wins-reachedp (and (natp max-wins) (= max-wins num-successful-recs)))
+       (- (and max-wins-reachedp
+               (cw "~%NOTE: Search stopped after finding ~x0 successful ~s1.~%" max-wins (if (< 1 max-wins) "recommendations" "recommendation"))))
        (state (if (posp num-successful-recs)
                   (progn$ (if (< 1 num-successful-recs)
-                              (cw "~%PROOF FOUND (~x0 successful recommendations out of ~x1):~%" num-successful-recs num-recs)
-                            (cw "~%PROOF FOUND (1 successful recommendation out of ~x0):~%" num-recs))
+                              (cw "~%PROOF FOUND (~x0 successful recommendations):~%" num-successful-recs)
+                            (cw "~%PROOF FOUND (1 successful recommendation):~%"))
                           (progn$ ;; (cw "~%SUCCESSFUL RECOMMENDATIONS:~%")
-                                  (let ((state (show-successful-recommendations successful-recs state)))
+                                  (let ((state (show-successful-recommendations successful-recs-no-dupes state)))
                                     state)))
                 (prog2$ (cw "~%NO PROOF FOUND~%~%")
                         state)))
@@ -1314,8 +1377,8 @@
        (mv nil ; no error
         '(value-triple :invisible) state)))
 
-(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto))
-  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit state)))
+(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto))
+  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit ,max-wins state)))
 
 ;; Example:
 ;; (acl2s-defaults :set testing-enabled nil) ; turn off testing
