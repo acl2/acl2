@@ -19,3 +19,4 @@
 (include-book "acl2s/match" :dir :system :ttags :all)
 (include-book "acl2s/interface/top" :dir :system)
 (include-book "acl2s/interface/acl2s-utils/top" :dir :system)
+(include-book "acl2s/cgen/defthm-support-for-on-failure" :dir :system)
