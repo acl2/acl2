@@ -910,8 +910,8 @@ HARD ACL2 ERROR in TOP:  Interrupt!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>(VALUE-TRIPLE
              (EQUAL (FIELDS-OF-TWO-USUALLYEQUAL-NUMS TWO-USUALLYEQUAL-NUMS)
@@ -1000,8 +1000,8 @@ HARD ACL2 ERROR in TOP:  Interrupt!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
 
@@ -1095,8 +1095,8 @@ HARD ACL2 ERROR in TOP:  Interrupt!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
 
@@ -1233,8 +1233,8 @@ HARD ACL2 ERROR in TOP:  Stopping!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
 

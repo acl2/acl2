@@ -10692,35 +10692,35 @@
 (defmacro rdepth-error (form &optional preprocess-p)
   (if preprocess-p
       (let ((ctx ''preprocess))
-        `(prog2$ (er hard ,ctx
-                     "The call depth limit of ~x0 has been exceeded in the ~
-                      ACL2 preprocessor (a sort of rewriter).  There might be ~
-                      a loop caused by some set of enabled simple rules.  To ~
-                      see why the limit was exceeded, ~@1retry the proof with ~
-                      :hints~%  :do-not '(preprocess)~%and then follow the ~
-                      directions in the resulting error message.  See :DOC ~
-                      rewrite-stack-limit for a possible solution when there ~
-                      is not a loop."
-                     (rewrite-stack-limit wrld)
-                     (if (f-get-global 'gstackp state)
-                         ""
-                       "execute~%  :brr t~%and next "))
+        `(prog2$ (er-hard
+                  ,ctx "Call depth"
+                  "The call depth limit of ~x0 has been exceeded in the ACL2 ~
+                   preprocessor (a sort of rewriter).  There might be a loop ~
+                   caused by some set of enabled simple rules.  To see why ~
+                   the limit was exceeded, ~@1retry the proof with :hints~%  ~
+                   :do-not '(preprocess)~%and then follow the directions in ~
+                   the resulting error message.  See :DOC rewrite-stack-limit ~
+                   for a possible solution when there is not a loop."
+                  (rewrite-stack-limit wrld)
+                  (if (f-get-global 'gstackp state)
+                      ""
+                    "execute~%  :brr t~%and next "))
                  ,form))
     (let ((ctx ''rewrite))
-      `(prog2$ (er hard ,ctx
-                   "The call depth limit of ~x0 has been exceeded in the ACL2 ~
-                    rewriter.  To see why the limit was exceeded, ~@1execute ~
-                    the form (cw-gstack) or, for less verbose output, instead ~
-                    try (cw-gstack :frames 30).  You may then notice a loop ~
-                    caused by some set of enabled rules, some of which you ~
-                    can then disable; see :DOC disable.  For a possible ~
-                    solution when there is not a loop, see :DOC ~
-                    rewrite-stack-limit."
-                   (rewrite-stack-limit wrld)
-                   (if (f-get-global 'gstackp state)
-                       ""
-                     "first execute~%  :brr ~
-                      t~%and then try the proof again, and then "))
+      `(prog2$ (er-hard
+                ,ctx "Call depth"
+                "The call depth limit of ~x0 has been exceeded in the ACL2 ~
+                 rewriter.  To see why the limit was exceeded, ~@1execute the ~
+                 form (cw-gstack) or, for less verbose output, instead try ~
+                 (cw-gstack :frames 30).  You may then notice a loop caused ~
+                 by some set of enabled rules, some of which you can then ~
+                 disable; see :DOC disable.  For a possible solution when ~
+                 there is not a loop, see :DOC rewrite-stack-limit."
+                (rewrite-stack-limit wrld)
+                (if (f-get-global 'gstackp state)
+                    ""
+                  "first execute~%  :brr t~%and then try the proof again, and ~
+                   then "))
                ,form))))
 
 (defun bad-synp-hyp-msg1 (hyp bound-vars all-vars-bound-p wrld)

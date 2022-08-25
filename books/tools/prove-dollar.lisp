@@ -8,71 +8,113 @@
 
 (include-book "kestrel/utilities/tables" :dir :system)
 
+(defun extend-prover-error-output-off (string-alist state)
+  (declare (xargs :mode :program :stobjs state))
+  (let ((alist (union-equal string-alist
+                            (table-alist 'inhibit-er-table (w state)))))
+    (with-output!
+      :off (event summary)
+
+; The following is based on (table inhibit-er-table nil alist :clear).
+
+      (table-fn 'inhibit-er-table
+                `(nil ',alist :clear)
+                state
+                `(table inhibit-er-table nil ',alist :clear)))))
+
+(defun formal-quote-args (lst)
+  (declare (xargs :mode :logic :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((eq (car lst) 'state)
+         (cons ''state
+               (formal-quote-args (cdr lst))))
+        (t (cons `(list 'quote ,(car lst))
+                 (formal-quote-args (cdr lst))))))
+
+(defmacro catch-hard-error (flg form)
+
+; Form should be a call of a function symbol or a "function-like" macro name.
+; Returns the error triple produced by form, except that if flg is true, then
+; we get an error triple suitably based on the trans-eval of an appropriate
+; form.
+
+  `(if ,flg
+       (er-progn
+        (extend-prover-error-output-off '(("Call depth") ("Evaluation"))
+                                        state)
+        (mv-let (erp stobjs-out/replaced-val state)
+          (trans-eval-no-warning
+           (list ',(car form) ,@(formal-quote-args (cdr form)))
+           'prove$ state t)
+          (mv (or erp
+                  (car (cdr stobjs-out/replaced-val)))
+              (cadr (cdr stobjs-out/replaced-val))
+              state)))
+     ,form))
+
 (defun prove$-fn (term state hints instructions otf-flg ignore-ok skip-proofs
-                       prover-error-output-off)
+                       prover-error-output-off catch-hard-error)
 
 ; This function is based on thm-fn and defthm-fn1.  It returns (value t) if the
 ; proof succeeds, else (value nil).  It returns a soft error if there is a
 ; translation failure.
 
   (declare (xargs :mode :program :stobjs state))
-  (let ((ctx "( PROVE$ ...)"))
-    (state-global-let*
-     ((abort-soft nil) ; interrupts abort immediately to the top level
-      (ld-skip-proofsp (if (eq skip-proofs :same)
-                           (ld-skip-proofsp state)
-                         skip-proofs)))
-     (er-let* ((wrld0 (value (w state)))
-               (wrld1 (value (table-programmatic
-                              'acl2-defaults-table
-                              :ignore-ok ignore-ok wrld0)))
-               (tterm (translate term t t t ctx wrld1 state))
-               (instructions
-                (cond ((null instructions) (value nil))
-                      (hints (er soft ctx
-                                 "It is illegal to supply non-nil values for ~
+  (revert-world
+   (let ((ctx "( PROVE$ ...)"))
+     (state-global-let*
+      ((abort-soft nil) ; interrupts abort immediately to the top level
+       (ld-skip-proofsp (if (eq skip-proofs :same)
+                            (ld-skip-proofsp state)
+                          skip-proofs)))
+      (er-let* ((wrld0 (value (w state)))
+                (wrld1 (value (table-programmatic
+                               'acl2-defaults-table
+                               :ignore-ok ignore-ok wrld0)))
+                (tterm (translate term t t t ctx wrld1 state))
+                (instructions
+                 (cond ((null instructions) (value nil))
+                       (hints (er soft ctx
+                                  "It is illegal to supply non-nil values for ~
                                   both :hints and :instructions to ~x0."
-                                 'prove$))
-                      (t (translate-instructions nil instructions ctx wrld1
-                                                 state))))
-               (hints (translate-hints+ 'thm
-                                        hints
-                                        (and (null instructions)
-                                             (default-hints wrld0))
-                                        ctx wrld1 state)))
-       (revert-world
+                                  'prove$))
+                       (t (translate-instructions nil instructions ctx wrld1
+                                                  state))))
+                (thints (translate-hints+ 'thm
+                                          hints
+                                          (and (null instructions)
+                                               (default-hints wrld0))
+                                          ctx wrld1 state)))
         (er-progn
-
-; The following is based on (table inhibit-er-soft-table nil alist :clear).
-
-         (let ((alist (cond ((eq prover-error-output-off t)
-                             '(("Failure") ("Step-limit")))
-                            ((string-listp prover-error-output-off)
-                             (pairlis$ prover-error-output-off nil))
-                            (t (er hard ctx
-                                   "Illegal value for ~
-                                    :prover-error-output-off argument, ~x0 ~
-                                    (value must be t or a list of strings)"
-                                   prover-error-output-off)))))
-           (with-output!
-             :off (event summary)
-             (table-fn 'inhibit-er-soft-table
-                       `(nil ',alist :clear)
-                       state
-                       `(table inhibit-er-soft-table nil ',alist :clear))))
+         (extend-prover-error-output-off
+          (cond ((eq prover-error-output-off t)
+; "Call depth" and  "Evaluation" are dealt with above the trans-eval call.
+                 '(("Failure")
+                   ("Step-limit")))
+                ((string-listp prover-error-output-off)
+                 (pairlis$ prover-error-output-off nil))
+                (t (er hard ctx
+                       "Illegal value for :prover-error-output-off argument, ~
+                       ~x0 (value must be t or a list of strings)"
+                       prover-error-output-off)))
+          state)
          (mv-let (erp val state)
-           (let ((wrld (w state)))
-             (with-ctx-summarized
-              ctx
-              (cond (instructions
-                     (proof-builder nil tterm term nil instructions wrld state))
-                    (t
-                     (let ((ens (ens state)))
-                       (prove tterm
-                              (make-pspv ens wrld state
-                                         :displayed-goal term
-                                         :otf-flg otf-flg)
-                              hints ens wrld ctx state))))))
+           (with-ctx-summarized
+            ctx
+            (cond
+             (instructions
+              (catch-hard-error
+               catch-hard-error
+               (proof-builder nil tterm term nil instructions
+                              (w state) state)))
+             (t (let ((ens (ens state)))
+                  (catch-hard-error
+                   catch-hard-error
+                   (prove tterm
+                          (make-pspv ens (w state) state
+                                     :displayed-goal term
+                                     :otf-flg otf-flg)
+                          thints ens (w state) ctx state))))))
            (declare (ignore val))
            (value (null erp)))))))))
 
@@ -85,22 +127,13 @@
                                   ,form))
        ,form)))
 
-(defmacro prove$ (term &key
-                       hints instructions otf-flg
-                       (with-output '(:off :all :on error :gag-mode nil))
-                       time-limit
-                       step-limit
-                       (ignore-ok 't)
-                       (skip-proofs ':same)
-                       (prover-error-output-off 't))
-
-; All of the arguments except :with-output are evaluated.  The result is
-; (mv nil t state) if the proof is successful, otherwise (mv nil nil state).
-
-  (declare (xargs :guard (member-eq ignore-ok '(t nil :warn))))
-
+(defun prove$-macro-fn (term hints instructions otf-flg with-output time-limit
+                             step-limit ignore-ok skip-proofs
+                             prover-error-output-off catch-hard-error)
+  (declare (xargs :mode :program))
   (let* ((form `(prove$-fn ,term state ,hints ,instructions ,otf-flg ,ignore-ok
-                           ,skip-proofs ,prover-error-output-off))
+                           ,skip-proofs ,prover-error-output-off
+                           ,catch-hard-error))
          (form `(with-output! ,@with-output ,form))
          (form (if time-limit
                    (make-with-prover-time-limit time-limit form)
@@ -124,7 +157,26 @@
                             (value nil)
                           (mv erp val state))))
                  form)))
-    `,form))
+    form))
+
+(defmacro prove$ (term &key
+                       hints instructions otf-flg
+                       (with-output '(:off :all :on error :gag-mode nil))
+                       time-limit
+                       step-limit
+                       (ignore-ok 't)
+                       (skip-proofs ':same)
+                       (prover-error-output-off 't)
+		       (catch-hard-error 't))
+
+; All of the arguments except :with-output and catch-hard-error are evaluated.
+; The result is (mv nil t state) if the proof is successful, otherwise (mv nil
+; nil state).
+
+  (declare (xargs :guard (member-eq ignore-ok '(t nil :warn))))
+  (prove$-macro-fn term hints instructions otf-flg with-output time-limit
+                   step-limit ignore-ok skip-proofs
+                   prover-error-output-off catch-hard-error))
 
 (set-guard-msg prove$
                (msg "Illegal value for :IGNORE-OK keyword of ~x0: ~x1.  The ~
@@ -173,7 +225,7 @@
  call.  Finally, the value of @('prover-error-output-off') must be either
  @('t'), which represents the list @('(\"Failure\" \"Step-limit\")'), or a list
  of strings; error messages arising during the proof whose type is one of these
- strings is to be suppressed, as though @(tsee set-inhibit-er-soft) had been
+ strings is to be suppressed, as though @(tsee set-inhibit-er) had been
  executed on these strings.</p>
 
  <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)').  If
