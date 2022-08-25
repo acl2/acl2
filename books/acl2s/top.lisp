@@ -17,3 +17,12 @@
 ;(include-book "projects/smtlink/examples/basictypes" :dir :system :ttags :all)
 (include-book "acl2s/sorting/sorting" :dir :system :ttags :all)
 (include-book "acl2s/match" :dir :system :ttags :all)
+
+#|
+
+; Hack for cert.pl ;
+
+(include-book "acl2s/cgen/cgen-no-thms.lisp")
+(include-book "acl2s/cgen/defthm-support-for-on-failure.lisp")
+
+|#
