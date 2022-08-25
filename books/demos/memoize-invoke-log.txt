@@ -351,8 +351,9 @@ Rules: NIL
 ACL2 !>>(F2 3)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (F2 X), which
-is (CONSP X), is violated by the arguments in the call (F2 3).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(F2 X), which is (CONSP X), is violated by the arguments in the call
+(F2 3).
 See :DOC set-guard-checking for information about suppressing this
 check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
@@ -476,8 +477,9 @@ ACL2 !>>(TRACE$ G2)
 ACL2 !>>(F2 3)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (F2 X), which
-is (CONSP X), is violated by the arguments in the call (F2 3).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(F2 X), which is (CONSP X), is violated by the arguments in the call
+(F2 3).
 See :DOC set-guard-checking for information about suppressing this
 check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
