@@ -185,19 +185,43 @@
            (fms-to-string "~X01" (acons #\0 (first checkpoints) (acons #\1 nil nil)))
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
+(defconst *rec-to-symbol-alist*
+  '(("add-by-hint" . :add-by-hint)
+    ("add-cases-hint" . :add-cases-hint)
+    ("add-disable-hint" . :add-disable-hint)
+    ("add-do-not-hint" . :add-do-not-hint)
+    ("add-enable-hint" . :add-enable-hint)
+    ("add-expand-hint" . :add-expand-hint)
+    ("add-hyp" . :add-hyp)
+    ("add-induct-hint" . :add-induct-hint)
+    ("add-library" . :add-library)
+    ("add-nonlinearp-hint" . :add-nonlinearp-hint)
+    ("add-use-hint" . :add-use-hint)
+    ("use-lemma" . :use-lemma)))
+
+(defconst *rec-types* (strip-cdrs *rec-to-symbol-alist*))
+
 ;; todo: strengthen
 (defun recommendationp (rec)
   (declare (xargs :guard t))
   (and (true-listp rec)
        (= 6 (len rec))
-       (stringp (nth 0 rec)) ; name
-       (keywordp (nth 1 rec)) ;type
-       ;; (nth 2 rec) ; object
-       (rationalp (nth 3 rec)) ; confidence-percent
-       ;; (nth 4 rec) ; book-map
-       ;; this (possibly) gets populated when we try the rec:
-       (let ((pre-commands (nth 5 rec))) ; todo: consider :unknown until we decide if any include-books are needed
-         (true-listp pre-commands))))
+       (let ((name (nth 0 rec))
+             (type (nth 1 rec))
+             ;; (object (nth 2 rec))
+             (confidence-percent (nth 3 rec))
+             ;; (book-map (nth 4 rec))
+             ;; this (possibly) gets populated when we try the rec:
+             ;; todo: consider :unknown until we decide if any include-books are needed
+             (pre-commands (nth 5 rec)))
+         (and (stringp name)
+              (member-eq type *rec-types*)
+              ;; object
+              (and (rationalp confidence-percent)
+                   (<= 0 confidence-percent)
+                   (<= confidence-percent 100))
+              ;; book-map
+              (true-listp pre-commands)))))
 
 (defun recommendation-listp (recs)
   (declare (xargs :guard t))
@@ -324,24 +348,11 @@
                   :stobjs state))
   (let ((state (widen-margins state)))
     (progn$ (show-successful-recommendations-aux recs)
+            (cw "~%")
             (let ((state (unwiden-margins state)))
               state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defconst *rec-to-symbol-alist*
-  '(("add-by-hint" . :add-by-hint)
-    ("add-cases-hint" . :add-cases-hint)
-    ("add-disable-hint" . :add-disable-hint)
-    ("add-do-not-hint" . :add-do-not-hint)
-    ("add-enable-hint" . :add-enable-hint)
-    ("add-expand-hint" . :add-expand-hint)
-    ("add-hyp" . :add-hyp)
-    ("add-induct-hint" . :add-induct-hint)
-    ("add-library" . :add-library)
-    ("add-nonlinearp-hint" . :add-nonlinearp-hint)
-    ("add-use-hint" . :add-use-hint)
-    ("use-lemma" . :use-lemma)))
 
 ;; Returns (mv erp form state).
 (defun parse-include-book (string state)
@@ -433,6 +444,11 @@
          ((when erp) (mv erp nil state)))
       (mv nil (pairlis$ syms book-lists-for-keys) state))))
 
+(defund round-to-hundredths (x)
+  (declare (xargs :guard (rationalp x)))
+  (/ (floor (* x 100) 1)
+     100))
+
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
 (defund parse-recommendation (rec rec-num state)
   (declare (xargs :guard (and (parsed-json-valuep rec)
@@ -452,7 +468,12 @@
           (cw "WARNING: Bad book map in rec: ~x0.~%" rec)
           (mv nil ; supressing this error for now
               :none state))
-         (confidence-percent (floor (* (rfix confidence) 10000) 100)) ; 2 digits after the decimal point
+         (confidence (rfix confidence)) ; for guards
+         ((when (or (< confidence 0)
+                    (< 1 confidence)))
+          (er hard? 'parse-recommendation "Bad confidence: ~x0." confidence)
+          (mv :bad-confidence nil state))
+         (confidence-percent (round-to-hundredths (* 100 confidence)))
          (res (assoc-equal type *rec-to-symbol-alist*))
          ((when (not res))
           (er hard? 'parse-recommendation "Unknown recommendation type: ~x0." type)
@@ -901,7 +922,7 @@
                                             theorem-otf-flg
                                             step-limit
                                             state))
-       (- (if provedp (cw-success-message rec) (cw "fail (:use hint of ~x0 didn't help)~%" item))))
+       (- (if provedp (cw-success-message rec) (cw "fail (:use ~x0 didn't help)~%" item))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -1258,7 +1279,7 @@
                   (progn$ (if (< 1 num-successful-recs)
                               (cw "~%PROOF FOUND (~x0 successful recommendations out of ~x1):~%" num-successful-recs num-recs)
                             (cw "~%PROOF FOUND (1 successful recommendation out of ~x0):~%" num-recs))
-                          (prog2$ (cw "~%SUCCESSFUL RECOMMENDATIONS:~%")
+                          (progn$ ;; (cw "~%SUCCESSFUL RECOMMENDATIONS:~%")
                                   (let ((state (show-successful-recommendations successful-recs state)))
                                     state)))
                 (prog2$ (cw "~%NO PROOF FOUND~%~%")
