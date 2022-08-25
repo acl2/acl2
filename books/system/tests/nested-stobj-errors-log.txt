@@ -140,9 +140,9 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (HT1-GET 'A ST1) 17))
 ACL2 !>>(HT1-GET 3 ST1)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (HT1-GET K ST1),
-which is (AND (ST1P ST1) (SYMBOLP K)), is violated by the arguments
-in the call (HT1-GET 3 ST1).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(HT1-GET K ST1), which is (AND (ST1P ST1) (SYMBOLP K)), is violated
+by the arguments in the call (HT1-GET 3 ST1).
 This error will be reported even if guard-checking is turned off, because
 a stobj argument of HT1-GET is the ``live'' ST1 and ACL2 does not support
 non-compliant live stobj manipulation.  To debug see :DOC print-gv,
@@ -194,9 +194,9 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST2) 0))
 ACL2 !>>(HT2-PUT 'A 'B ST2)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (HT2-PUT K V ST2),
-which is (AND (ST2P ST2) (SYMBOLP K) (INTEGERP V)), is violated by
-the arguments in the call (HT2-PUT 'A 'B ST2).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(HT2-PUT K V ST2), which is (AND (ST2P ST2) (SYMBOLP K) (INTEGERP V)),
+is violated by the arguments in the call (HT2-PUT 'A 'B ST2).
 This error will be reported even if guard-checking is turned off, because
 a stobj argument of HT2-PUT is the ``live'' ST2 and ACL2 does not support
 non-compliant live stobj manipulation.  To debug see :DOC print-gv,

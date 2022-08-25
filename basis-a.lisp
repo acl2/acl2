@@ -4993,11 +4993,11 @@
                                        (standard-string-p summary)))
                               (plist-worldp wrld)
                               (standard-string-alistp
-                               (table-alist 'inhibit-er-soft-table wrld)))))
+                               (table-alist 'inhibit-er-table wrld)))))
   (and summary
        (assoc-string-equal
         summary
-        (table-alist 'inhibit-er-soft-table wrld))))
+        (table-alist 'inhibit-er-table wrld))))
 
 (defun er-soft-off-p (summary state)
   (declare (xargs :stobjs state
@@ -5006,8 +5006,7 @@
                                        (standard-string-p summary)))
                               (state-p state)
                               (standard-string-alistp
-                               (table-alist 'inhibit-er-soft-table
-                                            (w state))))))
+                               (table-alist 'inhibit-er-table (w state))))))
   (er-soft-off-p1 summary (w state)))
 
 (defun error-fms-channel (hardp ctx summary str alist channel state newlines)
@@ -6330,6 +6329,10 @@
 (defmacro er-soft@par (context summary str &rest str-args)
   (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
     (list 'error1@par context summary str alist 'state)))
+
+(defmacro er-hard (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'hard-error context (list 'cons summary str) alist)))
 
 (defmacro observation1-body (commentp)
   `(io? observation ,commentp state
