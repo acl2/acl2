@@ -106,25 +106,25 @@
   :hooks (:fix)
   ///
 
-  (defret type-of-value-of-value-integer
-    (equal (type-of-value val)
-           (type-fix type))
-    :hyp (type-nonchar-integerp type)
-    :hints (("Goal" :in-theory (enable type-of-value
-                                       type-nonchar-integerp))))
+  (defrule type-of-value-of-value-integer
+    (implies (type-nonchar-integerp type)
+             (equal (type-of-value (value-integer mathint type))
+                    (type-fix type)))
+    :enable (type-of-value
+             type-nonchar-integerp))
 
-  (defret value-kind-of-value-integer
-    (equal (value-kind val)
-           (type-kind type))
-    :hyp (type-nonchar-integerp type)
-    :hints (("Goal" :in-theory (enable type-nonchar-integerp))))
+  (defrule value-kind-of-value-integer
+    (implies (type-nonchar-integerp type)
+             (equal (value-kind (value-integer mathint type))
+                    (type-kind type)))
+    :enable type-nonchar-integerp)
 
-  (defret value-integerp-of-value-integer
-    (value-integerp val)
-    :hyp (type-nonchar-integerp type)
-    :hints (("Goal" :in-theory (enable value-integerp
-                                       value-signed-integerp
-                                       value-unsigned-integerp)))))
+  (defrule value-integerp-of-value-integer
+    (implies (type-nonchar-integerp type)
+             (value-integerp (value-integer mathint type)))
+    :enable (value-integerp
+             value-signed-integerp
+             value-unsigned-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -263,9 +263,58 @@
              integer-type-min
              integer-type-max))
 
+  (defruled valuep-of-convert-integer-value-from-schar-to-slong
+    (implies (value-case val :schar)
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-schar-to-sllong
+    (implies (value-case val :schar)
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
   (defruled valuep-of-convert-integer-value-from-sshort-to-sint
     (implies (value-case val :sshort)
              (valuep (convert-integer-value val (type-sint))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sshort-to-slong
+    (implies (value-case val :sshort)
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sshort-to-sllong
+    (implies (value-case val :sshort)
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sint-to-slong
+    (implies (value-case val :sint)
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-sint-to-sllong
+    (implies (value-case val :sint)
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-slong-to-sllong
+    (implies (value-case val :slong)
+             (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max))
@@ -278,10 +327,58 @@
              integer-type-min
              integer-type-max))
 
+  (defruled valuep-of-convert-integer-value-from-uchar-to-slong
+    (implies (and (value-case val :uchar)
+                  (<= (uchar-max) (slong-max)))
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-uchar-to-sllong
+    (implies (and (value-case val :uchar)
+                  (<= (uchar-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
   (defruled valuep-of-convert-integer-value-from-ushort-to-sint
     (implies (and (value-case val :ushort)
                   (<= (ushort-max) (sint-max)))
              (valuep (convert-integer-value val (type-sint))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-ushort-to-slong
+    (implies (and (value-case val :ushort)
+                  (<= (ushort-max) (slong-max)))
+             (valuep (convert-integer-value val (type-slong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-ushort-to-sllong
+    (implies (and (value-case val :ushort)
+                  (<= (ushort-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-uint-to-sllong
+    (implies (and (value-case val :uint)
+                  (<= (uint-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-uint-to-slong
+    (implies (and (value-case val :uint)
+                  (<= (uint-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max)))
@@ -290,21 +387,11 @@
 
 (define promote-value ((val valuep))
   :guard (value-arithmeticp val)
-  :returns (promoted-val
-            valuep
-            :hints
-            (("Goal"
-              :cases ((equal (promote-type (type-of-value val))
-                             (type-of-value val)))
-              :in-theory (e/d
-                          (promote-type
-                           convert-integer-value-to-type-of-value
-                           valuep-of-convert-integer-value-to-unsigned
-                           valuep-of-convert-integer-value-from-schar-to-sint
-                           valuep-of-convert-integer-value-from-sshort-to-sint
-                           valuep-of-convert-integer-value-from-uchar-to-sint
-                           valuep-of-convert-integer-value-from-ushort-to-sint)
-                          ((:e type-sint))))))
+  :returns (promoted-val valuep
+                         :hints
+                         (("Goal"
+                           :in-theory
+                           (enable promote-value-not-error-lemma))))
   :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
   :long
   (xdoc::topstring
@@ -318,7 +405,13 @@
      obtaining the type of the new value.
      If the starting value is an integer one,
      in which case the promoted type is also an integer one,
-     we convert the value to the promoted type.")
+     we convert the value to the promoted type.
+     The other case, i.e. that the starting value is not an integer one,
+     cannot happens under the guard,
+     given that in our current model
+     all the arithmetic values are integer values.
+     But if/when we extend our model with more arithmetic values,
+     then this code does not have to change.")
    (xdoc::p
     "This function never returns error:
      promotion always works.
@@ -329,65 +422,55 @@
     (if (value-integerp val)
         (convert-integer-value val type)
       (value-fix val)))
-  :hooks (:fix)
-  ///
 
-  (defrule value-integerp-of-promote-value
-    (equal (value-integerp (promote-value val))
-           (value-integerp (value-fix val)))
-    :hints (("Goal"
-             :in-theory (e/d
-                         (promote-type
-                          convert-integer-value-to-type-of-value
-                          valuep-of-convert-integer-value-to-unsigned
-                          valuep-of-convert-integer-value-from-schar-to-sint
-                          valuep-of-convert-integer-value-from-sshort-to-sint
-                          valuep-of-convert-integer-value-from-uchar-to-sint
-                          valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep
-                          type-nonchar-integerp)
-                         ((:e type-sint))))))
+  :prepwork
+  ((defruled promote-value-not-error-lemma
+     (implies (value-integerp val)
+              (valuep
+               (convert-integer-value val
+                                      (promote-type (type-of-value val)))))
+     :enable (promote-type
+              convert-integer-value-to-type-of-value
+              valuep-of-convert-integer-value-to-unsigned
+              valuep-of-convert-integer-value-from-schar-to-sint
+              valuep-of-convert-integer-value-from-sshort-to-sint
+              valuep-of-convert-integer-value-from-uchar-to-sint
+              valuep-of-convert-integer-value-from-ushort-to-sint)
+     :disable ((:e type-sint))))
+
+  :hooks (:fix)
+
+  ///
 
   (defruled type-of-value-of-promote-value
     (equal (type-of-value (promote-value val))
            (promote-type (type-of-value val)))
-    :hints (("Goal"
-             :in-theory (e/d
-                         (promote-type
-                          convert-integer-value-to-type-of-value
-                          valuep-of-convert-integer-value-to-unsigned
-                          valuep-of-convert-integer-value-from-schar-to-sint
-                          valuep-of-convert-integer-value-from-sshort-to-sint
-                          valuep-of-convert-integer-value-from-uchar-to-sint
-                          valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep
-                          value-integerp
-                          value-signed-integerp
-                          value-unsigned-integerp
-                          type-nonchar-integerp)
-                         ((:e type-sint))))))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep
+             promote-type-when-not-type-integerp))
 
-  (defret value-promoted-arithmeticp-of-promote-value
-    (value-promoted-arithmeticp promoted-val)
-    :hyp (value-arithmeticp val)
-    :hints (("Goal"
-             :in-theory (e/d
-                         (promote-type
-                          convert-integer-value-to-type-of-value
-                          valuep-of-convert-integer-value-to-unsigned
-                          valuep-of-convert-integer-value-from-schar-to-sint
-                          valuep-of-convert-integer-value-from-sshort-to-sint
-                          valuep-of-convert-integer-value-from-uchar-to-sint
-                          valuep-of-convert-integer-value-from-ushort-to-sint
-                          not-errorp-when-valuep
-                          value-promoted-arithmeticp
-                          value-arithmeticp
-                          value-realp
-                          value-integerp
-                          value-signed-integerp
-                          value-unsigned-integerp
-                          type-nonchar-integerp)
-                         ((:e type-sint)))))))
+  (defrule value-arithmeticp-of-promote-value
+    (equal (value-arithmeticp (promote-value val))
+           (value-arithmeticp val))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep
+             value-arithmeticp
+             value-realp))
+
+  (defrule value-promoted-arithmeticp-of-promote-value
+    (equal (value-promoted-arithmeticp (promote-value val))
+           (value-arithmeticp val))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep
+             value-promoted-arithmeticp
+             value-arithmeticp
+             value-realp))
+
+  (defrule value-integerp-of-promote-value
+    (equal (value-integerp (promote-value val))
+           (value-integerp val))
+    :enable (promote-value-not-error-lemma
+             not-errorp-when-valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -67,9 +67,9 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (SHOW-LD-HISTORY-ENTRY 0 STATE)
 ACL2 !>>(CAR 3)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (CAR X),
-which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
-in the call (CAR 3).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(CAR X), which is (OR (CONSP X) (EQUAL X NIL)), is violated by the
+arguments in the call (CAR 3).
 See :DOC set-guard-checking for information about suppressing this
 check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
