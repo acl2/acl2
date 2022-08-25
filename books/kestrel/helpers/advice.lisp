@@ -480,7 +480,7 @@
          (book-map (lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (cw "WARNING: When parsing book map: ~s0.~%" erp)
+          (cw "WARNING: When parsing book map: ~x0.~%" erp)
           (mv nil ; supressing this error for now
               :none state))
          (confidence (rfix confidence)) ; for guards
@@ -916,6 +916,9 @@
            (ignore theorem-name))
   (b* (((when (eq item 'other))
         (cw "skip (skipping catch-all: ~x0)~%" item)
+        (mv nil nil state))
+       ((when (not (symbolp item)))
+        (cw "skip (unexpected object for :add-use-hint: ~x0)~%" item)
         (mv nil nil state))
        ((when (not (or (getpropc item 'unnormalized-body nil (w state))
                        (getpropc item 'theorem nil (w state)))))
