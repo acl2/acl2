@@ -10,6 +10,36 @@ Adapted from prove-cgen.lisp and top.lisp in acl2s/cgen
 (program)
 (set-verify-guards-eagerness 1)
 
+#|
+
+ itest?-fn returns an error-triple.
+
+ If there is an error, then the returned value is nil.
+
+ If there is no error, then the returned value is a list
+ (cts-found? itest?-res), where
+
+  1. cts-found? is t if counterexamples were found and nil otherwise.
+
+  2. if cts-found? is nil, then itest?-res is (nil) if itest?-fn
+  proved the conjecture or itest?-res is (:?) if itest?-fn could
+  neither prove the conjecture nor find counterexamples.
+
+  3. if cts-found? is t, then itest?-res is of the form
+  (:falsifiable ce1 ... cen), where cei is an assignment of values to
+  the variables appearing in the conjecture, which falsifies the
+  conjecture.
+
+ Here are some examples
+
+ (itest?-f '(integerp x) state)
+
+ (itest?-f '(consp (cons x y)) state)
+
+ (itest?-f '(/= 0 x) state)
+
+|#
+
 (defun itest?-fn (form hints override-defaults state)
   (declare (xargs :mode :program
                   :stobjs (state)))
