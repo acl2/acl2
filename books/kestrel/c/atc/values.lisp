@@ -638,7 +638,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-kind-theorems
+(defsection value-kind-under-value-predicates
   :short "Theorems relating @(tsee value-kind) to
           recognizers of integer values."
 
