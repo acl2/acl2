@@ -215,18 +215,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-unary ((op unopp) (arg value-resultp))
+(define exec-unary ((op unopp) (arg valuep))
   :returns (result value-resultp)
   :short "Execute a unary operation."
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg))
-    (unop-case op
-               :address (error :todo)
-               :indir (error :todo)
-               :plus (plus-value arg)
-               :minus (minus-value arg)
-               :bitnot (bitnot-value arg)
-               :lognot (lognot-value arg)))
+  (unop-case op
+             :address (error :todo)
+             :indir (error :todo)
+             :plus (plus-value arg)
+             :minus (minus-value arg)
+             :bitnot (bitnot-value arg)
+             :lognot (lognot-value arg))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1091,7 +1089,9 @@
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
      :predec (error (list :non-pure-expr e))
-     :unary (exec-unary e.op (exec-expr-pure e.arg compst))
+     :unary (b* ((arg (exec-expr-pure e.arg compst))
+                 ((when (errorp arg)) arg))
+              (exec-unary e.op arg))
      :cast (exec-cast e.type (exec-expr-pure e.arg compst))
      :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
                (case (binop-kind e.op)

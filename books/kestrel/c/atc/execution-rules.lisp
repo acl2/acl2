@@ -2533,10 +2533,11 @@
 
   (defruled exec-expr-pure-when-unary
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :unary))
+                  (equal (expr-kind e) :unary)
+                  (equal val (exec-expr-pure (expr-unary->arg e) compst))
+                  (valuep val))
              (equal (exec-expr-pure e compst)
-                    (exec-unary (expr-unary->op e)
-                                (exec-expr-pure (expr-unary->arg e) compst))))
+                    (exec-unary (expr-unary->op e) val)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-cast
