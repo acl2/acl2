@@ -166,7 +166,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This rule provides relates
+    "This rule relates
      the definition of value promotion in the deep embedding
      and the shallow embedding recognizers of integer values.
      This rule is used in certain proofs that relate aspects of
@@ -247,116 +247,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define uaconvert-values ((val1 valuep) (val2 valuep))
-  :guard (and (value-arithmeticp val1)
-              (value-arithmeticp val2))
-  :returns (mv (new-val1 valuep)
-               (new-val2 valuep))
-  :short "Apply the usual arithmetic conversions to two arithmetic values
-          [C:6.3.1.8]."
+(defruled values-of-uaconvert-values
+  :short "Theorem about the possible values
+          obtained from the usual arithmetic conversions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the dynamic counterpart of @(tsee uaconvert-types).
-     See the documentation of that function for details.
-     Here we actually convert the values;
-     we do not merely compute the common type."))
-  (b* ((val1 (promote-value val1))
-       (val2 (promote-value val2)))
-    (cond ((sllongp val1)
-           (cond ((sllongp val2) (mv val1 val2))
-                 ((slongp val2) (mv val1 (sllong-from-slong val2)))
-                 ((sintp val2) (mv val1 (sllong-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-sllong val1) val2))
-                 ((ulongp val2) (if (>= (sllong-max) (ulong-max))
-                                    (mv val1 (sllong-from-ulong val2))
-                                  (mv (ullong-from-sllong val1)
-                                      (ullong-from-ulong val2))))
-                 ((uintp val2) (if (>= (sllong-max) (uint-max))
-                                   (mv val1 (sllong-from-uint val2))
-                                 (mv (ullong-from-sllong val1)
-                                     (ullong-from-uint val2))))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((slongp val1)
-           (cond ((sllongp val2) (mv (sllong-from-slong val1) val2))
-                 ((slongp val2) (mv val1 val2))
-                 ((sintp val2) (mv val1 (slong-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-slong val1) val2))
-                 ((ulongp val2) (mv (ulong-from-slong val1) val2))
-                 ((uintp val2) (if (>= (slong-max) (uint-max))
-                                   (mv val1 (slong-from-uint val2))
-                                 (mv (ulong-from-slong val1)
-                                     (ulong-from-uint val2))))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((sintp val1)
-           (cond ((sllongp val2) (mv (sllong-from-sint val1) val2))
-                 ((slongp val2) (mv (slong-from-sint val1) val2))
-                 ((sintp val2) (mv val1 val2))
-                 ((ullongp val2) (mv (ullong-from-sint val1) val2))
-                 ((ulongp val2) (mv (ulong-from-sint val1) val2))
-                 ((uintp val2) (mv (uint-from-sint val1) val2))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((ullongp val1)
-           (cond ((sllongp val2) (mv val1 (ullong-from-sllong val2)))
-                 ((slongp val2) (mv val1 (ullong-from-slong val2)))
-                 ((sintp val2) (mv val1 (ullong-from-sint val2)))
-                 ((ullongp val2) (mv val1 val2))
-                 ((ulongp val2) (mv val1 (ullong-from-ulong val2)))
-                 ((uintp val2) (mv val1 (ullong-from-uint val2)))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((ulongp val1)
-           (cond ((sllongp val2) (if (>= (sllong-max) (ulong-max))
-                                     (mv (sllong-from-ulong val1) val2)
-                                   (mv (ullong-from-ulong val1)
-                                       (ullong-from-sllong val2))))
-                 ((slongp val2) (mv val1 (ulong-from-slong val2)))
-                 ((sintp val2) (mv val1 (ulong-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-ulong val1) val2))
-                 ((ulongp val2) (mv val1 val2))
-                 ((uintp val2) (mv val1 (ulong-from-uint val2)))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((uintp val1)
-           (cond ((sllongp val2) (if (>= (sllong-max) (uint-max))
-                                     (mv (sllong-from-uint val1) val2)
-                                   (mv (ullong-from-uint val1)
-                                       (ullong-from-sllong val2))))
-                 ((slongp val2) (if (>= (slong-max) (uint-max))
-                                    (mv (slong-from-uint val1) val2)
-                                  (mv (ulong-from-uint val1)
-                                      (ulong-from-slong val2))))
-                 ((sintp val2) (mv val1 (uint-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-uint val1) val2))
-                 ((ulongp val2) (mv (ulong-from-uint val1) val2))
-                 ((uintp val2) (mv val1 val2))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          (t (prog2$ (impossible) (mv val1 val2)))))
-  :guard-hints (("Goal"
-                 :do-not '(preprocess) ; just for speed
-                 :in-theory (enable slong-from-uint-okp
-                                    sllong-from-uint-okp
-                                    sllong-from-ulong-okp
-                                    sint-integerp-alt-def
-                                    slong-integerp-alt-def
-                                    sllong-integerp-alt-def
-                                    uint-integerp-alt-def
-                                    ulong-integerp-alt-def
-                                    ullong-integerp-alt-def)
-                 :use ((:instance values-of-promote-value (val val1))
-                       (:instance values-of-promote-value (val val2)))))
-  ///
-
-  (defrule values-of-uaconvert-values
-    (implies (and (value-arithmeticp val1)
-                  (value-arithmeticp val2))
-             (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
-               (or (and (uintp cval1) (uintp cval2))
-                   (and (sintp cval1) (sintp cval2))
-                   (and (ulongp cval1) (ulongp cval2))
-                   (and (slongp cval1) (slongp cval2))
-                   (and (ullongp cval1) (ullongp cval2))
-                   (and (sllongp cval1) (sllongp cval2)))))
-    :use ((:instance values-of-promote-value (val val1))
-          (:instance values-of-promote-value (val val2)))))
+    "This rule relates
+     the definition of usual arithmetic conversions in the deep embedding
+     and the shallow embedding recognizers of integer values.
+     This rule is used in certain proofs that relate aspects of
+     the deep embedding and the shallow embedding,
+     but we should no longer need it at some point,
+     after we reformulate all of the C dynamic semantics
+     solely in terms of the deep embedding,
+     without reference to the shallow embedding."))
+  (implies (and (value-arithmeticp val1)
+                (value-arithmeticp val2))
+           (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
+             (or (and (uintp cval1) (uintp cval2))
+                 (and (sintp cval1) (sintp cval2))
+                 (and (ulongp cval1) (ulongp cval2))
+                 (and (slongp cval1) (slongp cval2))
+                 (and (ullongp cval1) (ullongp cval2))
+                 (and (sllongp cval1) (sllongp cval2)))))
+  :use (:instance lemma (val1 (value-fix val1)) (val2 (value-fix val2)))
+  :prep-lemmas
+  ((defruled lemma
+     (implies (and (valuep val1)
+                   (valuep val2)
+                   (value-arithmeticp val1)
+                   (value-arithmeticp val2))
+              (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
+                (or (and (uintp cval1) (uintp cval2))
+                    (and (sintp cval1) (sintp cval2))
+                    (and (ulongp cval1) (ulongp cval2))
+                    (and (slongp cval1) (slongp cval2))
+                    (and (ullongp cval1) (ullongp cval2))
+                    (and (sllongp cval1) (sllongp cval2)))))
+     :disable (value-promoted-arithmeticp-of-uaconvert-values
+               type-of-value-of-uaconvert-values)
+     :use (value-promoted-arithmeticp-of-uaconvert-values
+           type-of-value-of-uaconvert-values)
+     :enable (value-promoted-arithmeticp-alt-def
+              type-of-value-when-uintp
+              type-of-value-when-sintp
+              type-of-value-when-ulongp
+              type-of-value-when-slongp
+              type-of-value-when-ullongp
+              type-of-value-when-sllongp
+              uintp-to-type-of-value
+              sintp-to-type-of-value
+              ulongp-to-type-of-value
+              slongp-to-type-of-value
+              ullongp-to-type-of-value
+              sllongp-to-type-of-value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

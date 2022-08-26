@@ -1586,7 +1586,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-uaconvert-rules-generation
+(defsection atc-uaconvert-values-rules-generation
   :short "Code to generate the rules for @(tsee uaconvert-values)."
 
   (define atc-uaconvert-values-rules-gen ((ltype typep) (rtype typep))
@@ -1614,8 +1614,19 @@
                             (equal (uaconvert-values x y)
                                    (mv ,lterm ,rterm)))
                    :enable (uaconvert-values
-                            ,@*atc-promote-value-rules*
-                            ,@*atc-integer-conv-rules*))))
+                            uaconvert-types
+                            promote-type
+                            convert-integer-value-to-type-of-value
+                            type-of-value-when-sintp
+                            type-of-value-when-uintp
+                            type-of-value-when-slongp
+                            type-of-value-when-ulongp
+                            type-of-value-when-sllongp
+                            type-of-value-when-ullongp
+                            value-integerp
+                            value-unsigned-integerp-alt-def
+                            value-signed-integerp-alt-def
+                            ,@*atc-convert-integer-value-rules*))))
       (mv name event))
     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
