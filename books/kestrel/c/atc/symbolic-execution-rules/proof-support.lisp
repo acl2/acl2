@@ -14,6 +14,7 @@
 (include-book "../symbolic-computation-states")
 (include-book "../shallow-embedding")
 (include-book "execution-rules")
+(include-book "exec-binary-strict-pure")
 
 (include-book "tools/rulesets" :dir :system)
 
