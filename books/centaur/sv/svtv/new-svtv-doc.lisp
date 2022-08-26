@@ -322,6 +322,15 @@ by some legacy utilities such as @(see svtv-debug) and @(see svtv-chase), but
 these are deprecated in favor of @(see svtv-debug$) and @(see
 svtv-chase$).</li>
 
+<li>@(':phase-config') is the config object for the phase FSM
+computation. Currently it is mainly an advanced feature useful for tweaking
+which signals are conditionally overridden in the phase and cycle FSMs.  By
+default all internally driven signals are conditionally overridden; this makes
+it so that it is fast to recompute the pipeline when changing the phases, even
+if overrides are modified.  But there may be some cases where it is better to
+allow either only a few specific signals to be overridden, or else disallow a
+few particular signals from being overridden.</li>
+
 </ul>
 
 <h3>@(':phases') argument format</h3>
