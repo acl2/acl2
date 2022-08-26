@@ -15,7 +15,6 @@
 (include-book "values")
 
 (include-book "../language/abstract-syntax-operations")
-(include-book "../language/computation-states")
 (include-book "../language/function-environments")
 (include-book "../language/dynamic-semantics")
 
@@ -32,36 +31,6 @@
      See @(see dynamic-semantics) for documentation on that and this code."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-ident ((id identp) (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute a variable."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We read the variable's value (if any) from the computation state.
-     If the value is an array, we return a pointer value for the array.
-     As explained in @(tsee exec-arrsub),
-     our treatment of pointers and arrays differs slightly from full C,
-     but leads to equivalent results in our C subset.
-     This is essentially like an array-to-pointer conversion,
-     but with the pointer pointing to the whole array
-     instead of the first element,
-     and with the pointer type being the array element type.
-     The object designator is just the variable:
-     currently @(tsee exec-block-item) prohibits local arrays,
-     so a variable that contains an array can only be a global one.
-     All of this will be properly generalized eventually,
-     to bring things more in line with full C."))
-  (b* ((val (read-var id compst))
-       ((when (errorp val)) val))
-    (if (value-case val :array)
-        (make-value-pointer :designator? (objdesign-variable id)
-                            :reftype (value-array->elemtype val))
-      val))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
