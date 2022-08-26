@@ -367,18 +367,18 @@
              integer-type-min
              integer-type-max))
 
-  (defruled valuep-of-convert-integer-value-from-uint-to-sllong
+  (defruled valuep-of-convert-integer-value-from-uint-to-slong
     (implies (and (value-case val :uint)
-                  (<= (uint-max) (sllong-max)))
-             (valuep (convert-integer-value val (type-sllong))))
+                  (<= (uint-max) (slong-max)))
+             (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max))
 
-  (defruled valuep-of-convert-integer-value-from-uint-to-slong
+  (defruled valuep-of-convert-integer-value-from-uint-to-sllong
     (implies (and (value-case val :uint)
                   (<= (uint-max) (sllong-max)))
-             (valuep (convert-integer-value val (type-slong))))
+             (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max)))
