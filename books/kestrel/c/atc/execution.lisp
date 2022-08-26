@@ -195,39 +195,23 @@
                     (slongp pval)
                     (ullongp pval)
                     (sllongp pval))))
-     :enable (promote-value
-              promote-type
-              convert-integer-value
-              value-integer
-              value-integer->get
-              integer-type-rangep
-              integer-type-min
-              integer-type-max
-              value-schar->get-to-schar->get
-              value-uchar->get-to-uchar->get
-              value-sshort->get-to-sshort->get
-              value-ushort->get-to-ushort->get
-              value-uint->get-to-uint->get
-              value-sint->get-to-sint->get
-              value-sint-to-sint
-              value-uint-to-uint
-              sint-from-uchar
-              sint-from-schar
-              sint-from-ushort
-              sint-from-sshort
-              scharp-when-valuep-and-kind-schar
-              ucharp-when-valuep-and-kind-uchar
-              sshortp-when-valuep-and-kind-sshort
-              ushortp-when-valuep-and-kind-ushort
-              sintp-when-valuep-and-kind-sint
-              value-arithmeticp
-              value-realp
-              value-integerp
-              value-unsigned-integerp-alt-def
-              value-signed-integerp-alt-def)
-     :disable ((:e integer-type-max)
-               (:e integer-type-min))
-     :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
+     :disable (value-promoted-arithmeticp-of-promote-value
+               type-of-value-of-promote-value)
+     :use (value-promoted-arithmeticp-of-promote-value
+           type-of-value-of-promote-value)
+     :enable (value-promoted-arithmeticp-alt-def
+              type-of-value-when-uintp
+              type-of-value-when-sintp
+              type-of-value-when-ulongp
+              type-of-value-when-slongp
+              type-of-value-when-ullongp
+              type-of-value-when-sllongp
+              uintp-to-type-of-value
+              sintp-to-type-of-value
+              ulongp-to-type-of-value
+              slongp-to-type-of-value
+              ullongp-to-type-of-value
+              sllongp-to-type-of-value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
