@@ -1220,7 +1220,7 @@
     export these theorems from the @(tsee encapsulate).")
 
   (xdoc::p
-   "See @(tsee atc-proof-support) and @(tsee atc-implementation) for details
+   "See @(tsee atc-implementation) for details
     on the generated theorems and their proofs.")
 
   (atc-tutorial-section "Code Generation after the Events")
