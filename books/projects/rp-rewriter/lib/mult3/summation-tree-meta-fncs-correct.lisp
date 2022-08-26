@@ -6120,7 +6120,8 @@
 
   :hints (("goal"
            :in-theory (e/d
-                       (bit-listp
+                       (c-fix-arg-aux-correct-singled-out
+                        bit-listp
                         has-bitp-rp-force-hyp-rewrite
                         regular-rp-evl-of_s_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_s_when_mult-formula-checks

@@ -4160,19 +4160,25 @@
                           (equal rest-s-lst nil)))
              (mv nil nil nil nil))
             (new-pp-lst (pp-sum-merge-aux rest-pp-lst new-pp-lst))
+            ((mv coughed-pp-lst new-pp-lst) (c-fix-arg-aux new-pp-lst t))
+            ((mv coughed-c-lst rest-c-lst) (c-fix-arg-aux rest-c-lst t))
             ((mv res-s-lst res-pp-lst res-c-lst)
              (create-c-instance nil
                                 new-pp-lst
-                                rest-c-lst)))
+                                rest-c-lst))
+            (res-pp-lst (pp-sum-merge-aux coughed-pp-lst res-pp-lst))
+            (res-c-lst (s-sum-merge-aux res-c-lst coughed-c-lst)))
          (mv res-s-lst res-pp-lst res-c-lst t)))
       (('c & ''nil ('list . pp-lst) ''nil)
        (b* (((mv new-pp-lst valid)
              (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst))
             ((unless valid) (mv nil nil nil nil))
+            ((mv coughed-pp-lst new-pp-lst) (c-fix-arg-aux new-pp-lst t))
             ((mv res-s-lst res-pp-lst res-c-lst)
              (create-c-instance nil
                                 new-pp-lst
-                                nil)))
+                                nil))
+            (res-pp-lst (pp-sum-merge-aux coughed-pp-lst res-pp-lst)))
          (mv res-s-lst res-pp-lst res-c-lst t)))
       (& (mv nil nil nil nil))))
   ///
