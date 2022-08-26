@@ -56,39 +56,42 @@
     ullongp
     sllongp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule valuep-possibilities
+  :short "Possible integer and other predicates for values."
+  (implies (valuep x)
+           (or (ucharp x)
+               (scharp x)
+               (ushortp x)
+               (sshortp x)
+               (uintp x)
+               (sintp x)
+               (ulongp x)
+               (slongp x)
+               (ullongp x)
+               (sllongp x)
+               (value-case x :pointer)
+               (value-case x :array)
+               (value-case x :struct)))
+  :enable (valuep
+           ucharp
+           scharp
+           ushortp
+           sshortp
+           uintp
+           sintp
+           ulongp
+           slongp
+           ullongp
+           sllongp
+           value-kind)
+  :rule-classes :forward-chaining)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-more-theorems
-  :short "Additional theorems about values."
-
-  (defrule valuep-possibilities
-    (implies (valuep x)
-             (or (ucharp x)
-                 (scharp x)
-                 (ushortp x)
-                 (sshortp x)
-                 (uintp x)
-                 (sintp x)
-                 (ulongp x)
-                 (slongp x)
-                 (ullongp x)
-                 (sllongp x)
-                 (value-case x :pointer)
-                 (value-case x :array)
-                 (value-case x :struct)))
-    :enable (valuep
-             ucharp
-             scharp
-             ushortp
-             sshortp
-             uintp
-             sintp
-             ulongp
-             slongp
-             ullongp
-             sllongp
-             value-kind)
-    :rule-classes :forward-chaining)
+(defsection valuep-when-valuepred
+  :short "Theorem saying that the value recognizers imply @(tsee valuep)."
 
   (defrule valuep-when-ucharp
     (implies (ucharp x)
@@ -142,8 +145,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-list-more-theorems
-  :short "Additional theorems about lists of values."
+(defsection value-listp-when-valuepred-listp
+  :short "Theorems saying that
+          the value list recognizers imply @(tsee value-listp)."
 
   (defrule value-listp-when-uchar-listp
     (implies (uchar-listp x)
@@ -310,7 +314,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-predicates-to-type-of-value-equalities
+(defsection valuepred-to-type-of-value-equalities
   :short "Rules that rewrite predicates for values
           to equalities of the types of the values."
 
@@ -416,7 +420,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection type-of-value-under-value-predicates
+(defsection type-of-value-when-valuepred
   :short "Rules that rewrite @(tsee type-of-value) to specific types
           under hypotheses on different types of values."
 
@@ -638,9 +642,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-kind-under-value-predicates
-  :short "Theorems relating @(tsee value-kind) to
-          recognizers of integer values."
+(defsection value-kind-when-valuepred
+  :short "Theorem providing the kind of value for different types."
 
   (defruled value-kind-when-scharp
     (implies (scharp x)
@@ -700,7 +703,13 @@
     (implies (ullongp x)
              (equal (value-kind x)
                     :ullong))
-    :enable (ullongp value-kind))
+    :enable (ullongp value-kind)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection valuepred-when-value-kind
+  :short "Theorems saying that specific @(tsee value-kind)s
+          imply corresponding value predicates."
 
   (defruled scharp-when-valuep-and-kind-schar
     (implies (and (valuep val)
