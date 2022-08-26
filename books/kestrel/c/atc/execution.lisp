@@ -215,20 +215,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-unary ((op unopp) (arg valuep))
-  :returns (result value-resultp)
-  :short "Execute a unary operation."
-  (unop-case op
-             :address (error :todo)
-             :indir (error :todo)
-             :plus (plus-value arg)
-             :minus (minus-value arg)
-             :bitnot (bitnot-value arg)
-             :lognot (lognot-value arg))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-mul ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
