@@ -113,7 +113,7 @@
                       (t error))))))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-const ((c constp))
   :returns (result value-resultp)
@@ -228,22 +228,6 @@
      :disable ((:e integer-type-max)
                (:e integer-type-min))
      :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-unary ((op unopp) (arg value-resultp))
-  :returns (result value-resultp)
-  :short "Execute a unary operation."
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg))
-    (unop-case op
-               :address (error :todo)
-               :indir (error :todo)
-               :plus (plus-value arg)
-               :minus (minus-value arg)
-               :bitnot (bitnot-value arg)
-               :lognot (lognot-value arg)))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,6 +354,22 @@
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-unsigned-integerp-alt-def
                                            value-signed-integerp-alt-def)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-unary ((op unopp) (arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a unary operation."
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg))
+    (unop-case op
+               :address (error :todo)
+               :indir (error :todo)
+               :plus (plus-value arg)
+               :minus (minus-value arg)
+               :bitnot (bitnot-value arg)
+               :lognot (lognot-value arg)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
