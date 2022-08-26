@@ -1512,35 +1512,11 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
-  (local (in-theory (e/d (promote-value
-                          promote-type
-                          convert-integer-value
-                          value-integer
-                          value-integer->get
-                          integer-type-rangep
-                          integer-type-min
-                          integer-type-max
-                          value-schar->get-to-schar->get
-                          value-uchar->get-to-uchar->get
-                          value-sshort->get-to-sshort->get
-                          value-ushort->get-to-ushort->get
-                          value-uint->get-to-uint->get
-                          value-sint->get-to-sint->get
-                          value-sint-to-sint
-                          value-integerp
-                          value-signed-integerp
-                          value-unsigned-integerp
-                          sint-from-uchar
-                          sint-from-schar
-                          sint-from-ushort
-                          sint-from-sshort
-                          scharp-when-valuep-and-kind-schar
-                          ucharp-when-valuep-and-kind-uchar
-                          sshortp-when-valuep-and-kind-sshort
-                          ushortp-when-valuep-and-kind-ushort
-                          sintp-when-valuep-and-kind-sint)
-                         ((:e integer-type-max)
-                          (:e integer-type-min)))))
+  (make-event
+   `(local (in-theory (enable promote-value
+                              promote-type
+                              convert-integer-value-to-type-of-value
+                              ,@*atc-convert-integer-value-rules*))))
 
   (defruled promote-value-when-scharp
     (implies (scharp x)
