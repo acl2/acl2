@@ -217,17 +217,17 @@
 ; We'll now prove, separately, our two main lemmas, about the decomposed
 ; circuit.
 
-(def-saved-event svtv-override-fact-defaults
-  (progn (local (table sv::svtv-override-fact-defaults :svtv 'boothpipe-run))
-         (local (table sv::svtv-override-fact-defaults :unsigned-byte-hyps t))
-         (local (table sv::svtv-override-fact-defaults :input-var-bindings '((en 1))))))
+(def-saved-event svtv-generalized-thm-defaults
+  (progn (local (table sv::svtv-generalized-thm-defaults :svtv 'boothpipe-run))
+         (local (table sv::svtv-generalized-thm-defaults :unsigned-byte-hyps t))
+         (local (table sv::svtv-generalized-thm-defaults :input-var-bindings '((en 1))))))
 
 
 
 (def-saved-event boothpipe-pp-correct
    ;; Main Lemma 1.  Partial Products Part is Correct.
    ;; This is a very easy proof for Glucose, taking about 1.5 seconds.
- (def-svtv-override-fact boothpipe-pp-correct
+ (def-svtv-generalized-thm boothpipe-pp-correct
    :input-vars (a b)
    :output-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
    :concl (and (equal pp0 (boothpipe-pp-spec 16 0 a b))
@@ -268,7 +268,7 @@
 ;; Main Lemma 2.  Addition Part is Correct.
 
 (def-saved-event boothpipe-sum-correct
- (def-svtv-override-fact boothpipe-sum-correct
+ (def-svtv-generalized-thm boothpipe-sum-correct
    :override-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
    :output-vars (o)
    :concl (b* ((- (cw "o: ~s0~%" (str::hexify o)))
@@ -385,14 +385,14 @@
 ;; (local (in-theory (disable boothpipe-decomp-is-boothpipe-via-GL)))
 
 ; All that remains is to chain the above facts together.  Fortunately, the
-; theorem resulting from each def-svtv-override-fact form is one that can
+; theorem resulting from each def-svtv-generalized-thm form is one that can
 ; easily be composed with other such theorems.  Boothpipe-pp-correct shows that
 ; the partial products are computed correctly; boothpipe-sum-correct shows that
 ; the partial products are correctly summed, and booth-sum-of-products-correct
 ; shows that the composition of the partial product computation and summing
 ; produces the signed 16-bit multiply.  The composition of these is just an
 ; ordinary ACL2 theorem (by rewriting), but we can write it succinctly as
-; another def-svtv-override-fact form (using the :no-lemmas option to skip the
+; another def-svtv-generalized-thm form (using the :no-lemmas option to skip the
 ; FGL step.)
 
 (in-theory (disable loghead logext unsigned-byte-p))
@@ -400,7 +400,7 @@
 ;; This is the most general form of the theorem. Note the ugly hyp #4 -- really
 ;; this just says that the PP override test variables should be unbound, or set to 0 or X.
 (def-saved-event boothpipe-correct-gen
-  (def-svtv-override-fact boothpipe-correct-gen
+  (def-svtv-generalized-thm boothpipe-correct-gen
     :input-vars (a b)
     :output-vars (o)
     :concl (equal o (loghead 32 (* (logext 16 a)
@@ -530,14 +530,14 @@ instead sampled as outputs.  The steps for this are as follows.</p>
 @(`(:code ($ boothpipe-data))`)
 @(`(:code ($ boothpipe-run-override-thms))`)
 
-<p>Now we can use the @(see def-svtv-override-fact) utility to prove our two
+<p>Now we can use the @(see def-svtv-generalized-thm) utility to prove our two
 steps. First, we set some defaults that will be used for all
-@('def-svtv-override-fact') invocations in this book: these forms say which
+@('def-svtv-generalized-thm') invocations in this book: these forms say which
 SVTV we're using, to assume by default that all input and override variables
 used are appropriate-sized unsigned bytes, and to assume the enable signal is
 1.</p>
 
-@(`(:code ($ svtv-override-fact-defaults))`)
+@(`(:code ($ svtv-generalized-thm-defaults))`)
 
 <p>We can start by proving the partial product computation correct:</p>
 @(`(:code ($ boothpipe-pp-correct))`)
@@ -596,7 +596,7 @@ to be generalized into this form.</p>
 partial products:</p>
 @(`(:code ($ boothpipe-sum-correct-fgl))`)
 
-<p>The final theorem proved by the @('def-svtv-override-fact') form, however,
+<p>The final theorem proved by the @('def-svtv-generalized-thm') form, however,
 eliminates these overrides.  It again has the @('svex-env-keys-no-1s-p')
 hypothesis, and instead extracts the partial products from the outputs of the
 @('svtv-run'). That is, instead of a theorem \"If you run the SVTV with PPs
@@ -618,7 +618,7 @@ it's purely an ACL2 arithmetic theorem:</p>
 @(`(:code ($ booth-sum-of-products-correct))`)
 
 <p>This can now be used to prove our top-level theorem.  We can do this with
-another @('def-svtv-override-fact') form, this time with the @(':no-lemmas t')
+another @('def-svtv-generalized-thm') form, this time with the @(':no-lemmas t')
 argument, which directs it to prove the generalized theorem directly with ACL2
 rather than first proving an FGL lemma:</p>
 
