@@ -402,6 +402,26 @@
               ulongp
               ullongp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled value-promoted-arithmeticp-alt-def
+  :short "Alternative definition of @(tsee value-promoted-arithmeticp),
+          in terms of the shallow embedding's integer value recognizers."
+  (implies (valuep val)
+           (equal (value-promoted-arithmeticp val)
+                  (or (uintp val)
+                      (sintp val)
+                      (ulongp val)
+                      (slongp val)
+                      (ullongp val)
+                      (sllongp val))))
+  :enable (value-promoted-arithmeticp
+           value-arithmeticp
+           value-realp
+           value-integerp
+           value-unsigned-integerp-alt-def
+           value-signed-integerp-alt-def))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection value-tau-rules
