@@ -15,11 +15,10 @@
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "dynamic-semantics")
 (include-book "shallow-embedding")
-(include-book "proof-support")
 (include-book "table")
 (include-book "term-checkers")
 
-(include-book "fty-pseudo-terms")
+(include-book "symbolic-execution-rules/proof-support")
 
 (include-book "../language/static-semantics")
 

@@ -11,15 +11,15 @@
 
 (in-package "C")
 
-(include-book "integers")
-(include-book "types")
+(include-book "../integers")
+(include-book "../types")
 
-(include-book "../language/values")
-(include-book "../language/pointer-operations")
-(include-book "../language/array-operations")
-(include-book "../language/structure-operations")
+(include-book "../../language/values")
+(include-book "../../language/pointer-operations")
+(include-book "../../language/array-operations")
+(include-book "../../language/structure-operations")
 
-(include-book "defthm-disjoint")
+(include-book "../defthm-disjoint")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 

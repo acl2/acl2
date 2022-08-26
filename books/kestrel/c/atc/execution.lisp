@@ -12,7 +12,7 @@
 (in-package "C")
 
 (include-book "integer-operations")
-(include-book "values")
+(include-book "symbolic-execution-rules/values")
 
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/function-environments")

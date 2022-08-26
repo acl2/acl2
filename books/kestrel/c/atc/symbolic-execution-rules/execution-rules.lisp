@@ -11,8 +11,8 @@
 
 (in-package "C")
 
-(include-book "execution")
-(include-book "arrays")
+(include-book "../execution")
+(include-book "../arrays")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))

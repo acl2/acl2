@@ -11,8 +11,8 @@
 
 (in-package "C")
 
-(include-book "symbolic-computation-states")
-(include-book "shallow-embedding")
+(include-book "../symbolic-computation-states")
+(include-book "../shallow-embedding")
 (include-book "execution-rules")
 
 (include-book "tools/rulesets" :dir :system)

@@ -13,7 +13,8 @@
 
 (include-book "integer-operations")
 (include-book "types")
-(include-book "values")
+
+(include-book "symbolic-execution-rules/values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
