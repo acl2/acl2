@@ -17,7 +17,7 @@
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/computation-states")
 (include-book "../language/function-environments")
-(include-book "../language/operations")
+(include-book "../language/dynamic-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,83 +32,6 @@
      See @(see dynamic-semantics) for documentation on that and this code."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-iconst ((ic iconstp))
-  :returns (result value-resultp)
-  :short "Execute an integer constant."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to [C:6.4.4.1/5]:
-     based on the suffixes and the base,
-     we find the first type that suffices to represent the value,
-     in the lists indicated in the table,
-     and we return the value of the found type.
-     If the value is too large, we return an error.")
-   (xdoc::p
-    "This is the dynamic counterpart of @(tsee check-iconst)."))
-  (b* (((iconst ic) ic)
-       (error (error (list :iconst-out-of-range (iconst-fix ic)))))
-    (if ic.unsignedp
-        (iconst-length-case
-         ic.length
-         :none (cond ((uint-integerp ic.value) (value-uint ic.value))
-                     ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error))
-         :long (cond ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error))
-         :llong (cond ((ullong-integerp ic.value) (value-ullong ic.value))
-                      (t error)))
-      (iconst-length-case
-       ic.length
-       :none (if (iconst-base-case ic.base :dec)
-                 (cond ((sint-integerp ic.value) (value-sint ic.value))
-                       ((slong-integerp ic.value) (value-slong ic.value))
-                       ((sllong-integerp ic.value) (value-sllong ic.value))
-                       (t error))
-               (cond ((sint-integerp ic.value) (value-sint ic.value))
-                     ((uint-integerp ic.value) (value-uint ic.value))
-                     ((slong-integerp ic.value) (value-slong ic.value))
-                     ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((sllong-integerp ic.value) (value-sllong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error)))
-       :long (if (iconst-base-case ic.base :dec)
-                 (cond ((slong-integerp ic.value) (value-slong ic.value))
-                       ((sllong-integerp ic.value) (value-sllong ic.value))
-                       (t error))
-               (cond ((slong-integerp ic.value) (value-slong ic.value))
-                     ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((sllong-integerp ic.value) (value-sllong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error)))
-       :llong (if (iconst-base-case ic.base :dec)
-                  (cond ((sllong-integerp ic.value) (value-sllong ic.value))
-                        (t error))
-                (cond ((sllong-integerp ic.value) (value-sllong ic.value))
-                      ((ullong-integerp ic.value) (value-ullong ic.value))
-                      (t error))))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-const ((c constp))
-  :returns (result value-resultp)
-  :short "Execute a constant."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We only support the execution of integer constants for now."))
-  (const-case c
-              :int (exec-iconst c.get)
-              :float (error :exec-const-float)
-              :enum (error :exec-const-enum)
-              :char (error :exec-const-char))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
