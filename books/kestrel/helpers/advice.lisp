@@ -53,6 +53,8 @@
 
 ;; TODO: Avoid including books that are known to be slow?
 
+;; TODO: Avoid illegal hints, such as adding a :by when there is already a :use, or vice versa
+
 ;; TODO: Untranslate before printing (e.g., hyps)?
 
 (include-book "kestrel/utilities/checkpoints" :dir :system)
@@ -977,6 +979,33 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
+(defun try-add-by-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (((when (eq 'other item))
+        (cw "fail (ignoring :by hint with catch-all \"Other\")~%")
+        (mv nil nil state))
+       ((when (not (symbolp item)))
+        (cw "fail (unexpected :by hint: ~x0)~%" item)
+        (mv nil nil state))
+       ((when (not (or (getpropc item 'unnormalized-body nil (w state))
+                       (getpropc item 'theorem nil (w state)))))
+        (cw "skip (unknown name for :by hint: ~x0)~%" item)
+        (mv nil nil state))
+       ;; TTODO: Include any necessary books first
+       ((mv provedp failure-info state)
+        (prove$-no-error-with-failure-info 'try-add-by-hint
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           ;; todo: remove existing hints?
+                                           (cons `("Goal" :by ,item) theorem-hints)
+                                           theorem-otf-flg
+                                           step-limit
+                                           state))
+       (- (if provedp (cw-success-message rec) (cw-failure-message ":by hint didn't help" failure-info))))
+    (mv nil (if provedp rec nil) state)))
+
+;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
@@ -1063,6 +1092,7 @@
           (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec state))
           (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
           (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+          (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
           (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
           ;; same as for try-add-enable-hint above:
