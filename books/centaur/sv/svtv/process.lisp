@@ -2024,7 +2024,7 @@ helps symbolic execution speed, but can cause an error like:</p>
 <h3>Decomposition Proofs</h3>
 
 <p>See @(see svtv-decomposition) and in particular @(see
-def-svtv-override-fact) for the recommended method for doing proofs by
+def-svtv-generalized-thm) for the recommended method for doing proofs by
 decomposition on SVTVs.</p>
 
 ")
