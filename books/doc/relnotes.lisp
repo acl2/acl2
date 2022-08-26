@@ -208,6 +208,10 @@
    (xdoc::p
     "The tool, @(see with-supporters), has been substantially enhanced.")
 
+   (xdoc::p
+    "The tool, @(see prove$), now treats hard errors as ordinary failures by
+     default, just as for soft errors.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
