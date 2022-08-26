@@ -18,7 +18,7 @@
 (include-book "table")
 (include-book "term-checkers")
 
-(include-book "symbolic-execution-rules/proof-support")
+(include-book "symbolic-execution-rules/top")
 
 (include-book "../language/static-semantics")
 
