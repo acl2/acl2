@@ -28,7 +28,7 @@
 
 (include-book "svtv-fsm-override")
 
-(std::def-primitive-aggregate svtv-override-fact
+(std::def-primitive-aggregate svtv-generalized-thm
   (name
    override-vars
    input-vars
@@ -53,46 +53,46 @@
 (program)
 
 
-(defun svtv-ovfact-input-var-bindings-alist-termlist (input-var-bindings)
+(defun svtv-genthm-input-var-bindings-alist-termlist (input-var-bindings)
   (b* (((when (atom input-var-bindings)) nil)
        ((list name term) (car input-var-bindings)))
     (cons `(cons ',name ,term)
-          (svtv-ovfact-input-var-bindings-alist-termlist (cdr input-var-bindings)))))
+          (svtv-genthm-input-var-bindings-alist-termlist (cdr input-var-bindings)))))
 
-(defun svtv-ovfact-var-alist-termlist (vars)
+(defun svtv-genthm-var-alist-termlist (vars)
   (if (atom vars)
       nil
     (b* ((name (car vars)))
       (cons `(cons ',name ,name)
-            (svtv-ovfact-var-alist-termlist (cdr vars))))))
+            (svtv-genthm-var-alist-termlist (cdr vars))))))
 
-(defun svtv-ovfact-override-test-alist (override-valnames triples triples-name)
+(defun svtv-genthm-override-test-alist (override-valnames triples triples-name)
   (b* (((when (Atom override-valnames)) nil)
        (trip (svar-override-triplelist-lookup-valvar (Car override-valnames) triples))
-       ((unless trip) (er hard? 'def-svtv-override-fact "Override name not present in triples ~x0: ~x1~%"
+       ((unless trip) (er hard? 'def-svtv-generalized-thm "Override name not present in triples ~x0: ~x1~%"
                           (list triples-name) (car override-valnames)))
        ((svar-override-triple trip)))
     (cons (cons trip.testvar -1)
-          (svtv-ovfact-override-test-alist (cdr override-valnames) triples triples-name))))
+          (svtv-genthm-override-test-alist (cdr override-valnames) triples triples-name))))
 
-(defun svtv-ovfact-integerp-conclusions-aux (outputs)
+(defun svtv-genthm-integerp-conclusions-aux (outputs)
   (if (Atom outputs)
       nil
     (cons `(integerp ,(car outputs))
-          (svtv-ovfact-integerp-conclusions-aux (cdr outputs)))))
+          (svtv-genthm-integerp-conclusions-aux (cdr outputs)))))
 
-(defun svtv-ovfact-output-expressions (x)
-  (b* (((svtv-override-fact x)))
+(defun svtv-genthm-output-expressions (x)
+  (b* (((svtv-generalized-thm x)))
     (append (set-difference-eq x.output-vars x.output-part-vars)
             x.output-parts)))
 
-(defun svtv-ovfact-integerp-conclusions (x)
-  (svtv-ovfact-integerp-conclusions-aux
-   (svtv-ovfact-output-expressions x)))
+(defun svtv-genthm-integerp-conclusions (x)
+  (svtv-genthm-integerp-conclusions-aux
+   (svtv-genthm-output-expressions x)))
 
-(defun svtv-ovfact-initial-override-lemma (x)
+(defun svtv-genthm-initial-override-lemma (x)
   (declare (Xargs :mode :program))
-  (b* (((svtv-override-fact x))
+  (b* (((svtv-generalized-thm x))
        (template '(<defthm> <name>-override-lemma
                     (implies <hyp>
                              (b* ((run (svtv-run (<svtv>)
@@ -111,13 +111,13 @@
                    (<hyp> . ,x.hyp)
                    (<svtv> . ,x.svtv)
                    (<concl> . ,x.concl)
-                   (<input-bindings> . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings)))
-                   (<input-vars> . (list . ,(svtv-ovfact-var-alist-termlist x.input-vars)))
-                   (<override-tests> . ',(svtv-ovfact-override-test-alist x.override-vars x.triples-val x.triples-name))
-                   (<override-vals> . (list . ,(svtv-ovfact-var-alist-termlist x.override-vars)))
+                   (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings)))
+                   (<input-vars> . (list . ,(svtv-genthm-var-alist-termlist x.input-vars)))
+                   (<override-tests> . ',(svtv-genthm-override-test-alist x.override-vars x.triples-val x.triples-name))
+                   (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist x.override-vars)))
                    (<outputs-list> . ,x.output-vars))
      :splice-alist `((<outputs> . ,x.output-vars)
-                     (<integerp-concls> . ,(if x.no-integerp nil (svtv-ovfact-integerp-conclusions x)))
+                     (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))
                      (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :pkg-sym x.pkg-sym)))
@@ -125,25 +125,25 @@
 
 
 
-(defun svtv-ovfact-override-svassocs (override-valnames triples triples-name)
+(defun svtv-genthm-override-svassocs (override-valnames triples triples-name)
   (b* (((when (Atom override-valnames)) nil)
        (trip (svar-override-triplelist-lookup-valvar (Car override-valnames) triples))
-       ((unless trip) (er hard? 'def-svtv-override-fact "Override name not present in triples ~x0: ~x1~%"
+       ((unless trip) (er hard? 'def-svtv-generalized-thm "Override name not present in triples ~x0: ~x1~%"
                           (list triples-name) (car override-valnames)))
        ((svar-override-triple trip)))
     (cons (if (eq trip.valvar trip.refvar)
               trip.valvar
             `(,trip.valvar ',trip.refvar))
-          (svtv-ovfact-override-svassocs (cdr override-valnames) triples triples-name))))
+          (svtv-genthm-override-svassocs (cdr override-valnames) triples triples-name))))
 
-(defun svtv-ovfact-input-binding-hyp-termlist (input-var-bindings)
+(defun svtv-genthm-input-binding-hyp-termlist (input-var-bindings)
   (b* (((when (atom input-var-bindings)) nil)
        ((list name term) (car input-var-bindings)))
     (cons `(equal ,name ,term)
-          (svtv-ovfact-input-binding-hyp-termlist (cdr input-var-bindings)))))
+          (svtv-genthm-input-binding-hyp-termlist (cdr input-var-bindings)))))
 
-(defun svtv-ovfact-mono-lemma (x)
-  (b* (((svtv-override-fact x))
+(defun svtv-genthm-mono-lemma (x)
+  (b* (((svtv-generalized-thm x))
        (template '(defthm <name>-<<=-lemma
                     (b* (((svassocs <input-var-svassocs>
                                     <input-unbound-svassocs>) env))
@@ -232,34 +232,34 @@
      :atom-alist
      `((<svtv> . ,x.svtv)
        (<triples> . ,x.triples-name)
-       (<input-bindings> . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings)))
-       (<input-vars> . (list . ,(svtv-ovfact-var-alist-termlist x.input-vars)))
-       (<override-tests> . ',(svtv-ovfact-override-test-alist x.override-vars x.triples-val x.triples-name))
-       (<override-vals> . (list . ,(svtv-ovfact-var-alist-termlist x.override-vars))))
+       (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings)))
+       (<input-vars> . (list . ,(svtv-genthm-var-alist-termlist x.input-vars)))
+       (<override-tests> . ',(svtv-genthm-override-test-alist x.override-vars x.triples-val x.triples-name))
+       (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist x.override-vars))))
      :splice-alist
      `((<input-var-svassocs> . ,(strip-cars x.input-var-bindings))
        (<input-unbound-svassocs> . ,x.input-vars)
-       (<override-svassocs> . ,(svtv-ovfact-override-svassocs x.override-vars x.triples-val x.triples-name))
-       (<input-binding-hyp> .  ,(svtv-ovfact-input-binding-hyp-termlist x.input-var-bindings)))
+       (<override-svassocs> . ,(svtv-genthm-override-svassocs x.override-vars x.triples-val x.triples-name))
+       (<input-binding-hyp> .  ,(svtv-genthm-input-binding-hyp-termlist x.input-var-bindings)))
      :str-alist `(("<NAME>" . ,(symbol-name x.name))
                   ("<SVTV>" . ,(symbol-name x.svtv)))
      :pkg-sym x.pkg-sym)))
 
 
-(defun svtv-ovfact-override-var-instantiation (override-vars svtv)
+(defun svtv-genthm-override-var-instantiation (override-vars svtv)
   (if (atom override-vars)
       nil
     (cons `(,(car override-vars) (svex-env-lookup ',(car override-vars) (svtv-run (,svtv) env)))
-          (svtv-ovfact-override-var-instantiation (cdr override-vars) svtv))))
+          (svtv-genthm-override-var-instantiation (cdr override-vars) svtv))))
 
-(defun svtv-ovfact-input-var-instantiation (input-vars)
+(defun svtv-genthm-input-var-instantiation (input-vars)
   (if (atom input-vars)
       nil
     (cons `(,(car input-vars) (svex-env-lookup ',(car input-vars) env))
-          (svtv-ovfact-input-var-instantiation (cdr input-vars)))))
+          (svtv-genthm-input-var-instantiation (cdr input-vars)))))
 
-(defun svtv-ovfact-final-thm (x)
-  (b* (((svtv-override-fact x))
+(defun svtv-genthm-final-thm (x)
+  (b* (((svtv-generalized-thm x))
        (template '(defthm <name>
                     (b* (((svassocs <input-var-svassocs>) env)
                          (run (svtv-run (<svtv>) env))
@@ -302,10 +302,10 @@
        (<hints> . ,x.hints))
      :splice-alist
      `((<input-var-svassocs> . ,(append x.input-vars (strip-cars x.input-var-bindings)))
-       (<override-svassocs> . ,(svtv-ovfact-override-svassocs x.override-vars x.triples-val x.triples-name))
-       (<input-binding-hyp> .  ,(svtv-ovfact-input-binding-hyp-termlist x.input-var-bindings))
-       (<override-var-instantiation> . ,(svtv-ovfact-override-var-instantiation x.override-vars x.svtv))
-       (<input-var-instantiation> . ,(svtv-ovfact-input-var-instantiation x.input-vars))
+       (<override-svassocs> . ,(svtv-genthm-override-svassocs x.override-vars x.triples-val x.triples-name))
+       (<input-binding-hyp> .  ,(svtv-genthm-input-binding-hyp-termlist x.input-var-bindings))
+       (<override-var-instantiation> . ,(svtv-genthm-override-var-instantiation x.override-vars x.svtv))
+       (<input-var-instantiation> . ,(svtv-genthm-input-var-instantiation x.input-vars))
        (<outputs> . ,x.output-vars)
        (<enable> . ,x.enable))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
@@ -321,7 +321,7 @@
       x)))
     
 
-(defun svtv-ovfact-check-variable-list (name x)
+(defun svtv-genthm-check-variable-list (name x)
   (b* ((illegal-tail (find-illegal-variable x))
        ((when illegal-tail)
         (msg "~s0 must be a list of legal variables, but contains ~x1" name (car illegal-tail)))
@@ -330,14 +330,14 @@
         (msg "~s0 cannot contain duplicates but ~x1 is duplicated" name (car dup-tail))))
     nil))
 
-(defun svtv-ovfact-error (x)
-  (b* (((svtv-override-fact x)))
-    (or (svtv-ovfact-check-variable-list "Override-vars" x.override-vars)
-        (svtv-ovfact-check-variable-list "Input-vars" x.input-vars)
-        (svtv-ovfact-check-variable-list "Output-vars" x.output-vars)
+(defun svtv-genthm-error (x)
+  (b* (((svtv-generalized-thm x)))
+    (or (svtv-genthm-check-variable-list "Override-vars" x.override-vars)
+        (svtv-genthm-check-variable-list "Input-vars" x.input-vars)
+        (svtv-genthm-check-variable-list "Output-vars" x.output-vars)
         (and (not (acl2::doublet-listp x.input-var-bindings))
              "Input-var-bindings must be a list of two-element lists")
-        (svtv-ovfact-check-variable-list "Keys of input-var-bindings" (strip-cars x.input-var-bindings))
+        (svtv-genthm-check-variable-list "Keys of input-var-bindings" (strip-cars x.input-var-bindings))
         (let ((dup-tail (acl2::hons-dups-p (append x.input-vars
                                                    (strip-cars x.input-var-bindings)
                                                    x.override-vars
@@ -347,24 +347,24 @@
                      intersect, but ~x0 is present in more than one"
                     (car dup-tail)))))))
 
-(defun svtv-override-fact-events (x)
-  (b* (((svtv-override-fact x))
-       (err (svtv-ovfact-error x))
-       ((when err) (er hard? `(def-svtv-override-fact ,x.name) "Error: ~@0" err)))
+(defun svtv-generalized-thm-events (x)
+  (b* (((svtv-generalized-thm x))
+       (err (svtv-genthm-error x))
+       ((when err) (er hard? `(def-svtv-generalized-thm ,x.name) "Error: ~@0" err)))
     `(defsection ,x.name
        ,@(and (not x.no-lemmas)
-              `((local ,(svtv-ovfact-initial-override-lemma x))
-                (local ,(svtv-ovfact-mono-lemma x))))
-       ,(svtv-ovfact-final-thm x))))
+              `((local ,(svtv-genthm-initial-override-lemma x))
+                (local ,(svtv-genthm-mono-lemma x))))
+       ,(svtv-genthm-final-thm x))))
 
-; (table svtv-override-fact-defaults nil nil :clear)
+; (table svtv-generalized-thm-defaults nil nil :clear)
 
-(defun svtv-ovfact-translate-lst (x ctx w state)
+(defun svtv-genthm-translate-lst (x ctx w state)
   (declare (xargs :stobjs state))
   (if (atom x)
       (value nil)
     (er-let* ((first (acl2::translate (car x) t nil nil ctx w state))
-              (rest (svtv-ovfact-translate-lst (cdr x) ctx w state)))
+              (rest (svtv-genthm-translate-lst (cdr x) ctx w state)))
       (value (cons first rest)))))
 
 (define svtv-unsigned-byte-hyps ((x svar-boolmasks-p))
@@ -375,10 +375,10 @@
     (cons `(unsigned-byte-p ,(integer-length mask) ,var)
           (svtv-unsigned-byte-hyps (cdr x)))))
 
-(defun svtv-override-fact-fn (name args state)
+(defun svtv-generalized-thm-fn (name args state)
   (declare (xargs :stobjs state))
-  (b* ((defaults (table-alist 'svtv-override-fact-defaults (w state)))
-       (ctx `(def-svtv-override-fact ,name))
+  (b* ((defaults (table-alist 'svtv-generalized-thm-defaults (w state)))
+       (ctx `(def-svtv-generalized-thm ,name))
        ((std::extract-keyword-args
          :defaults defaults
          :ctx ctx
@@ -406,7 +406,7 @@
                  :pkg-sym pkg-sym))
        ((mv err triples-val) (magic-ev-fncall triples nil state t t))
        ((when err) (er soft ctx "Couldn't evaluate ~x0" (list triples)))
-       ((mv err trans-parts state) (svtv-ovfact-translate-lst output-parts ctx (w state) state))
+       ((mv err trans-parts state) (svtv-genthm-translate-lst output-parts ctx (w state) state))
        ((when err) (er soft ctx "Couldn't translate output-parts: ~@0~%" err))
        (output-part-vars (all-vars1-lst trans-parts nil))
        ((mv err svtv-val) (magic-ev-fncall svtv nil state t t))
@@ -419,8 +419,8 @@
               hyp)))
 
     (value
-     (svtv-override-fact-events
-      (make-svtv-override-fact
+     (svtv-generalized-thm-events
+      (make-svtv-generalized-thm
        :name name
        :override-vars override-vars
        :input-vars input-vars
@@ -442,13 +442,13 @@
        :rule-classes rule-classes
        :pkg-sym pkg-sym)))))
 
-(defmacro def-svtv-override-fact (name &rest args)
-  `(make-event (svtv-override-fact-fn ',name ',args state)))
+(defmacro def-svtv-generalized-thm (name &rest args)
+  `(make-event (svtv-generalized-thm-fn ',name ',args state)))
 
 
 
 
-(defxdoc def-svtv-override-fact
+(defxdoc def-svtv-generalized-thm
   :parents (svtv-data)
   :short "Prove a theorem about an SVTV using a specific input env, perhaps
 with overrides, then generalize it to remove overrides and reliance on a
@@ -456,7 +456,7 @@ particular shape of input env."
   :long "
 <p>Usage:</p>
 @({
- (def-svtv-override-fact theorem-name
+ (def-svtv-generalized-thm theorem-name
    :svtv svtv-name
    :input-vars input-variable-list
    :input-var-bindings input-variable-binding-list
@@ -472,7 +472,7 @@ particular shape of input env."
  })
 
 <p>For each of the keyword arguments, if absent a default will be looked up in
-the @(see table) @('svtv-override-fact-defaults'), which may be (locally)
+the @(see table) @('svtv-generalized-thm-defaults'), which may be (locally)
 modified by users in order to avoid (for example) the need to repeatedly
 specify the same SVTV in every form.</p>
 
@@ -527,7 +527,7 @@ keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').</li>
 <li>@(':no-lemmas') says to skip the initial override theorem and monotonicity lemma
 and tries to prove the final theorem directly, with the hints given by the user.</li>
 
-<li>@(':no-integerp) says to skip proving @('integerp') of each output in the
+<li>@(':no-integerp') says to skip proving @('integerp') of each output in the
 initial override theorem.  The @(':enable') option typically must be used to
 provide additional rules for the final theorem to show that the lemma implies
 the outputs are integers.</li>
@@ -561,7 +561,7 @@ listed in @(':override-vars') are all bound to -1.</li>
 <p>For example, the following form:</p>
 
 @({
- (def-svtv-override-fact partial-prods-to-product
+ (def-svtv-generalized-thm partial-prods-to-product
    :svtv multiplier-svtv
    :input-var-bindings ((opcode *mul-opcode*))
    :override-vars (partial-products)

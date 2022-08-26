@@ -62,7 +62,7 @@ phase. Do not set the @(':monotonify') option to NIL (default T).</li>
 <li>Use @(see def-svtv-override-thms) to automatically prove certain important
 properties of the SVTV and its conditional overrides.</li>
 
-<li>Use @(see def-svtv-override-fact) to prove theorems about the decomposed components (cuts) within the SVTV.</li>
+<li>Use @(see def-svtv-generalized-thm) to prove theorems about the decomposed components (cuts) within the SVTV.</li>
 
 <li>Use standard ACL2 rewriting involving the theorems proved in step 4 to prove the top-level theorem.</li>
 

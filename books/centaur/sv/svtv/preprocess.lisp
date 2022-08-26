@@ -168,7 +168,7 @@ field).</li>
 <li>@(':output'), if specified, gives an output variable for the same signal at
 the given time.  This output will be assigned the non-overridden value of the
 signal.  This syntactic convenience supports the recommended method for
-decomposition proofs; see @(see def-svtv-override-fact).  The @(':hold') and
+decomposition proofs; see @(see def-svtv-generalized-thm).  The @(':hold') and
 @(':toggle') options don't apply to the output, in that it is only sampled at
 the phase in which it is declared.</li>
 </ul>

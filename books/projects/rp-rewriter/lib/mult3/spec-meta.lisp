@@ -377,7 +377,7 @@
                              +-IS-SUM)))))
 
 (local
- (defthm unsigned-byte-p-of-logapp
+ (defthm unsigned-byte-p-of-logapp2
    (implies (and (natp size)
                  (natp size2)
                  ;;(<= size2 size)
@@ -423,7 +423,7 @@
             (equal (unsigned-byte-p size (SVL::4VEC-CONCAT$ size2 x y))
                    (unsigned-byte-p (- size size2) y)))
    :hints (("Goal"
-            :use ((:instance unsigned-byte-p-of-logapp
+            :use ((:instance unsigned-byte-p-of-logapp2
                              (y y)
                              (size (- size size2))
                              (size2 size2)))
@@ -439,7 +439,7 @@
                               SV::4VEC->lower
                               SV::4VEC)
                              (+-IS-SUM
-                              unsigned-byte-p-of-logapp
+                              unsigned-byte-p-of-logapp2
                               MOD2-IS-M2
                               FLOOR
                               FLOOR2-IF-F2

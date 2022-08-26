@@ -22,11 +22,11 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Mertcan Temel <mert.temel@intel.com>
-;; This file is copied over from svtv-override-fact.lisp and updated to fit the needs
+;; This file is copied over from svtv-generalized-thm.lisp and updated to fit the needs
 
 (in-package "SV")
 
-(include-book "svtv-override-fact")
+(include-book "svtv-generalized-thm")
 
 (std::def-primitive-aggregate svtv-equiv-thm-data
   (name
@@ -123,9 +123,9 @@
                    (<svtv-1> . ,x.svtv-1)
                    (<svtv-2> . ,x.svtv-2)
                    (<input-bindings-1>
-                    . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-1)))
+                    . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-1)))
                    (<input-bindings-2>
-                    . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-2)))
+                    . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-2)))
                    (<input-vars-1> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-1 x.pkg-sym 1)))
                    (<input-vars-2> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-2 x.pkg-sym 2)))
                    (<outputs-list-1> . ,x.output-vars-1)
@@ -135,7 +135,7 @@
                      (<outputs-2>
                       . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-2 x.pkg-sym 2)) ;;;;
                      (<integerp-concls>
-                      . ,(svtv-ovfact-integerp-conclusions-aux (append
+                      . ,(svtv-genthm-integerp-conclusions-aux (append
                                                                 (svtv-equiv-thm-suffix-index-to-vars
                                                                  x.output-vars-1 x.pkg-sym 1)
                                                                 (svtv-equiv-thm-suffix-index-to-vars
@@ -239,14 +239,14 @@
          `((<env> . env-1)
            (<svtv> . ,x.svtv-1)
            (<triples> . ,x.triples-name-1)
-           (<input-bindings> . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-1)))
+           (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-1)))
            (<input-vars> . (list . ,(svtv-equiv-thm-input-vars-to-alist
                                      x.input-vars-1 x.pkg-sym 1)))
            )
        `((<env> . env-2)
          (<svtv> . ,x.svtv-2)
          (<triples> . ,x.triples-name-2)
-         (<input-bindings> . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-2)))
+         (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-2)))
          (<input-vars> . (list . ,(svtv-equiv-thm-input-vars-to-alist
                                    x.input-vars-2 x.pkg-sym 2)))
          ))
@@ -354,17 +354,17 @@
 
 (defun svtv-equiv-thm-precheck-for-errors (x)
   (b* (((svtv-equiv-thm-data x)))
-    (or (svtv-ovfact-check-variable-list "Input-vars-1" x.input-vars-1)
-        (svtv-ovfact-check-variable-list "Input-vars-2" x.input-vars-2)
-        (svtv-ovfact-check-variable-list "Output-vars-1" x.output-vars-1)
-        (svtv-ovfact-check-variable-list "Output-vars-2" x.output-vars-2)
+    (or (svtv-genthm-check-variable-list "Input-vars-1" x.input-vars-1)
+        (svtv-genthm-check-variable-list "Input-vars-2" x.input-vars-2)
+        (svtv-genthm-check-variable-list "Output-vars-1" x.output-vars-1)
+        (svtv-genthm-check-variable-list "Output-vars-2" x.output-vars-2)
         (and (not (acl2::doublet-listp x.input-var-bindings-1))
              "Input-var-bindings-1 must be a list of two-element lists")
         (and (not (acl2::doublet-listp x.input-var-bindings-2))
              "Input-var-bindings-2 must be a list of two-element lists")
-        (svtv-ovfact-check-variable-list "Keys of input-var-bindings-1"
+        (svtv-genthm-check-variable-list "Keys of input-var-bindings-1"
                                          (strip-cars x.input-var-bindings-1))
-        (svtv-ovfact-check-variable-list "Keys of input-var-bindings-2"
+        (svtv-genthm-check-variable-list "Keys of input-var-bindings-2"
                                          (strip-cars x.input-var-bindings-2))
         (let ((dup-tail (acl2::hons-dups-p (append x.input-vars-1
                                                    (strip-cars x.input-var-bindings-1)

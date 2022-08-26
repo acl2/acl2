@@ -769,6 +769,17 @@
   :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
 
+(defthm is-rp-of-rp
+    (implies (AND (SYMBOLP TYPE)
+                  (NOT (BOOLEANP TYPE))
+                  (NOT (EQUAL TYPE 'QUOTE))
+                  (NOT (EQUAL TYPE 'RP))
+                  (NOT (EQUAL TYPE 'LIST))
+                  (NOT (EQUAL TYPE 'FALIST)))
+             (is-rp `(rp ',type ,x)))
+    :hints (("Goal"
+             :in-theory (e/d (is-rp) ()))))
+
 (defthmd rule-syntaxp-implies
   (implies (and (rule-syntaxp rule :warning warning)
                 (not (rp-rule-metap rule)))
@@ -1060,8 +1071,50 @@
     :flag rp-trans-lst)
   :otf-flg t
   :hints (("Goal"
+           :expand ((:free (x y)
+                           (rp-termp (cons x y)))
+                    (RP-TERMP TERM))
+           :in-theory (e/d ()
+                           (FALIST-CONSISTENT
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS)))))
+
+(defthm-rp-trans
+  (defthm rp-trans-not-include-fnc-list
+    (not (include-fnc (rp-trans term) 'list))
+    :flag rp-trans)
+  (defthm rp-trans-lst-not-include-fnc-subterms-list
+    (not (include-fnc-subterms (rp-trans-lst lst) 'list))
+    :flag rp-trans-lst)
+  :otf-flg t
+  :hints (("Goal"
            :in-theory (e/d ()
                            ()))))
+
+
+(defthm rp-trans-of-trans-list
+  (equal (rp-trans (trans-list lst))
+         (trans-list (rp-trans-lst lst))))
+
+(defthm-rp-trans
+  (defthm rp-trans-of-rp-trans
+    (equal (rp-trans (rp-trans term))
+           (rp-trans term))
+    :flag rp-trans)
+  (defthm rp-trans-lst-of-rp-trans-lst
+    (equal (rp-trans-lst (rp-trans-lst lst))
+           (rp-trans-lst lst))
+    :flag rp-trans-lst)
+  :otf-flg t
+  :hints (("goal"
+           :expand ((is-falist (list (car term)))
+                    (rp-trans-lst (cdr term))
+                    (rp-trans-lst (cddr term))
+                    (rp-trans-lst (cdddr term))
+                    (rp-trans (cons (car term)
+                                    (rp-trans-lst (cdr term)))))
+           :in-theory (e/d ()
+                           ()))))
+
 
 #|(defthm-rp-trans
 (defthm rp-trans-is-term-when-list-is-absent

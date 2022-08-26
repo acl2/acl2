@@ -45,6 +45,7 @@
 (include-book "cl-correct")
 (include-book "tools/templates" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
+(include-book "centaur/meta/def-formula-checks" :dir :system)
 
 (defthm rp-state-preservedp-of-the-same-rp-state
   (implies (rp-statep rp-state)

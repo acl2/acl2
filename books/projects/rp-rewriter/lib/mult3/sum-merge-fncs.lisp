@@ -45,14 +45,23 @@
 (local
  (include-book "lemmas"))
 
-(include-book "pp-flatten-meta-fncs")
+;;(include-book "pp-flatten-meta-fncs")
 
 (include-book "std/util/defines" :dir :system)
 
 (include-book "equal-meta")
 
 (local
+ (fetch-new-events
+  (include-book "arithmetic-5/top" :dir :system)
+  use-arith-5
+  :disabled t))
+
+(local
  (in-theory (disable +-IS-SUM)))
+
+(local
+ (set-induction-depth-limit 1))
 
 (define valid-list-termp (term)
   (case-match term
@@ -64,20 +73,14 @@
                     "Unexpected list term ~p0 ~%"
                     (list (cons #\0 term))))))
 
-#|(define extract-from-list ((term valid-list-termp))
-  (case-match term
-    (('list . lst)
-     lst)
-    (''nil
-     nil)
-    (& term)))||#
+(defmacro pp-cons (a b)
+  `(cons ,a ,b))
 
-(define cons-pp-to-pp-lst-lst ((pp valid-pp-p)
-                               pp-lst-lst)
-  (b* ((pp-lst (pp-to-pp-lst pp)))
-    (if pp-lst
-        (cons pp-lst pp-lst-lst)
-      pp-lst-lst)))
+(defmacro pp-cons-with-hint (a b hint)
+  (declare (ignorable hint))
+  `(cons-with-hint ,a ,b ,hint)
+  ;;`(hons ,a ,b)
+  )
 
 (define append-pp-lst-lsts (l1 l2)
   ;;(append l1 l2)
@@ -157,8 +160,95 @@
                             s-order-lst)
                            ()))))
 
-(encapsulate
-  nil
+(acl2::defsection create-and-list
+  (define and-list-hash-aux (lst)
+    :returns (mv (hash )
+                 (rest-size ))
+    :verify-guards nil
+    :prepwork
+    ((local
+      (use-arith-5 t)))
+    (if (atom lst)
+        (mv 0 0)
+      (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
+           (cur (ex-from-rp (car lst))))
+        (case-match cur
+          (('bit-of & ('quote x))
+           (mv (+ rest (* (+ 5 rest-size) (+ 1 (ifix x))))
+               (+ 55 rest-size)))
+          (('s ('quote x) & &)
+           (mv (+ rest (ifix x))
+               (+ 6 rest-size)))
+          (('c ('quote x) & & &)
+           (mv (+ rest (ifix x))
+               (+ 8 rest-size)))
+          (& (mv rest rest-size)))))
+    ///
+    (defret result-type-of-of-<fn>
+      (and (natp rest-size)
+           (acl2-numberp rest-size)
+           (integerp hash)
+           (acl2-numberp hash)))
+    (verify-guards and-list-hash-aux))
+
+  (define and-list-hash (lst)
+    :returns (hash integerp)
+    (b* (((mv hash &)
+          (and-list-hash-aux lst)))
+      (logapp 4 (len lst) hash)))
+
+  (define create-and-list-instance (lst)
+    :returns (and-list-instance rp-termp
+                                :hyp (rp-term-listp lst))
+    (if (and (consp lst)
+             (atom (cdr lst))
+             (or (bit-of-p (ex-from-rp (car lst)))
+                 (has-bitp-rp (car lst))))
+        (car lst)
+      `(and-list ',(and-list-hash lst) (list . ,lst)))))
+
+(acl2::defsection pp-order
+
+  (define pp-list-order-aux ((x)
+                             (y))
+    :returns (mv (order)
+                 (equals booleanp))
+    (cond ((or (atom x)
+               (atom y))
+           (mv (not (atom y)) (equal x y)))
+          ((equal (car x) (car y))
+           (pp-list-order-aux (cdr x) (cdr y)))
+          (t
+           (mv (lexorder2- (car x) (car y)) nil))))
+
+  (define pp-list-order (x y)
+    :returns (mv (order)
+                 (equals booleanp))
+    (b* (((when (equal y '('1)))
+          (mv nil (equal x y)))
+         ((when (equal x '('1)))
+          (mv t (equal x y)))
+
+         (hash-x (and-list-hash x))
+         (hash-y (and-list-hash y))
+         ((when (not (= hash-x hash-y)))
+          (mv (> hash-x hash-y)
+              nil))
+         (len-x (len x))
+         (len-y (len y)))
+      (if (not (equal len-x len-y))
+          ;; (if (equal len-y 2)
+          ;;     (mv t nil)
+          ;;   (if (equal len-x 2)
+          ;;       (mv nil nil)
+          (mv (> len-x len-y) nil)
+        ;;))
+        ;;(if (and t (equal len-x 2))
+        (pp-list-order-aux x y)
+        ;;(pp-list-order-aux y x)
+        ;;)
+        )))
+
   (define ex-from-rp/--loose (x)
     :returns (res rp-termp :hyp (rp-termp x))
     (cond ((and (consp x)
@@ -202,7 +292,7 @@
                  (mv t (equal x y)))
                 (t (mv nil (equal x y)))))
          #|((when (equal x ''1))
-          (mv t (equal x y)))|#
+         (mv t (equal x y)))|#
          ((mv x-lst x-hash x-good-format)
           (case-match x
             (('and-list ('quote hash) ('list . lst))
@@ -221,78 +311,15 @@
             (if (and x-good-format y-good-format)
                 (mv order equals)
               (mv order (equal x y))))
-        (mv (> x-hash y-hash) nil)
-        ;;(pp-list-order x-lst y-lst)
-        )))
+        (mv (> x-hash y-hash) nil))))
 
-  #|(define pp-order (x y)
-  :inline t
-  :returns (mv (order)
-  (equals booleanp))
-  (b* (;;(x (ex-from--- x))
-  ;;(y (ex-from--- y))
-  (x-orig x)
-  (y-orig y))
-  (b* (((mv x atom-x len-x)
-  (case-match x
-  (('and-list & ('list . lst))
-  (mv lst nil (len lst)))
-  (('binary-and & &)
-  (mv (cdr x) nil 2))
-  (''1
-  (mv x t 1))
-  (('bit-of & &)
-  (mv x t 1))
-  (('rp ''bitp &)
-  (mv x t 1))
-  (& (mv x t -1))))
-  ((mv y atom-y len-y)
-  (case-match y
-  (('and-list & ('list . lst))
-  (mv lst nil (len lst)))
-  (('binary-and & &)
-  (mv (cdr y) nil 2))
-  (''1
-  (mv y t 1))
-  (('rp ''bitp &)
-  (mv y t 1))
-  (('bit-of & &)
-  (mv y t 1))
-  (& (mv y t -1)))))
-  (cond
-  ((not (equal len-x len-y))
-  (cond
-  ((or (equal len-x -1)
-  (equal len-y -1))
-  (mv nil (equal x-orig y-orig)))
-  ((equal len-y 2)
-  (mv t nil))
-  ((equal len-x 2)
-  (mv nil nil))
-  (t (mv (> len-x len-y) nil))))
-  ((or atom-x atom-y)
-  (cond ((not atom-x)
-  (if (consp x)
-  (if (equal (car x) y)
-  (mv nil
-  (equal x-orig y-orig)
-;(atom (cdr x)) ; ; ; ;
-  )
-  (mv (not (lexorder y (car x))) nil))
-  (mv t nil)))
-  ((not atom-y)
-  (if (consp y)
-  (if (equal (car y) x)
-  (mv (not (atom y))
-  (equal x-orig y-orig)
-;(atom y) ; ; ; ;
-  )
-  (mv (not (lexorder (car y) x)) nil))
-  (mv nil nil)))
-  (t (if (equal x y)
-  (mv nil t)
-  (mv (not (lexorder y x)) nil)))))
-  (t (pp-list-order x y))))))||#
+  ;; (defthm pp-list-order-sanity
+  ;;   (implies (mv-nth 0 (pp-list-order x y))
+  ;;            (not (mv-nth 0 (pp-list-order x y))))
+  ;;   :hints (("Goal"
+  ;;            :in-theory (e/d (pp-list-order
+  ;;                             lexorder2-sanity)
+  ;;                            (lexorder2)))))
 
   (define pp-lst-orderedp ((lst rp-term-listp))
     (if (atom lst)
@@ -311,7 +338,6 @@
       (''nil
        t)
       (& nil))))
-
 
 (define pp-order-and-negated-termsp ((term1 rp-termp)
                                      (term2 rp-termp))
@@ -459,8 +485,6 @@
 
   ;;(memoize 'pp-sum-merge :condition '(and (not (equal pp1 'nil)) (not (equal
   ;;pp2 'nil))))
-
-
 
 ;;(pp-lst-sum-merge '((a a a a b b b c d) (b c d e) (c d e m) (c f) (d f m))
 ;;:cough t)
@@ -1106,7 +1130,6 @@
          (or rep-ok (no-rep-p lst))
          (ordered-s/c-p-lst lst))))
 
-
 (defthm rp-term-listp-of-append-wog
   (implies (and (rp-term-listp lst1)
                 (rp-term-listp lst2))
@@ -1118,7 +1141,8 @@
 
 (define ex-from-pp-lst-aux ((pp-lst rp-term-listp))
   :prepwork ((local
-              (in-theory (disable rp-termp)))
+              (in-theory (disable ex-from-rp
+                                  rp-termp)))
              (local
               (defthm rp-termp-of---
                 (iff (rp-termp (list '-- x))
@@ -1155,19 +1179,23 @@
               (cons-with-hint cur-orig rest-pp-lst pp-lst)
               c-lst))
          (x-extracted (ex-from-rp x)))
-      (case-match x-extracted
-        (('s & & &)
+      (cond
+        ((single-s-p x-extracted)
          (mv (cons (if signed `(-- ,x) x) s-lst)
              rest-pp-lst
              c-lst))
-        (('c & & & &)
+        ((single-c-p x-extracted)
          (mv s-lst rest-pp-lst
              (cons (if signed `(-- ,x) x) c-lst)))
-        (('s-c-res s pp c)
-         (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
-             (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
-             (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
-        (& (mv s-lst
+        ((single-s-c-res-p x-extracted)
+         ;;('s-c-res s pp c)
+         (b* ((s (nth 1 x-extracted))
+              (pp (nth 2 x-extracted))
+              (c (nth 3 x-extracted)))
+           (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
+               (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
+               (append-wog (negate-lst (list-to-lst c)  signed) c-lst))))
+        (t (mv s-lst
                (cons-with-hint cur-orig
                                rest-pp-lst
                                pp-lst)

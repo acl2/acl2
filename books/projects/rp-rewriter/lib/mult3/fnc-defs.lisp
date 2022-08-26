@@ -52,6 +52,13 @@
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 
+(local
+ (fetch-new-events
+  (include-book "arithmetic-5/top" :dir :system)
+  use-arith-5
+  :disabled t))
+
+
 (progn
   (define binary-sum (x y)
     (+ (ifix x)
@@ -96,6 +103,19 @@
        2)
   :returns (res integerp)
   ///
+
+  (local
+   (use-arith-5 t))
+  
+  (defret bitp-of-s
+    (bitp res)
+    :hints (("Goal"
+             :in-theory (e/d () (mod)))))
+  (defret natp-of-s
+    (natp res))
+
+  (add-rp-rule bitp-of-s)
+  (add-rp-rule natp-of-s)
   (add-rp-rule integerp-of-s))
 
 (define c (hash-code s pp c)
@@ -198,8 +218,8 @@
 (define bit-fix-lst (lst)
   (if (atom lst)
       nil
-      (cons (bit-fix (car lst))
-            (bit-fix-lst (cdr lst))))
+    (cons (bit-fix (car lst))
+          (bit-fix-lst (cdr lst))))
   ///
   (defthm bit-fix-lst-opener
     (implies (bit-listp lst)
@@ -423,7 +443,6 @@
   (+ (ifix x)
      (ifix y)))
 
-
 (define adder-mux ((select bitp)
                    (i0 bitp)
                    (i1 bitp))
@@ -449,7 +468,6 @@
   ///
   (add-rp-rule bitp-of-bit-of))
 
-
 #|(define medw-compress (term)
   term
   ///
@@ -461,24 +479,24 @@
   (add-rp-rule unpack-booth :disabled nil))
 
 (rp::def-rw-opener-error
- s-spec-opener-error
- (rp::s-spec x))
+  s-spec-opener-error
+  (rp::s-spec x))
 
 (rp::def-rw-opener-error
- c-spec-opener-error
- (rp::c-spec x))
+  c-spec-opener-error
+  (rp::c-spec x))
 
 (rp::def-rw-opener-error
- s-c-spec-opener-error
- (rp::s-c-spec x))
+  s-c-spec-opener-error
+  (rp::s-c-spec x))
 
 (rp::def-rw-opener-error
- c-s-spec-opener-error
- (rp::c-s-spec x))
+  c-s-spec-opener-error
+  (rp::c-s-spec x))
 
 (rp::def-rw-opener-error
- sort-sum-opener-error
- (sort-sum x))
+  sort-sum-opener-error
+  (sort-sum x))
 
 ;; for proofs:
 (define m2 (x)
@@ -560,8 +578,6 @@
           (t
            `(list . ,lst)))))
 
-
-
 (progn
   (encapsulate
     (((unpack-booth-later-enabled) => *))
@@ -573,7 +589,7 @@
     t)
   (define return-nil ()
     nil)
-  
+
   (defmacro enable-unpack-booth-later (enable)
     (if enable
         `(defattach unpack-booth-later-enabled return-t)
@@ -582,85 +598,85 @@
   (enable-unpack-booth-later nil))
 
 (acl2::defines
- m-eval
- (define m-eval (term a)
-   (cond ((atom term)
-          (cdr (hons-assoc-equal term a)))
-         ((and (quotep term)
-               (consp (cdr term)))
-          (unquote term))
-         (t
-          (b* ((args (m-eval-lst (cdr term) a)))
-            (cond ((equal (car term) 's)
-                   (s (safe-i-nth 0 args)
-                      (safe-i-nth 1 args)
-                      (safe-i-nth 2 args)))
-                  ((equal (car term) 'c)
-                   (c (safe-i-nth 0 args)
-                      (safe-i-nth 1 args)
-                      (safe-i-nth 2 args)
-                      (safe-i-nth 3 args)))
-                  ((equal (car term) 's-c-res)
-                   (s-c-res (safe-i-nth 0 args)
-                            (safe-i-nth 1 args)
-                            (safe-i-nth 2 args)))
-                  ((equal (car term) 'binary-and)
-                   (and$ (safe-i-nth 0 args)
-                         (safe-i-nth 1 args)))
-                  ((equal (car term) 'binary-xor)
-                   (binary-xor (safe-i-nth 0 args)
-                               (safe-i-nth 1 args)))
-                  ((equal (car term) 'binary-or)
-                   (binary-or (safe-i-nth 0 args)
-                              (safe-i-nth 1 args)))
-                  ((equal (car term) 'binary-sum)
-                   (sum (safe-i-nth 0 args)
-                        (safe-i-nth 1 args)))
-                  ((equal (car term) 'equal)
-                   (equal (safe-i-nth 0 args)
+  m-eval
+  (define m-eval (term a)
+    (cond ((atom term)
+           (cdr (hons-assoc-equal term a)))
+          ((and (quotep term)
+                (consp (cdr term)))
+           (unquote term))
+          (t
+           (b* ((args (m-eval-lst (cdr term) a)))
+             (cond ((equal (car term) 's)
+                    (s (safe-i-nth 0 args)
+                       (safe-i-nth 1 args)
+                       (safe-i-nth 2 args)))
+                   ((equal (car term) 'c)
+                    (c (safe-i-nth 0 args)
+                       (safe-i-nth 1 args)
+                       (safe-i-nth 2 args)
+                       (safe-i-nth 3 args)))
+                   ((equal (car term) 's-c-res)
+                    (s-c-res (safe-i-nth 0 args)
+                             (safe-i-nth 1 args)
+                             (safe-i-nth 2 args)))
+                   ((equal (car term) 'binary-and)
+                    (and$ (safe-i-nth 0 args)
                           (safe-i-nth 1 args)))
-                  ((equal (car term) 'cons)
-                   (cons (safe-i-nth 0 args)
+                   ((equal (car term) 'binary-xor)
+                    (binary-xor (safe-i-nth 0 args)
+                                (safe-i-nth 1 args)))
+                   ((equal (car term) 'binary-or)
+                    (binary-or (safe-i-nth 0 args)
+                               (safe-i-nth 1 args)))
+                   ((equal (car term) 'binary-sum)
+                    (sum (safe-i-nth 0 args)
                          (safe-i-nth 1 args)))
-                  ((equal (car term) 's-c-spec)
-                   (s-c-spec (safe-i-nth 0 args)))
-                  ((equal (car term) 'binary-not)
-                   (not$ (safe-i-nth 0 args)))
-                  ((equal (car term) 'and-list)
-                   (and-list (safe-i-nth 0 args)
-                             (safe-i-nth 1 args)))
-                  ((equal (car term) 'sum-list)
-                   (sum-list (safe-i-nth 0 args)))
-                  ((equal (car term) 'sum-list-list)
-                   (sum-list-list (safe-i-nth 0 args)))
-                  ((equal (car term) 'rp)
-                   (safe-i-nth 1 args))
-                  ((equal (car term) 'bit-of)
-                   (bit-of
-                    (ifix (safe-i-nth 0 args))
-                    (nfix (safe-i-nth 1 args))))
-                  ((equal (car term) '--)
-                   (--
-                    (safe-i-nth 0 args)))
-                  ((equal (car term) 's-spec)
-                   (s-spec
-                    (safe-i-nth 0 args)))
-                  ((equal (car term) 'c-spec)
-                   (c-spec
-                    (safe-i-nth 0 args)))
-                  ((equal (car term) 'list)
-                   args)
-                  ((equal (car term) 'sum)
-                   (sum-list args))
-                  (t
-                   (hard-error 'm-eval
-                               "unexpected function symbol: ~p0 ~%"
-                               (list (cons #\0 (car term))))))))))
- (define m-eval-lst (lst a)
-   (if (atom lst)
-       nil
-     (cons (m-eval (car lst) a)
-           (m-eval-lst (cdr lst) a)))))
+                   ((equal (car term) 'equal)
+                    (equal (safe-i-nth 0 args)
+                           (safe-i-nth 1 args)))
+                   ((equal (car term) 'cons)
+                    (cons (safe-i-nth 0 args)
+                          (safe-i-nth 1 args)))
+                   ((equal (car term) 's-c-spec)
+                    (s-c-spec (safe-i-nth 0 args)))
+                   ((equal (car term) 'binary-not)
+                    (not$ (safe-i-nth 0 args)))
+                   ((equal (car term) 'and-list)
+                    (and-list (safe-i-nth 0 args)
+                              (safe-i-nth 1 args)))
+                   ((equal (car term) 'sum-list)
+                    (sum-list (safe-i-nth 0 args)))
+                   ((equal (car term) 'sum-list-list)
+                    (sum-list-list (safe-i-nth 0 args)))
+                   ((equal (car term) 'rp)
+                    (safe-i-nth 1 args))
+                   ((equal (car term) 'bit-of)
+                    (bit-of
+                     (ifix (safe-i-nth 0 args))
+                     (nfix (safe-i-nth 1 args))))
+                   ((equal (car term) '--)
+                    (--
+                     (safe-i-nth 0 args)))
+                   ((equal (car term) 's-spec)
+                    (s-spec
+                     (safe-i-nth 0 args)))
+                   ((equal (car term) 'c-spec)
+                    (c-spec
+                     (safe-i-nth 0 args)))
+                   ((equal (car term) 'list)
+                    args)
+                   ((equal (car term) 'sum)
+                    (sum-list args))
+                   (t
+                    (hard-error 'm-eval
+                                "unexpected function symbol: ~p0 ~%"
+                                (list (cons #\0 (car term))))))))))
+  (define m-eval-lst (lst a)
+    (if (atom lst)
+        nil
+      (cons (m-eval (car lst) a)
+            (m-eval-lst (cdr lst) a)))))
 
 (define m-eval-lst-lst (lst-lst a)
   (and nil
@@ -685,7 +701,6 @@
                           "Read above.."
                           nil)))))
 
-
 (mutual-recursion
  (defun count-fnc (term fnc)
    (declare (xargs :guard (symbolp fnc)
@@ -695,9 +710,9 @@
      (+ (if (eq (car term) fnc)
             1
           0)
-       (count-fnc-subterms (cdr term)
-                           fnc))))
- 
+        (count-fnc-subterms (cdr term)
+                            fnc))))
+
  (defun count-fnc-subterms (subterms fnc)
    (declare (xargs :guard (symbolp fnc)))
    (if (atom subterms)
@@ -805,14 +820,23 @@
       (implies (binary-or-p term)
                (case-match term (('binary-or & &) t)))
       :rule-classes :forward-chaining)
-
+    (defthm binary-or-p-implies-length-fc
+      (implies (binary-or-p term)
+               (case-match term ((& & &) t)))
+      :rule-classes :forward-chaining)
+    (defthm binary-or-p-transient
+      (implies (binary-or-p term)
+               (binary-or-p `(,(car term) ,x ,y))))
+    (defthm binary-or-p-bad-arg-length
+      (and (not (binary-or-p `(,fn ,x)))
+           (not (binary-or-p `(,fn ,x ,y ,z)))))
     (defthm binary-or-p-of-binary-or
       (equal (binary-or-p (cons 'binary-or y))
-             (let ((term (cons 'binary-or y))) 
+             (let ((term (cons 'binary-or y)))
                (case-match term (('binary-or & &) t))))
       :hints (("Goal"
                :in-theory (e/d (binary-or-p) ())))))
- 
+
   (define binary-and-p (term)
     :inline t
     (case-match term (('binary-and & &) t))
@@ -821,10 +845,19 @@
       (implies (binary-and-p term)
                (case-match term (('binary-and & &) t)))
       :rule-classes :forward-chaining)
-
+    (defthm binary-and-p-implies-length-fc
+      (implies (binary-and-p term)
+               (case-match term ((& & &) t)))
+      :rule-classes :forward-chaining)
+    (defthm binary-and-p-transient
+      (implies (binary-and-p term)
+               (binary-and-p `(,(car term) ,x ,y))))
+    (defthm binary-and-p-bad-arg-length
+      (and (not (binary-and-p `(,fn ,x)))
+           (not (binary-and-p `(,fn ,x ,y ,z)))))
     (defthm binary-and-p-of-binary-and
       (equal (binary-and-p (cons 'binary-and y))
-             (let ((term (cons 'binary-and y))) 
+             (let ((term (cons 'binary-and y)))
                (case-match term (('binary-and & &) t))))
       :hints (("goal"
                :in-theory (e/d (binary-and-p) ())))))
@@ -837,9 +870,19 @@
       (implies (binary-xor-p term)
                (case-match term (('binary-xor & &) t)))
       :rule-classes :forward-chaining)
+    (defthm binary-xor-p-implies-length-fc
+      (implies (binary-xor-p term)
+               (case-match term ((& & &) t)))
+      :rule-classes :forward-chaining)
+    (defthm binary-xor-p-transient
+      (implies (binary-xor-p term)
+               (binary-xor-p `(,(car term) ,x ,y))))
+    (defthm binary-xor-p-bad-arg-length
+      (and (not (binary-xor-p `(,fn ,x)))
+           (not (binary-xor-p `(,fn ,x ,y ,z)))))
     (defthm binary-xor-p-of-binary-xor
       (equal (binary-xor-p (cons 'binary-xor y))
-             (let ((term (cons 'binary-xor y))) 
+             (let ((term (cons 'binary-xor y)))
                (case-match term (('binary-xor & &) t))))
       :hints (("goal"
                :in-theory (e/d (binary-xor-p) ())))))
@@ -852,9 +895,19 @@
       (implies (binary-?-p term)
                (case-match term (('binary-? & & &) t)))
       :rule-classes :forward-chaining)
+    (defthm binary-?-p-implies-length-fc
+      (implies (binary-?-p term)
+               (case-match term ((& & & &) t)))
+      :rule-classes :forward-chaining)
+    (defthm binary-?-p-transient
+      (implies (binary-?-p term)
+               (binary-?-p `(,(car term) ,x ,y ,z))))
+    (defthm binary-?-p-bad-arg-length
+      (and (not (binary-?-p `(,fn ,x ,y)))
+           (not (binary-?-p `(,fn ,x)))))
     (defthm binary-?-p-of-binary-?
       (equal (binary-?-p (cons 'binary-? y))
-             (let ((term (cons 'binary-? y))) 
+             (let ((term (cons 'binary-? y)))
                (case-match term (('binary-? & & &) t))))
       :hints (("goal"
                :in-theory (e/d (binary-?-p) ())))))
@@ -867,10 +920,19 @@
       (implies (binary-not-p term)
                (case-match term (('binary-not &) t)))
       :rule-classes :forward-chaining)
-
+    (defthm binary-not-p-implies-length-fc
+      (implies (binary-not-p term)
+               (case-match term ((& &) t)))
+      :rule-classes :forward-chaining)
+    (defthm binary-not-p-transient
+      (implies (binary-not-p term)
+               (binary-not-p `(,(car term) ,x))))
+    (defthm binary-not-p-bad-arg-length
+      (and (not (binary-not-p `(,fn ,x ,y)))
+           (not (binary-not-p `(,fn ,x ,y ,z)))))
     (defthm binary-not-p-of-binary-not
       (equal (binary-not-p (cons 'binary-not y))
-             (let ((term (cons 'binary-not y))) 
+             (let ((term (cons 'binary-not y)))
                (case-match term (('binary-not &) t))))
       :hints (("goal"
                :in-theory (e/d (binary-not-p) ())))))
@@ -881,7 +943,27 @@
         (binary-and-p term)
         (binary-xor-p term)
         (binary-?-p term)
-        (binary-not-p term)))
+        (binary-not-p term))
+    ///
+    (defthm binary-fnc-p-implies-fc
+      (implies (binary-fnc-p x)
+               (and (consp x)
+                    (true-listp x)
+                    (not (equal (car x) 'quote))
+                    (not (equal (car x) 'falist))
+                    (SYMBOLP (CAR x))
+                    (CAR x)))
+      :rule-classes :forward-chaining)
+
+    (defthm binary-fnc-p-relieve
+      (implies (OR (BINARY-OR-P TERM)
+                   (BINARY-AND-P TERM)
+                   (BINARY-XOR-P TERM)
+                   (BINARY-?-P TERM)
+                   (BINARY-NOT-P TERM))
+               (binary-fnc-p term))
+      :hints (("Goal"
+               :in-theory (e/d (binary-fnc-p) ())))))
 
   (define bit-of-p (term)
     :inline t
@@ -890,6 +972,15 @@
     (defthm bit-of-p-implies-fc
       (implies (bit-of-p term)
                (case-match term (('bit-of & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define bit-fix-p (term)
+    :inline t
+    (case-match term (('bit-fix &) t))
+    ///
+    (defthm bit-fix-p-implies-fc
+      (implies (bit-fix-p term)
+               (case-match term (('bit-fix &) t)))
       :rule-classes :forward-chaining))
 
   (define adder-or-p (term)
@@ -937,83 +1028,82 @@
                (case-match term (('pp &) t)))
       :rule-classes :forward-chaining)))
 
-
 (define make-readable-4vec-concat-aux (term)
   :mode :program
   (case-match term
-      (('svl::4vec-concat$ ''1 this rest)
-       (cons this
-             (make-readable-4vec-concat-aux rest)))
+    (('svl::4vec-concat$ ''1 this rest)
+     (cons this
+           (make-readable-4vec-concat-aux rest)))
     (('svl::4vec-concat ''1 this rest)
-       (cons this
-             (make-readable-4vec-concat-aux rest)))
+     (cons this
+           (make-readable-4vec-concat-aux rest)))
     (('svl::4vec-concat$ 1 this rest)
-       (cons this
-             (make-readable-4vec-concat-aux rest)))
+     (cons this
+           (make-readable-4vec-concat-aux rest)))
     (('svl::4vec-concat 1 this rest)
-       (cons this
-             (make-readable-4vec-concat-aux rest)))
+     (cons this
+           (make-readable-4vec-concat-aux rest)))
     (& term)))
 
 (acl2::defines
- make-readable1
- :mode :program
- (define make-readable1 (term)
-   (case-match term
-       (('rp & term)
-        (make-readable1 term))
-     (('equal x y)
-      `(equal ,(make-readable1 x) ,(make-readable1 y)))
-     (('s & pp c)
-      `(ss . ,(append (make-readable1 pp) (make-readable1 c))))
-     (('s pp c)
-      `(ss . ,(append (make-readable1 pp) (list (make-readable1 c)))))
-     (('c & s pp c)
-      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (make-readable1 c))))
-     (('c s pp c)
-      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
-     (('-- term)
-      `(-- ,(make-readable1 term)))
-     (('list . lst)
-      (make-readable1-lst lst))
-     (('quote a)
-      a)
-     (('d ('rp ''evenpi ('d-sum s pp c)))
-      `(dd . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
-     (('cons a b)
-      (cons (make-readable1 a)
-            (make-readable1 b)))
-     #|(('binary-and & &)
-     term)||#
-     (('binary-and ('bit-of a ('quote i)) ('bit-of b ('quote j)))
-      (progn$
+  make-readable1
+  :mode :program
+  (define make-readable1 (term)
+    (case-match term
+      (('rp & term)
+       (make-readable1 term))
+      (('equal x y)
+       `(equal ,(make-readable1 x) ,(make-readable1 y)))
+      (('s & pp c)
+       `(ss . ,(append (make-readable1 pp) (make-readable1 c))))
+      (('s pp c)
+       `(ss . ,(append (make-readable1 pp) (list (make-readable1 c)))))
+      (('c & s pp c)
+       `(cc . ,(append (make-readable1 s) (make-readable1 pp) (make-readable1 c))))
+      (('c s pp c)
+       `(cc . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
+      (('-- term)
+       `(-- ,(make-readable1 term)))
+      (('list . lst)
+       (make-readable1-lst lst))
+      (('quote a)
+       a)
+      (('d ('rp ''evenpi ('d-sum s pp c)))
+       `(dd . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
+      (('cons a b)
+       (cons (make-readable1 a)
+             (make-readable1 b)))
+      #|(('binary-and & &)
+      term)||#
+      (('binary-and ('bit-of a ('quote i)) ('bit-of b ('quote j)))
+       (progn$
 ;(cw "term~p0 ~%" term)
-       (b* ((a (ex-from-rp-loose a))
-            (a (if (equal a 'in1) 'a a))
-            (b (ex-from-rp-loose b))
-            (b (if (equal b 'in2) 'b b)))
+        (b* ((a (ex-from-rp-loose a))
+             (a (if (equal a 'in1) 'a a))
+             (b (ex-from-rp-loose b))
+             (b (if (equal b 'in2) 'b b)))
 ;`(rp 'bitp
-         `   ,(sa (symbol-name a) i (symbol-name b) j)
+          `   ,(sa (symbol-name a) i (symbol-name b) j)
 ;    )
-         )))
+          )))
 
-     (('svl::4vec-concat$ 1 & &)
-      `(4list . ,(make-readable1-lst (make-readable-4vec-concat-aux term))))
-     (('svl::4vec-concat$ ''1 & &)
-      `(4list . ,(make-readable1-lst (make-readable-4vec-concat-aux term))))
+      (('svl::4vec-concat$ 1 & &)
+       `(4list . ,(make-readable1-lst (make-readable-4vec-concat-aux term))))
+      (('svl::4vec-concat$ ''1 & &)
+       `(4list . ,(make-readable1-lst (make-readable-4vec-concat-aux term))))
 
-     (&
-      (cond ((binary-fnc-p term)
-             `(,(car term) "..."))
-            ((atom term)
-             term)
-            (t
-             `(,(car term) . ,(make-readable1-lst (cdr term))))))))
- (define make-readable1-lst (lst)
-   (if (atom lst)
-       nil
-     (cons (make-readable1 (car lst))
-           (make-readable1-lst (cdr lst))))))
+      (&
+       (cond ((binary-fnc-p term)
+              `(,(car term) "..."))
+             ((atom term)
+              term)
+             (t
+              `(,(car term) . ,(make-readable1-lst (cdr term))))))))
+  (define make-readable1-lst (lst)
+    (if (atom lst)
+        nil
+      (cons (make-readable1 (car lst))
+            (make-readable1-lst (cdr lst))))))
 
 (define str-cat-lst ((lst string-listp))
   (if (atom lst)
@@ -1023,64 +1113,61 @@
               (str-cat-lst (cdr lst)))))
 
 (acl2::defines
- make-readable
- :verify-guards nil
- (define make-readable (term)
-   (declare (xargs :mode :program))
-   (b* ((term (ex-from-rp-loose term)))
-     (case-match term
-       (('equal a b)
-        `(equal ,(make-readable a)
-                ,(make-readable b)))
-       (('s hash pp c)
-        (b* ((pp-lst (make-readable-lst (list-to-lst pp)))
-             (c-lst (make-readable-lst (list-to-lst c))))
-          `(s (,hash). ,(append pp-lst c-lst))))
-       (('c hash s pp c)
-        (b* ((s-lst (make-readable-lst (list-to-lst s)))
-             (pp-lst (make-readable-lst (list-to-lst pp)))
-             (c-lst (make-readable-lst (list-to-lst c))))
-          `(c (,hash) . ,(append s-lst pp-lst c-lst))))
-       (('-- n)
-        `(-- ,(make-readable n)))
-       (''1
-        1)
-       (('and-list & bits)
-        (b* ((lst (make-readable-lst (list-to-lst bits)))
-             (str (str-cat-lst lst))
-             (sym (intern$ str "RP")))
-          sym))
-       (('bit-of name ('quote index))
-        (b* ((sym (sa  (ex-from-rp-loose name) index)))
-          (symbol-name sym)))
-       (('bit-of name index)
-        (b* ((sym (sa  (ex-from-rp-loose name) index)))
-          (symbol-name sym)))
-       (('binary-and x y)
-        `(and$ ,(make-readable x) ,(make-readable y)))
-       (('binary-or x y)
-        `(or$ ,(make-readable x) ,(make-readable y)))
-       (('binary-xor x y)
-        `(xor$ ,(make-readable x) ,(make-readable y)))
-       (('binary-? x y z)
-        `(binary-? ,(make-readable x) ,(make-readable y) ,(make-readable z)))
-       (('binary-not x)
-        `(not$ ,(make-readable x)))
-       (& (if (atom term)
-              (symbol-name term)
-            (progn$
-             (hard-error 'make-readable
-                         "Unexpected term instance~p0~%"
-                         (list (cons #\0 term)))
-             nil))))))
- (define make-readable-lst (lst)
-   (if (atom lst)
-       nil
-     (cons (make-readable (car lst))
-           (make-readable-lst (cdr lst))))))
-
-
-
+  make-readable
+  :verify-guards nil
+  (define make-readable (term)
+    (declare (xargs :mode :program))
+    (b* ((term (ex-from-rp-loose term)))
+      (case-match term
+        (('equal a b)
+         `(equal ,(make-readable a)
+                 ,(make-readable b)))
+        (('s hash pp c)
+         (b* ((pp-lst (make-readable-lst (list-to-lst pp)))
+              (c-lst (make-readable-lst (list-to-lst c))))
+           `(s (,hash). ,(append pp-lst c-lst))))
+        (('c hash s pp c)
+         (b* ((s-lst (make-readable-lst (list-to-lst s)))
+              (pp-lst (make-readable-lst (list-to-lst pp)))
+              (c-lst (make-readable-lst (list-to-lst c))))
+           `(c (,hash) . ,(append s-lst pp-lst c-lst))))
+        (('-- n)
+         `(-- ,(make-readable n)))
+        (''1
+         1)
+        (('and-list & bits)
+         (b* ((lst (make-readable-lst (list-to-lst bits)))
+              (str (str-cat-lst lst))
+              (sym (intern$ str "RP")))
+           sym))
+        (('bit-of name ('quote index))
+         (b* ((sym (sa  (ex-from-rp-loose name) index)))
+           (symbol-name sym)))
+        (('bit-of name index)
+         (b* ((sym (sa  (ex-from-rp-loose name) index)))
+           (symbol-name sym)))
+        (('binary-and x y)
+         `(and$ ,(make-readable x) ,(make-readable y)))
+        (('binary-or x y)
+         `(or$ ,(make-readable x) ,(make-readable y)))
+        (('binary-xor x y)
+         `(xor$ ,(make-readable x) ,(make-readable y)))
+        (('binary-? x y z)
+         `(binary-? ,(make-readable x) ,(make-readable y) ,(make-readable z)))
+        (('binary-not x)
+         `(not$ ,(make-readable x)))
+        (& (if (atom term)
+               (symbol-name term)
+             (progn$
+              (hard-error 'make-readable
+                          "Unexpected term instance~p0~%"
+                          (list (cons #\0 term)))
+              nil))))))
+  (define make-readable-lst (lst)
+    (if (atom lst)
+        nil
+      (cons (make-readable (car lst))
+            (make-readable-lst (cdr lst))))))
 
 
 (defmacro ss (&rest args)
@@ -1123,7 +1210,6 @@
                    (c-spec sum)
                    (1- size))))))
 
-
 (define has-bitp-rp (term)
   :hints (("Goal"
            :in-theory (e/d (is-rp) ())))
@@ -1148,7 +1234,7 @@
 
 (define append-wog (l1 l2)
   ;;(append l1 l2)
-  ;; same as append 
+  ;; same as append
   (if (atom l1)
       l2
     (cons (car l1)
@@ -1181,18 +1267,28 @@
     :inline t
     (create-list-instance (negate-lst (list-to-lst term) enabled))))
 
+(defun hons-list-macro-fn (acl2::lst)
+  (declare (xargs :guard t))
+  (if (consp acl2::lst)
+      (cons 'hons
+            (cons (car acl2::lst)
+                  (cons (hons-list-macro-fn (cdr acl2::lst))
+                        nil)))
+    nil))
 
+(DEFMACRO hons-LIST (&REST ARGS)
+  (hons-list-macro-fn ARGS))
 
 (encapsulate
   nil
 
   (local
    (in-theory (disable
-              ;; +-is-SUM
-              ;; mod2-is-m2
-              ;; floor2-if-f2
-              ;; c-is-f2
-              ;; s-is-m2
+               ;; +-is-SUM
+               ;; mod2-is-m2
+               ;; floor2-if-f2
+               ;; c-is-f2
+               ;; s-is-m2
                ;; s-spec-is-m2
                ;;SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
                ;;c-spec-is-f2
@@ -1209,7 +1305,7 @@
       mult-formula-checks
       (binary-append
        ifix
-       
+
        acl2::logcar$inline
        acl2::logcdr$inline
        acl2::logbit
@@ -1251,6 +1347,5 @@
        bit-concat
        ;;sv::4vec-fix
        svl::bits
+       
        ))))
-
-

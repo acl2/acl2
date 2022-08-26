@@ -287,4 +287,15 @@ Valid:~x8~%~%"
   (profile 'rp::c-pattern1-reduce)
   (profile 'rp::c-pattern2-reduce)
   (profile 'rp::c-pattern0-reduce)
+
+  (profile 'rp::4vec-branch-drop-r-case)
+
+  
+
+  (profile 'rp::pp-lst-orderedp)
+  (profile 'rp::pp-sum-sort-lst)
+  (profile 'rp::pp-radix8+-fix-aux-for-s/c-main)
+  (profile 'rp::recollect-pp-lst-to-sc)
+
+  (profile 'rp::calculate-c-hash)
   )

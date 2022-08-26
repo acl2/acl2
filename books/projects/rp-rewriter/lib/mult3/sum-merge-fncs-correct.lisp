@@ -1621,6 +1621,16 @@
            :in-theory (e/d (pp-sum-sort-lst)
                            (evens odds)))))
 
+(defthm pp-sum-sort-lst-correct-alt
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (equal (sum-list (rp-evlt-lst (pp-sum-sort-lst pp-lst) a))
+                  (sum-list (rp-evlt-lst pp-lst a))))
+  :hints (("Goal"
+           :use ((:instance pp-sum-sort-lst-correct))
+           :in-theory (e/d (pp-sum-sort-lst)
+                           (evens odds)))))
+
 (defthm valid-sc-subterms-of-odds-and-evens
   (implies (valid-sc-subterms lst a)
            (and (valid-sc-subterms (odds lst) a)
