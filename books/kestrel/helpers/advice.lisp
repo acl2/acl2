@@ -1336,7 +1336,7 @@
        (removed-count (- (len successful-recs) (len successful-recs-no-dupes)))
        (- (and (posp removed-count)
                (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
-                   (if (< 1 removed-count) "recommendations were" "recommendation was"))))
+                   (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
        (num-successful-recs (len successful-recs-no-dupes))
        (max-wins-reachedp (and (natp max-wins) (= max-wins num-successful-recs)))
        (- (and max-wins-reachedp
