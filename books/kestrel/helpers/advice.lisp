@@ -312,9 +312,10 @@
         (coerce (rest chars) 'string)
       str)))
 
-(defmacro fms-to-string-no-margin (&rest args)
-  `(fms-to-string ,@args :fmt-control-alist '((fmt-soft-right-margin . 10000)
-                                              (fmt-hard-right-margin . 10000))))
+(defmacro fms-to-string-one-line (&rest args)
+  `(drop-initial-newline ; work around problem with fms-to-string
+    (fms-to-string ,@args :fmt-control-alist '((fmt-soft-right-margin . 10000)
+                                               (fmt-hard-right-margin . 10000)))))
 
 (defun show-successful-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)
@@ -326,21 +327,19 @@
          ;; (book-map (car (nth 4 rec)))
          (pre-commands (nth 5 rec))
          (english-rec (case type
-                        (:add-cases-hint (fms-to-string-no-margin ":cases ~x0" (acons #\0 object nil)))
-                        (:add-disable-hint (fms-to-string-no-margin "disabling ~x0" (acons #\0 object nil)))
-                        (:add-do-not-hint (fms-to-string-no-margin ":do-not ~x0" (acons #\0 object nil)))
+                        (:add-cases-hint (fms-to-string-one-line ":cases ~x0" (acons #\0 object nil)))
+                        (:add-disable-hint (fms-to-string-one-line "disabling ~x0" (acons #\0 object nil)))
+                        (:add-do-not-hint (fms-to-string-one-line ":do-not ~x0" (acons #\0 object nil)))
                         ;; Same handling for both:
-                        ((:add-enable-hint :use-lemma) (fms-to-string-no-margin "enabling ~x0" (acons #\0 object nil)))
-                        (:add-expand-hint (fms-to-string-no-margin ":expand ~x0" (acons #\0 object nil)))
-                        (:add-hyp (fms-to-string-no-margin "adding the hyp ~x0" (acons #\0 object nil)))
-                        (:add-induct-hint (fms-to-string-no-margin ":induct ~x0" (acons #\0 object nil)))
-                        (:add-library (fms-to-string-no-margin "~x0" (acons #\0 object nil)))
-                        (:add-nonlinearp-hint (fms-to-string-no-margin ":nonlinearp ~x0" (acons #\0 object nil)))
-                        (:add-use-hint (fms-to-string-no-margin ":use ~x0" (acons #\0 object nil)))
-                        (:exact-hints (fms-to-string-no-margin ":hints ~x0" (acons #\0 object nil)))
-                        (t (er hard? 'show-successful-recommendation "Unknown rec type: ~x0." type))))
-         (english-rec (drop-initial-newline english-rec)) ; work around problem with fms-to-string
-         )
+                        ((:add-enable-hint :use-lemma) (fms-to-string-one-line "enabling ~x0" (acons #\0 object nil)))
+                        (:add-expand-hint (fms-to-string-one-line ":expand ~x0" (acons #\0 object nil)))
+                        (:add-hyp (fms-to-string-one-line "adding the hyp ~x0" (acons #\0 object nil)))
+                        (:add-induct-hint (fms-to-string-one-line ":induct ~x0" (acons #\0 object nil)))
+                        (:add-library (fms-to-string-one-line "~x0" (acons #\0 object nil)))
+                        (:add-nonlinearp-hint (fms-to-string-one-line ":nonlinearp ~x0" (acons #\0 object nil)))
+                        (:add-use-hint (fms-to-string-one-line ":use ~x0" (acons #\0 object nil)))
+                        (:exact-hints (fms-to-string-one-line ":hints ~x0" (acons #\0 object nil)))
+                        (t (er hard? 'show-successful-recommendation "Unknown rec type: ~x0." type)))))
     (if pre-commands
         (if (consp (cdr pre-commands))
             ;; More than one pre-command:
@@ -755,7 +754,8 @@
                                          state))
        (- (if provedp
               (cw-success-message rec)
-            (cw-failure-message "add hyp didn't help" failure-info))))
+            (let ((translated-hyp (translate-term hyp 'try-add-hyp (w state))))
+              (cw-failure-message (fms-to-string-one-line "adding hyp ~x0 didn't help" (acons #\0 translated-hyp nil)) failure-info)))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -774,6 +774,9 @@
         (mv nil nil state))
        ((when (keywordp rule))
         (cw "skip (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
+        (mv nil nil state))
+       ((when (not (symbolp rule)))
+        (cw "skip (Unsupported item: ~x0)~%" rule) ; todo: handle runes like (:TYPE-PRESCRIPTION A14 . 1)
         (mv nil nil state))
        (wrld (w state))
        (rule (handle-macro-alias rule wrld)) ; TODO: Handle the case of a macro-alias we don't know about
