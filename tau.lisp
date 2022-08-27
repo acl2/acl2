@@ -8539,15 +8539,6 @@
 ; The following function strips FORCE and CASE-SPLIT off of the hyps so that
 ; they don't trick us into missing tau rules.
 
-(defun strip-force-and-case-split (lst)
-  (cond ((endp lst) nil)
-        (t (let* ((hyp (car lst))
-                  (rest (strip-force-and-case-split (cdr lst))))
-             (case-match hyp
-               (('force hyp) (cons hyp rest))
-               (('case-split hyp) (cons hyp rest))
-               (& (cons hyp rest)))))))
-
 (defun strip-force-and-case-split-in-hyps-of-pairs (pairs)
   (cond ((endp pairs) nil)
         (t (cons (cons (strip-force-and-case-split (car (car pairs)))

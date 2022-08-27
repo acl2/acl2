@@ -64,7 +64,21 @@
            (equal (len newv) (len tuple)))
   :hints (("Goal" :induct (loop$-as tuple))))
 
-; Preservation of integer-listp
+(defthm from-to-by-x-x
+  (equal (from-to-by x x y)
+         (if (and (integerp x)
+                  (integerp y)
+                  (< 0 y))
+             (list x)
+             nil))
+  :hints (("Goal" :expand ((from-to-by x x y)
+                           (from-to-by (+ x y) x y)))))
+
+; Preservation of nat-listp, integer-listp, etc.
+
+(defthm nat-listp-from-to-by
+  (implies (natp i)
+           (nat-listp (from-to-by i j k))))
 
 (defthm integer-listp-from-to-by
   (implies (and (integerp i)
@@ -368,6 +382,10 @@
 ; the weaker (always$ 'integerp lst) as the hyp rather than (integer-listp
 ; lst).
 
+(defthm nat-listp-implies-always$-natp
+  (implies (nat-listp lst)
+           (always$ 'natp lst)))
+
 (defthm integer-listp-implies-always$-integerp
   (implies (integer-listp lst)
            (always$ 'integerp lst)))
@@ -452,6 +470,39 @@
            :use (:instance not-member-loop$-as-general
                            (tuple (cons lst1 (cons lst2 (cons lst3 rest))))
                            (n 2)))))
+
+(defthm not-member-loop$-as-natp-1
+  (implies (and (not (natp (car newv)))
+                (nat-listp lst1))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
+  :hints
+  (("Goal" :in-theory (disable not-member-loop$-as-general)
+    :use (:instance not-member-loop$-as-general
+                    (fnp 'natp)
+                    (tuple (cons lst1 rest))
+                    (n 0)))))
+
+(defthm not-member-loop$-as-natp-2
+  (implies (and (not (natp (cadr newv)))
+                (nat-listp lst2))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
+  :hints
+  (("Goal" :in-theory (disable not-member-loop$-as-general)
+    :use (:instance not-member-loop$-as-general
+                    (fnp 'natp)
+                    (tuple (cons lst1 (cons lst2 rest)))
+                    (n 1)))))
+
+(defthm not-member-loop$-as-natp-3
+  (implies (and (not (natp (caddr newv)))
+                (nat-listp lst3))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
+  :hints
+  (("Goal" :in-theory (disable not-member-loop$-as-general)
+    :use (:instance not-member-loop$-as-general
+                    (fnp 'natp)
+                    (tuple (cons lst1 (cons lst2 (cons lst3 rest))))
+                    (n 2)))))
 
 (defthm not-member-loop$-as-integer-1
   (implies (and (not (integerp (car newv)))
@@ -765,24 +816,352 @@
                                       (from-to-by (+ 1 i) i 1))))
   :rule-classes ((:definition :install-body nil)))
 
+; -----------------------------------------------------------------
+; Essay on How We Handle Inductions Suggested by Loop$-As
+
+; When FOR Loop$s have AS clauses they generate (loop$-as (list ...)) expressions.
+; For example
+
+; (loop$ for e in lst as i from i0 to max collect ...)
+
+; generates (loop$-as (list lst (from-to-by i0 max 1))).
+
+; This raises problems for our induction analysis because the occurrence of lst
+; in the above loop$-as expression suggests no induction while the occurrence
+; of the from-to-by suggests induction up from i0.  But what is actually an
+; appropriate induction is probably one on lst by cdr and i0 up to max by 1.
+; We can arrange this with :induction rules.
+
+; Solving the problem with :induction rules unfortunately means we have to
+; look for explicit combinations of targets, e.g.,
+
+; (loop$-as (list lst1 lst2))
+; (loop$-as (list lst1 (tails lst2)))
+; (loop$-as (list (tails lst2) lst1))
+; (loop$-as (list (tails lst1) (tails lst2)))
+; (loop$-as (list lst (from-to-by lo hi by)))
+; (loop$-as (list (from-to-by lo hi by) lst))
+; (loop$-as (list (tails lst) (from-to-by lo hi by)))
+; (loop$-as (list (from-to-by lo hi by) (tails lst)))
+; (loop$-as (list (from-to-by lo1 hi1 by1) (from-to-by lo2 hi2 by2)))
+
+; and that enumeration doesn't even consider combinations of more than two two
+; ranges like (loop$-as (list lst1 (tails ls2) (from-to-by lo hi by))).  One
+; might hope that merging of suggested inductions could handle other
+; combinations but it won't.  Our rules won't even fire on combinations of
+; three, and so there'll be no candidates to merge.
+
+; Nevertheless, in this particular treatment we limit ourselves to combinations
+; of just one or two ranges.
+
+; If this treatment works well enough for combinations of two inductions an
+; excellent project for somebody would be to extend ACL2's induction analysis
+; to handle all possible combinations of any number of ranges.  But we think it
+; is more important to use the tools at hand to get the best induction handling
+; we can come up with for common cases, and the above combinations are almost
+; certainly the most common!
+
+; But the problems don't stop there.
+
+; Unfortunately, the intrinsic induction suggested by a from-to-by term
+; can flaw a loop$-as induction involving from-to-by.  For example, the
+; simultaneous induction suggested in
+
+; (loop$ for i in lst as i from i0 to (len lst) collect ...)
+
+; is flawed by the intrinsic induction suggested by the subterm (from-to-by i0
+; (len lst) 1).  because that induction needs the upper bound held fixed but if
+; we induct down on lst simultaneously it is not.
+
+; To address that problem we disable the intrinsic induction suggested by
+; from-to-by!
+
+; But that means that simple loop$s like
+
+; (loop$ for i from i0 to max collect ...)
+
+; won't suggest any induction.
+
+; To fix that problem we code an :induction rule for each simple loop$ scion
+; and range, e.g.,
+
+; (collect$ fn (from-to-by lo hi by))
+
+; will have an :induction rule pattern that suggests the from-to-by induction.
+
+; We start with the :induction rules for simple loop$s and then deal
+; with combinations of two for fancy loop$s.
+
+; -----------------------------------------------------------------
+; Disabling the intrinsic from-to-by induction
+
+(in-theory (disable (:induction from-to-by)))
+
+; -----------------------------------------------------------------
+; Simple loop$ scions and from-to-by:
+
+; (sum$     fn (from-to-by lo hi by))
+; (always$  fn (from-to-by lo hi by))
+; (thereis$ fn (from-to-by lo hi by))
+; (collect$ fn (from-to-by lo hi by))
+; (append$  fn (from-to-by lo hi by))
+; (until$   fn (from-to-by lo hi by))
+; (when$    fn (from-to-by lo hi by))
+
+(defun from-to-by1 (i j k)
+
+; This is just from-to-by, but we leave its intrinsic induction enabled.
+
+  (declare (xargs :measure (from-to-by-measure i j)))
+  (cond ((and (integerp i)
+              (integerp j)
+              (integerp k)
+              (< 0 k))
+         (cond ((<= i j)
+                (cons i (from-to-by1 (+ i k) j k)))
+               (t nil)))
+        (t nil)))
+
+(defthm sum$-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (sum$ fn (from-to-by lo hi by))
+                             :scheme  (from-to-by1 lo hi by))))
+
+(defthm always$-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (always$ fn (from-to-by lo hi by))
+                             :scheme  (from-to-by1 lo hi by))))
+
+(defthm thereis$-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (thereis$ fn (from-to-by lo hi by))
+                             :scheme  (from-to-by1 lo hi by))))
+
+(defthm collect$-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (collect$ fn (from-to-by lo hi by))
+                             :scheme  (from-to-by1 lo hi by))))
+
+(defthm append$-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (append$ fn (from-to-by lo hi by))
+                             :scheme  (from-to-by1 lo hi by))))
+
+(defthm until$-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (until$ fn (from-to-by lo hi by))
+                             :scheme  (from-to-by1 lo hi by))))
+
+(defthm when$-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (when$ fn (from-to-by lo hi by))
+                             :scheme  (from-to-by1 lo hi by))))
+
+; -----------------------------------------------------------------
+
+; Now fancy loop$s without an AS clause, i.e., one lst range being cdr'd, but
+; buried in a loop$-as because global variables forced the use of a fancy loop$
+; scion instead of a simple one.  Note that (loop$-as (list lst)) and (loop$-as
+; (list (tails lst))) suggest the same induction.
+
+(defthm loop$-as-cdr-rule
+  t
+  :rule-classes
+; Lst1 and lst2 distinct variables:
+  ((:induction :pattern (loop$-as (list lst))
+               :condition (syntaxp (variablep lst))
+               :scheme (len lst))
+   (:induction :pattern (loop$-as (list (tails lst)))
+               :condition (syntaxp (variablep lst))
+               :scheme (len lst))))
+
+; -----------------------------------------------------------------
+; And the same for from-to-by.
+
+(defthm loop$-as-ftb-rule
+  t
+  :rule-classes
+; Lst1 and lst2 distinct variables:
+  ((:induction :pattern (loop$-as (list (from-to-by lo hi by)))
+               :condition (syntaxp (variablep lo))
+               :scheme (from-to-by1 lo hi by))))
+
+; -----------------------------------------------------------------
+; Now on to fancy loop$s with one AS clause, i.e., two simultaneous list ranges
+; being cdr'd.
+
+; TODO: The following replaces loop$-as-2-induction and loop$-as-hint-2 in
+; loop-lemmas.lisp.
+
+(defun loop$-as-cdr-cdr (lst1 lst2)
+
+; We use a measure below that makes both lst1 and lst2 controllers.  That means
+; (loop$-as-cdr-cdr lst1 lst2) will suggest an induction only if lst1 and lst2
+; are distinct variables.
+
+  (declare (xargs :measure (+ (acl2-count lst1) (acl2-count lst2))))
+
+  (cond ((endp lst1) nil)
+        ((endp lst2) nil)
+        (t (loop$-as-cdr-cdr (cdr lst1)
+                             (cdr lst2)))))
+
+; We handle (loop$-as (list lst1 lst2)) where lst1 and lst2 are distinct
+; variables and where they're the same variable.  Again, note that (loop$-as
+; (list lst1 lst2)) and (loop$-as (list lst1 (tails lst2))) suggest the same
+; induction.
+
+(defthm loop$-as-cdr-cdr-rule
+  t
+  :rule-classes
+; Lst1 and lst2 distinct variables:
+  ((:induction :pattern (loop$-as (list lst1 lst2))
+               :condition (syntaxp (and (variablep lst1)
+                                        (variablep lst2)
+                                        (not (eq lst1 lst2))))
+               :scheme (loop$-as-cdr-cdr lst1 lst2))
+   (:induction :pattern (loop$-as (list lst1 (tails lst2)))
+               :condition (syntaxp (and (variablep lst1)
+                                        (variablep lst2)
+                                        (not (eq lst1 lst2))))
+               :scheme (loop$-as-cdr-cdr lst1 lst2))
+   (:induction :pattern (loop$-as (list (tails lst2) lst1))
+               :condition (syntaxp (and (variablep lst1)
+                                        (variablep lst2)
+                                        (not (eq lst1 lst2))))
+               :scheme (loop$-as-cdr-cdr lst1 lst2))
+   (:induction :pattern (loop$-as (list (tails lst1) (tails lst2)))
+               :condition (syntaxp (and (variablep lst1)
+                                        (variablep lst2)
+                                        (not (eq lst1 lst2))))
+               :scheme (loop$-as-cdr-cdr lst1 lst2))
+
+; Lst1 and lst2 same variable:
+   (:induction :pattern (loop$-as (list lst1 lst1))
+               :condition (syntaxp (variablep lst1))
+               :scheme (len lst1))
+   (:induction :pattern (loop$-as (list (tails lst1) lst1))
+               :condition (syntaxp (variablep lst1))
+               :scheme (len lst1))
+   (:induction :pattern (loop$-as (list lst1 (tails lst1)))
+               :condition (syntaxp (variablep lst1))
+               :scheme (len lst1))
+   (:induction :pattern (loop$-as (list (tails lst1) (tails lst1)))
+               :condition (syntaxp (variablep lst1))
+               :scheme (len lst1))))
+
+; -----------------------------------------------------------------
+; Two ranges with one list being cdr'd and one aritmetic being incremented.
+
+; It is not uncommon in this case for the arithmetic upper bound to be related
+; to the length of the list.  Indeed, since iteration stops as soon as the
+; shorter range is exhausted, it's legal in Common Lisp to write no upper bound:
+
+; (loop$ for e in lst as i from 0 collect ...)
+
+; That is not permitted in ACL2 but a user wishing for the same effect could
+; write
+
+; (loop$ for e in lst as i from 0 to (- (len lst) 1) collect ...)
+
+; or even
+
+; (loop$ for e in lst as i from 0 to (len lst) collect ...).
+
+; But, as noted, if the upper bound is related to (len lst) then simultaneous
+; induction is flawed.  We address this by introducing the following function
+; that maps over lst by cdr while incrementing lo without bound.  We'll suggest
+; this induction when the upper bound of a from-to-by involves the lst
+; variable.
+
+; We'll suggest the more precise induction when the upper bound is unrelated to
+; the lst.
+
+(defun loop$-as-cdr-fb (lst lo by)
+  (cond
+   ((endp lst) (list lst lo by))
+   (t (loop$-as-cdr-fb (cdr lst) (+ by lo) by))))
+
+(defun loop$-as-cdr-ftb (lst lo hi by)
+  (if (and (integerp lo)
+           (integerp hi)
+           (integerp by)
+           (< 0 by))
+      (cond ((endp lst) (list lst lo hi by))
+            ((< hi lo)(list lst lo hi by))
+            (t (loop$-as-cdr-ftb (cdr lst) (+ by lo) hi by)))
+      (list lst lo hi by)))
+
+(defthm loop$-as-cdr-fbt-rule
+  t
+  :rule-classes
+; Upper bound involves lst
+  ((:induction :pattern (loop$-as (list lst (from-to-by lo hi by)))
+               :condition (syntaxp (and (variablep lst)
+                                        (member lst (all-vars hi))))
+               :scheme (loop$-as-cdr-fb lst lo by))
+   (:induction :pattern (loop$-as (list (from-to-by lo hi by) lst))
+               :condition (syntaxp (and (variablep lst)
+                                        (member lst (all-vars hi))))
+               :scheme (loop$-as-cdr-fb lst lo by))
+   (:induction :pattern (loop$-as (list (tails lst) (from-to-by lo hi by)))
+               :condition (syntaxp (and (variablep lst)
+                                        (member lst (all-vars hi))))
+               :scheme (loop$-as-cdr-fb lst lo by))
+   (:induction :pattern (loop$-as (list (from-to-by lo hi by) (tails lst)))
+               :condition (syntaxp (and (variablep lst)
+                                        (member lst (all-vars hi))))
+               :scheme (loop$-as-cdr-fb lst lo by))
+; Upper bound does not involve lst
+   (:induction :pattern (loop$-as (list lst (from-to-by lo hi by)))
+               :condition (syntaxp (and (variablep lst)
+                                        (not (member lst (all-vars hi)))))
+               :scheme (loop$-as-cdr-ftb lst lo hi by))
+   (:induction :pattern (loop$-as (list (from-to-by lo hi by) lst))
+               :condition (syntaxp (and (variablep lst)
+                                        (not (member lst (all-vars hi)))))
+               :scheme (loop$-as-cdr-ftb lst lo hi by))
+   (:induction :pattern (loop$-as (list (tails lst) (from-to-by lo hi by)))
+               :condition (syntaxp (and (variablep lst)
+                                        (not (member lst (all-vars hi)))))
+               :scheme (loop$-as-cdr-ftb lst lo hi by))
+   (:induction :pattern (loop$-as (list (from-to-by lo hi by) (tails lst)))
+               :condition (syntaxp (and (variablep lst)
+                                        (not (member lst (all-vars hi)))))
+               :scheme (loop$-as-cdr-ftb lst lo hi by))))
+
+; -----------------------------------------------------------------
+; Finally, we deal with two arithmetic ranges.
+
+(defun loop$-as-ftb-ftb (lo1 hi1 by1 lo2 hi2 by2)
+  (declare (xargs :measure (+ (from-to-by-measure lo1 hi1)
+                              (from-to-by-measure lo2 hi2))))
+  (if (and (integerp lo1)
+           (integerp hi1)
+           (integerp by1)
+           (integerp lo2)
+           (integerp hi2)
+           (integerp by2)
+           (< 0 by1)
+           (< 0 by2))
+      (cond ((< hi1 lo1) (list lo1 hi1 by1 lo2 hi2 by2))
+            ((< hi2 lo2) (list lo1 hi1 by1 lo2 hi2 by2))
+            (t (loop$-as-ftb-ftb (+ by1 lo1) hi1 by1 (+ by2 lo2) hi2 by2)))
+      (list lo1 hi1 by1 lo2 hi2 by2)))
+
+(defthm loop$-as-ftb-ftb-rule
+  t
+  :rule-classes ((:induction :pattern (loop$-as (list (from-to-by lo1 hi1 by1)
+                                                      (from-to-by lo2 hi2 by2)))
+                             :condition (syntaxp (and (variablep lo1)
+                                                      (variablep lo2)))
+                             :scheme (loop$-as-ftb-ftb lo1 hi1 by1 lo2 hi2 by2))))
+
+; -----------------------------------------------------------------
+
 (defthm len-collect$+-1
   (equal (len (collect$+ fn gvars (loop$-as (list lst))))
          (len lst)))
-
-(defthm loop$-as-1-induction
-  t
-  :rule-classes ((:induction :pattern (loop$-as (list lst1))
-                             :scheme (len lst1))))
-
-(defun loop$-as-hint-2 (lst1 lst2)
-  (cond ((endp lst1) nil)
-        ((endp lst2) nil)
-        (t (loop$-as-hint-2 (cdr lst1) (cdr lst2)))))
-
-(defthm loop$-as-2-induction
-  t
-  :rule-classes ((:induction :pattern (loop$-as (list lst1 lst2))
-                             :scheme (loop$-as-hint-2 lst1 lst2))))
 
 (defthm len-collect$+-2
   (equal (len (collect$+ fn gvars (loop$-as (list lst1 lst2))))
@@ -990,6 +1369,14 @@
 (defthm collect$-singleton
   (equal (collect$ fn (list x))
          (list (apply$ fn (list x)))))
+
+(defthm true-listp-true-list-fix-id
+  (implies (true-listp x)
+           (equal (true-list-fix x) x)))
+
+(defthm len-true-list-fix
+  (equal (len (true-list-fix x))
+         (len x)))
 
 (defthm append$-singleton
   (equal (append$ fn (list x))

@@ -2769,6 +2769,7 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
                        (EQUAL (APPLY$ 'HELLO '(JOHN))
                               '(HI JOHN))))
+Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
@@ -2776,7 +2777,8 @@ Q.E.D.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:EXECUTABLE-COUNTERPART CAR)
+Rules: ((:DEFINITION FORCE)
+        (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART HELLO)
         (:REWRITE APPLY$-HELLO))
@@ -3493,6 +3495,7 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
                        (EQUAL (APPLY$ 'HELLO '(JOHN))
                               '(HI JOHN))))
+Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
   2> (HELLO JOHN)
   <2 (HELLO (HI JOHN))
@@ -3502,7 +3505,8 @@ Q.E.D.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:EXECUTABLE-COUNTERPART CAR)
+Rules: ((:DEFINITION FORCE)
+        (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART HELLO)
         (:REWRITE APPLY$-HELLO))
@@ -4567,7 +4571,8 @@ Q.E.D.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+Rules: ((:DEFINITION FORCE)
+        (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART EV$)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:REWRITE APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
@@ -4609,7 +4614,8 @@ attempt has failed.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:DEFINITION HIDE)
+Rules: ((:DEFINITION FORCE)
+        (:DEFINITION HIDE)
         (:DEFINITION NOT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:REWRITE BETA-REDUCTION))
@@ -4646,15 +4652,27 @@ ACL2 !>>(THM
                           NIL)
                   '(HI JOHN)))
          :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+Goal'
 
-*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+         (EQUAL (APPLY$ (LAMBDA$ NIL
+                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                        NIL)
+                '(HI JOHN)))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
 
 No induction schemes are suggested by *1.  Consequently, the proof
 attempt has failed.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:DEFINITION NOT))
+Rules: ((:DEFINITION FORCE) (:DEFINITION NOT))
 Warnings:  rewrite-lambda-object
 
 ---
@@ -4664,7 +4682,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 
 *** Key checkpoint at the top level: ***
 
-Goal
+Goal'
 (IMPLIES (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
          (EQUAL (APPLY$ (LAMBDA$ NIL
                                  (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
