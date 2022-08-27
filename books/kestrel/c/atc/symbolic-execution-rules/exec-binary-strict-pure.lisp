@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "execution-rules")
+(include-book "uaconvert-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
