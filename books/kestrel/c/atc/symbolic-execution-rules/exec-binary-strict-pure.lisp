@@ -11,8 +11,9 @@
 
 (in-package "C")
 
-(include-book "execution-rules")
+(include-book "promote-value")
 (include-book "uaconvert-values")
+(include-book "execution-rules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

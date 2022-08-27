@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "promote-value")
 (include-book "execution-rules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
