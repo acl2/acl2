@@ -13,6 +13,9 @@
 
 (include-book "execution-rules")
 
+(include-book "syntaxp")
+(include-book "arrays")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-exec-arrsub-rules-generation
