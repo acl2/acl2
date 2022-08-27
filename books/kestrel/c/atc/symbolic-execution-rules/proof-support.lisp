@@ -17,6 +17,7 @@
 (include-book "exec-unary")
 (include-book "exec-binary-strict-pure")
 (include-book "exec-cast")
+(include-book "exec-expr-asg")
 
 (include-book "tools/rulesets" :dir :system)
 
