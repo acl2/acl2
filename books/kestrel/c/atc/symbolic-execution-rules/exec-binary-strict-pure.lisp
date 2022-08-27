@@ -11,9 +11,12 @@
 
 (in-package "C")
 
+(include-book "../execution")
+
+(include-book "syntaxp")
 (include-book "promote-value")
 (include-book "uaconvert-values")
-(include-book "execution-rules")
+(include-book "integer-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
