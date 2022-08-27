@@ -14,6 +14,8 @@
 (include-book "integer-operations")
 (include-book "types")
 
+(include-book "../language/array-operations")
+
 (include-book "symbolic-execution-rules/values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
