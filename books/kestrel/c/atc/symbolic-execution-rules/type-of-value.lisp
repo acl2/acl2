@@ -12,7 +12,7 @@
 (in-package "C")
 
 (include-book "integers")
-(include-book "../arrays")
+(include-book "arrays")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
