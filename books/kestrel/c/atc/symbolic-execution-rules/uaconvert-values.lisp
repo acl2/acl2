@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "convert-integer-value")
 (include-book "execution-rules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
