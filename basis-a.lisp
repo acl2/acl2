@@ -6330,9 +6330,13 @@
   (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
     (list 'error1@par context summary str alist 'state)))
 
-(defmacro er-hard (context summary str &rest str-args)
+(defmacro er-hard? (context summary str &rest str-args)
   (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
     (list 'hard-error context (list 'cons summary str) alist)))
+
+(defmacro er-hard (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'illegal context (list 'cons summary str) alist)))
 
 (defmacro observation1-body (commentp)
   `(io? observation ,commentp state
