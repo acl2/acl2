@@ -11,7 +11,10 @@
 
 (in-package "C")
 
-(include-book "execution-rules")
+(include-book "../execution")
+(include-book "../types")
+
+(include-book "arrays")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
