@@ -12,7 +12,8 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
-(include-book "arrays")
+
+(include-book "symbolic-execution-rules/arrays")
 
 (include-book "../language/portable-ascii-identifiers")
 (include-book "../language/structure-operations")

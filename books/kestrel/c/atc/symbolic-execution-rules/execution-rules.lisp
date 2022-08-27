@@ -12,8 +12,8 @@
 (in-package "C")
 
 (include-book "../execution")
-(include-book "../arrays")
 
+(include-book "arrays")
 (include-book "convert-integer-value")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
