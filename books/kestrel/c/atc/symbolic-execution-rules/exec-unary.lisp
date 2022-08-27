@@ -11,8 +11,10 @@
 
 (in-package "C")
 
+(include-book "../execution")
+
+(include-book "syntaxp")
 (include-book "promote-value")
-(include-book "execution-rules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
