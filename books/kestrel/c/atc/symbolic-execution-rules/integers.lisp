@@ -19,20 +19,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-values
-  :parents (atc-dynamic-semantics)
-  :short "C values for ATC."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "ATC uses the "
-    (xdoc::seetopic "values" "model of C values")
-    " from the language formalization for various purposes."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection integer-value-disjoint-rules
   :short "Rules about disjointness of integer values."
 

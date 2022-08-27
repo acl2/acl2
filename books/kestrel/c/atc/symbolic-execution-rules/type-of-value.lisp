@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "values")
+(include-book "integers")
 (include-book "../arrays")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

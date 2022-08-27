@@ -16,7 +16,7 @@
 
 (include-book "../language/array-operations")
 
-(include-book "symbolic-execution-rules/values")
+(include-book "symbolic-execution-rules/integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
