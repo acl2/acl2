@@ -13,13 +13,17 @@
 
 (include-book "../symbolic-computation-states")
 (include-book "../shallow-embedding")
-(include-book "execution-rules")
+
+(include-book "types")
+
 (include-book "exec-unary")
 (include-book "exec-binary-strict-pure")
 (include-book "exec-cast")
 (include-book "exec-arrsub")
 (include-book "exec-expr-asg")
 (include-book "uaconvert-values")
+
+(include-book "execution-rules")
 
 (include-book "tools/rulesets" :dir :system)
 
