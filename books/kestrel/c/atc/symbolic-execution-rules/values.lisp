@@ -647,14 +647,7 @@
                     (type-sllong)))
     :enable (type-of-value
              value-kind
-             sllongp))
-
-  (defruled type-of-value-when-value-pointer
-    (implies (and (valuep x)
-                  (value-case x :pointer))
-             (equal (type-of-value x)
-                    (type-pointer (value-pointer->reftype x))))
-    :enable type-of-value))
+             sllongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
