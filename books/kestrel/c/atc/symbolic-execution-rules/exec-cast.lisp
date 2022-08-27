@@ -11,7 +11,11 @@
 
 (in-package "C")
 
-(include-book "execution-rules")
+(include-book "../execution")
+
+(include-book "syntaxp")
+(include-book "integers")
+(include-book "../types")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
