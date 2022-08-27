@@ -31,6 +31,7 @@
 (include-book "structure-operations")
 (include-book "operations")
 (include-book "computation-states")
+(include-book "dynamic-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
