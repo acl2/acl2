@@ -24,6 +24,7 @@
 (include-book "exec-cast")
 (include-book "exec-test")
 (include-book "exec-arrsub")
+(include-book "exec-expr-pure")
 (include-book "exec-expr-asg")
 (include-book "uaconvert-values")
 (include-book "static-variable-pointers")
