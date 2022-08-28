@@ -7938,6 +7938,61 @@
      (declare (ignore bindings))
      (mv flg val state)))
 
+(defun tc-fn (level form state)
+
+; ``Tc'' stands for ``translate and clean.''  A sample call of this function is
+
+; (tc-fn 2 '(loop$ for e in lst always (predp (+ 1 e))) state)
+
+; This function translates the form and then cleans it up, returning a provably
+; equivalent term (at least, provably equivalent given appropriate warrants).
+; The level should be:
+
+; 0 - translate the form and then untranslate
+; 1 - translate the form, and then clean it up (but don't untranslate)
+; 2 - translate the form, clean it up, and untranslate it
+
+  (declare (xargs :mode :program))
+  (let ((wrld (w state)))
+    (mv-let (flg term bindings state)
+      (translate1 form
+                  :stobjs-out
+                  '((:stobjs-out . :stobjs-out))
+                  t ;;; known-stobjs = t (user interface)
+                  'top-level wrld state)
+      (declare (ignore bindings))
+      (cond
+       ((null flg)
+        (let ((hyps (mv-let (warrants unwarranteds)
+                      (warrants-for-tamep-lambdap term wrld nil nil)
+                      (declare (ignore unwarranteds))
+                      warrants)))
+          (cond
+           ((eql level 0)
+            (value (untranslate term nil wrld)))
+           ((eql level 1)
+            (value
+             (remove-guard-holders
+              (clean-up-dirty-lambda-objects hyps term nil wrld t)
+              wrld)))
+           (t
+            (value
+             (untranslate
+              (remove-guard-holders
+               (clean-up-dirty-lambda-objects hyps term nil wrld t)
+               wrld)
+              nil wrld))))))
+       (t (mv t :invisible state))))))
+
+(defmacro tca (form)
+  `(tc-fn 0 ,form state))
+
+(defmacro tc (form)
+  `(tc-fn 1 ,form state))
+
+(defmacro tcp (form)
+  `(tc-fn 2 ,form state))
+
 (defun tilde-*-props-fn-phrase1 (alist)
   (cond ((null alist) nil)
         (t (cons (msg "~y0~|~ ~y1~|"
