@@ -30,7 +30,10 @@
 (include-book "exec-expr-asg")
 (include-book "exec-expr-call-or-asg")
 (include-book "exec-fun")
-(include-book "uaconvert-values")
+(include-book "exec-stmt")
+(include-book "exec-initer")
+(include-book "exec-block-item")
+(include-book "init-scope")
 (include-book "static-variable-pointers")
 
 (include-book "execution-rules")
