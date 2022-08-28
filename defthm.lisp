@@ -7003,7 +7003,7 @@
                          :rune rune
                          :nume nume
                          :pattern pat-term
-                         :condition cond-term
+                         :condition (flatten-ands-in-lit cond-term)
                          :scheme scheme-term)
                    (getpropc fn 'induction-rules nil wrld))
              wrld)))
@@ -8322,6 +8322,22 @@
                        token name fn thm-name1
                        expected-fn-form evisc))))))))))))
 
+(defun induction-rule-synp-sanityp (lst)
+
+; Lst is a list of terms, implicitly conjoined.  Some of those terms are calls
+; of synp (aka syntaxp).  But we make sure that the only calls of synp are
+; top-level conjuncts, i.e., that synp is not called in non-synp terms.
+
+  (cond
+   ((endp lst) t)
+   ((and (nvariablep (car lst))
+         (not (fquotep (car lst)))
+         (eq (ffn-symb (car lst)) 'synp))
+    (induction-rule-synp-sanityp (cdr lst)))
+   ((ffnnamep 'synp (car lst))
+    nil)
+   (t (induction-rule-synp-sanityp (cdr lst)))))
+
 (defun translate-rule-class-alist (token alist seen corollary name x ctx ens
                                          wrld state)
 
@@ -8530,6 +8546,34 @@
                        scheme-term
                        (reverse (set-difference-eq scheme-vars pat-vars))
                        pat-term
+                       name))
+                  ((member-eq 'state cond-vars)
+                   (er soft ctx
+                       "The variable STATE may not appear in the :CONDITION ~
+                        term of an :INDUCTION rule because we have not ~
+                        implemented proper handling of STATE in SYNTAXP ~
+                        hypotheses of such rules.  But the condition ~x0 ~
+                        specified for ~x1 mentions STATE."
+                       cond-term
+                       name))
+                  ((member-eq 'mfc cond-vars)
+                   (er soft ctx
+                       "The variable MFC may not appear in the :CONDITION ~
+                        term of an :INDUCTION rule because we have not ~
+                        implemented proper handling of MFC in SYNTAXP ~
+                        hypotheses of such rules.  But the condition ~x0 ~
+                        specified for ~x1 mentions MFC."
+                       cond-term
+                       name))
+                  ((not (induction-rule-synp-sanityp
+                         (flatten-ands-in-lit cond-term)))
+                   (er soft ctx
+                       "The term ~x0 in the :CONDITION field of the ~
+                        :INDUCTION rule ~x1 violates the restriction that all ~
+                        occurrences of the SYNTAXP (aka SYNP) construct must ~
+                        be as top-level conjuncts of the term and not buried ~
+                        within other terms."
+                       cond-term
                        name))
                   ((assoc-eq :condition seen)
                    (value (alist-to-keyword-alist seen nil)))

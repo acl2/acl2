@@ -2134,10 +2134,10 @@
 ; apply$-userfn, not badge and apply$, as shown above; but the rewrite rule
 ; apply$-AP indeed deals with badge and apply$.  We deal with this later.
 
-(defun warrant-fn (names)
+(defun forced-warrant-fn (names)
 
-; This is a helper function for the macro warrant.  Given (a b c) we return
-; ((APPLY$-WARRANT-a) (APPLY$-WARRANT-b) (APPLY$-WARRANT-c))
+; This is a helper function for the macro warrant.  Given (a b ...) we return
+; ((FORCE (APPLY$-WARRANT-a)) (FORCE (APPLY$-WARRANT-b)) ...)
 
   (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
                   :guard (symbol-listp names)))
@@ -2145,9 +2145,9 @@
         ((or (assoc-eq (car names) *badge-prim-falist*)
              (assoc-eq (car names) *apply$-boot-fns-badge-alist*))
 ; Primitives and apply$ boot functions do not have or need warrants.
-         (warrant-fn (cdr names)))
-        (t (cons (list (warrant-name (car names)))
-                 (warrant-fn (cdr names))))))
+         (forced-warrant-fn (cdr names)))
+        (t (cons (list 'FORCE (list (warrant-name (car names))))
+                 (forced-warrant-fn (cdr names))))))
 
 (defmacro warrant (&rest names)
 
@@ -2155,7 +2155,7 @@
 ; (AND (APPLY$-WARRANT-a) (APPLY$-WARRANT-b) (APPLY$-WARRANT-c))
 
   (declare (xargs :guard (symbol-listp names)))
-  `(AND ,@(warrant-fn names)))
+  `(AND ,@(forced-warrant-fn names)))
 
 ; The warrant for AP, illustrated above, is particularly simple because AP is
 ; tame.  All of its formals are vanilla.  The warrant for a mapping function

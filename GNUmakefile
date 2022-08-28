@@ -765,6 +765,7 @@ large-acl2p:
 	@$(MAKE) -s large ACL2_PAR=p
 
 .PHONY: save-exec
+# Note: As per GitHub Issue #1422, $(ACL2_SAVED) is rebuilt unconditionally.
 save-exec:
 	@if [ "$(ACL2_CUSTOMIZATION)" = "" ] || \
             [ "$(ACL2_CUSTOMIZATION)" = "NONE" ] ; then \
@@ -778,17 +779,11 @@ save-exec:
 	  fi
 	@$(MAKE) update
 	@rm -f workxxx
-	@if [ -f "$(ACL2_SAVED)" ] && \
-           [ "$(ACL2_CUSTOMIZATION)" -ot "$(ACL2_SAVED)" ] && \
-           [ "$(PREFIXsaved_acl2)" -ot "$(ACL2_SAVED)" ] ; then \
-	  echo "Note: Not rebuilding $(ACL2_SAVED), which is already up to date." ;\
-	  else \
-	  echo "Preparing to save $(ACL2_SAVED) using ACL2_CUSTOMIZATION = $(ACL2_CUSTOMIZATION) ..." ;\
-	  echo '(value :q) (save-exec "$(ACL2_SAVED)" $(ACL2_SAVED_ARGS))' > workxxx ;\
-	  ./$(PREFIXsaved_acl2) < workxxx > $(ACL2_SAVED).out ;\
-	  echo "... done (see $(ACL2_SAVED).out for log)." ;\
-	  rm -f workxxx ;\
-	  fi
+	@echo "Preparing to save $(ACL2_SAVED) using ACL2_CUSTOMIZATION = $(ACL2_CUSTOMIZATION) ..."
+	@echo '(value :q) (save-exec "$(ACL2_SAVED)" $(ACL2_SAVED_ARGS))' > workxxx
+	@./$(PREFIXsaved_acl2) < workxxx > $(ACL2_SAVED).out
+	@echo "... done (see $(ACL2_SAVED).out for log)."
+	@rm -f workxxx
 
 # Since ACL2_WAG is for implementors only, we don't bother making a
 # target for it.  Instead one just uses ACL2_WAG=w on the "make"
