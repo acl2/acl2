@@ -29,6 +29,7 @@
 (include-book "exec-expr-call-or-pure")
 (include-book "exec-expr-asg")
 (include-book "exec-expr-call-or-asg")
+(include-book "exec-fun")
 (include-book "uaconvert-values")
 (include-book "static-variable-pointers")
 
