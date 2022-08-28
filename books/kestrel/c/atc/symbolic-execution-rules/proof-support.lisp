@@ -17,6 +17,7 @@
 (include-book "types")
 (include-book "values")
 (include-book "type-of-value")
+(include-book "exec-ident")
 (include-book "exec-unary")
 (include-book "exec-binary-strict-pure")
 (include-book "exec-cast")
