@@ -67,35 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-type-of-value-option-rules
-  :short "Rules about @(tsee type-of-value-option)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These rules reduce @(tsee type-of-value-option)
-     to @(tsee type-of-value) when the argument is a value,
-     and to @('void') when the argument is @('nil').
-     During execution, the argument is always either @('nil')
-     or a term that is easily proved to be a value;
-     so these rules suffice to eliminate @(tsee type-of-value-option)."))
-
-  (defruled type-of-value-option-when-valuep
-    (implies (valuep x)
-             (equal (type-of-value-option x)
-                    (type-of-value x)))
-    :enable (type-of-value-option
-             value-option-some->val))
-
-  (defruled type-of-value-option-of-nil
-    (equal (type-of-value-option nil)
-           (type-void)))
-
-  (defval *atc-type-of-value-option-rules*
-    '(type-of-value-option-when-valuep
-      type-of-value-option-of-nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-static-variable-pointer-rules
   :short "Rules about pointers to variables in static storage."
   :long
