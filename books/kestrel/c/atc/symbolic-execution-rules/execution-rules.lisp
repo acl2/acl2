@@ -67,31 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-valuep-rules
-  :short "Rules for discharging @(tsee valuep) hypotheses."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Some symbolic execution rules have hypotheses saying that
-     certain terms are values, i.e. satisfy @(tsee valuep).
-     These are discharged by backchaining to
-     the fact that those terms satisfy specific value predicates,
-     such as @(tsee sintp)."))
-
-  (defval *atc-valuep-rules*
-    '(valuep-when-scharp
-      valuep-when-ucharp
-      valuep-when-sshortp
-      valuep-when-ushortp
-      valuep-when-sintp
-      valuep-when-uintp
-      valuep-when-slongp
-      valuep-when-ulongp
-      valuep-when-sllongp
-      valuep-when-ullongp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-value-listp-rules
   :short "Rules for discharging @(tsee value-listp) hypotheses."
   :long
@@ -124,29 +99,6 @@
   (defval *atc-value-optionp-rules*
     '((:e value-optionp)
       value-optionp-when-valuep)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atc-value-kind-rules
-  :short "Rules to resolve @(tsee value-kind) for various kinds of values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are used to relieve the hypothesis of
-     the rule for executing identifiers,
-     in @(tsee atc-exec-ident-rules)."))
-
-  (defval *atc-value-kind-rules*
-    '(value-kind-when-scharp
-      value-kind-when-ucharp
-      value-kind-when-sshortp
-      value-kind-when-ushortp
-      value-kind-when-sintp
-      value-kind-when-uintp
-      value-kind-when-slongp
-      value-kind-when-ulongp
-      value-kind-when-sllongp
-      value-kind-when-ullongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
