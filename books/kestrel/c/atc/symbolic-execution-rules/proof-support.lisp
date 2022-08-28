@@ -36,8 +36,6 @@
 (include-book "init-scope")
 (include-book "static-variable-pointers")
 
-(include-book "execution-rules")
-
 (include-book "tools/rulesets" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
