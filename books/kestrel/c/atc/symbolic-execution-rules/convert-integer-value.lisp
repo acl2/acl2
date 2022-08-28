@@ -11,7 +11,11 @@
 
 (in-package "C")
 
-(include-book "../execution")
+(include-book "../../language/integer-operations")
+
+(include-book "../integer-conversions")
+
+(include-book "integers")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
