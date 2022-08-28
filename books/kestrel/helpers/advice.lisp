@@ -53,6 +53,8 @@
 
 ;; TODO: Avoid including books that are known to be slow?
 
+;; TODO: Avoid illegal hints, such as adding a :by when there is already a :use, or vice versa
+
 ;; TODO: Untranslate before printing (e.g., hyps)?
 
 (include-book "kestrel/utilities/checkpoints" :dir :system)
@@ -68,6 +70,8 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
+(include-book "kestrel/world-light/defined-functionp" :dir :system)
+(include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/htclient/post" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
@@ -86,6 +90,7 @@
 (defconst *step-limit* 100000)
 
 ;; If NAME is a macro-alias, return what it represents.  Otherwise, return NAME.
+;; TODO: Compare to (deref-macro-name name (macro-aliases wrld)).
 (defund handle-macro-alias (name wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (if (not (symbolp name)) ; possible?
@@ -129,25 +134,20 @@
     state))
 
 ;move
-(defund name-that-can-be-enabled/disabledp (name wrld)
-  (declare (xargs :guard (and ;; (symbolp name)
-                          (plist-worldp wrld))))
-  (let* ((name (if (symbolp name)
-                   name
-                 (if (and (consp name) ; might be (:rewrite foo) or (:rewrite foo . 1)
-                          (eq :rewrite (car name))
-                          (consp (cdr name))
-                          (cadr name)
-                          (symbolp (cadr name)))
-                     (cadr name)
-                   (er hard? 'name-that-can-be-enabled/disabledp "Unknown kind of name: ~x0."))))
-         (name (handle-macro-alias name wrld)))
-  (or (getpropc name 'unnormalized-body nil wrld)
-      (getpropc name 'theorem nil wrld) ;todo: what if it has :rule-classes nil?
-      (let ((alist (table-alist 'macro-aliases-table wrld)))
-        (and (alistp alist) ; should always be true
-             (assoc-eq name alist))))))
-
+;; TODO: What kinds of things can ITEM be?  A runic-designator?  A theory?
+(defund item-that-can-be-enabled/disabledp (item wrld)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (plist-worldp wrld)
+                          (alistp (macro-aliases wrld)))
+                  :verify-guards nil))
+  (if (symbolp item)
+      (let ((name (deref-macro-name item (macro-aliases wrld)))) ; no change if item is not a macro name
+        (if (getpropc name 'runic-mapping-pairs nil wrld)
+            t
+          nil))
+    (if (runep item wrld)
+        t
+      (cw "NOTE: Unknown kind of item: ~x0." item))))
 
 ;; Returns (mv erp lists)
 ;; Map parsed-json-array->values over a list.
@@ -310,9 +310,10 @@
         (coerce (rest chars) 'string)
       str)))
 
-(defmacro fms-to-string-no-margin (&rest args)
-  `(fms-to-string ,@args :fmt-control-alist '((fmt-soft-right-margin . 10000)
-                                              (fmt-hard-right-margin . 10000))))
+(defmacro fms-to-string-one-line (&rest args)
+  `(drop-initial-newline ; work around problem with fms-to-string
+    (fms-to-string ,@args :fmt-control-alist '((fmt-soft-right-margin . 10000)
+                                               (fmt-hard-right-margin . 10000)))))
 
 (defun show-successful-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)
@@ -324,21 +325,19 @@
          ;; (book-map (car (nth 4 rec)))
          (pre-commands (nth 5 rec))
          (english-rec (case type
-                        (:add-cases-hint (fms-to-string-no-margin ":cases ~x0" (acons #\0 object nil)))
-                        (:add-disable-hint (fms-to-string-no-margin "disabling ~x0" (acons #\0 object nil)))
-                        (:add-do-not-hint (fms-to-string-no-margin ":do-not ~x0" (acons #\0 object nil)))
+                        (:add-cases-hint (fms-to-string-one-line ":cases ~x0" (acons #\0 object nil)))
+                        (:add-disable-hint (fms-to-string-one-line "disabling ~x0" (acons #\0 object nil)))
+                        (:add-do-not-hint (fms-to-string-one-line ":do-not ~x0" (acons #\0 object nil)))
                         ;; Same handling for both:
-                        ((:add-enable-hint :use-lemma) (fms-to-string-no-margin "enabling ~x0" (acons #\0 object nil)))
-                        (:add-expand-hint (fms-to-string-no-margin ":expand ~x0" (acons #\0 object nil)))
-                        (:add-hyp (fms-to-string-no-margin "adding the hyp ~x0" (acons #\0 object nil)))
-                        (:add-induct-hint (fms-to-string-no-margin ":induct ~x0" (acons #\0 object nil)))
-                        (:add-library (fms-to-string-no-margin "~x0" (acons #\0 object nil)))
-                        (:add-nonlinearp-hint (fms-to-string-no-margin ":nonlinearp ~x0" (acons #\0 object nil)))
-                        (:add-use-hint (fms-to-string-no-margin ":use ~x0" (acons #\0 object nil)))
-                        (:exact-hints (fms-to-string-no-margin ":hints ~x0" (acons #\0 object nil)))
-                        (t (er hard? 'show-successful-recommendation "Unknown rec type: ~x0." type))))
-         (english-rec (drop-initial-newline english-rec)) ; work around problem with fms-to-string
-         )
+                        ((:add-enable-hint :use-lemma) (fms-to-string-one-line "enabling ~x0" (acons #\0 object nil)))
+                        (:add-expand-hint (fms-to-string-one-line ":expand ~x0" (acons #\0 object nil)))
+                        (:add-hyp (fms-to-string-one-line "adding the hyp ~x0" (acons #\0 object nil)))
+                        (:add-induct-hint (fms-to-string-one-line ":induct ~x0" (acons #\0 object nil)))
+                        (:add-library (fms-to-string-one-line "~x0" (acons #\0 object nil)))
+                        (:add-nonlinearp-hint (fms-to-string-one-line ":nonlinearp ~x0" (acons #\0 object nil)))
+                        (:add-use-hint (fms-to-string-one-line ":use ~x0" (acons #\0 object nil)))
+                        (:exact-hints (fms-to-string-one-line ":hints ~x0" (acons #\0 object nil)))
+                        (t (er hard? 'show-successful-recommendation "Unknown rec type: ~x0." type)))))
     (if pre-commands
         (if (consp (cdr pre-commands))
             ;; More than one pre-command:
@@ -480,7 +479,7 @@
          (book-map (lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (cw "WARNING: When parsing book map: ~s0.~%" erp)
+          (cw "WARNING: When parsing book map: ~x0.~%" erp)
           (mv nil ; supressing this error for now
               :none state))
          (confidence (rfix confidence)) ; for guards
@@ -547,7 +546,8 @@
   (declare (xargs :mode :program
                   :stobjs state))
   (mv-let (erp provedp state)
-    (prove$ term :hints hints :otf-flg otf-flg :step-limit step-limit)
+    ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
+    (prove$ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5)
     (if erp
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil state))
@@ -558,42 +558,48 @@
   (declare (xargs :mode :program
                   :stobjs state))
   (mv-let (erp provedp failure-info state)
-    (prove$+ term :hints hints :otf-flg otf-flg :step-limit step-limit :print nil)
+    ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
+    (prove$+ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5 :print nil)
     (if erp
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil nil state))
       (mv provedp failure-info state))))
 
-;; Calls prove$ but first does an include-book, which is undone after the prove$
-;; Returns (mv erp provedp state).
+;; See :doc lemma-instance
+(defund symbol-that-can-be-usedp (sym wrld)
+  (declare (xargs :guard (and (symbolp sym)
+                              (plist-worldp wrld))))
+  (or (defined-functionp sym wrld)
+      (defthm-or-defaxiom-symbolp sym wrld)))
+
+;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
+;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be something
+;; that can be enabled/disabled after including the book, or else we don't call prove$.
 (defun prove$-with-include-book (ctx
                                  formula
                                  include-book-form
                                  name-to-check ; we ensure this exists after the include-book, or nil
+                                 check-kind ; :enable or :use
                                  ;; args to prove$:
                                  hints otf-flg step-limit
                                  state)
   (declare (xargs :stobjs state :mode :program))
   (revert-world ;; ensures the include-book gets undone
-   (b* (;; Try to include the recommended book:
+   (b* (        ;; Try to include the recommended book:
         ((mv erp state) (submit-event-helper include-book-form nil nil state))
         ((when erp) ; can happen if there is a name clash
          (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
          (mv nil ; not considering this an error, since if there is a name clash we want to try the other recommendations
              nil state))
         ((when (and name-to-check
-                    (not (name-that-can-be-enabled/disabledp name-to-check (w state)))))
+                    (if (eq :enable check-kind)
+                        (not (item-that-can-be-enabled/disabledp name-to-check (w state)))
+                      (if (eq :use check-kind)
+                          (not (symbol-that-can-be-usedp name-to-check (w state)))
+                        (er hard? 'prove$-with-include-book "Bad check-kind: ~x0." check-kind)))))
          ;; (cw "NOTE: After including ~x0, ~x1 is still not defined.~%" (cadr include-book-form) name-to-check) ;; todo: add debug arg
          (mv nil ; suppress error
              nil state))
-        ;; Now see whether we can prove the theorem using the new include-book:
-        ;; ((mv erp ;todo: how to distinguish real errors?
-        ;;      state) (submit-event-helper
-        ;;                  `(encapsulate ()
-        ;;                     (local ,include-book-form)
-        ;;                     ,(make-thm-to-attempt theorem-body theorem-hints theorem-otf-flg))
-        ;;                  t nil state))
-        ;; (provedp (not erp))
         ((mv provedp state) (prove$-no-error ctx
                                              formula
                                              hints
@@ -609,6 +615,7 @@
                                       formula
                                       include-book-forms
                                       name-to-check
+                                      check-kind
                                       ;; args to prove$:
                                       hints otf-flg step-limit
                                       state)
@@ -622,6 +629,7 @@
           (prove$-with-include-book ctx formula
                                     form
                                     name-to-check
+                                    check-kind
                                     ;; args to prove$:
                                     hints otf-flg step-limit
                                     state))
@@ -631,6 +639,7 @@
                                      formula
                                      (rest include-book-forms)
                                      name-to-check
+                                     check-kind
                                      ;; args to prove$:
                                      hints otf-flg step-limit
                                      state))))
@@ -660,7 +669,7 @@
         (cw "fail (ill-formed library recommendation: ~x0)~%" include-book-form)
         (mv nil nil state))
        ((mv erp provedp state)
-        (prove$-with-include-book 'try-add-library theorem-body include-book-form nil theorem-hints theorem-otf-flg step-limit state))
+        (prove$-with-include-book 'try-add-library theorem-body include-book-form nil nil theorem-hints theorem-otf-flg step-limit state))
        ((when erp) (mv erp nil state))
        (- (if provedp (cw-success-message rec) (cw "fail (library didn't help)~%"))))
     (mv nil (if provedp rec nil) state)))
@@ -753,7 +762,8 @@
                                          state))
        (- (if provedp
               (cw-success-message rec)
-            (cw-failure-message "add hyp didn't help" failure-info))))
+            (let ((translated-hyp (translate-term hyp 'try-add-hyp (w state))))
+              (cw-failure-message (fms-to-string-one-line "adding hyp ~x0 didn't help" (acons #\0 translated-hyp nil)) failure-info)))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -772,6 +782,9 @@
         (mv nil nil state))
        ((when (keywordp rule))
         (cw "skip (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
+        (mv nil nil state))
+       ((when (not (symbolp rule)))
+        (cw "skip (Unsupported item: ~x0)~%" rule) ; todo: handle runes like (:TYPE-PRESCRIPTION A14 . 1)
         (mv nil nil state))
        (wrld (w state))
        (rule (handle-macro-alias rule wrld)) ; TODO: Handle the case of a macro-alias we don't know about
@@ -826,11 +839,11 @@
         ;; RULE is not currently known, so try to find where it is defined:
         (b* ((book-map-keys (strip-cars book-map))
              ((when (not (equal book-map-keys (list rule))))
-              (cw "WARNING: Bad book map, ~X01, for ~x2.~%" book-map nil rule)
+              (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil rule)
               (mv :bad-book-map nil state))
              (books-to-try (lookup-eq rule book-map))
              ((when (eq :builtin books-to-try))
-              (er hard? 'try-add-enable-hint "~x0 does not seem to be built-in, contrary to the book-map." rule)
+              (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" rule)
               (mv :bad-book-info nil state))
              ;; todo: check for empty books-to-try, or is that already checked?
              (num-books-to-try-orig (len books-to-try))
@@ -846,7 +859,7 @@
           (b* ( ;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
                ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
                ((mv erp successful-include-book-form-or-nil state)
-                (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule new-hints theorem-otf-flg *step-limit* state))
+                (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule :enable new-hints theorem-otf-flg *step-limit* state))
                ((when erp) (mv erp nil state))
                (provedp (if successful-include-book-form-or-nil t nil))
                ((when (not provedp))
@@ -858,10 +871,11 @@
                ;; We proved it with an include-book and an enable hint.  Now
                ;; try again but without the enable hint (maybe the include-book is enough):
                ((mv erp provedp-with-no-hint state)
-                (prove$-with-include-book 'try-add-enable-hint
+                (prove$-with-include-book 'try-add-enable-hint ; todo: the redoes the include-book
                                           theorem-body
                                           successful-include-book-form-or-nil ; won't be nil
                                           nil ; name-to-check (no need to check this again)
+                                          :enable
                                           ;; args to prove$:
                                           theorem-hints ; original hints, not new-hints
                                           theorem-otf-flg
@@ -892,7 +906,7 @@
        ((when (keywordp rule))
         (cw "skip (Not disabling unsupported item: ~x0)~%" rule) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
-       ((when (not (name-that-can-be-enabled/disabledp rule (w state))))
+       ((when (not (item-that-can-be-enabled/disabledp rule (w state))))
         (cw "skip (Not disabling unknown name: ~x0)~%" rule) ;; For now, we don't try to including the book that brings in the thing to disable!
         (mv nil nil state))
        (rule (handle-macro-alias rule (w state))) ; TODO: Handle the case of a macro-alias we don't know about
@@ -910,35 +924,88 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-;; TODO: Do we need to guess a substitution for the :use hint?  The change the rec before returning...
-(defun try-add-use-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
+;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
+(defun try-add-use-hint (item book-map theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (eq item 'other))
         (cw "skip (skipping catch-all: ~x0)~%" item)
         (mv nil nil state))
-       ((when (not (or (getpropc item 'unnormalized-body nil (w state))
-                       (getpropc item 'theorem nil (w state)))))
-        (cw "skip (unknown name to :use : ~x0)~%" item) ;; TTODO: Include any necessary books first
-        (mv nil nil state))
-       ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (submit-event-helper
-       ;;                  (make-thm-to-attempt theorem-body
-       ;;                                       ;; todo: ensure this is nice:
-       ;;                                       (cons `("Goal" :use ,item)
-       ;;                                             theorem-hints)
-       ;;                                       theorem-otf-flg)
-       ;;                  t nil state))
-       ((mv provedp state) (prove$-no-error 'try-add-use-hint
-                                            theorem-body
-                                            ;; todo: ensure this is nice:
-                                            ;; todo: also disable the item, if appropriate
-                                            (cons `("Goal" :use ,item) theorem-hints)
-                                            theorem-otf-flg
-                                            step-limit
-                                            state))
-       (- (if provedp (cw-success-message rec) (cw "fail (:use ~x0 didn't help)~%" item))))
-    (mv nil (if provedp rec nil) state)))
+       ((when (not (symbolp item))) ; for now
+        (cw "skip (unexpected object for :add-use-hint: ~x0)~%" item) ; todo: add support for other lemma-instances
+        (mv nil nil state)))
+    (if (symbol-that-can-be-usedp item (w state)) ; todo: what if it's defined but can't be :used?
+        (b* (((mv provedp state) (prove$-no-error 'try-add-use-hint
+                                                  theorem-body
+                                                  ;; todo: ensure this is nice:
+                                                  ;; todo: also disable the item, if appropriate
+                                                  (cons `("Goal" :use ,item) theorem-hints)
+                                                  theorem-otf-flg
+                                                  step-limit
+                                                  state))
+             (- (if provedp (cw-success-message rec) (cw "fail (:use ~x0 didn't help)~%" item))))
+          (mv nil (if provedp rec nil) state))
+      ;; ITEM is not in the current world, so try to find where it is defined:
+      (b* ((book-map-keys (strip-cars book-map))
+           ((when (not (equal book-map-keys (list item))))
+            (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil item)
+            (mv :bad-book-map nil state))
+           (books-to-try (lookup-eq item book-map))
+           ((when (eq :builtin books-to-try))
+            (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" item)
+            (mv :bad-book-info nil state))
+           ;; todo: check for empty books-to-try, or is that already checked?
+           (num-books-to-try-orig (len books-to-try))
+           ;; (- (and (< 1 num-books-to-try)
+           ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-books-to-try item books-to-try nil)))
+           (books-to-try (if (< 3 num-books-to-try-orig)
+                             (take 3 books-to-try)
+                           books-to-try))
+           ;; todo: ensure this is nice:
+           (new-hints ;; todo: ensure this is nice:
+            ;; todo: also disable the item, if appropriate
+            (cons `("Goal" :use ,item) theorem-hints))
+           ;; TODO: Would be nice to not bother if it is a definition that we don't have.
+           ;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
+           ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
+           ((mv erp successful-include-book-form-or-nil state)
+            (try-prove$-with-include-books 'try-add-use-hint theorem-body books-to-try item :use new-hints theorem-otf-flg *step-limit* state))
+           ((when erp) (mv erp nil state))
+           (provedp (if successful-include-book-form-or-nil t nil))
+           ((when (not provedp))
+            (if (< 3 num-books-to-try-orig)
+                ;; todo: try more if we didn't find it?:
+                (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig item)
+              (cw "fail (using ~x0 didn't help)~%" item))
+            (mv nil nil state))
+           ;; We proved it with an include-book and a :use hint.  Now
+           ;; try again but without the :use hint (maybe the include-book is enough):
+           ((mv erp provedp-with-no-hint state)
+            (prove$-with-include-book 'try-add-use-hint ; todo: the redoes the include-book
+                                      theorem-body
+                                      successful-include-book-form-or-nil ; won't be nil
+                                      nil ; name-to-check (no need to check this again)
+                                      :use
+                                      ;; args to prove$:
+                                      theorem-hints ; original hints, not new-hints
+                                      theorem-otf-flg
+                                      step-limit ; or base this on how many steps were taken when it succeeded
+                                      state))
+           ((when erp) (mv erp nil state))
+           ;; todo: we could even try to see if a smaller library would work
+           (rec (if provedp-with-no-hint
+                    (list (nth 0 rec) ;name (ok to keep the same name, i guess)
+                          :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                          successful-include-book-form-or-nil
+                          (nth 3 rec) ; not very meaningful now
+                          (nth 4 rec) ; not very meaningful now
+                          nil ; pre-commands (always none for :add-library)
+                          )
+                  (update-pre-commands rec (list successful-include-book-form-or-nil))))
+           (- (cw-success-message rec)))
+        (mv nil
+            rec
+            state)))))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-expand-hint (item ; the thing to expand
@@ -971,6 +1038,33 @@
                                             step-limit
                                             state))
        (- (if provedp (cw-success-message rec) (cw "fail (:expand hint didn't help)~%"))))
+    (mv nil (if provedp rec nil) state)))
+
+;; Returns (mv erp maybe-successful-rec state).
+(defun try-add-by-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (((when (eq 'other item))
+        (cw "fail (ignoring :by hint with catch-all \"Other\")~%")
+        (mv nil nil state))
+       ((when (not (symbolp item)))
+        (cw "fail (unexpected :by hint: ~x0)~%" item)
+        (mv nil nil state))
+       ((when (not (or (getpropc item 'unnormalized-body nil (w state))
+                       (getpropc item 'theorem nil (w state)))))
+        (cw "skip (unknown name for :by hint: ~x0)~%" item)
+        (mv nil nil state))
+       ;; TTODO: Include any necessary books first
+       ((mv provedp failure-info state)
+        (prove$-no-error-with-failure-info 'try-add-by-hint
+                                           theorem-body
+                                           ;; todo: ensure this is nice:
+                                           ;; todo: remove existing hints?
+                                           (cons `("Goal" :by ,item) theorem-hints)
+                                           theorem-otf-flg
+                                           step-limit
+                                           state))
+       (- (if provedp (cw-success-message rec) (cw-failure-message ":by hint didn't help" failure-info))))
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -1038,8 +1132,8 @@
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (true-listp successful-recs))
-            :mode :program
-            :stobjs state))
+                  :mode :program
+                  :stobjs state))
   (if (or (endp recs)
           (and (natp max-wins)
                (<= max-wins (len successful-recs))))
@@ -1050,30 +1144,33 @@
          (object (caddr rec))
          ;; (confidence-percent (cadddr rec))
          (book-map (car (cddddr rec)))
-         (- (cw "~s0: " name)))
-      (mv-let (erp maybe-successful-rec state)
-        (case type
-          ;; TODO: Pass the book-map to all who can use it:
-          (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:add-use-hint (try-add-use-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec state))
-          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec state))
-          (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
-                     (mv t nil state))))
-        (if erp
-            (mv erp nil state)
-          (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins
-                               (if maybe-successful-rec
-                                   (cons maybe-successful-rec successful-recs)
-                                 successful-recs)
-                               state))))))
+         (- (cw "~s0: " name))
+         ((mv & ; erp ; for now, we ignore errors and just continue
+              maybe-successful-rec state)
+          (case type
+            ;; TODO: Pass the book-map to all who can use it:
+            (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            ;; todo: do-not
+            (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            ;; todo: nonlinearp
+            (:add-use-hint (try-add-use-hint object book-map theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            ;; same as for try-add-enable-hint above:
+            (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec state))
+            ;; Hints not from ML:
+            (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec state))
+            (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
+                       (mv t nil state))))))
+      (try-recommendations (rest recs) theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins
+                           (if maybe-successful-rec
+                               (cons maybe-successful-rec successful-recs)
+                             successful-recs)
+                           state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1327,13 +1424,13 @@
         (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins nil state))
        (state (unwiden-margins state))
        ((when erp)
-        (er hard? 'advice-fn "Error trying recommendations.")
+        (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
         (mv erp nil state))
        (successful-recs-no-dupes (remove-duplicate-recs successful-recs nil))
        (removed-count (- (len successful-recs) (len successful-recs-no-dupes)))
        (- (and (posp removed-count)
                (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
-                   (if (< 1 removed-count) "recommendations were" "recommendation was"))))
+                   (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
        (num-successful-recs (len successful-recs-no-dupes))
        (max-wins-reachedp (and (natp max-wins) (= max-wins num-successful-recs)))
        (- (and max-wins-reachedp
