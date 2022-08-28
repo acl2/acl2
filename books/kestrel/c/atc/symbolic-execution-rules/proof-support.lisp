@@ -22,6 +22,7 @@
 (include-book "exec-unary")
 (include-book "exec-binary-strict-pure")
 (include-book "exec-cast")
+(include-book "exec-test")
 (include-book "exec-arrsub")
 (include-book "exec-expr-asg")
 (include-book "uaconvert-values")
