@@ -66,11 +66,12 @@
  reassign the name *1 to the original conjecture.
  })
 
- In that case, the unique top-level checkpoint is @('(<GOAL>)').  Moreover, all
- information stored for the proof attempt is based on the part of the attempt
- starting after returning to prove the original goal by induction; all
- checkpoints produced before that happens will be lost.  If that isn't what you
- want, consider using @(':')@(tsee otf-flg).</li>
+ In that case, the unique top-level checkpoint is @('(<GOAL>)'), so the list of
+ top-level checkpoints is @('((<GOAL>))').  Moreover, all information stored
+ for the proof attempt is based on the part of the attempt starting after
+ returning to prove the original goal by induction; all checkpoints produced
+ before that happens will be lost.  If that isn't what you want, consider using
+ @(':')@(tsee otf-flg).</li>
 
  <li>The notion of ``most recent proof attempt'' includes proof attempts made
  during @(tsee make-event) expansion.</li>
@@ -105,6 +106,12 @@
  <li>Unlike functions @('checkpoint-list') and @('checkpoint-info-list'), which
  are @(see guard)-verified @(see logic)-mode functions,
  @('checkpoint-list-pretty') is a @(see program)-mode function.</li>
+
+ <li>As with @('checkpoint-list'), there is a special case when a proof attempt
+ is aborted in favor of proving the original goal by induction.  With
+ @('checkpoint-list-pretty') you will see @('(<GOAL>)') to represent the list
+ of checkpoints as a list of terms: it shows that there is a single checkpoint
+ that is the original goal.</li>
 
  </ul>")
 

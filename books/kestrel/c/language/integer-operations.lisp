@@ -367,18 +367,18 @@
              integer-type-min
              integer-type-max))
 
-  (defruled valuep-of-convert-integer-value-from-uint-to-sllong
+  (defruled valuep-of-convert-integer-value-from-uint-to-slong
     (implies (and (value-case val :uint)
-                  (<= (uint-max) (sllong-max)))
-             (valuep (convert-integer-value val (type-sllong))))
+                  (<= (uint-max) (slong-max)))
+             (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max))
 
-  (defruled valuep-of-convert-integer-value-from-uint-to-slong
+  (defruled valuep-of-convert-integer-value-from-uint-to-sllong
     (implies (and (value-case val :uint)
                   (<= (uint-max) (sllong-max)))
-             (valuep (convert-integer-value val (type-slong))))
+             (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max)))
@@ -471,6 +471,141 @@
            (value-integerp val))
     :enable (promote-value-not-error-lemma
              not-errorp-when-valuep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uaconvert-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+  :returns (mv (new-val1 valuep)
+               (new-val2 valuep))
+  :short "Apply the usual arithmetic conversions to two arithmetic values
+          [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee uaconvert-types).
+     See the documentation of that function for details.
+     Here we actually convert the values;
+     we do not merely compute the common type.")
+   (xdoc::p
+    "We convert the types of the values,
+     obtaining the type of the new values.
+     Then we convert each value to the new type.
+     In our current model all the arithmetic values are integer values,
+     so we use the integer conversions;
+     if/when we add other arithmetic values,
+     we will generalize this to arithmetic conversions.")
+   (xdoc::p
+    "This function never returns error:
+     the usual arithmetic converesions always work.
+     To show this, we need to show that @(tsee convert-integer-value)
+     never returns errors when used to promote values,
+     which we do via rules about @(tsee convert-integer-value)."))
+  (b* ((type (uaconvert-types (type-of-value val1) (type-of-value val2)))
+       (new-val1 (convert-integer-value val1 type))
+       (new-val2 (convert-integer-value val2 type)))
+    (mv (value-fix new-val1)
+        (value-fix new-val2)))
+  :guard-hints (("Goal" :in-theory (enable uaconvert-values-not-error-lemma
+                                           value-arithmeticp
+                                           value-realp)))
+
+  :prepwork
+  ((defruled uaconvert-values-not-error-lemma
+     (implies (and (value-arithmeticp val)
+                   (type-arithmeticp type))
+              (and (valuep
+                    (convert-integer-value val
+                                           (uaconvert-types (type-of-value val)
+                                                            type)))
+                   (valuep
+                    (convert-integer-value val
+                                           (uaconvert-types type
+                                                            (type-of-value val))))))
+     :enable (uaconvert-types
+              promote-type
+              value-arithmeticp
+              value-realp
+              value-integerp
+              value-unsigned-integerp
+              value-signed-integerp
+              type-arithmeticp
+              type-realp
+              type-integerp
+              type-unsigned-integerp
+              type-signed-integerp
+              convert-integer-value-to-type-of-value
+              valuep-of-convert-integer-value-from-schar-to-sint
+              valuep-of-convert-integer-value-from-schar-to-slong
+              valuep-of-convert-integer-value-from-schar-to-sllong
+              valuep-of-convert-integer-value-from-sshort-to-sint
+              valuep-of-convert-integer-value-from-sshort-to-slong
+              valuep-of-convert-integer-value-from-sshort-to-sllong
+              valuep-of-convert-integer-value-from-sint-to-slong
+              valuep-of-convert-integer-value-from-sint-to-sllong
+              valuep-of-convert-integer-value-from-slong-to-sllong
+              valuep-of-convert-integer-value-from-uchar-to-sint
+              valuep-of-convert-integer-value-from-uchar-to-slong
+              valuep-of-convert-integer-value-from-uchar-to-sllong
+              valuep-of-convert-integer-value-from-ushort-to-sint
+              valuep-of-convert-integer-value-from-ushort-to-slong
+              valuep-of-convert-integer-value-from-ushort-to-sllong
+              valuep-of-convert-integer-value-from-uint-to-slong
+              valuep-of-convert-integer-value-from-uint-to-sllong)
+     :disable ((:e type-sint)
+               (:e type-slong)
+               (:e type-sllong))))
+
+  :hooks (:fix)
+
+  ///
+
+  (defruled type-of-value-of-uaconvert-values
+    (implies (and (value-arithmeticp val1)
+                  (value-arithmeticp val2))
+             (b* (((mv new-val1 new-val2) (uaconvert-values val1 val2))
+                  (type (uaconvert-types (type-of-value val1)
+                                         (type-of-value val2))))
+               (and (equal (type-of-value new-val1) type)
+                    (equal (type-of-value new-val2) type))))
+    :enable (uaconvert-values-not-error-lemma
+             not-errorp-when-valuep
+             type-of-value-of-convert-integer-value
+             value-arithmeticp
+             value-realp))
+
+  (defret value-arithmeticp-of-uaconvert-values
+    (and (value-arithmeticp new-val1)
+         (value-arithmeticp new-val2))
+    :hyp (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+    :hints (("Goal" :in-theory (enable uaconvert-values-not-error-lemma
+                                       not-errorp-when-valuep
+                                       value-arithmeticp
+                                       value-realp))))
+
+  (defrule value-promoted-arithmeticp-of-uaconvert-values
+    (b* (((mv newval1 newval2) (uaconvert-values val1 val2)))
+      (implies (and (value-arithmeticp val1)
+                    (value-arithmeticp val2))
+               (and (value-promoted-arithmeticp newval1)
+                    (value-promoted-arithmeticp newval2))))
+    :enable (uaconvert-values-not-error-lemma
+             not-errorp-when-valuep
+             value-promoted-arithmeticp
+             value-arithmeticp
+             value-realp))
+
+  (defret value-integerp-of-uaconvert-values
+    (and (value-integerp new-val1)
+         (value-integerp new-val2))
+    :hyp (and (value-integerp val1)
+              (value-integerp val2))
+    :hints (("Goal" :in-theory (enable uaconvert-values-not-error-lemma
+                                       not-errorp-when-valuep
+                                       value-arithmeticp
+                                       value-realp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

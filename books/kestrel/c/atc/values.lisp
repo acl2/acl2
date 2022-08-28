@@ -56,39 +56,42 @@
     ullongp
     sllongp))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-more-theorems
-  :short "Additional theorems about values."
+(defrule valuep-possibilities
+  :short "Possible integer and other predicates for values."
+  (implies (valuep x)
+           (or (ucharp x)
+               (scharp x)
+               (ushortp x)
+               (sshortp x)
+               (uintp x)
+               (sintp x)
+               (ulongp x)
+               (slongp x)
+               (ullongp x)
+               (sllongp x)
+               (value-case x :pointer)
+               (value-case x :array)
+               (value-case x :struct)))
+  :enable (valuep
+           ucharp
+           scharp
+           ushortp
+           sshortp
+           uintp
+           sintp
+           ulongp
+           slongp
+           ullongp
+           sllongp
+           value-kind)
+  :rule-classes :forward-chaining)
 
-  (defrule valuep-possibilities
-    (implies (valuep x)
-             (or (ucharp x)
-                 (scharp x)
-                 (ushortp x)
-                 (sshortp x)
-                 (uintp x)
-                 (sintp x)
-                 (ulongp x)
-                 (slongp x)
-                 (ullongp x)
-                 (sllongp x)
-                 (value-case x :pointer)
-                 (value-case x :array)
-                 (value-case x :struct)))
-    :enable (valuep
-             ucharp
-             scharp
-             ushortp
-             sshortp
-             uintp
-             sintp
-             ulongp
-             slongp
-             ullongp
-             sllongp
-             value-kind)
-    :rule-classes :forward-chaining)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection valuep-when-valuepred
+  :short "Theorem saying that the value recognizers imply @(tsee valuep)."
 
   (defrule valuep-when-ucharp
     (implies (ucharp x)
@@ -142,8 +145,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-list-more-theorems
-  :short "Additional theorems about lists of values."
+(defsection value-listp-when-valuepred-listp
+  :short "Theorems saying that
+          the value list recognizers imply @(tsee value-listp)."
 
   (defrule value-listp-when-uchar-listp
     (implies (uchar-listp x)
@@ -207,8 +211,140 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection value-kind-when-valuepred
+  :short "Theorem providing the kind of value for different types."
+
+  (defruled value-kind-when-scharp
+    (implies (scharp x)
+             (equal (value-kind x)
+                    :schar))
+    :enable (scharp value-kind))
+
+  (defruled value-kind-when-ucharp
+    (implies (ucharp x)
+             (equal (value-kind x)
+                    :uchar))
+    :enable (ucharp value-kind))
+
+  (defruled value-kind-when-sshortp
+    (implies (sshortp x)
+             (equal (value-kind x)
+                    :sshort))
+    :enable (sshortp value-kind))
+
+  (defruled value-kind-when-ushortp
+    (implies (ushortp x)
+             (equal (value-kind x)
+                    :ushort))
+    :enable (ushortp value-kind))
+
+  (defruled value-kind-when-sintp
+    (implies (sintp x)
+             (equal (value-kind x)
+                    :sint))
+    :enable (sintp value-kind))
+
+  (defruled value-kind-when-uintp
+    (implies (uintp x)
+             (equal (value-kind x)
+                    :uint))
+    :enable (uintp value-kind))
+
+  (defruled value-kind-when-slongp
+    (implies (slongp x)
+             (equal (value-kind x)
+                    :slong))
+    :enable (slongp value-kind))
+
+  (defruled value-kind-when-ulongp
+    (implies (ulongp x)
+             (equal (value-kind x)
+                    :ulong))
+    :enable (ulongp value-kind))
+
+  (defruled value-kind-when-sllongp
+    (implies (sllongp x)
+             (equal (value-kind x)
+                    :sllong))
+    :enable (sllongp value-kind))
+
+  (defruled value-kind-when-ullongp
+    (implies (ullongp x)
+             (equal (value-kind x)
+                    :ullong))
+    :enable (ullongp value-kind)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection valuepred-when-value-kind
+  :short "Theorems saying that specific @(tsee value-kind)s
+          imply corresponding value predicates."
+
+  (defruled scharp-when-valuep-and-kind-schar
+    (implies (and (valuep val)
+                  (value-case val :schar))
+             (scharp val))
+    :enable (valuep value-kind scharp))
+
+  (defruled ucharp-when-valuep-and-kind-uchar
+    (implies (and (valuep val)
+                  (value-case val :uchar))
+             (ucharp val))
+    :enable (valuep value-kind ucharp))
+
+  (defruled sshortp-when-valuep-and-kind-sshort
+    (implies (and (valuep val)
+                  (value-case val :sshort))
+             (sshortp val))
+    :enable (valuep value-kind sshortp))
+
+  (defruled ushortp-when-valuep-and-kind-ushort
+    (implies (and (valuep val)
+                  (value-case val :ushort))
+             (ushortp val))
+    :enable (valuep value-kind ushortp))
+
+  (defruled sintp-when-valuep-and-kind-sint
+    (implies (and (valuep val)
+                  (value-case val :sint))
+             (sintp val))
+    :enable (valuep value-kind sintp))
+
+  (defruled uintp-when-valuep-and-kind-uint
+    (implies (and (valuep val)
+                  (value-case val :uint))
+             (uintp val))
+    :enable (valuep value-kind uintp))
+
+  (defruled slongp-when-valuep-and-kind-slong
+    (implies (and (valuep val)
+                  (value-case val :slong))
+             (slongp val))
+    :enable (valuep value-kind slongp))
+
+  (defruled ulongp-when-valuep-and-kind-ulong
+    (implies (and (valuep val)
+                  (value-case val :ulong))
+             (ulongp val))
+    :enable (valuep value-kind ulongp))
+
+  (defruled sllongp-when-valuep-and-kind-sllong
+    (implies (and (valuep val)
+                  (value-case val :sllong))
+             (sllongp val))
+    :enable (valuep value-kind sllongp))
+
+  (defruled ullongp-when-valuep-and-kind-ullong
+    (implies (and (valuep val)
+                  (value-case val :ullong))
+             (ullongp val))
+    :enable (valuep value-kind ullongp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled value-signed-integerp-alt-def
-  :short "Alternative definition of @(tsee value-signed-integerp)."
+  :short "Alternative definition of @(tsee value-signed-integerp),
+          in terms of the shallow embedding's integer value recognizers."
   (equal (value-signed-integerp val)
          (b* ((val (value-fix val)))
            (or (scharp val)
@@ -238,7 +374,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled value-unsigned-integerp-alt-def
-  :short "Alternative definition of @(tsee value-unsigned-integerp)."
+  :short "Alternative definition of @(tsee value-unsigned-integerp),
+          in terms of the shallow embedding's integer value recognizers."
   (equal (value-unsigned-integerp val)
          (b* ((val (value-fix val)))
            (or (ucharp val)
@@ -264,6 +401,26 @@
               uintp
               ulongp
               ullongp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled value-promoted-arithmeticp-alt-def
+  :short "Alternative definition of @(tsee value-promoted-arithmeticp),
+          in terms of the shallow embedding's integer value recognizers."
+  (implies (valuep val)
+           (equal (value-promoted-arithmeticp val)
+                  (or (uintp val)
+                      (sintp val)
+                      (ulongp val)
+                      (slongp val)
+                      (ullongp val)
+                      (sllongp val))))
+  :enable (value-promoted-arithmeticp
+           value-arithmeticp
+           value-realp
+           value-integerp
+           value-unsigned-integerp-alt-def
+           value-signed-integerp-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,7 +465,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-predicates-to-type-of-value-equalities
+(defsection valuepred-to-type-of-value-equalities
   :short "Rules that rewrite predicates for values
           to equalities of the types of the values."
 
@@ -414,7 +571,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection type-of-value-under-value-predicates
+(defsection type-of-value-when-valuepred
   :short "Rules that rewrite @(tsee type-of-value) to specific types
           under hypotheses on different types of values."
 
@@ -633,129 +790,3 @@
              (equal (value-ullong->get x)
                     (ullong->get x)))
     :enable (value-ullong->get ullong->get)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection value-kind-theorems
-  :short "Theorems relating @(tsee value-kind) to
-          recognizers of integer values."
-
-  (defruled value-kind-when-scharp
-    (implies (scharp x)
-             (equal (value-kind x)
-                    :schar))
-    :enable (scharp value-kind))
-
-  (defruled value-kind-when-ucharp
-    (implies (ucharp x)
-             (equal (value-kind x)
-                    :uchar))
-    :enable (ucharp value-kind))
-
-  (defruled value-kind-when-sshortp
-    (implies (sshortp x)
-             (equal (value-kind x)
-                    :sshort))
-    :enable (sshortp value-kind))
-
-  (defruled value-kind-when-ushortp
-    (implies (ushortp x)
-             (equal (value-kind x)
-                    :ushort))
-    :enable (ushortp value-kind))
-
-  (defruled value-kind-when-sintp
-    (implies (sintp x)
-             (equal (value-kind x)
-                    :sint))
-    :enable (sintp value-kind))
-
-  (defruled value-kind-when-uintp
-    (implies (uintp x)
-             (equal (value-kind x)
-                    :uint))
-    :enable (uintp value-kind))
-
-  (defruled value-kind-when-slongp
-    (implies (slongp x)
-             (equal (value-kind x)
-                    :slong))
-    :enable (slongp value-kind))
-
-  (defruled value-kind-when-ulongp
-    (implies (ulongp x)
-             (equal (value-kind x)
-                    :ulong))
-    :enable (ulongp value-kind))
-
-  (defruled value-kind-when-sllongp
-    (implies (sllongp x)
-             (equal (value-kind x)
-                    :sllong))
-    :enable (sllongp value-kind))
-
-  (defruled value-kind-when-ullongp
-    (implies (ullongp x)
-             (equal (value-kind x)
-                    :ullong))
-    :enable (ullongp value-kind))
-
-  (defruled scharp-when-valuep-and-kind-schar
-    (implies (and (valuep val)
-                  (value-case val :schar))
-             (scharp val))
-    :enable (valuep value-kind scharp))
-
-  (defruled ucharp-when-valuep-and-kind-uchar
-    (implies (and (valuep val)
-                  (value-case val :uchar))
-             (ucharp val))
-    :enable (valuep value-kind ucharp))
-
-  (defruled sshortp-when-valuep-and-kind-sshort
-    (implies (and (valuep val)
-                  (value-case val :sshort))
-             (sshortp val))
-    :enable (valuep value-kind sshortp))
-
-  (defruled ushortp-when-valuep-and-kind-ushort
-    (implies (and (valuep val)
-                  (value-case val :ushort))
-             (ushortp val))
-    :enable (valuep value-kind ushortp))
-
-  (defruled sintp-when-valuep-and-kind-sint
-    (implies (and (valuep val)
-                  (value-case val :sint))
-             (sintp val))
-    :enable (valuep value-kind sintp))
-
-  (defruled uintp-when-valuep-and-kind-uint
-    (implies (and (valuep val)
-                  (value-case val :uint))
-             (uintp val))
-    :enable (valuep value-kind uintp))
-
-  (defruled slongp-when-valuep-and-kind-slong
-    (implies (and (valuep val)
-                  (value-case val :slong))
-             (slongp val))
-    :enable (valuep value-kind slongp))
-
-  (defruled ulongp-when-valuep-and-kind-ulong
-    (implies (and (valuep val)
-                  (value-case val :ulong))
-             (ulongp val))
-    :enable (valuep value-kind ulongp))
-
-  (defruled sllongp-when-valuep-and-kind-sllong
-    (implies (and (valuep val)
-                  (value-case val :sllong))
-             (sllongp val))
-    :enable (valuep value-kind sllongp))
-
-  (defruled ullongp-when-valuep-and-kind-ullong
-    (implies (and (valuep val)
-                  (value-case val :ullong))
-             (ullongp val))
-    :enable (valuep value-kind ullongp)))

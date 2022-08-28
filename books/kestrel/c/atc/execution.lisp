@@ -15,9 +15,8 @@
 (include-book "values")
 
 (include-book "../language/abstract-syntax-operations")
-(include-book "../language/computation-states")
 (include-book "../language/function-environments")
-(include-book "../language/operations")
+(include-book "../language/dynamic-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,137 +26,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We distinguish between pure (i.e. side-effect-free) expressions
-     and expressions that may have side effects.
-     We allow the latter to appear only in certain parts of statements,
-     and we put restrictions to ensure a predictable order of evaluation.
-     Pure expressions may be evaluated in any order;
-     we evaluate them left to right.")
-   (xdoc::p
-    "We formalize a big-step operational interpretive semantics.
-     To ensure the termination of the ACL2 mutually recursive functions
-     that formalize the execution of statements, function calls, etc.,
-     these ACL2 functions take a limit on the depth of the recursive calls,
-     which ends the recursion with an error when it reaches 0,
-     which is decremented at each recursive call,
-     and which is used as termination measure.
-     Thus, a proof of total correctness
-     (i.e. the code terminates and produces correct results)
-     involves showing the existence of sufficiently large limit values,
-     while a proof of partial correctness
-     (i.e. the code produces correct results if it terminates)
-     is relativized to the limit value not running out.
-     The limit is an artifact of the formalization;
-     it has no explicit counterpart in the execution state of the C code."))
+    "The code in this file is being reformulated
+     and moved to @('../langauge/dynamic-semantics.lisp').
+     See @(see dynamic-semantics) for documentation on that and this code."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-iconst ((ic iconstp))
-  :returns (result value-resultp)
-  :short "Execute an integer constant."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to [C:6.4.4.1/5]:
-     based on the suffixes and the base,
-     we find the first type that suffices to represent the value,
-     in the lists indicated in the table,
-     and we return the value of the found type.
-     If the value is too large, we return an error.")
-   (xdoc::p
-    "This is the dynamic counterpart of @(tsee check-iconst)."))
-  (b* (((iconst ic) ic)
-       (error (error (list :iconst-out-of-range (iconst-fix ic)))))
-    (if ic.unsignedp
-        (iconst-length-case
-         ic.length
-         :none (cond ((uint-integerp ic.value) (value-uint ic.value))
-                     ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error))
-         :long (cond ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error))
-         :llong (cond ((ullong-integerp ic.value) (value-ullong ic.value))
-                      (t error)))
-      (iconst-length-case
-       ic.length
-       :none (if (iconst-base-case ic.base :dec)
-                 (cond ((sint-integerp ic.value) (value-sint ic.value))
-                       ((slong-integerp ic.value) (value-slong ic.value))
-                       ((sllong-integerp ic.value) (value-sllong ic.value))
-                       (t error))
-               (cond ((sint-integerp ic.value) (value-sint ic.value))
-                     ((uint-integerp ic.value) (value-uint ic.value))
-                     ((slong-integerp ic.value) (value-slong ic.value))
-                     ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((sllong-integerp ic.value) (value-sllong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error)))
-       :long (if (iconst-base-case ic.base :dec)
-                 (cond ((slong-integerp ic.value) (value-slong ic.value))
-                       ((sllong-integerp ic.value) (value-sllong ic.value))
-                       (t error))
-               (cond ((slong-integerp ic.value) (value-slong ic.value))
-                     ((ulong-integerp ic.value) (value-ulong ic.value))
-                     ((sllong-integerp ic.value) (value-sllong ic.value))
-                     ((ullong-integerp ic.value) (value-ullong ic.value))
-                     (t error)))
-       :llong (if (iconst-base-case ic.base :dec)
-                  (cond ((sllong-integerp ic.value) (value-sllong ic.value))
-                        (t error))
-                (cond ((sllong-integerp ic.value) (value-sllong ic.value))
-                      ((ullong-integerp ic.value) (value-ullong ic.value))
-                      (t error))))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-const ((c constp))
-  :returns (result value-resultp)
-  :short "Execute a constant."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We only support the execution of integer constants for now."))
-  (const-case c
-              :int (exec-iconst c.get)
-              :float (error :exec-const-float)
-              :enum (error :exec-const-enum)
-              :char (error :exec-const-char))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-ident ((id identp) (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute a variable."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We read the variable's value (if any) from the computation state.
-     If the value is an array, we return a pointer value for the array.
-     As explained in @(tsee exec-arrsub),
-     our treatment of pointers and arrays differs slightly from full C,
-     but leads to equivalent results in our C subset.
-     This is essentially like an array-to-pointer conversion,
-     but with the pointer pointing to the whole array
-     instead of the first element,
-     and with the pointer type being the array element type.
-     The object designator is just the variable:
-     currently @(tsee exec-block-item) prohibits local arrays,
-     so a variable that contains an array can only be a global one.
-     All of this will be properly generalized eventually,
-     to bring things more in line with full C."))
-  (b* ((val (read-var id compst))
-       ((when (errorp val)) val))
-    (if (value-case val :array)
-        (make-value-pointer :designator? (objdesign-variable id)
-                            :reftype (value-array->elemtype val))
-      val))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,7 +39,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This rule provides relates
+    "This rule relates
      the definition of value promotion in the deep embedding
      and the shallow embedding recognizers of integer values.
      This rule is used in certain proofs that relate aspects of
@@ -195,168 +68,81 @@
                     (slongp pval)
                     (ullongp pval)
                     (sllongp pval))))
-     :enable (promote-value
-              promote-type
-              convert-integer-value
-              value-integer
-              value-integer->get
-              integer-type-rangep
-              integer-type-min
-              integer-type-max
-              value-schar->get-to-schar->get
-              value-uchar->get-to-uchar->get
-              value-sshort->get-to-sshort->get
-              value-ushort->get-to-ushort->get
-              value-uint->get-to-uint->get
-              value-sint->get-to-sint->get
-              value-sint-to-sint
-              value-uint-to-uint
-              sint-from-uchar
-              sint-from-schar
-              sint-from-ushort
-              sint-from-sshort
-              scharp-when-valuep-and-kind-schar
-              ucharp-when-valuep-and-kind-uchar
-              sshortp-when-valuep-and-kind-sshort
-              ushortp-when-valuep-and-kind-ushort
-              sintp-when-valuep-and-kind-sint
-              value-arithmeticp
-              value-realp
-              value-integerp
-              value-unsigned-integerp-alt-def
-              value-signed-integerp-alt-def)
-     :disable ((:e integer-type-max)
-               (:e integer-type-min))
-     :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-unary ((op unopp) (arg value-resultp))
-  :returns (result value-resultp)
-  :short "Execute a unary operation."
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg))
-    (unop-case op
-               :address (error :todo)
-               :indir (error :todo)
-               :plus (plus-value arg)
-               :minus (minus-value arg)
-               :bitnot (bitnot-value arg)
-               :lognot (lognot-value arg)))
-  :hooks (:fix))
+     :disable (value-promoted-arithmeticp-of-promote-value
+               type-of-value-of-promote-value)
+     :use (value-promoted-arithmeticp-of-promote-value
+           type-of-value-of-promote-value)
+     :enable (value-promoted-arithmeticp-alt-def
+              type-of-value-when-uintp
+              type-of-value-when-sintp
+              type-of-value-when-ulongp
+              type-of-value-when-slongp
+              type-of-value-when-ullongp
+              type-of-value-when-sllongp
+              uintp-to-type-of-value
+              sintp-to-type-of-value
+              ulongp-to-type-of-value
+              slongp-to-type-of-value
+              ullongp-to-type-of-value
+              sllongp-to-type-of-value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define uaconvert-values ((val1 valuep) (val2 valuep))
-  :guard (and (value-arithmeticp val1)
-              (value-arithmeticp val2))
-  :returns (mv (new-val1 valuep)
-               (new-val2 valuep))
-  :short "Apply the usual arithmetic conversions to two arithmetic values
-          [C:6.3.1.8]."
+(defruled values-of-uaconvert-values
+  :short "Theorem about the possible values
+          obtained from the usual arithmetic conversions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the dynamic counterpart of @(tsee uaconvert-types).
-     See the documentation of that function for details.
-     Here we actually convert the values;
-     we do not merely compute the common type."))
-  (b* ((val1 (promote-value val1))
-       (val2 (promote-value val2)))
-    (cond ((sllongp val1)
-           (cond ((sllongp val2) (mv val1 val2))
-                 ((slongp val2) (mv val1 (sllong-from-slong val2)))
-                 ((sintp val2) (mv val1 (sllong-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-sllong val1) val2))
-                 ((ulongp val2) (if (>= (sllong-max) (ulong-max))
-                                    (mv val1 (sllong-from-ulong val2))
-                                  (mv (ullong-from-sllong val1)
-                                      (ullong-from-ulong val2))))
-                 ((uintp val2) (if (>= (sllong-max) (uint-max))
-                                   (mv val1 (sllong-from-uint val2))
-                                 (mv (ullong-from-sllong val1)
-                                     (ullong-from-uint val2))))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((slongp val1)
-           (cond ((sllongp val2) (mv (sllong-from-slong val1) val2))
-                 ((slongp val2) (mv val1 val2))
-                 ((sintp val2) (mv val1 (slong-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-slong val1) val2))
-                 ((ulongp val2) (mv (ulong-from-slong val1) val2))
-                 ((uintp val2) (if (>= (slong-max) (uint-max))
-                                   (mv val1 (slong-from-uint val2))
-                                 (mv (ulong-from-slong val1)
-                                     (ulong-from-uint val2))))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((sintp val1)
-           (cond ((sllongp val2) (mv (sllong-from-sint val1) val2))
-                 ((slongp val2) (mv (slong-from-sint val1) val2))
-                 ((sintp val2) (mv val1 val2))
-                 ((ullongp val2) (mv (ullong-from-sint val1) val2))
-                 ((ulongp val2) (mv (ulong-from-sint val1) val2))
-                 ((uintp val2) (mv (uint-from-sint val1) val2))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((ullongp val1)
-           (cond ((sllongp val2) (mv val1 (ullong-from-sllong val2)))
-                 ((slongp val2) (mv val1 (ullong-from-slong val2)))
-                 ((sintp val2) (mv val1 (ullong-from-sint val2)))
-                 ((ullongp val2) (mv val1 val2))
-                 ((ulongp val2) (mv val1 (ullong-from-ulong val2)))
-                 ((uintp val2) (mv val1 (ullong-from-uint val2)))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((ulongp val1)
-           (cond ((sllongp val2) (if (>= (sllong-max) (ulong-max))
-                                     (mv (sllong-from-ulong val1) val2)
-                                   (mv (ullong-from-ulong val1)
-                                       (ullong-from-sllong val2))))
-                 ((slongp val2) (mv val1 (ulong-from-slong val2)))
-                 ((sintp val2) (mv val1 (ulong-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-ulong val1) val2))
-                 ((ulongp val2) (mv val1 val2))
-                 ((uintp val2) (mv val1 (ulong-from-uint val2)))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          ((uintp val1)
-           (cond ((sllongp val2) (if (>= (sllong-max) (uint-max))
-                                     (mv (sllong-from-uint val1) val2)
-                                   (mv (ullong-from-uint val1)
-                                       (ullong-from-sllong val2))))
-                 ((slongp val2) (if (>= (slong-max) (uint-max))
-                                    (mv (slong-from-uint val1) val2)
-                                  (mv (ulong-from-uint val1)
-                                      (ulong-from-slong val2))))
-                 ((sintp val2) (mv val1 (uint-from-sint val2)))
-                 ((ullongp val2) (mv (ullong-from-uint val1) val2))
-                 ((ulongp val2) (mv (ulong-from-uint val1) val2))
-                 ((uintp val2) (mv val1 val2))
-                 (t (prog2$ (impossible) (mv val1 val2)))))
-          (t (prog2$ (impossible) (mv val1 val2)))))
-  :guard-hints (("Goal"
-                 :do-not '(preprocess) ; just for speed
-                 :in-theory (enable slong-from-uint-okp
-                                    sllong-from-uint-okp
-                                    sllong-from-ulong-okp
-                                    sint-integerp-alt-def
-                                    slong-integerp-alt-def
-                                    sllong-integerp-alt-def
-                                    uint-integerp-alt-def
-                                    ulong-integerp-alt-def
-                                    ullong-integerp-alt-def)
-                 :use ((:instance values-of-promote-value (val val1))
-                       (:instance values-of-promote-value (val val2)))))
-  ///
-
-  (defrule values-of-uaconvert-values
-    (implies (and (value-arithmeticp val1)
-                  (value-arithmeticp val2))
-             (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
-               (or (and (uintp cval1) (uintp cval2))
-                   (and (sintp cval1) (sintp cval2))
-                   (and (ulongp cval1) (ulongp cval2))
-                   (and (slongp cval1) (slongp cval2))
-                   (and (ullongp cval1) (ullongp cval2))
-                   (and (sllongp cval1) (sllongp cval2)))))
-    :use ((:instance values-of-promote-value (val val1))
-          (:instance values-of-promote-value (val val2)))))
+    "This rule relates
+     the definition of usual arithmetic conversions in the deep embedding
+     and the shallow embedding recognizers of integer values.
+     This rule is used in certain proofs that relate aspects of
+     the deep embedding and the shallow embedding,
+     but we should no longer need it at some point,
+     after we reformulate all of the C dynamic semantics
+     solely in terms of the deep embedding,
+     without reference to the shallow embedding."))
+  (implies (and (value-arithmeticp val1)
+                (value-arithmeticp val2))
+           (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
+             (or (and (uintp cval1) (uintp cval2))
+                 (and (sintp cval1) (sintp cval2))
+                 (and (ulongp cval1) (ulongp cval2))
+                 (and (slongp cval1) (slongp cval2))
+                 (and (ullongp cval1) (ullongp cval2))
+                 (and (sllongp cval1) (sllongp cval2)))))
+  :use (:instance lemma (val1 (value-fix val1)) (val2 (value-fix val2)))
+  :prep-lemmas
+  ((defruled lemma
+     (implies (and (valuep val1)
+                   (valuep val2)
+                   (value-arithmeticp val1)
+                   (value-arithmeticp val2))
+              (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
+                (or (and (uintp cval1) (uintp cval2))
+                    (and (sintp cval1) (sintp cval2))
+                    (and (ulongp cval1) (ulongp cval2))
+                    (and (slongp cval1) (slongp cval2))
+                    (and (ullongp cval1) (ullongp cval2))
+                    (and (sllongp cval1) (sllongp cval2)))))
+     :disable (value-promoted-arithmeticp-of-uaconvert-values
+               type-of-value-of-uaconvert-values)
+     :use (value-promoted-arithmeticp-of-uaconvert-values
+           type-of-value-of-uaconvert-values)
+     :enable (value-promoted-arithmeticp-alt-def
+              type-of-value-when-uintp
+              type-of-value-when-sintp
+              type-of-value-when-ulongp
+              type-of-value-when-slongp
+              type-of-value-when-ullongp
+              type-of-value-when-sllongp
+              uintp-to-type-of-value
+              sintp-to-type-of-value
+              ulongp-to-type-of-value
+              slongp-to-type-of-value
+              ullongp-to-type-of-value
+              sllongp-to-type-of-value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,6 +211,22 @@
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-unsigned-integerp-alt-def
                                            value-signed-integerp-alt-def)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-unary ((op unopp) (arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a unary operation."
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg))
+    (unop-case op
+               :address (error :todo)
+               :indir (error :todo)
+               :plus (plus-value arg)
+               :minus (minus-value arg)
+               :bitnot (bitnot-value arg)
+               :lognot (lognot-value arg)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
