@@ -15,6 +15,7 @@
 (include-book "../shallow-embedding")
 
 (include-book "types")
+(include-book "values")
 
 (include-book "type-of-value")
 
