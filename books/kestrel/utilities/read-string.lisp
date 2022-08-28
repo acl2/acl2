@@ -36,7 +36,7 @@
     (if erp
         (mv erp nil state)
       (if (not (symbolp item))
-          (mv :string-parsed-to-a-non-symbol nil state)
+          (mv `(:string-parsed-to-a-non-symbol ,string) nil state)
         (mv nil item state)))))
 
 (defthm symbolp-of-mv-nth-1-of-read-string-as-single-symbol

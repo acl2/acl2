@@ -18,16 +18,20 @@
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
 ;; :step-limit-reached or :unknown.
+;; TODO: How to determine if the time-limit was reached?
 (defun prove$+-fn (term ; untranslated (todo: optimize if known to be translated?)
                    hints
                    instructions
                    otf-flg
-                   step-limit ; don't support time-limit because that's not portable
+                   step-limit ; warning: not sufficient to interrupt certain prover operations, such as subsumption
+                   time-limit ; warning: not portable
                    print
                    state)
   (declare (xargs :guard (and (booleanp otf-flg)
                               (or (natp step-limit)
-                                  (null step-limit)))
+                                  (null step-limit))
+                              (or (rationalp time-limit)
+                                  (null time-limit)))
                   :mode :program ; because this (ultimately) calls the prover
                   :stobjs state))
   (mv-let (erp val state)
@@ -36,7 +40,8 @@
                  :instructions instructions
                  :otf-flg otf-flg
                  ;; :ignore-ok t ; okay to have ignored let-vars
-                 :step-limit step-limit)
+                 :step-limit step-limit
+                 :time-limit time-limit)
     (if erp
         (mv erp nil nil state)
       ;; no error (but may have failed to prove):
@@ -63,9 +68,10 @@
                    (instructions 'nil)
                    (otf-flg 'nil)
                    (step-limit 'nil)
+                   (time-limit 'nil)
                    (print 't) ; todo: change default to nil?
                    )
-  `(prove$+-fn ,term ,hints ,instructions ,otf-flg ,step-limit ,print state))
+  `(prove$+-fn ,term ,hints ,instructions ,otf-flg ,step-limit ,time-limit ,print state))
 
 ;; Tests:
 ;; (prove$+ '(equal (car (cons x y)) x))

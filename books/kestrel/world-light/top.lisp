@@ -18,6 +18,7 @@
 
 (include-book "defined-functionp")
 
+(include-book "defthm-or-defaxiom-symbolp")
 (include-book "function-symbolsp")
 
 (include-book "filter-defined-fns")
