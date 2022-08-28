@@ -16,15 +16,14 @@
 
 (include-book "types")
 (include-book "values")
-
 (include-book "type-of-value")
-
 (include-book "exec-unary")
 (include-book "exec-binary-strict-pure")
 (include-book "exec-cast")
 (include-book "exec-arrsub")
 (include-book "exec-expr-asg")
 (include-book "uaconvert-values")
+(include-book "static-variable-pointers")
 
 (include-book "execution-rules")
 
