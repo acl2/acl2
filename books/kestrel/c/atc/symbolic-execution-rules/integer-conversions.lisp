@@ -217,51 +217,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-sint-get-rules
-  :short "Rules about the composition of @(tsee sint->get)
-          with @('sint-from-<type>') functions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are not used during the symbolic execution;
-     they are used to prove rules used during the symbolic execution."))
-
-  (defruled sint->get-of-sint-from-schar
-    (implies (scharp x)
-             (equal (sint->get (sint-from-schar x))
-                    (schar->get x)))
-    :enable (sint-from-schar
-             sint-integerp-alt-def))
-
-  (defruled sint->get-of-sint-from-uchar
-    (implies (ucharp x)
-             (equal (sint->get (sint-from-uchar x))
-                    (uchar->get x)))
-    :enable (sint-from-uchar
-             sint-integerp-alt-def))
-
-  (defruled sint->get-of-sint-from-sshort
-    (implies (sshortp x)
-             (equal (sint->get (sint-from-sshort x))
-                    (sshort->get x)))
-    :enable (sint-from-sshort
-             sint-integerp-alt-def))
-
-  (defruled sint->get-of-sint-from-ushort
-    (implies (ushortp x)
-             (equal (sint->get (sint-from-ushort x))
-                    (ushort->get x)))
-    :enable (sint-from-ushort
-             sint-integerp-alt-def))
-
-  (defval *atc-sint-get-rules*
-    '(sint->get-of-sint-from-schar
-      sint->get-of-sint-from-uchar
-      sint->get-of-sint-from-sshort
-      sint->get-of-sint-from-ushort)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-sint-from-boolean
   :short "Rules about @(tsee sint-from-boolean."
   :long
