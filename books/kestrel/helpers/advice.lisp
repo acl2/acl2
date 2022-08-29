@@ -479,7 +479,9 @@
          (book-map (lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (cw "WARNING: When parsing book map: ~x0.~%" erp)
+          (if (stringp erp)
+              (cw "WARNING: When parsing book map: ~s0.~%" erp)
+            (cw "WARNING: When parsing book map: ~x0.~%" erp))
           (mv nil ; supressing this error for now
               :none state))
          (confidence (rfix confidence)) ; for guards
@@ -862,6 +864,7 @@
                 (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule :enable new-hints theorem-otf-flg *step-limit* state))
                ((when erp) (mv erp nil state))
                (provedp (if successful-include-book-form-or-nil t nil))
+               ;; todo: clarify whether we even found an include-book that works
                ((when (not provedp))
                 (if (< 3 num-books-to-try-orig)
                     ;; todo: try more if we didn't find it?:
