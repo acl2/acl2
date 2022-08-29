@@ -850,3 +850,81 @@
       ullong-dec-const
       ullong-oct-const
       ullong-hex-const)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-integer-size-rules
+  :short "Rules related to integer sizes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the same as the linear rules,
+     but they are rewrite rules."))
+
+  (make-event
+   `(defruled uchar-max-vs-sint-max-rewrite
+      ,(if (<= (uchar-max) (sint-max))
+           '(<= (uchar-max) (sint-max))
+         '(> (uchar-max) (sint-max)))))
+
+  (make-event
+   `(defruled ushort-max-vs-sint-max-rewrite
+      ,(if (<= (ushort-max) (sint-max))
+           '(<= (ushort-max) (sint-max))
+         '(> (ushort-max) (sint-max)))))
+
+  (make-event
+   `(defruled uchar-max-vs-slong-max-rewrite
+      ,(if (<= (uchar-max) (slong-max))
+           '(<= (uchar-max) (slong-max))
+         '(> (uchar-max) (slong-max)))))
+
+  (make-event
+   `(defruled ushort-max-vs-slong-max-rewrite
+      ,(if (<= (ushort-max) (slong-max))
+           '(<= (ushort-max) (slong-max))
+         '(> (ushort-max) (slong-max)))))
+
+  (make-event
+   `(defruled uint-max-vs-slong-max-rewrite
+      ,(if (<= (uint-max) (slong-max))
+           '(<= (uint-max) (slong-max))
+         '(> (uint-max) (slong-max)))))
+
+  (make-event
+   `(defruled uchar-max-vs-sllong-max-rewrite
+      ,(if (<= (uchar-max) (sllong-max))
+           '(<= (uchar-max) (sllong-max))
+         '(> (uchar-max) (sllong-max)))))
+
+  (make-event
+   `(defruled ushort-max-vs-sllong-max-rewrite
+      ,(if (<= (ushort-max) (sllong-max))
+           '(<= (ushort-max) (sllong-max))
+         '(> (ushort-max) (sllong-max)))))
+
+  (make-event
+   `(defruled uint-max-vs-sllong-max-rewrite
+      ,(if (<= (uint-max) (sllong-max))
+           '(<= (uint-max) (sllong-max))
+         '(> (uint-max) (sllong-max)))))
+
+  (make-event
+   `(defruled ulong-max-vs-sllong-max-rewrute
+      ,(if (<= (ulong-max) (sllong-max))
+           '(<= (ulong-max) (sllong-max))
+         '(> (ulong-max) (sllong-max))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-integer-size-rules*
+  :short "List of rules related to integer sizes."
+  '(uchar-max-vs-sint-max-rewrite
+    ushort-max-vs-sint-max-rewrite
+    uchar-max-vs-slong-max-rewrite
+    ushort-max-vs-slong-max-rewrite
+    uint-max-vs-slong-max-rewrite
+    uchar-max-vs-sllong-max-rewrite
+    ushort-max-vs-sllong-max-rewrite
+    uint-max-vs-sllong-max-rewrite
+    ulong-max-vs-sllong-max-rewrute))
