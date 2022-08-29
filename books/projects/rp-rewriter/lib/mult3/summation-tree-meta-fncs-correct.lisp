@@ -6103,6 +6103,14 @@
                             )
                            ()))))
 
+(defthm equiv-of---
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (equal (-- x) (-- y))
+                  (equal x y)))
+  :hints (("Goal"
+           :in-theory (e/d (--) ()))))
+
 (defret pp-radix8+-fix-aux-for-s/c-correct
   (implies (and valid
                 (valid-sc single-s/c a)
@@ -6123,6 +6131,8 @@
                        (c-fix-arg-aux-correct-singled-out
                         bit-listp
                         has-bitp-rp-force-hyp-rewrite
+                        regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_--_when_mult-formula-checks
                         regular-rp-evl-of_s_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_s_when_mult-formula-checks
                         regular-rp-evl-of_c_when_mult-formula-checks_with-ex-from-rp
