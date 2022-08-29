@@ -259,3 +259,18 @@
       sint->get-of-sint-from-uchar
       sint->get-of-sint-from-sshort
       sint->get-of-sint-from-ushort)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-sint-from-boolean
+  :short "Rules about @(tsee sint-from-boolean."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We expand @(tsee sint-from-boolean),
+     because it is really just an abbreviation.
+     In fact, we want to expose its @(tsee if) structure
+     in the symbolic execution."))
+
+  (defval *atc-sint-from-boolean*
+    '(sint-from-boolean)))

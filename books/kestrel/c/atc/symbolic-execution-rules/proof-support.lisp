@@ -90,19 +90,6 @@
     "We expand @(tsee condexpr) because it is just a wrapper
      that signifies a conditional expression instead of statement.")
    (xdoc::p
-    "It may seem surprising that
-     we expand functions like @(tsee sint-dec-const),
-     since those correspond to C constructs;
-     we certainly do not expand functions like @(tsee add-sint-sint).
-     The reason is that functions like @(tsee sint-dec-const)
-     are used to represent C constants in ACL2 functions,
-     but in the dynamic semantics,
-     @(tsee exec-iconst) (which we expand, obviously)
-     produces terms of the form @('(sint <quoted-integer>)').
-     By expanding @(tsee sint-dec-const) in the ACL2 functions,
-     we produce terms of the form @('(sint <quoted-integer>)'),
-     which therefore match the ones from @(tsee exec-iconst).")
-   (xdoc::p
     "We do not expand any fixtype constructors.
      This is because such expansions would expose
      the internal representational details of the fixtype's values.
@@ -110,16 +97,10 @@
      and use deconstructors to obtain their components.
      In fact, as explained elsewhere,
      we enable rules that simplify
-     applications of deconstructors to constructors.")
-   (xdoc::p
-    "We expand @(tsee sint-from-boolean),
-     because it is really just an abbreviation.
-     In fact, we want to expose its @(tsee if) structure
-     in the symbolic execution."))
+     applications of deconstructors to constructors."))
   '(condexpr
     declar
-    assign
-    sint-from-boolean))
+    assign))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1290,7 +1271,8 @@
           *atc-type-prescription-rules*
           *atc-compound-recognizer-rules*
           *integer-value-disjoint-rules*
-          *array-value-disjoint-rules*))
+          *array-value-disjoint-rules*
+          *atc-sint-from-boolean*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
