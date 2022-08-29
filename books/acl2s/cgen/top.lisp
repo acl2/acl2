@@ -87,7 +87,7 @@
 
 ;Note on xdoc: <= or < cannot be used inside defxdoc!!
 
-(defun test?-fn (form hints override-defaults state)
+(defun test?-fn1 (form hints override-defaults state)
 ; Jan 9th 2013, dont print summary unless there was a counterexample.
   (declare (xargs :mode :program
                   :stobjs (state)))
@@ -153,6 +153,12 @@
 
     (mv cts-found? '(value-triple :invisible) state )))
 
+(defun test?-fn (form hints override-defaults state)
+  (declare (xargs :mode :program
+                  :stobjs (state)))
+  (revert-world (test?-fn1 form hints override-defaults state)))
+
+
 (defmacro test? (form &rest kwd-val-lst)
   (let* ((vl-entry (assoc-keyword :verbosity-level kwd-val-lst))
          (vl (and vl-entry (cadr vl-entry)))
@@ -165,8 +171,7 @@
       ,@(if debug nil (list :on 'comment))
       :gag-mode ,(not debug)
       (make-event
-       (revert-world
-        (test?-fn ',form ',hints ',kwd-val-lst state))))))
+       (test?-fn ',form ',hints ',kwd-val-lst state)))))
 
 (defxdoc acl2::cgen
   :parents (acl2::debugging acl2::acl2-sedan acl2::testing-utilities)

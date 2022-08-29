@@ -25,6 +25,33 @@
 
 (include-book "tools/prove-dollar" :dir :system)
 
+;; move to kestrel/utilities/tables.lisp?  Or redo to be like the function there?
+;; Sets the value of the table to ALIST, overwriting anything that was there.
+;; Returns an error triple.
+(defun overwrite-table-programmatic (table-name alist state)
+  (declare (xargs :mode :program :stobjs state))
+  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
+    (table-fn table-name
+              (list nil (kwote alist) :clear)
+              state
+              `(table ,table-name nil ',alist :clear))))
+
+;; move to kestrel/utilities/tables.lisp?  Or redo to be like the function there?
+;; Returns an error triple.
+(defun set-table-entry-programmatic (table-name key value state)
+  (declare (xargs :mode :program :stobjs state))
+  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
+    (table-fn table-name
+              (list (kwote key) (kwote value))
+              state
+              `(table ,table-name nil ',key ',value))))
+
+;; Returns an error triple.
+(defun add-inhibit-er-programmatic (str state)
+  (declare (xargs :mode :program :stobjs state))
+  ;; For some reason, keys are set to nil in this table:
+  (set-table-entry-programmatic 'inhibit-er-table str nil state))
+
 ;; Returns (mv erp provedp state).
 (defun prove$-nice-fn (term
                        hints
@@ -44,11 +71,9 @@
    (er-progn
     ;; Step-limit reached is not an error, so this makes it not print an error
     ;; message:
-    (with-output! :off :all ; silence TABLE-FN
-      (TABLE-FN 'INHIBIT-ER-TABLE
-                (list "step-limit" nil)
-                STATE
-                '(TABLE INHIBIT-ER-TABLE "step-limit" nil)))
+    (add-inhibit-er-programmatic "step-limit" state)
+    ;; Don't print an error if the rewrite stack depth is exceeded:
+    (add-inhibit-er-programmatic "Call depth" state)
     (if time-limit ;awkward, due to how prove$ handles time-limit
         (prove$ term
                 :hints hints
