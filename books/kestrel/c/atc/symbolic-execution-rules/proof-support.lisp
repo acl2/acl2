@@ -383,210 +383,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atc-integer-ops-1-type-prescription-rules*
-  :short "List of type prescription rules for the
-          models of C integer operations that involve one C integer type."
-  (b* ((ops '(plus minus bitnot lognot)))
-    (atc-integer-ops-1-type-presc-rules-loop-ops
-     ops
-     *nonchar-integer-types**))
-
-  :prepwork
-
-  ((define atc-integer-ops-1-type-presc-rules-loop-types ((op symbolp)
-                                                          (types type-listp))
-     :guard (and (member-eq op '(plus minus bitnot lognot))
-                 (type-nonchar-integer-listp types))
-     :returns (rules true-list-listp)
-     :parents nil
-     (cond
-      ((endp types) nil)
-      (t (b* ((type (car types))
-              (fixtype (integer-type-to-fixtype type)))
-           (cons
-            (list :t (pack op '- fixtype))
-            (atc-integer-ops-1-type-presc-rules-loop-types op (cdr types)))))))
-
-   (define atc-integer-ops-1-type-presc-rules-loop-ops ((ops symbol-listp)
-                                                        (types type-listp))
-     :guard (and (subsetp-eq ops '(plus minus bitnot lognot))
-                 (type-nonchar-integer-listp types))
-     :returns (rule true-list-listp)
-     :parents nil
-     (cond
-      ((endp ops) nil)
-      (t (append
-          (atc-integer-ops-1-type-presc-rules-loop-types (car ops) types)
-          (atc-integer-ops-1-type-presc-rules-loop-ops (cdr ops) types)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-integer-ops-2-type-prescription-rules*
-  :short "List of type prescription rules for the
-          models of C integer operations that involve two C integer types."
-  (b* ((ops (list 'add 'sub 'mul 'div 'rem
-                  'shl 'shr
-                  'lt 'gt 'le 'ge 'eq 'ne
-                  'bitand 'bitxor 'bitior)))
-    (atc-integer-ops-2-type-presc-rules-loop-ops
-     ops
-     *nonchar-integer-types**
-     *nonchar-integer-types**))
-
-  :prepwork
-
-  ((define atc-integer-ops-2-type-presc-rules-loop-right-types
-     ((op symbolp)
-      (ltype typep)
-      (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
-                                     'shl 'shr
-                                     'lt 'gt 'le 'ge 'eq 'ne
-                                     'bitand 'bitxor 'bitior))
-                 (type-nonchar-integerp ltype)
-                 (type-nonchar-integer-listp rtypes))
-     :returns (rules true-list-listp)
-     :parents nil
-     (cond
-      ((endp rtypes) nil)
-      (t (b* ((rtype (car rtypes))
-              (lfixtype (integer-type-to-fixtype ltype))
-              (rfixtype (integer-type-to-fixtype rtype)))
-           (cons
-            (list :t (pack op '- lfixtype '- rfixtype))
-            (atc-integer-ops-2-type-presc-rules-loop-right-types
-             op
-             ltype
-             (cdr rtypes))))))
-     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
-
-   (define atc-integer-ops-2-type-presc-rules-loop-left-types
-     ((op symbolp)
-      (ltypes type-listp)
-      (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
-                                     'shl 'shr
-                                     'lt 'gt 'le 'ge 'eq 'ne
-                                     'bitand 'bitxor 'bitior))
-                 (type-nonchar-integer-listp ltypes)
-                 (type-nonchar-integer-listp rtypes))
-     :returns (rules true-list-listp)
-     :parents nil
-     (cond ((endp ltypes) nil)
-           (t (append
-               (atc-integer-ops-2-type-presc-rules-loop-right-types op
-                                                                    (car ltypes)
-                                                                    rtypes)
-               (atc-integer-ops-2-type-presc-rules-loop-left-types op
-                                                                   (cdr ltypes)
-                                                                   rtypes)))))
-
-   (define atc-integer-ops-2-type-presc-rules-loop-ops ((ops symbol-listp)
-                                                        (ltypes type-listp)
-                                                        (rtypes type-listp))
-     :guard (and (subsetp-eq ops (list 'add 'sub 'mul 'div 'rem
-                                       'shl 'shr
-                                       'lt 'gt 'le 'ge 'eq 'ne
-                                       'bitand 'bitxor 'bitior))
-                 (type-nonchar-integer-listp ltypes)
-                 (type-nonchar-integer-listp rtypes))
-     :returns (rules true-list-listp)
-     :parents nil
-     (cond ((endp ops) nil)
-           (t (append
-               (atc-integer-ops-2-type-presc-rules-loop-left-types (car ops)
-                                                                   ltypes
-                                                                   rtypes)
-               (atc-integer-ops-2-type-presc-rules-loop-ops (cdr ops)
-                                                            ltypes
-                                                            rtypes)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-integer-convs-type-prescription-rules*
-  :short "List of type prescription rules for the
-          models of C integer conversions."
-  (atc-integer-convs-type-presc-rules-loop-src-types
-   *nonchar-integer-types**
-   *nonchar-integer-types**)
-
-  :prepwork
-
-  ((define atc-integer-convs-type-presc-rules-loop-dst-types
-     ((stype typep)
-      (dtypes type-listp))
-     :guard (and (type-nonchar-integerp stype)
-                 (type-nonchar-integer-listp dtypes))
-     :returns (rules true-list-listp)
-     :parents nil
-     (cond
-      ((endp dtypes) nil)
-      ((equal stype (car dtypes))
-       (atc-integer-convs-type-presc-rules-loop-dst-types stype
-                                                          (cdr dtypes)))
-      (t (b* ((sfixtype (integer-type-to-fixtype stype))
-              (dfixtype (integer-type-to-fixtype (car dtypes))))
-           (cons
-            (list :t (pack dfixtype '-from- sfixtype))
-            (atc-integer-convs-type-presc-rules-loop-dst-types
-             stype
-             (cdr dtypes)))))))
-
-   (define atc-integer-convs-type-presc-rules-loop-src-types
-     ((stypes type-listp)
-      (dtypes type-listp))
-     :guard (and (type-nonchar-integer-listp stypes)
-                 (type-nonchar-integer-listp dtypes))
-     :returns (rules true-list-listp)
-     :parents nil
-     (cond ((endp stypes) nil)
-           (t (append
-               (atc-integer-convs-type-presc-rules-loop-dst-types (car stypes)
-                                                                  dtypes)
-               (atc-integer-convs-type-presc-rules-loop-src-types (cdr stypes)
-                                                                  dtypes)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-array-read-type-prescription-rules*
-  :short "List of type prescription rules for the
-          models of C array read operations."
-  (atc-array-read-type-presc-rules-loop-array-types
-   *nonchar-integer-types**
-   *nonchar-integer-types**)
-
-  :prepwork
-
-  ((define atc-array-read-type-presc-rules-loop-index-types
-     ((atype typep) (itypes type-listp))
-     :guard (and (type-nonchar-integerp atype)
-                 (type-nonchar-integer-listp itypes))
-     :returns (rules true-listp)
-     :parents nil
-     (cond
-      ((endp itypes) nil)
-      (t (b* ((afixtype (integer-type-to-fixtype atype))
-              (ifixtype (integer-type-to-fixtype (car itypes))))
-           (cons
-            (list :t (pack afixtype '-array-read- ifixtype))
-            (atc-array-read-type-presc-rules-loop-index-types atype
-                                                              (cdr itypes)))))))
-
-   (define atc-array-read-type-presc-rules-loop-array-types
-     ((atypes type-listp) (itypes type-listp))
-     :guard (and (type-nonchar-integer-listp atypes)
-                 (type-nonchar-integer-listp itypes))
-     :returns (rules true-listp)
-     :parents nil
-     (cond ((endp atypes) nil)
-           (t (append
-               (atc-array-read-type-presc-rules-loop-index-types (car atypes)
-                                                                 itypes)
-               (atc-array-read-type-presc-rules-loop-array-types (cdr atypes)
-                                                                 itypes)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defval *atc-type-prescription-rules*
   :short "List of type prescription rules for the proofs generated by ATC."
   :long
@@ -602,26 +398,21 @@
     "We also need rules about the constructors of C integer values
      and the C functions that represent C operations and conversions,
      including array read operations."))
-  (append
-   '((:t exec-expr-call-or-pure)
-     (:t exec-fun)
-     (:t exec-stmt)
-     (:t exec-block-item)
-     (:t exec-block-item-list)
-     (:t schar)
-     (:t uchar)
-     (:t sshort)
-     (:t ushort)
-     (:t sint)
-     (:t uint)
-     (:t slong)
-     (:t ulong)
-     (:t sllong)
-     (:t ullong))
-   *atc-integer-ops-1-type-prescription-rules*
-   *atc-integer-ops-2-type-prescription-rules*
-   *atc-integer-convs-type-prescription-rules*
-   *atc-array-read-type-prescription-rules*))
+  '((:t exec-expr-call-or-pure)
+    (:t exec-fun)
+    (:t exec-stmt)
+    (:t exec-block-item)
+    (:t exec-block-item-list)
+    (:t schar)
+    (:t uchar)
+    (:t sshort)
+    (:t ushort)
+    (:t sint)
+    (:t uint)
+    (:t slong)
+    (:t ulong)
+    (:t sllong)
+    (:t ullong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -707,6 +498,10 @@
           *atc-integer-convs-return-rewrite-rules*
           *atc-array-read-return-rewrite-rules*
           *atc-array-write-return-rewrite-rules*
+          *atc-integer-ops-1-type-prescription-rules*
+          *atc-integer-ops-2-type-prescription-rules*
+          *atc-integer-convs-type-prescription-rules*
+          *atc-array-read-type-prescription-rules*
           *atc-more-rewrite-rules*
           *atc-type-prescription-rules*
           *atc-compound-recognizer-rules*
