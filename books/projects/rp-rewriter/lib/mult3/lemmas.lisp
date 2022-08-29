@@ -46,6 +46,12 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 
+(defthm <-1+-cancel
+   (implies (and (acl2-numberp x)
+                 (acl2-numberp y))
+            (equal (< (+ 1 x) (+ 1 y))
+                   (< x y))))
+
 (defthm ifix-opener
   (implies (integerp x)
            (equal (ifix x)

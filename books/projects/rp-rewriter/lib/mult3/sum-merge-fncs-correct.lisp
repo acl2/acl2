@@ -425,9 +425,21 @@
 ;;                              and-list-hash)
 ;;                             (floor logapp IFIX-OPENER FLOOR)))))))
 
+
+
+(defthm len-compare-redef
+  (equal (len-compare x y)
+         (> (len x) (len y)))
+  :hints (("Goal"
+           :induct (len-compare x y)
+           :expand ((LEN X))
+           :in-theory (e/d (len-compare
+                            LEN)
+                           (+-is-SUM)))))
+
 (local
  (defthm PP-LIST-ORDER-equals-redef
-   (equal (mv-nth 1 (PP-LIST-ORDER x y))
+   (equal (mv-nth 1 (PP-LIST-ORDER x y skip-hash))
           (equal x y))
    :hints (("Goal"
             :in-theory (e/d (pp-list-order
