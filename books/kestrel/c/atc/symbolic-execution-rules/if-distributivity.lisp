@@ -18,6 +18,15 @@
 
 (defsection atc-distributivity-over-if-rewrite-rules
   :short "Rewrite rules about certain functions distributing over @(tsee if)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We found it necessary to include rules
+     to distribute certain functions over @(tsee if)s.
+     It seems that, in the course of these symbolic execution proofs,
+     we will always want to distribute functions over @(tsee if)s.
+     This distribution happens at the goal level,
+     but not in the rewriter by default."))
 
   (defruled car-of-if
     (equal (car (if a b c))

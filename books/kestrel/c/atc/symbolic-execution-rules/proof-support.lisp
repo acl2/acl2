@@ -92,14 +92,7 @@
     "We also have two rules to simplify applications of
      @(tsee lognot-sint) to @('(sint 0)') and @('(sint 1)').
      Terms of this form may arise in the process of simplifying
-     C non-strict expressions involving @('&&') and @('||').")
-   (xdoc::p
-    "We also found it necessary to include rules
-     to distribute two specific functions over @(tsee if)s.
-     It seems that, in the course of these symbolic execution proofs,
-     we will always want to distribute functions over @(tsee if)s.
-     This distribution happens at the goal level,
-     but not in the rewriter by default."))
+     C non-strict expressions involving @('&&') and @('||')."))
 
   (defruled lognot-sint-of-0
     (equal (lognot-sint (sint 0))
