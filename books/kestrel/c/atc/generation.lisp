@@ -6358,7 +6358,7 @@
                                    *atc-array-length-rules*
                                    *atc-array-length-write-rules*
                                    *atc-other-executable-counterpart-rules*
-                                   *atc-other-definition-rules*
+                                   *atc-wrapper-rules*
                                    *atc-distributivity-over-if-rewrite-rules*
                                    *atc-identifier-rules*
                                    *atc-not-rules*
