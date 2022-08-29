@@ -106,12 +106,6 @@
              (equal (value-result-fix x)
                     x)))
 
-  (defruled boolean-from-sint-of-0
-    (equal (boolean-from-sint (sint 0)) nil))
-
-  (defruled boolean-from-sint-of-1
-    (equal (boolean-from-sint (sint 1)) t))
-
   (defruled lognot-sint-of-0
     (equal (lognot-sint (sint 0))
            (sint 1)))
@@ -125,8 +119,6 @@
 (defval *atc-other-rewrite-rules*
   :short "List of rewrite rules proved in @(see atc-other-rewrite-rules)."
   '(value-result-fix-when-valuep
-    boolean-from-sint-of-0
-    boolean-from-sint-of-1
     lognot-sint-of-0
     lognot-sint-of-1))
 
@@ -319,6 +311,7 @@
           *integer-value-disjoint-rules*
           *array-value-disjoint-rules*
           *atc-sint-from-boolean*
+          *atc-boolean-from-sint*
           *atc-integer-ifix-rules*
           *atc-limit-rules*
           *atc-not-error-rules*))
