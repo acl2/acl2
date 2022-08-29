@@ -331,6 +331,29 @@ if overrides are modified.  But there may be some cases where it is better to
 allow either only a few specific signals to be overridden, or else disallow a
 few particular signals from being overridden.</li>
 
+<li>@(':clocks') may be set to a list of clock input variable names. If this is
+provided, then an analysis will be done before computing the phase FSM to
+determine what other signals are derived clocks, and avoid providing
+conditional overrides on these derived clock signals.  It may be important to
+avoid building conditional overrides on such signals because they can prevent
+important simplifications that reduce the size of the expressions
+produced.</li>
+
+<li>@(':phase-scc-limit') affects the phase FSM constructed in cases where
+there is an apparent combinational loop at the bit level.  An apparent
+combinational loop is equivalent to a strongly connected component in the
+signal dependency graph; when such an SCC exists, self-composing those signals'
+assignments N times where N is the size of the SCC is guaranteed to reach a
+fixed point if all expressions are X-monotonic.  However, in practice this can
+result in very large expressions, and in practice a few such self-composition
+iterations is all that is necessary.  Setting the phase-scc-limit to a natural
+number (instead of the default, NIL, meaning no limit) restricts the number of
+self-composition steps to that limit.  Warning: If you build an SVTV with a
+current phase-scc-limit, then change the phase-scc-limit and try to build it
+again, that won't be sufficient to force the phase FSM to be recomputed.  You
+can force this with
+ @({(update-svtv-data->phase-fsm-validp nil svtv-data).})</li>
+
 </ul>
 
 <h3>@(':phases') argument format</h3>

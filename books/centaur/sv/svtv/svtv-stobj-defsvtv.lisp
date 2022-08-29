@@ -350,6 +350,8 @@
    (phase-config phase-fsm-config-p
                  :default (make-phase-fsm-config
                            :override-config (make-svtv-assigns-override-config-omit)))
+   (clocks svarlist-p :default nil)
+   (phase-scc-limit maybe-natp :default nil)
    (monotonify booleanp :default t)
    (simplify booleanp :default t)
    (pre-simplify booleanp :default t)
@@ -452,6 +454,8 @@
        ((mv err svtv-data)
         (svtv-data-defcycle-core x.design phases svtv-data
                                  :phase-config x.phase-config
+                                 :phase-scc-limit x.phase-scc-limit
+                                 :clocks-avoid-overrides x.clocks
                                  :rewrite-assigns x.pre-simplify
                                  :rewrite-phases x.pre-simplify
                                  :rewrite-cycle x.pre-simplify
