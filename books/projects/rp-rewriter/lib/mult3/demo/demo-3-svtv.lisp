@@ -256,45 +256,31 @@ four-lanes-hi and one-lane should be set to 1.~%")
 ;; recognize its definition rule.
 (add-rp-rule one-lane-mult2-svtv-autoins-fn)
 
-(encapsulate
-    nil
-
-  (defthmrp signed-one-lane-mult-is-correct
-      (implies (and (integerp in1)
-                    (integerp in2)
-                    (integerp in3))
-               (equal (sv::svtv-run (one-lane-mult2-svtv)
-                                    (one-lane-mult2-svtv-autoins
-                                     :mode (mode :one-lane t
-                                                 :signed t)))
-                      `((result . ,(loghead 128 (+ (* (sign-ext in1 64)
-                                                      (sign-ext in2 64))
-                                                   in3))))))))
+(defthmrp signed-one-lane-mult-is-correct
+  (implies (and (integerp in1)
+                (integerp in2)
+                (integerp in3))
+           (equal (sv::svtv-run (one-lane-mult2-svtv)
+                                (one-lane-mult2-svtv-autoins
+                                 :mode (mode :one-lane t
+                                             :signed t)))
+                  `((result . ,(loghead 128 (+ (* (sign-ext in1 64)
+                                                  (sign-ext in2 64))
+                                               in3)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Proof 2-1b: Unsigned One lane (64x64-bit) multiplication
-(encapsulate
-    nil
-
-    ;; Some  recently introduced  and unknown  bug seems  to have  affected the
-    ;; proofs for these  one lane multipliers for the  svtv framework. However,
-    ;; the  unpack-booth-later heuristics  seems  to help  push  the proofs  go
-    ;; though.
-
-    (local
-     (enable-unpack-booth-later t))
-  
-  (defthmrp unsigned-one-lane-mult-is-correct
-      (implies (and (integerp in1)
-                    (integerp in2)
-                    (integerp in3))
-               (equal (sv::svtv-run (one-lane-mult2-svtv)
-                                    (one-lane-mult2-svtv-autoins
-                                     :mode (mode :one-lane t
-                                                 :signed nil)))
-                      `((result . ,(loghead 128 (+ (* (loghead 64 in1)
-                                                      (loghead 64 in2))
-                                                   in3))))))))
+(defthmrp unsigned-one-lane-mult-is-correct
+  (implies (and (integerp in1)
+                (integerp in2)
+                (integerp in3))
+           (equal (sv::svtv-run (one-lane-mult2-svtv)
+                                (one-lane-mult2-svtv-autoins
+                                 :mode (mode :one-lane t
+                                             :signed nil)))
+                  `((result . ,(loghead 128 (+ (* (loghead 64 in1)
+                                                  (loghead 64 in2))
+                                               in3)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

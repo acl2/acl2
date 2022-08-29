@@ -478,7 +478,7 @@
              ((and (not (equal sign1 sign2))
                    (equal term1 term2))
               (merge-sorted-pp-lists (cdr first) (cdr second)))
-             ((b* (((mv order &) (pp-list-order term1 term2))) order)
+             ((b* (((mv order &) (pp-list-order term1 term2 nil))) order)
               (acons sign1
                      term1
                      (merge-sorted-pp-lists (cdr first) second)))
@@ -559,7 +559,7 @@
                    (equal term1 term2))
               nil)
 
-             ((b* (((mv order &) (pp-list-order term1 term2))) order)
+             ((b* (((mv order &) (pp-list-order term1 term2 nil))) order)
               lst)
              (t
               `(,(cadr lst)

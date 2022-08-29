@@ -425,9 +425,21 @@
 ;;                              and-list-hash)
 ;;                             (floor logapp IFIX-OPENER FLOOR)))))))
 
+
+
+(defthm len-compare-redef
+  (equal (len-compare x y)
+         (> (len x) (len y)))
+  :hints (("Goal"
+           :induct (len-compare x y)
+           :expand ((LEN X))
+           :in-theory (e/d (len-compare
+                            LEN)
+                           (+-is-SUM)))))
+
 (local
  (defthm PP-LIST-ORDER-equals-redef
-   (equal (mv-nth 1 (PP-LIST-ORDER x y))
+   (equal (mv-nth 1 (PP-LIST-ORDER x y skip-hash))
           (equal x y))
    :hints (("Goal"
             :in-theory (e/d (pp-list-order
@@ -925,6 +937,21 @@
            :use ((:instance c-fix-arg-aux-correct-lemma))
            :in-theory (e/d (times2) (c-fix-arg-aux-correct-lemma)))))
 
+(defthmd c-fix-arg-aux-correct-singled-out
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (b* (((mv coughed result)
+                 (c-fix-arg-aux pp-lst neg-flag)))
+             (equal
+              (sum-list-eval result a)
+              (sum (sum-list-eval pp-lst a)
+                   (-- (sum-list-eval coughed a))
+                   (-- (sum-list-eval coughed a))))))
+  :hints (("Goal"
+           :use ((:instance c-fix-arg-aux-correct
+                            (rest 0)))
+           :in-theory (e/d () (c-fix-arg-aux-correct)))))
+
 (defthm c-fix-arg-aux-with-cond-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
@@ -996,8 +1023,9 @@
            :use ((:instance c-fix-arg-aux-correct-lemma
                             (neg-flag t)
                             (pp-lst (cdr pp))))
-           :in-theory (e/d (c-fix-pp-args)
-                           (c-fix-arg-aux-correct-lemma)))))
+           :in-theory (e/d ( c-fix-pp-args)
+                           (C-FIX-ARG-AUX-CORRECT-SINGLED-OUT
+                            c-fix-arg-aux-correct-lemma)))))
 
 (defthm c-fix-pp-args-correct-2
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1019,7 +1047,8 @@
                             (neg-flag t)
                             (pp-lst (cdr pp))))
            :in-theory (e/d (c-fix-pp-args)
-                           (c-fix-arg-aux-correct)))))
+                           (C-FIX-ARG-AUX-CORRECT-SINGLED-OUT
+                            c-fix-arg-aux-correct)))))
 
 (defthm c-fix-pp-args-correct-on-f2
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1112,7 +1141,8 @@
                             (neg-flag t)
                             (pp-lst (cdr pp))))
            :in-theory (e/d (c-fix-s-args)
-                           (c-fix-arg-aux-correct-lemma)))))
+                           (C-FIX-ARG-AUX-CORRECT-SINGLED-OUT
+                            c-fix-arg-aux-correct-lemma)))))
 
 (defthm c-fix-s-args-correct-2
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1134,7 +1164,8 @@
                             (neg-flag t)
                             (pp-lst (cdr pp))))
            :in-theory (e/d (c-fix-s-args)
-                           (c-fix-arg-aux-correct)))))
+                           (C-FIX-ARG-AUX-CORRECT-SINGLED-OUT
+                            c-fix-arg-aux-correct)))))
 
 ;; #|(defthm c/d-fix-s-args-correct-with-sk
 ;;   (implies (and (rp-evl-meta-extract-global-facts :state state)

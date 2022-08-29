@@ -106,6 +106,21 @@
            :in-theory (enable ex-from-rp-loose
                               is-synp ex-from-rp  ex-from-synp))))
 
+
+(defthm measure-lemma-ex-from-rp-less-than-relation-with-other-variable
+  (implies (< (cons-count y)
+              (cons-count x))
+           (< (cons-count (ex-from-rp y))
+              (cons-count x)))
+  :hints (("Goal"
+           :induct (ex-from-rp y)
+           :in-theory (e/d (cons-count ex-from-rp)
+                           ()))))
+
+(defthm less-than-implies-less-than-or-equal-to
+  (implies (< x y)
+           (<= x y)))
+
 (defthm equality-measure-lemma2
   (implies (and (<= a b)
                 (<= b c))
@@ -730,7 +745,8 @@
     cons-count-of-cadddr
     cons-count-of-caddddr
     
-
+    less-than-implies-less-than-or-equal-to
+    
     measure-lemma1
     measure-lemma1-2
     equality-measure-lemma1

@@ -65,13 +65,19 @@
 2020 (Automated  and Scalable  Verification of  Integer Multipliers  by Mertcan
 Temel,   Anna  Slobodova,   Warren   A.   Hunt,   Jr.)    available  here:   <a
 href=\"http://doi.org/10.1007/978-3-030-53288-8_23\">
-http://doi.org/10.1007/978-3-030-53288-8_23</a>. A follow-up study is to appear
-in FMCAD21 by Mertcan Temel and Warran A. Hunt, Jr.. This method is also
-described in Mertcan Temel's PhD thesis from University of Texas at Austin.  </p>
+http://doi.org/10.1007/978-3-030-53288-8_23</a>. A follow-up study appeared
+in FMCAD21 by Mertcan Temel and Warran A. Hunt, Jr. (<a
+href=\"http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13\">
+http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13</a>). This method is also
+described in Mertcan Temel's (<a
+href=\"https://repositories.lib.utexas.edu/handle/2152/88056\">
+Ph.D. thesis</a>) from University of Texas at Austin.  </p>
 
 <p> Our framework currently supports  (System) Verilog with design hierarchy as
-inputs only.  These  designs are translated to @(see  SVL) design without
-flattening the adder  modules such as full-adders and  final stage-adders. Then
+inputs only for the time being. In one of our schemes,  these  designs are translated to @(see  SVL) design without
+flattening the adder  modules such as full-adders and  final
+stage-adders. Another method is to use @(see acl2::defsvtv) on flattened
+designs. Then
 @(see  RP-Rewriter) are  used  as the  clause-processor to  carry  out all  the
 rewriting instead  of the  built-in rewriter,  and our  meta rules  and rewrite
 rules dedicated for multiplier designs are used to simplify them and prove them
@@ -84,24 +90,24 @@ help proofs finish.   We enable very aggressive heuristics by  default for best
 coverage.   If   you  wish  to   tune  the   performance  of  your   proofs  by
 enabling/disabling    these   heuristics,    you    can    check   out    @(see
 Multiplier-Verification-Heuristics). Enabling/disabling these heuristics might
-help a proof attempt to go through. </p>
+help a proof attempt to go through, and in some cases, it may cause them to fail. </p>
 
-<p>  We  present  two demos  that  show  how  this  tool  can be  used  in  new
-designs. @(see Multiplier-Verification-demo-1) shows  a very basic verification
+<p>  We  deliver  various demos  that  show  how  this  tool  can be  used  in  new
+designs. For the SVL system: @(see Multiplier-Verification-demo-1-svl) shows  a very basic verification
 case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
-Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
+Multiplier-Verification-demo-2-svl) shows  how this tool  can be used on  much more
 complex designs where a stand-alone integer multiplier is reused as a submodule
 for various operations  such as MAC dot-product and  merged multiplication. It
 also shows a simple verification case on a sequential circuit.  </p>
 
 <p>  Alternatively,   we  present  a   different  framework  that   uses  @(see
 defsvtv) instead of @(see SVL). Defsvtv is more capable than SVL at
-handling combinational loops but it  flattens designs completely. This prevents
-our method from working properly because we need to identify instantiated adder
-modules. Therefore,  we soundly replace  adder modules with  their identifiable
-copies even when  flattened. Then, we call defsvtv on  the redefined multiplier
-design and we can verify this test vector with out tool. This mechanism is
-described in @(see Multiplier-Verification-demo-3).
+handling combinational loops but it  flattens designs completely. Since we want
+to take advantage of design hierarchy and identify adder modules inside a
+multiplier module, we take extra steps when using the SVTV system. This SVTV
+system can be used to verify multipliers in very complex industrial
+designs. Please see @(see Multiplier-Verification-demo-3-svtv) to use the SVTV
+system to simulate and verify multipliers.
 </p>
 
 <p> This library can be used to quickly generate counterexamples using an
@@ -109,7 +115,10 @@ external SAT solver, or help finish proofs with a SAT solver when our library
 fails to finish the job. You may include the book
 projects/rp-rewriter/lib/mult3/fgl, @(see FGL::FGL) book and use
 rp::defthmrp-then-fgl utility instead of rp::defthmrp to submit conjectures to
-ACL2. </p>
+ACL2. This macro will use RP-Rewriter first to simplify conjectures and if the
+result is not 't, then it prepares it for FGL and then submits the simplified
+term to it. Then, FGL uses SAT solver to generate a counterexample or finalize
+the proof if it is a theorem.</p>
 
 <p> There  are two older  versions of  this library. If  you would like  to use
 those   for    some   reason,    you   may   view    their   demo    files   at
@@ -153,7 +162,7 @@ overall circuit.  In some corner  cases, this can prevent  some simplifications
 and  cause a  proof attempt  to fail.  We implement  a heuristic  that we  call
 \"unpack-booth-later\" that doesn't perform  algebraic rewriting right away but
 leaves logical gates  from Booth encoding intact. When all  the other rewriting
-is finished,  only then these gates  are rewriting in the  algebraic form. This
+is finished,  we perform a second pass and only then these gates  are rewritten in the  algebraic form. This
 heuristic is not expected to be necessary for the majority of designs and it is
 disabled by default. If a proof attempt of a Booth encoded design is failing,
 we recommend that you enable this heuristic: </p>
@@ -217,28 +226,61 @@ to converting \"c\" terms to \"d\"  terms. We discontinued this support in this
 new  library but  instead started  experimenting with  easier-to-debug methods.
 You can  switch between these  two methods by  (rp::enable-c-of-s-fix-mode nil)
 and
-(rp::enable-c-of-s-fix-mode t). By default, c-of-s-fix-mode is enabled. We have
+(rp::enable-c-of-s-fix-mode t). When disabled, two c terms are tried to be
+merged using the lemma: (+ (c (s x) y) (c x)) = (c x y). The program searches
+for this pattern. When enabled, the program applies this lemma: (c (s x) y) =
+(+ (c x y) (- (c x))). By default, c-of-s-fix-mode is enabled because it is
+easier to manage in the program, and changes are made more easiler. We have
 seen   that  the   performance  between   two  methods   is  very   similar  in
 general. However, if c-of-s-fix-mode and stingy-pp-clean are both disabled, you
 may  observe  a  significant  reduction in  proof-time  performance  for  large
 Booth-Encoded designs. Disabling c-of-s-fix-mode may cause problems with the
-unpack-booth-later heuristic.
-</p>
+unpack-booth-later and maybe some new heuristics. We recommend that users not
+modify this mode and leave
+it enabled.
+</p >
 
 <code> @('(rp::enable-c-of-s-fix-mode <t-or-nil>)') </code>
+
+
+<p>RECOLLECT-PP</p>
+<p> We have discovered that after partial products are flatten (i.e., rewritten
+ in algebraic form), the result can be shrunk by rewriting (collecting) some
+terms into c and s terms. When enabled, this heuristic tries to perform such
+rewriting. It is currently only modified for Booth encoding radix-4 multipliers
+and may or may not have any performance effect on other configurations. We have
+observed that it can have considerable advantages in proof-time and memory
+usage in larger multipliers (up to 30%). We do not expect this heuristic to
+cause failures in any design but it is not thoroughly tested or thought
+through, so it is disabled by default.   
+</p>
+
+<code> @('(rp::enable-recollect-pp <t-or-nil>)') </code>
+
+
+<p>UNPACK-BOOTH-LATER-HONS-COPY</p>
+<p> When enabled, this causes terms to be hons-copied in the meta function that
+performs the second pass when unpack-booth-later is enabled. This can help
+prevent some repeated work for some memoized functions but we have seen so far
+that cost of hons-copy mostly overwhelms the benefits it brings. So  we leave
+this heuristic disabled. It might be worth a short if you see that a certain
+proof is too slow. This setting has no effect if unpack-booth-later is
+disabled.</p>
+
+<code> @('(rp::enable-unpack-booth-later-hons-copy <t-or-nil>)') </code>
 
 ")
 
 
 (xdoc::defxdoc
- Multiplier-Verification-demo-1
+ Multiplier-Verification-demo-1-svl
  :parents (Multiplier-Verification)
  :short "First demo for @(see  Multiplier-Verification) showing how an isolated
  integer multiplier is verified."
  :long " <p> Below is a demo that  shows how to input a multiplier design coded
 in (System) Verilog into ACL2, and verify it efficiently. We choose a 64x64-bit
 Booth Encoded Dadda Tree multiplier with  Han-Carlson adder as our example.  If
-you  wish, you  can skip  to @(see  Multiplier-Verification-demo-2) for  a more
+you  wish, you  can skip  to @(see  Multiplier-Verification-demo-2-svl) for  a more
 complex arithmetic module.  </p>
 
 
@@ -463,19 +505,19 @@ errors.
 
 
 <p>
-You may continue to @(see Multiplier-Verification-demo-2).
+You may continue to @(see Multiplier-Verification-demo-2-svl).
 </p>
 
 "
  )
 
 (xdoc::defxdoc
- Multiplier-Verification-demo-2
+ Multiplier-Verification-demo-2-svl
  :parents (Multiplier-Verification)
  :short  "The second  demo  for   @(see  Multiplier-Verification)  showing  how  an
  industrial-design-mimicking module  including a MAC, dot-product  and merged
  multipliers can be verified."
- :long "<p> In the first  demo (@(see Multiplier-Verification-demo-1)), we have
+ :long "<p> In the first  demo (@(see Multiplier-Verification-demo-1-svl)), we have
  shown how  our tool can  be used  on an isolated  multiplier.  This is  a good
  starting  point;  however,  real-world  applications  of  integer  multipliers
  involve more intricate  design strategies. We tried to recreate  some of those
@@ -1101,7 +1143,7 @@ why we  mainly use SVL system  where design hierarchy can  be maintained during
 symbolic simulation.  However, the @(see SVL) system is not as capable as
 defsvtv at handling  very complex designs that might  have combinational loops.
 Therefore, we provide an alternative way to  using SVL (which was used in @(see
-Multiplier-Verification-demo-1)  and   @(see  Multiplier-Verification-demo-2)).
+Multiplier-Verification-demo-1-svl)  and   @(see  Multiplier-Verification-demo-2-svl)).
 First, we  create copies  of the adder  modules (e.g.,  half-adder, full-adder,
 final stage adder) and we redefine  them.  The redefined adder modules have the
 same functionality but  use the Verilog \"+\" arithmetic  operator only.  Then,
@@ -1118,11 +1160,11 @@ the same signature as the original  ones, and they are functionally equivalent.
 </p>
 
 <p>   For   this   tutorial,   we   use   the   same   design   as   in   @(see
-Multiplier-Verification-demo-1), which is a 64x64-bit Dadda tree, Booth Encoded
+Multiplier-Verification-demo-1-svl), which is a 64x64-bit Dadda tree, Booth Encoded
 multiplier with Han-Carlson  final stage adder. The same events  given here can
 also be  found in  /books/projects/rp-rewriter/lib/mult3/demo/demo-3.lisp. This
 file   also   shows   the   same   procedure  for   the   module   from   @(see
-Multiplier-Verification-demo-2), which is a more complex multiplier module that
+Multiplier-Verification-demo-2-svl), which is a more complex multiplier module that
 can perform  MAC dot  product etc.  You can see  these demo  files also  on <a
 href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/\"
 target=\"_blank\">GitHub</a> </p>
