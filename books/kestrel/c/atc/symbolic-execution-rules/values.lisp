@@ -47,3 +47,16 @@
   (defval *atc-value-optionp-rules*
     '((:e value-optionp)
       value-optionp-when-valuep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-result-rules
+  :short "Rules for simplifying away @(tsee value-result-fix)."
+
+  (defruled value-result-fix-when-valuep
+    (implies (valuep x)
+             (equal (value-result-fix x)
+                    x)))
+
+  (defval *atc-value-result-rules*
+    '(value-result-fix-when-valuep)))

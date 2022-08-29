@@ -101,11 +101,6 @@
      This distribution happens at the goal level,
      but not in the rewriter by default."))
 
-  (defruled value-result-fix-when-valuep
-    (implies (valuep x)
-             (equal (value-result-fix x)
-                    x)))
-
   (defruled lognot-sint-of-0
     (equal (lognot-sint (sint 0))
            (sint 1)))
@@ -314,7 +309,8 @@
           *atc-boolean-from-sint*
           *atc-integer-ifix-rules*
           *atc-limit-rules*
-          *atc-not-error-rules*))
+          *atc-not-error-rules*
+          *atc-value-result-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
