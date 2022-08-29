@@ -816,6 +816,20 @@
 
 (defsection atc-integer-const-rules
   :short "Definition rules of the @('<type>-<base>-const')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It may seem surprising that we expand these functions,
+     since those correspond to C constructs;
+     we certainly do not expand functions like @(tsee add-sint-sint).
+     The reason is that functions like @(tsee sint-dec-const)
+     are used to represent C constants in ACL2 functions,
+     but in the dynamic semantics,
+     @(tsee exec-iconst) (which we expand, obviously)
+     produces terms of the form @('(sint <quoted-integer>)').
+     By expanding @(tsee sint-dec-const) in the ACL2 functions,
+     we produce terms of the form @('(sint <quoted-integer>)'),
+     which therefore match the ones from @(tsee exec-iconst)."))
 
   (defval *atc-integer-const-rules*
     '(sint-dec-const
