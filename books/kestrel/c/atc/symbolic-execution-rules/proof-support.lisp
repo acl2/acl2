@@ -119,25 +119,7 @@
   '(condexpr
     declar
     assign
-    sint-from-boolean
-    sint-dec-const
-    sint-oct-const
-    sint-hex-const
-    uint-dec-const
-    uint-oct-const
-    uint-hex-const
-    slong-dec-const
-    slong-oct-const
-    slong-hex-const
-    ulong-dec-const
-    ulong-oct-const
-    ulong-hex-const
-    sllong-dec-const
-    sllong-oct-const
-    sllong-hex-const
-    ullong-dec-const
-    ullong-oct-const
-    ullong-hex-const))
+    sint-from-boolean))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1295,6 +1277,7 @@
           *atc-other-definition-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
+          *atc-integer-const-rules*
           *atc-not-rules*
           *atc-integer-size-rules*
           *atc-other-rewrite-rules*
