@@ -71,9 +71,6 @@
      different partial ``arcs'' of the circles in different situations.
      Anyways, this is being flagged here as something to watch for.")
    (xdoc::p
-    "The rule @('ifix-of-<type>->get') serves to simplify away
-     occurrences of @(tsee ifix) used in the definition of the shift operations.")
-   (xdoc::p
     "The rule @('len-of-cons') below
      is a duplicate of @('acl2::len-of-cons')
      from at least two list libraries,
@@ -120,46 +117,6 @@
      This is the pattern in the second rule @('not-zp-of-limit-...'),
      whose hypothesis about the limit variable
      is easily discharged via linear arithmetic."))
-
-  (defruled ifix-of-schar->get
-    (equal (ifix (schar->get x))
-           (schar->get x)))
-
-  (defruled ifix-of-uchar->get
-    (equal (ifix (uchar->get x))
-           (uchar->get x)))
-
-  (defruled ifix-of-sshort->get
-    (equal (ifix (sshort->get x))
-           (sshort->get x)))
-
-  (defruled ifix-of-ushort->get
-    (equal (ifix (ushort->get x))
-           (ushort->get x)))
-
-  (defruled ifix-of-sint->get
-    (equal (ifix (sint->get x))
-           (sint->get x)))
-
-  (defruled ifix-of-uint->get
-    (equal (ifix (uint->get x))
-           (uint->get x)))
-
-  (defruled ifix-of-slong->get
-    (equal (ifix (slong->get x))
-           (slong->get x)))
-
-  (defruled ifix-of-ulong->get
-    (equal (ifix (ulong->get x))
-           (ulong->get x)))
-
-  (defruled ifix-of-sllong->get
-    (equal (ifix (sllong->get x))
-           (sllong->get x)))
-
-  (defruled ifix-of-ullong->get
-    (equal (ifix (ullong->get x))
-           (ullong->get x)))
 
   (defruled not-zp-of-limit-variable
     (implies (and (syntaxp (symbolp limit))
@@ -263,17 +220,7 @@
 
 (defval *atc-other-rewrite-rules*
   :short "List of rewrite rules proved in @(see atc-other-rewrite-rules)."
-  '(ifix-of-schar->get
-    ifix-of-uchar->get
-    ifix-of-sshort->get
-    ifix-of-ushort->get
-    ifix-of-sint->get
-    ifix-of-uint->get
-    ifix-of-slong->get
-    ifix-of-ulong->get
-    ifix-of-sllong->get
-    ifix-of-ullong->get
-    not-zp-of-limit-variable
+  '(not-zp-of-limit-variable
     not-zp-of-limit-minus-const
     value-result-fix-when-valuep
     not-errorp-when-scopep
@@ -482,7 +429,8 @@
           *atc-compound-recognizer-rules*
           *integer-value-disjoint-rules*
           *array-value-disjoint-rules*
-          *atc-sint-from-boolean*))
+          *atc-sint-from-boolean*
+          *atc-integer-ifix-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
