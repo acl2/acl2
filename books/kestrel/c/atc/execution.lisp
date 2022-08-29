@@ -944,6 +944,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-member ((str value-resultp) (mem identp))
+  :returns (result value-resultp)
+  :short "Execute a structure member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the @('.') operator.
+     The operand must be a structure.
+     The named member must be in the structure.
+     The value associated to the member is returned."))
+  (b* ((str (value-result-fix str))
+       ((when (errorp str)) str)
+       ((unless (value-case str :struct))
+        (error (list :mistype-member
+                     :required :struct
+                     :supplied (type-of-value str)))))
+    (value-struct-read mem str))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-memberp ((str value-resultp) (mem identp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a structure pointer member expression."
@@ -1083,10 +1104,8 @@
                                (exec-expr-pure e.sub compst)
                                compst)))
      :call (error (list :non-pure-expr e))
-     :member (error (list :not-supported-yet e))
-     :memberp (exec-memberp (exec-expr-pure e.target compst)
-                            e.name
-                            compst)
+     :member (exec-member (exec-expr-pure e.target compst) e.name)
+     :memberp (exec-memberp (exec-expr-pure e.target compst) e.name compst)
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
