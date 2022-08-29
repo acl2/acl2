@@ -43,6 +43,7 @@
 (include-book "executable-counterparts")
 (include-book "limit")
 (include-book "not-error")
+(include-book "integer-operations")
 
 (include-book "tools/rulesets" :dir :system)
 
