@@ -42,6 +42,7 @@
 (include-book "returns")
 (include-book "executable-counterparts")
 (include-book "limit")
+(include-book "not-error")
 
 (include-book "tools/rulesets" :dir :system)
 
@@ -105,71 +106,6 @@
              (equal (value-result-fix x)
                     x)))
 
-  (defruled not-errorp-when-scopep
-    (implies (scopep x)
-             (not (errorp x)))
-    :enable (errorp scopep))
-
-  (defruled not-errorp-when-scope-listp
-    (implies (scope-listp x)
-             (not (errorp x)))
-    :enable errorp)
-
-  (defruled not-errorp-when-schar-arrayp
-    (implies (schar-arrayp x)
-             (not (errorp x)))
-    :enable (errorp schar-arrayp))
-
-  (defruled not-errorp-when-uchar-arrayp
-    (implies (uchar-arrayp x)
-             (not (errorp x)))
-    :enable (errorp uchar-arrayp))
-
-  (defruled not-errorp-when-sshort-arrayp
-    (implies (sshort-arrayp x)
-             (not (errorp x)))
-    :enable (errorp sshort-arrayp))
-
-  (defruled not-errorp-when-ushort-arrayp
-    (implies (ushort-arrayp x)
-             (not (errorp x)))
-    :enable (errorp ushort-arrayp))
-
-  (defruled not-errorp-when-sint-arrayp
-    (implies (sint-arrayp x)
-             (not (errorp x)))
-    :enable (errorp sint-arrayp))
-
-  (defruled not-errorp-when-uint-arrayp
-    (implies (uint-arrayp x)
-             (not (errorp x)))
-    :enable (errorp uint-arrayp))
-
-  (defruled not-errorp-when-slong-arrayp
-    (implies (slong-arrayp x)
-             (not (errorp x)))
-    :enable (errorp slong-arrayp))
-
-  (defruled not-errorp-when-ulong-arrayp
-    (implies (ulong-arrayp x)
-             (not (errorp x)))
-    :enable (errorp ulong-arrayp))
-
-  (defruled not-errorp-when-sllong-arrayp
-    (implies (sllong-arrayp x)
-             (not (errorp x)))
-    :enable (errorp sllong-arrayp))
-
-  (defruled not-errorp-when-ullong-arrayp
-    (implies (ullong-arrayp x)
-             (not (errorp x)))
-    :enable (errorp ullong-arrayp))
-
-  (defruled not-errorp-when-booleanp
-    (implies (booleanp x)
-             (not (errorp x)))
-    :enable errorp)
-
   (defruled boolean-from-sint-of-0
     (equal (boolean-from-sint (sint 0)) nil))
 
@@ -189,19 +125,6 @@
 (defval *atc-other-rewrite-rules*
   :short "List of rewrite rules proved in @(see atc-other-rewrite-rules)."
   '(value-result-fix-when-valuep
-    not-errorp-when-scopep
-    not-errorp-when-scope-listp
-    not-errorp-when-schar-arrayp
-    not-errorp-when-uchar-arrayp
-    not-errorp-when-sshort-arrayp
-    not-errorp-when-ushort-arrayp
-    not-errorp-when-sint-arrayp
-    not-errorp-when-uint-arrayp
-    not-errorp-when-slong-arrayp
-    not-errorp-when-ulong-arrayp
-    not-errorp-when-sllong-arrayp
-    not-errorp-when-ullong-arrayp
-    not-errorp-when-booleanp
     boolean-from-sint-of-0
     boolean-from-sint-of-1
     lognot-sint-of-0
@@ -397,7 +320,8 @@
           *array-value-disjoint-rules*
           *atc-sint-from-boolean*
           *atc-integer-ifix-rules*
-          *atc-limit-rules*))
+          *atc-limit-rules*
+          *atc-not-error-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
