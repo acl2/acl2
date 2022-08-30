@@ -5000,7 +5000,7 @@
      as sufficient to run @(tsee exec-fun) to completion.")
    (xdoc::p
     "The proof is a symbolic execution of the generated translation unit,
-     which is a constant: see @(see atc-proof-support).
+     which is a constant: see @(see atc-symbolic-execution-rules).
      The proof is carried out in the theory that consists of exactly
      the general rules in @(tsee *atc-all-rules*),
      some structure-specific rules that are similar to
