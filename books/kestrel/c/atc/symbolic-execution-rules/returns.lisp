@@ -462,3 +462,20 @@
                                                                  itypes)
                (atc-array-read-type-presc-rules-loop-array-types (cdr atypes)
                                                                  itypes)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-boolean-from-integer-return-rules
+  :short "Rules about the return types of @('boolean-from-<type>')."
+
+  (defval *atc-boolean-from-integer-return-rules*
+    '(booleanp-of-boolean-from-uchar
+      booleanp-of-boolean-from-schar
+      booleanp-of-boolean-from-ushort
+      booleanp-of-boolean-from-sshort
+      booleanp-of-boolean-from-uint
+      booleanp-of-boolean-from-sint
+      booleanp-of-boolean-from-ulong
+      booleanp-of-boolean-from-slong
+      booleanp-of-boolean-from-ullong
+      booleanp-of-boolean-from-sllong)))
