@@ -62,19 +62,9 @@
   '(car-cons
     cdr-cons
     compustate-fix-when-compustatep
-    compustatep-of-add-frame
-    compustatep-of-enter-scope
-    compustatep-of-add-var
-    compustatep-of-update-var
-    compustatep-of-update-static-var
-    compustatep-of-update-object
-    compustatep-when-compustate-resultp-and-not-errorp
-    compustate-resultp-of-write-var
     heap-fix-when-heapp
-    heapp-of-compustate->heap
     mv-nth-of-cons
     omap::in-of-update
-    scopep-of-update
     schar-fix-when-scharp
     uchar-fix-when-ucharp
     sshort-fix-when-sshortp
@@ -221,7 +211,8 @@
           *atc-value-result-rules*
           *atc-lognot-sint-rules*
           *atc-boolean-from-integer-return-rules*
-          *atc-integer-constructors-return-rules*))
+          *atc-integer-constructors-return-rules*
+          *atc-computation-state-return-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

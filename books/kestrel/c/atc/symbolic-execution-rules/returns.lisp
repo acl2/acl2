@@ -496,3 +496,21 @@
       ulongp-of-ulong
       sllongp-of-sllong
       ullongp-of-ullong)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-computation-state-return-rules
+  :short "Rules about return types of
+          functions related to the computation state."
+
+  (defval *atc-computation-state-return-rules*
+    '(compustatep-of-add-frame
+      compustatep-of-enter-scope
+      compustatep-of-add-var
+      compustatep-of-update-var
+      compustatep-of-update-static-var
+      compustatep-of-update-object
+      compustatep-when-compustate-resultp-and-not-errorp
+      compustate-resultp-of-write-var
+      heapp-of-compustate->heap
+      scopep-of-update)))

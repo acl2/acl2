@@ -6371,6 +6371,7 @@
                                    *atc-array-read-return-rewrite-rules*
                                    *atc-array-write-return-rewrite-rules*
                                    *atc-more-rewrite-rules*
+                                   *atc-computation-state-return-rules*
                                    *atc-boolean-from-integer-return-rules*
                                    *atc-type-prescription-rules*
                                    *atc-compound-recognizer-rules*
