@@ -465,7 +465,7 @@
                      (svtv-cycle-eval-outs env prev-st x.cycle-phases x.phase-fsm))
                     (svex-envs-equivalent
                      (svex-alist-eval x.cycle-fsm.nextstate env)
-                     (svtv-cycle-eval-nextst env prev-st x.cycle-phases x.phase-fsm))
+                     (svtv-cycle-eval-nextst env prev-st x.cycle-phases x.phase-fsm.nextstate))
                     (equal (svex-alist-keys x.cycle-fsm.nextstate) statevars))))
     :hints (("goal" :in-theory (e/d (svtv-data$ap)
                                     (svtv-data$c-cycle-fsm-okp-necc))
