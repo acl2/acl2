@@ -48,10 +48,6 @@
 (include-book "type-prescriptions")
 (include-book "compound-recognizers")
 
-(include-book "tools/rulesets" :dir :system)
-
-(local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-all-rules*
