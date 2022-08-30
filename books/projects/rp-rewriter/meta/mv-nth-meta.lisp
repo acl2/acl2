@@ -38,6 +38,8 @@
 
 (include-book "../meta-rule-macros")
 
+(include-book "centaur/meta/def-formula-checks" :dir :system)
+
 (defun mv-nth-meta-aux (index term)
   (declare (xargs :guard (natp index)))
   (case-match term

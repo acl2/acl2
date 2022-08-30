@@ -223,17 +223,16 @@
               ;; book-map
               (true-listp pre-commands)))))
 
-(defun recommendation-listp (recs)
-  (declare (xargs :guard t))
-  (if (atom recs)
-      (null recs)
-    (and (recommendationp (first recs))
-         (recommendation-listp (rest recs)))))
-
-(defund update-pre-commands (rec pre-commands)
+(defund update-pre-commands (pre-commands rec)
   (declare (xargs :guard (recommendationp rec)))
   (append (take 5 rec)
           (list pre-commands)))
+
+(defund update-rec-type (new-type rec)
+  (declare (xargs :guard (recommendationp rec)))
+  (cons (nth 0 rec)
+        (cons new-type
+              (cddr rec))))
 
 (defun show-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)))
@@ -245,6 +244,13 @@
          ;; (pre-commands (nth 5 rec)) ; not present at this point
          )
     (cw "~s0: Try ~x1 with ~x2 (conf: ~x3%).~%" name type object (floor confidence-percent 1))))
+
+(defun recommendation-listp (recs)
+  (declare (xargs :guard t))
+  (if (atom recs)
+      (null recs)
+    (and (recommendationp (first recs))
+         (recommendation-listp (rest recs)))))
 
 (defun show-recommendations-aux (recs)
   (declare (xargs :guard (recommendation-listp recs)))
@@ -479,7 +485,9 @@
          (book-map (lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (cw "WARNING: When parsing book map: ~x0.~%" erp)
+          (if (stringp erp)
+              (cw "WARNING: When parsing book map: ~s0.~%" erp)
+            (cw "WARNING: When parsing book map: ~x0.~%" erp))
           (mv nil ; supressing this error for now
               :none state))
          (confidence (rfix confidence)) ; for guards
@@ -815,8 +823,13 @@
                                theorem-otf-flg
                                step-limit
                                state))
-             (- (if provedp (cw-success-message rec) (cw "fail (enabling function ~x0 didn't help)~%" fn))))
-          (mv nil (if provedp rec nil) state))
+             ((when (not provedp))
+              (cw "fail (enabling function ~x0 didn't help)~%" fn)
+              (mv nil nil state))
+             ;; We change the rec type to ensure duplicates get removed:
+             (rec (update-rec-type :add-enable-hint rec))
+             (- (cw-success-message rec)))
+          (mv nil rec state))
       (if (not (eq :no-body (getpropc rule 'theorem :no-body wrld))) ;todo: how to just check if the property is set?
           ;; It's a theorem in the current world:
           (b* ( ;; TODO: Consider whether to enable, say the :type-prescription rule
@@ -834,8 +847,13 @@
                                  theorem-otf-flg
                                  step-limit
                                  state))
-               (- (if provedp (cw-success-message rec) (cw "fail (enabling rule ~x0 didn't help)~%" rule))))
-            (mv nil (if provedp rec nil) state))
+               ((when (not provedp))
+                (cw "fail (enabling rule ~x0 didn't help)~%" rule)
+                (mv nil nil state))
+               ;; We change the rec type to ensure duplicates get removed:
+               (rec (update-rec-type :add-enable-hint rec))
+               (- (cw-success-message rec)))
+            (mv nil rec state))
         ;; RULE is not currently known, so try to find where it is defined:
         (b* ((book-map-keys (strip-cars book-map))
              ((when (not (equal book-map-keys (list rule))))
@@ -862,6 +880,7 @@
                 (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule :enable new-hints theorem-otf-flg *step-limit* state))
                ((when erp) (mv erp nil state))
                (provedp (if successful-include-book-form-or-nil t nil))
+               ;; todo: clarify whether we even found an include-book that works
                ((when (not provedp))
                 (if (< 3 num-books-to-try-orig)
                     ;; todo: try more if we didn't find it?:
@@ -891,7 +910,7 @@
                               (nth 4 rec) ; not very meaningful now
                               nil ; pre-commands (always none for :add-library)
                               )
-                      (update-pre-commands rec (list successful-include-book-form-or-nil))))
+                   (update-rec-type :add-enable-hint (update-pre-commands (list successful-include-book-form-or-nil) rec))))
                (- (cw-success-message rec)))
             (mv nil
                 rec
@@ -1001,7 +1020,7 @@
                           (nth 4 rec) ; not very meaningful now
                           nil ; pre-commands (always none for :add-library)
                           )
-                  (update-pre-commands rec (list successful-include-book-form-or-nil))))
+                  (update-pre-commands (list successful-include-book-form-or-nil) rec)))
            (- (cw-success-message rec)))
         (mv nil
             rec
