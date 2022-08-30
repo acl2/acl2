@@ -991,3 +991,20 @@
       ifix-of-ulong->get
       ifix-of-sllong->get
       ifix-of-ullong->get)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-integer-fix-rules
+  :short "Rules to simplify @('<type>-fix') applies to C integers."
+
+  (defval *atc-integer-fix-rules*
+    '(schar-fix-when-scharp
+      uchar-fix-when-ucharp
+      sshort-fix-when-sshortp
+      ushort-fix-when-ushortp
+      sint-fix-when-sintp
+      uint-fix-when-uintp
+      slong-fix-when-slongp
+      ulong-fix-when-ulongp
+      sllong-fix-when-sllongp
+      ullong-fix-when-ullongp)))

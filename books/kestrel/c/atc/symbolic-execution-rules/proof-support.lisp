@@ -65,16 +65,6 @@
     heap-fix-when-heapp
     mv-nth-of-cons
     omap::in-of-update
-    schar-fix-when-scharp
-    uchar-fix-when-ucharp
-    sshort-fix-when-sshortp
-    ushort-fix-when-ushortp
-    sint-fix-when-sintp
-    uint-fix-when-uintp
-    slong-fix-when-slongp
-    ulong-fix-when-ulongp
-    sllong-fix-when-sllongp
-    ullong-fix-when-ullongp
     value-fix-when-valuep
     value-list-fix-of-cons))
 
