@@ -50,6 +50,8 @@
 
 (include-book "../meta-rule-macros")
 
+(include-book "centaur/meta/def-formula-checks" :dir :system)
+
 (local
  (include-book "../proofs/measure-lemmas"))
 

@@ -40,6 +40,8 @@
 (include-book "tools/flag" :dir :system)
 ;(include-book "proof-functions")
 
+(local (include-book "centaur/meta/def-formula-checks" :dir :system)) ; this could perhaps be reduced
+
 ;; lemmas that are to be used locally
 
 ;(make-flag pseudo-termp :defthm-macro-name defthm-pseudo-termp)
