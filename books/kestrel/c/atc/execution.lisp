@@ -928,6 +928,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-member ((str value-resultp) (mem identp))
+  :returns (result value-resultp)
+  :short "Execute a structure member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the @('.') operator.
+     The operand must be a structure.
+     The named member must be in the structure.
+     The value associated to the member is returned."))
+  (b* ((str (value-result-fix str))
+       ((when (errorp str)) str)
+       ((unless (value-case str :struct))
+        (error (list :mistype-member
+                     :required :struct
+                     :supplied (type-of-value str)))))
+    (value-struct-read mem str))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-memberp ((str value-resultp) (mem identp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a structure pointer member expression."
@@ -959,6 +980,48 @@
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct))))))
     (value-struct-read mem struct))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-arrsub-of-member ((str value-resultp)
+                               (mem identp)
+                               (sub value-resultp))
+  :returns (result value-resultp)
+  :short "Execute an array subscripting expression
+          of a structure member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a combination of @(tsee exec-arrsub) and @(tsee exec-member),
+     but it is defined as a separate function because currently
+     those two functions are not really compositional.
+     Our current semantics of C is correct for the purposes of ATC,
+     but it is not full-fledged and compositional.
+     In particular, it should (and will) be extended so that
+     expression execution returns either a value or an object designator.")
+   (xdoc::p
+    "So here we formalize the execution of expressions of the form @('s.m[i]'),
+     where @('s') is a structure,
+     @('m') is the name of a member of the structure of array type,
+     and @('i') is an index into the array."))
+  (b* ((str (value-result-fix str))
+       ((when (errorp str)) str)
+       ((unless (value-case str :struct)) (error (list :not-struct str)))
+       (arr (value-struct-read mem str))
+       ((when (errorp arr)) arr)
+       ((unless (value-case arr :array)) (error (list :not-array arr)))
+       (sub (value-result-fix sub))
+       ((when (errorp sub)) sub)
+       ((unless (value-integerp sub)) (error
+                                       (list :mistype-array :index
+                                             :required :integer
+                                             :supplied (type-of-value sub))))
+       (index (exec-integer sub))
+       ((when (< index 0)) (error (list :negative-array-index
+                                        :array arr
+                                        :index sub))))
+    (value-array-read index arr))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1057,6 +1120,11 @@
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
      :arrsub (case (expr-kind e.arr)
+               (:member
+                (b* (((expr-member e.arr) e.arr))
+                  (exec-arrsub-of-member (exec-expr-pure e.arr.target compst)
+                                         e.arr.name
+                                         (exec-expr-pure e.sub compst))))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr))
                   (exec-arrsub-of-memberp (exec-expr-pure e.arr.target compst)
@@ -1067,10 +1135,8 @@
                                (exec-expr-pure e.sub compst)
                                compst)))
      :call (error (list :non-pure-expr e))
-     :member (error (list :not-supported-yet e))
-     :memberp (exec-memberp (exec-expr-pure e.target compst)
-                            e.name
-                            compst)
+     :member (exec-member (exec-expr-pure e.target compst) e.name)
+     :memberp (exec-memberp (exec-expr-pure e.target compst) e.name compst)
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
@@ -1418,6 +1484,39 @@
                        (new-array (value-array-write index val array))
                        ((when (errorp new-array)) new-array))
                     (write-object objdes new-array compst)))
+                 ((expr-case arr :member)
+                  (b* ((str (expr-member->target arr))
+                       (mem (expr-member->name arr))
+                       ((unless (expr-case str :ident))
+                        (error (list :expr-asg-arrsub-member-not-supported
+                                     str)))
+                       (var (expr-ident->get str))
+                       (struct (read-var var compst))
+                       ((when (errorp struct)) struct)
+                       ((unless (value-case struct :struct))
+                        (error (list :not-struct str (compustate-fix compst))))
+                       (array (value-struct-read mem struct))
+                       ((when (errorp array)) array)
+                       ((unless (value-case array :array))
+                        (error (list :not-array array)))
+                       (index (exec-expr-pure sub compst))
+                       ((when (errorp index)) index)
+                       ((unless (value-integerp index))
+                        (error (list :mistype-struct-array-read
+                                     :required :integer
+                                     :supplied index)))
+                       (index (exec-integer index))
+                       ((when (< index 0)) (error (list :negative-array-index
+                                                        :struct struct
+                                                        :array array
+                                                        :index index)))
+                       (val (exec-expr-pure right compst))
+                       ((when (errorp val)) val)
+                       (new-array (value-array-write index val array))
+                       ((when (errorp new-array)) new-array)
+                       (new-struct (value-struct-write mem new-array struct))
+                       ((when (errorp new-struct)) new-struct))
+                    (write-var var new-struct compst)))
                  ((expr-case arr :memberp)
                   (b* ((str (expr-memberp->target arr))
                        (mem (expr-memberp->name arr))
