@@ -479,3 +479,20 @@
       booleanp-of-boolean-from-slong
       booleanp-of-boolean-from-ullong
       booleanp-of-boolean-from-sllong)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-integer-constructors-return-rules
+  :short "Rules about the return types of the integer constructors."
+
+  (defval *atc-integer-constructors-return-rules*
+    '(scharp-of-schar
+      ucharp-of-uchar
+      sshortp-of-sshort
+      ushortp-of-ushort
+      sintp-of-sint
+      uintp-of-uint
+      slongp-of-slong
+      ulongp-of-ulong
+      sllongp-of-sllong
+      ullongp-of-ullong)))

@@ -85,16 +85,6 @@
     ulong-fix-when-ulongp
     sllong-fix-when-sllongp
     ullong-fix-when-ullongp
-    scharp-of-schar
-    ucharp-of-uchar
-    sshortp-of-sshort
-    ushortp-of-ushort
-    sintp-of-sint
-    uintp-of-uint
-    slongp-of-slong
-    ulongp-of-ulong
-    sllongp-of-sllong
-    ullongp-of-ullong
     value-fix-when-valuep
     value-list-fix-of-cons))
 
@@ -230,7 +220,8 @@
           *atc-not-error-rules*
           *atc-value-result-rules*
           *atc-lognot-sint-rules*
-          *atc-boolean-from-integer-return-rules*))
+          *atc-boolean-from-integer-return-rules*
+          *atc-integer-constructors-return-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
