@@ -2501,6 +2501,7 @@
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
+                  (not (expr-case arr :member))
                   (not (expr-case arr :memberp)))
              (equal (exec-expr-pure e compst)
                     (exec-arrsub (exec-expr-pure arr compst)

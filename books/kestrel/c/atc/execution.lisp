@@ -1000,6 +1000,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-arrsub-of-member ((str value-resultp)
+                               (mem identp)
+                               (sub value-resultp))
+  :returns (result value-resultp)
+  :short "Execute an array subscripting expression
+          of a structure member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a combination of @(tsee exec-arrsub) and @(tsee exec-member),
+     but it is defined as a separate function because currently
+     those two functions are not really compositional.
+     Our current semantics of C is correct for the purposes of ATC,
+     but it is not full-fledged and compositional.
+     In particular, it should (and will) be extended so that
+     expression execution returns either a value or an object designator.")
+   (xdoc::p
+    "So here we formalize the execution of expressions of the form @('s.m[i]'),
+     where @('s') is a structure,
+     @('m') is the name of a member of the structure of array type,
+     and @('i') is an index into the array."))
+  (b* ((str (value-result-fix str))
+       ((when (errorp str)) str)
+       ((unless (value-case str :struct)) (error (list :not-struct str)))
+       (arr (value-struct-read mem str))
+       ((when (errorp arr)) arr)
+       ((unless (value-case arr :array)) (error (list :not-array arr)))
+       (sub (value-result-fix sub))
+       ((when (errorp sub)) sub)
+       ((unless (value-integerp sub)) (error
+                                       (list :mistype-array :index
+                                             :required :integer
+                                             :supplied (type-of-value sub))))
+       (index (exec-integer sub))
+       ((when (< index 0)) (error (list :negative-array-index
+                                        :array arr
+                                        :index sub))))
+    (value-array-read index arr))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-arrsub-of-memberp ((str value-resultp)
                                 (mem identp)
                                 (sub value-resultp)
@@ -1094,6 +1136,11 @@
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
      :arrsub (case (expr-kind e.arr)
+               (:member
+                (b* (((expr-member e.arr) e.arr))
+                  (exec-arrsub-of-member (exec-expr-pure e.arr.target compst)
+                                         e.arr.name
+                                         (exec-expr-pure e.sub compst))))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr))
                   (exec-arrsub-of-memberp (exec-expr-pure e.arr.target compst)
