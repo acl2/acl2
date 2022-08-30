@@ -85,7 +85,8 @@
     :enable errorp)
 
   (defval *atc-not-error-rules*
-    '(not-errorp-when-scopep
+    '(;; proved above:
+      not-errorp-when-scopep
       not-errorp-when-scope-listp
       not-errorp-when-schar-arrayp
       not-errorp-when-uchar-arrayp
@@ -97,4 +98,8 @@
       not-errorp-when-ulong-arrayp
       not-errorp-when-sllong-arrayp
       not-errorp-when-ullong-arrayp
-      not-errorp-when-booleanp)))
+      not-errorp-when-booleanp
+      ;; proved elsewhere:
+      not-errorp-when-valuep
+      not-errorp-when-value-listp
+      not-errorp-when-compustatep)))

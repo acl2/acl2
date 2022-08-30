@@ -73,7 +73,6 @@
     heap-fix-when-heapp
     heapp-of-compustate->heap
     mv-nth-of-cons
-    not-errorp-when-compustatep
     omap::in-of-update
     scopep-of-update
     schar-fix-when-scharp
@@ -97,9 +96,7 @@
     sllongp-of-sllong
     ullongp-of-ullong
     value-fix-when-valuep
-    value-list-fix-of-cons
-    not-errorp-when-valuep
-    not-errorp-when-value-listp))
+    value-list-fix-of-cons))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
