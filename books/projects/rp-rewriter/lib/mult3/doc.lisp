@@ -1127,7 +1127,7 @@ product specification function as given below.
 
 
 (xdoc::defxdoc
- Multiplier-Verification-demo-3
+ Multiplier-Verification-demo-3-svtv
  :parents (Multiplier-Verification)
  :short  "Another  demo  for   @(see  Multiplier-Verification) showing how
  @(see svtv-run) can be used by overriding the adder modules."
