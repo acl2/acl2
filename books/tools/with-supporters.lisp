@@ -609,8 +609,7 @@
              (member-eq :tables events)
              (member-eq :show events)
              (member-eq :with-output events))
-         (wsa-er 'with-supporters
-                 "The :NAMES, and :TABLES keywords of WITH-SUPPORTERS must ~
+         (wsa-er "The :NAMES, and :TABLES keywords of WITH-SUPPORTERS must ~
                   appear immediately after the (initial) LOCAL event."))
         (t (mv names tables show
                (if with-output-p
