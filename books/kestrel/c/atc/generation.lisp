@@ -6365,7 +6365,6 @@
                                    *atc-integer-size-rules*
                                    *atc-limit-rules*
                                    *atc-not-error-rules*
-                                   *atc-other-rewrite-rules*
                                    *atc-integer-ops-1-return-rewrite-rules*
                                    *atc-integer-ops-2-return-rewrite-rules*
                                    *atc-integer-convs-return-rewrite-rules*

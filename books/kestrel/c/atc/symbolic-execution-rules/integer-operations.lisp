@@ -53,3 +53,27 @@
   (defval *atc-boolean-from-sint*
     '(boolean-from-sint-of-0
       boolean-from-sint-of-1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-lognot-sint-rules
+  :short "Rules about @(tsee lognot) applied to the signed integer 0 or 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We have two rules to simplify applications of
+     @(tsee lognot-sint) to @('(sint 0)') and @('(sint 1)').
+     Terms of this form may arise in the process of simplifying
+     C non-strict expressions involving @('&&') and @('||')."))
+
+  (defruled lognot-sint-of-0
+    (equal (lognot-sint (sint 0))
+           (sint 1)))
+
+  (defruled lognot-sint-of-1
+    (equal (lognot-sint (sint 1))
+           (sint 0)))
+
+  (defval *atc-lognot-sint-rules*
+    '(lognot-sint-of-0
+      lognot-sint-of-1)))
