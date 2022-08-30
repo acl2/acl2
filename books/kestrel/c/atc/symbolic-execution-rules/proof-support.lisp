@@ -65,7 +65,6 @@
     heap-fix-when-heapp
     mv-nth-of-cons
     omap::in-of-update
-    value-fix-when-valuep
     value-list-fix-of-cons))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,11 +197,12 @@
           *atc-integer-ifix-rules*
           *atc-limit-rules*
           *atc-not-error-rules*
-          *atc-value-result-rules*
+          *atc-value-result-fix-rules*
           *atc-lognot-sint-rules*
           *atc-boolean-from-integer-return-rules*
           *atc-integer-constructors-return-rules*
-          *atc-computation-state-return-rules*))
+          *atc-computation-state-return-rules*
+          *atc-value-fix-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

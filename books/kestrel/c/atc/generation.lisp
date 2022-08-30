@@ -6377,6 +6377,7 @@
                                    *atc-compound-recognizer-rules*
                                    *integer-value-disjoint-rules*
                                    *array-value-disjoint-rules*
+                                   *atc-value-fix-rules*
                                    '(,@not-error-thms
                                      ,@valuep-thms
                                      not

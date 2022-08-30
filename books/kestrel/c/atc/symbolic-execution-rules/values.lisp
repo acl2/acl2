@@ -50,7 +50,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-value-result-rules
+(defsection atc-value-fix-rules
+  :short "Rules for simplifying away @(tsee value-fix)."
+
+  (defval *atc-value-fix-rules*
+    '(value-fix-when-valuep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-result-fix-rules
   :short "Rules for simplifying away @(tsee value-result-fix)."
 
   (defruled value-result-fix-when-valuep
@@ -58,5 +66,5 @@
              (equal (value-result-fix x)
                     x)))
 
-  (defval *atc-value-result-rules*
+  (defval *atc-value-result-fix-rules*
     '(value-result-fix-when-valuep)))
