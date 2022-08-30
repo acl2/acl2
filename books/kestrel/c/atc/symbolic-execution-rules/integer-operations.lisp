@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-sint-from-boolean
-  :short "Rules about @(tsee sint-from-boolean."
+  :short "Rules about @(tsee sint-from-boolean)."
   :long
   (xdoc::topstring
    (xdoc::p
