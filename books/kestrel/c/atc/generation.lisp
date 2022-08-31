@@ -5690,7 +5690,9 @@
        (exec-stmt-while-for-fn-body
         `(b* ((fenv (init-fun-env ,prog-const))
               ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-              (continuep (exec-test (exec-expr-pure ',loop-test compst)))
+              (test (exec-expr-pure ',loop-test compst))
+              ((when (errorp test)) (mv test (compustate-fix compst)))
+              (continuep (test-value test))
               ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
               ((when (not continuep)) (mv nil (compustate-fix compst)))
               ((mv val? compst) (exec-stmt ',loop-body compst fenv (1- limit)))
@@ -5954,7 +5956,25 @@
      The hints are more than needed for now,
      as they include rules about statement execution,
      which does not apply here.
-     We will make the hints more nuanced later."))
+     We will make the hints more nuanced later.")
+   (xdoc::p
+    "We generate two conjuncts in the conclusion.
+     One conjunct, as expected, says that
+     executing the test yields the same as
+     the ACL2 term @('test-term') that represents the test.
+     Note that we need to wrap @(tsee exec-expr-pure) into @(tsee test-value),
+     because the ACL2 term is boolean,
+     and so we need to convert the C value to a boolean.
+     The other conjunct says that @(tsee exec-expr-pure)
+     does not return an error.
+     This is needed in the generated proof for the whole loop,
+     which equates the function generated
+     by @(tsee atc-gen-exec-stmt-while-for-loop)
+     to the execution of the loop:
+     that function's body includes a check that @(tsee exec-expr-pure)
+     does not yield an error,
+     and so this other conjunct here serves to
+     eliminate the case that that check fails."))
   (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-test-thm (add-suffix correct-thm "-TEST"))
        ((mv correct-test-thm names-to-avoid)
@@ -5970,8 +5990,9 @@
                    (> (compustate-frames-number ,compst-var) 0)
                    ,@hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
-                      ,test-term))
+       (concl `(and (not (errorp (exec-expr-pure ',loop-test ,compst-var)))
+                    (equal (test-value (exec-expr-pure ',loop-test ,compst-var))
+                           ,test-term)))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
        (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
@@ -5993,7 +6014,7 @@
                                ,@member-read-thms
                                ,@extobj-recognizers))
                  :use ((:instance (:guard-theorem ,fn)
-                        :extra-bindings-ok ,@instantiation))
+                                  :extra-bindings-ok ,@instantiation))
                  :expand :lambdas)))
        ((mv correct-test-thm-event &)
         (evmac-generate-defthm correct-test-thm
@@ -6823,7 +6844,27 @@
                     :in-theory
                     '(exec-arrsub-of-memberp
                       value-struct-read
-                      exec-integer
+                      value-integer->get
+                      value-schar->get-to-schar->get
+                      value-uchar->get-to-uchar->get
+                      value-sshort->get-to-sshort->get
+                      value-ushort->get-to-ushort->get
+                      value-sint->get-to-sint->get
+                      value-uint->get-to-uint->get
+                      value-slong->get-to-slong->get
+                      value-ulong->get-to-ulong->get
+                      value-sllong->get-to-sllong->get
+                      value-ullong->get-to-ullong->get
+                      value-kind-when-scharp
+                      value-kind-when-ucharp
+                      value-kind-when-sshortp
+                      value-kind-when-ushortp
+                      value-kind-when-sintp
+                      value-kind-when-uintp
+                      value-kind-when-slongp
+                      value-kind-when-ulongp
+                      value-kind-when-sllongp
+                      value-kind-when-ullongp
                       ifix
                       integer-range-p
                       not-errorp-when-valuep
@@ -7181,7 +7222,27 @@
           (hints `(("Goal"
                     :in-theory
                     '(exec-expr-asg
-                      exec-integer
+                      value-integer->get
+                      value-schar->get-to-schar->get
+                      value-uchar->get-to-uchar->get
+                      value-sshort->get-to-sshort->get
+                      value-ushort->get-to-ushort->get
+                      value-sint->get-to-sint->get
+                      value-uint->get-to-uint->get
+                      value-slong->get-to-slong->get
+                      value-ulong->get-to-ulong->get
+                      value-sllong->get-to-sllong->get
+                      value-ullong->get-to-ullong->get
+                      value-kind-when-scharp
+                      value-kind-when-ucharp
+                      value-kind-when-sshortp
+                      value-kind-when-ushortp
+                      value-kind-when-sintp
+                      value-kind-when-uintp
+                      value-kind-when-slongp
+                      value-kind-when-ulongp
+                      value-kind-when-sllongp
+                      value-kind-when-ullongp
                       value-struct-read
                       value-struct-write
                       not-errorp-when-valuep

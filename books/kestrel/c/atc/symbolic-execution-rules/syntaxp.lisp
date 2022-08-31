@@ -41,5 +41,5 @@
                                        exec-unary
                                        exec-cast
                                        exec-binary-strict-pure
-                                       exec-test
-                                       exec-expr-pure))))))
+                                       exec-expr-pure
+                                       test-value))))))

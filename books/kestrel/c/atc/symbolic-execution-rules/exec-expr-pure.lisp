@@ -127,15 +127,17 @@
                   (equal (expr-kind e) :binary)
                   (equal op (expr-binary->op e))
                   (equal (binop-kind op) :logand)
-                  (equal test1 (exec-test
-                                (exec-expr-pure (expr-binary->arg1 e)
-                                                compst)))
+                  (equal arg1 (exec-expr-pure (expr-binary->arg1 e) compst))
+                  (valuep arg1)
+                  (equal test1 (test-value arg1))
                   (booleanp test1))
              (equal (exec-expr-pure e compst)
                     (if test1
                         (sint-from-boolean-with-error
-                         (exec-test
-                          (exec-expr-pure (expr-binary->arg2 e) compst)))
+                         (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
+                                                    compst))
+                              ((when (errorp arg2)) arg2))
+                           (test-value arg2)))
                       (sint 0))))
     :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
 
@@ -144,16 +146,18 @@
                   (equal (expr-kind e) :binary)
                   (equal op (expr-binary->op e))
                   (equal (binop-kind op) :logor)
-                  (equal test1 (exec-test
-                                (exec-expr-pure (expr-binary->arg1 e)
-                                                compst)))
+                  (equal arg1 (exec-expr-pure (expr-binary->arg1 e) compst))
+                  (valuep arg1)
+                  (equal test1 (test-value arg1))
                   (booleanp test1))
              (equal (exec-expr-pure e compst)
                     (if test1
                         (sint 1)
                       (sint-from-boolean-with-error
-                       (exec-test
-                        (exec-expr-pure (expr-binary->arg2 e) compst))))))
+                       (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
+                                                  compst))
+                            ((when (errorp arg2)) arg2))
+                         (test-value arg2))))))
     :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
 
   (make-event
@@ -169,8 +173,9 @@
   (defruled exec-expr-pure-when-cond
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :cond)
-                  (equal test (exec-test
-                               (exec-expr-pure (expr-cond->test e) compst)))
+                  (equal arg1 (exec-expr-pure (expr-cond->test e) compst))
+                  (valuep arg1)
+                  (equal test (test-value arg1))
                   (booleanp test))
              (equal (exec-expr-pure e compst)
                     (if test

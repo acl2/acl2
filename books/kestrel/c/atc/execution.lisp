@@ -146,75 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-test ((arg value-resultp))
-  :returns (result boolean-resultp)
-  :short "Execute a test on a value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used for tests of conditionals
-     and for the operands of the non-strict operations.")
-   (xdoc::p
-    "The argument value must be a scalar.
-     We return an ACL2 boolean, or an error."))
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
-       ((unless (value-scalarp arg)) (error (list :test-mistype
-                                                  :required :scalar
-                                                  :supplied arg))))
-    (cond ((ucharp arg) (boolean-from-uchar arg))
-          ((scharp arg) (boolean-from-schar arg))
-          ((ushortp arg) (boolean-from-ushort arg))
-          ((sshortp arg) (boolean-from-sshort arg))
-          ((uintp arg) (boolean-from-uint arg))
-          ((sintp arg) (boolean-from-sint arg))
-          ((ulongp arg) (boolean-from-ulong arg))
-          ((slongp arg) (boolean-from-slong arg))
-          ((ullongp arg) (boolean-from-ullong arg))
-          ((sllongp arg) (boolean-from-sllong arg))
-          ((value-case arg :pointer) (not (value-pointer-nullp arg)))
-          (t (error (impossible)))))
-  :guard-hints (("Goal" :in-theory (enable value-scalarp
-                                           value-arithmeticp
-                                           value-realp
-                                           value-integerp
-                                           value-signed-integerp-alt-def
-                                           value-unsigned-integerp-alt-def)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-integer ((arg valuep))
-  :guard (value-integerp arg)
-  :returns (result integerp)
-  :short "Execute a value to obtain an (ACL2) integer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used for operands such that
-     only their mathematical values affect the result of the operation,
-     and not their C types.
-     Examples are the second operand of shift operations
-     and the index operand of array subscript operations."))
-  (b* ((arg (value-fix arg)))
-    (cond ((ucharp arg) (uchar->get arg))
-          ((scharp arg) (schar->get arg))
-          ((ushortp arg) (ushort->get arg))
-          ((sshortp arg) (sshort->get arg))
-          ((uintp arg) (uint->get arg))
-          ((sintp arg) (sint->get arg))
-          ((ulongp arg) (ulong->get arg))
-          ((slongp arg) (slong->get arg))
-          ((ullongp arg) (ullong->get arg))
-          ((sllongp arg) (sllong->get arg))
-          (t (prog2$ (impossible) 0))))
-  :guard-hints (("Goal" :in-theory (enable value-integerp
-                                           value-unsigned-integerp-alt-def
-                                           value-signed-integerp-alt-def)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-mul ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
@@ -427,7 +358,7 @@
                      :required :integer
                      :supplied arg2)))
        (val2 (promote-value arg2))
-       (val2 (exec-integer val2))
+       (val2 (value-integer->get val2))
        (err (error (list :undefined-shl arg1 arg2))))
     (cond
      ((uintp val1) (if (shl-uint-okp val1 val2)
@@ -473,7 +404,7 @@
                      :required :integer
                      :supplied arg2)))
        (val2 (promote-value arg2))
-       (val2 (exec-integer val2))
+       (val2 (value-integer->get val2))
        ((when (errorp val2)) val2)
        (err (error (list :undefined-shr arg1 arg2))))
     (cond
@@ -918,7 +849,7 @@
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
-       (index (exec-integer sub))
+       (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :pointer arr
                                         :array array
@@ -1017,7 +948,7 @@
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
-       (index (exec-integer sub))
+       (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
                                         :index sub))))
@@ -1077,7 +1008,7 @@
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
-       (index (exec-integer sub))
+       (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
                                         :index sub))))
@@ -1148,23 +1079,33 @@
      :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
                (case (binop-kind e.op)
                  (:logand
-                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                  (b* ((arg1 (exec-expr-pure e.arg1 compst))
+                       ((when (errorp arg1)) arg1)
+                       (test1 (test-value arg1))
                        ((when (errorp test1)) test1)
                        ((when (not test1)) (sint 0))
-                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       (arg2 (exec-expr-pure e.arg2 compst))
+                       ((when (errorp arg2)) arg2)
+                       (test2 (test-value arg2))
                        ((when (errorp test2)) test2))
                     (if test2 (sint 1) (sint 0))))
                  (:logor
-                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                  (b* ((arg1 (exec-expr-pure e.arg1 compst))
+                       ((when (errorp arg1)) arg1)
+                       (test1 (test-value arg1))
                        ((when (errorp test1)) test1)
                        ((when test1) (sint 1))
-                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       (arg2 (exec-expr-pure e.arg2 compst))
+                       ((when (errorp arg2)) arg2)
+                       (test2 (test-value arg2))
                        ((when (errorp test2)) test2))
                     (if test2 (sint 1) (sint 0))))
                  (t (exec-binary-strict-pure e.op
                                              (exec-expr-pure e.arg1 compst)
                                              (exec-expr-pure e.arg2 compst)))))
-     :cond (b* ((test (exec-test (exec-expr-pure e.test compst)))
+     :cond (b* ((test (exec-expr-pure e.test compst))
+                ((when (errorp test)) test)
+                (test (test-value test))
                 ((when (errorp test)) test))
              (if test
                  (exec-expr-pure e.then compst)
@@ -1474,7 +1415,7 @@
                         (error (list :mistype-array-index
                                      :required :integer
                                      :found index)))
-                       (index (exec-integer index))
+                       (index (value-integer->get index))
                        ((when (< index 0)) (error (list :negative-array-index
                                                         :pointer ptr
                                                         :array array
@@ -1505,7 +1446,7 @@
                         (error (list :mistype-struct-array-read
                                      :required :integer
                                      :supplied index)))
-                       (index (exec-integer index))
+                       (index (value-integer->get index))
                        ((when (< index 0)) (error (list :negative-array-index
                                                         :struct struct
                                                         :array array
@@ -1553,7 +1494,7 @@
                         (error (list :mistype-struct-array-read
                                      :required :integer
                                      :supplied index)))
-                       (index (exec-integer index))
+                       (index (value-integer->get index))
                        ((when (< index 0)) (error (list :negative-array-index
                                                         :pointer ptr
                                                         :array array
@@ -1710,12 +1651,16 @@
                    (mv compst/error (compustate-fix compst))))
                (mv nil compst/error))
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
-       :if (b* ((test (exec-test (exec-expr-pure s.test compst)))
+       :if (b* ((test (exec-expr-pure s.test compst))
+                ((when (errorp test)) (mv test (compustate-fix compst)))
+                (test (test-value test))
                 ((when (errorp test)) (mv test (compustate-fix compst))))
              (if test
                  (exec-stmt s.then compst fenv (1- limit))
                (mv nil (compustate-fix compst))))
-       :ifelse (b* ((test (exec-test (exec-expr-pure s.test compst)))
+       :ifelse (b* ((test (exec-expr-pure s.test compst))
+                    ((when (errorp test)) (mv test (compustate-fix compst)))
+                    (test (test-value test))
                     ((when (errorp test)) (mv test (compustate-fix compst))))
                  (if test
                      (exec-stmt s.then compst fenv (1- limit))
@@ -1767,7 +1712,9 @@
        we re-execute the loop,
        by calling this ACL2 function recursively."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (continuep (exec-test (exec-expr-pure test compst)))
+         (test-val (exec-expr-pure test compst))
+         ((when (errorp test-val)) (mv test-val (compustate-fix compst)))
+         (continuep (test-value test-val))
          ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
          ((when (not continuep)) (mv nil (compustate-fix compst)))
          ((mv val? compst) (exec-stmt body compst fenv (1- limit)))

@@ -17,12 +17,12 @@
 (include-book "types")
 (include-book "values")
 (include-book "type-of-value")
+(include-book "test-value")
 (include-book "exec-const")
 (include-book "exec-ident")
 (include-book "exec-unary")
 (include-book "exec-binary-strict-pure")
 (include-book "exec-cast")
-(include-book "exec-test")
 (include-book "exec-arrsub")
 (include-book "exec-expr-pure")
 (include-book "exec-expr-call")
@@ -142,7 +142,7 @@
           *atc-exec-unary-rules*
           *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
-          *atc-exec-test-rules*
+          *atc-test-value-rules*
           *atc-exec-expr-pure-rules*
           *atc-exec-expr-pure-list-rules*
           *atc-exec-expr-call-rules*

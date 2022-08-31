@@ -53,8 +53,9 @@
                   (equal (stmt-kind s) :if)
                   (not (zp limit))
                   (compustatep compst)
-                  (equal test
-                         (exec-test (exec-expr-pure (stmt-if->test s) compst)))
+                  (equal arg1 (exec-expr-pure (stmt-if->test s) compst))
+                  (valuep arg1)
+                  (equal test (test-value arg1))
                   (booleanp test))
              (equal (exec-stmt s compst fenv limit)
                     (if test
@@ -66,9 +67,9 @@
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :ifelse)
                   (not (zp limit))
-                  (equal test
-                         (exec-test
-                          (exec-expr-pure (stmt-ifelse->test s) compst)))
+                  (equal arg1 (exec-expr-pure (stmt-ifelse->test s) compst))
+                  (valuep arg1)
+                  (equal test (test-value arg1))
                   (booleanp test))
              (equal (exec-stmt s compst fenv limit)
                     (if test

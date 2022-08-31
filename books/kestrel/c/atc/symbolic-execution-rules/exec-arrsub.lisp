@@ -17,6 +17,8 @@
 (include-book "syntaxp")
 (include-book "arrays")
 
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-exec-arrsub-rules-generation
@@ -44,6 +46,8 @@
           (pack atype-array-read '-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
+         (value-itype->get-to-itype->get
+          (pack 'value- ifixtype '->get-to- ifixtype '->get))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -64,7 +68,8 @@
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub
-                            exec-integer
+                            value-integer->get
+                            ,value-itype->get-to-itype->get
                             ,atype-array-itype-index-okp
                             ,atype-array-read-itype
                             ,atype-array-read-alt-def
