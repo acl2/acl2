@@ -25,6 +25,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define test-value ((val valuep))
+  :returns (res boolean-resultp)
+  :short "Test a value logically."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In some contexts (e.g. conditional tests),
+     a value is treated as a logical boolean.
+     The value must be scalar; see @(tsee test-scalar-value) for details."))
+  (if (value-scalarp val)
+      (test-scalar-value val)
+    (error (list :test-mistype
+                 :required :scalar
+                 :supplied (value-fix val))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define plus-value ((val valuep))
   :returns (resval value-resultp)
   :short "Apply unary @('+') to a value [C:6.5.3.3/1] [C:6.5.3.3/2]."
@@ -86,24 +104,6 @@
   (if (value-scalarp val)
       (lognot-scalar-value val)
     (error (list :lognot-mistype
-                 :required :scalar
-                 :supplied (value-fix val))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define test-value ((val valuep))
-  :returns (res boolean-resultp)
-  :short "Test a value logically."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In some contexts (e.g. conditional tests),
-     a value is treated as a logical boolean.
-     The value must be scalar; see @(tsee test-scalar-value) for details."))
-  (if (value-scalarp val)
-      (test-scalar-value val)
-    (error (list :test-mistype
                  :required :scalar
                  :supplied (value-fix val))))
   :hooks (:fix))
