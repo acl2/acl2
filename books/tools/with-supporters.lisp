@@ -359,6 +359,34 @@
        `(progn ,ev
                (verify-guards ,(cadr ev)))))))
 
+(defun adjust-encapsulate-for-symbol-class (ev wrld)
+
+; See adjust-ev-for-symbol-class.  This is the special case when ev is a
+; non-trivial encapsulate event.
+
+  (let ((name (case-match ev
+                (('encapsulate (((name . &) . &) . &) . &)
+                 name)
+                (('encapsulate ((name . &) . &) . &)
+                 name)
+                (& nil))))
+    (cond
+     (name
+      (let* ((wrld-tail (lookup-world-index
+                         'event
+                         (getpropc name 'absolute-event-number 0 wrld)
+                         wrld))
+             (old-vge (default-verify-guards-eagerness wrld-tail))
+             (new-vge (default-verify-guards-eagerness wrld)))
+        (cond ((eql old-vge new-vge) ev)
+              (t `(encapsulate
+                    ()
+; The following setting of the acl2-defaults-table is local to the surrounding
+; encapsulate.
+                    (set-verify-guards-eagerness ,old-vge)
+                    ,ev)))))
+     (t ev))))
+
 (defun adjust-ev-for-symbol-class (ev wrld)
 
 ; Ev is an event, as returned by get-event, that comes from a locally-included
@@ -384,6 +412,8 @@
          `(mutual-recursion
            ,def1
            ,@(cddr ev)))))
+    (encapsulate
+     (adjust-encapsulate-for-symbol-class ev wrld))
     (otherwise ev)))
 
 (defun events-from-supporters-fal (pairs min max wrld acc)
