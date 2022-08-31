@@ -1404,7 +1404,7 @@
               (not (acl2::hons-dups-p (svex-alist-keys (svtv-fsm->nextstate x)))))
   :returns (env svex-env-p)
   (base-fsm-step-env (svtv-fsm-env inputs override-tests x)
-                     prev-st (svtv-fsm->base-fsm x))
+                     prev-st (svtv-fsm->nextstate x))
   ///
   (defret svtv-fsm-step-env-of-extract-states
     (equal (svtv-fsm-step-env
@@ -1995,7 +1995,7 @@
   (defretd <fn>-is-svtv-fsm-final-state-of-input-envs
     (equal final-st
            (base-fsm-final-state (svtv-fsm-run-input-envs inputs override-tests x)
-                                 prev-st (svtv-fsm->base-fsm x)))
+                                 prev-st (svtv-fsm->nextstate x)))
     :hints(("Goal" :in-theory (enable base-fsm-final-state svtv-fsm-run-input-envs
                                       svtv-fsm-step
                                       svtv-fsm-step-env
@@ -2113,12 +2113,12 @@
            (if (atom ins)
                (list n prev-st)
              (nth-of-sfe-ind (1- n) (cdr ins)
-                             (base-fsm-step (car ins) prev-st x)
+                             (base-fsm-step (car ins) prev-st (base-fsm->nextstate x))
                              x))))
   (defthmd nth-of-base-fsm-eval
     (equal (nth n (base-fsm-eval ins prev-st x))
            (and (< (nfix n) (len ins))
-                (b* ((st (base-fsm-final-state (take n ins) prev-st x)))
+                (b* ((st (base-fsm-final-state (take n ins) prev-st (base-fsm->nextstate x))))
                   (base-fsm-step-outs (nth n ins) st x))))
     :hints(("Goal" :in-theory (enable base-fsm-final-state
                                       base-fsm-eval nth)
@@ -2425,7 +2425,7 @@
              (take (len statevars) inputs)
              override-tests x)
             prev-st
-            (svtv-fsm->renamed-fsm x)
+            (svtv-fsm->nextstate x)
             statevars))
     :hints(("Goal" :in-theory (enable base-fsm-run-states
                                       svex-envlist-extract
@@ -2555,6 +2555,11 @@
   (local (defthm len-of-take
            (equal (len (take n x)) (nfix n))))
 
+  (local (defthm base-fsm->nextstate-of-svtv-fsm->renamed-fsm
+           (equal (base-fsm->nextstate (svtv-fsm->renamed-fsm x))
+                  (svtv-fsm->nextstate x))
+           :hints(("Goal" :in-theory (enable svtv-fsm->renamed-fsm)))))
+  
   (defretd <fn>-is-base-fsm-run-outs-and-states
     (equal <call>
            (b* (((mv outs states)
