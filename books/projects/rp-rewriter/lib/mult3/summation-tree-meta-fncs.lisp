@@ -919,21 +919,29 @@
          ((when (atom pp-lst2)) (atom pp-lst1))
          (cur1 (car pp-lst1))
          (cur2 (car pp-lst2)))
-      (cond ((equal cur1 cur2)
+      (cond ((rp-equal-cnt cur1 cur2 0)
              (and-lst-subsetp (cdr pp-lst1) (cdr pp-lst2)))
             ((lexorder2- cur1 cur2) nil)
             (t (and-lst-subsetp pp-lst1 (cdr pp-lst2))))))
 
   (define and-subsetp ((pp1 rp-termp)
                        (pp2 rp-termp))
+    :guard-hints (("Goal"
+                    :in-theory (e/d (RP-TERM-LISTP) ())))
     (b* ((pp1 (ex-from-rp$ pp1))
          (pp2 (ex-from-rp$ pp2))
-         ((unless (and (case-match pp1 (('and-list & ('list . &)) t))
-                       (case-match pp2 (('and-list & ('list . &)) t))))
+         ((unless (and (or (case-match pp1 (('and-list & ('list . &)) t))
+                           (bit-of-p (ex-from-rp$ pp1)))
+                       (or (case-match pp2 (('and-list & ('list . &)) t))
+                           (bit-of-p (ex-from-rp$ pp2)))))
           nil)
 
-         (pp1-lst (cdr (caddr pp1)))
-         (pp2-lst (cdr (caddr pp2))))
+         (pp1-lst (if (bit-of-p (ex-from-rp$ pp1))
+                      (list (ex-from-rp$ pp1))
+                    (cdr (caddr pp1))))
+         (pp2-lst (if (bit-of-p (ex-from-rp$ pp2))
+                      (list (ex-from-rp$ pp2))
+                    (cdr (caddr pp2)))))
       (and-lst-subsetp pp1-lst pp2-lst))))
 
 (local
@@ -1407,7 +1415,7 @@
            (& (mv s-lst pp-lst c-lst)))))
       (& (mv s-lst pp-lst c-lst))))))
 
-(local
+#|(local
  (defthmd and-subsetp-IMPLIES-and-list-intance
    (implies (and-subsetp pp1 pp2)
             (B* ((PP1 (EX-FROM-RP$ PP1))
@@ -1416,7 +1424,7 @@
                    (CASE-MATCH PP2 (('AND-LIST & ('LIST . &)) T)))))
    :rule-classes :forward-chaining
    :hints (("Goal"
-            :in-theory (e/d (and-subsetp) ())))))
+            :in-theory (e/d (and-subsetp) ())))))|#
 
 (progn
   (define and-list-instance-to-binary-and-aux ((lst))
@@ -1920,17 +1928,17 @@
           (pattern0-reduce-aux-c-lst c-lst (1- limit) (+ 2 (- pp-cnt) (- s-cnt))))
          ((unless c-valid)
           (mv ''nil ''nil nil)))
-      (cond ((and (= s-cnt 0) (= pp-cnt 0) (= c-cnt 2))
+      (cond ((and* (= s-cnt 0) (= pp-cnt 0) (= c-cnt 2))
              (mv c1 c2 t))
-            ((and (= s-cnt 0) (= pp-cnt 1) (= c-cnt 1))
+            ((and* (= s-cnt 0) (= pp-cnt 1) (= c-cnt 1))
              (mv pp1 c1 t))
-            ((and (= s-cnt 0) (= pp-cnt 2) (= c-cnt 0))
+            ((and* (= s-cnt 0) (= pp-cnt 2) (= c-cnt 0))
              (mv pp1 pp2 t))
-            ((and (= s-cnt 1) (= pp-cnt 0) (= c-cnt 1))
+            ((and* (= s-cnt 1) (= pp-cnt 0) (= c-cnt 1))
              (mv s1 c1 t))
-            ((and (= s-cnt 1) (= pp-cnt 1) (= c-cnt 0))
+            ((and* (= s-cnt 1) (= pp-cnt 1) (= c-cnt 0))
              (mv s1 pp1 t))
-            ((and (= s-cnt 2) (= pp-cnt 0) (= c-cnt 0))
+            ((and* (= s-cnt 2) (= pp-cnt 0) (= c-cnt 0))
              (mv s1 s2 t))
             (t
              (mv ''nil ''nil nil)))))
@@ -3770,6 +3778,7 @@
                                            (+-IS-SUM))))))
                (local
                 (in-theory (enable measure-lemmas))))
+    :verify-guards :after-returns
     :returns (mv (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                  (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
     (cond ((atom pp-lst) (mv pp-lst nil))
@@ -3779,14 +3788,20 @@
                 (recollectable-pp-p (car pp-lst)))
            (b* (((mv new-pp-lst c)
                  (recollect-pp (car pp-lst)))
-                ((mv rest-pp-lst res-c-lst)
+                ((mv rest-pp-lst rest-c-lst)
                  (recollect-pp-lst-to-sc (cddr pp-lst))))
              (mv (pp-sum-merge-aux rest-pp-lst new-pp-lst)
-                 (s-sum-merge-aux (list c) res-c-lst))))
-          (t (b* (((mv res-pp-lst res-c-lst)
-                   (recollect-pp-lst-to-sc (cdr pp-lst))))
-               (mv (cons (car pp-lst) res-pp-lst)
-                   res-c-lst)))))
+                 (s-sum-merge-aux (list c) rest-c-lst))))
+          (t (b* (((mv rest-pp-lst rest-c-lst)
+                   (recollect-pp-lst-to-sc (cdr pp-lst)))
+                  (can-be-consed (or (atom rest-pp-lst)
+                                     (b* (((mv order &) (pp-order (car pp-lst)
+                                                                  (car rest-pp-lst))))
+                                       order))))
+               (mv (if can-be-consed
+                       (cons-with-hint (car pp-lst) rest-pp-lst pp-lst)
+                     (pp-sum-merge-aux (list (car pp-lst)) rest-pp-lst)) 
+                   rest-c-lst)))))
 
   (progn
     (encapsulate

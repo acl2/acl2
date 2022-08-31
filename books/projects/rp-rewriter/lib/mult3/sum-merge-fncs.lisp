@@ -245,7 +245,8 @@
           ((equal (car x) (car y))
            (pp-list-order-aux (cdr x) (cdr y)))
           (t
-           (mv (lexorder2- (car x) (car y)) nil))))
+           ;; lexorder2- sort from small to large
+           (mv (lexorder2- (car y) (car x)) nil))))
 
   (define len-compare (x y)
     (if (or (atom x)
@@ -343,8 +344,9 @@
              (mv (list y) 0 nil)))))
       (if (= x-hash y-hash)
           (b* (((mv order equals)
-                (pp-list-order x-lst y-lst t)))
-            (if (and x-good-format y-good-format)
+                (pp-list-order x-lst y-lst
+                               (and* x-good-format y-good-format))))
+            (if (and* x-good-format y-good-format)
                 (mv order equals)
               (mv order (equal x y))))
         (mv (> x-hash y-hash) nil))))
@@ -357,14 +359,39 @@
   ;;                             lexorder2-sanity)
   ;;                            (lexorder2)))))
 
+
+  (define pp-order-and-negated-termsp ((term1 rp-termp)
+                                       (term2 rp-termp))
+    :returns (mv
+              (order)
+              (negated-terms booleanp)
+              (equal-terms booleanp))
+    (b* (((mv neg1 term1)
+          (case-match term1 (('-- a) (mv t a)) (& (mv nil term1))))
+         ((mv neg2 term2)
+          (case-match term2 (('-- a) (mv t a)) (& (mv nil term2))))
+         ((mv order equals)
+          (pp-order term1 term2))
+         (equals (or equals
+                     (rp-equal-cnt term1 term2 0))))
+      (mv  order
+           (and (not (equal neg1 neg2))
+                equals)
+           equals)))
+
+  
   (define pp-lst-orderedp ((lst rp-term-listp))
     (if (atom lst)
         t
       (if (atom (cdr lst))
           t
-        (and (b* (((mv order &) (pp-order (ex-from-rp/-- (cadr lst))
-                                          (ex-from-rp/-- (car lst)))))
-               (not order))
+        (and (b* (((mv order negated-terms &)
+                   (pp-order-and-negated-termsp (cadr lst) (car lst)))
+
+                  #|((mv order &) (pp-order (ex-from-rp/-- (cadr lst))
+                  (ex-from-rp/-- (car lst))))|#)
+               (and (not order)
+                    (not negated-terms)))
              (pp-lst-orderedp (cdr lst))))))
 
   (define pp-orderedp ((pp rp-termp))
@@ -375,24 +402,7 @@
        t)
       (& nil))))
 
-(define pp-order-and-negated-termsp ((term1 rp-termp)
-                                     (term2 rp-termp))
-  :returns (mv
-            (order)
-            (negated-terms booleanp)
-            (equal-terms booleanp))
-  (b* (((mv neg1 term1)
-        (case-match term1 (('-- a) (mv t a)) (& (mv nil term1))))
-       ((mv neg2 term2)
-        (case-match term2 (('-- a) (mv t a)) (& (mv nil term2))))
-       ((mv order equals)
-        (pp-order term1 term2))
-       (equals (or equals
-                   (rp-equal-cnt term1 term2 0))))
-    (mv  order
-         (and (not (equal neg1 neg2))
-              equals)
-         equals)))
+
 
 (define pp-sum-merge-aux ((pp1-lst rp-term-listp)
                           (pp2-lst rp-term-listp))

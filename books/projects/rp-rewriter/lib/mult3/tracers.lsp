@@ -10,6 +10,26 @@
 (clear-memoize-statistics)
 
 (trace$
+ (s-c-spec-meta
+  :cond (or (equal acl2::traced-fn 's-c-spec-meta)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list res-term ?dont-rw)
+                acl2::values))
+            (if (or (and (equal (caar acl2::arglist) 's-c-spec)
+                         (ordered-s/c-p (cadr res-term))
+                         (ordered-s/c-p (cadr (caddr res-term))))
+                    (and (equal (caar acl2::arglist) 's-spec)
+                         (ordered-s/c-p res-term))
+                    (and (equal (caar acl2::arglist) 'c-spec)
+                         (ordered-s/c-p res-term)))
+                (msg "")
+              (msg "Not ordered from s-c-spec-meta Input:
+  ~x0. res-term: ~x1. ~%"
+                   acl2::arglist res-term))))))
+
+
+(trace$
  (unpack-booth-for-s*
   :cond (or (equal acl2::traced-fn 'unpack-booth-for-s*)
             (equal acl2::traced-fn 'unpack-booth-for-s-fn));; Don't want to see *1* functions

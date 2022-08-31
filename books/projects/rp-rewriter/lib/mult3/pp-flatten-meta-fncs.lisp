@@ -964,6 +964,22 @@
     :hints (("Goal"
              :in-theory (e/d (pp-remove-extraneous-sc) ())))))
 
+(define pp-remove-extraneous-sc-lst (lst)
+  :returns (res-lst pp-term-list-p
+                    :hyp (pp-term-list-p lst)
+                    :hints (("Goal"
+                             :in-theory (e/d (pp-term-list-p) ()))))
+  (if (atom lst)
+      nil
+    (cons (pp-remove-extraneous-sc (car lst))
+          (pp-remove-extraneous-sc-lst (cdr lst))))
+  ///
+  (defret rp-term-listp-of-<fn>
+    (implies (rp-term-listp lst)
+             (rp-term-listp  res-lst))
+    :hints (("Goal"
+             :in-theory (e/d () ())))))
+
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp)
                     &key
@@ -1045,9 +1061,9 @@
                             (valid-single-bitp b)))
                (mv nil nil)))
            (mv t
-               (cons nil (sort-and$-list (cdr cur) 2)))))
+               (cons nil (pp-remove-extraneous-sc-lst (sort-and$-list (cdr cur) 2))))))
         (('bit-of & &)
-         (mv t (list nil cur)))
+         (mv t (list nil (pp-remove-extraneous-sc cur))))
         (''1
          (mv t (list nil cur)))
         (''0
@@ -1192,6 +1208,11 @@
          (b* (((unless (pp-term-p cur))
                (mv nil nil))
               (term-size-limit (pp-lists-limit))
+              ((when (or (include-fnc cur 's)
+                         (include-fnc cur 'c)
+                         (include-fnc cur 's-c-res)))
+               (mv nil nil))
+              (cur (pp-remove-extraneous-sc cur))
               ((mv pp-lists1 too-large) (pp-term-to-pp-lists cur nil))
               ((when too-large)
                (progn$
@@ -1205,6 +1226,11 @@
            (mv t (merge-sorted-pp-lists pp-lists1 pp-lists2))))
         (& (b* (((unless (pp-term-p term-orig))
                  (mv nil nil))
+                ((when (or (include-fnc term 's)
+                           (include-fnc term 'c)
+                           (include-fnc term 's-c-res)))
+                 (mv nil nil))
+                (term-orig (pp-remove-extraneous-sc term-orig))
                 (term-size-limit (pp-lists-limit))
                 ((mv res too-large) (pp-term-to-pp-lists term-orig nil))
                 ((when too-large)
@@ -1238,7 +1264,7 @@
     (acl2::defret pp-lists-p-of-<fn>
       (implies valid
                (pp-lists-p pp-lists)))
-    (verify-guards sort-sum-meta-aux2))
+    (verify-guards sort-sum-meta-aux2)) 
 
   (define sort-sum-meta (term)
     :returns (mv result
@@ -1248,10 +1274,10 @@
        (b* (((mv valid pp-lists)
              (sort-sum-meta-aux2 x))
             ((unless valid)
-             (progn$ (cw "sort-sum-meta got an unexpected term ~p0 ~%"
-                         term)
-                     (hard-error 'sort-sum-meta "Read above.." nil)
-                     (mv term t)))
+             (progn$ #|(cwe "Warning: sort-sum-meta got an unexpected term ~p0 ~%"
+                         term)|#
+                     ;;(hard-error 'sort-sum-meta "Read above.." nil)
+                     (mv `(binary-sum ,x '0) '(nil t t))))
             (pp-lists (sort-pp-lists pp-lists (len pp-lists)))
             (pp-lst (pp-lists-to-term-pp-lst pp-lists))
             (result (If pp-lst

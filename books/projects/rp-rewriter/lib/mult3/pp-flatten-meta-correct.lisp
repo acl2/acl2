@@ -395,6 +395,22 @@
                             (:DEFINITION FALIST-CONSISTENT-AUX)
                             rp-termp)))))
 
+(defret valid-sc-subterms-of-pp-remove-extraneous-sc
+  (implies (force (valid-sc-subterms lst a))
+           (valid-sc-subterms res-lst a))
+  :fn pp-remove-extraneous-sc-lst
+  :hints (("Goal"
+           :expand ((:free (x y) (is-rp (cons x y))))
+           :in-theory (e/d (pp-remove-extraneous-sc-lst)
+                           ((:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION RP-TERMP)
+                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                            (:REWRITE RP-TERMP-OF-PP-REMOVE-EXTRANEOUS-SC)
+                            (:DEFINITION FALIST-CONSISTENT)
+                            (:DEFINITION FALIST-CONSISTENT-AUX)
+                            rp-termp)))))
+
 (defthm valid-sc-subterms-append-wog
   (implies (and (force (valid-sc-subterms lst1 a))
                 (force (valid-sc-subterms lst2 a)))
@@ -3513,6 +3529,17 @@
                              (:REWRITE WHEN-EX-FROM-RP-IS-0)
                              (:TYPE-PRESCRIPTION BINARY-?-P$INLINE)
                              )))))
+
+(defret pp-remove-extraneous-sc-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts)
+                (mult-formula-checks state))
+           (equal (rp-evlt-lst res-lst a)
+                  (rp-evlt-lst lst a)))
+  :fn pp-remove-extraneous-sc-lst
+  :hints (("Goal"
+           :expand ((:free (term) (nth 3 term)))
+           :in-theory (e/d* (pp-remove-extraneous-sc-lst)
+                            ()))))
 
 (defret pp-remove-extraneous-sc-correct-2
   (implies (and (rp-evl-meta-extract-global-facts)
