@@ -242,7 +242,6 @@ it enabled.
 
 <code> @('(rp::enable-c-of-s-fix-mode <t-or-nil>)') </code>
 
-
 <p>RECOLLECT-PP</p>
 <p> We have discovered that after partial products are flatten (i.e., rewritten
  in algebraic form), the result can be shrunk by rewriting (collecting) some
@@ -1127,7 +1126,7 @@ product specification function as given below.
 
 
 (xdoc::defxdoc
- Multiplier-Verification-demo-3
+ Multiplier-Verification-demo-3-svtv
  :parents (Multiplier-Verification)
  :short  "Another  demo  for   @(see  Multiplier-Verification) showing how
  @(see svtv-run) can be used by overriding the adder modules."

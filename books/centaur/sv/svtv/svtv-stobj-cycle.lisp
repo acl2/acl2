@@ -68,7 +68,7 @@
      (equal (svex-eval (svex-lookup var nextst) env)
             (svex-env-lookup var (svtv-cycle-eval-nextst env
                                                        (svex-alist-eval prev-st env)
-                                                       phases x)))
+                                                       phases (base-fsm->nextstate x))))
      :hints (("goal" :use eval-nextsts-of-<fn>
               :in-theory (disable eval-nextsts-of-<fn>)))
      :fn svtv-cycle-compile)
@@ -78,7 +78,7 @@
       (iff (svex-lookup var nextst)
            (svex-env-boundp var (svtv-cycle-eval-nextst env
                                                       (svex-alist-eval prev-st env)
-                                                      phases x)))
+                                                      phases (base-fsm->nextstate x))))
       :hints (("goal" :use eval-nextsts-of-<fn>
                :in-theory (disable eval-nextsts-of-<fn>)))
       :fn svtv-cycle-compile))
@@ -261,6 +261,3 @@
   (defret cycle-phases-validp-of-<fn>
     (equal (svtv-data$c->cycle-phases new-svtv-data)
            (svtv-cyclephaselist-fix phases))))
-
-
-       

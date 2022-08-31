@@ -381,7 +381,7 @@
                     (ec-call
                      (svex-envs-equivalent (svex-alist-eval cycle-fsm.nextstate env)
                                            (svtv-cycle-eval-nextst
-                                            env prev-st phases phase-fsm)))
+                                            env prev-st phases (base-fsm->nextstate phase-fsm))))
                     (equal (svex-alist-keys cycle-fsm.nextstate) statevars)))))
     :rewrite :direct)
 
