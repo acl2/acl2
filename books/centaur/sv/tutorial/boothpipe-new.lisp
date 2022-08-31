@@ -261,7 +261,7 @@
    ;; Main Lemma 1.  Partial Products Part is Correct.
    ;; This is a very easy proof for Glucose, taking about 1.5 seconds.
    ;; The stuff done with the output alist is confusing but is what we want for composition.
- (def-svtv-override-fact boothpipe-pp-correct
+ (def-svtv-generalized-thm boothpipe-pp-correct
    :svtv boothpipe-run
    :input-vars (a b)
    :input-var-bindings ((en 1))
@@ -288,7 +288,7 @@
 ;; Main Lemma 2.  Addition Part is Correct.
 
 (local
- (def-svtv-override-fact boothpipe-sum-correct
+ (def-svtv-generalized-thm boothpipe-sum-correct
    :svtv boothpipe-run
    :input-var-bindings ((en 1))
    :override-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
