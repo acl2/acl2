@@ -80,6 +80,7 @@
 (include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/utilities/margins" :dir :system))
@@ -116,8 +117,6 @@
                            global-table-p
                            set-fmt-hard-right-margin
                            deref-macro-name)))
-
-(in-theory (disable str::coerce-to-list-removal)) ;todo
 
 (defund widen-margins (state)
   (declare (xargs :stobjs state))
