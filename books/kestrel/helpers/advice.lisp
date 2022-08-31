@@ -73,6 +73,7 @@
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
+(include-book "kestrel/alists-light/string-string-alistp" :dir :system)
 (include-book "kestrel/htclient/post" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
@@ -1324,7 +1325,26 @@
       (remove-duplicate-recs reduced-rest
                              (cons rec acc)))))
 
-
+;; Sends an HTTP POST request containing the POST-DATA to the server at
+;; SERVER-URL.  Parses the response as JSON.  Returns (mv erp
+;; parsed-json-response state).
+(defund post-and-parse-response-as-json (server-url post-data debug state)
+  (declare (xargs :guard (and (stringp server-url)
+                              (string-string-alistp post-data)
+                              (booleanp debug))
+                  :stobjs state))
+  (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
+       ((mv erp post-response state)
+        (htclient::post server-url post-data state))
+       ((when erp) (mv erp nil state))
+       (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
+       ;; Parse the JSON:
+       ((mv erp parsed-json-response) (parse-string-as-json post-response))
+       ((when erp)
+        (cw "Error parsing JSON response from ~x0.~%" server-url)
+        (mv erp nil state))
+       (- (and debug (cw "Parsed POST response: ~X01~%" parsed-json-response nil))))
+    (mv nil parsed-json-response state)))
 
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
@@ -1392,11 +1412,11 @@
                              raw-checkpoint-clauses))
        (- (and verbose (cw "Checkpoints in query: ~X01.)~%" checkpoint-clauses nil)))
        ;; Send query to server:
-       ((mv erp post-response state)
+       ((mv erp semi-parsed-recommendations state)
         (if (zp n)
             (prog2$ (cw "Not asking server for recommendations since n=0.")
                     (mv nil
-                        "[]" ; empty list of recommendations
+                        nil ; empty list of recommendations
                         state))
           (b* ((- (cw "Asking server for ~x0 recommendations on ~x1 ~s2...~%"
                       n
@@ -1404,19 +1424,13 @@
                       (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
                (post-data (acons "n" (nat-to-string n)
                                  (make-numbered-checkpoint-entries 0 checkpoint-clauses)))
-               (- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil))))
-            (htclient::post server-url post-data state))))
-       ((when erp)
-        (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
-        (mv erp nil state))
-       (- (and debug (cw "Raw JSON POST response: ~X01~%" post-response nil)))
-       ;; Parse the JSON:
-       ((mv erp parsed-json) (parse-string-as-json post-response))
-       ((when erp)
-        (er hard? 'advice-fn "Error parsing JSON.")
-        (mv erp nil state))
-       (semi-parsed-recommendations (parsed-json-array->values parsed-json))
-       (- (and debug (cw "After JSON parsing: ~X01~%" semi-parsed-recommendations nil)))
+               ((mv erp parsed-response state)
+                (post-and-parse-response-as-json server-url post-data debug state))
+               ((when erp)
+                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
+                (mv erp nil state)))
+            (mv nil (parsed-json-array->values parsed-response) state))))
+       ((when erp) (mv erp nil state))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations state))
        ((when erp)
