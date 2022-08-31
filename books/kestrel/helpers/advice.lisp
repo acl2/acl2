@@ -81,6 +81,8 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
+(local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/margins" :dir :system))
 
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
@@ -107,14 +109,18 @@
             name))))))
 
 (local (in-theory (disable state-p
-                           checkpoint-list-guard)))
+                           checkpoint-list-guard
+                           global-table
+                           put-global
+                           get-global
+                           global-table-p
+                           set-fmt-hard-right-margin
+                           deref-macro-name)))
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
-(defun widen-margins (state)
-  (declare (xargs :stobjs state
-                  :mode :program ; todo
-                  ))
+(defund widen-margins (state)
+  (declare (xargs :stobjs state))
   (let* ((old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
          (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
          ;; save the old values for later restoration:
@@ -125,13 +131,16 @@
          (state (set-fmt-soft-right-margin 400 state)))
     state))
 
-(defun unwiden-margins (state)
+(defund unwiden-margins (state)
   (declare (xargs :stobjs state
-                  :mode :program ; todo
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable boundp-global)))))
   ;; Restore the margins:
-  (let* ((state (set-fmt-hard-right-margin (f-get-global 'old-fmt-hard-right-margin state) state))
-         (state (set-fmt-soft-right-margin (f-get-global 'old-fmt-soft-right-margin state) state)))
+  (let* ((state (if (boundp-global 'old-fmt-hard-right-margin state)
+                    (set-fmt-hard-right-margin (pos-fix (f-get-global 'old-fmt-hard-right-margin state)) state)
+                  state))
+         (state (if (boundp-global 'old-fmt-soft-right-margin state)
+                    (set-fmt-soft-right-margin (pos-fix (f-get-global 'old-fmt-soft-right-margin state)) state)
+                  state)))
     state))
 
 ;move
@@ -140,7 +149,8 @@
   (declare (xargs :guard (and ;; (symbolp item)
                           (plist-worldp wrld)
                           (alistp (macro-aliases wrld)))
-                  :verify-guards nil))
+                  :verify-guards nil
+                  ))
   (if (symbolp item)
       (let ((name (deref-macro-name item (macro-aliases wrld)))) ; no change if item is not a macro name
         (if (getpropc name 'runic-mapping-pairs nil wrld)
@@ -179,7 +189,7 @@
 ;;           (untranslate-clauses (rest clauses) iff-flg wrld))))
 
 (defun make-numbered-checkpoint-entries (current-number checkpoints)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program)) ; because we call fms-to-string
   (if (endp checkpoints)
       nil
     (acons (concatenate 'string "checkpoint_" (nat-to-string current-number))
@@ -262,7 +272,7 @@
 
 ;; Returns state.
 (defun show-recommendations (recs state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (recommendation-listp recs)
                   :stobjs state))
   (let ((state (widen-margins state)))
     (progn$ (show-recommendations-aux recs)
@@ -274,20 +284,29 @@
 (defconst *option-names* '(:max-wins))
 
 ;; Returns (mv presentp val)
-(defun get-advice-option (option-name wrld)
+(defund get-advice-option (option-name wrld)
+  (declare (xargs :guard (and (symbolp option-name)
+                              (plist-worldp wrld))
+                  :verify-guards nil))
   (let* ((table-alist (table-alist 'advice-options wrld))
          (res (assoc-eq option-name table-alist)))
     (if res (mv t (cdr res)) (mv nil nil))))
 
 ;; Returns the value of the option.  Throws an error if not set.
-(defun get-advice-option! (option-name wrld)
+(defund get-advice-option! (option-name wrld)
+  (declare (xargs :guard (and (symbolp option-name)
+                              (plist-worldp wrld))
+                  :verify-guards nil))
   (mv-let (presentp val)
     (get-advice-option option-name wrld)
     (if (not presentp)
         (er hard? 'get-advice-option! "Option value not set: ~x0." option-name)
       val)))
 
-(defun advice-option-fn (option-name rest-args wrld)
+(defund advice-option-fn (option-name rest-args wrld)
+  (declare (xargs :guard (and (symbolp option-name)
+                              (plist-worldp wrld))
+                  :verify-guards nil))
   (if (not (member-eq option-name *option-names*))
       (er hard? 'advice-option-fn "Unknown option: ~x0." option-name)
     (if (consp rest-args)
@@ -324,7 +343,8 @@
 
 (defun show-successful-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)
-                  :mode :program))
+                  :mode :program ; because of fms-to-string
+                  ))
   (let* (;; (name (nth 0 rec))
          (type (nth 1 rec))
          (object (nth 2 rec))
@@ -376,7 +396,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp form state).
-(defun parse-include-book (string state)
+(defund parse-include-book (string state)
   (declare (xargs :guard (stringp string)
                   :stobjs state))
   (b* (((mv erp form state) (read-string-as-single-item string state)) ; todo: what about packages?
@@ -442,10 +462,8 @@
   :hints (("Goal" :in-theory (enable parse-book-map-info-lists))))
 
 ;; returns (mv erp parsed-book-map state)
-(defun parse-book-map (book-map state)
-  (declare (xargs :stobjs state
-;                  :verify-guards nil ; todo
-                  ))
+(defund parse-book-map (book-map state)
+  (declare (xargs :stobjs state))
   (if (not (parsed-json-objectp book-map))
       (mv :ill-formed-book-map nil state)
     (b* ((dict (parsed-json-object->pairs book-map)) ; strip the :object
@@ -516,7 +534,7 @@
           state))))
 
 ;; Returns (mv erp parsed-recommendations state).
-(defun parse-recommendations-aux (recs rec-num acc state)
+(defund parse-recommendations-aux (recs rec-num acc state)
   (declare (xargs :guard (and (parsed-json-valuesp recs)
                               (natp rec-num)
                               (true-listp acc))
@@ -534,11 +552,10 @@
                                  state))))
 
 ;; Returns (mv erp parsed-recommendations state).
-(defun parse-recommendations (recs state)
+(defund parse-recommendations (recs state)
   (declare (xargs :guard (parsed-json-valuesp recs)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))
-;                  :verify-guards nil ; todo
-                  :stobjs state))
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
   (parse-recommendations-aux recs 1 nil state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
