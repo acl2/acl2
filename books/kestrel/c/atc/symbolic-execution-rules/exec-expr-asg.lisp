@@ -76,6 +76,8 @@
           (pack afixtype '-array-write-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
+         (value-itype->get-to-itype->get
+          (pack 'value- ifixtype '->get-to- ifixtype '->get))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -116,7 +118,8 @@
          (event `(defruled ,name
                    ,formula
                    :enable (exec-expr-asg
-                            exec-integer
+                            value-integer->get
+                            ,value-itype->get-to-itype->get
                             ,atype-array-itype-index-okp
                             ,atype-array-write-itype
                             ,atype-array-write-alt-def

@@ -18,6 +18,8 @@
 (include-book "uaconvert-values")
 (include-book "integer-conversions")
 
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-sint-get-rules
@@ -118,8 +120,14 @@
                                     (pack op-kind '- lfixtype)
                                     (pack op-kind '- lfixtype '-okp)))
                             ,@(and (member-eq op-kind '(:shl :shr))
-                                   (cons 'exec-integer
-                                         *atc-sint-get-rules*))
+                                   (list* 'value-integer->get
+                                          'value-sint->get-to-sint->get
+                                          'value-uint->get-to-uint->get
+                                          'value-slong->get-to-slong->get
+                                          'value-ulong->get-to-ulong->get
+                                          'value-sllong->get-to-sllong->get
+                                          'value-ullong->get-to-ullong->get
+                                          *atc-sint-get-rules*))
                             ,@*atc-uaconvert-values-rules*
                             ,@*atc-promote-value-rules*))))
       (mv name event))

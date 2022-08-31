@@ -146,37 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-integer ((arg valuep))
-  :guard (value-integerp arg)
-  :returns (result integerp)
-  :short "Execute a value to obtain an (ACL2) integer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used for operands such that
-     only their mathematical values affect the result of the operation,
-     and not their C types.
-     Examples are the second operand of shift operations
-     and the index operand of array subscript operations."))
-  (b* ((arg (value-fix arg)))
-    (cond ((ucharp arg) (uchar->get arg))
-          ((scharp arg) (schar->get arg))
-          ((ushortp arg) (ushort->get arg))
-          ((sshortp arg) (sshort->get arg))
-          ((uintp arg) (uint->get arg))
-          ((sintp arg) (sint->get arg))
-          ((ulongp arg) (ulong->get arg))
-          ((slongp arg) (slong->get arg))
-          ((ullongp arg) (ullong->get arg))
-          ((sllongp arg) (sllong->get arg))
-          (t (prog2$ (impossible) 0))))
-  :guard-hints (("Goal" :in-theory (enable value-integerp
-                                           value-unsigned-integerp-alt-def
-                                           value-signed-integerp-alt-def)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-mul ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
@@ -389,7 +358,7 @@
                      :required :integer
                      :supplied arg2)))
        (val2 (promote-value arg2))
-       (val2 (exec-integer val2))
+       (val2 (value-integer->get val2))
        (err (error (list :undefined-shl arg1 arg2))))
     (cond
      ((uintp val1) (if (shl-uint-okp val1 val2)
@@ -435,7 +404,7 @@
                      :required :integer
                      :supplied arg2)))
        (val2 (promote-value arg2))
-       (val2 (exec-integer val2))
+       (val2 (value-integer->get val2))
        ((when (errorp val2)) val2)
        (err (error (list :undefined-shr arg1 arg2))))
     (cond
@@ -880,7 +849,7 @@
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
-       (index (exec-integer sub))
+       (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :pointer arr
                                         :array array
@@ -979,7 +948,7 @@
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
-       (index (exec-integer sub))
+       (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
                                         :index sub))))
@@ -1039,7 +1008,7 @@
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
-       (index (exec-integer sub))
+       (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
                                         :index sub))))
@@ -1446,7 +1415,7 @@
                         (error (list :mistype-array-index
                                      :required :integer
                                      :found index)))
-                       (index (exec-integer index))
+                       (index (value-integer->get index))
                        ((when (< index 0)) (error (list :negative-array-index
                                                         :pointer ptr
                                                         :array array
@@ -1477,7 +1446,7 @@
                         (error (list :mistype-struct-array-read
                                      :required :integer
                                      :supplied index)))
-                       (index (exec-integer index))
+                       (index (value-integer->get index))
                        ((when (< index 0)) (error (list :negative-array-index
                                                         :struct struct
                                                         :array array
@@ -1525,7 +1494,7 @@
                         (error (list :mistype-struct-array-read
                                      :required :integer
                                      :supplied index)))
-                       (index (exec-integer index))
+                       (index (value-integer->get index))
                        ((when (< index 0)) (error (list :negative-array-index
                                                         :pointer ptr
                                                         :array array

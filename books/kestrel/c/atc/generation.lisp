@@ -6844,7 +6844,27 @@
                     :in-theory
                     '(exec-arrsub-of-memberp
                       value-struct-read
-                      exec-integer
+                      value-integer->get
+                      value-schar->get-to-schar->get
+                      value-uchar->get-to-uchar->get
+                      value-sshort->get-to-sshort->get
+                      value-ushort->get-to-ushort->get
+                      value-sint->get-to-sint->get
+                      value-uint->get-to-uint->get
+                      value-slong->get-to-slong->get
+                      value-ulong->get-to-ulong->get
+                      value-sllong->get-to-sllong->get
+                      value-ullong->get-to-ullong->get
+                      value-kind-when-scharp
+                      value-kind-when-ucharp
+                      value-kind-when-sshortp
+                      value-kind-when-ushortp
+                      value-kind-when-sintp
+                      value-kind-when-uintp
+                      value-kind-when-slongp
+                      value-kind-when-ulongp
+                      value-kind-when-sllongp
+                      value-kind-when-ullongp
                       ifix
                       integer-range-p
                       not-errorp-when-valuep
@@ -7202,7 +7222,27 @@
           (hints `(("Goal"
                     :in-theory
                     '(exec-expr-asg
-                      exec-integer
+                      value-integer->get
+                      value-schar->get-to-schar->get
+                      value-uchar->get-to-uchar->get
+                      value-sshort->get-to-sshort->get
+                      value-ushort->get-to-ushort->get
+                      value-sint->get-to-sint->get
+                      value-uint->get-to-uint->get
+                      value-slong->get-to-slong->get
+                      value-ulong->get-to-ulong->get
+                      value-sllong->get-to-sllong->get
+                      value-ullong->get-to-ullong->get
+                      value-kind-when-scharp
+                      value-kind-when-ucharp
+                      value-kind-when-sshortp
+                      value-kind-when-ushortp
+                      value-kind-when-sintp
+                      value-kind-when-uintp
+                      value-kind-when-slongp
+                      value-kind-when-ulongp
+                      value-kind-when-sllongp
+                      value-kind-when-ullongp
                       value-struct-read
                       value-struct-write
                       not-errorp-when-valuep
