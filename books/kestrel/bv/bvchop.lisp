@@ -121,20 +121,20 @@
 ;allow the sizes to differ?
 ;or just use the meta rule...
 (defthm bvchop-of-*-of-bvchop
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (bvchop size (* (bvchop size x) y))
-                   (bvchop size (* x y))))
-   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (enable bvchop))))
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (* (bvchop size x) y))
+                  (bvchop size (* x y))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable bvchop))))
 
 (defthm bvchop-of-*-of-bvchop-arg2
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (bvchop size (* x (bvchop size y)))
-                   (bvchop size (* x y))))
-   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (enable bvchop))))
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (* x (bvchop size y)))
+                  (bvchop size (* x y))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable bvchop))))
 
 ;rename
 (defthm bvchop-+-bvchop-better
@@ -151,7 +151,7 @@
                   0))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (e/d (bvchop) (;FLOOR-MINUS-ERIC-BETTER ;drop the disable once this is fixed
-                                             )))))
+                                            )))))
 
 (defthm unsigned-byte-p-of-bvchop
   (implies (<= size size1)
@@ -190,12 +190,12 @@
 
 ;rename
 (defthm bvchop-shift
-   (implies (integerp x)
-            (equal (bvchop n (* 2 x))
-                   (if (posp n)
-                       (* 2 (bvchop (+ -1 n) x))
-                     0)))
-   :hints (("Goal" :in-theory (enable bvchop mod-expt-split))))
+  (implies (integerp x)
+           (equal (bvchop n (* 2 x))
+                  (if (posp n)
+                      (* 2 (bvchop (+ -1 n) x))
+                    0)))
+  :hints (("Goal" :in-theory (enable bvchop mod-expt-split))))
 
 (defthm bvchop-when-i-is-not-an-integer-cheap
   (implies (not (integerp i))
@@ -215,7 +215,7 @@
                 (equal free (bvchop freesize x))
                 (syntaxp (quotep free))
                 (syntaxp (quotep freesize))
-                ;gets computed:
+                ;;gets computed:
                 (not (equal free (bvchop freesize const))))
            (not (equal const x))))
 
@@ -287,7 +287,7 @@
   :hints (("Goal"
            :use (:instance integerp-of-expt-when-natp (i (+ m (- n))) (r 2))
            :in-theory (e/d (bvchop mod-cancel
-                                    expt-of-+)
+                                   expt-of-+)
                            (integerp-of-expt-when-natp)))))
 
 (defthm bvchop-shift-gen-alt
@@ -301,7 +301,7 @@
   :hints (("Goal"
            :use (:instance integerp-of-expt-when-natp (i (+ m (- n))) (r 2))
            :in-theory (e/d (bvchop mod-cancel
-                                    expt-of-+)
+                                   expt-of-+)
                            (integerp-of-expt-when-natp)))))
 
 (defthm bvchop-sum-drop-bvchop
@@ -454,7 +454,7 @@
            (equal (bvchop size (+ k x))
                   (if (equal 0 (bvchop size x))
                       (+ -1 (expt 2 size))
-                      (+ -1 (bvchop size x)))))
+                    (+ -1 (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
 ;rename
@@ -526,7 +526,7 @@
                 (equal k (bvchop free x))
                 (syntaxp (quotep k))
                 (<= size free)
-                ;(natp size)
+                ;;(natp size)
                 (integerp free))
            (equal (bvchop size x)
                   (bvchop size k))))
@@ -540,7 +540,7 @@
                       0
                     (expt 2 size2))))
   :hints (("Goal" :in-theory (e/d (bvchop) (;mod-of-expt-of-2-constant-version mod-of-expt-of-2
-                                             )))))
+                                            )))))
 
 ;can this be expensive?
 ;rename?
@@ -665,7 +665,7 @@
   (implies (and (syntaxp (quotep k)) ;new..
                 (power-of-2p k) ;(equal k (expt 2 (+ -1 (integer-length k))))
                 (integerp x)
-                ;(natp k)
+                ;;(natp k)
                 )
            (equal (mod x k)
                   (bvchop (+ -1 (integer-length k)) x)))
@@ -700,7 +700,7 @@
   (implies (and (<= size n)
                 (integerp x)
                 (natp n)
-                ;(natp size)
+                ;;(natp size)
                 )
            (equal (bvchop size (* x (expt 2 n)))
                   0))
