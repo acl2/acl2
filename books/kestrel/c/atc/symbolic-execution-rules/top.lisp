@@ -142,7 +142,7 @@
           *atc-exec-unary-rules*
           *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
-          *atc-exec-test-rules*
+          *atc-test-value-rules*
           *atc-exec-expr-pure-rules*
           *atc-exec-expr-pure-list-rules*
           *atc-exec-expr-call-rules*

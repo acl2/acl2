@@ -35,3 +35,25 @@
                                            value-arithmeticp
                                            value-realp)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define test-scalar-value ((val valuep))
+  :guard (value-scalarp val)
+  :returns (res booleanp)
+  :short "Test a scalar value logically."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In some contexts (e.g. conditional tests),
+     a scalar is treated as a logical boolean:
+     false if 0 (i.e. null if a pointer),
+     true if not 0 (i.e. not null if a pointer).
+     This is captured by this ACL2 function."))
+  (cond ((value-integerp val) (test-integer-value val))
+        ((value-case val :pointer) (test-pointer-value val))
+        (t (ec-call (acl2::bool-fix (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable value-scalarp
+                                           value-arithmeticp
+                                           value-realp)))
+  :hooks (:fix))

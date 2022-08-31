@@ -826,3 +826,19 @@
       (value-sint 1)
     (value-sint 0))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define test-integer-value ((val valuep))
+  :guard (value-integerp val)
+  :returns (res booleanp)
+  :short "Test an integer value logically."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In some contexts (e.g. conditional tests),
+     an integer is treated as a logical boolean:
+     false if 0, true if not 0.
+     This is captured by this ACL2 function."))
+  (not (equal (value-integer->get val) 0))
+  :hooks (:fix))

@@ -17,107 +17,122 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-test-rules
+(defsection atc-test-value-rules
   :short "Rules for executing tests on values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each rule turns @('(exec-test x)')
+    "Each rule turns @('(test-value x)')
      into @('(boolean-from-<type> x)'),
      where @('<type>') is the type of @('x').
-     The @(tsee exec-test) terms result
+     The @(tsee test-value) terms result
      from the symbolic execution of the C code,
      while the @('boolean-from-<type>') terms occur
      in the ACL2 functions that represent the C code."))
 
+  (local (in-theory (enable test-value
+                            test-scalar-value
+                            test-integer-value
+                            value-integer->get
+                            value-schar->get-to-schar->get
+                            value-uchar->get-to-uchar->get
+                            value-sshort->get-to-sshort->get
+                            value-ushort->get-to-ushort->get
+                            value-sint->get-to-sint->get
+                            value-uint->get-to-uint->get
+                            value-slong->get-to-slong->get
+                            value-ulong->get-to-ulong->get
+                            value-sllong->get-to-sllong->get
+                            value-ullong->get-to-ullong->get
+                            boolean-from-schar
+                            boolean-from-uchar
+                            boolean-from-sshort
+                            boolean-from-ushort
+                            boolean-from-sint
+                            boolean-from-uint
+                            boolean-from-slong
+                            boolean-from-ulong
+                            boolean-from-sllong
+                            boolean-from-ullong)))
+
   (make-event
-   `(defruled exec-test-when-scharp
+   `(defruled test-value-when-scharp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (scharp x))
-               (equal (exec-test x)
-                      (boolean-from-schar x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-schar x)))))
 
   (make-event
-   `(defruled exec-test-when-ucharp
+   `(defruled test-value-when-ucharp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (ucharp x))
-               (equal (exec-test x)
-                      (boolean-from-uchar x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-uchar x)))))
 
   (make-event
-   `(defruled exec-test-when-sshortp
+   `(defruled test-value-when-sshortp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (sshortp x))
-               (equal (exec-test x)
-                      (boolean-from-sshort x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-sshort x)))))
 
   (make-event
-   `(defruled exec-test-when-ushortp
+   `(defruled test-value-when-ushortp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (ushortp x))
-               (equal (exec-test x)
-                      (boolean-from-ushort x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-ushort x)))))
 
   (make-event
-   `(defruled exec-test-when-sintp
+   `(defruled test-value-when-sintp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (sintp x))
-               (equal (exec-test x)
-                      (boolean-from-sint x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-sint x)))))
 
   (make-event
-   `(defruled exec-test-when-uintp
+   `(defruled test-value-when-uintp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (uintp x))
-               (equal (exec-test x)
-                      (boolean-from-uint x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-uint x)))))
 
   (make-event
-   `(defruled exec-test-when-slongp
+   `(defruled test-value-when-slongp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (slongp x))
-               (equal (exec-test x)
-                      (boolean-from-slong x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-slong x)))))
 
   (make-event
-   `(defruled exec-test-when-ulongp
+   `(defruled test-value-when-ulongp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (ulongp x))
-               (equal (exec-test x)
-                      (boolean-from-ulong x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-ulong x)))))
 
   (make-event
-   `(defruled exec-test-when-sllongp
+   `(defruled test-value-when-sllongp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (sllongp x))
-               (equal (exec-test x)
-                      (boolean-from-sllong x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-sllong x)))))
 
   (make-event
-   `(defruled exec-test-when-ullongp
+   `(defruled test-value-when-ullongp
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                     (ullongp x))
-               (equal (exec-test x)
-                      (boolean-from-ullong x)))
-      :enable exec-test))
+               (equal (test-value x)
+                      (boolean-from-ullong x)))))
 
-  (defval *atc-exec-test-rules*
-    '(exec-test-when-scharp
-      exec-test-when-ucharp
-      exec-test-when-sshortp
-      exec-test-when-ushortp
-      exec-test-when-sintp
-      exec-test-when-uintp
-      exec-test-when-slongp
-      exec-test-when-ulongp
-      exec-test-when-sllongp
-      exec-test-when-ullongp)))
+  (defval *atc-test-value-rules*
+    '(test-value-when-scharp
+      test-value-when-ucharp
+      test-value-when-sshortp
+      test-value-when-ushortp
+      test-value-when-sintp
+      test-value-when-uintp
+      test-value-when-slongp
+      test-value-when-ulongp
+      test-value-when-sllongp
+      test-value-when-ullongp)))

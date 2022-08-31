@@ -80,3 +80,19 @@
       (value-sint 1)
     (value-sint 0))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define test-pointer-value ((val valuep))
+  :guard (value-case val :pointer)
+  :returns (res booleanp)
+  :short "Test a pointer value logically."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In some contexts (e.g. conditional tests),
+     a pointer is treated as a logical boolean:
+     false if null, true if not null.
+     This is captured by this ACL2 function."))
+  (not (value-pointer-nullp val))
+  :hooks (:fix))
