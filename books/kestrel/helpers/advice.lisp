@@ -79,6 +79,7 @@
 (include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
 ;; ;; Returns all disabled runes associate with NAME.
@@ -107,8 +108,6 @@
 
 (local (in-theory (disable state-p
                            checkpoint-list-guard)))
-
-(in-theory (disable str::coerce-to-list-removal)) ;todo
 
 (defun widen-margins (state)
   (declare (xargs :stobjs state

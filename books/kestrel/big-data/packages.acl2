@@ -9,3 +9,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ld "workshops/1999/mu-calculus/book/packages.lsp" :dir :system)
+(ld "centaur/svl/portcullis.acl2" :dir :system)
