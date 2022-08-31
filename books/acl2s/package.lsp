@@ -26,6 +26,7 @@
      cw?
      ecw
      ecw?
+     =>
      _ ;range
      comment
      )
