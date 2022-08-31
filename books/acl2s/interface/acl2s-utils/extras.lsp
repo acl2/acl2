@@ -1,19 +1,46 @@
 (in-package "ACL2S-INTERFACE-EXTRAS")
 
-;; The response from a call to itest? inside of acl2s-query should be of the form:
-;; (t nil) if an error occurred during itest? execution
-;;         (i.e. trying to test something containing an undefined function)
-;; or
-;; (nil (cx? cxs)) otherwise
-;; where cx? is a boolean that indicates whether a counterexample was found,
-;; and cxs is a nonempty list of counterexamples (variable assignments)
+#|
+
+ The response from a call to itest? inside of acl2s-query should be of the form:
+ (t nil) if an error occurred during itest? execution
+         (i.e. trying to test something containing an undefined function)
+ or
+ (nil (cts-found? itest?-res)), where
+
+ 1. cts-found? is t if counterexamples were found and nil otherwise.
+
+ 2. if cts-found? is nil (no counterexamples) and itest?-fn proved
+ the conjecture, then itest?-res is (nil nil wts), where wts is a
+ list witnesses found (could be nil). A witness is an assignment of
+ values to the variables appearing in the conjecture, which satisfies
+ the hypotheses and the conclusion of the conjecture.
+
+ 3. if cts-found? is nil (no counterexamples) and itest?-fn did not
+ prove the conjecture, then itest?-res is (:? nil wts), where wts is
+ a list witnesses found (could be nil). 
+
+ 4. if cts-found? is t, then itest?-res is of the form
+ (:falsifiable cts wts), where cts is a list of counterexamples and
+ wts is a list of witnesses. A counterexample is an assignment of
+ values to the variables appearing in the conjecture, which falsifies
+ the conjecture.
+
+ See itest-ithm.lisp, which also includes examples.  Keep the comments
+ in the two files in sync.
+
+|#
+
 (defun itest?-query-res-ok? (res)
   (and (consp res)
-       (>= (length res) 2)
+       (= (length res) 2)
        (consp (second res))
-       (>= (length (second res)) 2)
-       (or (not (car (second res)))
-	   (consp (second (second res))))))
+       (= (length (second res)) 2)
+       (consp (second (second res)))
+       (= (length (second (second res))) 3)
+       (booleanp (car (second res)))
+       (true-listp (second (second (second res))))
+       (true-listp (third (second (second res))))))
 
 ;; Returns a list where:
 ;; the first element indicates whether any counterexamples were found
@@ -40,9 +67,7 @@ errors out."
 	   (error 'unexpected-response-error :query query
 		  :desc "Error occurred running itest? query"
 		  :res res))
-	  (t (list (car (second res)) ;; whether a ctrex was found
-		   (cdr (second (second res))) ;; list of ctrexes found
-		   )))))
+	  (t (second res))))) ;; the list (cts-found? itest?-res), see above
 
 ;; TODO: double-check note about 'acl2::?
 (xdoc::defxdoc-raw itest?-query
@@ -59,12 +84,20 @@ errors out."
                            ;;           about the default value.
 )
 =>
-(list ctrex? ctrexes)
+(list cts-found? itest?-res)
 })
 <dl>
 <dt>Returns</dt>
-<dd>@('ctrex?') is nil if no counterexamples were found, or non-nil otherwise.</dd>
-<dd>@('ctrexes') is a list of assignments, each of which is a counterexample returned by itest?.</dd>
+<dd>@('cts-found?') is @('nil') if no counterexamples were found, or @('t') otherwise.</dd>
+<dd>@('itest?-res') is a list list of the form @('(status cts wts)'), where
+@('status') is either @('nil'), @(':falsifiable') or @(':?') and @('cts') and @('wts') are
+assignments, with @('cts') corresponding to counterexamples and @('wts') to
+witnesses returned by @('itest?'). If @('cts-found?') is @('nil') (no counterexamples) and @('itest?') proved
+ the conjecture, then @('itest?-res') is of the form @('(nil nil
+wts)'). If @('status') is @(':falsifiable') then @('cts') is a
+non-empty list. If @('status') is @(':?') then @('cts') is @('nil'),
+and the conjecture was not proved.
+ </dd>
 </dl>
 
 <p>
@@ -80,7 +113,11 @@ When the @(':quiet') option is set to @('t'), @('itest?-query') will attempt to 
 </p>
 
 <p>
-@(':num-counterexamples') allows one to request more counterexamples from @('itest?') than @('acl2s-defaults') specifies. Note that @('itest?') will not always produce the number of counterexamples requested.
+@(':num-counterexamples') allows one to request more counterexamples
+from @('itest?') than @('acl2s-defaults') specifies. Note that
+@('itest?') will not always produce the number of counterexamples
+requested. You may get more or less counterexamples. See @('test?')
+for a discussion of stopping conditions.
 </p>
 
 <p>
@@ -93,14 +130,27 @@ See @(see test?) for more information about ACL2s' counterexample generation fac
 
 <h4>Examples</h4>
 @({(itest?-query '(implies (integerp x) (natp x)))})
-Returns @('(T (((X -875)) ((X -472)) ((X -21))))') (note that values for x may be different)
+Returns @('(T
+ (:FALSIFIABLE
+  (((X -371)) ((X -1)) ((X -945)) ((X -297)) ((X -850)) ((X -487)) ((X -201))
+   ((X -18)) ((X -817)))
+  NIL))') (note that values for x may be different)
 
 @({(itest?-query '(implies (natp x) (integerp x)))})
-Returns @('(nil nil)')
+Returns @('(NIL (NIL NIL (((X 161)) ((X 5)) ((X 169)) ((X 8)) ((X 9)) ((X 417)))))')
 
-@({(itest?-query '(implies (tlp x) (< (length x) 50)))})
-Returns @('(nil nil)'). This is an example of a case where counterexamples exist (i.e. a list of 50 0's) but @('itest?') cannot find any.
+@({(itest?-query '(implies (true-listp x) (< (length x) 50)))})
+Returns @('(NIL
+ (:? NIL
+  (((X '(0 0))) ((X '(ACL2S::ABA))) ((X '(ACL2S::A ACL2S::A))) ((X '(0)))
+   ((X NIL)) ((X '(NIL NIL NIL NIL NIL))) ((X '(-1 (0 . T))))
+   ((X '((NIL . T) (((T) T) (NIL) T)))))))'). This is an example of a case where counterexamples exist (i.e. a list of 50 0's) but @('itest?') cannot find any.
 
-@({(itest?-query '(implies (and (natp x) (natp y) (natp z) (> x 0) (> y 0) (< z 100)) (!= z (+ (* x x) (* y y)))))})
-Returns @('(T (((Z 61) (Y 6) (X 5)) ((Z 37) (Y 1) (X 6)) ((Z 80) (Y 4) (X 8))))').
+@({(itest?-query '(implies (and (natp x) (natp y) (natp z) (> x 0) (> y 0) (< z 100)) (/= z (+ (* x x) (* y y)))))})
+Returns @('(T
+ (:FALSIFIABLE
+  (((Z 85) (Y 2) (X 9)) ((Z 41) (Y 4) (X 5)) ((Z 37) (Y 6) (X 1))
+   ((Z 53) (Y 7) (X 2)) ((Z 37) (Y 1) (X 6)) ((Z 29) (Y 5) (X 2)))
+  (((Z 76249) (Y 260) (X 93)) ((Z 254137) (Y 484) (X 141))
+   ((Z 13130) (Y 83) (X 79)))))').
 ")
