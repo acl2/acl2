@@ -2405,19 +2405,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-recognizer-to-type ((recognizer symbolp)
-                                (prec-tags atc-string-taginfo-alistp)
-                                (prec-objs atc-string-objinfo-alistp))
-  :returns (type type-optionp)
-  :short "C type corresponding to a recognizer name, if any."
+(define atc-check-guard-conjunct ((conjunct pseudo-termp)
+                                  (prec-tags atc-string-taginfo-alistp)
+                                  (prec-objs atc-string-objinfo-alistp))
+  :returns (mv (type type-optionp) (arg symbolp))
+  :short "C type and argument derived from a guard conjunct, if any."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used to determine the types of the formal parameters of functions
-     from the recognizers used in the guard,
+     from the conjuncts used in the guard,
      as explained in the user documentation.")
    (xdoc::p
-    "If the predicate is a known one for integer or integer array types,
+    "The conjunct must have the form @('(recognizer var)'),
+     where @('recognizer') is a recognizer of a C type
+     and @('var') is a variable.
+     If the recognizer is a known one for integer or integer array types,
      that readily determines the type.
      Otherwise, there may be two possibilities.
      One is that the recognizer is the one of a @(tsee defstruct),
@@ -2426,60 +2429,75 @@
      The other possibility is that recognizer is the one of a @(tsee defobject),
      of the form @('object-<name>-p'):
      in this case, the type is a pointer to the integer type
-     that is the element type of the array type of the object."))
-  (case recognizer
-    (scharp (type-schar))
-    (ucharp (type-uchar))
-    (sshortp (type-sshort))
-    (ushortp (type-ushort))
-    (sintp (type-sint))
-    (uintp (type-uint))
-    (slongp (type-slong))
-    (ulongp (type-ulong))
-    (sllongp (type-sllong))
-    (ullongp (type-ullong))
-    (schar-arrayp (type-pointer (type-schar)))
-    (uchar-arrayp (type-pointer (type-uchar)))
-    (sshort-arrayp (type-pointer (type-sshort)))
-    (ushort-arrayp (type-pointer (type-ushort)))
-    (sint-arrayp (type-pointer (type-sint)))
-    (uint-arrayp (type-pointer (type-uint)))
-    (slong-arrayp (type-pointer (type-slong)))
-    (ulong-arrayp (type-pointer (type-ulong)))
-    (sllong-arrayp (type-pointer (type-sllong)))
-    (ullong-arrayp (type-pointer (type-ullong)))
-    (t (b* (((mv okp struct/object tag/name p)
-             (atc-check-symbol-3part recognizer))
-            ((unless (and okp
-                          (equal (symbol-name p) "P")))
-             nil))
-         (cond ((equal (symbol-name struct/object) "STRUCT")
-                (b* ((tag (symbol-name tag/name))
-                     (info (cdr (assoc-equal tag prec-tags)))
-                     ((unless info) nil)
-                     ((unless (atc-tag-infop info))
-                      (raise "Internal error: malformed ATC-TAG-INFO ~x0."
-                             info))
-                     (info (atc-tag-info->defstruct info))
-                     ((unless (eq recognizer (defstruct-info->recognizer info)))
-                      nil))
-                  (type-pointer (type-struct (defstruct-info->tag info)))))
-               ((equal (symbol-name struct/object) "OBJECT")
-                (b* ((name (symbol-name tag/name))
-                     (info (cdr (assoc-equal name prec-objs)))
-                     ((unless info) nil)
-                     ((unless (atc-obj-infop info))
-                      (raise "Internal error: malformed ATC-OBJ-INFO ~x0."
-                             info))
-                     (info (atc-obj-info->defobject info))
-                     ((unless (eq recognizer (defobject-info->recognizer info)))
-                      nil)
-                     (arrtype (defobject-info->type info))
-                     ((unless (type-case arrtype :array))
-                      (raise "Internal error: object ~s0 has type ~x1."
-                             name arrtype)))
-                  (type-pointer (type-array->of arrtype))))
-               (t nil))))))
+     that is the element type of the array type of the object.")
+   (xdoc::p
+    "If the recognizer does not have any of the above forms,
+     we return @('nil') as both results.
+     If the argument is not a variable,
+     we also return @('nil') as both results."))
+  (b* (((when (variablep conjunct)) (mv nil nil))
+       ((when (fquotep conjunct)) (mv nil nil))
+       ((when (flambda-applicationp conjunct)) (mv nil nil))
+       (fn (ffn-symb conjunct))
+       (arg (fargn conjunct 1))
+       ((unless (symbolp arg)) (mv nil nil)))
+    (case fn
+      (scharp (mv (type-schar) arg))
+      (ucharp (mv (type-uchar) arg))
+      (sshortp (mv (type-sshort) arg))
+      (ushortp (mv (type-ushort) arg))
+      (sintp (mv (type-sint) arg))
+      (uintp (mv (type-uint) arg))
+      (slongp (mv (type-slong) arg))
+      (ulongp (mv (type-ulong) arg))
+      (sllongp (mv (type-sllong) arg))
+      (ullongp (mv (type-ullong) arg))
+      (schar-arrayp (mv (type-pointer (type-schar)) arg))
+      (uchar-arrayp (mv (type-pointer (type-uchar)) arg))
+      (sshort-arrayp (mv (type-pointer (type-sshort)) arg))
+      (ushort-arrayp (mv (type-pointer (type-ushort)) arg))
+      (sint-arrayp (mv (type-pointer (type-sint)) arg))
+      (uint-arrayp (mv (type-pointer (type-uint)) arg))
+      (slong-arrayp (mv (type-pointer (type-slong)) arg))
+      (ulong-arrayp (mv (type-pointer (type-ulong)) arg))
+      (sllong-arrayp (mv (type-pointer (type-sllong)) arg))
+      (ullong-arrayp (mv (type-pointer (type-ullong)) arg))
+      (t (b* (((mv okp struct/object tag/name p)
+               (atc-check-symbol-3part fn))
+              ((unless (and okp
+                            (equal (symbol-name p) "P")))
+               (mv nil nil)))
+           (cond ((equal (symbol-name struct/object) "STRUCT")
+                  (b* ((tag (symbol-name tag/name))
+                       (info (cdr (assoc-equal tag prec-tags)))
+                       ((unless info) (mv nil nil))
+                       ((unless (atc-tag-infop info))
+                        (mv (raise "Internal error: malformed ATC-TAG-INFO ~x0."
+                                   info)
+                            nil))
+                       (info (atc-tag-info->defstruct info))
+                       ((unless (eq fn (defstruct-info->recognizer info)))
+                        (mv nil nil)))
+                    (mv (type-pointer (type-struct (defstruct-info->tag info)))
+                        arg)))
+                 ((equal (symbol-name struct/object) "OBJECT")
+                  (b* ((name (symbol-name tag/name))
+                       (info (cdr (assoc-equal name prec-objs)))
+                       ((unless info) (mv nil nil))
+                       ((unless (atc-obj-infop info))
+                        (mv (raise "Internal error: malformed ATC-OBJ-INFO ~x0."
+                                   info)
+                            nil))
+                       (info (atc-obj-info->defobject info))
+                       ((unless (eq fn (defobject-info->recognizer info)))
+                        (mv nil nil))
+                       (arrtype (defobject-info->type info))
+                       ((unless (type-case arrtype :array))
+                        (mv (raise "Internal error: object ~s0 has type ~x1."
+                                   name arrtype)
+                            nil)))
+                    (mv (type-pointer (type-array->of arrtype)) arg)))
+                 (t (mv nil nil))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2495,11 +2513,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We look for a term of the form @('(<type> <formal>)')
-     among the conjuncts of the function's guard,
-     for each formal @('<formal>') of @('fn'),
-     where @('<type>') is a predicate that determines a C type
-     according to @(tsee atc-recognizer-to-type).
+    "We look for conjuncts from which we derive,
+     according to @(tsee atc-check-guard-conjunct),
+     types for the formals of @('fn').
      We ensure that there is exactly one such term for each formal.")
    (xdoc::p
     "If this is successful,
@@ -2550,9 +2566,10 @@
      (b* (((when (endp guard-conjuncts))
            (acl2::value (atc-symbol-type-alist-fix prelim-alist)))
           (conjunct (car guard-conjuncts))
-          ((unless (and (nvariablep conjunct)
-                        (not (fquotep conjunct))
-                        (not (flambda-applicationp conjunct))))
+          ((mv type arg) (atc-check-guard-conjunct conjunct
+                                                   prec-tags
+                                                   prec-objs))
+          ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            formals
                                            guard
@@ -2562,19 +2579,6 @@
                                            prec-objs
                                            ctx
                                            state))
-          (type-fn (ffn-symb conjunct))
-          (type (atc-recognizer-to-type type-fn prec-tags prec-objs))
-          ((when (not type))
-           (atc-typed-formals-prelim-alist fn
-                                           formals
-                                           guard
-                                           (cdr guard-conjuncts)
-                                           prelim-alist
-                                           prec-tags
-                                           prec-objs
-                                           ctx
-                                           state))
-          (arg (fargn conjunct 1))
           ((unless (member-eq arg formals))
            (atc-typed-formals-prelim-alist fn
                                            formals
