@@ -118,7 +118,7 @@
 ;; (include-book "projects/legacy-defrstobj/portcullis" :dir :system) ; conflict on RSTOBJ package
 ;; (include-book "projects/milawa/ACL2/portcullis" :dir :system) ; error
 (include-book "projects/regex/portcullis" :dir :system)
-(include-book "projects/rp-rewriter/meta/portcullis" :dir :system)
+;; (include-book "projects/rp-rewriter/meta/portcullis" :dir :system)  ; has an include book but brings in no new packages
 (include-book "projects/rp-rewriter/portcullis" :dir :system)
 (include-book "projects/sat/dimacs-reader/portcullis" :dir :system)
 (include-book "projects/sat/lrat/portcullis" :dir :system)
