@@ -58,8 +58,8 @@ list for F2 is (X Y).
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>(IRRELEVANT-FORMALS-INFO
              '(MUTUAL-RECURSION (DEFUN F1 (X Y)

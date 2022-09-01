@@ -1142,7 +1142,7 @@
 ; of these symbols is printed as <hidden>.  If alist or evisc-table pairs an
 ; object with a string, the string is printed in place of the object.  If alist
 ; or evisc-table pairs an object with anything else, x, then x is substituted
-; for the the object and is treated as eviscerated.  In general, alist will
+; for the object and is treated as eviscerated.  In general, alist will
 ; come from an evisceration tuple and evisc-table will be the value of the
 ; 'evisc-table table in the current ACL2 world.  We give priority to the former
 ; because the user may want to override the evisc-table, for example using ~P
@@ -1217,8 +1217,27 @@
                   (null null-iprint-fal))
              result)))
 
+(defun bounded-integer-listp (i j lst)
+  (declare (xargs :guard (and (integerp i)
+                              (or (integerp j)
+                                  (eq j 'infinity)))))
+  (cond
+   ((consp lst)
+    (and (integerp (car lst))
+         (<= i (car lst))
+         (or (eq j 'infinity)
+             (<= (car lst) j))
+         (bounded-integer-listp i j (cdr lst))))
+   (t (null lst))))
+
 (defun aset1-lst (name alist ar)
   (declare (xargs :guard (eqlable-alistp alist))) ; really nat-alistp
+  (declare (xargs :guard
+                  (and (alistp alist)
+                       (array1p name ar)
+                       (bounded-integer-listp 0
+                                              (- (car (dimensions name ar)) 1)
+                                              (strip-cars alist)))))
   (cond ((endp alist)
          ar)
         (t (aset1-lst name
@@ -2389,6 +2408,7 @@
    (f-get-global 'fmt-soft-right-margin state)))
 
 (defun set-fmt-hard-right-margin (n state)
+  (declare (xargs :guard (posp n) :stobjs state))
   (cond
    ((and (integerp n)
          (< 0 n))
@@ -2403,6 +2423,7 @@
         state))))
 
 (defun set-fmt-soft-right-margin (n state)
+  (declare (xargs :guard (posp n) :stobjs state))
   (cond
    ((and (integerp n)
          (< 0 n))
@@ -4972,11 +4993,11 @@
                                        (standard-string-p summary)))
                               (plist-worldp wrld)
                               (standard-string-alistp
-                               (table-alist 'inhibit-er-soft-table wrld)))))
+                               (table-alist 'inhibit-er-table wrld)))))
   (and summary
        (assoc-string-equal
         summary
-        (table-alist 'inhibit-er-soft-table wrld))))
+        (table-alist 'inhibit-er-table wrld))))
 
 (defun er-soft-off-p (summary state)
   (declare (xargs :stobjs state
@@ -4985,8 +5006,7 @@
                                        (standard-string-p summary)))
                               (state-p state)
                               (standard-string-alistp
-                               (table-alist 'inhibit-er-soft-table
-                                            (w state))))))
+                               (table-alist 'inhibit-er-table (w state))))))
   (er-soft-off-p1 summary (w state)))
 
 (defun error-fms-channel (hardp ctx summary str alist channel state newlines)
@@ -6310,6 +6330,14 @@
   (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
     (list 'error1@par context summary str alist 'state)))
 
+(defmacro er-hard? (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'hard-error context (list 'cons summary str) alist)))
+
+(defmacro er-hard (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'illegal context (list 'cons summary str) alist)))
+
 (defmacro observation1-body (commentp)
   `(io? observation ,commentp state
         (str alist ctx abbrev-p)
@@ -6649,6 +6677,7 @@
 ; keyword argument pairs.
 
 (defun partition-rest-and-keyword-args1 (x)
+  (declare (xargs :guard (true-listp x)))
   (cond ((endp x) (mv nil nil))
         ((keywordp (car x))
          (mv nil x))
@@ -6662,6 +6691,9 @@
 ; We return t if keypart is ill-formed as noted below.  Otherwise, we
 ; return ((:keyn . vn) ... (:key1 . v1)).
 
+  (declare (xargs :guard (and (true-listp keypart)
+                              (true-listp keys)
+                              (alistp alist))))
   (cond ((endp keypart) alist)
         ((and (keywordp (car keypart))
               (consp (cdr keypart))
@@ -6686,6 +6718,8 @@
 ; even numbered element, if it binds the same keyword more than once,
 ; or if it binds a keyword other than those listed in keys.
 
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp keys))))
   (mv-let (rest keypart)
           (partition-rest-and-keyword-args1 x)
           (let ((alist (partition-rest-and-keyword-args2 keypart keys nil)))

@@ -16,7 +16,11 @@
 
 ;; These came from running 'find ../../.. -name portcullis.lisp':
 
-;; TODO: Why does including this book bring in rev?
+;; TODO: Why does including this book bring in rev?  Maybe because of ./acl2/books/projects/async/package.lsp?
+
+;; TODO: Bring in M5 package once modernized
+
+;; See also some packages brought in by packages.acl2
 
 (include-book "acl2s/portcullis" :dir :system)
 (include-book "build/portcullis" :dir :system)
@@ -44,7 +48,7 @@
 (include-book "centaur/meta/portcullis" :dir :system)
 (include-book "centaur/nrev/portcullis" :dir :system)
 (include-book "centaur/satlink/portcullis" :dir :system)
-(include-book "centaur/svl/portcullis" :dir :system)
+;(include-book "centaur/svl/portcullis" :dir :system) ; todo: this includes an include-book !
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/truth/portcullis" :dir :system)
 (include-book "centaur/vl2014/portcullis" :dir :system)
@@ -114,7 +118,7 @@
 ;; (include-book "projects/legacy-defrstobj/portcullis" :dir :system) ; conflict on RSTOBJ package
 ;; (include-book "projects/milawa/ACL2/portcullis" :dir :system) ; error
 (include-book "projects/regex/portcullis" :dir :system)
-(include-book "projects/rp-rewriter/meta/portcullis" :dir :system)
+;; (include-book "projects/rp-rewriter/meta/portcullis" :dir :system)  ; has an include book but brings in no new packages
 (include-book "projects/rp-rewriter/portcullis" :dir :system)
 (include-book "projects/sat/dimacs-reader/portcullis" :dir :system)
 (include-book "projects/sat/lrat/portcullis" :dir :system)

@@ -253,6 +253,10 @@ sources_extra := GNUmakefile acl2-characters doc.lisp \
 
 ACL2_DEPS := $(sources) $(sources_extra)
 
+ACL2_SAVED ?= custom-saved_acl2${ACL2_SUFFIX}
+
+ACL2_SAVED_ARGS ?= "Saved with additions from $(ACL2_CUSTOMIZATION)"
+
 # Top (default) target:
 .PHONY: all
 all: large
@@ -759,6 +763,27 @@ large-acl2d:
 .PHONY: large-acl2p
 large-acl2p:
 	@$(MAKE) -s large ACL2_PAR=p
+
+.PHONY: save-exec
+# Note: As per GitHub Issue #1422, $(ACL2_SAVED) is rebuilt unconditionally.
+save-exec:
+	@if [ "$(ACL2_CUSTOMIZATION)" = "" ] || \
+            [ "$(ACL2_CUSTOMIZATION)" = "NONE" ] ; then \
+	  echo "Error: ACL2_CUSTOMIZATION must be set for target $(@)." ;\
+	  exit 1 ;\
+	  fi
+	@if [ ! -f "$(ACL2_CUSTOMIZATION)" ] ; then \
+	  echo "Error: ACL2_CUSTOMIZATION = $(ACL2_CUSTOMIZATION), but" ;\
+	  echo "       that file does not exist." ;\
+	  exit 1 ;\
+	  fi
+	@$(MAKE) update
+	@rm -f workxxx
+	@echo "Preparing to save $(ACL2_SAVED) using ACL2_CUSTOMIZATION = $(ACL2_CUSTOMIZATION) ..."
+	@echo '(value :q) (save-exec "$(ACL2_SAVED)" $(ACL2_SAVED_ARGS))' > workxxx
+	@./$(PREFIXsaved_acl2) < workxxx > $(ACL2_SAVED).out
+	@echo "... done (see $(ACL2_SAVED).out for log)."
+	@rm -f workxxx
 
 # Since ACL2_WAG is for implementors only, we don't bother making a
 # target for it.  Instead one just uses ACL2_WAG=w on the "make"

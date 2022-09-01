@@ -2574,6 +2574,9 @@
                          x)))
   :hints (("Goal" :in-theory (enable nfix acl2::bvchop-of-logtail-becomes-slice))))
 
+(theory-invariant (incompatible (:definition slice)
+                                (:rewrite acl2::bvchop-of-logtail-becomes-slice-gen)))
+
 ;simple ordering
 (defthm read-byte-from-segment-of-write-to-segment-not-irrel-1
   (implies (and (<= eff-addr2 eff-addr1)

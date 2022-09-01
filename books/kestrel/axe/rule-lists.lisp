@@ -1848,6 +1848,7 @@
     bvlt-trim-arg1-dag-all
     bvlt-trim-arg2-dag-all
     equal-of-bvplus-constant-and-constant
+    equal-of-bvplus-constant-and-constant-alt
     bvlt-of-bvplus-of-bvcat-of-slice-sha1
     bvlt-of-bvif-same-1
     unsigned-byte-p-of-bvplus-of-1-sha1 ;would it fire with a free var for the 31?

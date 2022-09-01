@@ -536,7 +536,7 @@
        (dag-parent-array-name 'dag-parent-array)
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
-       ;; Add the assumptions to the DAG (todo: negating these may not be necessary once prove-disjunction-with-stp can take negated nodenums):
+       ;; Add the assumptions to the DAG (todo: negating these may not be necessary once prove-node-disjunction-with-stp can take negated nodenums):
        ((mv erp negated-assumption-nodenum-or-quoteps dag-array dag-len dag-parent-array & &)
         (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?  or call merge-trees-into-dag-array-basic?
          (negate-terms assumptions)
@@ -554,7 +554,7 @@
        ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
        (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
        ((mv result state)
-        (prove-disjunction-with-stp disjunct-nodenums ; Disjuncts that represent disjunctions are flattened
+        (prove-node-disjunction-with-stp disjunct-nodenums ; Disjuncts that represent disjunctions are flattened
                                     dag-array ;must be named 'dag-array (fixme generalize?)
                                     dag-len
                                     dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)

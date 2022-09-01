@@ -9407,10 +9407,12 @@
        state)
       (t
        (pprogn
-        (newline chan state)
-        (princ$ "Here is the current pstack [see :DOC pstack]:" chan state)
+        (io? summary nil state (chan)
+             (fms "Here is the current pstack [see :DOC pstack]:"
+                  nil chan state nil))
         (mv-let (erp val state)
-                (pstack)
+                (io? summary nil (mv erp val state) nil
+                     (pstack))
                 (declare (ignore erp val))
                 (save-and-print-gag-state state))))))))
 

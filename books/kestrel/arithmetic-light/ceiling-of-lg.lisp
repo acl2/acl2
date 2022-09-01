@@ -47,3 +47,9 @@
                 (integerp j))
            (unsigned-byte-p (ceiling-of-lg j) i))
   :hints (("Goal" :in-theory (enable ceiling-of-lg))))
+
+(defthm ceiling-of-lg-of-expt2
+  (implies (natp n)
+           (equal (ceiling-of-lg (expt 2 n))
+                  n))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg))))

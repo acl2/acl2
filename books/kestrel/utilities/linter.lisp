@@ -85,6 +85,7 @@
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
+(include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "book-of-event")
 (include-book "fresh-names")
@@ -742,18 +743,6 @@
                               (lint-defun fn assume-guards suppress step-limit state))
                     state)))
       (lint-defuns (rest fns) assume-guards suppress skip-fns step-limit state))))
-
-;; Returns (mv hyps conc).
-(defun get-hyps-and-conc (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (if (call-of 'implies term)
-      (mv-let (hyps1 conc)
-        (get-hyps-and-conc (farg2 term))
-        (mv (append (get-conjuncts (farg1 term))
-                    hyps1)
-            conc))
-    ;; todo: handle lambdas
-    (mv nil term)))
 
 ;; Check whether any of the TERMS is implied by the ALL-TERMS, excluding itself
 ;; Returns state.

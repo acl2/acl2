@@ -1,5 +1,6 @@
-(include-book "std/strings/istrprefixp" :dir :system)
+;; (include-book "std/strings/istrprefixp" :dir :system)
 
+;; (include-book "centaur/meta/def-formula-checks" :dir :system)
 (include-book "centaur/meta/portcullis" :dir :system)
 
 (include-book "centaur/bitops/portcullis" :dir :system)

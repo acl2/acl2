@@ -12,9 +12,11 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
-(include-book "arrays")
+
+(include-book "symbolic-execution-rules/arrays")
 
 (include-book "../language/portable-ascii-identifiers")
+(include-book "../language/structure-operations")
 
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
@@ -25,139 +27,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ shallow-structures
-  :parents (atc-shallow-embedding)
-  :short "A model of C structures in the shallow embedding."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since C structure types are user-defined,
-     we provide a macro @(tsee defstruct) to define
-     an ACL2 representation of a C structure type.
-     The user must call this macro
-     to introduce the structure types that the C code must use.")
-   (xdoc::p
-    "The @(tsee defstruct) macro takes as inputs
-     the name (i.e. tag [C:6.7.2.3]) of the structure type
-     and a sequence of members;
-     each member consists of a name and a designation of
-     an integer type or of a sized integer array type
-     (for now we only support members of these types).
-     The names of the structure type and of the members
-     must be symbols whose @(tsee symbol-name) is a portable ASCII identifier;
-     the members must have all different @(tsee symbol-name)s
-     (it is not enough for the symbols to be different).")
-   (xdoc::p
-    "The designation of each member type is one of")
-   (xdoc::ul
-    (xdoc::li "@('schar')")
-    (xdoc::li "@('uchar')")
-    (xdoc::li "@('sshort')")
-    (xdoc::li "@('ushort')")
-    (xdoc::li "@('sint')")
-    (xdoc::li "@('uint')")
-    (xdoc::li "@('slong')")
-    (xdoc::li "@('ulong')")
-    (xdoc::li "@('sllong')")
-    (xdoc::li "@('ullong')")
-    (xdoc::li "@('(schar <pos>)')")
-    (xdoc::li "@('(uchar <pos>)')")
-    (xdoc::li "@('(sshort <pos>)')")
-    (xdoc::li "@('(ushort <pos>)')")
-    (xdoc::li "@('(sint <pos>)')")
-    (xdoc::li "@('(uint <pos>)')")
-    (xdoc::li "@('(slong <pos>)')")
-    (xdoc::li "@('(ulong <pos>)')")
-    (xdoc::li "@('(sllong <pos>)')")
-    (xdoc::li "@('(ullong <pos>)')"))
-   (xdoc::p
-    "where @('<pos>') is a positive integer not exceeding @(tsee ullong-max).
-     That is, the type of a member of integer type is specified by
-     the name of the fixtype of the integer type,
-     while the type of a member of integer array type is specified by
-     the name of the fixtype of the integer type and a size;
-     the size must be representable as an integer constant
-     (i.e. not exceed @(tsee ullong-max),
-     which is the maximum integer representable as an integer constant).")
-   (xdoc::p
-    "Let @('<tag>') be the tag of the structure type.")
-   (xdoc::p
-    "The @(tsee defstruct) macro introduces:")
-   (xdoc::ul
-    (xdoc::li
-     "A recognizer @('struct-<tag>-p') for the structures.")
-    (xdoc::li
-     "A fixer @('struct-<tag>-fix') for the structures.")
-    (xdoc::li
-     "A fixtype @('struct-<tag>') for the structures."))
-   (xdoc::p
-    "For each member named @('<member>') of integer type,
-     the @(tsee defstruct) macro introduces:")
-   (xdoc::ul
-    (xdoc::li
-     "A reader @('struct-<tag>-read-<member>')
-      that returns the value of the member.")
-    (xdoc::li
-     "A writer @('struct-<tag>-write-<member>')
-      that updates the value of the member."))
-   (xdoc::p
-    "For each member named @('<member>') of integer array type,
-     the @(tsee defstruct) macro introduces:")
-   (xdoc::ul
-    (xdoc::li
-     "A checker @('struct-<tag>-<member>-index-okp)
-      that checks whether an ACL2 integer index
-      is within the range of the array.")
-    (xdoc::li
-     "A checker @('struct-<tag>-<member>-<type>-index-okp'),
-      for each @('<type>') that is the name of a fixtype of a C integer type,
-      that checks whether an index of the C integer type denoted by @('<type>')
-      is within the range of the array.")
-    (xdoc::li
-     "A reader @('struct-<tag>-read-<member>')
-      that returns the value of an element of the array,
-      where the element is indexed by an ACL2 integer.
-      This reader uses @('struct-<tag>-<member>-index-okp')
-      in the guard.")
-    (xdoc::li
-     "A reader @('struct-<tag>-read-<member>-<type>'),
-      for each @('<type>') that is the name of a fixtype of a C integer type,
-      that returns the value of an element of the array,
-      where the element is indexed by a C integer type denoted by @('<type>').
-      This reader has @('struct-<tag>-<member>-<type>-index-okp')
-      in the guard.")
-    (xdoc::li
-     "A writer @('struct-<tag>-write-<member>')
-      that updates the value of an element of the array,
-      where the element is indexed by an ACL2 integer.
-      This writer uses @('struct-<tag>-<member>-index-okp')
-      in the guard.")
-    (xdoc::li
-     "A writer @('struct-<tag>-write-<member>-<type>'),
-      for each @('<type>') that is the name of a fixtype of a C integer type,
-      that udpates the value of an element of the array,
-      where the element is indexed by a C integer type denoted by @('<type>').
-      This writer has @('struct-<tag>-<member>-<type>-index-okp')
-      in the guard."))
-   (xdoc::p
-    "C code shallowly embedded in ACL2 can use
-     the recognizers @('struct-<tag>-p') in guards
-     to specify structure types for parameters;
-     more precisely, pointers to structure types, for now.
-     That is, similarly to arrays, structures are in the heap,
-     and pointers to them are passed to the represented C functions,
-     which may side-effect those structures via the member writers,
-     which represent assignments to structure members
-     accessed via the C @('->') operator (not the @('.') operator).
-     C structures may also be passed around by value in general,
-     but initially we support only passing by pointer.
-     Note that C arrays may only be passed by pointers, in effect,
-     as arrays are not first-class entities in C,
-     but merely collections of contiguous objects,
-     normally accessed via pointers to the first object of the collections.")
-   (xdoc::p
-    "The @(tsee defstruct) macro also records, in an ACL2 table,
-     information about the shallowly embedded structures it defines."))
+(defxdoc+ defstruct-implementation
+  :parents (defstruct)
+  :short "Implementation of @(tsee defstruct)."
   :order-subtopics t
   :default-parent t)
 
@@ -464,8 +336,8 @@
                              where TYPE is ~
                              either one of the symbols in ~&0, ~
                              or a doublet (ELEM SIZE) ~
-                             where ELEM is one of the symbols in ~&0
-                             and SIZE is a positive intger.
+                             where ELEM is one of the symbols in ~&0 ~
+                             and SIZE is a positive integer. ~
                              The second component of ~x1 ~
                              is a symbol, but not among ~&0."
                             typelist
@@ -478,8 +350,8 @@
                            where TYPE is ~
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           where ELEM is one of the symbols in ~&0 ~
+                           and SIZE is a positive integer. ~
                            The second component of ~x1 ~
                            is neither a symbol nor a doublet."
                           typelist
@@ -493,8 +365,8 @@
                            where TYPE is ~
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           where ELEM is one of the symbols in ~&0 ~
+                           and SIZE is a positive integer. ~
                            The second component of ~x1 is a doublet, ~
                            but its first component is not a symbol."
                           typelist
@@ -507,8 +379,8 @@
                            where TYPE is ~
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           where ELEM is one of the symbols in ~&0 ~
+                           and SIZE is a positive integer. ~
                            The second component of ~x1 is a doublet, ~
                            but its first component is not ~
                            one of the symbols in ~&0."
@@ -521,8 +393,8 @@
                            where TYPE is ~
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           where ELEM is one of the symbols in ~&0 ~
+                           and SIZE is a positive integer. ~
                            The second component of ~x1 is a doublet, ~
                            but its second component is not a positive integer."
                           typelist
@@ -534,8 +406,8 @@
                            where TYPE is ~
                            either one of the symbols in ~&0, ~
                            or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0
-                           and SIZE is a positive intger.
+                           where ELEM is one of the symbols in ~&0 ~
+                           and SIZE is a positive integer. ~
                            The second component of ~x1 is a doublet, ~
                            its second component is a positive integer, ~
                            but it exceeds ~x2, ~
@@ -609,8 +481,8 @@
        ((unless (consp members))
         (er-soft+ ctx t irrelevant
                   "There must be at least one member."))
-       ((mv erp memtypes state) (defstruct-process-members members ctx state))
-       ((when erp) (mv erp irrelevant state)))
+       ((er memtypes :iferr irrelevant)
+        (defstruct-process-members members ctx state)))
     (acl2::value (list tag tag-ident memtypes nil)))
   ///
   (more-returns
@@ -985,7 +857,7 @@
                                           (struct-tag-fix symbolp)
                                           (name identp)
                                           (type typep))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (mv (event pseudo-event-formp)
                (reader symbolp)
                (writer symbolp)
@@ -1070,7 +942,7 @@
                                         (name identp)
                                         (type typep)
                                         (size posp))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (mv (event pseudo-event-formp)
                (checkers symbol-listp)
                (readers symbol-listp)
@@ -1222,7 +1094,7 @@
             more-checkers
             more-reader-return-thms
             more-writer-return-thms)
-        (defstruct-gen-array-member-ops-aux *integer-nonbool-nonchar-types*
+        (defstruct-gen-array-member-ops-aux *nonchar-integer-types**
           struct-tag struct-tag-p name elem-typep index-okp reader writer))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event
@@ -1241,7 +1113,7 @@
                                                (index-okp symbolp)
                                                (reader symbolp)
                                                (writer symbolp))
-     :guard (type-integer-listp index-types)
+     :guard (type-nonchar-integer-listp index-types)
      :returns (mv (more-events pseudo-event-form-listp)
                   (more-readers symbol-listp)
                   (more-writers symbol-listp)
@@ -1329,7 +1201,7 @@
      but we will extend this to integer array members."))
   (b* ((name (member-type->name member))
        (type (member-type->type member))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((mv event
                   reader
                   writer
@@ -1349,7 +1221,7 @@
         (raise "Internal error: member type ~x0." type)
         (mv '(_) (make-defstruct-member-info :memtype member)))
        (elem-type (type-array->of type))
-       ((unless (type-integerp elem-type))
+       ((unless (type-nonchar-integerp elem-type))
         (raise "Internal error: member type ~x0." type)
         (mv '(_) (make-defstruct-member-info :memtype member)))
        (size (type-array->size type))
@@ -1452,19 +1324,15 @@
                       state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Process the inputs and generate the events."
-  (b* (((mv erp (list tag tag-ident members redundant) state)
+  (b* (((er (list tag tag-ident members redundant) :iferr '(_))
         (defstruct-process-inputs args call ctx state))
-       ((when erp) (mv erp '(_) state))
        ((when redundant) (acl2::value '(value-triple :redundant)))
        (event (defstruct-gen-everything tag tag-ident members call)))
     (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ defstruct (&whole call &rest args)
-  :short "Define a shallowly embedded C structure."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(see shallow-structures)."))
-  `(make-event (defstruct-fn ',args ',call 'defstruct state)))
+(defsection defstruct-macro-implementtion
+  :short "Definition of @(tsee defstruct)."
+  (defmacro defstruct (&whole call &rest args)
+    `(make-event (defstruct-fn ',args ',call 'defstruct state))))

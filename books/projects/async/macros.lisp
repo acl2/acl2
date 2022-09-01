@@ -13,6 +13,7 @@
 
 (include-book "misc/defopener" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ;; ======================================================================
 

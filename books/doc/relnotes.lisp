@@ -127,6 +127,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "The parsing generation tools have been slightly improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
 
    (xdoc::p
@@ -162,6 +169,10 @@
     "Support has been added for
      external object definitions (i.e. global variables) of array types.")
 
+   (xdoc::p
+    "The user documentation of @(tsee c::defstruct)
+     has been extended and improved.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
@@ -170,6 +181,13 @@
     "In the library of "
     (xdoc::seetopic "fty::defresult" "result types")
     ", some names have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Added a theorem.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,6 +200,17 @@
      an option @(':iferr') to return an alternative value
      in the error triple in case of error.
      See the latest documentation for details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Tools Library")
+
+   (xdoc::p
+    "The tool, @(see with-supporters), has been substantially enhanced.")
+
+   (xdoc::p
+    "The tool, @(see prove$), now treats hard errors as ordinary failures by
+     default, just as for soft errors.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

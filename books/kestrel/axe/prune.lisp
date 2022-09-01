@@ -26,6 +26,7 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 
@@ -41,7 +42,61 @@
                            ACL2-COUNT
                            default-car
                            default-cdr
-                           CONSP-FROM-LEN-CHEAP)))
+                           CONSP-FROM-LEN-CHEAP
+                           state-p
+                           nth)))
+
+(defund lookup-with-default (key alist default)
+  (declare (xargs :guard (and (eqlablep key)
+                              (alistp alist))))
+  (let ((res (assoc key alist)))
+    (if (not res)
+        default
+      (cdr res))))
+
+(defthm natp-of-lookup-with-default-type
+  (implies (and (nat-listp (strip-cdrs alist))
+                (natp default))
+           (natp (lookup-with-default key alist default)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable lookup-with-default assoc-equal strip-cdrs))))
+
+(defund count-top-level-if-branches-in-rev-dag (rev-dag
+                                                alist ; maps nodenums to the number of if-leaves they each represent
+                                                )
+  (declare (xargs :guard (and (weak-dagp rev-dag)
+                              (alistp alist)
+                              (nat-listp (strip-cdrs alist)))
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr-of-dargs-when-dag-exprp-iff
+                                                           consp-of-dargs-when-dag-exprp-iff)))))
+  (if (not (mbt (consp rev-dag)))
+      (er hard? 'count-top-level-if-branches-in-rev-dag "Empty DAG.")
+    (let* ((entry (first rev-dag))
+           (expr (cdr entry))
+           (leaf-count (if (and (call-of 'if expr)
+                                (consp (cdr (cdr (dargs expr)))))
+                           (let ((then (darg2 expr))
+                                 (else (darg3 expr)))
+                             ;; only counting leaves in the then and else branches, not the test:
+                             (+ (if (consp then) ; check for quotep
+                                    1
+                                  (lookup-with-default then alist 1))
+                                (if (consp else) ; check for quotep
+                                    1
+                                  (lookup-with-default else alist 1))))
+                         1 ; level expr is not an IF
+                         )))
+      (if (endp (cdr rev-dag)) ; we've reached the top node
+          leaf-count
+        (count-top-level-if-branches-in-rev-dag (cdr rev-dag)
+                                                (if (< 1 leaf-count)
+                                                    ;; only store counts greater than 1:
+                                                    (acons (car entry) leaf-count alist)
+                                                  alist))))))
+
+(defund count-top-level-if-branches-in-dag (dag)
+  (declare (xargs :guard (pseudo-dagp dag)))
+  (count-top-level-if-branches-in-rev-dag (reverse-list dag) nil))
 
 ;; Do not remove: justifies treatment of bool-fix below
 (thm (equal (boolif test x x) (bool-fix x)))
@@ -195,6 +250,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund make-bool-fix (arg)
+  (declare (xargs :guard (pseudo-termp arg)))
+  (if (quotep arg)
+      (enquote (bool-fix (unquote arg)))
+    `(bool-fix$inline ,arg)))
+
+(defthm pseudo-termp-of-make-bool-fix
+  (implies (pseudo-termp arg)
+           (pseudo-termp (make-bool-fix arg)))
+  :hints (("Goal" :in-theory (enable make-bool-fix))))
+
+(defund make-bvchop (size x)
+  (declare (xargs :guard (and (pseudo-termp size)
+                              (pseudo-termp x))))
+  (if (and (quotep x) ; unusual, so we test this first
+           (quotep size)
+           (natp (unquote x))
+           (natp (unquote size)))
+      (enquote (bvchop (unquote size) (unquote x)))
+    `(bvchop ,size ,x)))
+
+(defthm pseudo-termp-of-make-bvchop
+  (implies (and (pseudo-termp x)
+                (pseudo-termp size))
+           (pseudo-termp (make-bvchop size x)))
+  :hints (("Goal" :in-theory (enable make-bvchop))))
+
+
+
+
+
 ;; TODO: Thread through a print option
 (mutual-recursion
  ;; Returns (mv erp result-term state) where RESULT-TERM is equal
@@ -256,6 +342,7 @@
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    then-branch ; special case when both branches are the same
+                                 ;; TODO: Handle ground term here:
                                  `(,fn ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (boolif ;; (boolif test then-branch else-branch)
@@ -280,7 +367,8 @@
                       (mv erp nil state)
                     (mv (erp-nil)
                         ;; todo: skip the bool-fix if known-boolean:
-                        `(bool-fix$inline ,then-branch) state)))
+                        (make-bool-fix then-branch)
+                        state)))
               (if (eq :false result)
                   ;; Throw away the then-branch:
                   (mv-let (erp else-branch state)
@@ -290,7 +378,8 @@
                         (mv erp nil state)
                       (mv (erp-nil)
                           ;; todo: skip the bool-fix if known-boolean:
-                          `(bool-fix$inline ,else-branch) state)))
+                          (make-bool-fix else-branch)
+                          state)))
                 ;; todo: if it simplifies to something other than t/nil, use that here?
                 (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
@@ -310,7 +399,8 @@
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
-                                   `(bool-fix$inline ,then-branch) ; special case when both branches are the same
+                                   (make-bool-fix then-branch) ; special case when both branches are the same
+                                 ;; Can't be a ground term since test was not resolved:
                                  `(boolif ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (bvif ;; (bvif size test then-branch else-branch)
@@ -335,7 +425,8 @@
                   (if erp
                       (mv erp nil state)
                     (mv (erp-nil)
-                        `(bvchop ,size ,then-branch) state)))
+                        (make-bvchop size then-branch)
+                        state)))
               (if (eq :false result)
                   ;; Throw away the then-branch:
                   (mv-let (erp else-branch state)
@@ -344,7 +435,8 @@
                     (if erp
                         (mv erp nil state)
                       (mv (erp-nil)
-                          `(bvchop ,size ,else-branch) state)))
+                          (make-bvchop size else-branch)
+                          state)))
                 ;; todo: if it simplifies to something other than t/nil, use that here?
                 (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      (test-conjuncts (get-conjuncts-of-term2 test))
@@ -364,7 +456,8 @@
                                       rule-alist interpreted-function-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
-                                   `(bvchop ,size ,then-branch) ; special case when both branches are the same
+                                   (make-bvchop size then-branch) ; special case when both branches are the same
+                                 ;; Can't be a ground term since test was not resolved:
                                  `(bvif ,size ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (t ;; Anything other than if/myif/bvif/boolif:
@@ -383,6 +476,7 @@
             (b* ((args (fargs term))
                  ((mv erp new-args state) (prune-terms-aux args assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
                  ((when erp) (mv erp nil state)))
+              ;; TODO: Handle ground term here:
               (mv (erp-nil) `(,fn ,@new-args) state))))))))
 
  ;; Returns (mv erp result-terms state) where, if ERP is nil, then the
@@ -603,7 +697,7 @@
              (- (cw "Done pruning DAG.)~%")))
           (mv nil result-dag state))
       (prog2$ (and (natp prune-branches)
-                   (cw "Note: Not pruning DAG because its size is over the limit of ~x0.~%" prune-branches))
+                   (cw "(Note: Not pruning with precise contexts (DAG size > ~x0).)~%" prune-branches))
               (mv nil dag state)))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely

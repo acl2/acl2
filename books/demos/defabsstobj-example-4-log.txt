@@ -343,8 +343,8 @@ See :DOC user-stobjs-modified-warnings.
 
 
 
-ACL2 Error in TOP:  ACL2 cannot ev the call of non-executable function
-STOP on argument list:
+ACL2 Error [Evaluation] in TOP:  ACL2 cannot ev the call of non-executable
+function STOP on argument list:
 
 NIL
 
@@ -414,8 +414,8 @@ See :DOC user-stobjs-modified-warnings.
 
 
 
-ACL2 Error in TOP:  ACL2 cannot ev the call of non-executable function
-STOP on argument list:
+ACL2 Error [Evaluation] in TOP:  ACL2 cannot ev the call of non-executable
+function STOP on argument list:
 
 NIL
 

@@ -16185,13 +16185,13 @@
              test-case-array-alist ;invalid (nil?) if we are not keeping test cases
              )
          ;;perhaps this should indicate whether any test case made the top node false, and we should handle that failure here (if we're not in the top level miter, throwing a hard error seems like a mistake ffixme).
-         (probable-facts miter-array-name miter-array miter-len miter-depth
-                         shuffled-test-cases
-                         interpreted-function-alist print
-                         (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec fns but the miter is somehow not pure?)
-                         debug-nodes
-                         ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
-                         ))
+         (find-probable-facts miter-array-name miter-array miter-len miter-depth
+                              shuffled-test-cases
+                              interpreted-function-alist print
+                              (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec fns but the miter is somehow not pure?)
+                              debug-nodes
+                              ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
+                              ))
         (probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
         (sweep-info-array-name 'sweep-info-array) ;ffixme use a different name, according to the miter depth?
         ;; Set up the tags that are used to choose which node or node pair to handle next:

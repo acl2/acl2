@@ -234,7 +234,6 @@
            (not (reserrp x)))
   :enable (pathp reserrp))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist path-list

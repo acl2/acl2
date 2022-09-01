@@ -18,6 +18,7 @@
 (include-book "dags") ;for pseudo-dagp
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/make-into-array" :dir :system)
 (include-book "kestrel/acl2-arrays/array-to-alist" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "rational-lists")
@@ -567,15 +568,12 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-
-
+;; todo: Switch to use consp as the normal form?
 (defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
                 (natp n))
            (iff (consp (dargs (aref1 dag-array-name dag-array n)))
                 (dargs (aref1 dag-array-name dag-array n)))))
-
-
 
 (defthm bounded-darg-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)

@@ -1935,15 +1935,12 @@
                                                                                               probably-constant-node-alist)))))
    :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
 
-;repeatedly generate a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes
-;;returns (mv all-passedp
-;             probably-equal-node-sets ;includes sets believed to be a constant
-;             never-used-nodes
-;             probably-constant-node-alist ;pairs nodes with the constants they seem to be equal to
-;             test-case-array-alist ; valid iff keep-test-casesp is non-nil, pairs array names with arrays that give values to all the nodes
-;        )
+;; Repeatedly generates a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes.
+;; Returns (mv all-passedp probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist),
+;; where probably-equal-node-sets includes nodes believed to be constant and probably-constant-node-alist pairs nodes with the constants they seem to be equal to
+;; and test-case-array-alist is valid iff keep-test-casesp is non-nil and pairs array names with arrays that give values to all the nodes.
 ;todo: should this return the used test cases (I guess they can be extracted from the test-case-array-alist)?
-(defund probable-facts (miter-array-name miter-array miter-len
+(defund find-probable-facts (miter-array-name miter-array miter-len
                                          miter-depth
                                          test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
                                          interpreted-function-alist print keep-test-casesp

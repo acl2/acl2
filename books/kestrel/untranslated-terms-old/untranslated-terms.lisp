@@ -46,6 +46,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 
 ;;=== stuff to move to libraries:
 
@@ -166,12 +167,6 @@
 (defthm pair-listp-of-make-doublets
   (pair-listp (make-doublets x y))
   :hints (("Goal" :in-theory (enable pair-listp make-doublets))))
-
-;todo: this must exist
-(defthm len-of-append-lemma
-  (equal (len (append x y))
-         (+ (len x) (len y))))
-
 
 ;; (defthm last-of-append
 ;;   (implies (and (true-listp x)

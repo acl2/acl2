@@ -23,6 +23,7 @@
 (include-book "true-list-listp")
 
 (include-book "character-list-listp")
+(include-book "string-list-listp")
 
 (include-book "all-true-listp")
 (include-book "all-natp")
@@ -57,6 +58,7 @@
 (include-book "cons-listp-dollar")
 
 (include-book "append-all")
+(include-book "append-all-rules")
 
 ;; Stuff about lists of alists:
 (include-book "all-alistp")

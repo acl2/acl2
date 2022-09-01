@@ -294,7 +294,7 @@
      stack-height-decreased-wrt
      get-pc
      acl2::memberp-of-cons-irrel-strong
-     x86isa::memberp-of-cons-same
+     acl2::memberp-of-cons-same
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
      acl2::equal-of-same-cancel-4
@@ -1749,7 +1749,7 @@
          (if erp
              (mv erp nil nil nil nil state)
            (mv (erp-nil) changep state-dag generated-events next-loop-num state)))
-     (if (eq 'myif (ffn-symb state-term)) ;todo: pass the test as an asumption?
+     (if (eq 'myif (ffn-symb state-term)) ;todo: pass the test as an assumption?
          (b* ((- (cw "(Handling a myif with test ~x0.)~%" (farg1 state-term)))
               ((mv erp changep then-branch-dag generated-events next-loop-num state)
                (lift-loop-leaves (farg2 state-term)

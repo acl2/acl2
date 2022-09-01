@@ -2153,6 +2153,18 @@
       'write-stp-query-to-file
       state))))
 
+(defthm w-of-mv-nth-1-of-write-stp-query-to-file
+  (equal (w (mv-nth 1 (write-stp-query-to-file translated-query-core
+                                               dag-array-name dag-array dag-len
+                                               nodenums-to-translate
+                                               extra-asserts
+                                               filename
+                                               cut-nodenum-type-alist
+                                               constant-array-info
+                                               state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (write-stp-query-to-file) (w)))))
+
 (local (in-theory (disable subseq take)))
 
 ;; We use these constants instead of their corresponding keywords, so that we
@@ -2268,6 +2280,13 @@
                   2))
   :hints (("Goal" :in-theory (e/d (call-stp-on-file) (;LIST::EQUAL-CONS-CASES
                                                       )))))
+
+(defthm w-of-mv-nth-1-of-call-stp-on-file
+  (equal (w (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable call-stp-on-file
+                                     ;;todo:
+                                     call-axe-script))))
 
 ;; TODO: What if we cut out some structure but it is not involved in the counterexample?
 (defun all-cuts-are-at-vars (cut-nodenum-type-alist dag-array-name dag-array)
@@ -2424,6 +2443,24 @@
                       (counterexamplep (second res))
                       (equal (len res) 2)))))
   :hints (("Goal" :in-theory (enable prove-query-with-stp))))
+
+(defthm w-of-mv-nth-1-of-prove-query-with-stp
+  (equal (w (mv-nth 1 (prove-query-with-stp translated-query-core
+                                                      extra-string
+                                                      dag-array-name
+                                                      dag-array
+                                                      dag-len
+                                                      nodenums-to-translate
+                                                      extra-asserts
+                                                      base-filename
+                                                      cut-nodenum-type-alist
+                                                      print
+                                                      max-conflicts
+                                                      constant-array-info
+                                                      counterexamplep
+                                                      state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (w)))))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: Unify param order with prove-query-with-stp

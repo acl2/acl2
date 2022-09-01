@@ -15,10 +15,7 @@
 (local (include-book "kestrel/utilities/channels" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
-(local (in-theory (disable update-open-input-channels
-                           open-input-channels
-                           open-input-channel-any-p1
-                           read-object)))
+(local (in-theory (disable open-input-channel-any-p1)))
 
 ;; Returns (mv erp object state) where either ERP is non-nil (meaning an error
 ;; occurred) or else OBJECT is the first ACL2 object in the file.

@@ -15,7 +15,6 @@
 (include-book "kestrel/bv/bvcat-def" :dir :system)
 (include-book "kestrel/bv/slice-def" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
 (include-book "kestrel/utilities/file-existsp" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 
@@ -64,6 +63,7 @@
 
 ;; Returns (mv uint32 bytes) where BYTES is the bytes that remain after parsing the value.
 ;; This is a little-endian operation, because the least significant byte comes first.
+;; TODO: Rename to have "little" in the name, and similarly for similar functions.
 (defun parse-u32 (bytes)
   (declare (xargs :guard (and (integer-listp bytes)
                               (<= 4 (len bytes)))))

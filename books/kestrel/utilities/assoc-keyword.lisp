@@ -53,3 +53,14 @@
            (<= 2 (len (assoc-keyword key keyword-value-list))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable keyword-value-listp assoc-keyword))))
+
+(defthm assoc-keyword-of-cons-same
+  (equal (assoc-keyword key (cons key lst))
+         (cons key lst))
+  :hints (("Goal" :in-theory (enable assoc-keyword))))
+
+(defthm assoc-keyword-of-cons-diff
+  (implies (not (equal key key2))
+           (equal (assoc-keyword key (cons key2 lst))
+                  (assoc-keyword key (cdr lst))))
+  :hints (("Goal" :in-theory (enable assoc-keyword))))

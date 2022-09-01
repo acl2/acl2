@@ -26,6 +26,8 @@
      cw?
      ecw
      ecw?
+     ; => I really want this to be undefined since we define it to
+     ; mean implies
      _ ;range
      comment
      )

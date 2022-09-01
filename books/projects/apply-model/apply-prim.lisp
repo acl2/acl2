@@ -17,6 +17,8 @@
 ; boot-strap process is completed.  For example, MODAPP::APPLY$-PRIM can apply
 ; 'ACL2::APPLY$-PRIM, whereas ACL2::APPLY$-PRIM cannot!
 
+; (depends-on "build/ground-zero-theory.certdep" :dir :system)
+
 (in-package "MODAPP")
 
 ; Handling the Primitives

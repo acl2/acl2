@@ -354,6 +354,7 @@
        ((when (quotep dag)) ; todo: test this case
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
        ;;; Prune irrelevant branches, if instructed:
+       ;; TODO: Consider calling prune-dag-with-contexts here:
        ((mv erp dag state)
         (if prune-branches ; todo: allow this to be a size threshold
             (prune-dag-precisely-with-rule-alist dag

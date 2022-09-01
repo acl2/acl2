@@ -87,12 +87,16 @@
 
 ;Note on xdoc: <= or < cannot be used inside defxdoc!!
 
-(defun test?-fn (form hints override-defaults state)
+(defun test?-fn1 (form hints override-defaults state)
 ; Jan 9th 2013, dont print summary unless there was a counterexample.
   (declare (xargs :mode :program
                   :stobjs (state)))
 ;        :sig ((any hints keyword-value-listp state) -> (mv erp any state))
   (b* ((ctx 'test?)
+       (debug-enable (acl2::f-get-global 'acl2::debugger-enable state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  :never
+                                  state))
 
        (cgen::cgen-state (cgen::make-cgen-state-fn form (cons :USER-DEFINED ctx)
                                                    override-defaults (w state)))
@@ -142,10 +146,18 @@
                   (cgen::cw? (and pts? (cgen::normal-output-flag vl))
                        "~%Test? succeeded. No counterexamples were found.~%")
                   (mv NIL state)))))
-
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  debug-enable
+                                  state))
        )
 
     (mv cts-found? '(value-triple :invisible) state )))
+
+(defun test?-fn (form hints override-defaults state)
+  (declare (xargs :mode :program
+                  :stobjs (state)))
+  (revert-world (test?-fn1 form hints override-defaults state)))
+
 
 (defmacro test? (form &rest kwd-val-lst)
   (let* ((vl-entry (assoc-keyword :verbosity-level kwd-val-lst))
@@ -158,8 +170,8 @@
       ,@(if debug '(:on :all :summary-on :all) '(:off :all :summary-off :all))
       ,@(if debug nil (list :on 'comment))
       :gag-mode ,(not debug)
-     (make-event
-      (test?-fn ',form ',hints ',kwd-val-lst state)))))
+      (make-event
+       (test?-fn ',form ',hints ',kwd-val-lst state)))))
 
 (defxdoc acl2::cgen
   :parents (acl2::debugging acl2::acl2-sedan acl2::testing-utilities)

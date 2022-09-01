@@ -18,15 +18,20 @@
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
 ;; :step-limit-reached or :unknown.
+;; TODO: How to determine if the time-limit was reached?
 (defun prove$+-fn (term ; untranslated (todo: optimize if known to be translated?)
                    hints
                    instructions
                    otf-flg
-                   step-limit ; don't support time-limit because that's not portable
+                   step-limit ; warning: not sufficient to interrupt certain prover operations, such as subsumption
+                   time-limit ; warning: not portable
+                   print
                    state)
   (declare (xargs :guard (and (booleanp otf-flg)
                               (or (natp step-limit)
-                                  (null step-limit)))
+                                  (null step-limit))
+                              (or (rationalp time-limit)
+                                  (null time-limit)))
                   :mode :program ; because this (ultimately) calls the prover
                   :stobjs state))
   (mv-let (erp val state)
@@ -35,7 +40,8 @@
                  :instructions instructions
                  :otf-flg otf-flg
                  ;; :ignore-ok t ; okay to have ignored let-vars
-                 :step-limit step-limit)
+                 :step-limit step-limit
+                 :time-limit time-limit)
     (if erp
         (mv erp nil nil state)
       ;; no error (but may have failed to prove):
@@ -44,14 +50,14 @@
              (prover-steps (or prover-steps 0)))
         (if val
             ;; proved:
-            (progn$ (cw "Proved it in ~x0 steps.~%" prover-steps)
+            (progn$ (and print (cw "Proved it in ~x0 steps.~%" prover-steps))
                     (mv nil t nil state))
           ;; failed to prove:
           (if (not (natp prover-steps))
               ;; negative prover-steps means reached the step limit
-              (progn$ (cw "Failed to prove (step limit of ~x0 reached).~%" step-limit)
+              (progn$ (and print (cw "Failed to prove (step limit of ~x0 reached).~%" step-limit))
                       (mv nil nil :step-limit-reached state))
-            (progn$ (cw "Failed to prove (unknown reason).~%" prover-steps)
+            (progn$ (and print (cw "Failed to prove (unknown reason).~%" prover-steps))
                     (mv nil nil :unknown state))))))))
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
@@ -61,8 +67,11 @@
                    (hints 'nil)
                    (instructions 'nil)
                    (otf-flg 'nil)
-                   (step-limit 'nil))
-  `(prove$+-fn ,term ,hints ,instructions ,otf-flg ,step-limit state))
+                   (step-limit 'nil)
+                   (time-limit 'nil)
+                   (print 't) ; todo: change default to nil?
+                   )
+  `(prove$+-fn ,term ,hints ,instructions ,otf-flg ,step-limit ,time-limit ,print state))
 
 ;; Tests:
 ;; (prove$+ '(equal (car (cons x y)) x))

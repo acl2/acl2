@@ -1998,11 +1998,6 @@
 ;newly disabled:  move up!
 ;(in-theory (disable BAG::MEMBERP-SUBBAGP)) ;introduces bag reasoning!
 
-;rename
-(defthm memberp-of-cdr-when-not-memberp
-  (implies (not (memberp x lst))
-           (not (memberp x (cdr lst)))))
-
 ;(in-theory (disable LIST::FIX-OF-NTHCDR))
 
 ;; (defthm not-memberp-of-take
@@ -2079,21 +2074,21 @@
 
 
 ;bozo gen
-(defthm oddp-9-tighten
+(defthmd oddp-9-tighten
   (implies (and (oddp x)
                 (integerp x))
            (equal (< x 9)
                   (<= x 7))))
 
 ;bozo hope this doesn't loop
-(defthm oddp-9-tighten2
+(defthmd oddp-9-tighten2
   (implies (and (not (equal x 9))
                 (oddp x)
                 (integerp x))
            (equal (< 9 x)
                   (< 7 x))))
 
-(defthm oddp-9-7-rule
+(defthmd oddp-9-7-rule
   (implies (and (oddp x)
                 (integerp x)
                 (<= x 9)
@@ -2483,25 +2478,25 @@
   :hints (("Goal" :in-theory (enable myif))))
 
 ;gen? -alt?
-(defthm myif-of-logext-logior-32-hack
+(defthmd myif-of-logext-logior-32-hack
   (implies (signed-byte-p 32 x)
            (equal (myif test x (logext 32 (bvor 32 y x)))
                   (logext 32 (bvor 32 (myif test 0 y) x))))
   :hints (("Goal" :in-theory (enable myif))))
 
-;BOZO think about the extra logext here
-(defthm myif-of-logext-logior-32-hack-2
-  (implies t;(signed-byte-p 32 x)
-           (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
-                  (logext 32 (bvor 32 (myif test 0 y) x))))
-  :hints (("Goal" :in-theory (enable myif))))
+;; ;BOZO think about the extra logext here
+;; (defthmd myif-of-logext-logior-32-hack-2
+;;   (implies t;(signed-byte-p 32 x)
+;;            (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
+;;                   (logext 32 (bvor 32 (myif test 0 y) x))))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm myif-of-logior-32-hack
-  (implies (and (natp n)
-                (unsigned-byte-p n x))
-           (equal (myif test x (bvor n y x))
-                  (bvor n (myif test 0 y) x)))
-  :hints (("Goal" :in-theory (enable myif))))
+;; (defthmd myif-of-logior-32-hack
+;;   (implies (and (natp n)
+;;                 (unsigned-byte-p n x))
+;;            (equal (myif test x (bvor n y x))
+;;                   (bvor n (myif test 0 y) x)))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;; ;wouldn't fire?
 ;; (defthm myif-of-logior-32-hack-two
@@ -2510,13 +2505,6 @@
 ;;            (equal (myif test (bvor n y x) x)
 ;;                   (bvor n (myif test 0 y) x)))
 ;;   :hints (("Goal" :in-theory (enable myif))))
-
-;BOZO think about the extra logext here
-(defthm myif-of-logext-logior-32-hack-2
-  (implies t;(signed-byte-p 32 x)
-           (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
-                  (logext 32 (bvor 32 (myif test 0 y) x))))
-  :hints (("Goal" :in-theory (enable myif))))
 
 ;; (defthm myif-equal-bit-0-64
 ;;   (implies (unsigned-byte-p 1 bit)
@@ -2969,10 +2957,6 @@
            (not (< c a)))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 2))))
 
-(defthm memberp-nth-1-cdr
-  (equal (MEMBERP (NTH 1 x) (CDR x))
-         (< 1 (len x))))
-
 ;move to be next to the other one
 (defthm not-less-when->=-max-of-containing-bag
   (implies (and (<= (maxelem bag) k)
@@ -3126,15 +3110,6 @@
 ;;   (("Goal" :DO-NOT-INDUCT T
 ;;     :IN-THEORY (E/D (UPDATE-NTH-REWRITE) ((FORCE))))))
 
-
-(defthm less-than-max-hack
-  (implies (< z y)
-           (< z (MAX y x))))
-
-(defthm less-than-max-hack-alt
-  (implies (< z x)
-           (< z (MAX y x))))
-
 ;disgusting...
 (defthm if-hack
   (implies (integerp x)
@@ -3263,11 +3238,11 @@
                 (< k free))
            (not (equal x k))))
 
-;bozo this seemed necessary to get rid of some logext32's. - where did they come from?
-;trying disabled...
-(defthmd usbp8-implies-sbp32
-  (implies (unsigned-byte-p 8 x)
-           (signed-byte-p 32 x)))
+;; ;bozo this seemed necessary to get rid of some logext32's. - where did they come from?
+;; ;trying disabled...
+;; (defthmd usbp8-implies-sbp32
+;;   (implies (unsigned-byte-p 8 x)
+;;            (signed-byte-p 32 x)))
 
 ;; (defund iushr32 (r s)
 ;;   (bvchop 32 (jvm::iushr r s)))
@@ -3329,13 +3304,6 @@
                                     nil)))))
   :hints (("Goal" :in-theory (e/d (take; list::nth-append
                                    ) (take-of-cdr-becomes-subrange)))))
-
-;BOZO really the other should be called -cheap and this one should have no suffix
-(defthm memberp-of-cons-irrel-strong
-  (implies (not (equal a b))
-           (equal (memberp a (cons b x))
-                  (memberp a x)))
-  :hints (("Goal" :in-theory (enable MEMBERP-OF-CONS))))
 
 ;could restrict this to constants k and free
 (defthm bound-lemma

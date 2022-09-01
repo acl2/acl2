@@ -1,6 +1,6 @@
 ; Utilities to write string-trees to files
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,14 +12,14 @@
 
 ;; This file requires a trust tag because of the use of open-output-channel!.
 
-(include-book "kestrel/file-io-light/princ-dollar" :dir :system)
-(include-book "kestrel/file-io-light/open-output-channel-bang" :dir :system)
-
+(include-book "kestrel/file-io-light/princ-dollar" :dir :system) ; make local?
+(include-book "kestrel/file-io-light/open-output-channel-bang" :dir :system) ; make local?
 (include-book "string-trees")
+(local (include-book "w"))
 
 (defttag file-io!)
 
-(local (in-theory (disable state-p)))
+(local (in-theory (disable state-p w)))
 
 ;; Writes all the strings in STRING-TREE to CHANNEL, skipping any leaves that
 ;; are nil.  Returns state.
@@ -68,6 +68,11 @@
 
 (verify-guards write-string-tree-to-channel :hints (("Goal" :in-theory (enable open-output-channel-p-forward-to-open-output-channel-p-1))))
 
+(defthm w-of-write-string-tree-to-channel
+  (equal (w (write-string-tree-to-channel string-tree channel state))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (write-string-tree-to-channel) ()))))
+
 ;(in-theory (disable OPEN-OUTPUT-CHANNEL-ANY-P1))
 
 ;why?
@@ -93,3 +98,11 @@
         (pprogn (write-string-tree-to-channel string-tree channel state)
                 (close-output-channel channel state)
                 (mv nil state))))))
+
+(defthm w-of-mv-nth-1-of-write-string-tree!
+  (equal (w (mv-nth 1 (write-string-tree! string-tree fname ctx state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (write-string-tree!) (open-output-channels
+                                                        update-file-clock
+                                                        update-open-output-channels
+                                                        update-written-files)))))

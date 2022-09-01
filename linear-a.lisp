@@ -2147,7 +2147,7 @@
 
 ; Lst is a list of polys, term is the linear var which triggered the
 ; addition of the polys in lst, and flag is a boolean indicating
-; whether we have maxed out the the loop-stopper-value associated
+; whether we have maxed out the loop-stopper-value associated
 ; with term.  If flag is true, we check whether any of the polys are
 ; arith-term-order worse than term.
 
@@ -3461,7 +3461,7 @@
 ; accumulates the new polys in new-lst.  When lst is exhausted it
 ; starts over on the ones in new-lst and iterates that until no new polys
 ; are produced.  It returns 2 values:  the standard contradictionp in the
-; the first and the final pot-lst in the second.
+; first and the final pot-lst in the second.
 
 ; See add-polys0 for a discussion of max-rounds.
 

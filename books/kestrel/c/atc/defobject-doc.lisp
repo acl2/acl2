@@ -45,7 +45,7 @@
 
     (xdoc::p
      "This macro defines an external C object shallowly embedded in ACL2.
-      The macro specifies the name, type, and initializer.
+      The macro specifies the name, type, and optional initializer.
       The macro stores this information in a table,
       and generates a recognizer for the possible values of the object.
       A shallowly embedded C function that accesses the object
@@ -112,19 +112,25 @@
        it can be represented by a C integer constant."))
 
     (xdoc::desc
-     "@(':init') &mdash; no default"
+     "@(':init') &mdash; default @('nil')"
      (xdoc::p
       "Initializer of the externally defined object.")
      (xdoc::p
-      "It must be a list of length @('<pos>')
+      "It must be either @('nil') (the default)
+       or a list of length @('<pos>')
        of constant expression terms returning @('T'),
        where @('T') is the integer type specified in the @(':type') input
        (i.e. the element type of the array),
        and where the notion of constant expression term returning @('T')
-       is defined below.
-       This list represents an array initializer [C:6.7.9].")
+       is defined below.")
      (xdoc::p
-      "The terms must be guard-verifiable.
+      "If this input is not @('nil'),
+       it represents an array initializer [C:6.7.9].
+       If this input is @('nil'),
+       the object declaration does not have an initializer.")
+     (xdoc::p
+      "If this input is not @('nil'),
+       its constituent terms must be guard-verifiable.
        This requirement is checked implicitly
        by generating the @('object-<name>-init') function
        (see the `"
@@ -143,7 +149,7 @@
       A pure expression term is an ACL2 term that represent
       a C pure expression that may involve variables.
       A constant expression term is an ACL2 term that represents
-      a C constant expressions [C:6.6],
+      a C constant expression [C:6.6],
       which does not involve variables.
       Since there are no variables involved,
       the notion of constant expression term is defined
@@ -203,7 +209,7 @@
        applied to a value of the type indicated by the name of the function.
        The guard verification requirement ensures that
        the operator yields a well-defined result.
-       These functions covers all the C unary operators
+       These functions cover all the C unary operators
        (using the nomenclature in [C]).")
      (xdoc::li
       "A call of a function @('<op>-<type1>-<type2>')
@@ -246,7 +252,7 @@
        applied to values of the types indicated by the name of the function.
        The guard verification requirement ensures that
        the operator yields a well-defined result.
-       These functions covers all the C strict pure binary operators;
+       These functions cover all the C strict pure binary operators;
        the non-strict operators @('&&') and @('||'),
        and the non-pure operators @('='), @('+='), etc.,
        are represented differently.")
@@ -319,11 +325,20 @@
        @('<type>') is the integer fixtype name
        specified in the @(':type') input,
        and @('<term1>'), @('<term2>'), etc.
-       are the terms in the list in the @(':init') input.
-       The nullary function @('object-<name>-init') is
+       are the terms in the list in the @(':init') input,
+       if that input is not @('nil');
+       if the @(':init') input is @('nil'),
+       each term is @('(<type>-dec-const 0)'),
+       where @('<type>') is the element type of the array,
+       and where the term is repeated @('<pos>') times,
+       reflecting the fact that an external array object
+       without an explicit initializer
+       is initialized with 0 values of the appropriate type.")
+     (xdoc::p
+      "The nullary function @('object-<name>-init') is
        in the same package as the @('name') input.
        The function is in logic mode and guard-verified:
        its guard verification checks some of the requirements
        on the @(':init') input mentioned in the `"
       xdoc::*evmac-section-inputs-title*
-      "' section above.")))))
+      "' section above, when that input is not @('nil').")))))

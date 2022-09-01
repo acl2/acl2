@@ -400,8 +400,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define promote-type ((type typep))
+  :guard (type-arithmeticp type)
   :returns (promoted-type typep)
-  :short "Apply the integer promotions to a type [C:6.3.1.1/2]."
+  :short "Apply the integer promotions to an arithmetic type [C:6.3.1.1/2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -434,10 +435,61 @@
   :hooks (:fix)
   ///
 
+  (defrule type-arithmeticp-of-promote-type
+    (equal (type-arithmeticp (promote-type type))
+           (type-arithmeticp type))
+    :enable (promote-type
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
+
+  (defrule type-promoted-arithmeticp-of-promote-type
+    (equal (type-promoted-arithmeticp (promote-type type))
+           (type-arithmeticp type))
+    :enable (type-promoted-arithmeticp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
+
   (defrule type-integerp-of-promote-type
     (equal (type-integerp (promote-type type))
            (type-integerp type))
-    :enable (type-integerp type-unsigned-integerp type-signed-integerp)))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
+
+  (defrule type-nonchar-integerp-of-promote-type
+    (implies (type-nonchar-integerp type)
+             (type-nonchar-integerp (promote-type type)))
+    :enable type-nonchar-integerp)
+
+  (defruled promote-type-when-not-type-integerp
+    (implies (not (type-integerp type))
+             (equal (promote-type type)
+                    (type-fix type)))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
+
+  (defrule type-kind-of-promote-type-not-schar
+    (not (equal (type-kind (promote-type type))
+                :schar)))
+
+  (defrule type-kind-of-promote-type-not-uchar
+    (not (equal (type-kind (promote-type type))
+                :uchar)))
+
+  (defrule type-kind-of-promote-type-not-sshort
+    (not (equal (type-kind (promote-type type))
+                :sshort)))
+
+  (defrule type-kind-of-promote-type-not-ushort
+    (not (equal (type-kind (promote-type type))
+                :ushort))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -527,30 +579,16 @@
   :hooks (:fix)
   ///
 
-  (defruled uaconvert-types-when-same
-    (implies (and (type-arithmeticp type1)
-                  (type-arithmeticp type2)
-                  (type-equiv type1 type2))
-             (equal (uaconvert-types type1 type2)
-                    (promote-type type1)))
-    :enable (type-arithmeticp
+  (defrule type-arithmeticp-of-uaconvert-types
+    (equal (type-arithmeticp (uaconvert-types type1 type2))
+           (and (type-arithmeticp type1)
+                (type-arithmeticp type2)))
+    :enable (promote-type
+             type-arithmeticp
              type-realp
              type-integerp
-             type-signed-integerp
              type-unsigned-integerp
-             promote-type))
-
-  (defruled uaconvert-types-symmetry
-    (implies (and (type-arithmeticp type1)
-                  (type-arithmeticp type2))
-             (equal (uaconvert-types type1 type2)
-                    (uaconvert-types type2 type1)))
-    :enable (type-arithmeticp
-             type-realp
-             type-integerp
-             type-signed-integerp
-             type-unsigned-integerp
-             promote-type))
+             type-signed-integerp))
 
   (defrule type-integerp-of-uaconvert-types
     (implies (and (type-arithmeticp type1)
@@ -558,12 +596,63 @@
              (equal (type-integerp (uaconvert-types type1 type2))
                     (and (type-integerp type1)
                          (type-integerp type2))))
-    :enable (type-arithmeticp
+    :enable (promote-type
+             type-arithmeticp
              type-realp
              type-integerp
              type-unsigned-integerp
+             type-signed-integerp))
+
+  (defret type-nonchar-integerp-of-uaconvert-types
+    (type-nonchar-integerp type)
+    :hyp (and (type-integerp type1)
+              (type-integerp type2))
+    :hints (("Goal" :in-theory (enable promote-type
+                                       type-integerp
+                                       type-unsigned-integerp
+                                       type-signed-integerp))))
+
+
+  (defrule type-kind-of-uaconvert-types-not-schar
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :schar)))
+
+  (defrule type-kind-of-uaconvert-types-not-uchar
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :uchar)))
+
+  (defrule type-kind-of-uaconvert-types-not-sshort
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :sshort)))
+
+  (defrule type-kind-of-uaconvert-types-not-ushort
+    (not (equal (type-kind (uaconvert-types type1 type2))
+                :ushort)))
+
+  (defruled uaconvert-types-when-same
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2)
+                  (type-equiv type1 type2))
+             (equal (uaconvert-types type1 type2)
+                    (promote-type type1)))
+    :enable (promote-type
+             type-arithmeticp
+             type-realp
+             type-integerp
              type-signed-integerp
-             promote-type)))
+             type-unsigned-integerp))
+
+  (defruled uaconvert-types-symmetry
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2))
+             (equal (uaconvert-types type1 type2)
+                    (uaconvert-types type2 type1)))
+    :enable (promote-type
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,7 +671,17 @@
   (if (type-case type :array)
       (type-pointer (type-array->of type))
     (type-fix type))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule type-arithmeticp-of-apconvert-type
+    (equal (type-arithmeticp (apconvert-type type))
+           (type-arithmeticp type))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -870,6 +969,8 @@
                               :required :scalar
                               :supplied (type-fix arg-type))))))
     (t (error (impossible))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1551,7 +1652,8 @@
                           (funtab fun-tablep)
                           (vartab var-tablep)
                           (tagenv tag-envp)
-                          (constp booleanp))
+                          (constp booleanp)
+                          (initp booleanp))
   :returns (new-vartab var-table-resultp)
   :short "Check an object declaration."
   :long
@@ -1560,11 +1662,18 @@
     "We ensure that the type is not @('void'),
      because the type must be complete [C:6.7/7],
      and @('void') is incomplete [C:6.2.5/19].
-     We also ensure that the initializer type matches the declared type.
-     The @('constp') flag controls whether
-     we also require the initializer to be constant or not.
-     We return the updated variable table."))
-  (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init declon))
+     We also ensure that the initializer type matches the declared type,
+     if the initializer is present.")
+   (xdoc::p
+    "The @('constp') flag controls whether
+     we require the initializer, if present, to be constant or not.
+     If the initializer is absent, the test passes.")
+   (xdoc::p
+    "The @('initp') flag controls whether
+     we require the initializer to be present.")
+   (xdoc::p
+    "We return the updated variable table."))
+  (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init declon))
        (wf (check-tyname tyname tagenv))
        ((when (errorp wf)) (error (list :declon-error-type wf)))
        (wf (check-ident var))
@@ -1572,6 +1681,11 @@
        (type (tyname-to-type tyname))
        ((when (type-case type :void))
         (error (list :declon-error-type-void (obj-declon-fix declon))))
+       ((when (not init?))
+        (if initp
+            (error (list :declon-initializer-required (obj-declon-fix declon)))
+          (var-table-add-var var type vartab)))
+       (init init?)
        (init-type (check-initer init funtab vartab tagenv constp))
        ((when (errorp init-type))
         (error (list :declon-error-init init-type)))
@@ -1639,7 +1753,8 @@
    (xdoc::p
     "For a block item that is a declaration,
      we check the (object) declaration,
-     without requiring the initializer to be constant.
+     requiring the initializer
+     but without requiring it to be constant.
      We return the singleton set with @('void'),
      because a declaration never returns a value
      and proceeds with the next block item.")
@@ -1770,7 +1885,7 @@
     (block-item-case
      item
      :declon
-     (b* ((vartab (check-obj-declon item.get funtab vartab tagenv nil))
+     (b* ((vartab (check-obj-declon item.get funtab vartab tagenv nil t))
           ((when (errorp vartab)) (error (list :declon-error vartab))))
        (make-stmt-type :return-types (set::insert (type-void) nil)
                        :variables vartab))
@@ -2071,8 +2186,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For object declarations, we require the initializers to be constant
-     [C:6.7.9/4].")
+    "For object declarations,
+     we require the initializer to be constant if present [C:6.7.9/4],
+     without requiring it to be present.")
    (xdoc::p
     "If successful, we return updated
      function table, variable table, and tag environment."))
@@ -2084,7 +2200,7 @@
                                         :vars (var-table-fix vartab)
                                         :tags (tag-env-fix tagenv)))
    :obj-declon (b* ((vartab
-                     (check-obj-declon ext.get funtab vartab tagenv t))
+                     (check-obj-declon ext.get funtab vartab tagenv t nil))
                     ((when (errorp vartab)) vartab))
                  (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
                                             :vars vartab

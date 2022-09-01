@@ -105,7 +105,7 @@
                                      a)
                       (empty-eval var a)))))
   :hints (("Goal" :in-theory (enable make-lambda-term-simple
-                                     ;;assoc-equal-iff
+                                     ;;assoc-equal-iff-member-equal-of-strip-cars
                                      empty-eval-of-cdr-of-assoc-equal
                                      ))))
 
@@ -180,7 +180,7 @@
                                            A)
 ;:induct (ALISTS-EQUIV-ON KEYS a a)
            :in-theory (enable pairlis$ lookup-equal
-                              assoc-equal-iff
+                              assoc-equal-iff-member-equal-of-strip-cars
                               (:I len))))))
 
 ;; term may have free vars not among the lambda formals

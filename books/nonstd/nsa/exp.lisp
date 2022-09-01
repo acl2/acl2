@@ -1888,7 +1888,7 @@
 	     :use ((:instance large-next-integer-norm-large-integer))
 	     :in-theory (disable large-next-integer-norm-large-integer)))))
 
- ;; Now if x is limited, next-integer(next-intger(x)) < i-large-integer!
+ ;; Now if x is limited, next-integer(next-integer(x)) < i-large-integer!
 
  (local
   (defthm next-integer-next-integer-norm-<-i-large-integer
