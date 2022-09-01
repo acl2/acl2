@@ -42,3 +42,4 @@
 ;; Typed alists (TODO: Consider moving to a new dir):
 (include-book "symbol-alistp")
 (include-book "maybe-replace-var")
+(include-book "string-string-alistp")

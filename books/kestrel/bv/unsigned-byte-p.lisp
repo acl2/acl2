@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function unsigned-byte-p.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; For unsigned-byte-p-forward and unsigned-byte-p-from-bounds,
 ; see the copyrights on the ihs and coi libraries.
 ;
@@ -19,14 +19,32 @@
 
 (in-theory (disable unsigned-byte-p))
 
-;; from ihs/logops-definitions.lisp
-(defthm unsigned-byte-p-forward
-  (implies (unsigned-byte-p bits i)
-           (and (integerp i)
-                (>= i 0)
-                (< i (expt 2 bits))))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p)))
-  :rule-classes :forward-chaining)
+;; Note that unsigned-byte-p-forward-to-nonnegative-integerp is built into
+;; ACL2, so we don't need to forward-chain to natp from unsigned-byte-p.
+
+(defthm unsigned-byte-p-forward-to-<-of-expt
+  (implies (unsigned-byte-p bits x)
+           (< x (expt 2 bits)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;; I hope that bitp-compound-recognizer will then fire.
+(defthm unsigned-byte-p-1-forward-to-bitp
+  (implies (unsigned-byte-p 1 x)
+           (bitp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;restrict to when size is not a quoted constant?
+(defthm unsigned-byte-p-forward-to-natp-arg1
+  (implies (unsigned-byte-p bits x)
+           ;; This conjunction worked better than NATP:
+           (and (integerp bits)
+                (<= 0 bits)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm unsigned-byte-p-of-0-arg1
   (equal (unsigned-byte-p 0 x)
@@ -167,13 +185,6 @@
   (implies (unsigned-byte-p free x) ;free var
            (acl2-numberp x)))
 
-;not needed because UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP is built in to ACL2
-;; (defthm usbp-forward-to-integerp
-;;   (implies (unsigned-byte-p n x)
-;;            (integerp x))
-;;   :rule-classes (;(:type-prescription)
-;;                  (:forward-chaining :match-free :all)))
-
 (defthm usb-0-1
   (implies (and (unsigned-byte-p 1 x)
                 (not (equal 1 x)))
@@ -260,17 +271,7 @@
                 (natp free))
            (not (unsigned-byte-p size x))))
 
-;restrict to when size is not a quoted constant?
-(defthm integerp-from-unsigned-byte-p-size-param-fw
-  (implies (unsigned-byte-p size free)
-           (integerp size))
-  :rule-classes (:forward-chaining))
 
-;restrict to when size is not a quoted constant?
-(defthm non-negative-from-unsigned-byte-p-size-param-fw
-  (implies (unsigned-byte-p size free)
-           (not (< size 0)))
-  :rule-classes (:forward-chaining))
 
 (defthm unsigned-byte-p-of-if
   (equal (unsigned-byte-p size (if test x y))
@@ -295,4 +296,10 @@
   (implies (and (unsigned-byte-p size2 x)
                 (natp size1))
            (unsigned-byte-p (+ size1 size2) x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm unsigned-byte-p-of-+-of--1
+  (implies (unsigned-byte-p bits x)
+           (equal (unsigned-byte-p bits (+ -1 x))
+                  (not (equal 0 x))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))

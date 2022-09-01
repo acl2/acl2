@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,9 +13,10 @@
 
 ;; This book contains more BV rules (TODO: integrate into the rest of the library)
 
-(include-book "sbvlt")
+;;(include-book "sbvlt")
+(include-book "sbvlt-rules") ;for SBVLT-REWRITE
 (include-book "bvcat")
-(include-book "rules") ;for SBVLT-REWRITE
+(include-book "bvsx")
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 ;gen the 0?
