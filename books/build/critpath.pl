@@ -226,8 +226,9 @@ my $warnings = [];
 
 certlib_set_opts(\%certlib_opts);
 
-# add :dir :system as the path to this executable
-certlib_add_dir("SYSTEM", "$RealBin/..");
+
+my $acl2 = determine_acl2_exec(undef);
+my $acl2_books = determine_acl2_dirs(undef, undef, undef, undef, $RealBin);
 
 
 foreach my $target (@user_targets) {
