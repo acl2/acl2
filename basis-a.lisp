@@ -1142,7 +1142,7 @@
 ; of these symbols is printed as <hidden>.  If alist or evisc-table pairs an
 ; object with a string, the string is printed in place of the object.  If alist
 ; or evisc-table pairs an object with anything else, x, then x is substituted
-; for the the object and is treated as eviscerated.  In general, alist will
+; for the object and is treated as eviscerated.  In general, alist will
 ; come from an evisceration tuple and evisc-table will be the value of the
 ; 'evisc-table table in the current ACL2 world.  We give priority to the former
 ; because the user may want to override the evisc-table, for example using ~P

@@ -517,7 +517,7 @@
         (er hard? 'prepare-fancy-dir "Dir must be a string, but is: ~x0.~%" dir)
         state)
 
-       (dir-system     (acl2::f-get-global 'acl2::system-books-dir state))
+       (dir-system     (acl2::system-books-dir state))
        (xdoc-dir       (oslib::catpath dir-system "xdoc"))
        (xdoc/fancy     (oslib::catpath xdoc-dir "fancy"))
 

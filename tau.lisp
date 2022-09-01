@@ -4897,7 +4897,7 @@
 
 ; The next two functions are used to implement the deduction that if a tau
 ; includes all the rationals between between lo and hi but excludes each of the
-; the integers in that range, then the tau is non-INTEGERP.
+; integers in that range, then the tau is non-INTEGERP.
 
 (defun all-integers-in-range-excludedp1 (lo hi neg-evgs)
 

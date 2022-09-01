@@ -1024,7 +1024,7 @@
 
 ; That brings us to the main function we've been wanting: the one that
 ; determines what generated equivalence relations must be maintained
-; across the the arguments of fn in order to maintain a given
+; across the arguments of fn in order to maintain a given
 ; generated equivalence relation for the fn-expression itself.  Because
 ; we form new geneqvs from stored ones in the database, we have to
 ; have the enabled structure so we filter out disabled congruence
@@ -4873,7 +4873,7 @@
 ; completed since there were three very-long running certifications still in
 ; progress (about 3 hours each).  Among those, we noticed
 ; books/nonstd/workshops/2017/cayley/cayley1c.lisp, whose certification went
-; far enough for us to see the the proof of 8-COMPOSITION-LAW completed but
+; far enough for us to see the proof of 8-COMPOSITION-LAW completed but
 ; took 7560.97 seconds, far exceeding the 6.49 seconds taken in a recent run.
 ; It thus seemed obvious that such a change would likely cause massive changes
 ; to be necessary not only in the community books, but also in proprietary
@@ -15042,7 +15042,7 @@
 
 ; Note that we reverse below even though we do not reverse in the analogous
 ; function, relieve-hyps1-free-1.  That is because in relieve-hyps1-free-1, the
-; the failure-reason-lst is built by traversing a type-alist whose entries are
+; failure-reason-lst is built by traversing a type-alist whose entries are
 ; in reverse order from the order of hypotheses encountered that created those
 ; entries; but here, the unify-subst-lst is processed in order.
 
@@ -18040,7 +18040,7 @@
 
 ; Var-list is a list of pot labels.  If we have not yet multiplied
 ; the polys corresponding to those labels, we do so and add them to the
-; the simplify-clause-pot-lst.  Products-already-tried is a list of the
+; simplify-clause-pot-lst.  Products-already-tried is a list of the
 ; factors we have already tried, and pot-lst-to-look-in is the pot-lst
 ; from which we get our polys.
 

@@ -4551,7 +4551,7 @@
 ;;; CCL
 
 ; original
-; Unmodified from the the worse-than implementation in Version_7.0:
+; Unmodified from the worse-than implementation in Version_7.0:
 ; 52692.173u 1924.728s 2:26:28.33 621.4%	0+0k 1209904+5209720io 862pf+0w
 
 ; run-1
@@ -4587,7 +4587,7 @@
 ;;; GCL
 
 ; original
-; Unmodified from the the worse-than implementation in Version_7.0:
+; Unmodified from the worse-than implementation in Version_7.0:
 ; 63181.644u 1732.384s 2:39:00.22 680.4%	0+0k 7886424+10142248io 6495pf+0w
 
 ; run-2

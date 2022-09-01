@@ -84,7 +84,7 @@
            (state (princ$ "EXPORTED_VARS += USE_QUICKLISP" channel state))
            (state (newline channel state))
            (state (princ$ "export ACL2_THINKS_BOOK_DIR_IS := " channel state))
-           (state (princ$ (f-get-global 'system-books-dir state) channel state))
+           (state (princ$ (system-books-dir state) channel state))
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_THINKS_BOOK_DIR_IS" channel state))
            (state (newline channel state))
