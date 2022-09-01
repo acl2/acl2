@@ -3053,7 +3053,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; second function that needs special stobjs-out handling.  But then we need a
 ; version of must-be-equal with the logic input as the last argument, since
 ; that is what is returned in the logic.  We call that mbe1, but we leave
-; must-be-equal as we move the the return-last implementation (after v4-1,
+; must-be-equal as we move the return-last implementation (after v4-1,
 ; released Sept., 2010), since must-be-equal has been around since v2-8 (March,
 ; 2004).
 
@@ -11957,7 +11957,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; search the alist (with the function aref1) for the first pair whose
 ; car matches the key.  If such a pair is found, then aref1 returns
 ; the cdr of the pair; otherwise aref1 returns the value associated
-; with the :default key.  It is illegal to give aref1 an an index
+; with the :default key.  It is illegal to give aref1 an index
 ; equal to or greater than the car of the value associated with the
 ; :dimensions key.  In the normal case, updating happens by simply
 ; consing a new pair on to the alist with the function aset1.
@@ -12334,7 +12334,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let* ((old-book-path
             (reverse (unrelativize-book-path
                       (package-entry-book-path package-entry)
-                      (f-get-global 'system-books-dir *the-live-state*))))
+                      (project-dir-alist *the-live-state*))))
            (current-book-path
             (reverse
              (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
@@ -14626,6 +14626,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (print-readably . nil)
     (print-right-margin . nil)
     (program-fns-with-raw-code . ,*initial-program-fns-with-raw-code*)
+    (project-dir-alist . nil) ; set in enter-boot-strap-mode and perhaps lp
     (prompt-function . default-print-prompt)
     (prompt-memo . nil)
     (proof-tree . nil)
@@ -14664,7 +14665,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
     (system-attachments-cache . nil) ; see modified-system-attachments
-    (system-books-dir . nil) ; set in enter-boot-strap-mode and perhaps lp
     (temp-touchable-fns . nil)
     (temp-touchable-vars . nil)
     (term-evisc-tuple . :default)
@@ -15518,7 +15518,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-error-triples . t)
     (ld-error-action . :continue)
     (ld-query-control-alist . nil)
-    (ld-verbose . "System books directory ~xb.~|Type :help for help.~%Type ~
+    (ld-verbose . "Project-dir-alist:~|~xb.~|Type :help for help.~%Type ~
                    (quit) to quit completely out of ACL2.~|~%")
     (ld-user-stobjs-modified-warning . nil)))
 
@@ -17221,8 +17221,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq key :tau-auto-modep)
          (booleanp val))
         ((eq key :include-book-dir-alist)
-         (and (include-book-dir-alistp val (os world))
-              (null (assoc-eq :SYSTEM val))))
+
+; At one time we disallowed :SYSTEM as a key.  Now, we check at
+; add-include-book-dir time that :SYSTEM isn't bound to a directory that
+; conflicts with the value in the project-dir-alist.  Note that the
+; :include-book-dir-alist entry of the acl2-defaults-table can only be set by
+; way of add-include-book-dir; see the use of state global
+; modifying-include-book-dir-alist in chk-table-guard.
+
+         (include-book-dir-alistp val (os world)))
         ((eq key :ruler-extenders)
          (or (eq val :all)
              (chk-ruler-extenders val hard 'acl2-defaults-table world)))
@@ -21560,7 +21567,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(temp-touchable-vars
     temp-touchable-fns
 
-    system-books-dir
+    project-dir-alist
     user-home-dir
 
     acl2-version
@@ -21913,8 +21920,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                    (reverse
                                     (unrelativize-book-path
                                      (package-entry-book-path entry)
-                                     (f-get-global 'system-books-dir
-                                                   *the-live-state*))))))))))))
+                                     (project-dir-alist
+                                      *the-live-state*))))))))))))
                 (t nil))))))
         ((typep x 'string)
          (bad-lisp-stringp x))

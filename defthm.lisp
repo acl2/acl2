@@ -1610,7 +1610,7 @@
           ((set-difference-eq rhs-vars
                               (all-vars1-lst hyps lhs-vars))
            (warning$ ctx "Free"
-                     "A ~x0 rule generated from ~x1 contains the the free ~
+                     "A ~x0 rule generated from ~x1 contains the free ~
                       variable~#2~[~/s~] ~&2 on the right-hand side of the ~
                       rule, which ~#2~[is~/are~] not bound on the left-hand ~
                       side~#3~[~/ or in the hypothesis~/ or in any ~
@@ -7752,7 +7752,7 @@
         (t (er soft ctx
                "Each term in the :TRIGGER-TERMS of a :LINEAR rule should be a ~
                 legal trigger for the rule generated for each branch through ~
-                the corollary.  But the the proposed trigger ~p0 for the ~
+                the corollary.  But the proposed trigger ~p0 for the ~
                 :LINEAR rule ~x1 is illegal for the branch ~p2 because it ~
                 contains insufficient variables.  See :DOC linear."
                (untranslate term nil (w state))

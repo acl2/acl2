@@ -73,6 +73,7 @@
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
+(include-book "kestrel/alists-light/string-string-alistp" :dir :system)
 (include-book "kestrel/htclient/post" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
@@ -81,6 +82,8 @@
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
+(local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/margins" :dir :system))
 
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
@@ -107,12 +110,16 @@
             name))))))
 
 (local (in-theory (disable state-p
-                           checkpoint-list-guard)))
+                           checkpoint-list-guard
+                           global-table
+                           put-global
+                           get-global
+                           global-table-p
+                           set-fmt-hard-right-margin
+                           deref-macro-name)))
 
-(defun widen-margins (state)
-  (declare (xargs :stobjs state
-                  :mode :program ; todo
-                  ))
+(defund widen-margins (state)
+  (declare (xargs :stobjs state))
   (let* ((old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
          (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
          ;; save the old values for later restoration:
@@ -123,13 +130,16 @@
          (state (set-fmt-soft-right-margin 400 state)))
     state))
 
-(defun unwiden-margins (state)
+(defund unwiden-margins (state)
   (declare (xargs :stobjs state
-                  :mode :program ; todo
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable boundp-global)))))
   ;; Restore the margins:
-  (let* ((state (set-fmt-hard-right-margin (f-get-global 'old-fmt-hard-right-margin state) state))
-         (state (set-fmt-soft-right-margin (f-get-global 'old-fmt-soft-right-margin state) state)))
+  (let* ((state (if (boundp-global 'old-fmt-hard-right-margin state)
+                    (set-fmt-hard-right-margin (pos-fix (f-get-global 'old-fmt-hard-right-margin state)) state)
+                  state))
+         (state (if (boundp-global 'old-fmt-soft-right-margin state)
+                    (set-fmt-soft-right-margin (pos-fix (f-get-global 'old-fmt-soft-right-margin state)) state)
+                  state)))
     state))
 
 ;move
@@ -138,7 +148,8 @@
   (declare (xargs :guard (and ;; (symbolp item)
                           (plist-worldp wrld)
                           (alistp (macro-aliases wrld)))
-                  :verify-guards nil))
+                  :verify-guards nil
+                  ))
   (if (symbolp item)
       (let ((name (deref-macro-name item (macro-aliases wrld)))) ; no change if item is not a macro name
         (if (getpropc name 'runic-mapping-pairs nil wrld)
@@ -177,7 +188,7 @@
 ;;           (untranslate-clauses (rest clauses) iff-flg wrld))))
 
 (defun make-numbered-checkpoint-entries (current-number checkpoints)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program)) ; because we call fms-to-string
   (if (endp checkpoints)
       nil
     (acons (concatenate 'string "checkpoint_" (nat-to-string current-number))
@@ -260,7 +271,7 @@
 
 ;; Returns state.
 (defun show-recommendations (recs state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (recommendation-listp recs)
                   :stobjs state))
   (let ((state (widen-margins state)))
     (progn$ (show-recommendations-aux recs)
@@ -272,20 +283,29 @@
 (defconst *option-names* '(:max-wins))
 
 ;; Returns (mv presentp val)
-(defun get-advice-option (option-name wrld)
+(defund get-advice-option (option-name wrld)
+  (declare (xargs :guard (and (symbolp option-name)
+                              (plist-worldp wrld))
+                  :verify-guards nil))
   (let* ((table-alist (table-alist 'advice-options wrld))
          (res (assoc-eq option-name table-alist)))
     (if res (mv t (cdr res)) (mv nil nil))))
 
 ;; Returns the value of the option.  Throws an error if not set.
-(defun get-advice-option! (option-name wrld)
+(defund get-advice-option! (option-name wrld)
+  (declare (xargs :guard (and (symbolp option-name)
+                              (plist-worldp wrld))
+                  :verify-guards nil))
   (mv-let (presentp val)
     (get-advice-option option-name wrld)
     (if (not presentp)
         (er hard? 'get-advice-option! "Option value not set: ~x0." option-name)
       val)))
 
-(defun advice-option-fn (option-name rest-args wrld)
+(defund advice-option-fn (option-name rest-args wrld)
+  (declare (xargs :guard (and (symbolp option-name)
+                              (plist-worldp wrld))
+                  :verify-guards nil))
   (if (not (member-eq option-name *option-names*))
       (er hard? 'advice-option-fn "Unknown option: ~x0." option-name)
     (if (consp rest-args)
@@ -322,7 +342,8 @@
 
 (defun show-successful-recommendation (rec)
   (declare (xargs :guard (recommendationp rec)
-                  :mode :program))
+                  :mode :program ; because of fms-to-string
+                  ))
   (let* (;; (name (nth 0 rec))
          (type (nth 1 rec))
          (object (nth 2 rec))
@@ -374,7 +395,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp form state).
-(defun parse-include-book (string state)
+(defund parse-include-book (string state)
   (declare (xargs :guard (stringp string)
                   :stobjs state))
   (b* (((mv erp form state) (read-string-as-single-item string state)) ; todo: what about packages?
@@ -440,10 +461,8 @@
   :hints (("Goal" :in-theory (enable parse-book-map-info-lists))))
 
 ;; returns (mv erp parsed-book-map state)
-(defun parse-book-map (book-map state)
-  (declare (xargs :stobjs state
-;                  :verify-guards nil ; todo
-                  ))
+(defund parse-book-map (book-map state)
+  (declare (xargs :stobjs state))
   (if (not (parsed-json-objectp book-map))
       (mv :ill-formed-book-map nil state)
     (b* ((dict (parsed-json-object->pairs book-map)) ; strip the :object
@@ -514,7 +533,7 @@
           state))))
 
 ;; Returns (mv erp parsed-recommendations state).
-(defun parse-recommendations-aux (recs rec-num acc state)
+(defund parse-recommendations-aux (recs rec-num acc state)
   (declare (xargs :guard (and (parsed-json-valuesp recs)
                               (natp rec-num)
                               (true-listp acc))
@@ -532,11 +551,10 @@
                                  state))))
 
 ;; Returns (mv erp parsed-recommendations state).
-(defun parse-recommendations (recs state)
+(defund parse-recommendations (recs state)
   (declare (xargs :guard (parsed-json-valuesp recs)
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))
-;                  :verify-guards nil ; todo
-                  :stobjs state))
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
   (parse-recommendations-aux recs 1 nil state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1323,7 +1341,26 @@
       (remove-duplicate-recs reduced-rest
                              (cons rec acc)))))
 
-
+;; Sends an HTTP POST request containing the POST-DATA to the server at
+;; SERVER-URL.  Parses the response as JSON.  Returns (mv erp
+;; parsed-json-response state).
+(defund post-and-parse-response-as-json (server-url post-data debug state)
+  (declare (xargs :guard (and (stringp server-url)
+                              (string-string-alistp post-data)
+                              (booleanp debug))
+                  :stobjs state))
+  (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
+       ((mv erp post-response state)
+        (htclient::post server-url post-data state))
+       ((when erp) (mv erp nil state))
+       (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
+       ;; Parse the JSON:
+       ((mv erp parsed-json-response) (parse-string-as-json post-response))
+       ((when erp)
+        (cw "Error parsing JSON response from ~x0.~%" server-url)
+        (mv erp nil state))
+       (- (and debug (cw "Parsed POST response: ~X01~%" parsed-json-response nil))))
+    (mv nil parsed-json-response state)))
 
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
@@ -1391,11 +1428,11 @@
                              raw-checkpoint-clauses))
        (- (and verbose (cw "Checkpoints in query: ~X01.)~%" checkpoint-clauses nil)))
        ;; Send query to server:
-       ((mv erp post-response state)
+       ((mv erp semi-parsed-recommendations state)
         (if (zp n)
             (prog2$ (cw "Not asking server for recommendations since n=0.")
                     (mv nil
-                        "[]" ; empty list of recommendations
+                        nil ; empty list of recommendations
                         state))
           (b* ((- (cw "Asking server for ~x0 recommendations on ~x1 ~s2...~%"
                       n
@@ -1403,19 +1440,13 @@
                       (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
                (post-data (acons "n" (nat-to-string n)
                                  (make-numbered-checkpoint-entries 0 checkpoint-clauses)))
-               (- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil))))
-            (htclient::post server-url post-data state))))
-       ((when erp)
-        (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
-        (mv erp nil state))
-       (- (and debug (cw "Raw JSON POST response: ~X01~%" post-response nil)))
-       ;; Parse the JSON:
-       ((mv erp parsed-json) (parse-string-as-json post-response))
-       ((when erp)
-        (er hard? 'advice-fn "Error parsing JSON.")
-        (mv erp nil state))
-       (semi-parsed-recommendations (parsed-json-array->values parsed-json))
-       (- (and debug (cw "After JSON parsing: ~X01~%" semi-parsed-recommendations nil)))
+               ((mv erp parsed-response state)
+                (post-and-parse-response-as-json server-url post-data debug state))
+               ((when erp)
+                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
+                (mv erp nil state)))
+            (mv nil (parsed-json-array->values parsed-response) state))))
+       ((when erp) (mv erp nil state))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations state))
        ((when erp)

@@ -7163,7 +7163,10 @@
          *the-live-state*)
 
 ; Set the system books directory now that the operating-system has been defined
-; (needed by pathname-os-to-unix).
+; (needed by pathname-os-to-unix).  Note that the value of state global
+; project-dir-alist will eventually be an alist that includes a pair mapping
+; :system to the system books directory, but at this point, that value is just
+; that directory.
 
   (cond (system-books-dir
          (let* ((dir (unix-full-pathname
@@ -7173,9 +7176,9 @@
                        ((stringp system-books-dir)
                         system-books-dir)
                        (t (er hard 'initialize-acl2
-                              "Unable to complete initialization, because ~
-                                the supplied system books directory, ~x0, is ~
-                                not a string."
+                              "Unable to complete initialization, because the ~
+                               supplied system books directory, ~x0, is not a ~
+                               string."
                               system-books-dir)))))
                 (msg (bad-lisp-stringp dir)))
            (when msg
@@ -7184,12 +7187,12 @@
                ENTER-BOOT-STRAP-MODE, which is ~x0, is not a legal ACL2 ~
                string.~%~@1"
               dir msg))
-           (f-put-global 'system-books-dir
+           (f-put-global 'project-dir-alist ; see comment above
                          (canonical-dirname! (maybe-add-separator dir)
                                              'enter-boot-strap-mode
                                              *the-live-state*)
                          *the-live-state*)))
-        (t (f-put-global 'system-books-dir
+        (t (f-put-global 'project-dir-alist ; see comment above
                          (concatenate
                           'string
                           (canonical-dirname! (our-pwd)
@@ -9049,6 +9052,208 @@
                        (quit 1))
                   (t (value val))))))))))
 
+(defun project-dir-filename (dir filename filename-dir key ctx state)
+
+; This function is similar to canonical-dirname!.
+
+; Filename is a Unix-style pathname and filename-dir is its directory, which is
+; an absolute pathname against which dir, if a relative pathname, is to be
+; resolved.
+
+; As of August 2022 when we introduced the project-dir-alist, for sysfiles
+; other than :system, this code had been in LP for a few years for computing
+; the system books directory (which was stored in state global
+; 'system-books-dir).  We use this same code for other project-dir-alist
+; entries.
+
+; Filename is used for error reporting.  It is nil when we are using an
+; environment variable to set the directory for :system; otherwise it is the
+; project-dir-alist file.
+
+  (let* ((dir (extend-pathname+ filename-dir dir t state)))
+    (cond ((and dir
+                (or (equal dir "")
+                    (not (eql (char dir (1- (length dir)))
+                              *directory-separator*))))
+           (cond
+            (filename
+             (er soft ctx
+                 "The project pathname ~x0, supplied in file ~x1 for the key ~
+                  ~x2, represents a file but not a directory."
+                 dir filename key))
+            (t
+             (er soft ctx
+                 "The pathname ~x0, supplied by environment variable ~
+                  ACL2_SYSTEM_BOOKS, represents a file but not a directory."
+                 dir))))
+          (dir (value dir))
+          (filename
+           (er soft ctx
+               "The project pathname ~x0, supplied in file ~x1 for the key ~
+                ~x2, represents a directory that does not exist."
+               dir filename key))
+          (t
+           (er soft ctx
+               "The pathname ~x0, supplied by environment variable ~
+                ACL2_SYSTEM_BOOKS, represents a directory that does not exist."
+               dir)))))
+
+(defun project-dir-alist-from-file-rec (lst filename filename-dir ctx state)
+
+; This function is like plist-to-alist, except that the value components are
+; strings and we ensure that each ends in the directory-separator and is
+; suitably canonical.
+
+  (declare (xargs :guard (and (keyword-value-listp lst)
+                              (string-listp (odds lst)))))
+  (cond ((endp lst) (value nil))
+        (t (let* ((key (car lst))
+                  (dir0 (cadr lst))
+                  (dir1 (if (equal dir0 "") "./" dir0)))
+             (er-let* ((dir (project-dir-filename dir1 filename filename-dir
+                                                  key ctx state))
+                       (rest (project-dir-alist-from-file-rec
+                              (cddr lst) filename filename-dir ctx state)))
+               (cond
+                ((> (length dir) (fixnum-bound))
+                 (er soft ctx
+                     "Length is too long for directory associated in the ~
+                      project-dir-alist with keyword ~x0!"
+                     key))
+                (t (value (acons (car lst) dir rest)))))))))
+
+(defun project-dir-alist-from-file-0 (filename ctx state)
+  (declare (xargs :stobjs state :mode :program))
+  (let ((filename-u (pathname-os-to-unix filename (os (w state)) state)))
+    (er-let* ((lst (read-file+ filename
+                               (msg "Unable to open file ~x0 to read the ~
+                                   project-dir-alist (see :DOC ~
+                                   project-dir-alist)."
+                                    filename)
+                               ctx
+                               state)))
+      (cond ((not (keyword-value-string-listp lst))
+             (er soft ctx
+                 "The value read for the project-dir-alist (see :DOC ~
+                  project-dir-alist) must be an alternating list of keywords ~
+                  and strings, starting with a keyword.  But the value read ~
+                  from file ~x0 is ~x1, which does not have that property."
+                 filename lst))
+            ((not (project-dir-file-p filename state))
+             (er soft ctx
+                 "The value read for the project-dir-alist is, as expected, ~
+                  an alternating list of keywords and strings, starting with ~
+                  a keyword.  But each line must either be blank, be a ~
+                  comment (i.e., its first non-whitespace character is `;'), ~
+                  or contain a keyword followed by a filename without `\"' in ~
+                  its name.  File ~x0 does not have that property.  See :DOC ~
+                  project-dir-alist."
+                 filename))
+            (t
+             (let ((abs (unix-truename-pathname filename-u nil state)))
+               (cond
+                ((null abs)
+                 (er soft ctx
+                     "Surprising error: Unable to get the absolute pathname ~
+                      for file ~x0~@1."
+                     filename-u
+                     (if (equal filename filename-u)
+                         ""
+                       (msg " (which was obtained from filename ~x0)"
+                            filename))))
+                (t (project-dir-alist-from-file-rec
+                    lst abs
+                    (directory-of-absolute-pathname abs)
+                    ctx state)))))))))
+
+(defun project-dir-alist-from-file (filename ctx state)
+
+; We avoid using with-output! below because we get an error pertaining to
+; acl2-unwind-protect in that case.
+
+  (let* ((old-inh (f-get-global 'inhibit-output-lst state))
+         (flg (member-eq 'error old-inh)))
+    (er-progn
+     (if flg
+         (set-inhibit-output-lst (cons 'error old-inh))
+       (value nil))
+     (mv-let (erp val state)
+       (project-dir-alist-from-file-0 filename ctx state)
+       (cond (erp (pprogn
+                   (fms "ABORTING start of ACL2!  Address the error message ~
+                         shown above in order to run ACL2."
+                        nil *standard-co* state nil)
+                   (prog2$ (exit 1)
+                           (value nil))))
+             (t (er-progn (if flg
+                              (set-inhibit-output-lst old-inh)
+                            (value nil))
+                          (value val))))))))
+
+(defun establish-project-dir-alist (system-dir0 ctx state)
+
+; System-dir0 is either nil or the value of environment variable
+; ACL2_SYSTEM_BOOKS (possibly with a trailing slash added).  We assume that
+; state global project-dir-alist has already been set to the
+; system-books-directory; it's not yet an alist.
+
+  (declare (xargs :stobjs state :mode :program))
+  (let ((system-books-dir
+         (if system-dir0 ; from getenv$-raw, so a legal ACL2 string if non-nil
+             (extend-pathname+ (cbd) system-dir0 t state)
+
+; Else the value of project-dir-alist is the system books directory, as
+; established in enter-boot-strap-mode.
+
+           (f-get-global 'project-dir-alist state))))
+    (cond
+     ((alistp system-books-dir)
+      (er soft ctx
+          "The project-dir-alist has already been set, but an attempt is ~
+           being made to set it again.  That is illegal.  The existing value ~
+           of the project-dir-alist is~|~x0."
+          system-books-dir))
+     ((not (stringp system-books-dir))
+      (er soft ctx
+          "Implementation error: The project-dir-alist has value~|~x0~|but ~
+           that is neither a string nor an alist."
+          system-books-dir))
+     (t
+      (er-let*
+          ((filename (getenv$ "ACL2_PROJECTS" state))
+           (alist (if (and filename (not (equal filename "")))
+                      (project-dir-alist-from-file filename ctx state)
+                    (value nil)))
+           (pair (value (assoc-eq :system alist)))
+           (val
+            (cond
+             ((null alist)
+              (value (list (cons :system system-books-dir))))
+             ((and pair
+                   (not (equal (cdr pair) system-books-dir)))
+              (mv-let
+                (erp val state)
+                (er-let* ((dir0 (getenv$ "ACL2_SYSTEM_BOOKS" state)))
+                  (er soft ctx
+                      "ABORTING start of ACL2!  The project-dir-alist read ~
+                       from file ~x0 associates :SYSTEM with ~x1.  This ~
+                       conflicts with the value ~x2 associated with ~
+                       :SYSTEM~@3.  Address this error in order to run ACL2."
+                      filename
+                      (cdr pair)
+                      system-books-dir
+                      (if (and dir0 (not (equal dir0 "")))
+                          (msg " by environment variable ACL2_SYSTEM_BOOKS")
+                        (msg ", which by default is the pathname of the ~
+                              books/ directory of your ACL2 distribution"))))
+                (prog2$ (exit 1)
+                        (mv erp val state))))
+              (pair (value (merge-sort-len>=-cdr alist)))
+              (t (value (merge-sort-len>=-cdr
+                         (acons :SYSTEM system-books-dir alist)))))))
+        (pprogn (f-put-global 'project-dir-alist val state)
+                (value val)))))))
+
 (defun lp (&rest args)
 
 ; This function can only be called from within raw lisp, because no ACL2
@@ -9078,8 +9283,8 @@
 
 ; Remark for #+acl2-par.  Here we set the gc-threshold to a high number.  If
 ; the Lisps support it, this threshold could be based off the actual memory in
-; the system.  We perform this setting of the threshold in lp, because Lispworks
-; doesn't save the GC configuration as part of the Lisp image.
+; the system.  We perform this setting of the threshold in lp, because
+; Lispworks doesn't save the GC configuration as part of the Lisp image.
 
 ; Parallelism no-fix: the threshold below may cause problems for machines with
 ; less than that amount of free RAM.  At a first glance, this shouldn't
@@ -9196,28 +9401,16 @@
                                    os-user-home-dir
                                    (os (w *the-live-state*))
                                    *the-live-state*)))
-              (system-dir0 (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-                             (and str
-                                  (maybe-add-separator str)))))
+              (system-dir0 (getenv$-raw "ACL2_SYSTEM_BOOKS")))
          (when save-expansion
            (f-put-global 'save-expansion-file t *the-live-state*))
          (when book-hash-alistp-env
            (f-put-global 'book-hash-alistp t *the-live-state*))
          (when user-home-dir
            (f-put-global 'user-home-dir user-home-dir *the-live-state*))
-         (when system-dir0 ; needs to wait for user-homedir-pathname
-           (f-put-global
-            'system-books-dir
-            (canonical-dirname!
-             (unix-full-pathname
-              (expand-tilde-to-user-home-dir
-               system-dir0 ; from getenv$-raw, hence a legal ACL2 string
-               (os (w *the-live-state*))
-               'lp
-               *the-live-state*))
-             'lp
-             *the-live-state*)
-            *the-live-state*)))
+; The following needs to wait for user-homedir-pathname.
+         (establish-project-dir-alist system-dir0 'lp *the-live-state*)
+         )
        (set-gag-mode-fn :goals *the-live-state*)
        (f-put-global 'serialize-character-system #\Z state)
        (f-put-global 'pc-info

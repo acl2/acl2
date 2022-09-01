@@ -49,7 +49,7 @@
 #   - use the directory specified by the -b or --acl2-books command line argument
 #   - use the directory specified by the environment variable $ACL2_SYSTEM_BOOKS
 #   - look for a "books" directory where the ACL2 we're using is located
-#   - run ACL2 and check if (@ system-books-dir) evaluates to a directory that exists
+#   - run ACL2 and check if (system-books-dir state) evaluates to a directory that exists
 #   - use the parent of the directory containing this script
 
 # This script also scans the relevant .acl2 files for each book, looking for
@@ -312,8 +312,9 @@ COMMAND LINE OPTIONS
            overrides the ACL2_SYSTEM_BOOKS environment variable, if
            that variable is set.  If neither is set, a directory is
            guessed based on the location of the ACL2 executable, or
-           the value of (@ system-books-dir) as reported by the ACL2
-           executable, or the location of this script, in that order.
+           the value of (system-books-dir state) as reported by the
+           ACL2 executable, or the location of this script, in that
+           order.
 
    --clean-certs
    --cc
@@ -765,7 +766,7 @@ flag or ACL2 environment variable.\n");
 # choose a value for $acl2_books if it is not yet set, we try the
 # following in order until one succeeds:
 #   - look for a "books" directory where the ACL2 we're using is located
-#   - run ACL2 and check if (@ system-books-dir) evaluates to a directory that exists
+#   - run ACL2 and check if (system-books-dir state) evaluates to a directory that exists
 #   - use the parent of the directory containing this script
 
 if (! $acl2_books && $acl2 ) {
@@ -779,7 +780,7 @@ if (! $acl2_books && $acl2 ) {
 
 if (! $acl2_books && $acl2 ) {
     my $dumper1 = # command to send to ACL2
-        '(cw \"~%CERT_PL_VAL:~S0~%\" (@ acl2::system-books-dir))';
+        '(cw \"~%CERT_PL_VAL:~S0~%\" (acl2::system-books-dir acl2::state))';
     my $dumper2 = # command to send to STARTJOB
         'echo "' . $dumper1 . '" | ' .
         "$acl2 2>$devnull | " .

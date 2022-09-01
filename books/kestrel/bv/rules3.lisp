@@ -14,7 +14,6 @@
 (include-book "rules")
 (include-book "bvashr")
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
-;(local (include-book "arith"))
 (local (include-book "rules0"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
