@@ -17,6 +17,7 @@
 (include-book "promote-value")
 (include-book "uaconvert-values")
 (include-book "integer-conversions")
+(include-book "value-integer-get")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -106,7 +107,7 @@
                             (equal
                              (,exec-binary-strict-pure-of-op-and-ltype x y)
                              (,op-ltype-rtype x y))))
-         (enables (if (binop-case op :mul)
+         (enables (if (member-eq (binop-kind op) '(:mul :div))
                       `(,exec-binary-strict-pure-of-op-and-ltype
                         ,op-values
                         ,op-arithmetic-values
@@ -124,14 +125,8 @@
                         ,@*atc-uaconvert-values-rules*
                         ,@*atc-promote-value-rules*
                         result-integer-value
-                        value-integer->get
+                        ,@*atc-value-integer->get-rules*
                         value-integer
-                        value-sint->get-to-sint->get
-                        value-uint->get-to-uint->get
-                        value-slong->get-to-slong->get
-                        value-ulong->get-to-ulong->get
-                        value-sllong->get-to-sllong->get
-                        value-ullong->get-to-ullong->get
                         value-sint-to-sint
                         value-uint-to-uint
                         value-slong-to-slong
@@ -180,7 +175,8 @@
                       ,@*atc-promote-value-rules*)))
          (event `(defruled ,name
                    ,formula
-                   :enable ,enables)))
+                   :enable ,enables
+                   :disable truncate)))
       (mv name event))
     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
@@ -213,7 +209,7 @@
          (lpred (pack lfixtype 'p))
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
-         (exec-op (if (binop-case op :mul)
+         (exec-op (if (member-eq (binop-kind op) '(:mul :div))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -257,7 +253,7 @@
     (b* (((when (endp ops)) (mv nil nil))
          (op (car ops))
          (op-kind (binop-kind op))
-         (exec-op (if (binop-case op :mul)
+         (exec-op (if (member-eq (binop-kind op) '(:mul :div))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
