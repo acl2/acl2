@@ -46,6 +46,14 @@ Adapted from prove-cgen.lisp and top.lisp in acl2s/cgen
                                        elided-var-map counteregp state)))
         (value (cons r Rs)))))
 
+#|
+
+; Old version. The idea of the new version is to collect together all
+; the counterexamples and witnesses discovered, not just the ones from
+; the last checkpoint and not just the number requested. For example,
+; if we requested 3 counterexamples and 3 witnesses, but we found 7
+; counterexamples and 3 witnesses, then return everything we found.
+
 (defun itest?-print-cts/wts (s-hist cts-p top-vars state)
   (declare (xargs :stobjs (state)))
   (if (endp s-hist)
@@ -57,9 +65,28 @@ Adapted from prove-cgen.lisp and top.lisp in acl2s/cgen
                   (access test-outcomes% wts)))
          (elide-map (access s-hist-entry% elide-map))
          ((when (endp A-lst)) 
-          (itest?-print-cts/wts (cdr s-hist) cts-p 
-                             top-vars state)))
-        (itest?-extract-assignments A-lst top-vars elide-map cts-p state))))
+          (itest?-print-cts/wts (cdr s-hist) cts-p top-vars state)))
+      (itest?-extract-assignments A-lst top-vars elide-map cts-p state))))
+
+|#
+
+(defun itest?-print-cts/wts (s-hist cts-p top-vars state)
+  (declare (xargs :stobjs (state)))
+  (if (endp s-hist)
+      (value nil)
+    (b* (((cons ? s-hist-entry%) (car s-hist))
+         (test-outcomes% (access s-hist-entry% test-outcomes))
+         (A-lst (if cts-p 
+                    (access test-outcomes% cts)
+                  (access test-outcomes% wts)))
+         (elide-map (access s-hist-entry% elide-map))
+         ((when (endp A-lst)) 
+          (itest?-print-cts/wts (cdr s-hist) cts-p top-vars state))
+         ((mv & res1 state)
+          (itest?-extract-assignments A-lst top-vars elide-map cts-p state))
+         ((mv & res2 state)
+          (itest?-print-cts/wts (cdr s-hist) cts-p top-vars state)))
+      (value (remove-duplicates (append res1 res2) :test 'equal)))))
 
 ; adapted from print-testing-summary-fn
 (defun extract-cgen (cgen-state state)
@@ -72,12 +99,17 @@ Adapted from prove-cgen.lisp and top.lisp in acl2s/cgen
                 (& . &))
          (b* ((top-term (cget user-supplied-term))
               (top-vars (all-vars top-term))
-              ((er res)  (itest?-print-cts/wts
-                          s-hist 
-                          T
-                          top-vars 
-                          state)))
-             (value res)))
+              ((er cts) (itest?-print-cts/wts
+                         s-hist 
+                         T
+                         top-vars 
+                         state))
+              ((er wts) (itest?-print-cts/wts
+                         s-hist 
+                         nil
+                         top-vars 
+                         state)))
+           (value (list cts wts))))
         (& (value (cw? 
                    (normal-output-flag vl) 
                    "~|ITEST? error: BAD gcs% in cgen-state.~|"))))))

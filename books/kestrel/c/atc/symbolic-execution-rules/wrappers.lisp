@@ -30,4 +30,5 @@
   (defval *atc-wrapper-rules*
     '(condexpr
       declar
-      assign)))
+      assign
+      pointer)))
