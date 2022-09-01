@@ -1277,7 +1277,9 @@
   (xdoc::topstring
    (xdoc::p
     "These are the recognizer, fixer, fixtype, member operations,
-     and the table event."))
+     and the table event.
+     We conclude with a @(tsee deflabel) event
+     that facilitates history manipulation."))
   (b* ((struct-tag (packn-pos (list 'struct- tag) tag))
        (struct-tag-p (packn-pos (list struct-tag '-p) tag))
        (struct-tag-fix (packn-pos (list struct-tag '-fix) tag))
@@ -1308,13 +1310,15 @@
               :value-kind-thm value-kind-when-struct-tag-p
               :type-of-value-thm type-of-value-when-struct-tag-p
               :call call))
-       (table-event (defstruct-table-record-event (symbol-name tag) info)))
+       (table-event (defstruct-table-record-event (symbol-name tag) info))
+       (label-event `(deflabel ,tag)))
     `(progn
        ,recognizer-event
        ,fixer-event
        ,fixtype-event
        ,@member-op-events
-       ,table-event)))
+       ,table-event
+       ,label-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
