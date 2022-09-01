@@ -55,6 +55,6 @@
    (xdoc::p
     "The idea is that @('(pointer (P ...))') represents,
      for the purpose of generating a C type,
-     the pointer type @('T*')
+     the pointer type @('T *')
      if the recognizer @('P') represents type @('T')."))
   x)
