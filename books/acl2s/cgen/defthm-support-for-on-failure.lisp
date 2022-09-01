@@ -63,7 +63,7 @@
 |#
 
 (in-package "ACL2")
-(include-book "acl2s/cgen/top" :dir :system)
+(include-book "acl2s/cgen/top" :dir :system :ttags :all)
 
 ; If you want a minimal cgen use this instead of the above.
 ; (include-book "acl2s/cgen/cgen-no-thms" :dir :system)
@@ -99,6 +99,7 @@
                         (local (acl2s-defaults :set testing-enabled nil))
                         (with-output :stack :pop ,new-form))
                        (with-output :stack :pop ,new-form))
-               '(with-output :stack :pop ,new-form)))))))))
+               '(with-output :stack :pop ,new-form)))
+           :expansion? ,new-form))))))
 
 (redef-)
