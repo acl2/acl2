@@ -512,6 +512,8 @@
                                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                                    )))))
 
+(theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2) (:definition slice)))
+
 (defthmd bvchop-of-floor-of-expt-of-2-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep n)))
@@ -522,6 +524,9 @@
                   (slice (+ (lg k) -1 n) (lg k) x)))
   :hints (("Goal" :use (:instance bvchop-of-floor-of-expt-of-2 (m (lg k)))
            :in-theory (e/d (power-of-2p) (bvchop-of-floor-of-expt-of-2)))))
+
+
+(theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2-constant-version) (:definition slice)))
 
 (defthm bitp-of-slice-same-type
   (bitp (slice n n x))

@@ -467,6 +467,14 @@
   :hints (("Goal" :use (:instance getbit-of-*-of-expt-arg1)
            :in-theory (disable getbit-of-*-of-expt-arg1))))
 
+;; ;yuck! can loop!
+;; (defthmd getbit-0-of-times
+;;    (implies (and (integerp x) (integerp y))
+;;             (equal (getbit 0 (* x y))
+;;                    (getbit 0 (* (getbit 0 x) (getbit 0 y)))))
+;;    :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+
+;rename
 (defthm getbit-0-of-times-constant
   (implies (and (syntaxp (and (quotep x)
                               (not (unsigned-byte-p 1 (unquote x)))))
@@ -593,3 +601,8 @@
   :hints (("Goal" :in-theory (e/d (getbit)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))
+
+(defthm equal-of-getbit-same
+  (equal (equal (getbit 0 x) x)
+         (unsigned-byte-p 1 x))
+  :hints (("Goal" :in-theory (enable getbit-identity))))

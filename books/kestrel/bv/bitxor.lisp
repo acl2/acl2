@@ -300,3 +300,5 @@
   (implies (posp size)
            (equal (bitxor z (bvxor size x y))
                   (bitxor z (bitxor x y)))))
+
+;need more bitxor cancel rules?
