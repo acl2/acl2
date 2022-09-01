@@ -580,7 +580,7 @@
                                   (true-listp)))))
 
 ;state-p could call this
-(defun global-table-p (x)
+(defund global-table-p (x)
   (declare (xargs :guard t))
   (and (ordered-symbol-alistp x)
        (all-boundp *initial-global-table* x)
@@ -603,8 +603,14 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-global-table x state))
                   (global-table-p x)))
-  :hints (("Goal" :in-theory (e/d (state-p1)
+  :hints (("Goal" :in-theory (e/d (state-p1 global-table-p)
                                   (true-listp)))))
+
+(defthm state-p-of-update-global-table
+  (implies (state-p state)
+           (equal (state-p (update-global-table x state))
+                  (global-table-p x)))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm state-p1-of-update-file-clock
   (implies (state-p1 state)
@@ -694,12 +700,18 @@
 ;;            (boundp-global global-name state))
 ;;   :hints (("Goal" :in-theory (enable state-p1))))
 
+(defthm boundp-global1-when-state-p
+  (implies (and (member-equal global-name *initial-globals*)
+                (state-p state))
+           (boundp-global1 global-name state))
+  :hints (("Goal" :in-theory (e/d (state-p state-p1 boundp-global1)
+                                  (member-equal)))))
+
 (defthm boundp-global-when-state-p
   (implies (and (member-equal global-name *initial-globals*)
                 (state-p state))
            (boundp-global global-name state))
-  :hints (("Goal" :in-theory (e/d (state-p state-p1 boundp-global)
-                                  (member-equal)))))
+  :hints (("Goal" :in-theory (enable boundp-global))))
 
 (defthm plist-worldp-of-w-when-state-p1
   (implies (state-p1 state)
@@ -712,7 +724,7 @@
                 (not (member-equal key '(current-acl2-world timer-alist))) ; todo
                 )
            (state-p1 (put-global key value state)))
-  :hints (("Goal" :in-theory (enable put-global state-p1))))
+  :hints (("Goal" :in-theory (enable put-global state-p1 global-table-p))))
 
 (defthm state-p-of-put-global
   (implies (and (state-p state)
@@ -721,3 +733,9 @@
                 )
            (state-p (put-global key value state)))
   :hints (("Goal" :in-theory (enable state-p))))
+
+(defthm boundp-global1-of-put-global
+  (implies (not (equal name key))
+           (equal (boundp-global1 name (put-global key value state))
+                  (boundp-global1 name state)))
+  :hints (("Goal" :in-theory (enable put-global boundp-global1))))

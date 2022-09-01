@@ -1,7 +1,7 @@
 ; Rules that deal with both bvcat and other operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -397,3 +397,18 @@
            (equal (bvif size test x (bvcat highsize highval lowsize lowval))
                   (bvif size test x lowval)))
   :hints (("Goal" :in-theory (enable bvif myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+;bozo gen
+;strength reduction from bvmult to shift, so i guess this is a win? unless we are in an arithmetic context?
+(defthmd bvmult-of-2
+  (implies (natp n)
+           (equal (bvmult n 2 x)
+                  (bvcat (+ -1 n) x 1 0)))
+  :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
+                                  (bvchop-1-becomes-getbit
+                                   slice-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice
+                                   logtail-of-bvchop-becomes-slice)))))

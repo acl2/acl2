@@ -3801,11 +3801,6 @@
                                                             SLICE-BECOMES-GETBIT)))))
 
 
-(defthm equal-of-getbit-same
-  (equal (equal (getbit 0 x) x)
-         (unsigned-byte-p 1 x))
-  :hints (("Goal" :in-theory (enable getbit-identity))))
-
 ;should always bit blast as a last resort?
 (defthmd bit-blast-3
   (implies (and (syntaxp (and (member-eq (car x) *trimmable-operators*)
