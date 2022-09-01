@@ -448,7 +448,9 @@
   (xdoc::topstring
    (xdoc::p
     "These are the recognizer, initializer, and table event.
-     They are put into one @(tsee progn) event."))
+     They are put into one @(tsee progn) event.
+     We conclude with a @(tsee deflabel) event
+     that facilitates history manipulation."))
   (b* (((unless (and (type-case type :array)
                      (type-nonchar-integerp (type-array->of type))))
         (raise "Internal error: not integer array type ~x0." type)
@@ -479,11 +481,13 @@
                                   :recognizer recognizer-name
                                   :initializer initializer-name
                                   :call call))
-       (table-event (defobject-table-record-event name-string info)))
+       (table-event (defobject-table-record-event name-string info))
+       (label-event `(deflabel ,name)))
     `(progn
        ,recognizer-event
        ,initializer-event
-       ,table-event)))
+       ,table-event
+       ,label-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
