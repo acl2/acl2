@@ -107,3 +107,20 @@
                  :required :scalar
                  :supplied (value-fix val))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define mul-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply binary @('*') to values [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not arithmetic."))
+  (if (and (value-arithmeticp val1)
+           (value-arithmeticp val2))
+      (mul-arithmetic-values val1 val2)
+    (error (list :mul-mistype
+                 :required :arithmetic :arithmetic
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
