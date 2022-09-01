@@ -3826,9 +3826,9 @@
       (mv pp-lst nil))))
 
 ;;;;;;;;;;;;;;;;;;
-;; radix-8+ fix
+;; cross product applicable pp
 ;;:i-am-here
-(define pp-radix8+-fix-pattern-check-aux ((ppe-lst rp-term-listp))
+(define cross-product-pp-pattern-check-aux ((ppe-lst rp-term-listp))
   :returns (mv (pass booleanp)
                (s/c-found booleanp))
   (if (atom ppe-lst)
@@ -3838,17 +3838,17 @@
          (cur (ex-from-rp cur-orig)))
       (case-match cur
         (('bit-of & &)
-         (pp-radix8+-fix-pattern-check-aux (cdr ppe-lst)))
+         (cross-product-pp-pattern-check-aux (cdr ppe-lst)))
         (('s & & &)
          (b* (((mv rest-valid rest-s/c-found)
-               (pp-radix8+-fix-pattern-check-aux (cdr ppe-lst))))
+               (cross-product-pp-pattern-check-aux (cdr ppe-lst))))
            (mv (and rest-valid
                     ;;(equal (len (acl2::all-vars cur)) 1)
                     (not rest-s/c-found))
                t)))
         (('c & & & &)
          (b* (((mv rest-valid rest-s/c-found)
-               (pp-radix8+-fix-pattern-check-aux (cdr ppe-lst))))
+               (cross-product-pp-pattern-check-aux (cdr ppe-lst))))
            (mv (and rest-valid
                     ;;(equal (len (acl2::all-vars cur)) 1)
                     (not rest-s/c-found)
@@ -3856,23 +3856,23 @@
                t)))
         (('s-c-res & & &)
          (b* (((mv rest-valid rest-s/c-found)
-               (pp-radix8+-fix-pattern-check-aux (cdr ppe-lst))))
+               (cross-product-pp-pattern-check-aux (cdr ppe-lst))))
            (mv (and rest-valid
                     (not rest-s/c-found)
                     has-bitp)
                t)))
         (& (mv nil nil))))))
 
-(define pp-radix8+-fix-pattern-check ((single-pp rp-termp))
+(define cross-product-pp-pattern-check ((single-pp rp-termp))
   :returns (pass booleanp)
   (case-match single-pp
     (('and-list & ('list . lst))
      (b* (((mv pass &)
-           (pp-radix8+-fix-pattern-check-aux lst)))
+           (cross-product-pp-pattern-check-aux lst)))
        pass))
     (& nil)))
 
-(define pp-radix8+-fix-pattern-check2-aux ((term rp-termp))
+(define cross-product-pp-pattern-check2-aux ((term rp-termp))
   :returns (mv (pass booleanp)
                (s/c-count natp))
   :measure (cons-count term)
@@ -3883,34 +3883,34 @@
        (term (ex-from-rp term)))
     (cond ((binary-?-p term)
            (b* (((mv pass1 s/c-count1)
-                 (pp-radix8+-fix-pattern-check2-aux (cadr term)))
+                 (cross-product-pp-pattern-check2-aux (cadr term)))
                 ((mv pass2 s/c-count2)
-                 (pp-radix8+-fix-pattern-check2-aux (caddr term)))
+                 (cross-product-pp-pattern-check2-aux (caddr term)))
                 ((mv pass3 s/c-count3)
-                 (pp-radix8+-fix-pattern-check2-aux (cadddr term)))
+                 (cross-product-pp-pattern-check2-aux (cadddr term)))
                 (sum13 (+ s/c-count1 s/c-count3)))
              (mv (and pass1 pass2 pass3
                       (equal sum13 0))
                  (+ sum13 s/c-count2))))
           ((binary-and-p term)
            (b* (((mv pass1 s/c-count1)
-                 (pp-radix8+-fix-pattern-check2-aux (cadr term)))
+                 (cross-product-pp-pattern-check2-aux (cadr term)))
                 ((mv pass2 s/c-count2)
-                 (pp-radix8+-fix-pattern-check2-aux (caddr term))))
+                 (cross-product-pp-pattern-check2-aux (caddr term))))
              (mv (and pass1 pass2 )
                  (+ s/c-count1 s/c-count2))))
           ((or (binary-or-p term)
                (binary-xor-p term))
            (b* (((mv pass1 s/c-count1)
-                 (pp-radix8+-fix-pattern-check2-aux (cadr term)))
+                 (cross-product-pp-pattern-check2-aux (cadr term)))
                 ((mv pass2 s/c-count2)
-                 (pp-radix8+-fix-pattern-check2-aux (caddr term)))
+                 (cross-product-pp-pattern-check2-aux (caddr term)))
                 (total (+ s/c-count1 s/c-count2)))
              (mv (and pass1 pass2 (equal total 0))
                  total)))
           ((binary-not-p term)
            (b* (((mv pass s/c-count)
-                 (pp-radix8+-fix-pattern-check2-aux (cadr term))))
+                 (cross-product-pp-pattern-check2-aux (cadr term))))
              (mv (and pass (equal s/c-count 0)) s/c-count)))
           ((bit-of-p term)
            (mv t 0))
@@ -3922,14 +3922,14 @@
            (mv has-bitp 1))
           (t (mv has-bitp 0)))))
 
-(define pp-radix8+-fix-pattern-check2 ((single-pp rp-termp))
+(define cross-product-pp-pattern-check2 ((single-pp rp-termp))
   :returns (pass booleanp)
   (b* (((mv pass s/c-count)
-        (pp-radix8+-fix-pattern-check2-aux single-pp)))
+        (cross-product-pp-pattern-check2-aux single-pp)))
     (and pass
          (equal s/c-count 1))))
 
-(define pp-radix8+-fix-aux-precollect ((e-lst rp-term-listp))
+(define cross-product-pp-aux-precollect ((e-lst rp-term-listp))
   :returns (mv (single-s/c rp-termp :hyp (rp-term-listp e-lst))
                (res-e-lst rp-term-listp :hyp (rp-term-listp e-lst))
                (valid booleanp))
@@ -3939,7 +3939,7 @@
          (has-bitp (has-bitp-rp cur-orig))
          (cur (ex-from-rp cur-orig))
          ((mv rest-single-s/c rest-lst valid)
-          (pp-radix8+-fix-aux-precollect (cdr e-lst)))
+          (cross-product-pp-aux-precollect (cdr e-lst)))
          ((unless (and valid
                        #|(equal rest-single-s/c ''1)|#))
           (mv rest-single-s/c ;; should never come here becasue of pattern-check
@@ -3967,7 +3967,7 @@
              (cons cur rest-lst)
              nil))))))
 
-(define pp-radix8+-fix-aux-precollect2-aux ((single-pp rp-termp)
+(define cross-product-pp-aux-precollect2-aux ((single-pp rp-termp)
                                             (side-pp-lst rp-term-listp))
   :returns (res-side-pp-lst rp-term-listp :hyp (and (rp-termp single-pp)
                                                     (rp-term-listp side-pp-lst)))
@@ -3975,9 +3975,9 @@
       nil
     (cons `(binary-and ,single-pp
                        ,(car side-pp-lst))
-          (pp-radix8+-fix-aux-precollect2-aux single-pp (cdr side-pp-lst)))))
+          (cross-product-pp-aux-precollect2-aux single-pp (cdr side-pp-lst)))))
 
-(define pp-radix8+-fix-aux-precollect2 ((single-pp rp-termp))
+(define cross-product-pp-aux-precollect2 ((single-pp rp-termp))
   :returns (mv (single-s/c rp-termp :hyp (rp-termp single-pp))
                (res-pp rp-termp :hyp (rp-termp single-pp))
                (side-pp-lst rp-term-listp :hyp (rp-termp single-pp))
@@ -3993,7 +3993,7 @@
                 (then (caddr term))
                 (else (cadddr term))
                 ((mv s/c1 pp1 side-pp1 valid)
-                 (pp-radix8+-fix-aux-precollect2 then))
+                 (cross-product-pp-aux-precollect2 then))
                 ((when (equal s/c1 ''1))
                  (mv ''1 single-pp nil t))
                 ((unless valid)
@@ -4001,7 +4001,7 @@
              (mv s/c1
                  `(binary-and ,test ,pp1)
                  (cons `(binary-and (binary-not ,test) ,else)
-                       (pp-radix8+-fix-aux-precollect2-aux test side-pp1))
+                       (cross-product-pp-aux-precollect2-aux test side-pp1))
                  t)))
           ((or (binary-not-p term)
                (binary-or-p term)
@@ -4012,20 +4012,20 @@
            (mv ''1 single-pp nil t))
           ((binary-and-p term)
            (b* (((mv s/c1 pp1 side1 valid1)
-                 (pp-radix8+-fix-aux-precollect2 (cadr term)))
+                 (cross-product-pp-aux-precollect2 (cadr term)))
                 ((mv s/c2 pp2 side2 valid2)
-                 (pp-radix8+-fix-aux-precollect2 (caddr term)))
+                 (cross-product-pp-aux-precollect2 (caddr term)))
                 ((unless (and valid1 valid2))
                  (mv ''nil ''nil nil nil))
                 (s/c1-e (not (equal s/c1 ''1)))
                 (s/c2-e (not (equal s/c2 ''1)))
                 ((when (and s/c1-e (not s/c2-e) (not side2)))
                  (mv s/c1 `(binary-and ,pp1 ,pp2)
-                     (pp-radix8+-fix-aux-precollect2-aux pp2 side1)
+                     (cross-product-pp-aux-precollect2-aux pp2 side1)
                      t))
                 ((when (and s/c2-e (not s/c1-e) (not side1)))
                  (mv s/c2 `(binary-and ,pp1 ,pp2)
-                     (pp-radix8+-fix-aux-precollect2-aux pp1 side2)
+                     (cross-product-pp-aux-precollect2-aux pp1 side2)
                      t))
                 ((when (and (not s/c1-e) (not s/c2-e) (not side1) (not side2)))
                  (mv ''1 `(binary-and ,pp1 ,pp2) nil t)))
@@ -4065,7 +4065,7 @@
                     (equal term ''0)
                     (has-bitp-rp term))))))
 
-(define pp-radix8+-fix-aux-for-pp-lst-aux ((pp-lst rp-term-listp)
+(define cross-product-pp-aux-for-pp-lst-aux ((pp-lst rp-term-listp)
                                            (e-lst rp-term-listp))
   :returns (mv (res-pp-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
                                                    (rp-term-listp e-lst)))
@@ -4082,7 +4082,7 @@
         (b* (((mv cur-in-binary-fnc cur-is-bitp) (and-list-to-binary-and cur))
              ((Unless cur-is-bitp) (mv nil nil))
              ((mv rest-pp-lst valid)
-              (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst))
+              (cross-product-pp-aux-for-pp-lst-aux (cdr pp-lst) e-lst))
              (res `(binary-and ,cur-in-binary-fnc ,(car e-lst))))
           (mv (cons (if cur-is-signed `(-- ,res) res)
                     rest-pp-lst)
@@ -4094,11 +4094,11 @@
                 (cur-pp (create-and-list-instance res-e-lst))
                 (cur-pp (if cur-is-signed `(-- ,cur-pp) cur-pp))
                 ((mv rest-pp-lst valid)
-                 (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst)))
+                 (cross-product-pp-aux-for-pp-lst-aux (cdr pp-lst) e-lst)))
              (mv (cons cur-pp rest-pp-lst)
                  valid)))
           (&
-           (mv nil (hard-error 'pp-radix8+-fix-aux-for-pp-lst-aux
+           (mv nil (hard-error 'cross-product-pp-aux-for-pp-lst-aux
                                "Unexpected pp-lst element: ~p0 ~%"
                                (list (cons #\0 cur)))))))
        ((or (bit-of-p cur)
@@ -4107,28 +4107,28 @@
              (cur-pp (create-and-list-instance res-e-lst))
              (cur-pp (if cur-is-signed `(-- ,cur-pp) cur-pp))
              ((mv rest-pp-lst valid)
-              (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst)))
+              (cross-product-pp-aux-for-pp-lst-aux (cdr pp-lst) e-lst)))
           (mv (cons cur-pp rest-pp-lst)
               valid)))
        ((binary-fnc-p cur)
         (b* ((e-lst-in-binary-fnc (and-list-to-binary-and-aux e-lst))
              ((mv rest-pp-lst valid)
-              (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst))
+              (cross-product-pp-aux-for-pp-lst-aux (cdr pp-lst) e-lst))
              (res `(binary-and ,e-lst-in-binary-fnc ,cur)))
           (mv (cons (if cur-is-signed `(-- ,res) res)
                     rest-pp-lst)
               valid)))
-       (t (mv nil (hard-error 'pp-radix8+-fix-aux-for-pp-lst-aux
+       (t (mv nil (hard-error 'cross-product-pp-aux-for-pp-lst-aux
                               "Unexpected pp-lst element: ~p0 ~%"
                               (list (cons #\0 cur)))))))))
 
-(define pp-radix8+-fix-aux-for-pp-lst  ((pp-lst rp-term-listp)
+(define cross-product-pp-aux-for-pp-lst  ((pp-lst rp-term-listp)
                                         (e-lst rp-term-listp))
   :returns (mv (res-pp-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
                                                    (rp-term-listp e-lst)))
                (valid booleanp))
   (b* (((mv res-pp-lst valid)
-        (pp-radix8+-fix-aux-for-pp-lst-aux pp-lst e-lst))
+        (cross-product-pp-aux-for-pp-lst-aux pp-lst e-lst))
        ((unless valid)
         (mv res-pp-lst valid))
        ((when (pp-lst-orderedp res-pp-lst))
@@ -4136,7 +4136,7 @@
        (res-pp-lst (pp-sum-sort-lst res-pp-lst)))
     (mv res-pp-lst valid)))
 
-(define pp-radix8+-fix-aux-for-s/c ((single-s/c rp-termp)
+(define cross-product-pp-aux-for-s/c ((single-s/c rp-termp)
                                     (e-lst rp-term-listp))
   :verify-guards nil
   :returns (mv (res-s-lst)
@@ -4176,10 +4176,10 @@
            (case-match single-s/c
              (('s & ('list . pp-lst) ('list single-c))
               (b* (((mv new-pp-lst valid)
-                    (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst))
+                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
                    ((unless valid) (mv nil nil nil nil))
                    ((mv rest-s-lst rest-pp-lst rest-c-lst valid)
-                    (pp-radix8+-fix-aux-for-s/c single-c e-lst))
+                    (cross-product-pp-aux-for-s/c single-c e-lst))
                    ((unless (and valid
                                  (equal rest-s-lst nil)))
                     (mv nil nil nil nil))
@@ -4195,7 +4195,7 @@
                     t)))
              (('s & ('list . pp-lst) ''nil)
               (b* (((mv new-pp-lst valid)
-                    (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst))
+                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
                    ((unless valid) (mv nil nil nil nil))
                    (new-pp-lst (s-fix-pp-args-aux new-pp-lst))
                    ((mv res-s-lst res-pp-lst res-c-lst)
@@ -4210,10 +4210,10 @@
            (case-match single-s/c
              (('c & ''nil ('list . pp-lst) ('list single-c))
               (b* (((mv new-pp-lst valid)
-                    (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst))
+                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
                    ((unless valid) (mv nil nil nil nil))
                    ((mv rest-s-lst rest-pp-lst rest-c-lst valid)
-                    (pp-radix8+-fix-aux-for-s/c single-c e-lst))
+                    (cross-product-pp-aux-for-s/c single-c e-lst))
                    ((unless (and valid
                                  (equal rest-s-lst nil)))
                     (mv nil nil nil nil))
@@ -4232,7 +4232,7 @@
                     t)))
              (('c & ''nil ('list . pp-lst) ''nil)
               (b* (((mv new-pp-lst valid)
-                    (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst))
+                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
                    ((unless valid) (mv nil nil nil nil))
                    ((mv coughed-pp-lst new-pp-lst) (c-fix-arg-aux new-pp-lst t))
                    ((mv res-s-lst res-pp-lst res-c-lst)
@@ -4256,9 +4256,9 @@
                   (rp-term-listp res-pp-lst)
                   (rp-term-listp res-c-lst))))
 
-  (verify-guards pp-radix8+-fix-aux-for-s/c))
+  (verify-guards cross-product-pp-aux-for-s/c))
 
-(define pp-radix8+-fix-aux-for-s/c-lst ((s/c-lst rp-term-listp)
+(define cross-product-pp-aux-for-s/c-lst ((s/c-lst rp-term-listp)
                                         (e-lst rp-term-listp))
   :returns (mv (res-s-lst)
                (res-pp-lst)
@@ -4268,10 +4268,10 @@
   (if (atom s/c-lst)
       (mv nil nil nil t)
     (b* (((mv res-s-lst res-pp-lst res-c-lst valid)
-          (pp-radix8+-fix-aux-for-s/c (car s/c-lst) e-lst))
+          (cross-product-pp-aux-for-s/c (car s/c-lst) e-lst))
          ((unless valid) (mv nil nil nil nil))
          ((mv res-s-lst2 res-pp-lst2 res-c-lst2 valid)
-          (pp-radix8+-fix-aux-for-s/c-lst (cdr s/c-lst) e-lst))
+          (cross-product-pp-aux-for-s/c-lst (cdr s/c-lst) e-lst))
          ((unless valid) (mv nil nil nil nil)))
       (mv (s-sum-merge-aux res-s-lst res-s-lst2)
           (pp-sum-merge-aux res-pp-lst res-pp-lst2)
@@ -4284,9 +4284,9 @@
              (and (rp-term-listp res-s-lst)
                   (rp-term-listp res-pp-lst)
                   (rp-term-listp res-c-lst))))
-  (verify-guards pp-radix8+-fix-aux-for-s/c-lst))
+  (verify-guards cross-product-pp-aux-for-s/c-lst))
 
-(define pp-radix8+-fix-aux-for-s/c-main ((single-s/c rp-termp)
+(define cross-product-pp-aux-for-s/c-main ((single-s/c rp-termp)
                                          (e-lst rp-term-listp))
   :returns (mv (res-s-lst)
                (res-pp-lst)
@@ -4299,20 +4299,20 @@
                 (pp-lst (list-to-lst (caddr single-s/c)))
                 (c-lst (list-to-lst (cadddr single-s/c)))
                 ((mv res-s-lst1 res-pp-lst1 res-c-lst1 valid)
-                 (pp-radix8+-fix-aux-for-s/c-lst s-lst e-lst))
+                 (cross-product-pp-aux-for-s/c-lst s-lst e-lst))
                 ((unless valid) (mv nil nil nil nil))
                 ((mv res-pp-lst2 valid)
-                 (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst))
+                 (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
                 ((unless valid) (mv nil nil nil nil))
                 ((mv res-s-lst3 res-pp-lst3 res-c-lst3 valid)
-                 (pp-radix8+-fix-aux-for-s/c-lst c-lst e-lst))
+                 (cross-product-pp-aux-for-s/c-lst c-lst e-lst))
                 ((unless valid) (mv nil nil nil nil)))
              (mv (s-sum-merge-aux res-s-lst1 res-s-lst3)
                  (pp-sum-merge-aux res-pp-lst1
                                    (pp-sum-merge-aux res-pp-lst2 res-pp-lst3))
                  (s-sum-merge-aux res-c-lst1 res-c-lst3)
                  t)))
-          (t (pp-radix8+-fix-aux-for-s/c single-s/c-orig e-lst))))
+          (t (cross-product-pp-aux-for-s/c single-s/c-orig e-lst))))
   ///
   (defret rp-term-listp-of-<fn>
     (implies (and (rp-termp single-s/c)
@@ -4321,7 +4321,7 @@
                   (rp-term-listp res-pp-lst)
                   (rp-term-listp res-c-lst)))))
 
-(define pp-radix8+-fix-aux ((single-pp rp-termp))
+(define cross-product-pp-aux ((single-pp rp-termp))
   :returns (mv (res-s-lst  rp-term-listp :hyp (rp-termp single-pp))
                (res-pp-lst rp-term-listp :hyp (rp-termp single-pp))
                (res-c-lst  rp-term-listp :hyp (rp-termp single-pp))
@@ -4332,14 +4332,14 @@
           (& (mv single-pp nil)))))
     (case-match single-pp
       (('and-list & ('list . e-lst))
-       (b* (((unless (pp-radix8+-fix-pattern-check single-pp))
+       (b* (((unless (cross-product-pp-pattern-check single-pp))
              (mv nil nil nil nil))
             ((mv single-s e-lst valid)
-             (pp-radix8+-fix-aux-precollect e-lst))
+             (cross-product-pp-aux-precollect e-lst))
             ((unless valid)
              (mv nil nil nil nil))
             ((mv res-s-lst res-pp-lst res-c-lst valid)
-             (pp-radix8+-fix-aux-for-s/c-main single-s e-lst)))
+             (cross-product-pp-aux-for-s/c-main single-s e-lst)))
          (if negated
              (mv (negate-lst res-s-lst)
                  (negate-lst res-pp-lst)
@@ -4349,14 +4349,14 @@
       (&
        (b* (((Unless (binary-fnc-p single-pp))
              (mv nil nil nil nil))
-            ((unless (pp-radix8+-fix-pattern-check2 single-pp))
+            ((unless (cross-product-pp-pattern-check2 single-pp))
              (mv nil nil nil nil))
             ((mv single-s/c res-pp side-pp-lst valid)
-             (pp-radix8+-fix-aux-precollect2 single-pp))
+             (cross-product-pp-aux-precollect2 single-pp))
             ((unless valid)
              (mv nil nil nil nil))
             ((mv res-s-lst res-pp-lst res-c-lst valid)
-             (pp-radix8+-fix-aux-for-s/c-main single-s/c (list res-pp)))
+             (cross-product-pp-aux-for-s/c-main single-s/c (list res-pp)))
             (res-pp-lst (pp-sum-merge-aux res-pp-lst side-pp-lst)))
          (if negated
              (mv (negate-lst res-s-lst)
@@ -4406,7 +4406,7 @@
             :in-theory (e/d (nthcdr len)
                             ())))))
 
-#|(define pp-radix8+-fix-aux2 ((pp-lst rp-term-listp))
+#|(define cross-product-pp-aux2 ((pp-lst rp-term-listp))
   :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
@@ -4424,10 +4424,10 @@
   (if (atom pp-lst)
       (mv nil nil nil)
     (b* (((mv res-s-lst res-pp-lst res-c-lst valid)
-          (pp-radix8+-fix-aux (car pp-lst)))
+          (cross-product-pp-aux (car pp-lst)))
 
          ((mv rest-s-lst rest-pp-lst rest-c-lst)
-          (pp-radix8+-fix-aux2 (cdr pp-lst)))) ;;
+          (cross-product-pp-aux2 (cdr pp-lst)))) ;;
       (if valid
           (mv (s-sum-merge-aux res-s-lst rest-s-lst)
               (pp-sum-merge-aux res-pp-lst rest-pp-lst)
@@ -4438,7 +4438,7 @@
                             pp-lst)
             rest-c-lst)))))|#
 
-(define pp-radix8+-fix-aux2 ((pp-lst rp-term-listp))
+(define cross-product-pp-aux2 ((pp-lst rp-term-listp))
   :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
@@ -4456,7 +4456,7 @@
   (if (atom pp-lst)
       (mv nil nil nil)
     (b* (((mv res-s-lst res-pp-lst res-c-lst valid)
-          (pp-radix8+-fix-aux (car pp-lst)))
+          (cross-product-pp-aux (car pp-lst)))
 
          (rep-count (count-repetitions-at-top pp-lst)) ;;
          (res-s-lst (repeat-s-sum-lst res-s-lst rep-count))
@@ -4465,7 +4465,7 @@
 
          (next-args (nthcdr rep-count pp-lst))
          ((mv rest-s-lst rest-pp-lst rest-c-lst)
-          (pp-radix8+-fix-aux2 next-args))) ;;
+          (cross-product-pp-aux2 next-args))) ;;
       (if valid
           (mv (s-sum-merge-aux res-s-lst rest-s-lst)
               (pp-sum-merge-aux res-pp-lst rest-pp-lst)
@@ -4482,12 +4482,14 @@
                            rest-pp-lst)))
             rest-c-lst)))))
 
-(define pp-radix8+-fix ((pp-lst rp-term-listp))
+(define cross-product-pp ((pp-lst rp-term-listp))
   :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+  "Applicable elements in pp-lst will be tried for cross product. For example,
+  (and$ x (s a b c)) may become (s (and$ a x) (and$ b x) (and$ c x))" 
   (b* (((mv res-s-lst res-pp-lst res-c-lst)
-        (pp-radix8+-fix-aux2 pp-lst))
+        (cross-product-pp-aux2 pp-lst))
        (res-pp-lst (if (pp-lst-orderedp res-pp-lst)
                        res-pp-lst
                      (pp-sum-sort-lst res-pp-lst))))
@@ -4716,7 +4718,7 @@
            (s (s-sum-merge s (create-list-instance s-lst2)))
            (c-lst (s-sum-merge-aux c-lst c-lst2))
 
-           ((mv s-lst2 pp-lst2 c-lst2) (pp-radix8+-fix pp-lst2))
+           ((mv s-lst2 pp-lst2 c-lst2) (cross-product-pp pp-lst2))
            (s (s-sum-merge s (create-list-instance s-lst2)))
            (c-lst (s-sum-merge-aux c-lst c-lst2))
 
