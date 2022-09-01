@@ -221,7 +221,8 @@
    (orig-internals true-list-listp)
    (expanded-ins         svtv-lines-p)
    (expanded-overrides   svtv-lines-p)
-   (nphases        natp))
+   (nphases        natp)
+   (form           "Original form defining the defsvtv"))
   :layout :list)
 
 

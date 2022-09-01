@@ -44,10 +44,31 @@
 (local (in-theory (disable acl2::alist-keys-member-hons-assoc-equal)))
 
 
+(defxdoc svtv-decomposition
+  :parents (svex-stvs)
+  :short "Umbrella topic for the recommended method for proof by decomposition using SVTVs."
+  :long "<p>The recommended method for proof by decomposition using @(see SVTV)s follows the following flow:</p>
 
+<ol>
 
+<li>Define your SVTV using @(see defsvtv$-phasewise) or @(see defsvtv$).  Each
+cutpoint signal should have an output variable sampled at the appropriate phase
+as well as conditional override (value/test) variables set at the same
+phase. Do not set the @(':monotonify') option to NIL (default T).</li>
 
+<li>Immediately after the @('defsvtv$') event, export the contents of the
+@('svtv-data') stobj to an ACL2 object using @(see def-svtv-data-export).</li>
 
+<li>Use @(see def-svtv-override-thms) to automatically prove certain important
+properties of the SVTV and its conditional overrides.</li>
+
+<li>Use @(see def-svtv-generalized-thm) to prove theorems about the decomposed components (cuts) within the SVTV.</li>
+
+<li>Use standard ACL2 rewriting involving the theorems proved in step 4 to prove the top-level theorem.</li>
+
+</ol>
+
+<p>The @(see sv-tutorial) has a section on @(see decomposition-proofs) that illustrates this flow further.</p>")
 
 
 (define pipeline-run ((setup pipeline-setup-p)
@@ -244,53 +265,53 @@
                                                  (envs svex-envlist-p)
                                                  (prev-envs svex-envlist-p)
                                                  (initst svex-env-p)
-                                                 (fsm base-fsm-p))
+                                                 (fsm.nextstate svex-alist-p))
   :guard (and (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate fsm)))
-              (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate fsm)))))
+                     (svex-alist-keys fsm.nextstate))
+              (not (hons-dups-p (svex-alist-keys fsm.nextstate))))
   :measure (len prev-envs)
   (if (atom prev-envs)
       t
     (and (svex-override-triplelist-env-ok (car triples)
-                                          (base-fsm-step-env (car envs) initst fsm)
-                                          (base-fsm-step-env (car prev-envs) initst fsm))
+                                          (base-fsm-step-env (car envs) initst fsm.nextstate)
+                                          (base-fsm-step-env (car prev-envs) initst fsm.nextstate))
          (svex-override-triplelist-fsm-inputs-ok* (cdr triples)
                                                   (cdr envs)
                                                   (cdr prev-envs)
-                                                  (base-fsm-step (car prev-envs) initst fsm)
-                                                  fsm)))
+                                                  (base-fsm-step (car prev-envs) initst fsm.nextstate)
+                                                  fsm.nextstate)))
   ///
   (defthm svex-override-triplelist-fsm-inputs-ok*-of-cons
     (equal (svex-override-triplelist-fsm-inputs-ok* triples
                                                     (cons env envs)
                                                     (cons prev-env prev-envs)
-                                                    initst fsm)
+                                                    initst fsm.nextstate)
            (and (svex-override-triplelist-env-ok (car triples)
-                                                 (base-fsm-step-env env initst fsm)
-                                                 (base-fsm-step-env prev-env initst fsm))
+                                                 (base-fsm-step-env env initst fsm.nextstate)
+                                                 (base-fsm-step-env prev-env initst fsm.nextstate))
                 (svex-override-triplelist-fsm-inputs-ok* (cdr triples) envs prev-envs
-                                                         (base-fsm-step prev-env initst fsm)
-                                                         fsm))))
+                                                         (base-fsm-step prev-env initst fsm.nextstate)
+                                                         fsm.nextstate))))
 
   (defthm svex-override-triplelist-fsm-inputs-ok*-of-nil
-    (equal (svex-override-triplelist-fsm-inputs-ok* triples envs nil initst fsm)
+    (equal (svex-override-triplelist-fsm-inputs-ok* triples envs nil initst fsm.nextstate)
            t))
 
   (defthm svex-override-triplelist-fsm-inputs-ok*-of-svex-alistlist-eval-cons
     (equal (svex-override-triplelist-fsm-inputs-ok* triples
                                                     envs
                                                     (svex-alistlist-eval (cons prev-env-al prev-env-als) env1)
-                                                    initst fsm)
+                                                    initst fsm.nextstate)
            (and (svex-override-triplelist-env-ok (car triples)
-                                                 (base-fsm-step-env (car envs) initst fsm)
-                                                 (base-fsm-step-env (svex-alist-eval prev-env-al env1) initst fsm))
+                                                 (base-fsm-step-env (car envs) initst fsm.nextstate)
+                                                 (base-fsm-step-env (svex-alist-eval prev-env-al env1) initst fsm.nextstate))
                 (svex-override-triplelist-fsm-inputs-ok* (cdr triples)
                                                          (cdr envs)
                                                          (svex-alistlist-eval prev-env-als env1)
-                                                         (base-fsm-step (svex-alist-eval prev-env-al env1) initst fsm)
-                                                         fsm))))
+                                                         (base-fsm-step (svex-alist-eval prev-env-al env1) initst fsm.nextstate)
+                                                         fsm.nextstate))))
 
-  (defcong svex-envs-similar equal (svex-override-triplelist-fsm-inputs-ok* triples envs prev-envs prev-st fsm) 4))
+  (defcong svex-envs-similar equal (svex-override-triplelist-fsm-inputs-ok* triples envs prev-envs prev-st fsm.nextstate) 4))
 
 
 
@@ -553,8 +574,8 @@
                     (svex-override-triplelist-fsm-inputs-ok*
                      (svar->svex-override-triplelistlist triples (base-fsm->values fsm))
                      envs (nthcdr cycle ins)
-                     (base-fsm-final-state (take cycle ins) prev-st fsm)
-                     fsm)))
+                     (base-fsm-final-state (take cycle ins) prev-st (base-fsm->nextstate fsm))
+                     (base-fsm->nextstate fsm))))
     :hints(("Goal" :in-theory (e/d (nth-of-base-fsm-eval
                                     base-fsm-step-outs
                                     append-svarlists
@@ -562,7 +583,7 @@
                                     base-fsm-step-env)
                                    (take))
             :induct (ind cycle triples envs ins) ;; bit of a hack but it works
-            :expand ((:free (triples eval-ins prev-st) (svex-override-triplelist-fsm-inputs-ok* triples envs eval-ins prev-st fsm))
+            :expand ((:free (triples eval-ins prev-st fsm) (svex-override-triplelist-fsm-inputs-ok* triples envs eval-ins prev-st fsm))
                      (:free (eval) (svar-override-triplelist-fsm-inputs-ok*-of-fsm-eval
                                     cycle triples envs eval))
                      (:free (values) (svar->svex-override-triplelistlist triples values))
@@ -597,48 +618,48 @@
                                                 (envs svex-envlist-p)
                                                 (prev-envs svex-envlist-p)
                                                 (initst svex-env-p)
-                                                (fsm base-fsm-p))
+                                                (fsm.nextstate svex-alist-p))
   :guard (and (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate fsm)))
-              (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate fsm)))))
+                     (svex-alist-keys fsm.nextstate))
+              (not (hons-dups-p (svex-alist-keys fsm.nextstate))))
   (if (atom envs)
       t
     (and (svex-override-triplelist-env-ok triples
-                                          (base-fsm-step-env (car envs) initst fsm)
-                                          (base-fsm-step-env (car prev-envs) initst fsm))
+                                          (base-fsm-step-env (car envs) initst fsm.nextstate)
+                                          (base-fsm-step-env (car prev-envs) initst fsm.nextstate))
          (svex-override-triplelist-fsm-inputs-ok triples (cdr envs) (cdr prev-envs)
-                                                 (base-fsm-step (car prev-envs) initst fsm)
-                                                 fsm)))
+                                                 (base-fsm-step (car prev-envs) initst fsm.nextstate)
+                                                 fsm.nextstate)))
   ///
   (defthm svex-override-triplelist-fsm-inputs-ok-of-cons
     (equal (svex-override-triplelist-fsm-inputs-ok triples
                                                    (cons env envs)
                                                    (cons prev-env prev-envs)
-                                                   initst fsm)
+                                                   initst fsm.nextstate)
            (and (svex-override-triplelist-env-ok triples
-                                                 (base-fsm-step-env env initst fsm)
-                                                 (base-fsm-step-env prev-env initst fsm))
+                                                 (base-fsm-step-env env initst fsm.nextstate)
+                                                 (base-fsm-step-env prev-env initst fsm.nextstate))
                 (svex-override-triplelist-fsm-inputs-ok triples envs prev-envs
-                                                        (base-fsm-step prev-env initst fsm)
-                                                        fsm))))
+                                                        (base-fsm-step prev-env initst fsm.nextstate)
+                                                        fsm.nextstate))))
 
   (defthm svex-override-triplelist-fsm-inputs-ok-of-nil
-    (equal (svex-override-triplelist-fsm-inputs-ok triples nil prev-envs initst fsm)
+    (equal (svex-override-triplelist-fsm-inputs-ok triples nil prev-envs initst fsm.nextstate)
            t))
 
   (defthm svex-override-triplelist-fsm-inputs-ok-of-svex-alistlist-eval-cons
     (equal (svex-override-triplelist-fsm-inputs-ok triples
                                                    (svex-alistlist-eval (cons env-al env-als) env1)
                                                    prev-envs
-                                                   initst fsm)
+                                                   initst fsm.nextstate)
            (and (svex-override-triplelist-env-ok triples
-                                                 (base-fsm-step-env (svex-alist-eval env-al env1) initst fsm)
-                                                 (base-fsm-step-env (car prev-envs) initst fsm))
+                                                 (base-fsm-step-env (svex-alist-eval env-al env1) initst fsm.nextstate)
+                                                 (base-fsm-step-env (car prev-envs) initst fsm.nextstate))
                 (svex-override-triplelist-fsm-inputs-ok triples
                                                         (svex-alistlist-eval env-als env1)
                                                         (cdr prev-envs)
-                                                        (base-fsm-step (car prev-envs) initst fsm)
-                                                        fsm)))))
+                                                        (base-fsm-step (car prev-envs) initst fsm.nextstate)
+                                                        fsm.nextstate)))))
 
 
 
@@ -765,13 +786,13 @@
   (local (in-theory (disable svex-env-removekeys-of-append)))
 
   (local (defthm base-fsm-step-env-of-removekeys
-           (implies (and (not (intersectp-equal vars (svex-alist-keys (base-fsm->nextstate fsm))))
+           (implies (and (not (intersectp-equal vars (svex-alist-keys fsm.nextstate)))
                          (svarlist-p vars))
                     (equal (base-fsm-step-env
                             (svex-env-removekeys vars in)
-                            initst fsm)
+                            initst fsm.nextstate)
                            (svex-env-removekeys vars
-                                                (base-fsm-step-env in initst fsm))))
+                                                (base-fsm-step-env in initst fsm.nextstate))))
            :hints(("Goal" :in-theory (enable base-fsm-step-env)))))
 
   (defthm remove-override-vars-of-base-fsm-eval
@@ -784,7 +805,7 @@
                     (not bad2)
                     (no-duplicatesp-equal vars)
                     (not (intersectp-equal vars (svex-alist-keys (base-fsm->nextstate fsm))))
-                    (svex-override-triplelist-fsm-inputs-ok triples envs prev-envs initst fsm))
+                    (svex-override-triplelist-fsm-inputs-ok triples envs prev-envs initst fsm.nextstate))
                (equal (base-fsm-eval prev-envs initst fsm)
                       (base-fsm-eval envs initst fsm))))
     :hints(("Goal" :in-theory (enable base-fsm-eval
@@ -804,7 +825,7 @@
                                                   (base-fsm-step (svex-env-removekeys
                                                                   (svex-override-triplelist-vars (car triplelist))
                                                                   (car envs))
-                                                                 initst fsm)
+                                                                 initst (base-fsm->nextstate fsm))
                                                   fsm)))
 
   (local (defthm svex-env-removekeys-when-keys-nil
@@ -832,7 +853,7 @@
                     (svex-override-triple-subsetlist-p triplelist triples)
                     (no-duplicatesp-equal vars)
                     (not (intersectp-equal vars (svex-alist-keys (base-fsm->nextstate fsm))))
-                    (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst fsm))
+                    (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst fsm.nextstate))
                (equal (base-fsm-eval prev-envs initst fsm)
                       (base-fsm-eval envs initst fsm))))
     :hints(("Goal" :in-theory (enable base-fsm-eval
@@ -882,8 +903,8 @@
                                          svarlist-fix intersectp-equal))))))
 
 (local (defthm svex-env-keys-keys-no-1s-p-of-step-env
-         (implies (not (intersectp-equal (svarlist-fix vars) (svex-alist-keys (base-fsm->nextstate fsm))))
-                  (equal (svex-env-keys-no-1s-p vars (base-fsm-step-env ins initst fsm))
+         (implies (not (intersectp-equal (svarlist-fix vars) (svex-alist-keys fsm.nextstate)))
+                  (equal (svex-env-keys-no-1s-p vars (base-fsm-step-env ins initst fsm.nextstate))
                          (svex-env-keys-no-1s-p vars ins)))
          :hints(("Goal" :in-theory (enable base-fsm-step-env)))))
 
@@ -903,14 +924,14 @@
 
 
 (local (defthm base-fsm-step-env-of-append-extract-nonstates
-         (implies (and (not (intersectp-equal vars (svex-alist-keys (base-fsm->nextstate fsm))))
+         (implies (and (not (intersectp-equal vars (svex-alist-keys fsm.nextstate)))
                        (svarlist-p vars))
                   (svex-envs-equivalent
                    (base-fsm-step-env
                     (append (svex-env-extract vars in) in2)
-                    initst fsm)
+                    initst fsm.nextstate)
                    (append (svex-env-extract vars in)
-                           (base-fsm-step-env in2 initst fsm))))
+                           (base-fsm-step-env in2 initst fsm.nextstate))))
          :hints(("Goal" :in-theory (enable base-fsm-step-env
                                            svex-envs-equivalent)))))
 
@@ -923,7 +944,7 @@
               (cdr triplelist)
               (cdr prev-envs)
               (cdr override-envs)
-              (base-fsm-step (car prev-envs) initst fsm)
+              (base-fsm-step (car prev-envs) initst (base-fsm->nextstate fsm))
               fsm))))
 
 
@@ -955,7 +976,7 @@
                     (svex-override-triple-subsetlist-p triplelist triples)
                     (no-duplicatesp-equal vars)
                     (not (intersectp-equal vars (svex-alist-keys (base-fsm->nextstate fsm))))
-                    (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst fsm))
+                    (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst fsm.nextstate))
                (equal (base-fsm-eval envs initst fsm)
                       (base-fsm-eval prev-envs initst fsm))))
     :hints(("Goal" :in-theory (enable base-fsm-eval
@@ -999,7 +1020,7 @@
               (cdr triplelist)
               (cdr prev-envs)
               (cdr envs)
-              (base-fsm-step (car prev-envs) initst fsm)
+              (base-fsm-step (car prev-envs) initst (base-fsm->nextstate fsm))
               fsm))))
 
   (local (defthm svex-envs-agree-except-of-base-fsm-step-env
@@ -1019,7 +1040,7 @@
          ((base-fsm fsm))
          (bad1 (svexlist-check-overridetriples (svex-alist-vals fsm.values) triples))
          (bad2 (svexlist-check-overridetriples (svex-alist-vals fsm.nextstate) triples)))
-      (implies (and (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst fsm)
+      (implies (and (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst (base-fsm->nextstate fsm))
                     (not bad1)
                     (not bad2)
                     (equal (len envs) (len prev-envs))
@@ -1853,7 +1874,7 @@
                (bad1 (svexlist-check-overridetriples (svex-alist-vals fsm.values) triples))
                (bad2 (svexlist-check-overridetriples (svex-alist-vals fsm.nextstate) triples)))
             (implies (and (bind-free '((triples . (<name>-fsm-triple-set))) (triples))
-                          (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst fsm)
+                          (svex-override-triplelist-fsm-inputs-ok* triplelist envs prev-envs initst fsm.nextstate)
                           (not bad1)
                           (not bad2)
                           (equal (len envs) (len prev-envs))
@@ -1864,7 +1885,7 @@
                           (svex-envlists-agree-except varslist envs prev-envs)
                           (svex-override-triple-subsetlist-p triplelist triples)
                           (no-duplicatesp-equal vars)
-                          (not (intersectp-equal vars (svex-alist-keys (base-fsm->nextstate fsm)))))
+                          (not (intersectp-equal vars (svex-alist-keys fsm.nextstate))))
                      (equal (base-fsm-eval envs initst fsm)
                             (base-fsm-eval prev-envs initst fsm))))
           :hints (("goal" :use base-fsm-eval-of-overrides)))
@@ -1943,7 +1964,7 @@
                  svex-envs-equivalent-refines-svex-envs-similar
                  SVEX-ENVS-EQUIVALENT-IMPLIES-SVEX-ENVS-EQUIVALENT-SVTV-PIPELINE-OVERRIDE-TRIPLES-EXTRACT-2
                  BASE-FSM-EVAL-BASE-FSM-EQUIV-CONGRUENCE-ON-X
-                 BASE-FSM-EVAL-ENVS-BASE-FSM-EQUIV-CONGRUENCE-ON-X
+                 BASE-FSM-EVAL-ENVS-SVEX-ALIST-EQUIV-CONGRUENCE-ON-X.NEXTSTATE
                  BASE-FSM-EVAL-SVEX-ENVLIST-EQUIV-CONGRUENCE-ON-INS
                  ACL2::SET-EQUIV-IMPLIES-EQUAL-SUBSETP-1
                  SVEX-ENVS-EQUIVALENT-IMPLIES-SVEX-ENVS-EQUIVALENT-SVTV-PIPELINE-OVERRIDE-TRIPLES-EXTRACT-2
@@ -3250,7 +3271,7 @@ proved.</p>")
            (if (atom ins)
                (list initst other-envs)
              (ind (cdr ins)
-                  (base-fsm-step (car ins) initst fsm)
+                  (base-fsm-step (car ins) initst (base-fsm->nextstate fsm))
                   fsm
                   (cdr other-envs)))))
   (defthm lhs-eval-zero-of-append-when-vars-subset-of-first-keys
@@ -3333,20 +3354,20 @@ proved.</p>")
   :hints(("Goal" :in-theory (enable svex-envs-agree))))
 
 
-(defthm base-fsm-final-state-of-svtv-fsm->renamed-fsm
-  (equal (base-fsm-final-state ins initst (svtv-fsm->renamed-fsm fsm))
-         (base-fsm-final-state ins initst (svtv-fsm->base-fsm fsm)))
-  :hints(("Goal" :in-theory (enable base-fsm-final-state
-                                    svtv-fsm->renamed-fsm
-                                    base-fsm-step
-                                    base-fsm-step-env))))
+;; (defthm base-fsm-final-state-of-svtv-fsm->renamed-fsm
+;;   (equal (base-fsm-final-state ins initst (svtv-fsm->renamed-fsm fsm))
+;;          (base-fsm-final-state ins initst (svtv-fsm->base-fsm fsm)))
+;;   :hints(("Goal" :in-theory (enable base-fsm-final-state
+;;                                     svtv-fsm->renamed-fsm
+;;                                     base-fsm-step
+;;                                     base-fsm-step-env))))
 
 (defthm base-fsm-step-outs-of-svtv-fsm->renamed-fsm
   (equal (base-fsm-step-outs in prev-st (svtv-fsm->renamed-fsm fsm))
          (svtv-name-lhs-map-eval
           (svtv-fsm->namemap fsm)
           (append (base-fsm-step-outs in prev-st (svtv-fsm->base-fsm fsm))
-                  (base-fsm-step-env in prev-st (svtv-fsm->base-fsm fsm)))))
+                  (base-fsm-step-env in prev-st (svtv-fsm->nextstate fsm)))))
   :hints(("Goal" :in-theory (enable base-fsm-step-outs
                                     svtv-fsm->renamed-fsm
                                     base-fsm-step-env))))
@@ -3362,15 +3383,15 @@ proved.</p>")
 
 (define base-fsm-eval-envs ((ins svex-envlist-p)
                             (prev-st svex-env-p)
-                            (x base-fsm-p))
-  :guard (and (not (acl2::hons-dups-p (svex-alist-keys (base-fsm->nextstate x))))
+                            (x.nextstate svex-alist-p))
+  :guard (and (not (acl2::hons-dups-p (svex-alist-keys x.nextstate)))
               (equal (alist-keys prev-st)
-                     (svex-alist-keys (base-fsm->nextstate x))))
+                     (svex-alist-keys x.nextstate)))
   (b* (((when (Atom ins)) nil))
-    (cons (base-fsm-step-env (car ins) prev-st x)
+    (cons (base-fsm-step-env (car ins) prev-st x.nextstate)
           (base-fsm-eval-envs (cdr ins)
-                              (base-fsm-step (car ins) prev-st x)
-                              x)))
+                              (base-fsm-step (car ins) prev-st x.nextstate)
+                              x.nextstate)))
   ///
   (defthmd base-fsm-eval-of-svtv-fsm->renamed-fsm
     (equal (base-fsm-eval ins prev-st (svtv-fsm->renamed-fsm x))
@@ -3378,7 +3399,7 @@ proved.</p>")
             (svtv-fsm->namemap x)
             (svex-envlists-append-corresp
              (base-fsm-eval ins prev-st (svtv-fsm->base-fsm x))
-             (base-fsm-eval-envs ins prev-st (svtv-fsm->base-fsm x)))))
+             (base-fsm-eval-envs ins prev-st (svtv-fsm->nextstate x)))))
     :hints(("Goal" :in-theory (enable base-fsm-eval
                                       base-fsm-step
                                       base-fsm-step-env
@@ -3419,7 +3440,7 @@ proved.</p>")
            (if (atom ins)
                (list x prev-st fsm)
              (refvars-bound-of-base-fsm-eval-ind (cdr x) (cdr ins)
-                                                 (base-fsm-step (car ins) prev-st fsm)
+                                                 (base-fsm-step (car ins) prev-st (base-fsm->nextstate fsm))
                                                  fsm))))
 
   (defthm svar-override-triplelistlist-refvars-bound-in-envs-of-base-fsm-eval
@@ -3809,7 +3830,7 @@ proved.</p>")
           (base-fsm-collect-override-envs
            (cdr test-envs)
            (cdr eval-ins)
-           (base-fsm-step (car eval-ins) prev-st fsm)
+           (base-fsm-step (car eval-ins) prev-st (base-fsm->nextstate fsm))
            fsm)))
   ///
 
@@ -3819,7 +3840,7 @@ proved.</p>")
              (base-fsm-collect-override-envs-env-ind
               (cdr test-envs)
               (cdr eval-ins)
-              (base-fsm-step (car eval-ins) prev-st fsm)
+              (base-fsm-step (car eval-ins) prev-st (base-fsm->nextstate fsm))
               fsm
               (cdr other-ins)))))
 
@@ -3851,14 +3872,14 @@ proved.</p>")
 
 
   (local (defthm base-fsm-step-env-of-append-override-env
-           (implies (svarlist-non-override-p (svex-alist-keys (base-fsm->nextstate fsm)))
+           (implies (svarlist-non-override-p (svex-alist-keys fsm.nextstate))
                     (svex-envs-similar
                      (base-fsm-step-env
                       (append (svex-alist-collect-override-env test-env res-env)
                               env2)
-                      prev-st fsm)
+                      prev-st fsm.nextstate)
                      (append (svex-alist-collect-override-env test-env res-env)
-                             (base-fsm-step-env env2 prev-st fsm))))
+                             (base-fsm-step-env env2 prev-st fsm.nextstate))))
            :hints(("Goal" :in-theory (enable base-fsm-step-env
                                              svex-alist-collect-override-env)
                    :induct (svex-alist-collect-override-env test-env res-env)))))
@@ -3878,7 +3899,7 @@ proved.</p>")
                (svex-envlist-keys-list test-envs)
                (base-fsm->values fsm))
               (append-corresp-svex-envs override-envs any-envs)
-              eval-ins prev-st fsm))
+              eval-ins prev-st (base-fsm->nextstate fsm)))
     :hints(("Goal" :in-theory (enable svex-envlist-all-keys
                                       svex-envlist-keys-list
                                       svex-override-triplelist-fsm-inputs-ok*
@@ -3947,7 +3968,7 @@ proved.</p>")
     :pre-bind ((fsm-eval (base-fsm-eval eval-ins prev-st fsm)))
     (equal override-envs
            (base-fsm-collect-override-envs test-envs (nthcdr cycle eval-ins)
-                                           (base-fsm-final-state (take cycle eval-ins) prev-st fsm)
+                                           (base-fsm-final-state (take cycle eval-ins) prev-st (base-fsm->nextstate fsm))
                                            fsm))
     :hints(("Goal" :in-theory (e/d (nth-of-base-fsm-eval)
                                    (take))
@@ -3959,5 +3980,3 @@ proved.</p>")
 
 
 
-
-;; For a given pipeline

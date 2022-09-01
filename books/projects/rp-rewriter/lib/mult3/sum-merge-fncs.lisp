@@ -45,14 +45,23 @@
 (local
  (include-book "lemmas"))
 
-(include-book "pp-flatten-meta-fncs")
+;;(include-book "pp-flatten-meta-fncs")
 
 (include-book "std/util/defines" :dir :system)
 
 (include-book "equal-meta")
 
 (local
+ (fetch-new-events
+  (include-book "arithmetic-5/top" :dir :system)
+  use-arith-5
+  :disabled t))
+
+(local
  (in-theory (disable +-IS-SUM)))
+
+(local
+ (set-induction-depth-limit 1))
 
 (define valid-list-termp (term)
   (case-match term
@@ -64,20 +73,14 @@
                     "Unexpected list term ~p0 ~%"
                     (list (cons #\0 term))))))
 
-#|(define extract-from-list ((term valid-list-termp))
-  (case-match term
-    (('list . lst)
-     lst)
-    (''nil
-     nil)
-    (& term)))||#
+(defmacro pp-cons (a b)
+  `(cons ,a ,b))
 
-(define cons-pp-to-pp-lst-lst ((pp valid-pp-p)
-                               pp-lst-lst)
-  (b* ((pp-lst (pp-to-pp-lst pp)))
-    (if pp-lst
-        (cons pp-lst pp-lst-lst)
-      pp-lst-lst)))
+(defmacro pp-cons-with-hint (a b hint)
+  (declare (ignorable hint))
+  `(cons-with-hint ,a ,b ,hint)
+  ;;`(hons ,a ,b)
+  )
 
 (define append-pp-lst-lsts (l1 l2)
   ;;(append l1 l2)
@@ -157,8 +160,132 @@
                             s-order-lst)
                            ()))))
 
-(encapsulate
-  nil
+(acl2::defsection create-and-list
+
+  (local
+   (defthm characterlistp-member-equal-lemma
+     (implies (and (member-equal y x)
+                   (character-listp x))
+              (CHARACTERP y))
+     :rule-classes (:forward-chaining :rewrite)))
+
+  (define get-symbol-hash (x)
+    :returns (hash (and (integerp hash)
+                        (acl2-numberp hash)))
+    (b* ((x (ex-from-rp x)))
+      (if (symbolp x)
+          (b* ((chars (explode (symbol-name x)))
+               (hash (loop$ for x in chars sum
+                            :guard (and ;;(character-listp chars)
+                                    (CHARACTERP x))
+                            (char-code x))))
+            (ifix hash))
+        0)))
+
+  (memoize 'get-symbol-hash)
+
+  (define and-list-hash-aux (lst)
+    :returns (mv (hash )
+                 (rest-size ))
+    :verify-guards nil
+    :prepwork
+    ((local
+      (use-arith-5 t)))
+    (if (atom lst)
+        (mv 0 0)
+      (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
+           (cur (ex-from-rp (car lst))))
+        (case-match cur
+          (('bit-of & ('quote x))
+           (mv (+ rest (* (+ 5 rest-size)
+                          (1+ (ifix x))))
+               (+ 55 rest-size)))
+          (('s ('quote x) & &)
+           (mv (+ rest (ifix x))
+               (+ 6 rest-size)))
+          (('c ('quote x) & & &)
+           (mv (+ rest (ifix x))
+               (+ 8 rest-size)))
+          (& (mv rest rest-size)))))
+    ///
+    (defret result-type-of-of-<fn>
+      (and (natp rest-size)
+           (acl2-numberp rest-size)
+           (integerp hash)
+           (acl2-numberp hash)))
+    (verify-guards and-list-hash-aux))
+
+  
+
+  (define and-list-hash (lst)
+    :returns (hash integerp)
+    (b* (((mv hash &)
+          (and-list-hash-aux lst)))
+      (logapp 4 (len lst) hash)))
+
+  (define create-and-list-instance (lst)
+    :returns (and-list-instance rp-termp
+                                :hyp (rp-term-listp lst))
+    (if (and (consp lst)
+             (atom (cdr lst))
+             (or (bit-of-p (ex-from-rp (car lst)))
+                 (has-bitp-rp (car lst))))
+        (car lst)
+      `(and-list ',(and-list-hash lst) (list . ,lst)))))
+
+(acl2::defsection pp-order
+
+  (define pp-list-order-aux ((x)
+                             (y))
+    :returns (mv (order)
+                 (equals booleanp))
+    (cond ((or (atom x)
+               (atom y))
+           (mv (not (atom x)) (equal x y)))
+          ((equal (car x) (car y))
+           (pp-list-order-aux (cdr x) (cdr y)))
+          (t
+           ;; lexorder2- sort from small to large
+           (mv (lexorder2- (car y) (car x)) nil))))
+
+  (define len-compare (x y)
+    (if (or (atom x)
+            (atom y))
+        (not (atom x))
+      (len-compare (cdr x) (cdr y))))
+         
+
+  (define pp-list-order (x y skip-hash)
+    :returns (mv (order)
+                 (equals booleanp))
+    (b* (((when (equal y '('1)))
+          (mv nil (equal x y)))
+         ((when (equal x '('1)))
+          (mv t (equal x y)))
+
+         ;;((when t) (pp-list-order-aux x y))
+         
+         (hash-x (or skip-hash (and-list-hash x)))
+         (hash-y (or skip-hash (and-list-hash y)))
+         ((unless (equal hash-x hash-y))
+          (mv (> hash-x hash-y)
+              nil))
+         ;;(len-x (len x))
+         ;;(len-y (len y))
+         )
+      (if (len-compare x y)
+          ;; (if (equal len-y 2)
+          ;;     (mv t nil)
+          ;;   (if (equal len-x 2)
+          ;;       (mv nil nil)
+          (mv t nil)
+        ;;))
+        ;;(if (and t (equal len-x 2))
+        (pp-list-order-aux x y)
+        ;;(pp-list-order-aux y x)
+        ;;)
+        )))
+
   (define ex-from-rp/--loose (x)
     :returns (res rp-termp :hyp (rp-termp x))
     (cond ((and (consp x)
@@ -188,7 +315,7 @@
 
   (define pp-order ((x rp-termp)
                     (y rp-termp))
-    :inline t
+    ;;:inline t
     :returns (mv (order)
                  (equals booleanp))
     (b* ((x (ex-from-rp$ x))
@@ -202,7 +329,7 @@
                  (mv t (equal x y)))
                 (t (mv nil (equal x y)))))
          #|((when (equal x ''1))
-          (mv t (equal x y)))|#
+         (mv t (equal x y)))|#
          ((mv x-lst x-hash x-good-format)
           (case-match x
             (('and-list ('quote hash) ('list . lst))
@@ -217,91 +344,54 @@
              (mv (list y) 0 nil)))))
       (if (= x-hash y-hash)
           (b* (((mv order equals)
-                (pp-list-order x-lst y-lst)))
-            (if (and x-good-format y-good-format)
+                (pp-list-order x-lst y-lst
+                               (and* x-good-format y-good-format))))
+            (if (and* x-good-format y-good-format)
                 (mv order equals)
               (mv order (equal x y))))
-        (mv (> x-hash y-hash) nil)
-        ;;(pp-list-order x-lst y-lst)
-        )))
+        (mv (> x-hash y-hash) nil))))
 
-  #|(define pp-order (x y)
-  :inline t
-  :returns (mv (order)
-  (equals booleanp))
-  (b* (;;(x (ex-from--- x))
-  ;;(y (ex-from--- y))
-  (x-orig x)
-  (y-orig y))
-  (b* (((mv x atom-x len-x)
-  (case-match x
-  (('and-list & ('list . lst))
-  (mv lst nil (len lst)))
-  (('binary-and & &)
-  (mv (cdr x) nil 2))
-  (''1
-  (mv x t 1))
-  (('bit-of & &)
-  (mv x t 1))
-  (('rp ''bitp &)
-  (mv x t 1))
-  (& (mv x t -1))))
-  ((mv y atom-y len-y)
-  (case-match y
-  (('and-list & ('list . lst))
-  (mv lst nil (len lst)))
-  (('binary-and & &)
-  (mv (cdr y) nil 2))
-  (''1
-  (mv y t 1))
-  (('rp ''bitp &)
-  (mv y t 1))
-  (('bit-of & &)
-  (mv y t 1))
-  (& (mv y t -1)))))
-  (cond
-  ((not (equal len-x len-y))
-  (cond
-  ((or (equal len-x -1)
-  (equal len-y -1))
-  (mv nil (equal x-orig y-orig)))
-  ((equal len-y 2)
-  (mv t nil))
-  ((equal len-x 2)
-  (mv nil nil))
-  (t (mv (> len-x len-y) nil))))
-  ((or atom-x atom-y)
-  (cond ((not atom-x)
-  (if (consp x)
-  (if (equal (car x) y)
-  (mv nil
-  (equal x-orig y-orig)
-;(atom (cdr x)) ; ; ; ;
-  )
-  (mv (not (lexorder y (car x))) nil))
-  (mv t nil)))
-  ((not atom-y)
-  (if (consp y)
-  (if (equal (car y) x)
-  (mv (not (atom y))
-  (equal x-orig y-orig)
-;(atom y) ; ; ; ;
-  )
-  (mv (not (lexorder (car y) x)) nil))
-  (mv nil nil)))
-  (t (if (equal x y)
-  (mv nil t)
-  (mv (not (lexorder y x)) nil)))))
-  (t (pp-list-order x y))))))||#
+  ;; (defthm pp-list-order-sanity
+  ;;   (implies (mv-nth 0 (pp-list-order x y))
+  ;;            (not (mv-nth 0 (pp-list-order x y))))
+  ;;   :hints (("Goal"
+  ;;            :in-theory (e/d (pp-list-order
+  ;;                             lexorder2-sanity)
+  ;;                            (lexorder2)))))
 
+
+  (define pp-order-and-negated-termsp ((term1 rp-termp)
+                                       (term2 rp-termp))
+    :returns (mv
+              (order)
+              (negated-terms booleanp)
+              (equal-terms booleanp))
+    (b* (((mv neg1 term1)
+          (case-match term1 (('-- a) (mv t a)) (& (mv nil term1))))
+         ((mv neg2 term2)
+          (case-match term2 (('-- a) (mv t a)) (& (mv nil term2))))
+         ((mv order equals)
+          (pp-order term1 term2))
+         (equals (or equals
+                     (rp-equal-cnt term1 term2 0))))
+      (mv  order
+           (and (not (equal neg1 neg2))
+                equals)
+           equals)))
+
+  
   (define pp-lst-orderedp ((lst rp-term-listp))
     (if (atom lst)
         t
       (if (atom (cdr lst))
           t
-        (and (b* (((mv order &) (pp-order (ex-from-rp/-- (cadr lst))
-                                          (ex-from-rp/-- (car lst)))))
-               (not order))
+        (and (b* (((mv order negated-terms &)
+                   (pp-order-and-negated-termsp (cadr lst) (car lst)))
+
+                  #|((mv order &) (pp-order (ex-from-rp/-- (cadr lst))
+                  (ex-from-rp/-- (car lst))))|#)
+               (and (not order)
+                    (not negated-terms)))
              (pp-lst-orderedp (cdr lst))))))
 
   (define pp-orderedp ((pp rp-termp))
@@ -313,24 +403,6 @@
       (& nil))))
 
 
-(define pp-order-and-negated-termsp ((term1 rp-termp)
-                                     (term2 rp-termp))
-  :returns (mv
-            (order)
-            (negated-terms booleanp)
-            (equal-terms booleanp))
-  (b* (((mv neg1 term1)
-        (case-match term1 (('-- a) (mv t a)) (& (mv nil term1))))
-       ((mv neg2 term2)
-        (case-match term2 (('-- a) (mv t a)) (& (mv nil term2))))
-       ((mv order equals)
-        (pp-order term1 term2))
-       (equals (or equals
-                   (rp-equal-cnt term1 term2 0))))
-    (mv  order
-         (and (not (equal neg1 neg2))
-              equals)
-         equals)))
 
 (define pp-sum-merge-aux ((pp1-lst rp-term-listp)
                           (pp2-lst rp-term-listp))
@@ -459,8 +531,6 @@
 
   ;;(memoize 'pp-sum-merge :condition '(and (not (equal pp1 'nil)) (not (equal
   ;;pp2 'nil))))
-
-
 
 ;;(pp-lst-sum-merge '((a a a a b b b c d) (b c d e) (c d e m) (c f) (d f m))
 ;;:cough t)
@@ -1106,7 +1176,6 @@
          (or rep-ok (no-rep-p lst))
          (ordered-s/c-p-lst lst))))
 
-
 (defthm rp-term-listp-of-append-wog
   (implies (and (rp-term-listp lst1)
                 (rp-term-listp lst2))
@@ -1118,7 +1187,8 @@
 
 (define ex-from-pp-lst-aux ((pp-lst rp-term-listp))
   :prepwork ((local
-              (in-theory (disable rp-termp)))
+              (in-theory (disable ex-from-rp
+                                  rp-termp)))
              (local
               (defthm rp-termp-of---
                 (iff (rp-termp (list '-- x))
@@ -1155,23 +1225,27 @@
               (cons-with-hint cur-orig rest-pp-lst pp-lst)
               c-lst))
          (x-extracted (ex-from-rp x)))
-      (case-match x-extracted
-        (('s & & &)
-         (mv (cons (if signed `(-- ,x) x) s-lst)
-             rest-pp-lst
-             c-lst))
-        (('c & & & &)
-         (mv s-lst rest-pp-lst
-             (cons (if signed `(-- ,x) x) c-lst)))
-        (('s-c-res s pp c)
-         (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
-             (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
-             (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
-        (& (mv s-lst
-               (cons-with-hint cur-orig
-                               rest-pp-lst
-                               pp-lst)
-               c-lst))))))
+      (cond
+       ((single-s-p x-extracted)
+        (mv (cons (if signed `(-- ,x) x) s-lst)
+            rest-pp-lst
+            c-lst))
+       ((single-c-p x-extracted)
+        (mv s-lst rest-pp-lst
+            (cons (if signed `(-- ,x) x) c-lst)))
+       ((single-s-c-res-p x-extracted)
+        ;;('s-c-res s pp c)
+        (b* ((s (nth 1 x-extracted))
+             (pp (nth 2 x-extracted))
+             (c (nth 3 x-extracted)))
+          (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
+              (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
+              (append-wog (negate-lst (list-to-lst c)  signed) c-lst))))
+       (t (mv s-lst
+              (cons-with-hint cur-orig
+                              rest-pp-lst
+                              pp-lst)
+              c-lst))))))
 
 (define ex-from-pp-lst ((pp-lst rp-term-listp))
   :returns (mv (s-lst rp-term-listp :hyp (rp-term-listp pp-lst))

@@ -10,6 +10,26 @@
 (clear-memoize-statistics)
 
 (trace$
+ (s-c-spec-meta
+  :cond (or (equal acl2::traced-fn 's-c-spec-meta)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list res-term ?dont-rw)
+                acl2::values))
+            (if (or (and (equal (caar acl2::arglist) 's-c-spec)
+                         (ordered-s/c-p (cadr res-term))
+                         (ordered-s/c-p (cadr (caddr res-term))))
+                    (and (equal (caar acl2::arglist) 's-spec)
+                         (ordered-s/c-p res-term))
+                    (and (equal (caar acl2::arglist) 'c-spec)
+                         (ordered-s/c-p res-term)))
+                (msg "")
+              (msg "Not ordered from s-c-spec-meta Input:
+  ~x0. res-term: ~x1. ~%"
+                   acl2::arglist res-term))))))
+
+
+(trace$
  (unpack-booth-for-s*
   :cond (or (equal acl2::traced-fn 'unpack-booth-for-s*)
             (equal acl2::traced-fn 'unpack-booth-for-s-fn));; Don't want to see *1* functions
@@ -254,3 +274,48 @@ Valid:~x8~%~%"
                    pp-res-lst (pp-lst-orderedp pp-res-lst)
                    c-res-lst (list (s-sum-ordered-listp c-res-lst) (ordered-s/c-p-lst c-res-lst))
                    valid))))))
+
+
+(clear-memoize-statistics) (clear-memoize-tables)
+
+(rp::show-rules :cnt)
+
+(progn
+  (profile 'rp::create-c-instance)
+  (profile 'rp::create-s-instance)
+  (profile 'rp::create-s-c-res-instance)
+  (profile 'rp::c-sum-merge-main-fn)
+  (profile 'rp::sum-merge-lst-for-s)
+  
+  (profile 'SVL::CONCAT-META)
+  (profile 'SVL::BITS-OF-META-FN)
+  (profile 'SVL::4VEC-RSH-OF-META)
+  (profile 'rp::rp-rw-rule)
+  (profile 'rp::rp-rw-rule-aux)
+  (profile 'rp::rp-rw-meta-rule-main)
+  (profile 'rp::s-c-spec-meta)
+  (profile 'rp::preprocess-then-rp-rw)
+  (profile 'rp::unpack-booth-meta)
+  (profile 'rp::hons-copy2)
+  (profile 'rp::pp-flatten-fn)
+  (profile 'rp::unpack-booth-general-meta$)
+  (profile 'rp::unpack-booth-general-postprocessor)
+  (profile 'rp::pp-radix8+-fix)
+  (profile 'rp::ex-from-pp-lst)
+  (profile 'rp::c-of-s-fix-lst)
+  (profile 'rp::maybe-bitp-precheck)
+  (profile 'rp::c-pattern1-reduce)
+  (profile 'rp::c-pattern2-reduce)
+  (profile 'rp::c-pattern0-reduce)
+
+  (profile 'rp::4vec-branch-drop-r-case)
+
+  
+
+  (profile 'rp::pp-lst-orderedp)
+  (profile 'rp::pp-sum-sort-lst)
+  (profile 'rp::pp-radix8+-fix-aux-for-s/c-main)
+  (profile 'rp::recollect-pp-lst-to-sc)
+
+  (profile 'rp::calculate-c-hash)
+  )

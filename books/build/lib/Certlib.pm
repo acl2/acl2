@@ -41,7 +41,7 @@ use Cwd 'abs_path';
 use Certinfo;
 use Depdb;
 use Bookscan;
-
+use Cygwin_paths;
 
 use base 'Exporter';
 
@@ -72,6 +72,8 @@ find_deps
 write_timestamps
 read_timestamps
 cert_target_deps
+determine_acl2_exec
+determine_acl2_dirs
 );
 
 
@@ -85,8 +87,8 @@ cert_target_deps
 # 				include_dirs => '%',    # add-include-book-dir(!) forms
 # 				rec_visited => '%' ];   # already seen files for depends_rec
 
-# database:
-my $cache_version_code = 8;
+# database -- increment this when changing the format of events produced by Bookscan.pm
+my $cache_version_code = 9;
 
 # Note: for debugging you can enable this use and then print an error message
 # using
@@ -130,6 +132,30 @@ sub certlib_add_dir {
     $dirs{$name} = $dir;
 }
 
+sub read_projects_dirs {
+    my ($acl2_projects) = @_;
+    # acl2_projects should already be absolute, canonical path
+    if (open (my $projects, "<", $acl2_projects)) {
+	while (my $pline = <$projects>) {
+	    my @parts = $pline =~ m/^\s*:(\S*)\s+"([^"]*)"/;
+	    if (@parts) {
+		my ($key, $dir) = @parts;
+		my $dirfull = File::Spec->catfile(dirname($acl2_projects), $dir);
+		certlib_add_dir(uc($key), abs_canonical_path($dirfull));
+	    } else {
+		print(STDERR
+		      "Couldn't parse ACL2_PROJECTS file line $pline\n");
+	    }
+	}
+	close($projects);
+    } else {
+	print(STDERR
+	      "Couldn't read ACL2_PROJECTS file $acl2_projects\n");
+    }
+}
+
+
+
 sub certlib_set_opts {
     my $opts = shift;
     $debugging = $opts->{"debugging"};
@@ -141,6 +167,133 @@ sub certlib_set_opts {
     $debug_up_to_date = $opts->{"debug_up_to_date"};
     $force_up_to_date = $opts->{"force_up_to_date"};
     $force_out_of_date = $opts->{"force_out_of_date"};
+}
+
+
+sub determine_acl2_exec {
+    my ($acl2) = @_;
+    # If it is already set here, it has been set by command line and we won't override it.
+    
+    unless($acl2) {
+	$acl2 = $ENV{"ACL2"};
+    }
+    
+    unless ($acl2) {
+	$acl2 = "acl2";
+    }
+
+    # convert user-provided ACL2 to cygwin path, under cygwin
+    $acl2 = path_import($acl2);
+    # this is probably always /dev/null but who knows under windows
+    my $devnull = File::Spec->devnull;
+    # get the absolute path
+    $acl2 = `which $acl2 2>$devnull`;
+    chomp($acl2);		# remove trailing newline
+
+    if ($acl2) {
+	# canonicalize the path
+	$acl2 = abs_canonical_path($acl2);
+	$ENV{"ACL2"} = $acl2;
+    }
+    return $acl2;
+}
+
+sub determine_acl2_dirs {
+    my ($acl2_books, $acl2_projects, $acl2, $startjob, $scriptdir) = @_;
+    # Determines the system books dir and imports project dirs as
+    # global include-book-dirs.  If acl2_books or acl2_projects is
+    # defined, then these were set by command line args and won't be
+    # overridden.  Acl2 is the acl2 executable, which is run in order
+    # to determine the system books as a fallback. Scriptdir is the
+    # RealBin of the script itself, presumably in books/build, which
+    # we use to determine the system books as another fallback.
+
+    # Returns the final system books dir.
+
+    # First way of setting acl2_books: command line (passed in as arg here)
+    # Second way: environment var
+    unless ($acl2_books) {
+	$acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
+    }
+
+    unless ($acl2_projects) {
+	$acl2_projects = $ENV{"ACL2_PROJECTS"};
+    }
+
+    if ($acl2_projects) {
+	$acl2_projects = abs_canonical_path($acl2_projects);
+	read_projects_dirs($acl2_projects);
+	# In case we're going to run Make, set the ACL2_PROJECTS
+	# environment var to match our assumption.
+	my $acl2_projects_env = path_export($acl2_projects);
+	$ENV{"ACL2_PROJECTS"} = $acl2_projects_env;
+    }
+
+    # Third way of setting acl2_books: projects entry
+    unless ($acl2_books ) {
+	# Check whether the SYSTEM dir was set when reading the acl2_projects file and set it if so.
+	$acl2_books = lookup_colon_dir("SYSTEM", {});
+
+	# In this case we skip the rest because the path should be
+	# canonicalized already and is already added to the $dirs.
+	my $acl2_books_env = path_export($acl2_books);
+	$ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
+	return $acl2_books;
+    }
+    
+    # Fourth way: directory named books under the directory containing acl2
+    if (! $acl2_books && $acl2 ) {
+	# was:
+	# my $tmp_acl2_books = rel_path(dirname($acl2), "books");
+	my $tmp_acl2_books = File::Spec->catfile(dirname($acl2), "books");
+	if (-d $tmp_acl2_books) {
+	    $acl2_books = $tmp_acl2_books;
+	}
+    }
+    
+    my $devnull = File::Spec->devnull;
+    $startjob = $startjob || "bash";
+    # Fifth way: run ACL2 and have it print the system-books-dir
+    if (! $acl2_books && $acl2 ) {
+	my $dumper1 =		# command to send to ACL2
+	    '(cw \"~%CERT_PL_VAL:~S0~%\" (acl2::system-books-dir acl2::state))';
+	my $dumper2 =		# command to send to STARTJOB
+	    'echo "' . $dumper1 . '" | ' .
+	    "$acl2 2>$devnull | " .
+	    'awk -F: "/CERT_PL_VAL/ { print \$2 }"';
+	my $dumper3 =		# command to send to the shell
+	    "$startjob -c '$dumper2'";
+	my $tmp_acl2_books = `$dumper3`;
+	chomp($tmp_acl2_books);
+	if (-d $tmp_acl2_books) {
+	    $acl2_books = $tmp_acl2_books;
+	}
+    }
+    
+    # Sixth: directory underneath the script directory (which we assume to be books/build)
+    if (! $acl2_books ) {
+	my $tmp_acl2_books = "$scriptdir/..";
+	if (-d $tmp_acl2_books) {
+	    $acl2_books = $tmp_acl2_books;
+	}
+    }
+
+    unless ($acl2_books) {
+	return undef;
+    }
+    
+    $acl2_books = abs_canonical_path($acl2_books);
+    
+    # In case we're going to run Make, set the ACL2_SYSTEM_BOOKS
+    # environment variable to match our assumption.
+    # In cygwin, ACL2 reads paths like c:/foo/bar whereas we're dealing in
+    # paths like /cygdrive/c/foo/bar, so "export" it
+    certlib_add_dir("SYSTEM", $acl2_books);
+    my $acl2_books_env = path_export($acl2_books);
+    $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
+
+    return $acl2_books;
+
 }
 
 
@@ -548,9 +701,15 @@ sub src_deps {
 	} elsif ($ifdef_skipping_level == 0) {
 	    # Only pay attention to other events if we're not skipping due to ifdefs.
 	    if ($type eq add_dir_event) {
-		my (undef, $name, $dir, $localp) = @$event;
+		my (undef, $name, $key, $dir, $localp) = @$event;
 
-		print "add_dir_event: name=$name, dir=$dir, localp=$localp\n" if $debugging;
+		print "add_dir_event: name=$name, key=$key, dir=$dir, localp=$localp\n" if $debugging;
+
+		if ($key) {
+		    my $keydir = lookup_colon_dir($key, $incdirs);
+		    $dir = File::Spec->catfile($keydir, $dir);
+		}
+
 		my $newdir;
 		if (File::Spec->file_name_is_absolute($dir)) {
 		    $newdir = canonical_path($dir);

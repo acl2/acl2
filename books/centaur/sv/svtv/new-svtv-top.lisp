@@ -41,5 +41,6 @@
 (include-book "svtv-stobj-decomp")
 (include-book "svtv-stobj-pipeline-monotonicity")
 (include-book "svtv-fsm-override")
-(include-book "svtv-override-fact")
+(include-book "svtv-generalized-thm")
+(include-book "svtv-equiv-thm")
 (local (include-book "svtv-fsm-override-fgl-theory"))

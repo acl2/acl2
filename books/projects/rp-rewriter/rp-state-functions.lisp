@@ -292,6 +292,7 @@ which submits an event.
                                 (list*
                                  (list ':type failed)
                                  (list ':rune rune)
+                                 (list ':frames-caused frames)
                                  (if new-term (list (list ':new-term new-term)
                                                     (list ':old-term old-term))
                                    nil))
