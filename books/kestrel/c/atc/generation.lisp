@@ -802,16 +802,18 @@
    (xdoc::p
     "For a supported integer type,
      the predicate is the recognizer of values of that type.
+     For a structure type,
+     the predicate is the recognizer of structures of that type.
      For a pointer to integer type,
      the predicate is the recognizer of arrays with that element type.
      For a pointer to structure type,
-     the predicate is the recognizer of structures of that type.
-     This is based on our current ACL2 representation of C types,
-     which may be extended in the future;
-     note that, in the current representation,
+     the predicate is the recognizer of structures of that type.")
+   (xdoc::p
+    "This is based on our current ACL2 representation of C types,
+     which may be extended in the future.
+     Note that, in the current representation,
      the predicate corresponding to each type
-     is never a recognizer of pointer values.
-     We return @('nil') for other types."))
+     is never a recognizer of pointer values."))
   (type-case
    type
    :void (raise "Internal error: type ~x0." type)
@@ -826,11 +828,14 @@
    :ulong 'ulongp
    :sllong 'sllongp
    :ullong 'ullongp
-   :struct (raise "Internal error: type ~x0." type)
+   :struct (b* ((info (defstruct-table-lookup (ident->name type.tag) wrld))
+                ((unless info)
+                 (raise "Internal error: no recognizer for ~x0." type)))
+             (defstruct-info->recognizer info))
    :pointer (type-case
              type.to
-             :void nil
-             :char nil
+             :void (raise "Internal error: type ~x0." type)
+             :char (raise "Internal error: type ~x0." type)
              :schar 'schar-arrayp
              :uchar 'uchar-arrayp
              :sshort 'sshort-arrayp
@@ -2417,18 +2422,23 @@
      from the conjuncts used in the guard,
      as explained in the user documentation.")
    (xdoc::p
-    "The conjunct must have the form @('(recognizer var)'),
+    "The conjunct must have the form
+     @('(recognizer var)') or @('(pointer (recognizer var))'),
      where @('recognizer') is a recognizer of a C type
      and @('var') is a variable.
      If the recognizer is a known one for integer or integer array types,
-     that readily determines the type.
+     the @(tsee pointer) wrapper is disallowed,
+     and the integer type is readily determined.
      Otherwise, there may be two possibilities.
      One is that the recognizer is the one of a @(tsee defstruct),
      of the form @('struct-<tag>-p'):
-     in this case, the type is pointer to the structure.
-     The other possibility is that recognizer is the one of a @(tsee defobject),
+     in this case, the type is the structure type or a pointer type to it,
+     depending on the absence or presence of the @(tsee pointer) wrapper.
+     The other possibility is that
+     the recognizer is the one of a @(tsee defobject),
      of the form @('object-<name>-p'):
-     in this case, the type is a pointer to the integer type
+     in this case, the @(tsee pointer) wrapper is disallowed,
+     and the type is a pointer to the integer type
      that is the element type of the array type of the object.")
    (xdoc::p
     "If the recognizer does not have any of the above forms,
@@ -5414,6 +5424,7 @@
                  the function ~x0 returns void and affects no variables."
                 fn)))
        ((unless (or (type-nonchar-integerp type)
+                    (type-case type :struct)
                     (type-case type :void)))
         (acl2::value
          (raise "Internal error: ~

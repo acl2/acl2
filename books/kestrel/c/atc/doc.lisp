@@ -338,6 +338,13 @@
      (xdoc::li
       "@('(ullong-arrayp x)'), representing @('unsigned long long *').")
      (xdoc::li
+      "@('(struct-<tag>-p x)'),
+       where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
+       representing the corresponding C structure type,
+       @('struct <tag>').
+       The @('<tag>') target must precede @('fn')
+       in the list of targets @('(t1 ... tp)').")
+     (xdoc::li
       "@('(pointer (struct-<tag>-p x))'),
        where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
        representing a pointer type to the corresponding C structure type,
