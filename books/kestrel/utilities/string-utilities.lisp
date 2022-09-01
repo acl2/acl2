@@ -18,6 +18,7 @@
 (include-book "read-chars")
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/position-equal-ac" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -178,20 +179,6 @@
   (IMPLIES (force (CHARACTER-LISTP X))
            (EQUAL (COERCE (COERCE X 'STRING) 'LIST)
                   X)))
-
-(defthm position-equal-ac-bound
-  (implies (and (POSITION-EQUAL-ac item lst acc) ;item is present
-                )
-           (< (POSITION-EQUAL-ac item lst acc)
-              (+ acc (len lst))))
-  :hints (("Goal" :in-theory (enable position-equal-ac))))
-
-(defthm position-equal-ac-bound-special
-  (implies (and (POSITION-EQUAL-ac item lst 0) ;item is present
-                )
-           (< (POSITION-EQUAL-ac item lst 0)
-              (len lst)))
-  :hints (("Goal" :use (:instance position-equal-ac-bound (acc 0)))))
 
 (defthm position-equal-bound
   (implies (and (stringp str) ;fixme gen
