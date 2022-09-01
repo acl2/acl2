@@ -1,6 +1,6 @@
 ; Check compatibility of this library with STD
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,4 +13,5 @@
 ;; Makes sure we can include both this libary and std/alists without any name
 ;; clashes:
 (include-book "std/alists/top" :dir :system)
+(include-book "std/typed-alists/top" :dir :system)
 (include-book "top")

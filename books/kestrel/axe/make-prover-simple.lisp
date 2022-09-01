@@ -2709,8 +2709,11 @@
                                (:e eqlable-listp)
                                member-eq-exec-is-member-equal ;(:e member-eq-exec)
                                member-eql-exec-is-member-equal
-                               unsigned-byte-p-from-bounds
-                               unsigned-byte-p-forward
+                               zp-compound-recognizer
+                               unsigned-byte-p-forward-to-nonnegative-integerp
+                               ;; unsigned-byte-p-from-bounds
+                               unsigned-byte-p-of-+-of--1
+                               ;; unsigned-byte-p-forward
                                rule-alistp-means-alistp
                                axe-bind-free-function-applicationp
                                natp-of-+-of-1-and-largest-non-quotep
