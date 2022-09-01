@@ -144,41 +144,6 @@
               ullongp-to-type-of-value
               sllongp-to-type-of-value))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-mul ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-mul
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-mul
-                     :required :arithmetic
-                     :supplied arg2)))
-       (err (error (list :undefined-mul arg1 arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (mul-uint-uint val1 val2))
-     ((sintp val1) (if (mul-sint-sint-okp val1 val2)
-                       (mul-sint-sint val1 val2)
-                     err))
-     ((ulongp val1) (mul-ulong-ulong val1 val2))
-     ((slongp val1) (if (mul-slong-slong-okp val1 val2)
-                        (mul-slong-slong val1 val2)
-                      err))
-     ((ullongp val1) (mul-ullong-ullong val1 val2))
-     ((sllongp val1) (if (mul-sllong-sllong-okp val1 val2)
-                         (mul-sllong-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-div ((arg1 valuep) (arg2 valuep))
@@ -735,7 +700,7 @@
        ((when (errorp arg1)) arg1)
        ((when (errorp arg2)) arg2))
     (case (binop-kind op)
-      (:mul (exec-mul arg1 arg2))
+      (:mul (mul-values arg1 arg2))
       (:div (exec-div arg1 arg2))
       (:rem (exec-rem arg1 arg2))
       (:add (exec-add arg1 arg2))
