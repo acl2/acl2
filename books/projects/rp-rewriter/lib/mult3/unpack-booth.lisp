@@ -352,7 +352,7 @@
              (pp-arg-lst (unpack-booth-for-pp-lst pp-arg-lst))
 
              ((mv s-lst1 pp-arg-lst c-lst1) (ex-from-pp-lst pp-arg-lst))
-             ((mv s-lst2 pp-arg-lst c-lst2) (pp-radix8+-fix pp-arg-lst))
+             ((mv s-lst2 pp-arg-lst c-lst2) (cross-product-pp pp-arg-lst))
 
              #|(- (and (not (pp-lst-orderedp pp-arg-lst))
              (not (cw "in unpack-booth-process-pp-arg

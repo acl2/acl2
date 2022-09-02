@@ -62,8 +62,9 @@
 
 ;; In this  file, we repeat a  subset of the  proofs (for svtv this  time) from
 ;; demo-1.lisp and demo-2.lisp: DT_SB4_HC_64_64_multgen.sv (64x64 Signed, Booth
-;; radix-4  encoded,  Dadda  Tree)   and  integrated_multipliers.sv  (FMA,  Dot
-;; product, Four-lanes truncated at lower and higher locations).
+;; radix-4  encoded,   Dadda  Tree)  and   integrated_multipliers.sv  (Multiply
+;; accumulate,  Dot   product,  Four-lanes   truncated  at  lower   and  higher
+;; locations).
 
 (in-package "RP")
 
@@ -160,20 +161,11 @@
                     `((res . ,(loghead 128 (* (sign-ext in1 64)
                                               (sign-ext in2 64))))))))
 
-;; I  tried to  create a  final  theorem for  a  test vector  created with  the
-;; original SV  design instead of  the redefined one.  I  used a SAT  Solver to
-;; prove the equivalance of "redefined-mult1-svtv"  to that vector.  I expected
-;; that the SAT solver could easily prove that because only adders are replaced
-;; and the overall structure of the design is mostly intact, But the SAT solver
-;; seemed to  keep on running  forever.  There is probably  a way to  have that
-;; proof  go   quickly.   However,   the  sanity   check  performed   with  the
-;; "replace-adders" event should be enough to trust that the adder replacements
-;; are correct and done soundly.
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Example-2: integrated_multipliers.sv (FMA,  Dot-product, Four-lane mult with
-;; truncation) (sequential or combinational) (the module in demo-2.lisp)
+;; Example-2:   integrated_multipliers.sv  (Multiply-accumulate,   Dot-product,
+;; Four-lane mult with truncation) (sequential or combinational) (the module in
+;; demo-2.lisp)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; We follow the  same steps from Example-1 to verify  an even more complicated
