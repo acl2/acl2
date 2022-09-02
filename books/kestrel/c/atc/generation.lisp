@@ -16,7 +16,7 @@
 (include-book "dynamic-semantics")
 (include-book "shallow-embedding")
 (include-book "table")
-(include-book "term-checkers")
+(include-book "term-checkers-common")
 
 (include-book "symbolic-execution-rules/top")
 

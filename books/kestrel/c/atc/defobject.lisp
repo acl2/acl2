@@ -13,7 +13,7 @@
 
 (include-book "abstract-syntax")
 (include-book "arrays")
-(include-book "term-checkers")
+(include-book "term-checkers-common")
 
 (include-book "fty-pseudo-terms")
 
