@@ -234,11 +234,13 @@ sub determine_acl2_dirs {
 	# Check whether the SYSTEM dir was set when reading the acl2_projects file and set it if so.
 	$acl2_books = lookup_colon_dir("SYSTEM", {});
 
-	# In this case we skip the rest because the path should be
-	# canonicalized already and is already added to the $dirs.
-	my $acl2_books_env = path_export($acl2_books);
-	$ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
-	return $acl2_books;
+        if ($acl2_books) {
+            # In this case we skip the rest because the path should be
+            # canonicalized already and is already added to the $dirs.
+            my $acl2_books_env = path_export($acl2_books);
+            $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
+            return $acl2_books;
+        }
     }
     
     # Fourth way: directory named books under the directory containing acl2
