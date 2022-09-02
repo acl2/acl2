@@ -758,14 +758,9 @@ chmod(0750,$shtmp);
 
 my $START_TIME = mytime();
 
-    my $firstchar = substr $shtmp, 0, 1;
-    if ($firstchar eq "/") {
-        system("$STARTJOB", "$shtmp");
-    }
-    else {
-        system("$STARTJOB", "./$shtmp");
-    }
-    $status = $? >> 8;
+$shtmp = File::Spec->file_name_is_absolute($shtmp) ? $shtmp : "./$shtmp";
+system("$STARTJOB", "$shtmp");
+$status = $? >> 8;
 
 my $END_TIME = mytime();
 
