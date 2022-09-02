@@ -18,7 +18,6 @@
 (include-book "read-chars")
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/position-equal-ac" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -173,33 +172,10 @@
 
 ;(in-theory (enable subseq))
 
-(in-theory (disable position-equal))
-
 (DEFthm COERCE-INVERSE-1-forced
   (IMPLIES (force (CHARACTER-LISTP X))
            (EQUAL (COERCE (COERCE X 'STRING) 'LIST)
                   X)))
-
-(defthm position-equal-bound
-  (implies (and (stringp str) ;fixme gen
-                (position-equal item str))
-           (< (position-equal item str)
-              (length str)))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :use (:instance position-equal-ac-bound-special (lst (coerce str 'list)))
-           :in-theory (e/d (position-equal) (position-equal-ac-bound-special)))))
-
-(defthm natp-of-position-equal
-  (implies (position-equal item lst)
-           (natp (position-equal item lst)))
-  :hints (("Goal" :in-theory (enable position-equal))))
-
-(defthm position-equal-type
-  (or (not (position-equal item lst))
-      (natp (position-equal item lst)))
-  :rule-classes (:type-prescription))
-
-
 
 ;returns (mv string-before-char rest-of-string)
 (defund split-string-before-char (str char)
