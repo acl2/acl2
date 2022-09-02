@@ -121,7 +121,7 @@
 ; for computing that result (i.e., state global gag-state-saved is nil), return
 ; :unavailable.
 
-; Keep this in sync with checkpoint-list, which provides additional
+; Keep this in sync with checkpoint-info-list, which provides additional
 ; information.  Also keep this in sync with checkpoint-list-pretty.
 
   (declare (xargs :guard (checkpoint-list-guard top-p state)))
@@ -218,4 +218,3 @@
 
 (defmacro show-checkpoint-list (&optional prettyify)
   `(show-checkpoint-list-fn ,prettyify state))
-

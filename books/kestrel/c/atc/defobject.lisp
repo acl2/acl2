@@ -70,7 +70,8 @@
       This is currently a list of C expressions,
       because the object is always an array.
       In the future, this may be generalized to other kinds of initializers.
-      The length of the list must match the size of the array type,
+      This list is empty to represent an external object without initializer;
+      otherwise, the length of the list matches the size of the array type,
       but this invariant is not captured in this fixtype currently.")
     (xdoc::li
      "The name of the recognizer of the possible values of the object.
@@ -255,9 +256,8 @@
     "In essence, this generates C code for
      a term used in the initializer of the external object."))
   (b* (((acl2::fun (irrelevant)) (list (irr-expr) (irr-type)))
-       ((mv erp (list okp const out-type) state)
+       ((er (list okp const out-type) :iferr (irrelevant))
         (atc-check-iconst term ctx state))
-       ((when erp) (mv erp (irrelevant) state))
        ((when okp)
         (acl2::value
          (list (expr-const (const-int const))
@@ -345,8 +345,8 @@
                    a single non-stobj value, ~
                    but it returns ~x1 instead."
                   term stobjs-out))
-       ((mv erp (list expr type) state) (defobject-term-to-expr term ctx state))
-       ((when erp) (mv erp (irr-expr) state))
+       ((er (list expr type) :iferr (irr-expr))
+        (defobject-term-to-expr term ctx state))
        ((unless (equal type elemtype))
         (er-soft+ ctx t (irr-expr)
                   "The initializer term ~x0 has type ~x1, ~
@@ -369,9 +369,8 @@
     "We process each item,
      returning the corresponding list of expressions if successful."))
   (b* (((when (endp terms)) (acl2::value nil))
-       ((mv erp expr state) (defobject-process-init-term
-                              (car terms) elemtype ctx state))
-       ((when erp) (mv erp nil state))
+       ((er expr :iferr nil) (defobject-process-init-term
+                               (car terms) elemtype ctx state))
        ((er exprs) (defobject-process-init-terms
                      (cdr terms) elemtype ctx state)))
     (acl2::value (cons expr exprs))))
@@ -385,9 +384,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We ensure that it is a list
-     of terms that appropriately represent expressions,
-     and that the length of the list matches the size of the array type"))
+    "We ensure that it is either @('nil'),
+     or a list of terms that appropriately represent expressions,
+     and that the length of the list (if not @('nil')) matches
+     the (positive) size of the array type."))
   (b* (((er &)
         (acl2::ensure-value-is-true-list$ init
                                           (msg "The :INIT input ~x0" init)
@@ -395,6 +395,7 @@
                                           nil))
        ((unless (type-case type :array))
         (acl2::value (raise "Internal error: not array type ~x0." type)))
+       ((when (endp init)) (acl2::value nil))
        ((unless (equal (len init) (type-array->size type)))
         (er-soft+ ctx t nil
                   "The number ~x0 of elements of the :INIT input ~
@@ -422,15 +423,14 @@
   :mode :program
   :short "Process the inputs of @(tsee defobject)."
   (b* (((acl2::fun (irrelevant)) (list "" (irr-ident) (irr-type) nil nil))
-       ((mv erp (list name-string name-ident redundantp) state)
+       ((er (list name-string name-ident redundantp):iferr (irrelevant))
         (defobject-process-name name call ctx state))
-       ((when erp) (mv erp (irrelevant) state))
        ((when redundantp)
         (acl2::value (list name-string name-ident (irr-type) nil t)))
-       ((mv erp type state) (defobject-process-type type ctx state))
-       ((when erp) (mv erp (irrelevant) state))
-       ((mv erp exprs state) (defobject-process-init init type ctx state))
-       ((when erp) (mv erp (irrelevant) state)))
+       ((er type :iferr (irrelevant))
+        (defobject-process-type type ctx state))
+       ((er exprs :iferr (irrelevant))
+        (defobject-process-init init type ctx state)))
     (acl2::value (list name-string name-ident type exprs nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -450,7 +450,7 @@
     "These are the recognizer, initializer, and table event.
      They are put into one @(tsee progn) event."))
   (b* (((unless (and (type-case type :array)
-                     (type-integerp (type-array->of type))))
+                     (type-nonchar-integerp (type-array->of type))))
         (raise "Internal error: not integer array type ~x0." type)
         '(_))
        (fixtype (integer-type-to-fixtype (type-array->of type)))
@@ -460,6 +460,7 @@
        (type-arrayp (pack fixtype '-arrayp))
        (type-array-length (pack fixtype '-array-length))
        (type-array-of (pack fixtype '-array-of))
+       (type-dec-const (pack fixtype '-dec-const))
        (recognizer-event
         `(define ,recognizer-name (x)
            :returns (yes/no booleanp)
@@ -468,7 +469,9 @@
        (initializer-event
         `(define ,initializer-name ()
            :returns (object ,recognizer-name)
-           (,type-array-of (list ,@init))))
+           (,type-array-of ,(if (consp init)
+                                `(list ,@init)
+                              `(repeat ,size (,type-dec-const 0))))))
        (info (make-defobject-info :name-ident name-ident
                                   :name-symbol name
                                   :type type
@@ -495,9 +498,8 @@
                state)
   :mode :program
   :short "Process the inputs and generate the events."
-  (b* (((mv erp (list name-string name-ident type exprs redundantp) state)
+  (b* (((er (list name-string name-ident type exprs redundantp) :iferr '(_))
         (defobject-process-inputs name type init call ctx state))
-       ((when erp) (mv erp '(_) state))
        ((when redundantp) (acl2::value '(value-triple :redundant)))
        (event (defobject-gen-everything
                 name name-string name-ident type init exprs call)))

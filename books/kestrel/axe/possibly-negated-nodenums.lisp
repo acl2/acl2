@@ -315,3 +315,9 @@
            (all-< (strip-nots-from-possibly-negated-nodenums items) bound))
   :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
                                      bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-possibly-negated-nodenump-of-cons-of-not
+  (equal (bounded-possibly-negated-nodenump (list 'not x) bound)
+         (and (natp x)
+              (< x bound)))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))

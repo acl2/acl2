@@ -92,7 +92,7 @@
 (local (in-theory (disable <-OF-IF-ARG1)))
 
 ;drop?:
-(mydefconst *minus-1* 4294967295)
+(defconst *minus-1* 4294967295)
 
 ;gross
  ;might be expensive

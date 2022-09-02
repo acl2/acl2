@@ -132,7 +132,7 @@
           :flag ,instantiate-hyp-no-free-vars-lst-name)
         :hints (("Goal" :in-theory (enable ,instantiate-hyp-no-free-vars-name
                                            ,instantiate-hyp-no-free-vars-lst-name
-                                           assoc-equal-iff))))
+                                           assoc-equal-iff-member-equal-of-strip-cars))))
 
        (,(pack$ 'defthm-flag- instantiate-hyp-no-free-vars-name)
         (defthm ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)

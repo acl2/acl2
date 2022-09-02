@@ -192,7 +192,6 @@
 
 |#
 
-
 (defmacro with-timeout-aux-raw (&whole whole duration/timeout-form body)
   (case-match duration/timeout-form
     (('quote (duration timeout-form))
@@ -207,6 +206,43 @@
                  ,timeout-form)
                 (t (values-list vals))))))
     (& (error "Illegal call in with-timeout-aux-raw:~%~s~%" whole))))
+
+#|
+
+ I left this here as an example of how to modify with-timeout-aux-raw
+ so that debugging breaks are disabled. In one iteration of trying to
+ get cgen to ignore break$, due to a request by Eric Smith, I explored
+ doing that, in part, here. Currently, this is done at a higher level
+ in test-checkpoint and test?-fn. That's better since it gets done
+ less frequently but covers more of the cgen code. A version of this
+ function may be independently useful so I left this code here.
+
+(defmacro with-timeout-aux-raw (&whole whole duration/timeout-form body)
+  (case-match duration/timeout-form
+    (('quote (duration timeout-form))
+     (let ((timeout-id (acl2-gentemp "WITH-TIMEOUT$"))
+           (debug-enable (acl2::f-get-global 'acl2::debugger-enable
+                                             acl2::*the-live-state*)))
+       `(let ((vals
+               (handler-case
+                   (progn
+                     (acl2::f-put-global 'acl2::debugger-enable
+                                         :never
+                                         acl2::*the-live-state*)
+                     (catch1 ',timeout-id
+                             (with-timeout-raw ,duration
+                                               ,timeout-id
+                                               ,body)))
+                 (error (c) ',timeout-id))))
+          (progn
+            (acl2::f-put-global 'acl2::debugger-enable
+                                ,debug-enable
+                                acl2::*the-live-state*)
+            (cond ((eq vals ',timeout-id)
+                   ,timeout-form)
+                  (t (values-list vals)))))))
+    (& (error "Illegal call in with-timeout-aux-raw:~%~s~%" whole))))
+|#
 
 #|
 

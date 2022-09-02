@@ -239,7 +239,7 @@
 ;; engineering design of ACL2 theorem prover.
 ;; If somebody reads this comment, I would be very interested in any other
 ;; theorem-provers having a call-back mechanism in their implementation.
-(defun acl2::test-checkpoint (id cl cl-list processor pspv hist ctx state)
+(defun acl2::test-checkpoint-h1 (id cl cl-list processor pspv hist ctx state)
   "?: This function is a callback called via an override hint +
 backtrack no-op hint combination.  On SUBGOALS that are not
 checkpoints it is a no-op. On checkpoints it calls the main
@@ -439,8 +439,19 @@ Nested testing not allowed! Skipping testing of new goal...~%"
    ;;  (value nil))
    )
 
-
-
+(defun acl2::test-checkpoint (id cl cl-list processor pspv hist ctx state)
+  (declare (xargs :stobjs (state) :mode :program))
+  (b* ((debug-enable (acl2::f-get-global 'acl2::debugger-enable state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  :never
+                                  state))
+       ((mv & val state)
+        (acl2::test-checkpoint-h1
+         id cl cl-list processor pspv hist ctx state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  debug-enable
+                                  state)))
+    (value val)))
 
 ;;; add no-op override hints that test each checkpoint.  The reason
 ;;; why we need backtrack hint is not that we need clause-list

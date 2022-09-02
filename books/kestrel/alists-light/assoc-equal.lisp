@@ -1,11 +1,12 @@
 ; A lightweight book about the built-in function assoc-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,19 +92,39 @@
                     (assoc-equal x alist2))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-;; matches std
+;; Better than the version in std.
 ;; Can help when assoc-equal-type cannot fire due to the hyps needing rewriting to be relieved.
-(defthm consp-of-assoc-equal
-  (implies (alistp alist)
+(defthm consp-of-assoc-equal-gen
+  (implies (or (alistp alist)
+               key)
            (iff (consp (assoc-equal key alist))
                 (assoc-equal key alist)))
   :hints (("Goal" :in-theory (enable alistp assoc-equal))))
 
-(defthmd assoc-equal-iff
-  (implies (alistp alist)
+;; Not sure which normal form is better
+(defthmd assoc-equal-iff-member-equal-of-strip-cars
+  (implies (or (alistp alist)
+               key)
            (iff (assoc-equal key alist)
                 (member-equal key (strip-cars alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; Not sure which normal form is better
+(defthmd member-equal-of-strip-cars-iff-assoc-equal
+  (implies (or (alistp alist)
+               key)
+           (iff (member-equal key (strip-cars alist))
+                (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; Note: No hyp about alistp
+(defthmd member-equal-of-strip-cars-when-assoc-equal
+  (implies (assoc-equal key alist)
+           (member-equal key (strip-cars alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+(theory-invariant (incompatible (:rewrite assoc-equal-iff-member-equal-of-strip-cars)
+                                (:rewrite member-equal-of-strip-cars-iff-assoc-equal)))
 
 (defthm assoc-equal-type
   (implies (or x ;if X is nil, and ALIST contains an atom, ASSOC-EQUAL might return that atom
@@ -117,3 +138,17 @@
   (implies (alistp alist)
            (iff (< 0 (len (assoc-equal key alist)))
                 (assoc-equal key alist))))
+
+(defthm car-of-assoc-equal-cheap
+  (implies (assoc-equal x alist)
+           (equal (car (assoc-equal x alist))
+                  x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+(defthm car-of-assoc-equal-strong
+  (equal (car (assoc-equal x alist))
+         (if (assoc-equal x alist)
+             x
+           nil))
+  :hints (("Goal" :in-theory (enable assoc-equal))))

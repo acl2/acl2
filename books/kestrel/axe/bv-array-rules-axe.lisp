@@ -283,3 +283,16 @@
                   (bv-array-write width (len lst) key val lst)))
   :hints (("Goal" :use update-nth-becomes-bv-array-write
            :in-theory (enable unsigned-byte-p-forced))))
+
+;; Throws away array elements that can't be accessed (based on the size of the index term)
+(defthmd bv-array-read-shorten-axe
+  (implies (and (syntaxp (and (quotep len)
+                              (quotep data)))
+                (axe-bind-free (bind-bv-size-axe index 'isize dag-array) '(isize))
+                (< (expt 2 isize) len) ; gets computed
+                (equal len (len data)) ; gets computed
+                (unsigned-byte-p-forced isize index))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (expt 2 isize) index (take (expt 2 isize) data))))
+  :hints (("Goal" :use (:instance bv-array-read-shorten-core)
+           :in-theory (disable bv-array-read-shorten-core))))

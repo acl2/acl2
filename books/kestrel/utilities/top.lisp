@@ -31,6 +31,8 @@
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
 (include-book "event-tuples-between")
+; Skipping the following, because it requires a trust tag:
+; (include-book "forcert")
 (include-book "functions-in-world")
 (include-book "gen-xdoc-for-file")
 (include-book "include-book-paths")

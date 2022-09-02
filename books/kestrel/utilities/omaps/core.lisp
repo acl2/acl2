@@ -270,7 +270,6 @@
     :rule-classes :built-in-clause
     :enable (empty mfix)))
 
-
 (define head-key ((map mapp))
   :guard (not (empty map))
   :enabled t
@@ -319,7 +318,6 @@
                  (acl2-count map)))
     :rule-classes :built-in-clause
     :enable (empty mfix)))
-
 
 (defruled head-tail-order
   (implies (not (empty (tail X)))
@@ -608,7 +606,12 @@
            (if (equal key1 key)
                (cons key val)
              (in key1 map)))
-    :enable (update head tail empty mfix mapp)))
+    :enable (update head tail empty mfix mapp))
+
+  (defrule update-of-cdr-of-in-when-in
+    (implies (in k m)
+             (equal (update k (cdr (in k m)) m)
+                    m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -637,7 +640,6 @@
   (defrule in*-of-tail
     (implies (in* keys map)
              (in* (set::tail keys) map))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

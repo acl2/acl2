@@ -6526,49 +6526,133 @@
                  (list (cons #\0 (print-indented-list-msg objects indent nil)))
                  0 channel state evisc-tuple))))
 
-(defun relativize-book-path (filename system-books-dir action)
+(defun sysfile-p (x)
+  (and (consp x)
+       (keywordp (car x))
+       (stringp (cdr x))))
 
-; System-books-dir is presumably the value of state global 'system-books-dir.
+(defun sysfile-key (x)
+  (declare (xargs :guard (sysfile-p x)))
+  (car x))
+
+(defun sysfile-filename (x)
+  (declare (xargs :guard (sysfile-p x)))
+  (cdr x))
+
+(defun project-dir-alist (state)
+  (declare (xargs :stobjs state))
+  (f-get-global 'project-dir-alist state))
+
+(defun project-dir-lookup (key alist ctx)
+
+; At the top level, alist is presumably (project-dir-alist state).  We
+; guarantee that the value of key in alist exists and is a string.  Except, we
+; allow that to fail if ctx is nil, returning nil in that case.
+
+; We use hons-assoc-equal below not because of hons (in fact hons-assoc-equal
+; has no under-the-hood code for fast alists), but because its guard is t and
+; that allows a guard of t here and simplifies guard verification.
+
+  (declare (xargs :guard t))
+  (let ((ans (if (stringp alist)
+                 (if (eq key :system)
+                     alist
+                   (er hard? 'project-dir-alist
+                       "Attempted to look up a key, ~x0, other than :system ~
+                        before initializing project-dir-alist!"
+                       key))
+               (cdr (hons-assoc-equal key alist)))))
+    (cond ((and (stringp ans)
+
+; It is tempting to check (absolute-pathname-string-p str t (os (w state))),
+; but we don't have state (or world) here.  The caller could supply it, or the
+; caller could do the check; but actually, we know that this will truly be an
+; absolute pathname, and if anyone needs that fact they can do the check.
+
+; Relativize-book-path requires the string not to be too long, because it calls
+; string-prefixp.
+
+                (<= (length ans) (fixnum-bound)))
+           ans)
+          ((null ctx) nil)
+          (t (prog2$
+              (er-hard? ctx "Missing project"
+                        "The project-dir-alist needs an entry for the keyword ~
+                         but that keyword is missing the current ~
+                         project-dir-alist, ~x1.  See :DOC project-dir-alist."
+                        key alist)
+; Dumb default so caller gets a sufficiently short string:
+              *directory-separator-string*)))))
+
+(defun project-dir (key state)
+  (declare (xargs :guard (state-p state)))
+  (project-dir-lookup key (project-dir-alist state) 'project-dir))
+
+(defun system-books-dir (state)
+  (declare (xargs :stobjs state))
+  (project-dir :system state))
+
+(defun project-dir-prefix-entry (filename project-dir-alist)
+
+; Return the first entry in project-dir-alist whose filename is a prefix of the
+; given filename, if there is one.  Otherwise return nil, which is appropriate
+; when filename isn't under a project directory.
+
+  (declare (xargs :guard (stringp filename)))
+  (cond ((atom project-dir-alist) nil)
+        ((and (consp (car project-dir-alist)) ; always t (for guard proof)
+              (stringp (cdar project-dir-alist)) ; always t (for guard proof)
+              (<= (length (cdar project-dir-alist))
+                  (fixnum-bound)) ; (for guard proof)
+              (string-prefixp (cdar project-dir-alist) filename))
+         (car project-dir-alist))
+        (t (project-dir-prefix-entry filename (cdr project-dir-alist)))))
+
+(defun relativize-book-path (filename project-dir-alist action)
+
+; Project-dir-alist is presumably the value of (project-dir-alist state).
 ; There are three possibilities, depending on action, which should either be
 ; :make-cons (the default), nil, or a book name as supplied to include-book
 ; (hence without the .lisp extension).
 
-; First suppose that the given filename is an absolute pathname extending the
-; absolute directory name system-books-dir.  Then if action is :make-cons,
-; return (:system . suffix), where suffix is a relative pathname that points to
-; the same file with respect to system-books-dir.  Otherwise return action.lisp
-; if action is non-nil, and otherwise, a suitable pathname relative to the
-; community books directory, prefixed by "[books]/".
+; First suppose that for some pair (:K . s) in project-dir-alist, s is a prefix
+; of the given filename.  Then if action is :make-cons, return (:K . suffix),
+; where suffix is a relative pathname, relative to the first such s associated
+; with :K.  Otherwise return action.lisp if action is non-nil, and otherwise, a
+; suitable pathname relative to the community books directory, prefixed by
+; "[books]/".
 
 ; Otherwise, return action.lisp if action is a string, else the given filename.
 
-  (declare (xargs :guard (and (stringp filename)
-                              (stringp system-books-dir)
-                              (<= (length system-books-dir) (fixnum-bound))
-                              (or (eq action :make-cons)
-                                  (eq action nil)
-                                  (stringp action)))))
-  (cond ((and (stringp filename) ; could already be (:system . fname)
-              (string-prefixp system-books-dir filename))
-         (let ((relative-pathname
-                (subseq filename (length system-books-dir) nil)))
-           (cond
-            ((eq action :make-cons)
-             (cons :system relative-pathname))
-            (action
-             (concatenate 'string action ".lisp"))
-            (t
-             (concatenate 'string "[books]/" relative-pathname)))))
-        ((stringp action)
-         (concatenate 'string action ".lisp"))
-        (t filename)))
+  (declare (xargs :guard (or (eq action :make-cons)
+                             (eq action nil)
+                             (stringp action))))
+  (let ((pair (and (stringp filename)
+                   (not (stringp action)) ; optimization
+                   (project-dir-prefix-entry filename
+                                             project-dir-alist))))
+                      
+    (cond ((stringp action) ; hence not :make-cons
+           (concatenate 'string action ".lisp"))
+          (pair ; (:kwd . "absolute-pathname/")
+           (let ((relative-pathname
+                  (subseq filename (length (cdr pair)) nil)))
+             (cond
+              ((eq action :make-cons)
+               (cons (car pair) relative-pathname))
+              (t
+               (concatenate 'string "[books]/" relative-pathname)))))
+          (t filename))))
 
-(defun relativize-book-path-lst (lst root action)
-  (declare (xargs :guard (and (string-listp lst)
-                              (stringp root))))
-  (cond ((endp lst) nil)
-        (t (cons (relativize-book-path (car lst) root action)
-                 (relativize-book-path-lst (cdr lst) root action)))))
+(defun relativize-book-path-lst (lst project-dir-alist action)
+  (declare (xargs :guard (string-listp lst)))
+  (cond
+   ((endp lst) nil)
+   (t (cons (relativize-book-path (car lst) project-dir-alist action)
+            (relativize-book-path-lst (cdr lst) project-dir-alist action)))))
+
+(defun filename-to-sysfile (filename state)
+  (relativize-book-path filename (project-dir-alist state) :make-cons))
 
 (defun print-book-path (book-path indent channel state)
   (assert$
@@ -6582,7 +6666,7 @@
        (print-indented-list
         (cond ((f-get-global 'script-mode state)
                (relativize-book-path-lst book-path
-                                         (f-get-global 'system-books-dir state)
+                                         (project-dir-alist state)
                                          nil))
               (t book-path))
         (1+ indent) 0 channel nil state)
@@ -7679,7 +7763,7 @@
 
 ; It has occurred to us to wonder whether a form such as (putprop-unless sym
 ; prop val nil wrld) -- that is, where exception is nil -- might cause problems
-; if the the value of property prop for symbol sym is *acl2-property-unbound*.
+; if the value of property prop for symbol sym is *acl2-property-unbound*.
 ; We don't think that's a problem, though, since in that case (getprop sym prop
 ; default name wrld) returns nil, just as though we'd actually put nil
 ; explicitly as the property value.
@@ -7937,6 +8021,61 @@
        nil))
      (declare (ignore bindings))
      (mv flg val state)))
+
+(defun tc-fn (level form state)
+
+; ``Tc'' stands for ``translate and clean.''  A sample call of this function is
+
+; (tc-fn 2 '(loop$ for e in lst always (predp (+ 1 e))) state)
+
+; This function translates the form and then cleans it up, returning a provably
+; equivalent term (at least, provably equivalent given appropriate warrants).
+; The level should be:
+
+; 0 - translate the form and then untranslate
+; 1 - translate the form, and then clean it up (but don't untranslate)
+; 2 - translate the form, clean it up, and untranslate it
+
+  (declare (xargs :mode :program))
+  (let ((wrld (w state)))
+    (mv-let (flg term bindings state)
+      (translate1 form
+                  :stobjs-out
+                  '((:stobjs-out . :stobjs-out))
+                  t ;;; known-stobjs = t (user interface)
+                  'top-level wrld state)
+      (declare (ignore bindings))
+      (cond
+       ((null flg)
+        (let ((hyps (mv-let (warrants unwarranteds)
+                      (warrants-for-tamep-lambdap term wrld nil nil)
+                      (declare (ignore unwarranteds))
+                      warrants)))
+          (cond
+           ((eql level 0)
+            (value (untranslate term nil wrld)))
+           ((eql level 1)
+            (value
+             (remove-guard-holders
+              (clean-up-dirty-lambda-objects hyps term nil wrld t)
+              wrld)))
+           (t
+            (value
+             (untranslate
+              (remove-guard-holders
+               (clean-up-dirty-lambda-objects hyps term nil wrld t)
+               wrld)
+              nil wrld))))))
+       (t (mv t :invisible state))))))
+
+(defmacro tca (form)
+  `(tc-fn 0 ,form state))
+
+(defmacro tc (form)
+  `(tc-fn 1 ,form state))
+
+(defmacro tcp (form)
+  `(tc-fn 2 ,form state))
 
 (defun tilde-*-props-fn-phrase1 (alist)
   (cond ((null alist) nil)
@@ -9866,7 +10005,7 @@
 
 ; Substn is alleged to be a substitution from variables to terms.
 ; We know it is a true list!  We check that each element is of the
-; the form (v term) where v is a variable symbol and term is a term.
+; form (v term) where v is a variable symbol and term is a term.
 ; We also check that no v is bound twice.  If things check out we
 ; return an alist in which each pair is of the form (v . term'), where
 ; term' is the translation of term.  Otherwise, we cause an error.
@@ -10475,7 +10614,7 @@
 
 ; This function returns t if fn is instantiable and nil otherwise; except, if
 ; if it has been introduced with unknown-constraints, then it returns the
-; the 'constrainedp property, i.e., *unknown-constraints*.
+; 'constrainedp property, i.e., *unknown-constraints*.
 
   (and (symbolp fn)
        (not (member-eq fn *non-instantiable-primitives*))

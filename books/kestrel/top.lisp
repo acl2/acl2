@@ -34,6 +34,7 @@
 (include-book "evaluators/top")
 (include-book "event-macros/top")
 (include-book "hdwallet/top")
+;; (include-book "helpers/top") ;; TODO: Uncomment when stable
 (include-book "ethereum/top")
 (include-book "file-io-light/top")
 (include-book "fty/top")
@@ -55,6 +56,7 @@
 (include-book "syntheto/top")
 (include-book "unicode-light/top")
 (include-book "utilities/top")
+(include-book "world-light/top")
 (include-book "x86/top")
 (include-book "yul/top")
 (include-book "zcash/top")

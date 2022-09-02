@@ -1251,7 +1251,7 @@
 ;    logext-list-equal-nil-rewrite
 
 ;    iushr-constant-opener
-            usbp8-implies-sbp32-2 ;fixme do we still need this?
+;            usbp8-implies-sbp32-2 ;fixme do we still need this?
             integerp-of-nth-when-all-integerp
 ;    logext-identity;;this caused problems.  trying without.
             sbp-32-when-non-neg ;do we need still this?

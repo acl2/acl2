@@ -11,7 +11,9 @@
 (in-package "ACL2")
 
 (include-book "princ-dollar")
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
+(local (include-book "kestrel/utilities/state" :dir :system))
+
+(local (in-theory (disable open-output-channel-p1 open-output-channel-p)))
 
 ;; Returns state.
 (defund write-strings-to-channel (strings channel state)
@@ -24,12 +26,6 @@
       state
     (pprogn (princ$ (car strings) channel state) ;todo: call something faster? (e.g., something that only works for strings)?
             (write-strings-to-channel (cdr strings) channel state))))
-
-;; (thm
-;;  (equal (open-output-channels (write-strings-to-channel list channel state))
-;;         (open-output-channels state))
-;;  :hints (("Goal" :in-theory (enable write-strings-to-channel ;open-output-channels
-;;                                     ))))
 
 (defthm state-p-of-write-strings-to-channel
   (implies (and (state-p state)
@@ -49,3 +45,8 @@
   (implies (open-output-channel-p1 channel2 typ state)
            (open-output-channel-p1 channel2 typ (write-strings-to-channel strings channel state)))
   :hints (("Goal" :in-theory (enable write-strings-to-channel))))
+
+(defthm w-of-write-strings-to-channel
+  (equal (w (write-strings-to-channel strings channel state))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (write-strings-to-channel) (w)))))

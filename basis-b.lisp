@@ -2254,7 +2254,8 @@
            (mv (reverse acc) state))
           (t (read-file-iterate channel (cons obj acc) state)))))
 
-(defun read-file (name state)
+(defun read-file+ (name msg ctx state)
+  (declare (xargs :stobjs state :mode :program))
   (mv-let (channel state)
     (open-input-channel name :object state)
     (cond (channel
@@ -2262,7 +2263,12 @@
              (read-file-iterate channel nil state)
              (pprogn (close-input-channel channel state)
                      (mv nil ans state))))
-          (t (er soft 'read-file "No file found ~x0." name)))))
+          (msg (er soft ctx "~@0" msg))
+          (t (er soft ctx "No file found ~x0." name)))))
+
+(defun read-file (name state)
+  (declare (xargs :stobjs state :mode :program))
+  (read-file+ name nil 'read-file state))
 
 (defun formals (fn w)
   (declare (xargs :guard (and (symbolp fn)

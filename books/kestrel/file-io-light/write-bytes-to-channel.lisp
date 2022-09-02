@@ -1,6 +1,6 @@
 ; A function to write a sequence of bytes to a channel
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,8 +10,13 @@
 
 (in-package "ACL2")
 
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
 (local (include-book "write-byte-dollar"))
+(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "kestrel/utilities/state" :dir :system))
+
+(local (in-theory (disable state-p state-p1
+                           open-output-channels ; not done by a library?
+                           )))
 
 (defun all-bytep (lst)
   (declare (xargs :guard t))
@@ -28,7 +33,9 @@
                   :guard (and (all-bytep bytes)
                               (symbolp channel)
                               (open-output-channel-p channel :byte state))
-                  :guard-hints (("Goal" :in-theory (enable open-output-channel-p)))))
+                  :guard-hints (("Goal" :in-theory (enable open-output-channel-p
+                                                           open-output-channel-p1 ; todo
+                                                           )))))
   (if (atom bytes)
       state
     (pprogn (write-byte$ (car bytes) channel state)
@@ -37,7 +44,9 @@
 (defthm open-output-channel-p1-of-write-bytes-to-channel
   (implies (open-output-channel-p1 channel2 typ state)
            (open-output-channel-p1 channel2 typ (write-bytes-to-channel bytes channel state)))
-  :hints (("Goal" :in-theory (enable write-bytes-to-channel))))
+  :hints (("Goal" :in-theory (enable write-bytes-to-channel
+                                     open-output-channel-p1 ; todo
+                                     ))))
 
 (defthm state-p1-of-write-bytes-to-channel
   (implies (and (open-output-channel-p1 channel :byte state)
@@ -45,4 +54,6 @@
                 (state-p1 state)
                 (all-bytep list))
            (state-p1 (write-bytes-to-channel list channel state)))
-  :hints (("Goal" :in-theory (enable write-bytes-to-channel))))
+  :hints (("Goal" :in-theory (enable write-bytes-to-channel
+                                     open-output-channel-p1 ; todo
+                                     ))))

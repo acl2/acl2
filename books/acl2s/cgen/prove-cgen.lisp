@@ -520,6 +520,10 @@ history s-hist.")
   (b* ((s-hist (cget s-hist))
 ;when testing errored out or timed out, theres no point of printing.
        (gcs%   (cget gcs))
+       (debug-enable (acl2::f-get-global 'acl2::debugger-enable state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  :never
+                                  state))
        (vl     (cget verbosity-level))
        (- (cw? (debug-flag vl) "~|testing summary - gcs% = ~x0~%" gcs%))
        (- (cw? (debug-flag vl) "~|testing summary - s-hist = ~x0~%" s-hist))
@@ -589,7 +593,11 @@ history s-hist.")
                                   (and (> wts-to-print 0) (> num-wts 0));print wts if true
                                   cts-to-print wts-to-print 
                                   top-term top-vars top-ctx
-                                  vl state)))
+                                  vl state))
+           (state (acl2::f-put-global 'acl2::debugger-enable
+                                      debug-enable
+                                      state))
+           )
        (value nil)))
      (& (value (cw? (normal-output-flag vl) "~|CEgen/Error: BAD gcs% in cgen-state.~|"))))))
 

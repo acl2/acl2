@@ -1,16 +1,18 @@
 ; A lightweight book about the built-in function subsetp-equal.
 ;
-; Copyright (C) 2016-2019 Kestrel Institute
+; Copyright (C) 2016-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
 (local (include-book "member-equal"))
+(local (include-book "remove1-equal"))
 
 (in-theory (disable subsetp-equal))
 
@@ -342,3 +344,42 @@
                 (subsetp-equal lst2 lst))
            (member-equal x lst))
   :hints (("Goal" :in-theory (enable subsetp-equal member-equal))))
+
+;; If there are at least two As in Y, then removing A from Y makes no
+;; difference.  Otherwise, A must not be in X.
+(defthm subsetp-equal-of-remove1-equal
+  (equal (subsetp-equal x (remove1-equal a y))
+         (and (if (member-equal a (remove1-equal a y))
+                  t
+                (not (member-equal a x)))
+              (subsetp-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+;; Maybe move to a file of mixed rules.
+(encapsulate ()
+  (local
+   (defun induct-fn (x y)
+     (declare (irrelevant y))
+     (if (consp x)
+         (induct-fn (cdr x) (remove1-equal (car x) y))
+       t)))
+
+  (defthm <=-of-len-and-len-when-subsetp-equal-and-no-duplicatesp-equal-forward-chaining
+    (implies (and (subsetp-equal x y)
+                  (no-duplicatesp-equal x))
+             (<= (len x) (len y)))
+    :hints (("Goal" :induct (induct-fn x y)))
+    :rule-classes :forward-chaining)
+
+  (defthmd <=-of-len-and-len-when-subsetp-equal-and-no-duplicatesp-equal-linear
+    (implies (and (subsetp-equal x y)
+                  (no-duplicatesp-equal x))
+             (<= (len x) (len y)))
+    :hints (("Goal" :by <=-of-len-and-len-when-subsetp-equal-and-no-duplicatesp-equal-forward-chaining))
+    :rule-classes :linear)
+
+  (defthmd <=-of-len-and-len-when-subsetp-equal-and-no-duplicatesp-equal
+    (implies (and (subsetp-equal x y)
+                  (no-duplicatesp-equal x))
+             (<= (len x) (len y)))
+    :hints (("Goal" :by <=-of-len-and-len-when-subsetp-equal-and-no-duplicatesp-equal-forward-chaining))))

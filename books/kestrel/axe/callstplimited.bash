@@ -38,10 +38,12 @@ fi
 
 #TODO: The STP timeout is hardly graceful.  It says "Aborted..." Try the new STP?  <-- old comment?
 
-echo "CALLING STP"
+# echo "CALLING STP"
 
 ## Requires a relatively new STP:
 stp ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
+## For a newer STP, this may be needed:
+# stp ${COUNTEREXAMPLE_ARGS} --max-num-confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
 
 # if [ -f "${NEWSTP}" ]; then
 #     echo "Using NEWSTP, which is ${NEWSTP}."

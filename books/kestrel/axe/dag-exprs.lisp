@@ -81,11 +81,19 @@
   :hints (("Goal" :expand (nth 1 (dargs expr))
            :in-theory (enable nth))))
 
-(defthm caddr-of-dargs-becomes-nth-1-of-dargs
+(defthm caddr-of-dargs-becomes-nth-2-of-dargs
   (equal (caddr (dargs expr))
          (nth 2 (dargs expr)))
   :hints (("Goal" :expand ((nth 1 (cdr (dargs expr)))
                            (nth 2 (dargs expr)))
+           :in-theory (enable nth))))
+
+(defthm cadddr-of-dargs-becomes-nth-3-of-dargs
+  (equal (cadddr (dargs expr))
+         (nth 3 (dargs expr)))
+  :hints (("Goal" :expand ((nth 1 (cdr (cdr (dargs expr))))
+                           (nth 2 (cdr (dargs expr)))
+                           (nth 3 (dargs expr)))
            :in-theory (enable nth))))
 
 (defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))))) (first (dargs x)))
@@ -146,6 +154,26 @@
            (true-listp (dargs expr)))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
+; normal form matches consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
+(defthmd consp-of-dargs-when-dag-exprp-iff
+  (implies (and (dag-exprp expr)
+                ;; (consp expr)
+                ;; (not (equal 'quote (car expr)))
+                )
+           (iff (consp (dargs expr))
+                (dargs expr)))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
+
+; normal form matches consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
+(defthmd consp-of-cdr-of-dargs-when-dag-exprp-iff
+  (implies (and (dag-exprp expr)
+                ;; (consp expr)
+                ;; (not (equal 'quote (car expr)))
+                )
+           (iff (consp (cdr (dargs expr)))
+                (cdr (dargs expr))))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
+
 ;drop?
 (local (in-theory (enable consp-of-cdr-of-nth-when-all-dargp)))
 
@@ -185,6 +213,18 @@
                 )
            (equal (myquotep (nth n (dargs expr)))
                   (consp (nth n (dargs expr)))))
+  :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-all-dargp)
+                                  (myquotep)))))
+
+(defthm eqlablep-of-nth-of-dargs
+  (implies (and (dag-exprp expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (car expr)))
+;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
+                )
+           (equal (eqlablep (nth n (dargs expr)))
+                  (not (consp (nth n (dargs expr))))))
   :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-all-dargp)
                                   (myquotep)))))
 

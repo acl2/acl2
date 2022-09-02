@@ -316,6 +316,15 @@
   (type-realp type)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-arithmetic-listp (x)
+  :guard (type-listp x)
+  (type-arithmeticp x)
+  ///
+  (fty::deffixequiv type-arithmetic-listp
+    :args ((x type-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-scalarp ((type typep))
@@ -327,10 +336,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-integer-nonbool-nonchar-p ((type typep))
+(define type-promoted-arithmeticp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an integer type
-          but not @('_Bool') or the plain @('char') type."
+  :short "Check if a type is a promoted arithmetic type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, an arithmetic type that is promoted,
+     in the sense that applying integer promotions [C:6.3.1.1/2] to it
+     would leave the type unchanged.
+     This means that the type is not
+     a (signed, unsigned, or plain) @('char') type
+     or a (signed or unsigned) @('short') type."))
+  (and (type-arithmeticp type)
+       (not (type-case type :char))
+       (not (type-case type :schar))
+       (not (type-case type :uchar))
+       (not (type-case type :sshort))
+       (not (type-case type :ushort)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-nonchar-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a (supported) type is an integer type
+          except for the plain @('char') type."
   (or (type-case type :uchar)
       (type-case type :schar)
       (type-case type :ushort)
@@ -344,8 +375,8 @@
   :hooks (:fix)
   ///
 
-  (defrule type-integerp-when-type-integer-nonbool-nonchar-p
-    (implies (type-integer-nonbool-nonchar-p x)
+  (defrule type-integerp-when-type-nonchar-integerp
+    (implies (type-nonchar-integerp x)
              (type-integerp x))
     :enable (type-integerp
              type-unsigned-integerp
@@ -353,11 +384,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist type-integer-nonbool-nonchar-listp (x)
+(std::deflist type-nonchar-integer-listp (x)
   :guard (type-listp x)
-  (type-integer-nonbool-nonchar-p x)
+  (type-nonchar-integerp x)
   ///
-  (fty::deffixequiv type-integer-nonbool-nonchar-listp
+  (fty::deffixequiv type-nonchar-integer-listp
     :args ((x type-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -483,8 +514,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *integer-nonbool-nonchar-types*
-  :short "List of the C integer types except @('_Bool') and plain @('char')."
+(defval *nonchar-integer-types**
+  :short "List of the (supported) C integer types except plain @('char')."
   (list (type-schar)
         (type-uchar)
         (type-sshort)
@@ -499,11 +530,11 @@
 
   (local (include-book "std/lists/len" :dir :system))
 
-  (defruled member-integer-nonbool-nonchar-types-as-pred
+  (defruled member-nonchar-integer-types-as-pred
     (implies (typep type)
-             (iff (member-equal type *integer-nonbool-nonchar-types*)
-                  (type-integer-nonbool-nonchar-p type)))
-    :enable (type-integer-nonbool-nonchar-p
+             (iff (member-equal type *nonchar-integer-types**)
+                  (type-nonchar-integerp type)))
+    :enable (type-nonchar-integerp
              type-kind
              typep)))
 

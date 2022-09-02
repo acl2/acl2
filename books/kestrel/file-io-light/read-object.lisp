@@ -19,11 +19,7 @@
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-object))
 
-(local (in-theory (disable open-input-channels
-                           update-open-input-channels
-                           member-equal)))
-
-(local (in-theory (enable consp-of-cdr)))
+(local (in-theory (e/d (consp-of-cdr) (open-input-channels member-equal))))
 
 (local
  (defthmd assoc-equal-when-not-symbolp-and-open-channels-p

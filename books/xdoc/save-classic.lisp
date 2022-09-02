@@ -391,7 +391,7 @@ command, along the following lines:</p>
 ;;        (state       (oslib::mkdir! dir))
 ;;        (state       (oslib::mkdir! dir/xml))
 
-;;        (dir-system   (acl2::f-get-global 'acl2::system-books-dir state))
+;;        (dir-system   (acl2::system-books-dir state))
 ;;        (xdoc-dir     (oslib::catpath dir-system "xdoc"))
 ;;        (xdoc/classic (oslib::catpath xdoc-dir "classic"))
 

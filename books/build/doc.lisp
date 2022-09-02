@@ -287,8 +287,8 @@ use.</p>
 <p>Incidentally, if @('cert.pl') cannot determine the location of the books
 directory from one of the above two directives, it will first try to find a
 @('books') directory alongside the ACL2 executable.  If this fails, it will run
-the ACL2 executable and ask it for the value of the global variable
-@('system-books-dir').  If the response it receives does not point to a
+the ACL2 executable and ask it for the value of the expression
+@('(system-books-dir state)').  If the response it receives does not point to a
 directory that exists on the filesystem, @('cert.pl') finally chooses the
 parent directory of its own location.</p>")
 

@@ -51,6 +51,7 @@
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
+;(include-book "kestrel/untranslated-terms-old/untranslated-terms-apply" :dir :system)
 
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
 
@@ -596,17 +597,25 @@
   `(add-to-ruleset ,(propiso-info->osi-ruleset-name propiso-info)
                    ',thms))
 
+(define symbolp-or-lambdap (x)
+  :returns (b booleanp)
+  :enabled t
+  (or (symbolp x)
+      (and (consp x)
+           (equal (car x) 'lambda)
+           (equal (len x) 3))))
+
 ;; fn-info fns
 
 (std::defaggregate fn-info-elt
                    ((source-fn symbolp)
-                    (target-fn symbolp)
+                    (target-fn symbolp-or-lambdap)
                     (iso-thm symbolp)
                     (osi-thm symbolp)
                     (arg-types symbol-listp)
                     (result-types symbol-listp)))
 
-(define merge-fn-info-elt-iso-fn-type (fn-info? (fun symbolp) (fun1 symbolp) arg-sig ret-sig)
+(define merge-fn-info-elt-iso-fn-type (fn-info? (fun symbolp) (fun1 symbolp-or-lambdap) arg-sig ret-sig)
   :mode :program
   (if (null fn-info?)
       (fn-info-elt fun fun1 nil nil arg-sig ret-sig)
@@ -638,7 +647,7 @@
           (r-val (target-fns (rest fn-infos))))
       (if (null fn)
           r-val
-        (cons fn  r-val)))))
+        (cons fn r-val)))))
 (defun iso-thms (fn-infos)
   (if (endp fn-infos)
       ()
@@ -1218,7 +1227,7 @@
   :mode :program
   (case-match old-body-tm
     (('if pred then-cl else-cl)
-     (let ((pred (rename-fns-in-untranslated-term pred fn-renaming)))
+     (let ((pred (rename-fns-and-expand-lambdas-in-untranslated-term pred fn-renaming)))
        (append (support-thms-for-defun-aux then-cl (cons pred hyps)
                                            (+ n 1)
                                            fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)
@@ -1236,11 +1245,11 @@
        (support-thms-for-defun-aux new-let* hyps n fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)))
     ;; ((mv . mvs))  ;; ??
     (& (b* ((thm-name (pack$ fun1 "--" n))
-            (body-tm (rename-fns-in-untranslated-term old-body-tm fn-renaming))
+            (body-tm (rename-fns-and-expand-lambdas-in-untranslated-term old-body-tm fn-renaming))
             (body-tm (add-iso-conversions body-tm fn-infos iso-infos))
             (hyps (add-iso-conversions-list hyps fn-infos iso-infos))
             (thm-body (make-impl-nice hyps `(equal ,head-tm ,body-tm)))
-            ;; (refd-funs (all-ffn-symbs (rename-fns-in-untranslated-term thm-body fn-renaming) nil))
+            ;; (refd-funs (all-ffn-symbs (rename-fns-and-expand-lambdas-in-untranslated-term thm-body fn-renaming) nil))
             (user-hints (lookup-hints thm-name propiso-info))
             (skip-proofs-p (eq user-hints 'skip-proofs))
             (user-e/d (and (consp user-hints)
@@ -1839,6 +1848,7 @@ Example: int10-map-p-->-int20-map-p
                              (fn-infos fn-infos-list-p)    ; mapping of old fns to new plus domain signature
                              (iso-infos iso-info-alist-p)  ; list of isomorphism 4-tuples
                              (propiso-info propiso-info-p) ; Map from theorem name to hints lists
+                             (dont-verify-guards booleanp)
                              (events true-list-listp)      ; events generated so far
                              (eventup acl2::pseudo-event-landmarkp)
                              state)
@@ -1861,13 +1871,14 @@ Example: int10-map-p-->-int20-map-p
        (body (fn-ubody1 fun body0 world event-defun))
        (body (clean-body body))
        (measure (and recursivep (acl2::measure+ fun world)))
-       (guard-verifiedp (acl2::event-demands-guard-verificationp event-defun))
+       (guard-verifiedp (and (not dont-verify-guards)
+                             (acl2::event-demands-guard-verificationp event-defun)))
        (old-guard (guard fun nil world))
        (old-guard (untranslate old-guard nil world))
        (old-guard-list (flatten-conj old-guard))
-       (body1 (rename-fns-in-untranslated-term body fn-renaming1))
-       (measure1 (rename-fns-in-untranslated-term measure fn-renaming1))
-       (new-guard (rename-fns-in-untranslated-term old-guard fn-renaming1))
+       (body1 (rename-fns-and-expand-lambdas-in-untranslated-term body fn-renaming1))
+       (measure1 (rename-fns-and-expand-lambdas-in-untranslated-term measure fn-renaming1))
+       (new-guard (rename-fns-and-expand-lambdas-in-untranslated-term old-guard fn-renaming1))
        ;; make body, measure, and guard of FUN' more readable: -- now just use untranslated body
        ;; (body1 (untranslate body1 nil world))
        (measure1 (untranslate measure1 nil world))
@@ -2132,7 +2143,7 @@ Example: int10-map-p-->-int20-map-p
        (matrix (defun-sk-matrix fun world))
        ;; substitute function names in the matrix of FUN:
        (matrix1 (untranslate matrix nil world))
-       (matrix1 (rename-fns-in-untranslated-term matrix1 fn-renaming))
+       (matrix1 (rename-fns-and-expand-lambdas-in-untranslated-term matrix1 fn-renaming))
        ;; add DEFINE-SK for FUN' to events:
        (event `(define-sk ,fun1 ,formals
                  (,quantifier ,bound-vars ,matrix1)))
@@ -2236,7 +2247,7 @@ Example: int10-map-p-->-int20-map-p
        ;;        (cw "thm event:~%~x0~%" (my-get-event thm world))
        ;;      ()))
        ;; substitute function names in the formula of THM:
-       (formula1 (rename-fns-in-untranslated-term formula fn-renaming))
+       (formula1 (rename-fns-and-expand-lambdas-in-untranslated-term formula fn-renaming))
        ;; get all the iso theorems for functions referenced by THM
        ;; (these are the ones relevant to proving THM'):
        ((mv & head) (rule-hyps-and-conc formula thm))                       ; hyps
@@ -2310,7 +2321,7 @@ Example: int10-map-p-->-int20-map-p
   ;; returns updated (mv nil fn-renaming renaming fn-infos iso-infos events)
   :mode :program
   (b* (;; replace H with its refinement H', if there is one:
-       (new-fun (rename-fns-in-untranslated-term old-fun fn-renaming))
+       (new-fun (rename-fns-and-expand-lambdas-in-untranslated-term old-fun fn-renaming))
        ;; if H' is the same as H, then H does not depend on F1
        ;; and thus no VERIFY-GUARDS event needs to be generated;
        ;; otherwise we generate a VERIFY-GUARDS event for H':
@@ -2330,7 +2341,8 @@ Example: int10-map-p-->-int20-map-p
    (renaming symbol-alistp)             ; mapping of old fn and thm names to new
    (fn-infos fn-infos-list-p)           ; mapping of old fns to new plus rewrite thm and domain signature
    (iso-infos iso-info-alist-p)         ; mapping from isomorphism names to isomorphism records
-   (propiso-info propiso-info-p) ; Map from theorem name to hints lists
+   (propiso-info propiso-info-p)        ; Map from theorem name to hints lists
+   (dont-verify-guards booleanp)
    (events true-listp)                  ; generated events, reverse chronological order
    state)
   ;; returns list of events and final iso-infos and fn-infos
@@ -2349,7 +2361,8 @@ Example: int10-map-p-->-int20-map-p
                     (if (std::find-define-sk-guts fun world)
                         (propagate-iso-define-sk fun fn-renaming renaming fn-infos iso-infos propiso-info events ;; state
                                                  )
-                      (propagate-iso-defun fun last-defuned-fn fn-renaming renaming fn-infos iso-infos propiso-info events eventup state)))))
+                      (propagate-iso-defun fun last-defuned-fn fn-renaming renaming fn-infos iso-infos propiso-info
+                                           dont-verify-guards events eventup state)))))
             (defuns
               (prog2$ (raise "Event tuple ~x0 not supported." eventup)
                       (mv nil nil nil nil nil nil)))
@@ -2365,7 +2378,7 @@ Example: int10-map-p-->-int20-map-p
                      (mv nil nil nil nil nil nil))))
         ;; process remaining event tuples, with updated accumulators:
         (propagate-iso-loop
-         (cdr eventups) last-defuned-fn fn-renaming+ renaming+ fn-infos+ iso-infos+ propiso-info events+ state)))))
+         (cdr eventups) last-defuned-fn fn-renaming+ renaming+ fn-infos+ iso-infos+ propiso-info dont-verify-guards events+ state)))))
 
 
 ;; Propagate isomorphisms
@@ -2381,18 +2394,15 @@ Example: int10-map-p-->-int20-map-p
    state)
   ;; returns list of events
   :mode :program
-  :ignore-ok t ; TODO: delete
+  ;:ignore-ok t ; TODO: delete
   (b* ((world (propiso-info->world propiso-info))
        ;; take event tuples from iso sources to last-event:
        (eventups (acl2::event-tuples-between (append extra-seed-fns (source-fns fn-infos) (strip-cars iso-infos))
-                                       (list (cdar (last event-regions))) world))
+                                             (list (cdar (last event-regions))) world))
        ;; if there are no event tuples, G1 does not depend on F1:
        ((if (eq eventups nil))
         (raise "~x0 does not depend on isomorphisms." (cdar (last event-regions)))
         (mv nil nil nil))
-       ;; since the first event tuple introduces F1,
-       ;; for which we already have the refinement F2,
-       ;; we skip the first event tuple and start with the next one:
        (eventups (event-tuples-between-pairs event-regions eventups))
        (fn-renaming (append (pairlis$ (strip-cars iso-infos) (map-iso-domb iso-infos))
                             (pairlis$ (source-fns fn-infos) (target-fns fn-infos))))
@@ -2404,7 +2414,8 @@ Example: int10-map-p-->-int20-map-p
        (typing-thm-event (add-iso-osi-theorem-event typing-thms propiso-info))
        ;; propagate the refinement to all event tuples:
        ((mv events iso-infos fn-infos)
-        (propagate-iso-loop eventups nil fn-renaming renaming fn-infos iso-infos propiso-info (list typing-thm-event) state)))
+        (propagate-iso-loop eventups nil fn-renaming renaming fn-infos iso-infos propiso-info
+                            dont-verify-guards (list typing-thm-event) state)))
       ;; arrange in chronological order:
       (mv (reverse events) iso-infos fn-infos)))
 
@@ -2435,16 +2446,20 @@ Example: int10-map-p-->-int20-map-p
            (mv t nil)))
 
 (define check-fn-infos1 (fn-info (iso-infos iso-info-alist-p) (world plist-worldp))
+  :guard-debug t
   (case-match fn-info
     ((fn-i t-fn-i iso-thm osi-thm arg-types (quote~ =>) result-ty)
      (cond ((not (and (symbolp fn-i)
                       (or (function-symbolp fn-i world)
                           (acl2::macro-symbolp fn-i world))))
             (raise-mv-t "~x0 must be a function." fn-i))
-           ((not (and (symbolp t-fn-i)  ; Todo: Check arities are the same!
-                      (or (function-symbolp t-fn-i world)
-                          (acl2::macro-symbolp t-fn-i world))))
-            (raise-mv-t "~x0 must be a function." t-fn-i))
+           ((not (or (and (symbolp t-fn-i) ; Todo: Check arities are the same!
+                          (or (function-symbolp t-fn-i world)
+                              (acl2::macro-symbolp t-fn-i world)))
+                     (and (consp t-fn-i)
+                          (equal (car t-fn-i) 'lambda)
+                          (equal (len t-fn-i) 3))))
+            (raise-mv-t "~x0 must be a function symbol or lambda term." t-fn-i))
            ((not (and (symbolp iso-thm)
                       (acl2::theorem-symbolp iso-thm world)))
             (raise-mv-t "~x0 must be a theorem." iso-thm))
@@ -2552,7 +2567,13 @@ Example: int10-map-p-->-int20-map-p
        (initial-iso-rules (append (iso-thms fn-infos) iso-rules))
        (osi-ruleset-name (pack$ main-iso-name "-OSI-THMS"))
        (initial-osi-rules (append (osi-thms fn-infos) osi-rules))
-       (propiso-info (propiso-info iso-osi-ruleset-name iso-ruleset-name osi-ruleset-name (doublets-to-alist hints-map)
+       (propiso-info (propiso-info iso-osi-ruleset-name iso-ruleset-name osi-ruleset-name
+                                   (doublets-to-alist (if (and (listp hints-map)
+                                                               (eql (len hints-map) 2)
+                                                               (symbolp (car hints-map)))
+                                                          ;; If just one allow extra parens to be omitted
+                                                          (list hints-map)
+                                                        hints-map))
                                    world))
        (event-regions (doublets-to-alist event-regions))
        (event-regions (if first-event

@@ -46,6 +46,13 @@
            (unsigned-byte-p size (bvshr size x amt)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
+(defthm bvchop-of-bvshr-same
+  (implies (and (natp width)
+                (natp shift-amount))
+           (equal (bvchop width (bvshr width x shift-amount))
+                  (bvshr width x shift-amount)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
 (defthm bvchop-of-bvshr
   (implies (and (integerp width)
                 (integerp shift-amount))

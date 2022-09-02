@@ -2726,6 +2726,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun hard-error (ctx str alist)
 
+; Str is often a fmt string to print with respect to alist.  But it may also be
+; a cons pair (summary . str), where str is as above and summary is a string
+; that could be a key of inhibit-er-table.
+
 ; This function returns nil -- when it returns.  However, the implementation
 ; usually signals a hard error, which is sound since it is akin to running out
 ; of stack or some other resource problem.
@@ -2784,7 +2788,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; this would be a BAD IDEA.  But error-fms only prints stuff that was created
 ; earlier (and passed in via alist).
 
-    (let ((state *the-live-state*))
+    (let ((state *the-live-state*)
+          (summary (if (consp str) (car str) nil))
+          (str (if (consp str) (cdr str) str)))
       (cond
        (*hard-error-is-error*
         (hard-error-is-error ctx str alist))
@@ -2795,7 +2801,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 :test #'eq)))
           (let ((*standard-output* *error-output*)
                 (*wormholep* nil))
-            (error-fms t ctx nil str alist state)))
+            (error-fms t ctx summary str alist state)))
 
 ; Once upon a time hard-error took a throw-flg argument and did the
 ; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
@@ -3047,7 +3053,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; second function that needs special stobjs-out handling.  But then we need a
 ; version of must-be-equal with the logic input as the last argument, since
 ; that is what is returned in the logic.  We call that mbe1, but we leave
-; must-be-equal as we move the the return-last implementation (after v4-1,
+; must-be-equal as we move the return-last implementation (after v4-1,
 ; released Sept., 2010), since must-be-equal has been around since v2-8 (March,
 ; 2004).
 
@@ -11951,7 +11957,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; search the alist (with the function aref1) for the first pair whose
 ; car matches the key.  If such a pair is found, then aref1 returns
 ; the cdr of the pair; otherwise aref1 returns the value associated
-; with the :default key.  It is illegal to give aref1 an an index
+; with the :default key.  It is illegal to give aref1 an index
 ; equal to or greater than the car of the value associated with the
 ; :dimensions key.  In the normal case, updating happens by simply
 ; consing a new pair on to the alist with the function aset1.
@@ -12328,7 +12334,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let* ((old-book-path
             (reverse (unrelativize-book-path
                       (package-entry-book-path package-entry)
-                      (f-get-global 'system-books-dir *the-live-state*))))
+                      (project-dir-alist *the-live-state*))))
            (current-book-path
             (reverse
              (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
@@ -14121,6 +14127,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-file$
     set-bad-lisp-consp-memoize
     retract-stobj-tables
+    get-cpu-time get-real-time
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
   ))
@@ -14151,7 +14158,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     logic er deflabel mv-let program value-triple
     set-body comp set-bogus-defun-hints-ok
     dmr-stop defpkg set-measure-function
-    set-inhibit-warnings! set-inhibit-er-soft! defthm mv
+    set-inhibit-warnings! set-inhibit-er! defthm mv
     f-big-clock-negative-p reset-prehistory
     mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
@@ -14619,6 +14626,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (print-readably . nil)
     (print-right-margin . nil)
     (program-fns-with-raw-code . ,*initial-program-fns-with-raw-code*)
+    (project-dir-alist . nil) ; set in enter-boot-strap-mode and perhaps lp
     (prompt-function . default-print-prompt)
     (prompt-memo . nil)
     (proof-tree . nil)
@@ -14657,7 +14665,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
     (system-attachments-cache . nil) ; see modified-system-attachments
-    (system-books-dir . nil) ; set in enter-boot-strap-mode and perhaps lp
     (temp-touchable-fns . nil)
     (temp-touchable-vars . nil)
     (term-evisc-tuple . :default)
@@ -15511,7 +15518,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-error-triples . t)
     (ld-error-action . :continue)
     (ld-query-control-alist . nil)
-    (ld-verbose . "System books directory ~xb.~|Type :help for help.~%Type ~
+    (ld-verbose . "Project-dir-alist:~|~xb.~|Type :help for help.~%Type ~
                    (quit) to quit completely out of ACL2.~|~%")
     (ld-user-stobjs-modified-warning . nil)))
 
@@ -17214,8 +17221,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq key :tau-auto-modep)
          (booleanp val))
         ((eq key :include-book-dir-alist)
-         (and (include-book-dir-alistp val (os world))
-              (null (assoc-eq :SYSTEM val))))
+
+; At one time we disallowed :SYSTEM as a key.  Now, we check at
+; add-include-book-dir time that :SYSTEM isn't bound to a directory that
+; conflicts with the value in the project-dir-alist.  Note that the
+; :include-book-dir-alist entry of the acl2-defaults-table can only be set by
+; way of add-include-book-dir; see the use of state global
+; modifying-include-book-dir-alist in chk-table-guard.
+
+         (include-book-dir-alistp val (os world)))
         ((eq key :ruler-extenders)
          (or (eq val :all)
              (chk-ruler-extenders val hard 'acl2-defaults-table world)))
@@ -20300,21 +20314,28 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (update-idates (cdr (idates state-state)) state-state)))
 
 #-acl2-loop-only
-(defun get-internal-time ()
-  (if (f-get-global 'get-internal-time-as-realtime *the-live-state*)
-      (get-internal-real-time)
-    #-gcl
-    (get-internal-run-time)
-    #+gcl
-    (multiple-value-bind
-     (top child)
+(declaim (inline our-get-internal-run-time))
+
+#-acl2-loop-only
+(defun our-get-internal-run-time ()
+  #-gcl
+  (get-internal-run-time)
+  #+gcl
+  (multiple-value-bind
+   (top child)
 
 ; Note that binding two variables here is OK, as per CL HyperSpec, even if
 ; get-internal-run-time returns more than two values.  Starting around
 ; mid-October 2013, GCL 2.6.10pre returns four values.
 
-     (get-internal-run-time)
-     (+ top child))))
+   (get-internal-run-time)
+   (+ top child)))
+
+#-acl2-loop-only
+(defun get-internal-time ()
+  (if (f-get-global 'get-internal-time-as-realtime *the-live-state*)
+      (get-internal-real-time)
+    (our-get-internal-run-time)))
 
 (defun read-run-time (state-state)
   (declare (xargs :guard (state-p1 state-state)))
@@ -21546,7 +21567,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(temp-touchable-vars
     temp-touchable-fns
 
-    system-books-dir
+    project-dir-alist
     user-home-dir
 
     acl2-version
@@ -21899,8 +21920,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                    (reverse
                                     (unrelativize-book-path
                                      (package-entry-book-path entry)
-                                     (f-get-global 'system-books-dir
-                                                   *the-live-state*))))))))))))
+                                     (project-dir-alist
+                                      *the-live-state*))))))))))))
                 (t nil))))))
         ((typep x 'string)
          (bad-lisp-stringp x))
@@ -22565,37 +22586,37 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(local (toggle-inhibit-warning! ,str)))
 
 #-acl2-loop-only
-(defmacro set-inhibit-er-soft! (&rest x)
+(defmacro set-inhibit-er! (&rest x)
   (declare (ignore x))
   nil)
 
-(table inhibit-er-soft-table nil nil
+(table inhibit-er-table nil nil
        :guard
        (stringp key))
 
 #+acl2-loop-only
-(defmacro set-inhibit-er-soft! (&rest lst)
+(defmacro set-inhibit-er! (&rest lst)
   (declare (xargs :guard (string-listp lst)))
   `(with-output
      :off (event summary)
-     (progn (table inhibit-er-soft-table nil ',(pairlis$ lst nil) :clear)
+     (progn (table inhibit-er-table nil ',(pairlis$ lst nil) :clear)
             (value-triple ',lst))))
 
-(defmacro set-inhibit-er-soft (&rest lst)
-  `(local (set-inhibit-er-soft! ,@lst)))
+(defmacro set-inhibit-er (&rest lst)
+  `(local (set-inhibit-er! ,@lst)))
 
-(defmacro toggle-inhibit-er-soft! (str)
-  `(table inhibit-er-soft-table
+(defmacro toggle-inhibit-er! (str)
+  `(table inhibit-er-table
           nil
           (let ((inhibited-er-soft
-                 (table-alist 'inhibit-er-soft-table world)))
+                 (table-alist 'inhibit-er-table world)))
             (cond ((assoc-string-equal ',str inhibited-er-soft)
                    (remove1-assoc-string-equal ',str inhibited-er-soft))
                   (t (acons ',str nil inhibited-er-soft))))
           :clear))
 
-(defmacro toggle-inhibit-er-soft (str)
-  `(local (toggle-inhibit-er-soft! ,str)))
+(defmacro toggle-inhibit-er (str)
+  `(local (toggle-inhibit-er! ,str)))
 
 (defmacro set-inhibit-output-lst (lst)
 
@@ -29003,3 +29024,32 @@ Lisp definition."
         (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
       (count-keys (cdr al)))))
 
+(defun get-cpu-time (state)
+
+; We define this function and get-real-time much like we define read-run-time.
+; Logically, they are the same, using the oracle field of the state.  In raw
+; Lisp, this one uses the runtime, also known as cpu time.
+
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (cond ((live-state-p state) ; handle like read-run-time
+         (return-from get-cpu-time
+                      (mv (/ (our-get-internal-run-time)
+                             internal-time-units-per-second)
+                          state))))
+  (read-run-time state))
+
+(defun get-real-time (state)
+
+; We define this function and get-cpu-time much like we define read-run-time.
+; Logically, they are the same, using the oracle field of the state.  In raw
+; Lisp, this one uses the real time.
+
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (cond ((live-state-p state) ; handle like read-run-time
+         (return-from get-real-time
+                      (mv (/ (get-internal-real-time)
+                             internal-time-units-per-second)
+                          state))))
+  (read-run-time state))

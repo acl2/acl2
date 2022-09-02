@@ -15,11 +15,10 @@
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "dynamic-semantics")
 (include-book "shallow-embedding")
-(include-book "proof-support")
 (include-book "table")
 (include-book "term-checkers")
 
-(include-book "fty-pseudo-terms")
+(include-book "symbolic-execution-rules/top")
 
 (include-book "../language/static-semantics")
 
@@ -778,6 +777,20 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred atc-string-objinfo-alistp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-objinfo-alist-to-recognizers
+  ((prec-objs atc-string-objinfo-alistp))
+  :returns (recognizers symbol-listp)
+  :short "Project the recognizers
+          out of an external object information alist."
+  (b* (((when (endp prec-objs)) nil)
+       (info (cdar prec-objs))
+       (recognizer (defobject-info->recognizer (atc-obj-info->defobject info)))
+       (more-recognizers
+        (atc-string-objinfo-alist-to-recognizers (cdr prec-objs))))
+    (cons recognizer more-recognizers)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1771,9 +1784,8 @@
             (acl2::value
              (list (expr-ident (make-ident :name (symbol-name var)))
                    (type-fix type)))))
-         ((mv erp (list okp const out-type) state)
+         ((er (list okp const out-type) :iferr (irr))
           (atc-check-iconst term ctx state))
-         ((when erp) (mv erp (irr) state))
          ((when okp)
           (acl2::value
            (list (expr-const (const-int const))
@@ -1931,19 +1943,17 @@
                                elem-type))))
          ((mv okp arg) (atc-check-sint-from-boolean term))
          ((when okp)
-          (b* (((mv erp expr state)
-                (atc-gen-expr-bool arg inscope prec-tags fn ctx state))
-               ((when erp) (mv erp (irr) state)))
+          (b* (((er expr :iferr (irr))
+                (atc-gen-expr-bool arg inscope prec-tags fn ctx state)))
             (mv nil (list expr (type-sint)) state)))
          ((mv okp test then else) (atc-check-condexpr term))
          ((when okp)
-          (b* (((mv erp test-expr state) (atc-gen-expr-bool test
-                                                            inscope
-                                                            prec-tags
-                                                            fn
-                                                            ctx
-                                                            state))
-               ((when erp) (mv erp (irr) state))
+          (b* (((er test-expr :iferr (irr)) (atc-gen-expr-bool test
+                                                               inscope
+                                                               prec-tags
+                                                               fn
+                                                               ctx
+                                                               state))
                ((er (list then-expr then-type)) (atc-gen-expr-pure
                                                  then
                                                  inscope
@@ -2061,9 +2071,8 @@
                                            :arg2 arg2-expr))))
          ((mv okp arg in-type) (atc-check-boolean-from-type term))
          ((when okp)
-          (b* (((mv erp (list expr type) state)
+          (b* (((er (list expr type) :iferr (irr-expr))
                 (atc-gen-expr-pure arg inscope prec-tags fn ctx state))
-               ((when erp) (mv erp expr state))
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr-expr)
                           "The conversion from ~x0 to boolean ~
@@ -2072,7 +2081,7 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           in-type arg type)))
-            (mv erp expr state))))
+            (acl2::value expr))))
       (er-soft+ ctx t (irr-expr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
@@ -2130,13 +2139,13 @@
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
   (b* (((when (endp terms)) (acl2::value (list nil nil)))
-       ((mv erp (list expr type) state) (atc-gen-expr-pure (car terms)
-                                                           inscope
-                                                           prec-tags
-                                                           fn
-                                                           ctx
-                                                           state))
-       ((when erp) (mv erp (list nil nil) state))
+       ((er(list expr type) :iferr (list nil nil))
+        (atc-gen-expr-pure (car terms)
+                           inscope
+                           prec-tags
+                           fn
+                           ctx
+                           state))
        ((er (list exprs types)) (atc-gen-expr-pure-list (cdr terms)
                                                         inscope
                                                         prec-tags
@@ -2217,14 +2226,14 @@
                         "The call ~x0 does not satisfy the restrictions ~
                          on array arguments being identical to the formals."
                         term))
-             ((mv erp (list arg-exprs types) state)
+             ((er (list arg-exprs types)
+                  :iferr (list (irr-expr) (irr-type) nil nil))
               (atc-gen-expr-pure-list args
                                       inscope
                                       prec-tags
                                       fn
                                       ctx
                                       state))
-             ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state))
              ((unless (equal types in-types))
               (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
                         "The function ~x0 with input types ~x1 ~
@@ -2239,9 +2248,8 @@
                         out-type
                         affect
                         `(binary-+ '2 ,limit))))))
-    (b* (((mv erp (list expr type) state)
-          (atc-gen-expr-pure term inscope prec-tags fn ctx state))
-         ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state)))
+    (b* (((er (list expr type) :iferr (list (irr-expr) (irr-type) nil nil))
+          (atc-gen-expr-pure term inscope prec-tags fn ctx state)))
       (acl2::value (list expr type affect '(quote 1)))))
   ///
   (more-returns
@@ -2397,19 +2405,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-recognizer-to-type ((recognizer symbolp)
-                                (prec-tags atc-string-taginfo-alistp)
-                                (prec-objs atc-string-objinfo-alistp))
-  :returns (type type-optionp)
-  :short "C type corresponding to a recognizer name, if any."
+(define atc-check-guard-conjunct ((conjunct pseudo-termp)
+                                  (prec-tags atc-string-taginfo-alistp)
+                                  (prec-objs atc-string-objinfo-alistp))
+  :returns (mv (type type-optionp) (arg symbolp))
+  :short "C type and argument derived from a guard conjunct, if any."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used to determine the types of the formal parameters of functions
-     from the recognizers used in the guard,
+     from the conjuncts used in the guard,
      as explained in the user documentation.")
    (xdoc::p
-    "If the predicate is a known one for integer or integer array types,
+    "The conjunct must have the form @('(recognizer var)'),
+     where @('recognizer') is a recognizer of a C type
+     and @('var') is a variable.
+     If the recognizer is a known one for integer or integer array types,
      that readily determines the type.
      Otherwise, there may be two possibilities.
      One is that the recognizer is the one of a @(tsee defstruct),
@@ -2418,60 +2429,84 @@
      The other possibility is that recognizer is the one of a @(tsee defobject),
      of the form @('object-<name>-p'):
      in this case, the type is a pointer to the integer type
-     that is the element type of the array type of the object."))
-  (case recognizer
-    (scharp (type-schar))
-    (ucharp (type-uchar))
-    (sshortp (type-sshort))
-    (ushortp (type-ushort))
-    (sintp (type-sint))
-    (uintp (type-uint))
-    (slongp (type-slong))
-    (ulongp (type-ulong))
-    (sllongp (type-sllong))
-    (ullongp (type-ullong))
-    (schar-arrayp (type-pointer (type-schar)))
-    (uchar-arrayp (type-pointer (type-uchar)))
-    (sshort-arrayp (type-pointer (type-sshort)))
-    (ushort-arrayp (type-pointer (type-ushort)))
-    (sint-arrayp (type-pointer (type-sint)))
-    (uint-arrayp (type-pointer (type-uint)))
-    (slong-arrayp (type-pointer (type-slong)))
-    (ulong-arrayp (type-pointer (type-ulong)))
-    (sllong-arrayp (type-pointer (type-sllong)))
-    (ullong-arrayp (type-pointer (type-ullong)))
-    (t (b* (((mv okp struct/object tag/name p)
-             (atc-check-symbol-3part recognizer))
-            ((unless (and okp
-                          (equal (symbol-name p) "P")))
-             nil))
-         (cond ((equal (symbol-name struct/object) "STRUCT")
-                (b* ((tag (symbol-name tag/name))
-                     (info (cdr (assoc-equal tag prec-tags)))
-                     ((unless info) nil)
-                     ((unless (atc-tag-infop info))
-                      (raise "Internal error: malformed ATC-TAG-INFO ~x0."
-                             info))
-                     (info (atc-tag-info->defstruct info))
-                     ((unless (eq recognizer (defstruct-info->recognizer info)))
-                      nil))
-                  (type-pointer (type-struct (defstruct-info->tag info)))))
-               ((equal (symbol-name struct/object) "OBJECT")
-                (b* ((name (symbol-name tag/name))
-                     (info (cdr (assoc-equal name prec-objs)))
-                     ((unless info) nil)
-                     ((unless (atc-obj-infop info))
-                      (raise "Internal error: malformed ATC-OBJ-INFO ~x0."
-                             info))
-                     (info (atc-obj-info->defobject info))
-                     ((unless (eq recognizer (defobject-info->recognizer info)))
-                      nil)
-                     (arrtype (defobject-info->type info))
-                     ((unless (type-case arrtype :array))
-                      (raise "Internal error: object ~s0 has type ~x1."
-                             name arrtype)))
-                  (type-pointer (type-array->of arrtype))))
-               (t nil))))))
+     that is the element type of the array type of the object.")
+   (xdoc::p
+    "If the recognizer does not have any of the above forms,
+     we return @('nil') as both results.
+     If the argument is not a variable,
+     we also return @('nil') as both results."))
+  (b* (((when (or (variablep conjunct)
+                  (fquotep conjunct)
+                  (flambda-applicationp conjunct)))
+        (mv nil nil))
+       (fn (ffn-symb conjunct))
+       (arg (fargn conjunct 1))
+       ((mv okp pointerp fn arg)
+        (if (eq fn 'pointer)
+            (if (or (variablep arg)
+                    (fquotep arg)
+                    (flambda-applicationp arg))
+                (mv nil nil nil nil)
+              (mv t t (ffn-symb arg) (fargn arg 1)))
+          (mv t nil fn arg)))
+       ((when (not okp)) (mv nil nil))
+       ((unless (symbolp arg)) (mv nil nil))
+       (type
+        (b* (((when (eq fn 'scharp)) (type-schar))
+             ((when (eq fn 'ucharp)) (type-uchar))
+             ((when (eq fn 'sshortp)) (type-sshort))
+             ((when (eq fn 'ushortp)) (type-ushort))
+             ((when (eq fn 'sintp)) (type-sint))
+             ((when (eq fn 'uintp)) (type-uint))
+             ((when (eq fn 'slongp)) (type-slong))
+             ((when (eq fn 'ulongp)) (type-ulong))
+             ((when (eq fn 'sllongp)) (type-sllong))
+             ((when (eq fn 'ullongp)) (type-ullong))
+             ((when (eq fn 'schar-arrayp)) (type-pointer (type-schar)))
+             ((when (eq fn 'uchar-arrayp)) (type-pointer (type-uchar)))
+             ((when (eq fn 'sshort-arrayp)) (type-pointer (type-sshort)))
+             ((when (eq fn 'ushort-arrayp)) (type-pointer (type-ushort)))
+             ((when (eq fn 'sint-arrayp)) (type-pointer (type-sint)))
+             ((when (eq fn 'uint-arrayp)) (type-pointer (type-uint)))
+             ((when (eq fn 'slong-arrayp)) (type-pointer (type-slong)))
+             ((when (eq fn 'ulong-arrayp)) (type-pointer (type-ulong)))
+             ((when (eq fn 'sllong-arrayp)) (type-pointer (type-sllong)))
+             ((when (eq fn 'ullong-arrayp)) (type-pointer (type-ullong)))
+             ((mv okp struct/object tag/name p) (atc-check-symbol-3part fn))
+             ((unless (and okp
+                           (equal (symbol-name p) "P")))
+              nil)
+             ((when (equal (symbol-name struct/object) "STRUCT"))
+              (b* ((tag (symbol-name tag/name))
+                   (info (cdr (assoc-equal tag prec-tags)))
+                   ((unless info) nil)
+                   ((unless (atc-tag-infop info))
+                    (raise "Internal error: malformed ATC-TAG-INFO ~x0." info))
+                   (info (atc-tag-info->defstruct info))
+                   ((unless (eq fn (defstruct-info->recognizer info))) nil))
+                (type-struct (defstruct-info->tag info))))
+             ((when (equal (symbol-name struct/object) "OBJECT"))
+              (b* ((name (symbol-name tag/name))
+                   (info (cdr (assoc-equal name prec-objs)))
+                   ((unless info) nil)
+                   ((unless (atc-obj-infop info))
+                    (raise "Internal error: malformed ATC-OBJ-INFO ~x0." info))
+                   (info (atc-obj-info->defobject info))
+                   ((unless (eq fn (defobject-info->recognizer info))) nil)
+                   (arrtype (defobject-info->type info))
+                   ((unless (type-case arrtype :array))
+                    (raise "Internal error: object ~s0 has type ~x1."
+                           name arrtype)))
+                (type-pointer (type-array->of arrtype)))))
+          nil))
+       ((unless type) (mv nil nil))
+       ((when (and pointerp
+                   (not (type-case type :struct))))
+        (mv nil nil))
+       (type (if pointerp
+                 (type-pointer type)
+               type)))
+    (mv type arg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2487,11 +2522,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We look for a term of the form @('(<type> <formal>)')
-     among the conjuncts of the function's guard,
-     for each formal @('<formal>') of @('fn'),
-     where @('<type>') is a predicate that determined a C type
-     according to @(tsee atc-recognizer-to-type).
+    "We look for conjuncts from which we derive,
+     according to @(tsee atc-check-guard-conjunct),
+     types for the formals of @('fn').
      We ensure that there is exactly one such term for each formal.")
    (xdoc::p
     "If this is successful,
@@ -2542,9 +2575,10 @@
      (b* (((when (endp guard-conjuncts))
            (acl2::value (atc-symbol-type-alist-fix prelim-alist)))
           (conjunct (car guard-conjuncts))
-          ((unless (and (nvariablep conjunct)
-                        (not (fquotep conjunct))
-                        (not (flambda-applicationp conjunct))))
+          ((mv type arg) (atc-check-guard-conjunct conjunct
+                                                   prec-tags
+                                                   prec-objs))
+          ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            formals
                                            guard
@@ -2554,19 +2588,6 @@
                                            prec-objs
                                            ctx
                                            state))
-          (type-fn (ffn-symb conjunct))
-          (type (atc-recognizer-to-type type-fn prec-tags prec-objs))
-          ((when (not type))
-           (atc-typed-formals-prelim-alist fn
-                                           formals
-                                           guard
-                                           (cdr guard-conjuncts)
-                                           prelim-alist
-                                           prec-tags
-                                           prec-objs
-                                           ctx
-                                           state))
-          (arg (fargn conjunct 1))
           ((unless (member-eq arg formals))
            (atc-typed-formals-prelim-alist fn
                                            formals
@@ -2891,13 +2912,12 @@
                             proofs
                             ctx
                             state))
-             ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                          inscope
-                                                          prec-tags
-                                                          fn
-                                                          ctx
-                                                          state))
-             ((when erp) (mv erp irr state))
+             ((er test-expr :iferr irr) (atc-gen-expr-bool test
+                                                           inscope
+                                                           prec-tags
+                                                           fn
+                                                           ctx
+                                                           state))
              ((er (list then-items then-type then-limit))
               (atc-gen-stmt then
                             var-term-alist
@@ -2994,9 +3014,8 @@
                                an attempt is made to modify the variables ~x1, ~
                                not all of which are assignable."
                               fn vars))
-                   ((mv erp
-                        (list init-expr init-type init-affect init-limit)
-                        state)
+                   ((er (list init-expr init-type init-affect init-limit)
+                        :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3005,29 +3024,27 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal init-affect vars))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars init-affect))
-                   ((mv erp typed-formals state)
+                   ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp & state) (atc-ensure-formals-not-lost vars
-                                                                  affect
-                                                                  typed-formals
-                                                                  fn
-                                                                  ctx
-                                                                  state))
-                   ((when erp) (mv erp irr state))
+                   ((er & :iferr irr)
+                    (atc-ensure-formals-not-lost vars
+                                                 affect
+                                                 typed-formals
+                                                 fn
+                                                 ctx
+                                                 state))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init-type))
                    (declon (make-obj-declon :tyspec tyspec
                                             :declor declor
-                                            :init (initer-single init-expr)))
+                                            :init? (initer-single init-expr)))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
@@ -3069,9 +3086,7 @@
                                to modify a non-assignable variable ~x1."
                               fn var))
                    (prev-type type?)
-                   ((mv erp
-                        (list rhs-expr rhs-type rhs-affect rhs-limit)
-                        state)
+                   ((er (list rhs-expr rhs-type rhs-affect rhs-limit) :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3080,7 +3095,6 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t irr
                               "The type ~x0 of the term ~x1 ~
@@ -3095,16 +3109,15 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars rhs-affect))
-                   ((mv erp typed-formals state)
+                   ((er typed-formals :iferr irr)
                     (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp & state) (atc-ensure-formals-not-lost vars
-                                                                  affect
-                                                                  typed-formals
-                                                                  fn
-                                                                  ctx
-                                                                  state))
-                   ((when erp) (mv erp irr state))
+                   ((er & :iferr irr)
+                    (atc-ensure-formals-not-lost vars
+                                                 affect
+                                                 typed-formals
+                                                 fn
+                                                 ctx
+                                                 state))
                    ((when (type-case rhs-type :array))
                     (raise "Internal error: array type ~x0." rhs-type)
                     (acl2::value irr))
@@ -3167,16 +3180,15 @@
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
                         fn val))
-             ((mv erp typed-formals state)
+             ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((when erp) (mv erp irr state))
-             ((mv erp & state) (atc-ensure-formals-not-lost vars
-                                                            affect
-                                                            typed-formals
-                                                            fn
-                                                            ctx
-                                                            state))
-             ((when erp) (mv erp irr state))
+             ((er & :iferr irr)
+              (atc-ensure-formals-not-lost vars
+                                           affect
+                                           typed-formals
+                                           fn
+                                           ctx
+                                           state))
              ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val
                             var-term-alist
@@ -3237,15 +3249,12 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((mv erp (list arr-expr type1) state)
+                   ((er (list arr-expr type1) :iferr irr)
                     (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp (list sub-expr type2) state)
+                   ((er (list sub-expr type2) :iferr irr)
                     (atc-gen-expr-pure sub inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp (list elem-expr type3) state)
+                   ((er (list elem-expr type3) :iferr irr)
                     (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal type1 (type-pointer elem-type)))
                     (er-soft+ ctx t irr
                               "The array ~x0 of type ~x1 ~
@@ -3315,13 +3324,11 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((mv erp (list struct-expr type1) state)
+                   ((er (list struct-expr type1) :iferr irr)
                     (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
-                   ((mv erp (list member-expr type2) state)
-                    (atc-gen-expr-pure member-value
-                                       inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
+                   ((er (list member-expr type2) :iferr irr)
+                    (atc-gen-expr-pure
+                     member-value inscope prec-tags fn ctx state))
                    ((unless (equal type1 (type-pointer (type-struct tag))))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -3381,9 +3388,8 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((mv erp (list struct-expr struct-type) state)
+                   ((er (list struct-expr struct-type) :iferr irr)
                     (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal struct-type
                                    (type-pointer (type-struct tag))))
                     (er-soft+ ctx t irr
@@ -3393,9 +3399,8 @@
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
                               var struct-type (type-pointer (type-struct tag))))
-                   ((mv erp (list index-expr index-type1) state)
+                   ((er (list index-expr index-type1) :iferr irr)
                     (atc-gen-expr-pure index inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal index-type1 index-type))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -3406,9 +3411,8 @@
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
                               var struct-type index index-type1 index-type))
-                   ((mv erp (list elem-expr elem-type1) state)
+                   ((er (list elem-expr elem-type1) :iferr irr)
                     (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal elem-type1 elem-type))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -3471,9 +3475,8 @@
                                must be a portable ASCII C identifier, ~
                                but it is not."
                               (symbol-name var) var fn))
-                   ((mv erp
-                        (list init-expr init-type init-affect init-limit)
-                        state)
+                   ((er (list init-expr init-type init-affect init-limit)
+                        :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3482,7 +3485,6 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((when (consp init-affect))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -3494,7 +3496,7 @@
                                         init-type))
                    (declon (make-obj-declon :tyspec tyspec
                                             :declor declor
-                                            :init (initer-single init-expr)))
+                                            :init? (initer-single init-expr)))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
@@ -3528,9 +3530,8 @@
                         fn var))
              ((when (eq wrapper? 'assign))
               (b* ((prev-type type?)
-                   ((mv erp
-                        (list rhs-expr rhs-type rhs-affect rhs-limit)
-                        state)
+                   ((er (list rhs-expr rhs-type rhs-affect rhs-limit)
+                        :iferr irr)
                     (atc-gen-expr val
                                   var-term-alist
                                   inscope
@@ -3539,7 +3540,6 @@
                                   prec-tags
                                   ctx
                                   state))
-                   ((when erp) (mv erp irr state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t irr
                               "The type ~x0 of the term ~x1 ~
@@ -3604,16 +3604,15 @@
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
-             ((mv erp typed-formals state)
+             ((er typed-formals :iferr irr)
               (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((when erp) (mv erp irr state))
-             ((mv erp & state) (atc-ensure-formals-not-lost (list var)
-                                                            affect
-                                                            typed-formals
-                                                            fn
-                                                            ctx
-                                                            state))
-             ((when erp) (mv erp irr state))
+             ((er & :iferr irr)
+              (atc-ensure-formals-not-lost (list var)
+                                           affect
+                                           typed-formals
+                                           fn
+                                           ctx
+                                           state))
              ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val
                             var-term-alist
@@ -3680,7 +3679,7 @@
            ((equal terms affect)
             (acl2::value (list nil (type-void) (pseudo-term-quote 1))))
            ((equal (cdr terms) affect)
-            (b* (((mv erp (list expr type eaffect limit) state)
+            (b* (((er (list expr type eaffect limit) :iferr irr)
                   (atc-gen-expr (car terms)
                                 var-term-alist
                                 inscope
@@ -3689,7 +3688,6 @@
                                 prec-tags
                                 ctx
                                 state))
-                 ((when erp) (mv erp irr state))
                  ((when (consp eaffect))
                   (er-soft+ ctx t irr
                             "The first argument ~x0 of the term ~x1 ~
@@ -3790,14 +3788,13 @@
                          which differs from the variables ~x3 ~
                          being affected here."
                         fn loop-fn fn-affect affect))
-             ((mv erp (list arg-exprs types) state)
+             ((er (list arg-exprs types) :iferr irr)
               (atc-gen-expr-pure-list args
                                       inscope
                                       prec-tags
                                       fn
                                       ctx
                                       state))
-             ((when erp) (mv erp irr state))
              ((unless (equal types in-types))
               (er-soft+ ctx t irr
                         "The function ~x0 with input types ~x1 ~
@@ -3811,7 +3808,7 @@
           (acl2::value (list (list (block-item-stmt (stmt-expr call-expr)))
                              (type-void)
                              `(binary-+ '5 ,limit)))))
-       ((mv erp (list expr type eaffect limit) state)
+       ((er (list expr type eaffect limit) :iferr irr)
         (atc-gen-expr term
                       var-term-alist
                       inscope
@@ -3820,7 +3817,6 @@
                       prec-tags
                       ctx
                       state))
-       ((when erp) (mv erp irr state))
        ((when loop-flag)
         (er-soft+ ctx t irr
                   "A loop body must end with ~
@@ -4071,13 +4067,12 @@
                            proofs
                            ctx
                            state))
-       ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                    inscope
-                                                    prec-tags
-                                                    fn
-                                                    ctx
-                                                    state))
-       ((when erp) (mv erp (irr) state))
+       ((er test-expr :iferr (irr)) (atc-gen-expr-bool test
+                                                       inscope
+                                                       prec-tags
+                                                       fn
+                                                       ctx
+                                                       state))
        (formals (formals+ fn wrld))
        ((mv okp affect)
         (b* (((when (member-eq else formals)) (mv t (list else)))
@@ -4092,7 +4087,7 @@
                    does not have the required form. ~
                    See the user documentation."
                   else fn))
-       ((mv erp (list body-items body-type body-limit) state)
+       ((er (list body-items body-type body-limit) :iferr (irr))
         (atc-gen-stmt then
                       nil
                       (cons nil inscope)
@@ -4105,7 +4100,6 @@
                       proofs
                       ctx
                       state))
-       ((when erp) (mv erp (irr) state))
        ((unless (type-case body-type :void))
         (raise "Internal error: ~
                 the loop body ~x0 of ~x1 ~ returns type ~x2."
@@ -4257,6 +4251,7 @@
                                (typed-formals atc-symbol-type-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
                                (prec-tags atc-string-taginfo-alistp)
+                               (prec-objs atc-string-objinfo-alistp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
@@ -4280,7 +4275,7 @@
      "Calls of @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
       are known to return C values.")
     (xdoc::li
-     "Calls of arrays and structure readers and writers
+     "Calls of array and structure readers and writers
       are known to return C values.")
     (xdoc::li
      "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
@@ -4298,7 +4293,7 @@
     (xdoc::li
      "An @(tsee mv) returns C values,
       because either they are parameters or bound variables,
-      or terms that recursively return C values
+      or they are terms that recursively return C values
       (the latter case is for non-recursive functions
       that return a non-@('void') result
       and also affect arrays and structures)."))
@@ -4308,8 +4303,14 @@
      the definition of @('fn'),
      the return type theorems of @(tsee sint-dec-const) and related functions,
      the return type theorems for array and structure readers and writers,
-     and the theorems about the preceding functions;
-     we also add a @(':use') hint for the guard theorem of @('fn').
+     and the theorems about the preceding functions.
+     We also include the definitions of the recognizers
+     of the external objects that precede @('fn'),
+     which certainly include any external object used in @('fn'):
+     this is needed if @('fn') returns the external object,
+     because the guard uses its recognizer,
+     which implies but differs from a type predicate.
+     We also add a @(':use') hint for the guard theorem of @('fn').
      The theorems about structure readers and writers
      are taken from the alist of the preceding structure tags.")
    (xdoc::p
@@ -4345,7 +4346,7 @@
      Then we operate on the resulting alist,
      which forms all the results of the function
      with their names (and @('nil') for the result, if present).
-     The alist is never empty (an ACL2 function must always return something);
+     The alist is never empty (an ACL2 function must always return something).
      If the alist is a singleton,
      we generate assertions about the function call.
      If the list has multiple elements,
@@ -4370,8 +4371,7 @@
      Without this, some proofs fail with a subgoal saying that
      a function result is @('nil'), which is false.
      This seems to happen only with functions returning multiple results,
-     where the results in question have the form @('(mv-nth ...)');
-     perhaps single results are taken care by ACL2's tau system.
+     where the results in question have the form @('(mv-nth ...)').
      So we generate these non-@('nil') theorems only for multiple results.
      These theorems have to be rewrite rules:
      with type prescription rules,
@@ -4427,8 +4427,10 @@
                   *atc-array-read-return-rewrite-rules*
                   *atc-array-write-return-rewrite-rules*
                   *atc-array-length-write-rules*
+                  *atc-wrapper-rules*
                   ',(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
                   ',(atc-string-taginfo-alist-to-writer-return-thms prec-tags)
+                  ',(atc-string-objinfo-alist-to-recognizers prec-objs)
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
@@ -4451,9 +4453,6 @@
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
-                    condexpr
-                    declar
-                    assign
                     mv-nth-of-cons
                     (:e zp)
                     (:e ucharp)
@@ -4520,7 +4519,7 @@
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
                 (reftype (type-pointer->to type))
-                ((unless (type-integerp reftype)) nil)
+                ((unless (type-nonchar-integerp reftype)) nil)
                 (reftype-array-length (pack (integer-type-to-fixtype reftype)
                                             '-array-length)))
              (list `(equal (,reftype-array-length ,theresult)
@@ -4537,11 +4536,12 @@
 
 (define atc-gen-outer-bindings-and-hyps ((typed-formals atc-symbol-type-alistp)
                                          (compst-var symbolp)
-                                         (fn-recursivep booleanp))
+                                         (fn-recursivep booleanp)
+                                         (prec-objs atc-string-objinfo-alistp))
   :returns (mv (bindings doublet-listp)
-               (pointer-hyps true-listp)
-               (pointer-subst symbol-symbol-alistp
-                              :hyp (atc-symbol-type-alistp typed-formals))
+               (hyps true-listp)
+               (subst symbol-symbol-alistp
+                      :hyp (atc-symbol-type-alistp typed-formals))
                (instantiation doublet-listp))
   :short "Generate the outer bindings,
           pointer hypotheses,
@@ -4562,7 +4562,7 @@
      explained below.
      We also generate a variable substitution, explained below.
      We also generate an instantiation
-     for a lemma used in the hints of the generated theorem.")
+     for lemmas used in the hints of generated theorems.")
    (xdoc::p
     "The (outer) bindings can be determined from
      the formals of the ACL2 function @('fn') that represents
@@ -4575,8 +4575,10 @@
     "Consider a non-recursive @('fn'), which represents a C function.
      Its correctness theorem equates (roughly speaking)
      a call of @(tsee exec-fun) with a call of @('fn').
-     However, while @('fn') takes arrays and structures as arguments,
-     @(tsee exec-fun) takes pointers to those arrays and structures.
+     However, while @('fn') takes arrays and structures in the heap
+     as arguments,
+     @(tsee exec-fun) takes pointers to those arrays and structures
+     as arguments.
      So we introduce variables for the pointers,
      named after the formals of @('fn') that are arrays or structures:
      we add @('-PTR') to the formals of @('fn'),
@@ -4596,11 +4598,34 @@
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
      we also generate an alist element @('(a . a-ptr)'),
-     returned as part of the @('pointer-subst') result,
+     returned as part of the @('subst') result,
      that is used to generate the argument list of @(tsee exec-fun),
-     by applying the substitution @('pointer-subst') to the formals of @('fn'):
+     by applying the substitution @('subst') to the formals of @('fn'):
      this way, @('a') gets substituted with @('a-ptr'),
-     which is what we want since @(tsee exec-fun) takes pointers, not arrays.")
+     which is what we want since @(tsee exec-fun) takes pointers, not arrays.
+     The substitution is also used to calculate the final computation state,
+     in @(tsee atc-gen-cfun-final-compustate).")
+   (xdoc::p
+    "The treatment of arrays that are external objects is different.
+     Similarly to heap arrays,
+     @('fn') takes the whole external arrays as arguments.
+     But @(tsee exec-fun) takes nothing for these as arguments:
+     those arrays are found in the static storage of the computation state.
+     We still need to generate a binding that relates
+     the variables passed to @('fn') that contain these arrays
+     to the computation state:
+     we do it via bindings of the form
+     @('((a (read-static-var (ident ...) compst)))'),
+     which we generate here.
+     We generate no hypotheses in this case:
+     we do not introduce a pointer variable,
+     so there is no need for hypotheses about it;
+     the pointer is generated internally during symbolic execution,
+     with an object designator for the variable in static storage.
+     We generate no pointer substitution in this case:
+     again, there is no pointer variable introduced here.
+     Finally, we generate an instantiation pair consisting of
+     the formal and the @('(read-static-var (ident ...) compst)') call.")
    (xdoc::p
     "The non-array non-structure formals of a non-recursive @('fn')
      do not cause any bindings, hypotheses, or substitutions to be generated.
@@ -4618,7 +4643,8 @@
      There is still a correspondence, of course:
      the formals of @('fn') correspond to variables in the computation state.
      We consider separately
-     the case of arrays or structures,
+     the case of arrays or structures in the heap,
+     the case of arrays in static storage,
      and the case of non-arrays and non-structures.")
    (xdoc::p
     "If @('a') is a non-array non-structure formal of a recursive @('fn'),
@@ -4626,9 +4652,11 @@
      where @('<a>') is the identifier derived from the name of @('a').
      Thus, in this case we generate the binding @('(a (read-var <a> compst))').
      Since no pointers are involved, in this case we generate
-     no hypotheses and no substitutions.")
+     no hypotheses and no substitutions;
+     we generate an instantiation that instantiates
+     the formal with @('(read-var <a> compst)').")
    (xdoc::p
-    "If @('a') is an array or structure formal of a recursive @('fn'),
+    "If @('a') is a heap array or structure formal of a recursive @('fn'),
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
      We generate two bindings @('(a-ptr (read-var <a> compst))')
@@ -4646,13 +4674,33 @@
      It should be clear why the two bindings have to be in that order;
      the bindings are put into a @(tsee b*),
      which enforces the order.
-     We generate no substitution map in @('pointer-subst') here,
-     because that only applies to @(tsee exec-fun),
-     which is not used for C loops.")
+     We generate a substitution of @('a') with @('a-ptr'),
+     for use by @(tsee atc-gen-loop-final-compustate)
+     (not to calculate the arguments of @(tsee exec-fun),
+     because no @(tsee exec-fun) call is involved in the theorem for loops.
+     The instantiation combines @(tsee read-var) and @(tsee read-object).")
    (xdoc::p
-    "The reason for generating and using these bindings in the theorems,
+    "If @('a') is an array in static storage,
+     things are more similar to the case in which @('fn') is not recursive.
+     The binding is with @(tsee read-static-var), i.e. the same.
+     We generate a different hypothesis from all other cases:
+     the hypothesis is that the variable is not in automatic storage,
+     i.e. that it is found in static storage.
+     This is necessary for theorems for C loops,
+     because a @(tsee read-var) during execution cannot reach @(tsee add-frame)
+     and be turned into @(tsee read-static-var) as done for C functions.
+     This hypothesis is relieved in the correctness theorem
+     of the non-recursive function that calls the recursive one:
+     the symbolic execution for the non-recursive one
+     can have @(tsee read-var) reach @(tsee add-frame)
+     and turn that into @(tsee read-static-var).
+     We generate no substitution, since there are no pointer variables.
+     We generate an instantiation that instantiates the formal
+     with the @(tsee read-static-var) call.")
+   (xdoc::p
+    "The reason for generating and using the described bindings in the theorems,
      as opposed to making the substitutions in the theorem's formula,
-     is greater readability.
+     is greater readability of the theorems.
      Particularly in the case of loop theorems,
      if @('a') occurs a few times in the guard,
      the guard with just @('a') in those occurrences is more readable than
@@ -4674,43 +4722,60 @@
        (formal-objdes `(value-pointer->designator ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
        (pointerp (type-case type :pointer))
+       (extobjp (assoc-equal (symbol-name formal) prec-objs))
        (bindings
         (if fn-recursivep
             (if pointerp
-                (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                      `(,formal (read-object ,formal-objdes ,compst-var)))
+                (if extobjp
+                    (list `(,formal
+                            (read-static-var ,formal-id ,compst-var)))
+                  (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                        `(,formal (read-object ,formal-objdes ,compst-var))))
               (list `(,formal (read-var ,formal-id ,compst-var))))
           (if pointerp
-              (list `(,formal (read-object ,formal-objdes ,compst-var)))
+              (if extobjp
+                  (list `(,formal
+                          (read-static-var ,formal-id ,compst-var)))
+                (list `(,formal (read-object ,formal-objdes ,compst-var))))
             nil)))
-       (subst? (and pointerp
-                    (list (cons formal formal-ptr))))
+       (subst (and pointerp
+                   (not extobjp)
+                   (list (cons formal formal-ptr))))
        (hyps (and pointerp
-                  (list `(valuep ,formal-ptr)
-                        `(value-case ,formal-ptr :pointer)
-                        `(not (value-pointer-nullp ,formal-ptr))
-                        `(equal (objdesign-kind
-                                 (value-pointer->designator ,formal-ptr))
-                                :address)
-                        `(equal (value-pointer->reftype ,formal-ptr)
-                                ,(type-to-maker (type-pointer->to type))))))
+                  (if extobjp
+                      (list `(not (var-autop ,formal-id ,compst-var)))
+                    (list `(valuep ,formal-ptr)
+                          `(value-case ,formal-ptr :pointer)
+                          `(not (value-pointer-nullp ,formal-ptr))
+                          `(equal (objdesign-kind
+                                   (value-pointer->designator ,formal-ptr))
+                                  :address)
+                          `(equal (value-pointer->reftype ,formal-ptr)
+                                  ,(type-to-maker (type-pointer->to type)))))))
        (inst (if fn-recursivep
                  (if pointerp
-                     (list `(,formal (read-object (value-pointer->designator
-                                                   (read-var ,formal-id
-                                                             ,compst-var))
-                                                  ,compst-var)))
+                     (if extobjp
+                         (list `(,formal
+                                 (read-static-var ,formal-id ,compst-var)))
+                       (list `(,formal (read-object (value-pointer->designator
+                                                     (read-var ,formal-id
+                                                               ,compst-var))
+                                                    ,compst-var))))
                    (list `(,formal (read-var ,formal-id ,compst-var))))
                (if pointerp
-                   (list `(,formal (read-object ,formal-objdes ,compst-var)))
+                   (if extobjp
+                       (list `(,formal
+                               (read-static-var ,formal-id ,compst-var)))
+                     (list `(,formal (read-object ,formal-objdes ,compst-var))))
                  nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
                                          compst-var
-                                         fn-recursivep)))
+                                         fn-recursivep
+                                         prec-objs)))
     (mv (append bindings more-bindings)
         (append hyps more-hyps)
-        (append subst? more-subst)
+        (append subst more-subst)
         (append inst more-inst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4760,10 +4825,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-filter-exec-fun-args ((formals symbol-listp)
+                                  (prec-objs atc-string-objinfo-alistp))
+  :returns (args symbol-listp :hyp (symbol-listp formals))
+  :short "Filter external objects out of the formals,
+          for passing to @(tsee exec-fun),"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the generated correctness theorem for each non-recursive function,
+     we generally pass to @(tsee exec-fun)
+     an argument for each formal of the function.
+     Except for formals that represent external objects:
+     those are accessed in the computation state.
+     Thus, here we filter, out of a list of formals,
+     the ones that represent external objects."))
+  (b* (((when (endp formals)) nil)
+       (formal (car formals)))
+    (if (assoc-equal (symbol-name formal) prec-objs)
+        (atc-filter-exec-fun-args (cdr formals) prec-objs)
+      (cons formal (atc-filter-exec-fun-args (cdr formals) prec-objs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-cfun-final-compustate ((affect symbol-listp)
                                        (typed-formals atc-symbol-type-alistp)
-                                       (pointer-subst symbol-symbol-alistp)
-                                       (compst-var symbolp))
+                                       (subst symbol-symbol-alistp)
+                                       (compst-var symbolp)
+                                       (prec-objs atc-string-objinfo-alistp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
           after the execution of a C function."
@@ -4781,23 +4870,28 @@
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
-     a nest of @(tsee write-object) calls.
+     a nest of @(tsee write-object) and @(tsee write-static-var) calls,
+     based on whether the affected object are in the heap or in static storage.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "The parameter @('affect') passed to this code
      consists of the formals of @('fn') that represent arrays and structures
      affected by the body of the ACL2 function that represents the C function.
-     The parameter @('pointer-subst') is
+     The parameter @('subst') is
      the result of @(tsee atc-gen-outer-bindings-and-hyps)
      that maps array and structure formals of the ACL2 function
      to the corresponding pointer variables used by the correctness theorems.
      Thus, we go through @('affect'),
-     looking up the corresponding pointer variables in @('pointer-subst'),
+     looking up the corresponding pointer variables in @('subst'),
      and we construct
      each nested @(tsee write-object) call,
      which needs both a pointer and an array or structure;
      we distinguish between arrays and structures
-     via the types of the formals.")
+     via the types of the formals.
+     This is the case for arrays and structures in the heap;
+     for arrays in static storage,
+     we generate a call of @(tsee write-static-var),
+     and there are no pointers involved.")
    (xdoc::p
     "Note that, in the correctness theorem,
      the new array and structure variables are bound to
@@ -4814,13 +4908,21 @@
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
                formal type)))
-    `(write-object (value-pointer->designator ,(cdr (assoc-eq formal
-                                                              pointer-subst)))
-                   ,(add-suffix-to-fn formal "-NEW")
-                   ,(atc-gen-cfun-final-compustate (cdr affect)
-                                                   typed-formals
-                                                   pointer-subst
-                                                   compst-var)))
+    (if (consp (assoc-equal (symbol-name formal) prec-objs))
+        `(write-static-var (ident ,(symbol-name formal))
+                           ,(add-suffix-to-fn formal "-NEW")
+                           ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                           typed-formals
+                                                           subst
+                                                           compst-var
+                                                           prec-objs))
+      `(write-object (value-pointer->designator ,(cdr (assoc-eq formal subst)))
+                     ,(add-suffix-to-fn formal "-NEW")
+                     ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                     typed-formals
+                                                     subst
+                                                     compst-var
+                                                     prec-objs))))
   :prepwork
   ((defrulel lemma
      (implies (symbol-symbol-alistp x)
@@ -4834,6 +4936,7 @@
                                   (affect symbol-listp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prec-tags atc-string-taginfo-alistp)
+                                  (prec-objs atc-string-objinfo-alistp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
@@ -4908,7 +5011,7 @@
      as sufficient to run @(tsee exec-fun) to completion.")
    (xdoc::p
     "The proof is a symbolic execution of the generated translation unit,
-     which is a constant: see @(see atc-proof-support).
+     which is a constant: see @(see atc-symbolic-execution-rules).
      The proof is carried out in the theory that consists of exactly
      the general rules in @(tsee *atc-all-rules*),
      some structure-specific rules that are similar to
@@ -4982,18 +5085,23 @@
        (result-var (if (type-case type :void)
                        nil
                      (genvar 'atc "RESULT" nil formals)))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var nil))
+       ((mv formals-bindings hyps subst instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals
+                                         compst-var
+                                         nil
+                                         prec-objs))
        (diff-pointer-hyps
-        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (exec-fun-args (fsublis-var-lst pointer-subst formals))
+       (exec-fun-args (fsublis-var-lst subst
+                                       (atc-filter-exec-fun-args formals
+                                                                 prec-objs)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (if (type-case type :void)
                                nil
@@ -5005,8 +5113,9 @@
        (final-compst
         (atc-gen-cfun-final-compustate affect
                                        typed-formals
-                                       pointer-subst
-                                       compst-var))
+                                       subst
+                                       compst-var
+                                       prec-objs))
        (concl `(equal (exec-fun (ident ,(symbol-name fn))
                                 (list ,@exec-fun-args)
                                 ,compst-var
@@ -5041,6 +5150,7 @@
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
@@ -5057,6 +5167,7 @@
                                ,@member-write-thms
                                ,@type-prescriptions-called
                                ,@type-prescriptions-struct-readers
+                               ,@extobj-recognizers
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm))
@@ -5302,7 +5413,7 @@
          (raise "Internal error: ~
                  the function ~x0 returns void and affects no variables."
                 fn)))
-       ((unless (or (type-integerp type)
+       ((unless (or (type-nonchar-integerp type)
                     (type-case type :void)))
         (acl2::value
          (raise "Internal error: ~
@@ -5341,6 +5452,7 @@
                                          typed-formals
                                          prec-fns
                                          prec-tags
+                                         prec-objs
                                          names-to-avoid
                                          wrld))
                  ((mv fn-correct-local-events
@@ -5352,6 +5464,7 @@
                                             affect
                                             prec-fns
                                             prec-tags
+                                            prec-objs
                                             prog-const
                                             fn-thms
                                             fn-fun-env-thm
@@ -5588,7 +5701,9 @@
        (exec-stmt-while-for-fn-body
         `(b* ((fenv (init-fun-env ,prog-const))
               ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-              (continuep (exec-test (exec-expr-pure ',loop-test compst)))
+              (test (exec-expr-pure ',loop-test compst))
+              ((when (errorp test)) (mv test (compustate-fix compst)))
+              (continuep (test-value test))
               ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
               ((when (not continuep)) (mv nil (compustate-fix compst)))
               ((mv val? compst) (exec-stmt ',loop-body compst fenv (1- limit)))
@@ -5837,6 +5952,7 @@
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
                                        (prec-tags atc-string-taginfo-alistp)
+                                       (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -5851,7 +5967,25 @@
      The hints are more than needed for now,
      as they include rules about statement execution,
      which does not apply here.
-     We will make the hints more nuanced later."))
+     We will make the hints more nuanced later.")
+   (xdoc::p
+    "We generate two conjuncts in the conclusion.
+     One conjunct, as expected, says that
+     executing the test yields the same as
+     the ACL2 term @('test-term') that represents the test.
+     Note that we need to wrap @(tsee exec-expr-pure) into @(tsee test-value),
+     because the ACL2 term is boolean,
+     and so we need to convert the C value to a boolean.
+     The other conjunct says that @(tsee exec-expr-pure)
+     does not return an error.
+     This is needed in the generated proof for the whole loop,
+     which equates the function generated
+     by @(tsee atc-gen-exec-stmt-while-for-loop)
+     to the execution of the loop:
+     that function's body includes a check that @(tsee exec-expr-pure)
+     does not yield an error,
+     and so this other conjunct here serves to
+     eliminate the case that that check fails."))
   (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-test-thm (add-suffix correct-thm "-TEST"))
        ((mv correct-test-thm names-to-avoid)
@@ -5861,14 +5995,15 @@
                                            wrld))
        (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
-       ((mv formals-bindings pointer-hyps & instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+       ((mv formals-bindings hyps & instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
-                      ,test-term))
+       (concl `(and (not (errorp (exec-expr-pure ',loop-test ,compst-var)))
+                    (equal (test-value (exec-expr-pure ',loop-test ,compst-var))
+                           ,test-term)))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
        (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
@@ -5877,6 +6012,7 @@
         (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
        (member-read-thms
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
@@ -5886,9 +6022,10 @@
                                ,@valuep-thms
                                ,@value-kind-thms
                                ,@struct-reader-return-thms
-                               ,@member-read-thms))
+                               ,@member-read-thms
+                               ,@extobj-recognizers))
                  :use ((:instance (:guard-theorem ,fn)
-                        :extra-bindings-ok ,@instantiation))
+                                  :extra-bindings-ok ,@instantiation))
                  :expand :lambdas)))
        ((mv correct-test-thm-event &)
         (evmac-generate-defthm correct-test-thm
@@ -5902,8 +6039,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
-                                       (pointer-subst symbol-symbol-alistp)
-                                       (compst-var symbolp))
+                                       (typed-formals atc-symbol-type-alistp)
+                                       (subst symbol-symbol-alistp)
+                                       (compst-var symbolp)
+                                       (prec-objs atc-string-objinfo-alistp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
           after the execution of a C loop."
@@ -5920,7 +6059,9 @@
      and which have corresponding named variables and heap arrays
      in the computation state.
      The modified computation state is expressed as
-     a nest of @(tsee write-var) and @(tsee write-object) calls.
+     a nest of @(tsee write-var),
+     @(tsee write-static-var),
+     and @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "Note that, in the correctness theorem,
@@ -5932,18 +6073,34 @@
      because the names of the formals must be portable C identifiers."))
   (b* (((when (endp mod-vars)) compst-var)
        (mod-var (car mod-vars))
-       (ptr (cdr (assoc-eq mod-var pointer-subst))))
-    (if ptr
-        `(write-object (value-pointer->designator ,ptr)
-                       ,(add-suffix-to-fn mod-var "-NEW")
-                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                       pointer-subst
-                                                       compst-var))
+       (type (cdr (assoc-eq mod-var typed-formals)))
+       ((when (not type))
+        (raise "Internal error: formal ~x0 not found." mod-var))
+       (ptrp (type-case type :pointer))
+       (ptr (cdr (assoc-eq mod-var subst))))
+    (if ptrp
+        (if (consp (assoc-equal (symbol-name mod-var) prec-objs))
+            `(write-static-var (ident ,(symbol-name mod-var))
+                               ,(add-suffix-to-fn mod-var "-NEW")
+                               ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                               typed-formals
+                                                               subst
+                                                               compst-var
+                                                               prec-objs))
+          `(write-object (value-pointer->designator ,ptr)
+                         ,(add-suffix-to-fn mod-var "-NEW")
+                         ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                         typed-formals
+                                                         subst
+                                                         compst-var
+                                                         prec-objs)))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                  pointer-subst
-                                                  compst-var)))))
+                                                  typed-formals
+                                                  subst
+                                                  compst-var
+                                                  prec-objs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5955,6 +6112,7 @@
                                        (body-term pseudo-termp)
                                        (prec-fns atc-symbol-fninfo-alistp)
                                        (prec-tags atc-string-taginfo-alistp)
+                                       (prec-objs atc-string-objinfo-alistp)
                                        (prog-const symbolp)
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
@@ -5985,16 +6143,16 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+       ((mv formals-bindings hyps subst instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
-        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)
                    ,(untranslate test-term nil wrld)))
@@ -6003,8 +6161,10 @@
                           (car affect-new)
                         `(mv ,@affect-new)))
        (final-compst (atc-gen-loop-final-compustate affect
-                                                    pointer-subst
-                                                    compst-var))
+                                                    typed-formals
+                                                    subst
+                                                    compst-var
+                                                    prec-objs))
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
@@ -6036,6 +6196,7 @@
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
@@ -6051,6 +6212,7 @@
                                ,@member-write-thms
                                ,@type-prescriptions-called
                                ,@type-prescriptions-struct-readers
+                               ,@extobj-recognizers
                                ,@result-thms
                                ,@correct-thms
                                ,@measure-thms))
@@ -6075,6 +6237,7 @@
                                   (loop-body stmtp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prec-tags atc-string-taginfo-alistp)
+                                  (prec-objs atc-string-objinfo-alistp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-result-thm symbolp)
@@ -6154,16 +6317,16 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
-        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+       ((mv formals-bindings hyps subst instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
-        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   ,@pointer-hyps
+                   ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
@@ -6171,8 +6334,10 @@
                           (car affect-new)
                         `(mv ,@affect-new)))
        (final-compst (atc-gen-loop-final-compustate affect
-                                                    pointer-subst
-                                                    compst-var))
+                                                    typed-formals
+                                                    subst
+                                                    compst-var
+                                                    prec-objs))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
                               (mv nil ,final-compst))))
@@ -6211,6 +6376,7 @@
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (append
@@ -6224,22 +6390,26 @@
                                    *atc-array-length-rules*
                                    *atc-array-length-write-rules*
                                    *atc-other-executable-counterpart-rules*
-                                   *atc-other-definition-rules*
+                                   *atc-wrapper-rules*
                                    *atc-distributivity-over-if-rewrite-rules*
                                    *atc-identifier-rules*
                                    *atc-not-rules*
                                    *atc-integer-size-rules*
-                                   *atc-other-rewrite-rules*
+                                   *atc-limit-rules*
+                                   *atc-not-error-rules*
                                    *atc-integer-ops-1-return-rewrite-rules*
                                    *atc-integer-ops-2-return-rewrite-rules*
                                    *atc-integer-convs-return-rewrite-rules*
                                    *atc-array-read-return-rewrite-rules*
                                    *atc-array-write-return-rewrite-rules*
-                                   *atc-more-rewrite-rules*
+                                   *atc-misc-rewrite-rules*
+                                   *atc-computation-state-return-rules*
+                                   *atc-boolean-from-integer-return-rules*
                                    *atc-type-prescription-rules*
                                    *atc-compound-recognizer-rules*
                                    *integer-value-disjoint-rules*
                                    *array-value-disjoint-rules*
+                                   *atc-value-fix-rules*
                                    '(,@not-error-thms
                                      ,@valuep-thms
                                      not
@@ -6255,6 +6425,7 @@
                                      ,@correct-thms
                                      ,@measure-thms
                                      ,natp-of-measure-of-fn-thm
+                                     ,@extobj-recognizers
                                      ,correct-test-thm
                                      ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
@@ -6373,6 +6544,7 @@
                                          typed-formals
                                          prec-fns
                                          prec-tags
+                                         prec-objs
                                          names-to-avoid
                                          wrld))
                  (loop-test (stmt-while->test loop-stmt))
@@ -6414,6 +6586,7 @@
                                                  test-term
                                                  fn-thms
                                                  prec-tags
+                                                 prec-objs
                                                  names-to-avoid
                                                  wrld))
                  ((mv body-local-events
@@ -6427,6 +6600,7 @@
                                                  body-term
                                                  prec-fns
                                                  prec-tags
+                                                 prec-objs
                                                  prog-const
                                                  fn-thms
                                                  body-limit
@@ -6444,6 +6618,7 @@
                                             loop-body
                                             prec-fns
                                             prec-tags
+                                            prec-objs
                                             prog-const
                                             fn-thms
                                             fn-result-thm
@@ -6529,7 +6704,7 @@
      to calls of the readers.
      The generation of these theorems relies on the fact that
      the order of the readers and the checkers matches the order of
-     the types in @(tsee *integer-nonbool-nonchar-types*).
+     the types in @(tsee *nonchar-integer-types**).
      Note that the @(tsee defstruct-member-info)
      contains 11 readers and 11 checkers,
      where the first reader and checker operate on ACL2 integers,
@@ -6541,7 +6716,7 @@
        (type (member-type->type memtype))
        (readers (defstruct-member-info->readers meminfo))
        (checkers (defstruct-member-info->checkers meminfo))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((unless (and (consp readers)
                            (endp (cdr readers))))
               (prog2$
@@ -6575,7 +6750,7 @@
              (hints `(("Goal"
                        :in-theory
                        '(exec-memberp
-                         not-errorp-when-valuep-rewrite
+                         not-errorp-when-valuep
                          value-resultp-when-valuep
                          value-result-fix-when-value-resultp
                          ,recognizer
@@ -6592,7 +6767,7 @@
          (raise "Internal error: member type ~x0." type)
          (mv nil nil nil)))
        (elemtype (type-array->of type))
-       ((unless (type-integerp elemtype))
+       ((unless (type-nonchar-integerp elemtype))
         (prog2$
          (raise "Internal error: array member element type ~x0." elemtype)
          (mv nil nil nil))))
@@ -6601,7 +6776,7 @@
                                       fixer-recognizer-thm
                                       memname
                                       elemtype
-                                      *integer-nonbool-nonchar-types*
+                                      *nonchar-integer-types**
                                       (car readers)
                                       (car checkers)
                                       (cdr readers)
@@ -6622,8 +6797,8 @@
                                              (checkers symbol-listp)
                                              (names-to-avoid symbol-listp)
                                              (wrld plist-worldp))
-     :guard (and (type-integerp elemtype)
-                 (type-integer-listp indextypes))
+     :guard (and (type-nonchar-integerp elemtype)
+                 (type-nonchar-integer-listp indextypes))
      :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                   (member-read-thms "A @(tsee symbol-listp).")
                   (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -6680,10 +6855,30 @@
                     :in-theory
                     '(exec-arrsub-of-memberp
                       value-struct-read
-                      exec-integer
+                      value-integer->get
+                      value-schar->get-to-schar->get
+                      value-uchar->get-to-uchar->get
+                      value-sshort->get-to-sshort->get
+                      value-ushort->get-to-ushort->get
+                      value-sint->get-to-sint->get
+                      value-uint->get-to-uint->get
+                      value-slong->get-to-slong->get
+                      value-ulong->get-to-ulong->get
+                      value-sllong->get-to-sllong->get
+                      value-ullong->get-to-ullong->get
+                      value-kind-when-scharp
+                      value-kind-when-ucharp
+                      value-kind-when-sshortp
+                      value-kind-when-ushortp
+                      value-kind-when-sintp
+                      value-kind-when-uintp
+                      value-kind-when-slongp
+                      value-kind-when-ulongp
+                      value-kind-when-sllongp
+                      value-kind-when-ullongp
                       ifix
                       integer-range-p
-                      not-errorp-when-valuep-rewrite
+                      not-errorp-when-valuep
                       value-fix-when-valuep
                       value-result-fix-when-value-resultp
                       value-resultp-when-valuep
@@ -6803,7 +6998,7 @@
      to calls of the writers.
      The generation of these theorems relies on the fact that
      the order of the writers and the checkers matches the order of
-     the types in @(tsee *integer-nonbool-nonchar-types*).
+     the types in @(tsee *nonchar-integer-types**).
      Note that the @(tsee defstruct-member-info)
      contains 11 writers and 11 checkers,
      where the first writer and checker operate on ACL2 integers,
@@ -6817,7 +7012,7 @@
        (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
        (writer-return-thm (car writer-return-thms))
        (checkers (defstruct-member-info->checkers meminfo))
-       ((when (type-integerp type))
+       ((when (type-nonchar-integerp type))
         (b* (((unless (and (consp writers)
                            (endp (cdr writers))))
               (prog2$
@@ -6869,7 +7064,7 @@
              (hints `(("Goal"
                        :in-theory
                        '(exec-expr-asg
-                         not-errorp-when-valuep-rewrite
+                         not-errorp-when-valuep
                          valuep-when-ucharp
                          valuep-when-scharp
                          valuep-when-ushortp
@@ -6928,7 +7123,7 @@
          (raise "Internal error: member type ~x0." type)
          (mv nil nil nil)))
        (elemtype (type-array->of type))
-       ((unless (type-integerp elemtype))
+       ((unless (type-nonchar-integerp elemtype))
         (prog2$
          (raise "Internal error: array member element type ~x0." elemtype)
          (mv nil nil nil))))
@@ -6937,7 +7132,7 @@
                                        fixer-recognizer-thm
                                        memname
                                        elemtype
-                                       *integer-nonbool-nonchar-types*
+                                       *nonchar-integer-types**
                                        (car writers)
                                        (car checkers)
                                        (cdr writers)
@@ -6964,8 +7159,8 @@
                                               (type-of-value-thm symbolp)
                                               (names-to-avoid symbol-listp)
                                               (wrld plist-worldp))
-     :guard (and (type-integerp elemtype)
-                 (type-integer-listp indextypes))
+     :guard (and (type-nonchar-integerp elemtype)
+                 (type-nonchar-integer-listp indextypes))
      :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                   (member-write-thms "A @(tsee symbol-listp).")
                   (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -7038,10 +7233,30 @@
           (hints `(("Goal"
                     :in-theory
                     '(exec-expr-asg
-                      exec-integer
+                      value-integer->get
+                      value-schar->get-to-schar->get
+                      value-uchar->get-to-uchar->get
+                      value-sshort->get-to-sshort->get
+                      value-ushort->get-to-ushort->get
+                      value-sint->get-to-sint->get
+                      value-uint->get-to-uint->get
+                      value-slong->get-to-slong->get
+                      value-ulong->get-to-ulong->get
+                      value-sllong->get-to-sllong->get
+                      value-ullong->get-to-ullong->get
+                      value-kind-when-scharp
+                      value-kind-when-ucharp
+                      value-kind-when-sshortp
+                      value-kind-when-ushortp
+                      value-kind-when-sintp
+                      value-kind-when-uintp
+                      value-kind-when-slongp
+                      value-kind-when-ulongp
+                      value-kind-when-sllongp
+                      value-kind-when-ullongp
                       value-struct-read
                       value-struct-write
-                      not-errorp-when-valuep-rewrite
+                      not-errorp-when-valuep
                       value-integerp
                       value-unsigned-integerp-alt-def
                       value-signed-integerp-alt-def
@@ -7257,9 +7472,10 @@
        (type (defobject-info->type info))
        (exprs (defobject-info->init info))
        ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
+       (initer? (if (consp exprs) (initer-list exprs) nil))
        (declon (make-obj-declon :tyspec tyspec
                                 :declor declor
-                                :init (initer-list exprs)))
+                                :init? initer?))
        (info (atc-obj-info info))
        (prec-objs (acons (str-fix name)
                          info
@@ -7303,52 +7519,43 @@
                   names-to-avoid))
         (b* (((when (function-symbolp target (w state)))
               (b* ((fn target)
-                   ((mv erp
-                        (list exts
+                   ((er (list exts
                               prec-fns
                               local-events
                               exported-events
                               names-to-avoid)
-                        state)
+                        :iferr (list nil nil nil nil nil))
                     (if (irecursivep+ fn (w state))
-                        (b* (((mv erp
-                                  (list local-events
+                        (b* (((er (list local-events
                                         exported-events
                                         prec-fns
                                         names-to-avoid)
-                                  state)
+                                  :iferr (list nil nil nil nil nil))
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
                                             proofs prog-const
                                             fn-thms fn-appconds appcond-thms
-                                            print names-to-avoid ctx state))
-                             ((when erp)
-                              (mv erp (list nil nil nil nil nil) state)))
+                                            print names-to-avoid ctx state)))
                           (acl2::value (list nil
                                              prec-fns
                                              local-events
                                              exported-events
                                              names-to-avoid)))
-                      (b* (((mv erp
-                                (list fundef
+                      (b* (((er (list fundef
                                       local-events
                                       exported-events
                                       prec-fns
                                       names-to-avoid)
-                                state)
+                                :iferr (list nil nil nil nil nil))
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
                                             proofs
                                             prog-const init-fun-env-thm fn-thms
                                             print names-to-avoid ctx state))
-                           ((when erp)
-                            (mv erp (list nil nil nil nil nil) state))
                            (ext (ext-declon-fundef fundef)))
                         (acl2::value (list (list ext)
                                            prec-fns
                                            local-events
                                            exported-events
-                                           names-to-avoid)))))
-                   ((when erp)
-                    (mv erp (list nil nil nil nil nil nil nil) state)))
+                                           names-to-avoid))))))
                 (acl2::value
                  (list exts
                        prec-fns

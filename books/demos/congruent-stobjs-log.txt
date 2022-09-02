@@ -591,9 +591,9 @@ has modified the user stobj ST2.  See :DOC user-stobjs-modified-warnings.
 
 
 
-ACL2 Error in MUST-FAIL+:  The guard for the function call (UPDATE3 X ST2),
-which is (AND (ST2P ST2) (ACL2-NUMBERP X)), is violated by the arguments
-in the call (UPDATE3 'A ST2).
+ACL2 Error [Evaluation] in MUST-FAIL+:  The guard for the function
+call (UPDATE3 X ST2), which is (AND (ST2P ST2) (ACL2-NUMBERP X)), is
+violated by the arguments in the call (UPDATE3 'A ST2).
 See :DOC set-guard-checking for information about suppressing this
 check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
@@ -615,9 +615,9 @@ has modified the user stobj ST1.  See :DOC user-stobjs-modified-warnings.
 
 
 
-ACL2 Error in MUST-FAIL+:  The guard for the function call (UPDATE3 X ST2),
-which is (AND (ST2P ST2) (ACL2-NUMBERP X)), is violated by the arguments
-in the call (UPDATE3 'A ST1).
+ACL2 Error [Evaluation] in MUST-FAIL+:  The guard for the function
+call (UPDATE3 X ST2), which is (AND (ST2P ST2) (ACL2-NUMBERP X)), is
+violated by the arguments in the call (UPDATE3 'A ST1).
 See :DOC set-guard-checking for information about suppressing this
 check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
@@ -719,9 +719,9 @@ Rules: NIL
 ACL2 !>>(MUST-FAIL+ (WITH-GUARD-CHECKING T (TEST)))
 
 
-ACL2 Error in MUST-FAIL+:  The guard for the function call (G X ST),
-which is (AND (STP ST) (CONSP X)), is violated by the arguments in
-the call (G 3 |<some-stobj>|).
+ACL2 Error [Evaluation] in MUST-FAIL+:  The guard for the function
+call (G X ST), which is (AND (STP ST) (CONSP X)), is violated by the
+arguments in the call (G 3 |<some-stobj>|).
 See :DOC set-guard-checking for information about suppressing this
 check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.

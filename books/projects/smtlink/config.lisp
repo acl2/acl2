@@ -33,15 +33,15 @@
                         (global-table x)))))
 
 (local
- (defthm boundp-of-system-books-dir
+ (defthm boundp-of-project-dir-alist
    (implies (state-p state)
-            (acl2::f-boundp-global 'acl2::system-books-dir state))
+            (acl2::f-boundp-global 'acl2::project-dir-alist state))
    :hints (("Goal"
             :in-theory (disable all-boundp-of-initial-glb)
             :use ((:instance all-boundp-of-initial-glb (x state)))))))
 
 (defconsts *default-smtlink-config*
-  (b* ((sys-dir (f-get-global 'acl2::system-books-dir state))
+  (b* ((sys-dir (acl2::system-books-dir state))
        ((unless (stringp sys-dir))
         (er hard? 'SMT-config=>*default-smtlink-config* "Failed to find ~
 where the system books are."))

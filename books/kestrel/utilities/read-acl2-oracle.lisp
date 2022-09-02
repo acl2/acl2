@@ -12,6 +12,8 @@
 
 (local (include-book "update-acl2-oracle"))
 
+(in-theory (disable read-acl2-oracle))
+
 (defthm state-p1-of-mv-nth-2-of-read-acl2-oracle
    (implies (state-p1 state)
             (state-p1 (mv-nth 2 (read-acl2-oracle state))))

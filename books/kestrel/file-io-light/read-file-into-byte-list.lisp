@@ -21,8 +21,7 @@
 
 (local (in-theory (disable assoc-equal
                            channel-contents
-                           open-input-channels
-                           state-p)))
+                           open-input-channels)))
 
 ;; Returns (mv bytes state).
 (defund read-file-into-byte-list-aux (channel acc state)

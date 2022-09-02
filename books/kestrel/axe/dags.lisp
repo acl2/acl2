@@ -187,8 +187,6 @@
            (consp (car (last rev-dag))))
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-
-
 ;even holds for bad nodenums or nodenums of vars, since the cdr will return nil
 (defthm true-listp-of-dargs-of-lookup-equal-when-weak-dagp-aux-cheap
   (implies (weak-dagp-aux dag)
@@ -216,7 +214,14 @@
            (dag-exprp (lookup-equal n dag)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux lookup-equal))))
 
-(defthm natp-of-maxelem-of-strip-cars-when-rev-dagp
+(defthm symbolp-of-car-of-lookup-equal-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux dag)
+;                (<= nodenum-or-quotep (car (car dag)))
+                ;(natp nodenum-or-quotep)
+                )
+           (symbolp (car (lookup-equal nodenum-or-quotep dag)))))
+
+(defthm natp-of-maxelem-of-strip-cars-when-weak-dagp-aux
   (implies (and (weak-dagp-aux rev-dag)
                 (consp rev-dag))
            (natp (maxelem (strip-cars rev-dag))))
@@ -240,6 +245,13 @@
            (natp (car (car dag))))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+;disable?
+(defthm all-integerp-of-strip-cars-when-weak-dagp-aux
+  (implies (weak-dagp-aux dag)
+           (all-integerp (strip-cars dag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;this does enforce that children are less than the parents
 ;does not enforce that all the nodes come in order!
@@ -308,14 +320,6 @@
                 (lookup-equal n dag))
            (dag-exprp (lookup-equal n dag)))
   :hints (("Goal" :in-theory (enable weak-dagp))))
-
-;rename
-(defthm symbolp-of-car-of-lookup-equal
-  (implies (and (weak-dagp-aux dag)
-;                (<= nodenum-or-quotep (car (car dag)))
-                ;(natp nodenum-or-quotep)
-                )
-           (symbolp (car (lookup-equal nodenum-or-quotep dag)))))
 
 ;rename
 (defthm symbolp-of-car-of-lookup-equal-when-weak-dagp
@@ -398,6 +402,22 @@
            (pseudo-dagp-aux (nthcdr n dag) current-nodenum))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux nthcdr))))
 
+(defthm car-of-car-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+                (natp top-nodenum))
+           (equal (car (car dag-lst))
+                  top-nodenum))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
+(defthm bounded-natp-alistp-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+                (< top-nodenum bound)
+                (natp top-nodenum)
+                (natp bound))
+           (bounded-natp-alistp dag-lst bound))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-natp-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks that the node numbering is correct with no gaps and that nodes only
 ;; refer to smaller nodes.  Does not check that the arities of the functions
@@ -441,6 +461,12 @@
            (posp (len dag)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+(defthm pseudo-dagp-of-cdr-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (equal (pseudo-dagp (cdr dag))
+                  (consp (cdr dag))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux))))
 
 (defthm bounded-dag-exprp-of-lookup-equal-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
@@ -720,58 +746,26 @@
           (drop-nodes-past nodenum (cdr dag-lst))
         dag-lst))))
 
-;does not include inlined constants
-(defun dag-constants-aux (dag acc)
-  (declare (xargs :guard (and (alistp dag)
-                              (true-listp acc))
-                  :guard-hints (("Goal" :in-theory (enable alistp)))))
-  (if (endp dag)
-      acc
-    (let* ((entry (first dag))
-           (expr (cdr entry)))
-      (dag-constants-aux (cdr dag)
-                         (if (quotep expr)
-                             (add-to-set-equal expr acc)
-                           acc)))))
+;; ;does not include inlined constants
+;; (defund dag-constants-aux (dag acc)
+;;   (declare (xargs :guard (and (alistp dag)
+;;                               (true-listp acc))
+;;                   :guard-hints (("Goal" :in-theory (enable alistp)))))
+;;   (if (endp dag)
+;;       acc
+;;     (let* ((entry (first dag))
+;;            (expr (cdr entry)))
+;;       (dag-constants-aux (cdr dag)
+;;                          (if (quotep expr)
+;;                              (add-to-set-equal expr acc)
+;;                            acc)))))
 
-(defun dag-constants (dag)
-  (declare (xargs :guard (alistp dag)))
-  (dag-constants-aux dag nil))
+;; (defund dag-constants (dag)
+;;   (declare (xargs :guard (alistp dag)))
+;;   (dag-constants-aux dag nil))
 
 ;; test: (dag-equal-term-at-node '((2 foo 1 0) (1 quote 3) (0 . x)) '(foo '3 x) 2)
 ;; test: (not (dag-equal-term-at-node '((2 foo 1 0) (1 quote 3) (0 . x)) '(foo '3 y) 2))
-
-;; similar to (append (keep-atoms items) acc).
-;move?
-(defund append-atoms (items acc)
-  (declare (xargs :guard (true-listp items)))
-  (if (endp items)
-      acc
-    (let ((item (first items)))
-      (append-atoms (rest items)
-                    (if (atom item)
-                        (cons item acc)
-                      acc)))))
-
-(defthm all-<-of-append-atoms
-  (equal (all-< (append-atoms args acc) bound)
-         (and (all-< (keep-atoms args) bound)
-              (all-< acc bound)))
-  :hints (("Goal" :in-theory (enable keep-atoms append-atoms all-<))))
-
-(defthm true-listp-of-append-atoms
-  (implies (true-listp acc)
-           (true-listp (append-atoms args acc)))
-  :hints (("Goal" :in-theory (enable append-atoms))))
-
-(defthm nat-listp-of-append-atoms
-  (implies (and (all-dargp args)
-                (nat-listp acc))
-           (nat-listp (append-atoms args acc)))
-  :hints (("Goal" :in-theory (enable append-atoms nat-listp))))
-
-
-
 
 ;kill
 ;i guess this is a weakend obligation for checking that an arg is a quoted thing?
@@ -808,21 +802,6 @@
 ;;            (equal (< 1 (len (nth n (dargs expr))))
 ;;                   (consp (nth n (dargs expr)))))
 ;;   :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-all-dargp))))
-
-(defthm car-of-car-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
-                (natp top-nodenum))
-           (equal (car (car dag-lst))
-                  top-nodenum))
-  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
-
-(defthm bounded-natp-alistp-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
-                (< top-nodenum bound)
-                (natp top-nodenum)
-                (natp bound))
-           (bounded-natp-alistp dag-lst bound))
-  :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-natp-alistp))))
 
 
 
@@ -904,10 +883,7 @@
                   -1))
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
 
-;disable?
-(defthm all-integerp-of-strip-cars-when-weak-dagp-aux
-  (implies (weak-dagp-aux dag)
-           (all-integerp (strip-cars dag))))
+
 
 ;move?
 ;todo: why didn't dag-walker-measure-for-item work here?  may need some mbts
@@ -1460,3 +1436,34 @@
            (natp (top-nodenum-of-dag dag)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable top-nodenum-of-dag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; similar to (append (keep-atoms items) acc).
+;move?
+(defund append-atoms (items acc)
+  (declare (xargs :guard (true-listp items)))
+  (if (endp items)
+      acc
+    (let ((item (first items)))
+      (append-atoms (rest items)
+                    (if (atom item)
+                        (cons item acc)
+                      acc)))))
+
+(defthm all-<-of-append-atoms
+  (equal (all-< (append-atoms args acc) bound)
+         (and (all-< (keep-atoms args) bound)
+              (all-< acc bound)))
+  :hints (("Goal" :in-theory (enable keep-atoms append-atoms all-<))))
+
+(defthm true-listp-of-append-atoms
+  (implies (true-listp acc)
+           (true-listp (append-atoms args acc)))
+  :hints (("Goal" :in-theory (enable append-atoms))))
+
+(defthm nat-listp-of-append-atoms
+  (implies (and (all-dargp args)
+                (nat-listp acc))
+           (nat-listp (append-atoms args acc)))
+  :hints (("Goal" :in-theory (enable append-atoms nat-listp))))

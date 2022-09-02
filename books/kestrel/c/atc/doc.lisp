@@ -107,8 +107,7 @@
      (xdoc::p
       "This must be an ACL2 string that is a file path.
        The path may be absolute,
-       or relative to
-       the " (xdoc::seetopic "cbd" "current working directory") ".")
+       or relative to the current working directory.")
      (xdoc::p
       "The directory must exist.
        The file may or may not exist:
@@ -125,7 +124,7 @@
       (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
       " @('(opt-name1 opt-value1 opt-name2 opt-value2 ...)')
        where each @('opt-namek') is a keyword among the ones described below,
-       and each @('opt-value1') is one of the allowed values
+       and each @('opt-valuek') is one of the allowed values
        for the corresponding keyword as described below.")
      (xdoc::p
       "The following pretty-printing options are supported:")
@@ -168,11 +167,7 @@
      (xdoc::p
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
-       in case proof generation is (temporarily) broken.")
-     (xdoc::p
-      "Currently this must be @('nil')
-       if the targets include @(tsee defobject) names.
-       Proof generation for external objects will be supported soon."))
+       in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
@@ -343,7 +338,7 @@
      (xdoc::li
       "@('(ullong-arrayp x)'), representing @('unsigned long long *').")
      (xdoc::li
-      "@('(struct-<tag>-p x)'),
+      "@('(pointer (struct-<tag>-p x))'),
        where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
        representing a pointer type to the corresponding C structure type,
        @('struct <tag> *').

@@ -358,7 +358,7 @@
 ; arguments!)
 
 ; Because of all the Special Conjectures (see the Essay on Loop$) we have to be
-; careful not to evaluate ground calls of the the special function symbols
+; careful not to evaluate ground calls of the special function symbols
 ; listed below during guard clause generation.  If any of these functions were
 ; to be evaluated we would fail to recognize the need for some special
 ; conjectures.  For example, (collect$ (lambda$ ...)  (tails '...))  is a
@@ -5974,6 +5974,9 @@
     (clean-up-dirty-lambda-objects hyps term nil wrld lamp))
    (t term)))
 
+; Note: The following function is never called, but is mentioned in a comment
+; in encapsulate-constraint.
+
 (defun possibly-clean-up-dirty-lambda-objects-lst (hyps terms wrld lamp)
 
 ; We copy each term in terms and clean up every dirty well-formed quoted lambda
@@ -5989,6 +5992,15 @@
             (possibly-clean-up-dirty-lambda-objects-lst
              hyps (cdr terms) wrld lamp)))))
 
+(defun strip-force-and-case-split (lst)
+  (cond ((endp lst) nil)
+        (t (let* ((hyp (car lst))
+                  (rest (strip-force-and-case-split (cdr lst))))
+             (case-match hyp
+               (('force hyp) (cons hyp rest))
+               (('case-split hyp) (cons hyp rest))
+               (& (cons hyp rest)))))))
+
 (defun possibly-clean-up-dirty-lambda-objects-in-pairs (pairs wrld lamp)
 
 ; Pairs is a list of pairs as produced by unprettyify, each pair being ((hyp1
@@ -5996,13 +6008,22 @@
 ; hyps to establish warrants.  We do not clean up the hyps.  We return a list
 ; of pairs.
 
+; To be clear, we leave the hyps exactly as unprettyify produced them.  But for
+; cleaning up the concl we pass in slightly cleaned up hyps by stripping any
+; FORCE and CASE-SPLITS off.  What this really means is that when
+; possibly-clean-up-dirty-lambda-objects (actually,
+; clean-up-dirty-lambda-objects) asks whether the necessary warrants are a
+; subset of the hyps it is not fooled by forced warrants.
+
   (cond
    ((endp pairs) nil)
    (t (let ((hyps (car (car pairs)))
             (concl (cdr (car pairs))))
         (cons
          (cons hyps
-               (possibly-clean-up-dirty-lambda-objects hyps concl wrld lamp))
+               (possibly-clean-up-dirty-lambda-objects
+                (strip-force-and-case-split hyps)
+                concl wrld lamp))
          (possibly-clean-up-dirty-lambda-objects-in-pairs
           (cdr pairs) wrld lamp))))))
 
@@ -6994,6 +7015,12 @@
 (defun untranslate-lambda-object-cheat ()
   (declare (xargs :guard t :mode :logic))
   :untranslate-lambda-object-cheat)
+
+(defconst *default-default-state-vars*
+  (default-state-vars nil))
+
+(defproxy translate11-lambda-object-proxy
+  (* * * * * * * * * *) => (mv * * *))
 
 (mutual-recursion
 
@@ -8357,7 +8384,7 @@
 ; X is a well-formed LAMBDA object.  It may be tagged as having come from a
 ; lambda$ but we cannot trust that tagging since the user could have
 ; counterfeited such an object with `(lambda (x) (return-last 'progn '(lambda$
-; (x) zzz) x)).  We ignore the the tagging -- indeed, we strip it out, and
+; (x) zzz) x)).  We ignore the tagging -- indeed, we strip it out, and
 ; untranslate the rest!
 
   (let* ((formals (lambda-object-formals x))
@@ -8428,6 +8455,16 @@
 
 (defun untranslate1-lambda-objects-in-fn-slots
   (args ilks iff-flg untrans-tbl preprocess-fn wrld)
+
+; This function maps over args as it maps over ilks and untranslates the lambda
+; objects in :fn slots.
+
+; It is sensitive to the value of (untranslate-lambda-object-p).  That system
+; function can be attached by the user to turn off this untranslation.  In
+; particular:
+
+; (defattach-system untranslate-lambda-object-p constant-nil-function-arity-0)
+
   (cond
    ((endp args) nil)
    ((and (eq (car ilks) :FN)
@@ -8440,17 +8477,54 @@
 ; untranslate1-possible-scion-call.)
 
     (let* ((lp (untranslate-lambda-object-p))
+           (obj (unquote (car args)))
            (first
             (cond ((or (not lp)
-                       (not (well-formed-lambda-objectp (unquote (car args))
-                                                        wrld)))
+                       (not (well-formed-lambda-objectp obj wrld)))
                    (car args))
                   ((and (eq lp (untranslate-lambda-object-cheat))
-                        (let ((body (lambda-object-body (unquote (car args)))))
+
+; If we've been told to just trust any tagged lambda object we come across and
+; if this is one such, we just return the lambda$ it claims to be.
+
+                        (let ((body (lambda-object-body obj)))
                           (and (lambda$-bodyp body)
                                (unquote (fargn body 2))))))
-                  (t ; default for lp
-                   (untranslate1-lambda-object (unquote (car args)) untrans-tbl
+                  ((lambda$-bodyp (lambda-object-body obj))
+
+; This object is tagged as though it came from a lambda$.  We check to see.
+
+                   (let ((alleged-lambda$
+                          (unquote (fargn (lambda-object-body obj) 2))))
+                     (mv-let (erp val bindings)
+                       (translate11-lambda-object-proxy
+                        alleged-lambda$
+                        t  ; stobjs-out
+                        nil ; bindings
+                        t   ; known-stobjs
+                        nil ; flet-alist
+                        nil ; cform
+                        'untranslate1-lambda-objects-in-fn-slots
+                        wrld
+                        *default-default-state-vars*
+                        nil)
+                       (declare (ignore bindings))
+                       (cond
+                        ((and (null erp)
+                              (equal val (car args)))
+                         alleged-lambda$)
+                        (t (car args))))))
+                  ((mv-let (warrants unwarranteds)
+                     (warrants-for-tamep-lambdap obj wrld nil nil)
+                     (declare (ignore warrants))
+                     unwarranteds)
+
+; There are unwarranted fns in the body and so the lambda$ we are tempted to create
+; won't be provably fn-equal to obj.  So we leave it untouched.
+
+                   (car args))
+                  (t ; translate into a lambda$
+                   (untranslate1-lambda-object obj untrans-tbl
                                                preprocess-fn wrld)))))
       (cons first
             (untranslate1-lambda-objects-in-fn-slots
@@ -12481,7 +12555,7 @@
 
 ; But we don't see a purist solution to (c) because, for example, the guard on
 ; (from-to-by i j k) can't express the idea that the arguments satisfy the
-; type-spec of the the LAMBDA because (from-to-by i j k) doesn't contain the
+; type-spec of the LAMBDA because (from-to-by i j k) doesn't contain the
 ; LAMBDA.  And collect$ can't do it because by the time collect$ executes the
 ; (from-to-by i j k) will have turned into a list of integers indistiguishable
 ; from an IN iteration.
@@ -18790,7 +18864,7 @@
 ; Accumulate into acc a path from some function in fns down the call tree to a
 ; function that contains a with-global-stobj call binding st, where if upd is
 ; true then this is an updataing with-global-stobj call.  If we hit a loop,
-; which should only happen with redefinition, then we push :loop onto the the
+; which should only happen with redefinition, then we push :loop onto the
 ; path accumulated before hitting the loop.  If we fail to complete the path,
 ; we push :fail onto the accumulated path to indicate that this shouldn't
 ; happen.
@@ -19325,7 +19399,7 @@
 
 ; This error is referenced in the Algorithm Description found in a comment in
 ; cmp-do-body.  It is more draconian than necessary, in that we could allow
-; such binding when there are no imperative constructs the the translation of
+; such binding when there are no imperative constructs in the translation of
 ; x.  But this is a simple rule to implement and explain, and the extra
 ; restriction doesn't seem harsh.
 
@@ -19946,7 +20020,7 @@
 
 ; Just below, we allow a stobj recognizer to be applied to an ordinary object,
 ; even when translating for execution (function bodies or top-level loop).
-; This is an exception to the the usual rule, which requires stobj functions to
+; This is an exception to the usual rule, which requires stobj functions to
 ; respect their stobjs-in arguments when translating for execution.  We take
 ; advantage of this exception in our support for stobj fields of stobjs.  For
 ; example, consider the following two events.
@@ -20358,7 +20432,7 @@
                      (cadr (assoc-keyword :SPLIT-TYPES (cdr xargs)))))
                 (guard1-tail (assoc-keyword :guard (cdr xargs)))
 
-; Guard1 is the the actual, untranslated expression the user supplied with
+; Guard1 is the actual, untranslated expression the user supplied with
 ; XARGS :GUARD.
 
                 (guard1 ; only valid if guard1-tail is non-nil
@@ -20448,17 +20522,40 @@
                        (if (termp body wrld)
                            (if (and (not allow-counterfeitsp)
                                     (lambda$-bodyp body))
-                               (trans-er+?
-                                cform x
-                                ctx
-                                "The body of a LAMBDA object may not be of ~
-                                 the form (RETURN-LAST 'PROGN '(LAMBDA$ ...) ~
-                                 ...) because that idiom is used to flag ~
-                                 LAMBDA objects generated by translating ~
-                                 lambda$ terms. But you wrote a LAMBDA object ~
-                                 with body ~x0.  ~@1"
-                                body
-                                *gratuitous-lambda-object-restriction-msg*)
+                               (if (let ((alleged-lambda$
+                                          (unquote (fargn body 2))))
+                                     (mv-let (erp val bindings)
+                                       (translate11-lambda-object
+                                        alleged-lambda$
+                                        t   ; stobjs-out
+                                        nil ; bindings
+                                        t   ; known-stobjs
+                                        nil ; flet-alist
+                                        nil ; cform
+                                        'translate11-lambda-object
+                                        wrld
+                                        *default-default-state-vars*
+                                        nil)
+                                       (declare (ignore bindings))
+                                       (and (null erp)
+; Since we just successfully translated a lambda$ expression, we know val
+; is a quoted lambda object.  We're interested in whether the body of
+; that lambda object is body...
+                                            (equal (lambda-object-body
+                                                    (unquote val))
+                                                   body))))
+                                   (trans-value body)
+                                   (trans-er+?
+                                    cform x
+                                    ctx
+                                    "The body of a LAMBDA object may not be ~
+                                     of the form (RETURN-LAST 'PROGN ~
+                                     '(LAMBDA$ ...) ...) because that idiom ~
+                                     is used to flag LAMBDA objects generated ~
+                                     by translating lambda$ terms. But you ~
+                                     wrote a LAMBDA object with body ~x0.  ~@1"
+                                    body
+                                    *gratuitous-lambda-object-restriction-msg*))
                                (trans-value body))
                            (trans-er+?
                             cform x
@@ -20468,7 +20565,7 @@
                             body
                             *gratuitous-lambda-object-restriction-msg*))
                        (translate11 body
-                                    nil    ; ilk
+                                    nil ; ilk
                                     stobjs-out-simple
                                     bindings
                                     nil ; known-stobjs
@@ -23393,6 +23490,16 @@
 
 )
 
+(defun translate11-lambda-object-proxy-builtin
+    (x stobjs-out bindings known-stobjs flet-alist cform ctx wrld state-vars
+       allow-counterfeitsp)
+  (translate11-lambda-object x stobjs-out bindings known-stobjs flet-alist
+                             cform ctx wrld state-vars allow-counterfeitsp))
+
+(defattach (translate11-lambda-object-proxy
+            translate11-lambda-object-proxy-builtin)
+  :skip-checks t)
+
 (defun translate1-cmp (x stobjs-out bindings known-stobjs ctx w state-vars)
 
 ; See also translate1 for a corresponding version that also returns state.
@@ -23911,7 +24018,7 @@
 ; that might have arisen) so that all the errors that might be caused by this
 ; translation and evaluation are handled within this function.
 
-          (error1 ctx nil (car val) (cdr val) state))
+          (error1 ctx "Evaluation" (car val) (cdr val) state))
          (t (mv nil
                 (cons stobjs-out
                       (replace-stobjs stobjs-out val))

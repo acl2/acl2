@@ -192,10 +192,9 @@
 (defsection value-result-theorems
   :extension value-result
 
-  (defrule not-errorp-when-valuep
+  (defruled not-errorp-when-valuep
     (implies (valuep x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable (valuep
              errorp))
 
@@ -218,10 +217,9 @@
 (defsection value-list-result-theorems
   :extension value-list-result
 
-  (defrule not-errorp-when-value-listp
+  (defruled not-errorp-when-value-listp
     (implies (value-listp x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable errorp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,11 +251,95 @@
 (defsection value-option-result-theorems
   :extension value-option
 
-  (defrule not-errorp-when-value-optionp
+  (defruled not-errorp-when-value-optionp
     (implies (value-optionp x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable value-optionp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bounds-of-integer-values
+  :short "Linear rules about the bounds of the integer values."
+
+  (defrule value-schar->get-bound
+    (and (<= (schar-min) (value-schar->get x))
+         (<= (value-schar->get x) (schar-max)))
+    :rule-classes :linear
+    :use schar-integerp-of-value-schar->get
+    :disable schar-integerp-of-value-schar->get
+    :enable schar-integerp-alt-def)
+
+  (defrule value-uchar->get-bound
+    (and (<= 0 (value-uchar->get x))
+         (<= (value-uchar->get x) (uchar-max)))
+    :rule-classes :linear
+    :use uchar-integerp-of-value-uchar->get
+    :disable uchar-integerp-of-value-uchar->get
+    :enable uchar-integerp-alt-def)
+
+  (defrule value-sshort->get-bound
+    (and (<= (sshort-min) (value-sshort->get x))
+         (<= (value-sshort->get x) (sshort-max)))
+    :rule-classes :linear
+    :use sshort-integerp-of-value-sshort->get
+    :disable sshort-integerp-of-value-sshort->get
+    :enable sshort-integerp-alt-def)
+
+  (defrule value-ushort->get-bound
+    (and (<= 0 (value-ushort->get x))
+         (<= (value-ushort->get x) (ushort-max)))
+    :rule-classes :linear
+    :use ushort-integerp-of-value-ushort->get
+    :disable ushort-integerp-of-value-ushort->get
+    :enable ushort-integerp-alt-def)
+
+  (defrule value-sint->get-bound
+    (and (<= (sint-min) (value-sint->get x))
+         (<= (value-sint->get x) (sint-max)))
+    :rule-classes :linear
+    :use sint-integerp-of-value-sint->get
+    :disable sint-integerp-of-value-sint->get
+    :enable sint-integerp-alt-def)
+
+  (defrule value-uint->get-bound
+    (and (<= 0 (value-uint->get x))
+         (<= (value-uint->get x) (uint-max)))
+    :rule-classes :linear
+    :use uint-integerp-of-value-uint->get
+    :disable uint-integerp-of-value-uint->get
+    :enable uint-integerp-alt-def)
+
+  (defrule value-slong->get-bound
+    (and (<= (slong-min) (value-slong->get x))
+         (<= (value-slong->get x) (slong-max)))
+    :rule-classes :linear
+    :use slong-integerp-of-value-slong->get
+    :disable slong-integerp-of-value-slong->get
+    :enable slong-integerp-alt-def)
+
+  (defrule value-ulong->get-bound
+    (and (<= 0 (value-ulong->get x))
+         (<= (value-ulong->get x) (ulong-max)))
+    :rule-classes :linear
+    :use ulong-integerp-of-value-ulong->get
+    :disable ulong-integerp-of-value-ulong->get
+    :enable ulong-integerp-alt-def)
+
+  (defrule value-sllong->get-bound
+    (and (<= (sllong-min) (value-sllong->get x))
+         (<= (value-sllong->get x) (sllong-max)))
+    :rule-classes :linear
+    :use sllong-integerp-of-value-sllong->get
+    :disable sllong-integerp-of-value-sllong->get
+    :enable sllong-integerp-alt-def)
+
+  (defrule value-ullong->get-bound
+    (and (<= 0 (value-ullong->get x))
+         (<= (value-ullong->get x) (ullong-max)))
+    :rule-classes :linear
+    :use ullong-integerp-of-value-ullong->get
+    :disable ullong-integerp-of-value-ullong->get
+    :enable ullong-integerp-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -335,6 +417,24 @@
       (value-case val :pointer))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-promoted-arithmeticp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is a promoted arithmetic value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, an arithmetic value whose type is a "
+    (xdoc::seetopic "type-promoted-arithmeticp"
+                    "promoted arithmetic type")))
+  (and (value-arithmeticp val)
+       (not (value-case val :schar))
+       (not (value-case val :uchar))
+       (not (value-case val :sshort))
+       (not (value-case val :ushort)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-of-value ((val valuep))
@@ -366,50 +466,97 @@
   :prepwork ((local (include-book "std/lists/len" :dir :system)))
   ///
 
-  (defruled type-signed-integerp-of-type-of-signed-integer-value
-    (implies (value-signed-integerp val)
-             (type-signed-integerp (type-of-value val)))
-    :enable value-signed-integerp)
+  (defrule type-kind-of-type-of-value
+    (equal (type-kind (type-of-value val))
+           (value-kind val)))
 
-  (defruled type-unsigned-integerp-of-type-of-unsigned-integer-value
-    (implies (value-unsigned-integerp val)
-             (type-unsigned-integerp (type-of-value val)))
-    :enable value-unsigned-integerp)
+  (defrule type-signed-integerp-of-type-of-value
+    (equal (type-signed-integerp (type-of-value val))
+           (value-signed-integerp val))
+    :enable (value-signed-integerp
+             type-signed-integerp))
 
-  (defruled type-integerp-of-type-of-integer-value
-    (implies (value-integerp val)
-             (type-integerp (type-of-value val)))
+  (defrule type-unsigned-integerp-of-type-of-value
+    (equal (type-unsigned-integerp (type-of-value val))
+           (value-unsigned-integerp val))
+    :enable (value-unsigned-integerp
+             type-unsigned-integerp))
+
+  (defrule type-integerp-of-type-of-value
+    (equal (type-integerp (type-of-value val))
+           (value-integerp val))
     :enable (value-integerp
              value-signed-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
 
-  (defruled type-realp-of-type-of-real-value
-    (implies (value-realp val)
-             (type-realp (type-of-value val)))
+  (defrule type-realp-of-type-of-value
+    (equal (type-realp (type-of-value val))
+           (value-realp val))
     :enable (value-realp
              value-integerp
              value-signed-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
 
-  (defruled type-arithmeticp-of-type-of-arithmetic-value
-    (implies (value-arithmeticp val)
-             (type-arithmeticp (type-of-value val)))
+  (defrule type-arithmeticp-of-type-of-value
+    (equal (type-arithmeticp (type-of-value val))
+           (value-arithmeticp val))
     :enable (value-arithmeticp
              value-realp
              value-integerp
              value-signed-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
 
-  (defruled type-scalarp-of-type-of-scalar-value
-    (implies (value-scalarp val)
-             (type-scalarp (type-of-value val)))
+  (defrule type-scalarp-of-type-of-value
+    (equal (type-scalarp (type-of-value val))
+           (value-scalarp val))
     :enable (value-scalarp
              value-arithmeticp
              value-realp
              value-integerp
              value-signed-integerp
              value-unsigned-integerp
-             type-scalarp)))
+             type-scalarp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp))
+
+  (defrule type-promoted-arithmeticp-of-type-of-value
+    (equal (type-promoted-arithmeticp (type-of-value val))
+           (value-promoted-arithmeticp val))
+    :enable (value-promoted-arithmeticp
+             value-arithmeticp
+             value-realp
+             value-integerp
+             value-unsigned-integerp
+             value-signed-integerp
+             type-promoted-arithmeticp
+             type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp))
+
+  (defrule type-nonchar-integerp-of-type-of-value
+    (equal (type-nonchar-integerp (type-of-value val))
+           (value-integerp val))
+    :enable (value-integerp
+             value-signed-integerp
+             value-unsigned-integerp
+             type-nonchar-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -489,9 +636,8 @@
 (defsection init-value-result-theorems
   :extension init-value-result
 
-  (defrule not-errorp-when-init-valuep
+  (defruled not-errorp-when-init-valuep
     (implies (init-valuep x)
              (not (errorp x)))
-    :rule-classes :tau-system
     :enable (init-valuep
              errorp)))

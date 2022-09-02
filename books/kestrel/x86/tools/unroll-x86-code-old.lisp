@@ -72,20 +72,27 @@
        ;; assumptions (these get simplified and so don't have to be in normal form):
        (assumptions (if (eq :mach-o-64 executable-type)
                         (cons `(standard-assumptions-mach-o-64 ',subroutine-name
-                                                             ',parsed-executable
-                                                             ',stack-slots-needed
-                                                             text-offset
-                                                             x86)
+                                                               ',parsed-executable
+                                                               ',stack-slots-needed
+                                                               text-offset
+                                                               x86)
                               assumptions)
                       ;; TODO: Support :pe-32
                       (if (eq :pe-64 executable-type)
                           (cons `(standard-assumptions-pe-64 ',subroutine-name
-                                                           ',parsed-executable
-                                                           ',stack-slots-needed
-                                                           text-offset
-                                                           x86)
+                                                             ',parsed-executable
+                                                             ',stack-slots-needed
+                                                             text-offset
+                                                             x86)
                                 assumptions)
-                        assumptions)))
+                        (if (eq :elf-64 executable-type)
+                            (cons `(standard-assumptions-elf-64 ',subroutine-name
+                                                                ',parsed-executable
+                                                                ',stack-slots-needed
+                                                                text-offset
+                                                                x86)
+                                  assumptions)
+                          assumptions))))
        (- (cw "Assumptions: ~x0.~%" assumptions))
        ;; Force the expander not to give up prematurely:
        ((mv & & state)

@@ -35,6 +35,7 @@
 (include-book "../dag-size")
 (include-book "../dag-info")
 (include-book "../prune")
+(include-book "../prune-dag")
 (include-book "../print-levels")
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -61,7 +62,9 @@
   (member-eq type '(:pe-32
                     :pe-64
                     :mach-o-32
-                    :mach-o-64)))
+                    :mach-o-64
+                    :elf-32
+                    :elf-64)))
 
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
 (deftheory 32-bit-reg-rules
@@ -130,12 +133,17 @@
          ((when (quotep dag-or-quote))
           (mv (erp-nil) dag-or-quote state))
          (dag dag-or-quote)
-         ;; Prune the DAG:
+         ;; Prune the DAG (TODO: think about these steps):
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-with-contexts dag state))
+         ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep)
          ((mv erp dag state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
                                            dag
-                                           ;; the assumptions used during lifting seem unlikely to be helpful when pruning, and user assumptions
-                                           ;; seem like they should be used during lifting (TODO: What about assumptions only usable by STP?)
+                                           ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
+                                           ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
+                                           ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
                                            nil ; assumptions
                                            rules
                                            nil ; interpreted-fns
@@ -172,6 +180,7 @@
                                     state))
                            (- (cw "~X01" dag nil))
                            (state (set-print-base-radix 10 state))
+                           (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
                            (- (cw ")~%")))
                         state))))
               (repeatedly-run (- steps-left steps-for-this-iteration)
@@ -253,19 +262,26 @@
                                                                text-offset
                                                                x86)
                                   assumptions)
-                          (if (eq :mach-o-32 executable-type)
-                              (append (gen-standard-assumptions-mach-o-32 target
+                          (if (eq :elf-64 executable-type)
+                              (cons `(standard-assumptions-elf-64 ',target
+                                                                  ',parsed-executable
+                                                                  ',stack-slots
+                                                                  text-offset
+                                                                  x86)
+                                    assumptions)
+                            (if (eq :mach-o-32 executable-type)
+                                (append (gen-standard-assumptions-mach-o-32 target
+                                                                            parsed-executable
+                                                                            stack-slots)
+                                        assumptions)
+                              (if (eq :pe-32 executable-type)
+                                  ;; todo: try without expanding this:
+                                  (append (gen-standard-assumptions-pe-32 target
                                                                           parsed-executable
                                                                           stack-slots)
-                                      assumptions)
-                            (if (eq :pe-32 executable-type)
-                                ;; todo: try without expanding this:
-                                (append (gen-standard-assumptions-pe-32 target
-                                                                        parsed-executable
-                                                                        stack-slots)
-                                        assumptions)
-                              (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                      assumptions)))))))
+                                          assumptions)
+                                (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
+                                        assumptions))))))))
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
        (- (and print (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
@@ -282,6 +298,9 @@
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (rules (set-difference-eq rules remove-rules))
+       (rules-to-monitor (if (eq :debug monitor)
+                             (debug-rules32)
+                           monitor))
        ;; Next, we simplify the assumptions.  This allows us to state the
        ;; theorem about a lifted routine concisely, using an assumption
        ;; function that opens to a large conjunction before lifting is
@@ -297,7 +316,7 @@
         (acl2::simplify-terms-repeatedly ;; simplify-terms-using-each-other
          assumptions
          rule-alist
-         nil ; monitored-rules
+         rules-to-monitor
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
@@ -310,9 +329,7 @@
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
-       (rules-to-monitor (if (eq :debug monitor)
-                             (debug-rules32)
-                           monitor))
+
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))

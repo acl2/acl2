@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "world")
+(include-book "world") ; for fn-body, todo: reduce
+(include-book "kestrel/world-light/defined-functionp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
@@ -56,7 +57,7 @@
                                       undefined-fns-acc
                                       (cons fn stopper-fns-acc) ; not already present since not in donelist
                                       wrld)
-            (if (not (fn-definedp fn wrld))
+            (if (not (defined-functionp fn wrld))
                 (fns-supporting-fns-aux (+ -1 count)
                                         (rest worklist)
                                         (cons fn donelist)
