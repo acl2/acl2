@@ -352,18 +352,35 @@
                                      svex-compose
                                      svexlist-compose)))))
 
+(defprod phase-fsm-params
+  ((scc-selfcompose-limit maybe-natp
+                          "Limit on the number of times to self-compose a set
+of signals that form a strongly connnected component in the dependency graph,
+i.e. they all depend on each other.  By default this is NIL, which means that
+we will compose together such an SCC N times where N is the size of the SCC --
+this is the theoretical limit on how many iterations are needed to come to a
+fixed point (assuming the expressions are X-monotonic).  But since this
+behavior can cause a blowup in the size of the expressions, setting the limit
+to a small number is usually practical if there is such a problem.")
+   (rewrite booleanp "Apply some rewriting during the composition process -- default T."
+            :default t)))
+
 (define svtv-compose-assigns/delays ((flatnorm flatnorm-res-p)
-                                     (config phase-fsm-config-p))
+                                     (config phase-fsm-config-p)
+                                     (params phase-fsm-params-p))
   :returns (fsm base-fsm-p)
   (b* (((flatnorm-res flatnorm))
        ((phase-fsm-config config))
+       ((phase-fsm-params params))
        (override-alist (svarlist-to-override-alist
                         (svtv-assigns-override-vars flatnorm.assigns config.override-config)))
        (overridden-assigns (with-fast-alist override-alist
                              (svex-alist-compose flatnorm.assigns override-alist)))
        (updates1 (make-fast-alist
                   (with-fast-alist overridden-assigns
-                    (svex-assigns-compose overridden-assigns :rewrite t))))
+                    (svex-assigns-compose overridden-assigns
+                                          :rewrite params.rewrite
+                                          :scc-selfcompose-limit params.scc-selfcompose-limit))))
        (updates2 (fast-alist-fork updates1 (make-fast-alist (svex-alist-compose override-alist updates1))))
        (masks (svexlist-mask-alist (svex-alist-vals flatnorm.assigns)))
        (nextstates (svex-compose-delays (fast-alist-clean flatnorm.delays) updates2 masks)))
@@ -437,6 +454,7 @@
                             ((aliases "overwritten") 'aliases)
                             (override-all 't)
                             ((overrides string-listp) 'nil)
+                            ((selfcompose-limit maybe-natp) 'nil)
                             (rewrite 't))
   :prepwork ((local (include-book "std/alists/fast-alist-clean" :dir :system))
              (local (defthm svex-alist-p-of-fast-alist-fork
@@ -487,7 +505,8 @@
                              (svex-alist-compose assigns override-alist)))
        (updates1 (make-fast-alist
                   (with-fast-alist overridden-assigns
-                    (svex-assigns-compose overridden-assigns :rewrite rewrite))))
+                    (svex-assigns-compose overridden-assigns :rewrite rewrite
+                                          :scc-selfcompose-limit selfcompose-limit))))
        (updates2 (svex-alist-compose override-alist updates1))
        (masks (svexlist-mask-alist (svex-alist-vals updates2)))
        (nextstates (with-fast-alist updates2 (svex-compose-delays delays updates2 masks))))

@@ -358,7 +358,7 @@
 ; arguments!)
 
 ; Because of all the Special Conjectures (see the Essay on Loop$) we have to be
-; careful not to evaluate ground calls of the the special function symbols
+; careful not to evaluate ground calls of the special function symbols
 ; listed below during guard clause generation.  If any of these functions were
 ; to be evaluated we would fail to recognize the need for some special
 ; conjectures.  For example, (collect$ (lambda$ ...)  (tails '...))  is a
@@ -8384,7 +8384,7 @@
 ; X is a well-formed LAMBDA object.  It may be tagged as having come from a
 ; lambda$ but we cannot trust that tagging since the user could have
 ; counterfeited such an object with `(lambda (x) (return-last 'progn '(lambda$
-; (x) zzz) x)).  We ignore the the tagging -- indeed, we strip it out, and
+; (x) zzz) x)).  We ignore the tagging -- indeed, we strip it out, and
 ; untranslate the rest!
 
   (let* ((formals (lambda-object-formals x))
@@ -12555,7 +12555,7 @@
 
 ; But we don't see a purist solution to (c) because, for example, the guard on
 ; (from-to-by i j k) can't express the idea that the arguments satisfy the
-; type-spec of the the LAMBDA because (from-to-by i j k) doesn't contain the
+; type-spec of the LAMBDA because (from-to-by i j k) doesn't contain the
 ; LAMBDA.  And collect$ can't do it because by the time collect$ executes the
 ; (from-to-by i j k) will have turned into a list of integers indistiguishable
 ; from an IN iteration.
@@ -18864,7 +18864,7 @@
 ; Accumulate into acc a path from some function in fns down the call tree to a
 ; function that contains a with-global-stobj call binding st, where if upd is
 ; true then this is an updataing with-global-stobj call.  If we hit a loop,
-; which should only happen with redefinition, then we push :loop onto the the
+; which should only happen with redefinition, then we push :loop onto the
 ; path accumulated before hitting the loop.  If we fail to complete the path,
 ; we push :fail onto the accumulated path to indicate that this shouldn't
 ; happen.
@@ -19399,7 +19399,7 @@
 
 ; This error is referenced in the Algorithm Description found in a comment in
 ; cmp-do-body.  It is more draconian than necessary, in that we could allow
-; such binding when there are no imperative constructs the the translation of
+; such binding when there are no imperative constructs in the translation of
 ; x.  But this is a simple rule to implement and explain, and the extra
 ; restriction doesn't seem harsh.
 
@@ -20020,7 +20020,7 @@
 
 ; Just below, we allow a stobj recognizer to be applied to an ordinary object,
 ; even when translating for execution (function bodies or top-level loop).
-; This is an exception to the the usual rule, which requires stobj functions to
+; This is an exception to the usual rule, which requires stobj functions to
 ; respect their stobjs-in arguments when translating for execution.  We take
 ; advantage of this exception in our support for stobj fields of stobjs.  For
 ; example, consider the following two events.
@@ -20432,7 +20432,7 @@
                      (cadr (assoc-keyword :SPLIT-TYPES (cdr xargs)))))
                 (guard1-tail (assoc-keyword :guard (cdr xargs)))
 
-; Guard1 is the the actual, untranslated expression the user supplied with
+; Guard1 is the actual, untranslated expression the user supplied with
 ; XARGS :GUARD.
 
                 (guard1 ; only valid if guard1-tail is non-nil

@@ -41,9 +41,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ term-checkers
+(defxdoc+ term-checkers-common
   :parents (atc-event-and-code-generation defobject-implementation)
-  :short "Checkers of ACL2 terms that represent C constructs."
+  :short "Checkers of ACL2 terms that represent C constructs,
+          common to ATC and @(tsee defobject)."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -70,17 +70,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Return structures unchanged.
+; Return structures unchanged, by value and by pointer.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |return1| (|s|)
+  (declare (xargs :guard (struct-|point2D|-p |s|)))
+  |s|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return2| (|s|)
   (declare (xargs :guard (c::pointer (struct-|point2D|-p |s|))))
   |s|)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |return2| (|s| |t|)
+(defun |return3| (|s| |t|)
+  (declare (xargs :guard (and (struct-|point2D|-p |s|)
+                              (struct-|point3D|-p |t|))))
+  (declare (ignore |t|))
+  |s|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return4| (|s| |t|)
+  (declare (xargs :guard (and (struct-|point2D|-p |s|)
+                              (struct-|point3D|-p |t|))))
+  (declare (ignore |s|))
+  |t|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return5| (|s| |t|)
   (declare (xargs :guard (and (c::pointer (struct-|point2D|-p |s|))
                               (c::pointer (struct-|point3D|-p |t|)))))
   (declare (ignore |t|))
@@ -88,10 +110,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |return3| (|s| |t|)
+(defun |return6| (|s| |t|)
+  (declare (xargs :guard (and (c::pointer (struct-|point2D|-p |s|))
+                              (c::pointer (struct-|point3D|-p |t|)))))
+  (declare (ignore |s|))
+  |t|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return7| (|s| |t|)
   (declare (xargs :guard (and (c::pointer (struct-|point2D|-p |s|))
                               (c::pointer (struct-|point3D|-p |t|)))))
   (mv |t| |s|))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return8| (|s| |t|)
+  (declare (xargs :guard (and (struct-|point2D|-p |s|)
+                              (c::pointer (struct-|point3D|-p |t|)))))
+  (declare (ignore |t|))
+  |s|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return9| (|s| |t|)
+  (declare (xargs :guard (and (struct-|point2D|-p |s|)
+                              (c::pointer (struct-|point3D|-p |t|)))))
+  (declare (ignore |s|))
+  |t|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return10| (|s| |t|)
+  (declare (xargs :guard (and (struct-|point2D|-p |s|)
+                              (c::pointer (struct-|point3D|-p |t|)))))
+  (mv |s| |t|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,6 +200,13 @@
         |return1|
         |return2|
         |return3|
+        |return4|
+        |return5|
+        |return6|
+        |return7|
+        |return8|
+        |return9|
+        |return10|
         |write_x_to_point2D|
         |write_y_to_point2D|
         |write_scalar|

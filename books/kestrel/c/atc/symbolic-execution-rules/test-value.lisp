@@ -14,6 +14,7 @@
 (include-book "../execution")
 
 (include-book "syntaxp")
+(include-book "value-integer-get")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,30 +31,21 @@
      while the @('boolean-from-<type>') terms occur
      in the ACL2 functions that represent the C code."))
 
-  (local (in-theory (enable test-value
-                            test-scalar-value
-                            test-integer-value
-                            value-integer->get
-                            value-schar->get-to-schar->get
-                            value-uchar->get-to-uchar->get
-                            value-sshort->get-to-sshort->get
-                            value-ushort->get-to-ushort->get
-                            value-sint->get-to-sint->get
-                            value-uint->get-to-uint->get
-                            value-slong->get-to-slong->get
-                            value-ulong->get-to-ulong->get
-                            value-sllong->get-to-sllong->get
-                            value-ullong->get-to-ullong->get
-                            boolean-from-schar
-                            boolean-from-uchar
-                            boolean-from-sshort
-                            boolean-from-ushort
-                            boolean-from-sint
-                            boolean-from-uint
-                            boolean-from-slong
-                            boolean-from-ulong
-                            boolean-from-sllong
-                            boolean-from-ullong)))
+  (make-event
+   `(local (in-theory (enable test-value
+                              test-scalar-value
+                              test-integer-value
+                              ,@*atc-value-integer->get-rules*
+                              boolean-from-schar
+                              boolean-from-uchar
+                              boolean-from-sshort
+                              boolean-from-ushort
+                              boolean-from-sint
+                              boolean-from-uint
+                              boolean-from-slong
+                              boolean-from-ulong
+                              boolean-from-sllong
+                              boolean-from-ullong))))
 
   (make-event
    `(defruled test-value-when-scharp

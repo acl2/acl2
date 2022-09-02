@@ -22,16 +22,21 @@
 (defun make-sysfile (filename system-books-dir)
 
 ; This is based on ACL2 source function filename-to-sysfile, but takes the
-; value of (f-get-global 'system-books-dir state) instead of taking state.  If
+; value of (system-books-dir state) instead of taking state.  If
 ; filename is under the given directory, then we return a sysfile (:system
 ; . path), where path is a relative pathname that is relative to that
 ; directory.  Otherwise, we return filename unchanged.
+
+; Note added 8/31/2022: We Could probably use the entire project-dir-alist
+; here.  But for now I'll make backward-compatible changes.
 
   (declare (xargs :mode :logic
                   :guard (and (stringp filename)
                               (stringp system-books-dir)
                               (<= (length system-books-dir) (fixnum-bound)))))
-  (relativize-book-path filename system-books-dir :make-cons))
+  (relativize-book-path filename
+                        (list (cons :system system-books-dir))
+                        :make-cons))
 
 (defun td-book-alist (rev-wrld path system-books-dir acc)
 
@@ -39,7 +44,7 @@
 ; chronological order.  Path is nil at the top level, and otherwise is the
 ; value of world global 'include-book-path at the current point of our
 ; traversal.  System-books-dir is a directory, intended to be a value of
-; (f-get-global 'system-books-dir state).  We accumulate into acc an alist that
+; (system-books-dir state).  We accumulate into acc an alist that
 ; associates each function symbol with the book in which it was introduced.
 ; Finally we return the accumulated alist as a fast-alist.
 
@@ -623,7 +628,7 @@
 
 (defmacro td-init (&key fns-limit clause-size-limit)
   `(time$ (td-init-fn (w state)
-                      (f-get-global 'system-books-dir state)
+                      (system-books-dir state)
                       td ,fns-limit ,clause-size-limit)))
 
 (defun write-td-cands (n td wrld acc)
@@ -656,13 +661,12 @@
 (defun write-td-fn-include-books-extra (chan state)
 
 ; After (include-book "top" :dir :system), in raw Lisp, we find the
-; packages that are present but whose book is "top" (here, <ACL2>
-; denotes the path to the top-level ACL2 directory):
+; packages that are present but whose book is "top":
 
 ;   (value :q)
 ;   (let ((doc-top-book
 ;          (concatenate 'string
-;                       (f-get-global 'system-books-dir *the-live-state*)
+;                       (system-books-dir *the-live-state*)
 ;                       "top.lisp")))
 ;     (loop for x in (known-package-alist *the-live-state*)
 ;           when (equal (car (package-entry-book-path x))
@@ -710,7 +714,7 @@
   (declare (xargs :stobjs state))
   (remove-duplicates-equal
    (pkg-books-1 (known-package-alist state)
-                (f-get-global 'system-books-dir state))))
+                (system-books-dir state))))
 
 (defun map-include-book (sysfile-lst acc)
   (cond ((endp sysfile-lst) (reverse acc)) ; reverse is optional
@@ -768,8 +772,8 @@
                         chan state)
                 (fms!-lst (pkg-include-books state) chan state)
                 (fms "~%; Next we deal with packages whose associated book ~
-                      in~%;~ ~ ~ ~x0~%; is community book \"top\", ~
-                      which is too large to include efficiently.~%"
+                      in~%;~ ~ ~ ~x0~%; is community book \"top\", which ~
+                      is too large to include efficiently.~%"
                      (list (cons #\0 '(known-package-alist state)))
                      chan state nil)
                 (write-td-fn-include-books-extra chan state)

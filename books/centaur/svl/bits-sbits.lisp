@@ -1688,6 +1688,8 @@
                               sv::4vec->upper)
                              (convert-4vec-concat-to-4vec-concat$)))))
 
+  (add-svex-simplify-rule natp-4vec-concat$)
+
   (def-rp-rule bitp-4vec-concat$
     (implies (and (integerp x))
              (bitp (4vec-concat$ 1 x 0)))
@@ -1698,7 +1700,8 @@
                               sv::4vec->lower
                               4vec-part-select
                               sv::4vec->upper)
-                             (convert-4vec-concat-to-4vec-concat$))))))
+                             (convert-4vec-concat-to-4vec-concat$)))))
+  (add-svex-simplify-rule bitp-4vec-concat$))
 
 (encapsulate
   nil
@@ -2287,6 +2290,20 @@
                            (4vec-part-select-of-4vec-bit?!)))))
 
 (add-svex-simplify-rule bits-of-4vec-bit?!)
+
+(def-rp-rule bits-of-4vec-bit?
+  (implies (and (natp start)
+                (natp size))
+           (equal (bits (sv::4vec-bit? test then else) start size)
+                  (sv::4vec-bit? (bits test start size)
+                                  (bits then start size)
+                                  (bits else start size))))
+  :hints (("Goal"
+           :use ((:instance 4vec-part-select-of-4vec-bit?))
+           :in-theory (e/d (bits)
+                           (4vec-part-select-of-4vec-bit?)))))
+
+(add-svex-simplify-rule bits-of-4vec-bit?)
 
 (progn
   (def-rp-rule 4vec-concat$-same-var-merge

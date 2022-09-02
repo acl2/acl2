@@ -38,7 +38,7 @@
 
 (in-package "RP")
 (include-book "tools/flag" :dir :system)
-;(include-book "proof-functions")
+
 
 (local (include-book "centaur/meta/def-formula-checks" :dir :system)) ; this could perhaps be reduced
 

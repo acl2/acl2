@@ -1626,8 +1626,7 @@
                        (cons #\l (f-get-global 'ld-level state))
                        (cons #\c (f-get-global 'connected-book-directory
                                                state))
-                       (cons #\b (f-get-global 'system-books-dir
-                                               state)))
+                       (cons #\b (project-dir-alist state)))
                  (standard-co state)
                  state
                  (ld-evisc-tuple state))))))
@@ -5154,3 +5153,79 @@
 
 (defmacro without-evisc (form)
   `(without-evisc-fn ',form state))
+
+; We now introduce some definitions in support of establish-project-dir-alist.
+; Establish-project-dir-alist is called in LP, but the following can be
+; defined in ACL2 (not just raw Lisp).  Unfortunately unix-full-pathname is
+; defined only in raw Lisp at this point, so some of the functions supporting
+; establish-project-dir-alist cannot be defined here naturally.
+
+(defun keyword-value-string-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l) (null l))
+        (t (and (keywordp (car l))
+                (consp (cdr l))
+                (stringp (cadr l))
+                (keyword-value-string-listp (cddr l))))))
+
+(defun project-dir-string-p (s pos bound)
+  (declare (type (unsigned-byte 29) bound)
+           (xargs :measure (nfix (- bound pos))
+                  :guard (and (stringp s)
+                              (natp pos)
+                              (natp bound)
+                              (<= pos bound)
+                              (<= bound (length s)))))
+  (let ((pos (scan-past-whitespace s pos bound)))
+    (cond ((mbe :logic (or (not (natp pos))
+                           (>= pos bound))
+                :exec (= pos bound))
+           t)
+          ((eql (char s pos) #\;)
+           (let ((p0 (search *newline-string* s :start2 (1+ pos) :end2 bound)))
+             (or (null p0)
+                 (project-dir-string-p s p0 bound))))
+          (t (let* ((p0 (search *newline-string* s :start2 pos :end2 bound))
+                    (p (or p0 bound))
+                    (k (search ":" s :start2 pos :end2 p))
+                    (q (search "\"" s :start2 pos :end2 p))
+                    (q2 ; double-quote ending the filename
+                     (and q
+                          (search "\"" s :start2 (1+ q) :end2 p))))
+               (and k q2 (< k q)
+                    (= p (scan-past-whitespace s (1+ q2) p))
+                    (not (search ":" s :start2 (1+ q2) :end2 p))
+                    (not (search "\"" s :start2 (1+ q2) :end2 p))
+                    (project-dir-string-p s p bound)))))))
+
+(defun project-dir-file-p (filename state)
+
+; This function performs only a basic sanity check that the given file has
+; lines consisting of a keyword and a string.
+
+  (declare (xargs :stobjs state
+                  :guard (stringp filename)))
+  (let* ((s (read-file-into-string filename))
+         (len (length s)))
+      (and (stringp s)
+           (unsigned-byte-p 29 len)
+           (project-dir-string-p s 0 len))))
+
+(defun merge-len>=-cdr (l1 l2)
+  (declare (xargs :guard (and (alistp l1)
+                              (alistp l2))
+                  :measure (+ (len l1) (len l2))))
+  (cond ((endp l1) l2)
+        ((endp l2) l1)
+        ((<= (len (cdar l1)) (len (cdar l2)))
+         (cons (car l1) (merge-len>=-cdr (cdr l1) l2)))
+        (t (cons (car l2) (merge-len>=-cdr l1 (cdr l2))))))
+
+(defun merge-sort-len>=-cdr (l)
+  (declare (xargs :guard (alistp l)
+                  :measure (len l)
+                  :verify-guards nil))
+  (cond ((endp (cdr l)) l)
+        (t (merge-len>=-cdr (merge-sort-len>=-cdr (evens l))
+                            (merge-sort-len>=-cdr (odds l))))))
+

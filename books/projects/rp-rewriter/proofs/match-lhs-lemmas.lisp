@@ -1725,7 +1725,9 @@
      (implies (and (consp x)
                    (not (equal (car x) 'quote))
                    (not (equal (car x) 'list))
-                   (not (is-falist x)))
+                   (not (and (equal (car x) 'falist)
+                             (consp (cdr x))
+                             (consp (cddr x)))))
               (equal (rp-trans x)
                      (CONS (CAR x)
                            (RP-TRANS-LST (CDR x)))))
@@ -1908,7 +1910,9 @@
              :in-theory (e/d (rp-evlt-of-ex-from-falist
                               ;;rp-evlt-of-ex-from-rp-ex-from-falist-reverse
                               )
-                             (RP-TRANS-LST-OF-RP-APPLY-BINDINGS-SUBTERMS
+                             (rp-evlt-of-apply-bindings-to-evl
+                              rp-evlt-lst-of-apply-bindings-to-evl-lst
+                              RP-TRANS-LST-OF-RP-APPLY-BINDINGS-SUBTERMS
                               ;;rp-evl-of-ex-from-falist
                               rp-evlt-of-ex-from-rp))))))
 

@@ -25,7 +25,7 @@
 
 ; See the Essay on the APPLY$ Integration in apply-prim.lisp for an overview.
 
-; This file builds on top of apply-prim.lisp and introduces the the four apply$
+; This file builds on top of apply-prim.lisp and introduces the four apply$
 ; stubs: BADGE-USERFN, APPLY$-USERFN, UNTAME-APPLY$ and UNTAME-EV$ and
 ; initializes the table in which we record the badges of user-defined
 ; functions.

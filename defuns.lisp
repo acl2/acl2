@@ -4468,7 +4468,7 @@
    (subversive-p
 
 ; We avoid storing a runic type-prescription rule for any subversive function,
-; because our fixed-point algorithm assumes the the definition provably
+; because our fixed-point algorithm assumes that the definition provably
 ; terminates, which may not be the case for subversive functions.
 
 ; Below is a series of two examples.  The first is the simpler of the two, and

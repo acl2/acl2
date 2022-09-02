@@ -40,7 +40,7 @@
   (declare (xargs :stobjs state
                   :guard (and (stringp script-name)
                               (string-listp script-args))))
-  (let ((system-books-dir (f-get-global 'system-books-dir state))) ; should end with /
+  (let ((system-books-dir (system-books-dir state))) ; should end with /
     (if (not (stringp system-books-dir))
         (prog2$
          (er hard? 'call-script "Could not get system-books-dir when calling ~s0." script-name)

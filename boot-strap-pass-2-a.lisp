@@ -193,6 +193,11 @@
 
 (verify-termination-boot-strap bounded-integer-listp) ; and guards
 
+(verify-termination-boot-strap project-dir-alist) ; and guards
+(verify-termination-boot-strap project-dir-lookup) ; and guards
+(verify-termination-boot-strap project-dir) ; and guards
+(verify-termination-boot-strap system-books-dir) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

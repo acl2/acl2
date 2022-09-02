@@ -39,8 +39,8 @@
 
 (in-package "RP")
 (include-book "../extract-formula")
-
 (include-book "proof-functions")
+
 (local (include-book "proof-function-lemmas"))
 (local (include-book "aux-function-lemmas"))
 (local (include-book "rp-equal-lemmas"))
@@ -831,16 +831,7 @@
      :hints (("Goal"
               :in-theory (e/d (is-rp) ())))))
 
-  (local
-   (defthm is-rp-of-rp
-     (NOT (IS-RP (LIST 'RP
-                       (LIST 'RP
-                             x
-                             y)
-                       z)))
-     :hints (("Goal"
-              :in-theory (e/d (is-rp) ())))))
-
+ 
   (local
    (defthm lemma17
      (implies (and (eval-and-all-nt (context-from-rp term nil) a)

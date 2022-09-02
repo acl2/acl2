@@ -16,6 +16,7 @@
 
 (include-book "syntaxp")
 (include-book "arrays")
+(include-book "value-integer-get")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -46,8 +47,6 @@
           (pack atype-array-read '-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
-         (value-itype->get-to-itype->get
-          (pack 'value- ifixtype '->get-to- ifixtype '->get))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -68,8 +67,7 @@
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub
-                            value-integer->get
-                            ,value-itype->get-to-itype->get
+                            ,@*atc-value-integer->get-rules*
                             ,atype-array-itype-index-okp
                             ,atype-array-read-itype
                             ,atype-array-read-alt-def

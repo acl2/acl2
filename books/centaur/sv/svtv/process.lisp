@@ -592,7 +592,8 @@
                       (pre-simplify)
                       (initial-state-vars)
                       (keep-final-state)
-                      (keep-all-states))
+                      (keep-all-states)
+                      form)
   :parents (defsvtv)
   :short "Main subroutine of @(see defsvtv), which extracts output formulas from
           the provided design."
@@ -735,7 +736,8 @@
                    :orig-internals orig-internals
                    :expanded-ins       ins
                    :expanded-overrides overrides
-                   :nphases        nphases)
+                   :nphases        nphases
+                   :form           form)
         moddb aliases)))
 
 
@@ -1308,7 +1310,7 @@ defined with @(see sv::defsvtv).</p>"
                     keep-all-states
                     define-macros
                     define-mod
-                    parents short long)
+                    parents short long form)
   :guard (modalist-addr-p (design->modalist design))
   :irrelevant-formals-ok t
   :hooks nil
@@ -1316,12 +1318,13 @@ defined with @(see sv::defsvtv).</p>"
   (b* ((svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify
                (or state-machine initial-state-vars)
                (or state-machine keep-final-state)
-               keep-all-states))
+               keep-all-states form))
        ((unless svtv)
         (raise "failed to generate svtv")))
     (defsvtv-events svtv design-const labels define-macros define-mod parents short long)))
 
-(defmacro defsvtv (name &key design mod
+(defmacro defsvtv (&whole form
+                          name &key design mod
                         labels
                         inputs
                         overrides
@@ -1344,12 +1347,16 @@ defined with @(see sv::defsvtv).</p>"
                    ,(or design mod) ',(or design mod) ,labels ,simplify
                    ,pre-simplify
                    ,state-machine ,initial-state-vars ,keep-final-state ,keep-all-states
-                   ,define-macros ,define-mod ',parents ,short ,long))))
+                   ,define-macros ,define-mod ',parents ,short ,long ',form))))
 
 (defxdoc svtv-stimulus-format
   :parents (defsvtv)
-  :short "Syntax for inputs/outputs/overrides/internals entries of @(see defsvtv) forms"
+  :short "(Deprecated) Syntax for inputs/outputs/overrides/internals entries of @(see defsvtv) forms"
   :long "
+
+<p>This stimulus format can still be used in @(see defsvtv$) and
+the (deprecated) @('defsvtv'), but the @(':phases') format is recommended
+instead.</p>
 
 <p>An SVTV is a timing diagram-like format similar to @(see acl2::esim) @(see
 acl2::symbolic-test-vectors).  Each of the fields @(':inputs'), @(':outputs'),
@@ -1440,8 +1447,10 @@ phase.</li>
 
 (defxdoc defsvtv
   :parents (svex-stvs)
-  :short "Create an SVTV structure for some simulation pattern of a hardware design."
+  :short "(Deprecated) Create an SVTV structure for some simulation pattern of a hardware design."
   :long "
+
+<p>This is deprecated in favor of @(see defsvtv$).</p>
 
 <p>See the @(see sv-tutorial) and the parent topic @(see svex-stvs) for
 higher-level discussion; here, we provide a reference for the arguments.</p>
@@ -1941,7 +1950,9 @@ irrelevant inputs are removed.</p>"
 
 
 
-
+(defxdoc svtv
+  :parents (svex-stvs)
+  :short "A shorter name for @(see svex-stvs), i.e. SVEX Symbolic Test Vectors.")
 
 (defxdoc svex-stvs
   :parents (sv)
@@ -1971,28 +1982,29 @@ The result of defining a symbolic test vector is an expression (@(see svex))
 for each output in terms of the input variables.</p>
 
 <h3>Defining an SVTV</h3>
-<p>There are two utilities for defining svex-based S(V)TVs: the original @(see
-defsvtv), and the newer @(see defsvtv$), which uses the @(see svtv-data) stobj
-framework to keep track of logical relationships between the results of
-different steps in the process and support better debugging tools.  These
-utilities both begin with SV modules as produced by the @(see vl-to-svex)
-tools, go through the steps described in @(see svex-compilation) to produce a
-finite state machine representation of the design, and then compose the FSM
-phases together to create the output expressions in terms of the input
-variables according to the I/O specification.  Both use a similar timing
-diagram syntax for describing the I/O specification, and both support a variant
-@(see defsvtv-phasewise), @(see defsvtv$-phasewise) that tend to make it easier
-to edit these I/O specifications.</p>
+
+<p>The recommended utility for defining svex-based S(V)TVs is @(see defsvtv$).
+Previous versions these, @('defsvtv') and @('defsvtv-phasewise') are deprecated
+since @('defsvtv$') supports better debugging tools, has a more coherent
+logical story, and support better methods for decomposition.  This takes an SV
+hierarchical design as produced by the @(see vl-to-svex) tools, goes through
+the steps described in @(see svex-compilation) to produce a finite state
+machine representation of the design, and then composes the FSM phases together
+to create the output expressions in terms of the input variables according to
+the I/O specification.</p>
 
 <h3>Testing, Proof, and Debugging</h3>
+
 <p>Once an SVTV is defined, the function @(see svtv-run) can be used to run
 tests on it, and is also the usual target for proofs about it.  There are also
-some useful debugging utilities, @(see svtv-debug) for dumping waveforms and
-@(see svtv-chase) for chasing down the root causes of signal values.  See @(see
-svtv-data) for versions of these utilities that can shorten the debug loop when
-using SVTVs defined with @(see defsvtv$).</p>
+some useful debugging utilities: @(see svtv-debug$) for dumping waveforms and
+@(see svtv-chase$) for chasing down the root causes of signal values.</p>
 
-
+<p>When working on defining an SVTV, sometimes one goes through many iterations
+before all the signal settings are right.  A few utilities support debugging
+concrete runs of SVTVs without first performing all the computation necessary
+to define them.  See @(see svtv-debug-defsvtv$), @(see
+svtv-chase-defsvtv$), and @(see svtv-run-defsvtv$).</p>
 
 <h3>Symbolic Simulation</h3>
 
@@ -2011,44 +2023,11 @@ helps symbolic execution speed, but can cause an error like:</p>
 
 <h3>Decomposition Proofs</h3>
 
-<p>The book \"svex/decomp.lisp\" contains a proof strategy for proving that the
-composition of two or more STV runs is equivalent to some other STV run.  It
-provides a computed hint that provides a good theory for rewriting such rules,
-then a meta rule that can reverse the decomposition, and an invocation of GL to
-finish off any mismatches due to svex simplification.  Here is an example
-showing that the composition of STVs @('stv-a') and @('stv-b') is equivalent to
-@('stv-c'):</p>
+<p>See @(see svtv-decomposition) and in particular @(see
+def-svtv-generalized-thm) for the recommended method for doing proofs by
+decomposition on SVTVs.</p>
 
-@({
- (defthm a-and-b-compose-to-c
-  (implies (stv-c-autohyps)
-           (b* ((c-out (stv-run (stv-c) (stv-c-autoins)))
-                (a-ins (stv-a-autoins))
-                (a-out (stv-run (stv-a) a-ins))
-                ;; may be various ways of making the input to the 2nd phase
-                (b-ins (stv-b-alist-autoins (append a-ins a-out)))
-                (b-out (stv-run (stv-b) b-ins)))
-             (and
-               ;; may be various forms for the final equivalence
-               (equal (extract-keys *my-keys* b-out)
-                      (extract-keys *my-keys* c-out))
-               (equal (cdr (assoc 'out b-out))
-                      (cdr (assoc 'out c-out)))
-               (equal b-out c-out))))
-  :hints ((sv::svdecomp-hints :hyp (stv-c-autohyps)
-                                :g-bindings (stv-c-autobinds)
-                                :enable (extract-keys-of-cons))))
- })
-
-<p>The @(':hyp') and @(':g-bindings') arguments to svdecomp-hints are for the
-GL phase.  Usually some autohyps and autobindings from your STV are
-appropriate. @(':enable') allows you to add rules to use in the initial
-rewriting phase before the meta rule is used.  This can help on occasion when
-you want to use some particular function to (e.g.) construct the alist for some
-subsequent step or to extract values to compare.</p>
-
-<p>More information about the decomposition strategy is in @(see svex-decomp),
-or will be someday.</p>")
+")
 
 (defxdoc svtv-versus-stv
   :parents (svex-stvs)

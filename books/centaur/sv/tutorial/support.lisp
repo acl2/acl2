@@ -62,11 +62,12 @@ the sources.</p>
 
 ;; NOTE: This macro saves and runs the form, but doesn't produce any event.
 (defmacro def-saved-nonevent (name form &key (return '?res) writep)
+  (declare (ignorable return))
   `(make-event
     (b* ((form ',form)
          (?res :ok)
          ,@(and writep '((state (f-put-global 'acl2::writes-okp t state))))
-         (,return ,form))
+         ((er ?ans) (trans-eval-default-warning ',form '(def-saved-nonevent ,name) state t)))
       (value `(table saved-forms-table ',',name ',form)))))
 
 ;; NOTE: This macro just keeps track of the ordering of subtopics.  Otherwise

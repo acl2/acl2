@@ -46,6 +46,12 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 
+(defthm <-1+-cancel
+   (implies (and (acl2-numberp x)
+                 (acl2-numberp y))
+            (equal (< (+ 1 x) (+ 1 y))
+                   (< x y))))
+
 (defthm ifix-opener
   (implies (integerp x)
            (equal (ifix x)
@@ -906,3 +912,61 @@
   :hints (("Goal"
            :in-theory (e/d (-- sum)
                            (+-is-SUM)))))
+
+
+(defthm bit-of-p-of-quoted
+  (implies (and (syntaxp (quotep x)))
+           (equal (bit-of-p (cons x y))
+                  (and (equal x 'bit-of)
+                       (consp y)
+                       (consp (cdr y))
+                       (not (cddr y)))))
+  :hints (("Goal"
+           :in-theory (e/d (bit-of-p) ()))))
+
+(defthm bit-fix-p-of-quoted
+  (implies (and (syntaxp (quotep x)))
+           (equal (bit-fix-p (cons x y))
+                  (and (equal x 'bit-fix)
+                       (consp y)
+                       (not (cdr y)))))
+  :hints (("Goal"
+           :in-theory (e/d (bit-fix-p) ()))))
+
+(defthm pp-p-of-quoted
+  (implies (and (syntaxp (quotep x)))
+           (equal (pp-p (cons x y))
+                  (and (equal x 'pp)
+                       (consp y)
+                       (not (cdr y)))))
+  :hints (("Goal"
+           :in-theory (e/d (pp-p) ()))))
+
+(defthm rpterm-p-of-quoted
+  (implies (and (syntaxp (quotep x))
+                (not (equal x 'quote))
+                (not (equal x 'rp))
+                (not (equal x 'falist)))
+           (equal (rp-termp (cons x y))
+                  (and (symbolp x)
+                       x
+                       (rp-term-listp y))))
+  :hints (("Goal"
+           :in-theory (e/d (pp-p) ()))))
+
+
+(defthm is-rp-of-quoted
+  (implies (and (syntaxp (quotep x)))
+           (equal (is-rp (cons x y))
+                  (and (equal x 'rp)
+                       (CASE-MATCH y
+                         ((('QUOTE TYPE) &)
+                          (AND (SYMBOLP TYPE)
+                               (NOT (BOOLEANP TYPE))
+                               (NOT (EQUAL TYPE 'QUOTE))
+                               (NOT (EQUAL TYPE 'RP))
+                               (NOT (EQUAL TYPE 'LIST))
+                               (NOT (EQUAL TYPE 'FALIST))))
+                         (& NIL)))))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))

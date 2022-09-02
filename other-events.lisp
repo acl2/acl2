@@ -1802,22 +1802,32 @@
                        convert-book-name-to-cert-name:  ~x0"
                       cert-op)))))
 
-(defun unrelativize-book-path (lst dir)
-  (cond ((endp lst) nil)
-        ((consp (car lst))
-         (assert$ (eq (caar lst) :system) ; see relativize-book-path
-                  (cons (concatenate 'string dir (cdar lst))
-                        (unrelativize-book-path (cdr lst) dir))))
-        (t (cons (car lst)
-                 (unrelativize-book-path (cdr lst) dir)))))
+(defun unrelativize-book-path (lst project-dir-alist)
+  (cond
+   ((endp lst) nil)
+   (t (let ((book (car lst)))
+        (cons (if (stringp book)
+                  book
+                (assert$
+                 (sysfile-p book)
+
+; We use a simple concatenate call instead of extend-pathname below, since we
+; know that project-dirs are all canonical.
+
+                 (concatenate 'string
+                              (project-dir-lookup (sysfile-key book)
+                                                  project-dir-alist
+                                                  'unrelativize-book-path)
+                              (sysfile-filename book))))
+              (unrelativize-book-path (cdr lst) project-dir-alist))))))
 
 (defun tilde-@-defpkg-error-phrase (name package-entry new-not-old old-not-new
                                          book-path defpkg-book-path w
-                                         distrib-books-dir)
+                                         project-dir-alist)
   (let ((book-path
-         (unrelativize-book-path book-path distrib-books-dir))
+         (unrelativize-book-path book-path project-dir-alist))
         (defpkg-book-path
-          (unrelativize-book-path defpkg-book-path distrib-books-dir)))
+          (unrelativize-book-path defpkg-book-path project-dir-alist)))
     (list
      "The proposed defpkg conflicts with an existing defpkg for ~
       name ~x0~@1.  ~#a~[For example, symbol ~s2::~s3 is in the list of ~
@@ -2003,7 +2013,7 @@
                       (conflict (conflicting-imports imports))
                       (base-symbol (packn (cons name '("-PACKAGE")))))
 
-; Base-symbol is the the base symbol of the rune for the rule added by
+; Base-symbol is the base symbol of the rune for the rule added by
 ; defpkg describing the properties of symbol-package-name on interns
 ; with the new package.
 
@@ -2039,7 +2049,7 @@
                             (package-entry-book-path package-entry)
                             defpkg-book-path
                             w
-                            (f-get-global 'system-books-dir state))))
+                            (project-dir-alist state))))
                       ((and package-entry
                             (or hidden-p
                                 (not (package-entry-hidden-p package-entry))))
@@ -9515,54 +9525,66 @@
          (temp (member *directory-separator* rlst)))
     (coerce (reverse temp) 'string)))
 
-(defun extend-pathname (dir0 file-name state)
+(defun extend-pathname+ (dir0 file-name canon-p state)
 
-; Dir is a string representing an absolute directory name, and file-name is a
-; string representing a file or directory name.  We want to extend dir by
-; file-name if subdir is relative, and otherwise return file-name.  Except, we
-; return something canonical, if possible.
+; See extend-pathname, which is similar.  The present function has an extra
+; argument, canon-p; when this is true, then the result is either canonical or
+; nil.
 
   (let* ((os (os (w state)))
-         (dir (if (eq dir0 :system)
-                  (f-get-global 'system-books-dir state)
+         (ctx 'extend-pathname)
+         (dir (if (keywordp dir0)
+                  (project-dir-lookup dir0 (project-dir-alist state) ctx)
                 dir0))
          (file-name1 (expand-tilde-to-user-home-dir
-                      file-name os 'extend-pathname state))
+                      file-name os ctx state))
          (abs-filename (cond
                         ((absolute-pathname-string-p file-name1 nil os)
                          file-name1)
                         (t
                          (our-merge-pathnames dir file-name1))))
-         (canonical-filename (if (eq dir0 :system)
-                                 abs-filename
+         (canonical-filename (if (keywordp dir0)
+                                 abs-filename ; already canonical
                                (canonical-pathname abs-filename nil state))))
     (or canonical-filename
 
 ; If a canonical filename doesn't exist, then presumably the file does not
 ; exist.  But perhaps the directory exists; we try that next.
 
-        (let ((len (length abs-filename)))
-          (assert$
-           (not (eql len 0)) ; absolute filename starts with "/"
-           (cond
-            ((eql (char abs-filename (1- (length abs-filename)))
-                  #\/) ; we have a directory, which we know doesn't exist
-             abs-filename)
-            (t
+        (and
+         (not canon-p)
+         (let ((len (length abs-filename)))
+           (assert$
+            (not (eql len 0)) ; absolute filename starts with "/"
+            (cond
+             ((eql (char abs-filename (1- (length abs-filename)))
+                   #\/) ; we have a directory, which we know doesn't exist
+              abs-filename)
+             (t
 
 ; Let's go ahead and at least try to canonicalize the directory of the file (or
 ; parent directory, in the unlikely event that we have a directory).
 
-             (let* ((dir0 (directory-of-absolute-pathname abs-filename))
-                    (len0 (length dir0))
-                    (dir1 (assert$ (and (not (eql len0 0))
-                                        (eql (char dir0 (1- len0))
-                                             #\/))
-                                   (canonical-pathname dir0 t state))))
-               (cond (dir1 (concatenate 'string dir1
-                                        (subseq abs-filename len0 len)))
-                     (t ; return something not canonical; at least we tried!
-                      abs-filename))))))))))
+              (let* ((dir0 (directory-of-absolute-pathname abs-filename))
+                     (len0 (length dir0))
+                     (dir1 (assert$ (and (not (eql len0 0))
+                                         (eql (char dir0 (1- len0))
+                                              #\/))
+                                    (canonical-pathname dir0 t state))))
+                (cond (dir1 (concatenate 'string dir1
+                                         (subseq abs-filename len0 len)))
+                      (t ; return something not canonical; at least we tried!
+                       abs-filename)))))))))))
+
+(defun extend-pathname (dir0 file-name state)
+
+; Dir0 is a string representing an absolute directory name or a keyword
+; representing a project directory, and file-name is a string representing a
+; file or directory name.  We want to extend dir by file-name if file-name is
+; relative, and otherwise return file-name.  Except, we return something
+; canonical, if possible.
+
+  (extend-pathname+ dir0 file-name nil state))
 
 (defun maybe-add-separator (str)
   (if (and (not (equal str ""))
@@ -9705,27 +9727,6 @@
               (string-prefixp *1*-pkg-prefix* ; i.e., *1*-package-prefix*
                               pkg-name)))))
 
-(defun sysfile-p (x)
-  (and (consp x)
-       (eq (car x) :system)
-       (stringp (cdr x))))
-
-(defun sysfile-filename (x)
-  (declare (xargs :guard (sysfile-p x)))
-  (cdr x))
-
-(defun filename-to-sysfile (filename state)
-  (relativize-book-path filename
-                        (f-get-global 'system-books-dir state)
-                        :make-cons))
-
-(defun sysfile-to-filename (x state)
-  (cond ((sysfile-p x)
-         (extend-pathname :system
-                          (sysfile-filename x)
-                          state))
-        (t x)))
-
 (mutual-recursion
 
 (defun make-include-books-absolute-1 (form cbd dir names localp ctx state)
@@ -9819,9 +9820,9 @@
 ; connected-book-directory as when originally processed (namely, cbd) will be
 ; used as the connected-book-directory when the book is being included as a
 ; portcullis command of bk (namely, connected-book-directory dir).
-; Well... actually, if bk is a system book, and if the system books are moved,
-; then cbd and dir will change but their equality (and inequality) will be
-; preserved.
+; Well... actually, if bk is a project book, and if the project books are
+; moved, then cbd and dir will change but their equality (and inequality) will
+; be preserved.
 
 ; If cbd is nil then we are recovering portcullis commands from an existing
 ; certificate, so relative pathnames have already been converted to absolute
@@ -9832,23 +9833,23 @@
 ; need to convert to an absolute pathname.
 
 ; If we have an absolute pathname, either by conversion or because the
-; include-book originally referenced an absolute pathname under the system
-; books directory, then we convert to using :dir :system.
+; include-book originally referenced an absolute pathname under a project books
+; directory, then we convert to use a sysfile.
 
 ; To summarize much of the above: if cbd is nil or if cbd and dir are equal, we
 ; can skip any pathname conversion and fall through to the next top-level COND
 ; branch, where form is returned unchanged -- except in both cases, an absolute
-; pathname under the system books directory is replaced using :dir :system.
+; pathname under a project books directory :d is replaced using :dir :d.
 
     (assert$
-     (keyword-value-listp (cddr form)) ; as form is a legal event
+     (keyword-value-listp (cddr form)) ; as form is a legal include-book event
      (cond
       ((assoc-keyword :dir form)
 
 ; We do not need to convert a relative pathname to an absolute pathname if the
 ; :dir argument already specifies how to do this.  Recall that the table guard
 ; of the acl2-defaults-table specifies that :dir arguments are absolute
-; pathnames.
+; pathnames; similarly for include-book-dir!-table and the project-dir-alist.
 
        (mv nil form))
       ((not (equal cbd dir)) ; always true in case (b)
@@ -9862,7 +9863,7 @@
                    (mv t
                        (list* 'include-book
                               (sysfile-filename x)
-                              :dir :system
+                              :dir (sysfile-key x)
                               (cddr form))))
                   ((and dir
 
@@ -9886,7 +9887,7 @@
                    (mv t
                        (list* 'include-book
                               (sysfile-filename sysfile)
-                              :dir :system
+                              :dir (sysfile-key sysfile)
                               (cddr form))))
                   (t (mv nil form)))))))))
    ((member-eq (car form)
@@ -10021,7 +10022,7 @@
    (t
     (first-known-package-alist (cdr wrld-segment)))))
 
-(defun defpkg-items-rec (new-kpa old-kpa system-books-dir ctx w state acc)
+(defun defpkg-items-rec (new-kpa old-kpa project-dir-alist ctx w state acc)
 
 ; For background on the discussion below, see the Essay on Hidden Packages.
 
@@ -10048,7 +10049,7 @@
         (cond
          ((find-package-entry n old-kpa)
           (defpkg-items-rec
-            (cdr new-kpa) old-kpa system-books-dir ctx w state acc))
+            (cdr new-kpa) old-kpa project-dir-alist ctx w state acc))
          (t
           (let* ((imports (package-entry-imports e))
                  (event (package-entry-defpkg-event-form e))
@@ -10062,7 +10063,7 @@
 ; (as is done as of August 2010 by Debian ACL2 release and ACL2s).
 
                   (relativize-book-path-lst (package-entry-book-path e)
-                                            system-books-dir
+                                            project-dir-alist
                                             :make-cons)))
             (mv-let (erp pair state)
 
@@ -10074,7 +10075,7 @@
                                          "The second argument to defpkg"
                                          ctx w state nil)
               (defpkg-items-rec
-                (cdr new-kpa) old-kpa system-books-dir
+                (cdr new-kpa) old-kpa project-dir-alist
                 ctx w state
                 (cons (list name
                             imports
@@ -10118,7 +10119,7 @@
      (mv-let
        (erp val state)
        (defpkg-items-rec new-kpa old-kpa
-         (f-get-global 'system-books-dir state)
+         (project-dir-alist state)
          ctx w state nil)
        (assert$
         (null erp)
@@ -10257,14 +10258,14 @@
 
 )
 
-(defun hidden-defpkg-events1 (kpa system-books-dir w ctx state acc)
+(defun hidden-defpkg-events1 (kpa project-dir-alist w ctx state acc)
 
 ; Warning: Keep this in sync with hidden-defpkg-events-simple.
 
   (cond
    ((endp kpa) (value (reverse acc)))
    ((not (package-entry-hidden-p (car kpa)))
-    (hidden-defpkg-events1 (cdr kpa) system-books-dir w ctx state acc))
+    (hidden-defpkg-events1 (cdr kpa) project-dir-alist w ctx state acc))
    (t
     (let* ((e (car kpa))
            (n (package-entry-name e))
@@ -10276,7 +10277,7 @@
            (tterm (package-entry-tterm e))
            (book-path (relativize-book-path-lst
                        (package-entry-book-path e)
-                       system-books-dir
+                       project-dir-alist
                        :make-cons)))
       (mv-let
        (erp pair state)
@@ -10285,7 +10286,7 @@
                                   ctx w state nil)
        (hidden-defpkg-events1
         (cdr kpa)
-        system-books-dir w ctx state
+        project-dir-alist w ctx state
         (cons `(defpkg ,name
                  ,(assert$
                    event
@@ -10315,7 +10316,7 @@
   (state-global-let*
    ((inhibit-output-lst *valid-output-names*))
    (hidden-defpkg-events1 kpa
-                          (f-get-global 'system-books-dir state)
+                          (project-dir-alist state)
                           w ctx state nil)))
 
 (defun fix-portcullis-cmds1 (dir cmds cbds ans names ctx state)
@@ -11152,8 +11153,8 @@
 
 ; This record represents information stored in a certificate file.  The
 ; "-sysfile" variants are used for checksums, employing sysfiles (see
-; sysfile-p) in place of absolute pathnames referencing system books, to
-; support the relocation of system books directories that include .cert files,
+; sysfile-p) in place of absolute pathnames referencing project books, to
+; support the relocation of project books directories that include .cert files,
 ; while the "-abs" variants instead contain the original absolute pathnames,
 ; and are used for purposes other than checksums.
 
@@ -11217,6 +11218,13 @@
             (and (natp book-length)
                  (natp book-write-date)))
            (& (integerp book-hash))))))
+
+(defun sysfile-to-filename (x state)
+  (cond ((sysfile-p x)
+         (extend-pathname (sysfile-key x)
+                          (sysfile-filename x)
+                          state))
+        (t x)))
 
 (defun sysfile-to-filename-ttag-alist-val (lst state)
   (declare (xargs :guard (true-listp lst)))
@@ -11610,13 +11618,13 @@
 ; match the sysfile expansion stored for the book in its certificate.  Before
 ; this change, we could include a community book in its own directory using its
 ; relative pathname (free of "/"), and it would be considered certified -- and
-; would return a pathname based on the system-books-dir for the current ACL2
-; executable!  Maybe that's not so serious, or we could just fix that specific
-; problem; but more serious is that sub-books would also have bad resolutions
-; of sysfile references.  We could restrict this check to the case that there
-; is at least one sysfile reference in the certificate file for a subbook.  But
-; it seems best (and simpler) to point out to the user the sysfile mismatch for
-; the top-level book.
+; would return a pathname based on the current project-dir-alist!  Maybe that's
+; not so serious, or we could just fix that specific problem; but more serious
+; is that sub-books would also have bad resolutions of sysfile references.  We
+; could restrict this check to the case that there is at least one sysfile
+; reference in the certificate file for a subbook.  But it seems best (and
+; simpler) to point out to the user the sysfile mismatch for the top-level
+; book.
 
 ; Note that (caar post-alist3-sysfile) represents the book being included.
 ; When the book was certified, the post-alist was created after pass 1 from
@@ -12579,11 +12587,12 @@
 ; that created the world in which the certification was done.
 ; Pre-alist-sysfile is the include-book-alist in the "portcullis world" that is
 ; the certification world except that local commands, if any, are skipped
-; there, and full-book-names under the system books are converted to sysfiles.
-; Post-alist1 is the include-book-alist after proving the events in file and
-; post-alist2 is the include-book-alist after just including the events in
-; file.  If they are different it is because the book included some subbooks
-; within LOCAL forms and those subbooks did not get loaded for post-alist2.
+; there, and full-book-names covered by the project-dir-alist are converted to
+; sysfiles.  Post-alist1 is the include-book-alist after proving the events in
+; file and post-alist2 is the include-book-alist after just including the
+; events in file.  If they are different it is because the book included some
+; subbooks within LOCAL forms and those subbooks did not get loaded for
+; post-alist2.
 
 ; To verify that a subsequent inclusion is ok, we really only need post-alist2.
 ; That is, if the book included some LOCAL subbook then it is not necessary
@@ -12622,7 +12631,7 @@
 ; where cert-hash may be the checksum of ((cmds . pre-alist-sysfile)
 ; . post-alist3-sysfile) -- see function cert-hash -- and where
 ; post-alist3-sysfile is the result of converting to sysfiles those
-; full-book-names in post-alist3-abs that are under the system books.
+; full-book-names in post-alist3-abs that are covered by the project-dir-alist.
 
 ; The reason the portcullis commands are written this way, rather than
 ; as a single object, is that we can't read them all at once since
@@ -12926,8 +12935,8 @@
                       (alistp (table-alist 'include-book-dir!-table wrld)))))
           :guard-hints (("Goal" :in-theory (enable state-p1)))))
   (cond
-   ((eq dir :system)
-    (f-get-global 'system-books-dir state))
+   ((and (keywordp dir)
+         (project-dir-lookup dir (project-dir-alist state) nil))) 
    ((raw-include-book-dir-p state)
     (or (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir!-alist state)))
         (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir-alist state)))))
@@ -12947,8 +12956,9 @@
        (cond ((null dir-value) ; hence, dir is not :system
               (er ,soft-or-hard ctx
                   "The legal values for the :DIR argument are keywords that ~
-                   include :SYSTEM as well as those added by a call of ~v0.  ~
-                   However, that argument is ~x1, which is not ~@2."
+                   include those in the global project-dir-alist (see :DOC ~
+                   project-dir-alist) as well as those added by a call of ~
+                   ~v0.  However, that argument is ~x1, which is not ~@2."
                   '(add-include-book-dir add-include-book-dir!)
                   dir
                   (cond
@@ -12958,6 +12968,7 @@
                      (cons :system
                            (strip-cars
                             (append
+                             (project-dir-alist state)
                              (cdr (assoc-eq :include-book-dir-alist
                                             (table-alist 'acl2-defaults-table
                                                          (w state))))
@@ -14021,14 +14032,13 @@
                                         (if (f-get-global 'script-mode state)
                                             (relativize-book-path
                                              path
-                                             (f-get-global 'system-books-dir
-                                                           state)
+                                             (project-dir-alist state)
                                              (and (null dir)
                                                   user-book-name))
                                           path)))
                                     (list* 'include-book
 
-; We use the the unique representative of the full book name provided by the
+; We use the unique representative of the full book name provided by the
 ; one in the .cert file, when the certificate is valid before execution of this
 ; event), namely, cert-full-book-name; otherwise, we use the full-book-name
 ; parsed from what the user supplied.  Either way, we have an absolute path
@@ -15909,7 +15919,7 @@
 ; associates keywords with lists as follows.  In each case, only events in the
 ; world after including the book are considered, hence not events that are
 ; merely local or events events within other books, but including events from
-; the the portcullis (certification world) for foo.lisp.  The keyword :books is
+; the portcullis (certification world) for foo.lisp.  The keyword :books is
 ; associated with the list of full book names of included books.  Each other
 ; keyword is associated with an alist that associates each key, a package name,
 ; with a list of symbol-names for symbols in that package that are introduced
@@ -16180,7 +16190,7 @@
 ; each key, a name, to a list of lists of runes.  The call of read-file causes
 ; an error if the @useless-runes.lsp file doesn't exist (or isn't readable).
 
-; We copy code from read-file, but avoid that funciton so that we can fail
+; We copy code from read-file, but avoid that function so that we can fail
 ; silently.
 
 ; Notice the use of with-packages-unhidden.  We would like to ensure that when
@@ -20449,7 +20459,7 @@
 
 ; Definitions.  Let al be an alist mapping variables to values.  We say that a1
 ; is A-proper if for every pair <s,x> in al such that s is a stobj name, x
-; satisfies the the :EXEC recognizer for s if s is in A, else x satisfies the
+; satisfies the :EXEC recognizer for s if s is in A, else x satisfies the
 ; recognizer for s (equivalently, x satisfies the :LOGIC recognizer for s).
 ; Note that when we discuss notions like "satisfies" we are of course
 ; referencing logic, not evaluation).  When A is the empty set, {}, we may call
@@ -21574,7 +21584,7 @@
 ;   ACL2 !>
 
 ; Notice that for the inner lambda application, the unique update is in an
-; argument, and for the the outer lambda, it's in the lambda-body.
+; argument, and for the outer lambda, it's in the lambda-body.
 
 ; We rely on the following claim, which we believe to be true: if a term can
 ; make more than one update to st, then this will be observed in our algorithm,
@@ -26199,18 +26209,24 @@
 
 ; Essay on Include-book-dir-alist
 
-; ACL2 supports two alists that associate keywords with absolute directory
+; ACL2 supports three alists that associate keywords with absolute directory
 ; pathnames, to be used as values of the :dir argument of include-book and ld:
-; the include-book-dir!-table, and the :include-book-dir-alist field of the
-; acl2-defaults-table.  The macros add-include-book-dir and
-; add-include-book-dir! provide ways to extend these alists to allow additional
-; legal values for :dir.  Up through ACL2 Version_3.6.1, when
-; add-include-book-dir was executed in raw Lisp it would be ignored, because it
-; macroexpanded to a table event.  But consider a file loaded in raw Lisp, say
-; when we are in raw-mode and are executing an include-book command with a :dir
-; argument.  If that :dir value were defined by an add-include-book-dir event
-; also evaluated in raw Lisp, and hence ignored, then that :dir value would not
-; really be defined after all and the include-book would fail.
+; the include-book-dir!-table, the :include-book-dir-alist field of the
+; acl2-defaults-table, and the project-dir-alist.  The macros
+; add-include-book-dir and add-include-book-dir! provide ways to extend these
+; first two alists to allow additional legal values for :dir; see :DOC
+; project-dir-alist regarding the third.  The remainder of this essay discusses
+; some subtlety with the first two of these, and a solution.  (The
+; project-dir-alist never changes throughout a session and therefore has no
+; such issue.)
+
+; Up through ACL2 Version_3.6.1, when add-include-book-dir was executed in raw
+; Lisp it would be ignored, because it macroexpanded to a table event.  But
+; consider a file loaded in raw Lisp, say when we are in raw-mode and are
+; executing an include-book command with a :dir argument.  If that :dir value
+; were defined by an add-include-book-dir event also evaluated in raw Lisp, and
+; hence ignored, then that :dir value would not really be defined after all and
+; the include-book would fail.
 
 ; The above problem with raw-mode could be explained away by saying that
 ; raw-mode is a hack, and you get what you get.  But Version_4.0 introduced the
@@ -26279,8 +26295,8 @@
   (declare (xargs :guard (state-p state)
                   :mode :program))
   (let* ((ctx (if dir0
-                 (cons caller keyword)
-               (msg "~x0" (list caller keyword))))
+                  (cons caller keyword)
+                (msg "~x0" (list caller keyword))))
          (bang-p (member-eq caller '(add-include-book-dir!
                                      delete-include-book-dir!)))
          (dir (and dir0
@@ -26311,152 +26327,165 @@
                  (if dir
                      '(add-include-book-dir add-include-book-dir!)
                    '(delete-include-book-dir delete-include-book-dir!))))))
-          ((or (not (keywordp keyword))
-               (eq keyword :SYSTEM))
+          ((not (keywordp keyword))
            (er soft ctx
-               "The first argument of ~x0 must be a keyword (see :DOC ~
-                keywordp) other than :SYSTEM, but ~x1 is not."
+               "The first argument of ~x0 must be a keyword other than ~
+                :SYSTEM, but ~x1 is not."
                caller keyword))
           ((and dir (not (stringp dir)))
            (er soft ctx
-               "The second argument of ~x0 must be a string or of the form ~
-                (:SYSTEM . string), but ~x1 is not."
+               "The second argument of ~x0 must be a string or a sysfile ~
+                (i.e., of the form (:keyword . string)), but ~x1 is not."
                caller dir))
           (t
-           (state-global-let*
-            ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst)))
-             (modifying-include-book-dir-alist t))
-            (let ((dir (and dir
-                            (maybe-add-separator
-                             (extend-pathname (cbd) dir state))))
-                  (raw-p (raw-include-book-dir-p state))
-                  (wrld (w state)))
-              (mv-let
-               (old alt)
-               (cond
-                (raw-p
-                 (cond
-                  (bang-p
-                   (mv (f-get-global 'raw-include-book-dir!-alist
-                                     state)
-                       (f-get-global 'raw-include-book-dir-alist
-                                     state)))
-                  (t
-                   (mv (f-get-global 'raw-include-book-dir-alist
-                                     state)
-                       (f-get-global 'raw-include-book-dir!-alist
-                                     state)))))
-                (bang-p
-                 (mv (table-alist 'include-book-dir!-table wrld)
-                     (cdr (assoc-eq :include-book-dir-alist
-                                    (table-alist 'acl2-defaults-table
-                                                 wrld)))))
-                (t
-                 (mv (cdr (assoc-eq :include-book-dir-alist
-                                    (table-alist 'acl2-defaults-table
-                                                 wrld)))
-                     (table-alist 'include-book-dir!-table wrld))))
-               (let ((old-pair (assoc-eq keyword old))
-                     (alt-pair (assoc-eq keyword alt)))
-                 (cond
-                  ((and dir
-                        (not (absolute-pathname-string-p dir t (os wrld))))
+           (let ((dir (and dir
+                           (maybe-add-separator
+                            (extend-pathname (cbd) dir state))))
+                 (fname (project-dir-lookup keyword
+                                            (project-dir-alist state)
+                                            nil))
+                 (raw-p (raw-include-book-dir-p state))
+                 (wrld (w state)))
+             (cond
+              ((and fname
+                    (not (equal fname dir)))
+               (er soft ctx
+                   "Illegal call of ~x0: it associates ~x1 with ~x2, yet ~x1 ~
+                    is already bound to a different value, ~x3, in the ~
+                    project-dir-alist (see :DOC project-dir-alist)."
+                   caller keyword dir fname))
+              (t
+               (state-global-let*
+                ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst)))
+                 (modifying-include-book-dir-alist t))
+                (mv-let
+                  (old alt)
+                  (cond
+                   (raw-p
+                    (cond
+                     (bang-p
+                      (mv (f-get-global 'raw-include-book-dir!-alist
+                                        state)
+                          (f-get-global 'raw-include-book-dir-alist
+                                        state)))
+                     (t
+                      (mv (f-get-global 'raw-include-book-dir-alist
+                                        state)
+                          (f-get-global 'raw-include-book-dir!-alist
+                                        state)))))
+                   (bang-p
+                    (mv (table-alist 'include-book-dir!-table wrld)
+                        (cdr (assoc-eq :include-book-dir-alist
+                                       (table-alist 'acl2-defaults-table
+                                                    wrld)))))
+                   (t
+                    (mv (cdr (assoc-eq :include-book-dir-alist
+                                       (table-alist 'acl2-defaults-table
+                                                    wrld)))
+                        (table-alist 'include-book-dir!-table wrld))))
+                  (let ((old-pair (assoc-eq keyword old))
+                        (alt-pair (assoc-eq keyword alt)))
+                    (cond
+                     ((and dir
+                           (not (absolute-pathname-string-p dir t (os wrld))))
 
 ; The call above of maybe-add-separator should make this branch dead code, but
 ; we leave it here for robustness, e.g., in case we change that call.
 
-                   (er soft ctx
-                       "The second argument of ~x0 must represent a ~
-                        directory, in particular ending with character '~s1', ~
-                        but ~x2 does not."
-                       caller *directory-separator-string* dir))
-                  ((and dir
-                        (equal (cdr old-pair) dir))
-                   (stop-redundant-event ctx state))
-                  ((if dir
-                       (or old-pair alt-pair) ; already bound
-                     alt-pair)                ; bound in the wrong table
-                   (mv-let
-                    (other-add other-delete)
-                    (cond (bang-p
-                           (mv 'add-include-book-dir
-                               'delete-include-book-dir))
-                          (t
-                           (mv 'add-include-book-dir!
-                               'delete-include-book-dir!)))
-                    (cond ((null dir) ; hence alt-pair
-                           (er soft ctx
-                               "The keyword ~x0 was previously bound to ~
-                                directory ~x1 by a call of ~x2.  Perhaps you ~
-                                intended to call ~x3 instead of ~x4."
-                               keyword (cdr alt-pair) other-add other-delete
-                               caller))
-                          (alt-pair
-                           (er soft ctx
-                               "The keyword ~x0 was previously bound to ~
-                                directory ~x1 by a call of ~x2.  To bind ~x0 ~
-                                with ~x3 first evaluate ~x4."
-                               keyword
-                               (cdr alt-pair)
-                               other-add
-                               caller
-                               (list other-delete keyword)))
-                          (t (er soft ctx
-                                 "The keyword ~x0 was previously bound to ~
-                                  directory ~x1.  If you intend to override ~
-                                  the old setting with directory ~x2, first ~
-                                  evaluate ~x3."
-                                 keyword
-                                 (cdr old-pair)
-                                 dir
-                                 (list (cond (bang-p 'delete-include-book-dir!)
-                                             (t 'delete-include-book-dir))
-                                       keyword))))))
-                  ((and (null dir)
-                        (null (cdr old-pair)))
-                   (stop-redundant-event ctx state))
-                  (t (let ((new (cond (dir (acons keyword dir old))
-                                      (t (remove1-assoc-eq keyword old)))))
-                       (er-progn
-                        (cond
-                         (raw-p
-                          (pprogn
-                           (cond (bang-p
-                                  (f-put-global 'raw-include-book-dir!-alist
-                                                new
-                                                state))
-                                 (t
-                                  (f-put-global 'raw-include-book-dir-alist
-                                                new
-                                                state)))
-                           (value nil)))
-                         ((not bang-p)
-                          (table-fn 'acl2-defaults-table
-                                    (list :include-book-dir-alist
-                                          (kwote new))
-                                    state
-                                    (list 'table
-                                          'acl2-defaults-table
-                                          ':include-book-dir-alist
-                                          (kwote new))))
-                         (dir
-                          (table-fn 'include-book-dir!-table
-                                    (list keyword (kwote dir))
-                                    state
-                                    (list 'table
-                                          'include-book-dir!-table
-                                          keyword
-                                          (kwote dir))))
-                         (t
-                          (table-fn 'include-book-dir!-table
-                                    (list nil (kwote new) :clear)
-                                    state
-                                    (list 'table
-                                          'include-book-dir!-table
-                                          nil
-                                          (kwote new)
-                                          :clear))))
-                        (value new)))))))))))))
+                      (er soft ctx
+                          "The second argument of ~x0 must represent a ~
+                           directory, in particular ending with character ~
+                           '~s1', but ~x2 does not."
+                          caller *directory-separator-string* dir))
+                     ((and dir
+                           (equal (cdr old-pair) dir))
+                      (stop-redundant-event ctx state))
+                     ((if dir
+                          (or old-pair alt-pair) ; already bound
+                        alt-pair)                ; bound in the wrong table
+                      (mv-let
+                        (other-add other-delete)
+                        (cond (bang-p
+                               (mv 'add-include-book-dir
+                                   'delete-include-book-dir))
+                              (t
+                               (mv 'add-include-book-dir!
+                                   'delete-include-book-dir!)))
+                        (cond ((null dir) ; hence alt-pair
+                               (er soft ctx
+                                   "The keyword ~x0 was previously bound to ~
+                                    directory ~x1 by a call of ~x2.  Perhaps ~
+                                    you intended to call ~x3 instead of ~x4."
+                                   keyword (cdr alt-pair) other-add other-delete
+                                   caller))
+                              (alt-pair
+                               (er soft ctx
+                                   "The keyword ~x0 was previously bound to ~
+                                    directory ~x1 by a call of ~x2.  To bind ~
+                                    ~x0 with ~x3 first evaluate ~x4."
+                                   keyword
+                                   (cdr alt-pair)
+                                   other-add
+                                   caller
+                                   (list other-delete keyword)))
+                              (t (er soft ctx
+                                     "The keyword ~x0 was previously bound to ~
+                                      directory ~x1.  If you intend to ~
+                                      override the old setting with directory ~
+                                      ~x2, first evaluate ~x3."
+                                     keyword
+                                     (cdr old-pair)
+                                     dir
+                                     (list (cond
+                                            (bang-p 'delete-include-book-dir!)
+                                            (t 'delete-include-book-dir))
+                                           keyword))))))
+                     ((and (null dir)
+                           (null (cdr old-pair)))
+                      (stop-redundant-event ctx state))
+                     (t (let ((new (cond (dir (acons keyword dir old))
+                                         (t (remove1-assoc-eq keyword old)))))
+                          (er-progn
+                           (cond
+                            (raw-p
+                             (pprogn
+                              (cond
+                               (bang-p
+                                (f-put-global 'raw-include-book-dir!-alist
+                                              new
+                                              state))
+                               (t
+                                (f-put-global 'raw-include-book-dir-alist
+                                              new
+                                              state)))
+                              (value nil)))
+                            ((not bang-p)
+                             (table-fn 'acl2-defaults-table
+                                       (list :include-book-dir-alist
+                                             (kwote new))
+                                       state
+                                       (list 'table
+                                             'acl2-defaults-table
+                                             ':include-book-dir-alist
+                                             (kwote new))))
+                            (dir
+                             (table-fn 'include-book-dir!-table
+                                       (list keyword (kwote dir))
+                                       state
+                                       (list 'table
+                                             'include-book-dir!-table
+                                             keyword
+                                             (kwote dir))))
+                            (t
+                             (table-fn 'include-book-dir!-table
+                                       (list nil (kwote new) :clear)
+                                       state
+                                       (list 'table
+                                             'include-book-dir!-table
+                                             nil
+                                             (kwote new)
+                                             :clear))))
+                           (value new)))))))))))))))
 
 (defun add-custom-keyword-hint-fn (key uterm1 uterm2 state)
 
@@ -30702,7 +30731,7 @@
 ; for every possible call of m, every function called has the same attachment
 ; now as it did when the value was stored.  To do this, we maintain a stronger
 ; invariant, described in the next paragraph, that is based on the acyclic
-; "extended ancestor" relation introduced in the the Essay on Defattach.
+; "extended ancestor" relation introduced in the Essay on Defattach.
 ; Roughly speaking, this relation is the transitive closure of the immediate
 ; ancestor relation, where g is an immediate ancestor of f if either g is an
 ; ordinary ancestor of f or else <f,g> is an attachment pair (think: f is
@@ -31289,7 +31318,7 @@
    nil :read-only t)
   (times    ; can be updated by time-tracker with option :print?
    nil :type (satisfies rational-listp))
-  (interval ; if non-nil, used for updating an an empty Times
+  (interval ; if non-nil, used for updating an empty Times
    nil :type (or null rational) :read-only t)
   )
 
@@ -33506,10 +33535,10 @@
 ; trivial) implication of their guards.  We considered supporting a way for the
 ; user to specify the names of those theorems in the memoize command.  On a
 ; 2019-vintage MacBook Pro it took only 0.28 seconds to search the entire world
-; (fruitlessly) for the former after including system book doc/top-slow, which
-; produced a world of length 5,633,256.  Moreover, we skip the checks during
-; include-book and the second pass of encapsulate (see the call of
-; skip-proofs-due-to-system in memoize-table-chk-invoke-msg), which is
+; (fruitlessly) for the former after including (a previous version of) system
+; book top.lisp, which produced a world of length 5,633,256.  Moreover, we skip
+; the checks during include-book and the second pass of encapsulate (see the
+; call of skip-proofs-due-to-system in memoize-table-chk-invoke-msg), which is
 ; justified by the usual conservativity argument.  So we kept the interface
 ; simple, sparing users from specifying those theorems.  Note that memoize is
 ; not doing the proofs itself; if the table event were to invoke the prover, we

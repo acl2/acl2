@@ -48,18 +48,20 @@
 ; SAVE-EXEC for more information about how to save images.
 
 (include-book "../top")
-(include-book "centaur/vl/loader/top" :dir :system)
-(include-book "centaur/gl/gl" :dir :system)
-(include-book "centaur/aig/g-aig-eval" :dir :system)
-(include-book "tools/plev-ccl" :dir :system)
-(include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "support")
+(include-book "centaur/misc/memory-mgmt" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
 (include-book "oslib/ls" :dir :system)
+(include-book "centaur/fgl/def-fgl-thm" :dir :system)
+(include-book "tools/plev-ccl" :dir :system)
+(local (include-book "centaur/fgl/top" :dir :system))
+(local (include-book "centaur/aignet/transforms" :dir :system))
+(local (include-book "centaur/vl/loader/top" :dir :system))
 
 ; cert_param: (uses-glucose)
 ; cert_param: (non-cmucl)
 
-(gl::def-gl-clause-processor sv-tutorial-glcp)
+; (gl::def-gl-clause-processor sv-tutorial-glcp)
 
 (make-event
 
@@ -231,25 +233,41 @@ full:</p>
 ; The ALU16 module is a simply clocked pipeline.  Inputs go in one cycle; the
 ; result is computed using an opcode that is provided the next cycle, and the
 ; result is output the following cycle.
-(def-saved-event alu-stv
-  (defsvtv alu-test-vector        ;; name for this test vector
+;; (def-saved-event alu-stv
+;;   (defsvtv alu-test-vector        ;; name for this test vector
+;;     :mod *alu-svex-design*    ;; the svex design to simulate
+
+;;     :parents (stvs-and-testing)
+;;     :short "A simple test of the alu16 module."
+;;     :labels  '(dat1  dat2  op1   op2   out1  out2)
+
+;;     :inputs
+;;       ;; verilog name --> sequence of inputs to supply
+;;     '(("clk"    1     0     1     0     1     0)
+;;       ("opcode" _     _     _     op    _)
+;;       ("abus"   _     a     _)
+;;       ("bbus"   _     b     _))
+
+;;     :outputs                  ;; verilog name --> variable names we will use
+;;     '(("out"    _     _     _     _     _    res))))
+
+(def-saved-event alu-svtv
+  (defsvtv$ alu-test-vector        ;; name for this test vector
     :mod *alu-svex-design*    ;; the svex design to simulate
 
     :parents (stvs-and-testing)
     :short "A simple test of the alu16 module."
-    :labels  '(dat1  dat2  op1   op2   out1  out2)
-
-    :inputs
-      ;; verilog name --> sequence of inputs to supply
-    '(("clk"    1     0     1     0     1     0)
-      ("opcode" _     _     _     op    _)
-      ("abus"   _     a     _)
-      ("bbus"   _     b     _))
-
-    :outputs                  ;; verilog name --> variable names we will use
-    '(("out"    _     _     _     _     _    res))))
-
-
+    :phases ((:label dat
+              :inputs (("clk" 0 :toggle t)
+                       ("abus" a)
+                       ("bbus" b)))
+             (:label op
+              :delay 2
+              :inputs (("opcode" op)))
+             
+             (:label out
+              :delay 2
+              :outputs (("out" res))))))
 
 
 
@@ -314,12 +332,12 @@ full:</p>
 
 (local
  (def-saved-nonevent alu-debug
-   (svtv-debug (alu-test-vector)
-               `((op . ,*op-mult*)
-                 (a  . 5)
-                 (b  . 3))
-               :filename "alu-min-debug.vcd")
-   :return state
+   (svtv-debug$ (alu-test-vector)
+                `((op . ,*op-mult*)
+                  (a  . 5)
+                  (b  . 3))
+                :filename "alu-min-debug.vcd")
+   :return (mv vcd-wiremap vcd-vals svtv-data state)
    :writep t))
 
 (def-saved-nonevent alu-function-examine
@@ -359,39 +377,35 @@ So we need to provide the @('a') and @('b') inputs one cycle, @('opcode') the
 next, and read the output the cycle after that.  The following form defines a
 @(see symbolic-test-vector) that describes this simulation pattern:</p>
 
-@(`(:code ($ alu-stv))`)
+@(`(:code ($ alu-svtv))`)
 
-<p>The semantically significant fields here are @(':inputs') and @(':outputs')
--- in particular, @(':parents'), @(':short'), @(':labels'), and @(':long') (not
-provided here) are just for documentation.  You can see the documentation
-generated for this STV <see topic='@(url alu-test-vector)'>here</see>.</p>
+<p>The most important field here is @(':phases'), which says what inputs to
+provide when and what outputs to read when. Arguments @(':parents'),
+@(':short'), and @(':long') (not provided here) are just for documentation.
+You can see the documentation generated for this SVTV <see topic='@(url
+alu-test-vector)'>here</see>.</p>
 
-<p>The first column of @(':inputs') gives the Verilog signal names of
-inputs we wish to set.  The first column after that describes what happens in
-the first phase of simulation: we set the clock to 1.  All the other signals
-have an underscore, meaning we don't set them.  The phase after that, we set
-the clock to 0 and set the @('abus') and @('bbus') inputs to variables @('a')
-and @('b').</p>
+<p>Each entry in @(':phases') says what should happen in a particular
+time (phase) in the simulation.  The first entry says that the \"clk\" signal will initially be set to 0, but will toggle every time step.  It also says that the \"abus\" and \"bbus\" inputs should be set to symbolic variables @('a') and @('b') at that time.  That phase is also labeled @('dat') for documentation purposes.</p>
 
-<blockquote>Aside: Why do this on the clock-low phase rather than the
-clock-high phase?  For @('posedge') flipflops, the updated value depends on the
-input to the flop during the previous clock-low phase; nothing much of
-consequence happens during the clock-high phase.</blockquote>
+<p>The next entry in the phases is labeled @('op').  It has a @(':delay')
+argument, which says how many time steps after the previous entry the current
+entry should happen; the default delay is 1 and the delay must be positive. In
+this design everything of importance happens on the clock-low phase of a clock
+cycle, which is standard for designs that use positive edge-triggered
+flip-flops. So the delay on each phase after the first is 2 because on the
+skipped phases the clock is high and nothing much happens. In this phase
+another input signal, \"opcode\", is set to another symbolic variable, @('op').</p>
 
-<p>The next phase, the clock is set to 1; the next one, back to 0 and the
-opcode is set to variable @('op'), and after that we toggle the clock twice
-more and are done.</p>
+<p>Finally, in the third entry, labelled @('out'), we read an output signal
+\"out\" into a symbolic variable called @('res').  Again, this happens 2 phases
+after the last one, so on the next clock-low phase.</p>
 
-<p>The outputs have a similar format to the inputs, except that instead of
-naming input variables we're naming output names.  So our output line says that
-we record the value of signal @('out') in variable @('res') at phase 6 of our
-simulation (one cycle after the opcode goes in).</p>
-
-<p>The main effect of this @(see defsvtv) form is to create a
+<p>The main effect of this @(see defsvtv$) form is to create a
 constant (accessed via a 0-ary function, @('(alu-test-vector)') that encapsulates
 the given simulation pattern in a set of svex expressions, one for each output
 variable, expressed in terms of the input variables.  So the resulting
-@('(alu-test-vector)') from the @('defsvtv') above contains an svex expression for
+@('(alu-test-vector)') from the @('defsvtv$') above contains an svex expression for
 @('res') as a combinational function in terms of @('a'), @('b'), and @('op').
 You can examine this function by looking at the @('outexprs') field of the SVTV
 structure:</p>
@@ -416,14 +430,14 @@ with @(see svtv-run):</p>
 
 <p>This takes as input an alist binding the STV input variables to integers.
 Note that we don't have to do anything for the clock; its behavior was defined
-by the @('defsvtv') form, and it has no input variable.  The output from
+by the @('defsvtv$') form, and it has no input variable.  The output from
 @('svtv-run') is just another alist binding the output variable(s) to their
 values -- here, our ALU has added 3 and 5 and returned 8.</p>
 
 <p>Sometimes you may need to drive a wire to X, Z, or some combination of X/Z
 with good Boolean values.  The biggest difference in usage between svex's STV
 functions and esim's is the notation used for this.  Svex constants, including
-those in @('defsvtv') forms and in the inputs and outputs of @('svtv-run'), are
+those in @('defsvtv$') forms and in the inputs and outputs of @('svtv-run'), are
 always expressed as @(see 4vec) objects.  Essentially, if your input or output
 value is an all-Boolean vector, then you can just represent it as a single
 integer.  If not, it is then a pair of integers; see @(see 4vec) for more
@@ -437,7 +451,7 @@ interpret the output expressions examined above.</p>
 
 <h4>Viewing Simulation Waveforms</h4>
 
-<p>To debug these simulations in more depth, we can use @('svtv-debug'), which
+<p>To debug these simulations in more depth, we can use @('svtv-debug$'), which
 produces a VCD waveform that can be examined in a waveform viewer such as
 gtkwave:</p>
 
@@ -479,81 +493,59 @@ gtkwave:</p>
 ;
 ; -----------------------------------------------------------------------------
 
+(def-saved-event tshell-ensure
+  (value-triple (acl2::tshell-ensure)))
+
 (def-saved-event alu-simple-proof
-  (gl::def-gl-thm alu16-adds
+  (fgl::def-fgl-thm alu16-adds
     :hyp (and (alu-test-vector-autohyps)
               (equal op *op-plus*))
     :concl (equal (cdr (assoc 'res (svtv-run (alu-test-vector)
                                              (alu-test-vector-autoins))))
-                  (loghead 16 (+ a b)))
-    :g-bindings (alu-test-vector-autobinds)))
+                  (loghead 16 (+ a b)))))
 
 (def-saved-event alu-simple-proof-opt
-  (gl::def-gl-thm alu16-adds-opt
+  (fgl::def-fgl-thm alu16-adds-opt
     :hyp (and (alu-test-vector-autohyps)
               (equal op *op-plus*))
     :concl (equal (cdr (assoc 'res (svtv-run (alu-test-vector)
                                              (alu-test-vector-autoins))))
-                  (loghead 16 (+ a b)))
-    :g-bindings (gl::auto-bindings (:nat op 3)
-                                   (:mix
-                                    (:nat a 16)
-                                    (:nat b 16)))))
+                  (loghead 16 (+ a b)))))
 
 (local
  (make-event
-  (b* ((event-form '(gl::def-gl-thm alu16-counts
+  (b* ((event-form '(fgl::def-fgl-thm alu16-counts
                       :hyp (and (alu-test-vector-autohyps)
                                 (equal op *op-count*))
                       :concl (equal (cdr (assoc 'res (svtv-run (alu-test-vector)
                                                                (alu-test-vector-autoins))))
-                                    (logcount a))
-                      :g-bindings (alu-test-vector-autobinds)))
-       ((mv er & state)
-        (make-event event-form)))
+                                    (logcount a))))
+       ((er (list ?stobjs-out er ?val ?replaced-state))
+        (trans-eval-default-warning event-form '(fgl::def-fgl-thm alu16-counts) state t)))
     (value (and er
                 `(progn (table saved-forms-table 'alu-count-ctrex ',event-form)
                         (value-triple :ok)))))))
 
 (local
  (def-saved-nonevent alu-debug-ctrex
-   (svtv-debug (alu-test-vector)
+   (svtv-debug$ (alu-test-vector)
                `((a . #xb7b3)
                  (op . ,*op-count*))
                :filename "alu-ctrex.vcd")
    :return state
    :writep t))
 
-(def-saved-event satlink-include
-  (include-book "centaur/gl/bfr-satlink" :dir :system))
+;; fake event showing how to set up kissat
+(table saved-forms-table
+       'kissat-satlink-config
+       '(defun kissat-satlink-config ()
+          (declare (xargs :Guard t))
+          (satlink::change-config satlink::*default-config*
+                                  :cmdline "kissat")))
 
-(def-saved-event satlink-configure
-  (local (progn (defun my-satlink-config ()
-                  (declare (Xargs :guard t))
-                  (satlink::make-config
-                   :cmdline "glucose -model"
-                   :verbose t
-                   :mintime 1))
-                (defattach gl::gl-satlink-config my-satlink-config))))
-
-(def-saved-event gl-use-satlink
-  (local (gl::gl-satlink-mode)))
-
-(def-saved-event tshell
-  (value-triple (acl2::tshell-start)))
-
-(def-saved-event alu-simple-proof-sat
-  (gl::def-gl-thm alu16-counts-sat
-    :hyp (and (alu-test-vector-autohyps)
-              (equal op *op-plus*))
-    :concl (equal (cdr (assoc 'res (svtv-run (alu-test-vector)
-                                             (alu-test-vector-autoins))))
-                  (loghead 16 (+ a b)))
-    :g-bindings (alu-test-vector-autobinds)))
-
-(def-saved-event bdd-mode
-  (local (gl::gl-bdd-mode)))
-
+(table saved-forms-table
+       'kissat-satlink-attach
+       '(defattach fgl::fgl-satlink-config kissat-satlink-config))
 
 
 
@@ -561,20 +553,50 @@ gtkwave:</p>
 
 (deftutorial proofs-with-stvs
   :parents (sv-tutorial)
-  :short "How to do proofs about hardware models using STVs and GL."
+  :short "How to do proofs about hardware models using STVs and FGL."
   :long "
 
 <p>Part of the @(see sv-tutorial). Previous section: @(see
 stvs-and-testing).</p>
 
+<h4>FGL Setup</h4>
+
+<p>The main engine for proofs about STVs is bitblasting.  The suggested tool
+for this is the <see topic='@(url fgl::fgl)'>FGL system</see>.  An alternative is
+the <see topic='@(url acl2::gl)'>GL system</see>, but this is no longer
+updated.</p>
+
+<p>A prerequisite for effectively using FGL is to install a SAT solver.  See
+@(see satlink::sat-solver-options) for instructions to install several SAT
+solvers.  In particular, glucose is used in many of the community books (and
+this tutorial, by default), and Kissat is recommended for a high-performing
+general-purpose solver.</p>
+
+<p>If you have installed glucose and have it in your PATH, the following FGL
+proofs should work with no further setup.  Supposing you instead installed
+kissat and have that in your path, you could change the default solver used by
+FGL as follows.  First define a 0-ary function with guard T that returns a @(see
+satlink::config-p) object:</p>
+@(`(:code ($ kissat-satlink-config))`)
+<p>Then attach that function to the stub @('fgl::fgl-satlink-config') using
+@(see defattach):</p>
+@(`(:code ($ kissat-satlink-attach))`)
+
+<p>This lets FGL use Kissat as its default solver.</p>
+
+<p>Once we have set up a SAT solver for FGL, we are ready to prove theorems
+with it. There are many more options for how to solve SAT problems with FGL;
+see @(see fgl::fgl-solving) for more.</p>
+
+
 <h4>Simple STV Proofs</h4>
 
-<p>Now that we've set up a symbolic test vector (in the previous section), we
-can try some proofs about it.  Here is a simple example:</p>
+<p>Now that we've set up a symbolic test vector (in the previous section) and a
+SAT solver, we can try some proofs about it.  Here is a simple example:</p>
 
 @(`(:code ($ alu-simple-proof))`)
 
-<p>In addition to defining the STV @('(alu-test-vector)') itself, the @('defsvtv')
+<p>In addition to defining the STV @('(alu-test-vector)') itself, the @('defsvtv$')
 form from the previous section also defines  the following macros/functions:</p>
 
 <ul>
@@ -591,81 +613,20 @@ form from the previous section also defines  the following macros/functions:</p>
        (cons 'OP op))
  })
 
-<li>@('(alu-test-vector-autobinds)') expands to a form that creates a set of
-appropriate GL bindings for the input variables; in this case,</li>
-@({
-  (gl::auto-bindings (:nat b 16)
-                     (:nat a 16)
-                     (:nat op 3))
- })
-
-<li>@('(alu-test-vector-alist-autohyps x)'), like @('(alu-test-vector-autohyps)'),
-checks the type of the inputs, but instead of taking the input variables, it
-takes an alist @('x') that binds the variable symbols to their values.</li>
-
-<li>@('(alu-test-vector-alist-autoins x)'), like @('(alu-test-vector-autoins)'), checks
-the type of the inputs, but instead of taking the input variables, it takes an
-alist @('x') that binds the variable symbols to their values.  (Why would you
-want to do this?  It can be useful in decomposition proofs, which we'll get to
-later in the tutorial.)</li>
-
 </ul>
 
-<p>So the @('def-gl-thm') form above is checking that when the inputs @('a'),
+<p>So the @('def-fgl-thm') form above is checking that when the inputs @('a'),
 @('b') are appropriately-sized integers and @('op') is set to the addition
 opcode, the @('res') computed by the STV is (the low 16 bits of) the sum of
 @('a') and @('b').</p>
 
-<h4>Optimizing BDD Order</h4>
-
-<p>The automatically-generated GL bindings don't always produce a good BDD
-order (in fact, they don't really try to).  So in order to improve performance
-when doing BDD-based proofs (which is the default), you may make your own @(see
-gl::auto-bindings) form, or even create a hand-optimized variable ordering.
-For example, the following version of the same theorem proves more quickly
-because it uses a good interleaving of the variables of the @('a') and @('b')
-inputs:</p>
-
-@(`(:code ($ alu-simple-proof-opt))`)
-
-<p>In addition to proving properties, it's also important to be able to debug
-properties that don't prove.  For example, the @('COUNT') opcode has a bug in
-our design.  Attempting the following proof exposes the bug:</p>
-
-@(`(:code ($ alu-count-ctrex))`)
-
-<p>Instead of completing the proof, this prints out some counterexamples.  It
-can then be useful to plug one of these into @('svtv-debug') in order to get a
-waveform:</p>
-
-@(`(:code ($ alu-debug-ctrex))`)
-
-<h4>Using SAT rather than BDDs</h4>
-
-<p>If you have a SAT solver such as Glucose installed and set up in your path,
-you may set up GL to use AIG/SAT based reasoning rather than BDDs, as
-follows:</p>
-@(`(:code ($ satlink-include))`)
-@(`(:code ($ satlink-configure))`)
-@(`(:code ($ gl-use-satlink))`)
-@(`(:code ($ tshell))`)
-
-<p>First, we need to include an additional book to get the SAT machinery.
-Next, we create a satlink configuration that says how to run our SAT solver of
-choice -- here, we use Glucose with its \"-model\" option so that it outputs a
-satisfying assignment we can use -- and attach the function specifying that
-configuration to GL's satlink-config stub, @('gl::gl-satlink-config').
-@('Gl-satlink-mode') puts GL in a mode that uses AIGs to express Boolean
-functions and SAT to solve them, and finally we need to start a tshell (see
-@(see acl2::tshell)) to allow the SAT solver to be executed (the
-@('value-triple') just makes it an event form that can be in a certifiable
-book).  After this setup, any GL theorem we submit will be attempted using this
-AIG/SAT strategy.  One advantage to this approach is that BDD ordering doesn't
-matter, so using the automatically generated GL bindings is generally OK.</p>
-
-<p>To go back to BDD mode, you just need to do:</p>
-
-@(`(:code ($ bdd-mode))`)
+<p>There are many ways to change the behavior of FGL and configure it to solve
+different sorts of problems.  There is lots of documentation under @(see
+fgl::fgl). Particular topics that might be of interest:</p> <ul> <li>adding
+<see topic='@(url fgl::fgl-rewrite-rules)'>FGL rewrite rules</see></li>
+<li>configuring <see topic='@(url fgl::fgl-solving)'>SAT solving</see></li>
+<li>using <see topic='@(url aignet::aignet-comb-transforms)'>AIG
+transformations</see> before SAT solving.</li> </ul>
 
 <p>To continue, next see @(see decomposition-proofs).</p>")
 

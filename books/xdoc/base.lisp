@@ -93,7 +93,7 @@
                                  :in-theory (disable all-boundp assoc)
                                  :expand ((:free (a b x) (all-boundp (cons a b) x)))))
                   :guard t))  ;; WAHJr. added guard (see original below)
-  (let ((dir-system (acl2::f-get-global 'acl2::system-books-dir state)))
+  (let ((dir-system (acl2::system-books-dir state)))
     (if (not (and (stringp dir-system) (stringp bookname)))
         bookname
       (let ((lds (length dir-system)))

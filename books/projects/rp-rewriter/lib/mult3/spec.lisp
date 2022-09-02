@@ -1116,7 +1116,8 @@
                               sum-pps-bycol-bybit-simple-is-sum-pps-bycol-bybit
                               mult-bycol-bybit-spec) ())))))
 
-(def-rp-rule loghead-of-*-is-mult-final-spec
+(def-rp-rule :disabled-for-acl2 t
+  loghead-of-*-is-mult-final-spec
   (implies (and (integerp mult)
                 (integerp mcand)
                 (natp out-size))
@@ -1414,7 +1415,7 @@
                                (D2-OF-MINUS
                                 SUM-OF-F2S)))))
 
-  (defthm loghead-of-+-is-2vec-adder
+  (defthmd loghead-of-+-is-2vec-adder
     (implies (and (integerp x)
                   (integerp y)
                   (bitp carry))
@@ -1442,7 +1443,7 @@
                               ))
              )))
 
-  (defthm loghead-of-+-is-2vec-adder-without-carry
+  (defthmd loghead-of-+-is-2vec-adder-without-carry
     (implies (and (integerp x)
                   (integerp y))
              (equal (loghead size (+ x y))
@@ -1783,7 +1784,7 @@
                              (unsigned-byte-p
                               max)))))
 
-  (defthm +-of-known-sized-vecs
+  (defthmd +-of-known-sized-vecs
     (and (Implies (and (unsigned-byte-p size1 x)
                        (unsigned-byte-p size2 y))
                   (equal (+ x y)
@@ -1807,4 +1808,138 @@
              :in-theory (e/d () (loghead-of-+-is-2vec-adder-without-carry
                                  unsigned-byte-p
                                  unsigned-byte-p-of-+
-                                 loghead-of-+-is-2vec-adder))))))
+                                 loghead-of-+-is-2vec-adder)))))
+
+  (defthmd +-of-known-sized-vecs-reverse
+    (and (Implies (and (unsigned-byte-p size1 x)
+                       (unsigned-byte-p size2 y))
+                  (equal (2vec-adder x y 0 (1+ (max size1 size2)))
+                         (+ x y)))
+         (Implies (and (unsigned-byte-p size1 x)
+                       (unsigned-byte-p size2 y)
+                       (unsigned-byte-p 1 z))
+                  (equal (2vec-adder x y z (1+ (max size1 size2)))
+                         (+ x y z))))
+    :otf-flg t
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance +-of-known-sized-vecs
+                              )
+                   )
+             :in-theory nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; subtraction:
+
+(define 2vec-subtract (x y size carry-in)
+  :measure (nfix size)
+  :verify-guards nil
+  (if (zp size)
+      (-- (rp::binary-not carry-in))
+    (b* ((xc (acl2::logcar x))
+         (yc (acl2::logcar (acl2::lognot (acl2::logcar y))))
+         ((list s c)
+          (s-c-spec (list xc yc carry-in))))
+      (svl::4vec-cons s
+                      (2vec-subtract (acl2::logcdr x)
+                                     (acl2::logcdr y)
+                                     (1- size)
+                                     c))))
+  ///
+  (set-ignore-ok t)
+  (add-rp-rule 2vec-subtract :beta-reduce t))
+
+(local
+ (defthm 4vec-cons-equivalance
+   (implies (and (integerp x)
+                 (integerp y)
+                 (integerp rest))
+            (equal (equal x (svl::4vec-cons y rest))
+                   (and (equal (acl2::logcar x) (acl2::logcar y))
+                        (equal (acl2::logcdr x) rest))))
+   :hints (("Goal"
+            :in-theory (e/d (svl::4vec-concat$
+                             SV::4VEC-CONCAT
+                             SV::4VEC->UPPER
+                             SV::4VEC->lower
+                             SV::4VEC-P)
+                            ())))))
+
+(local
+ (defthm logcdr-of-subtracted
+   (implies (integerp y)
+            (equal (acl2::logcdr (- y))
+                   (+ (- (acl2::logcar y))
+                      (- (acl2::logcdr y)))))
+   :hints (("goal"
+            :in-theory (e/d* (acl2::logcar
+                              acl2::logcdr
+                              (:rewrite acl2::|(* x (- y))|)
+                              (:rewrite acl2::|(+ (if a b c) x)|)
+                              (:rewrite acl2::|(+ 0 x)|)
+                              (:rewrite acl2::|(+ c (+ d x))|)
+                              (:rewrite acl2::|(+ x (if a b c))|)
+                              (:rewrite acl2::|(- (* c x))|)
+                              (:rewrite acl2::|(- (+ x y))|)
+                              (:rewrite acl2::|(- (if a b c))|)
+                              (:rewrite acl2::|(floor x 2)| . 1)
+                              (:rewrite acl2::|(mod x 2)| . 1))
+                             (logcar-is-logbit-0))))))
+
+(defthmd -to-2vec-subtract
+  (implies (and (natp size)
+                (bitp carry-in)
+                (unsigned-byte-p size x)
+                (unsigned-byte-p size y))
+           (equal (+ x (- y) (- (rp::binary-not carry-in)))
+                  (2vec-subtract x y size carry-in)))
+  :otf-flg t
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (2vec-subtract x y size carry-in)
+           :in-theory (e/d* (bitp
+                             S-C-SPEC
+                             2vec-subtract
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions)
+                            ((:REWRITE LOGCAR-IS-LOGBIT-0)
+                             unsigned-byte-p)))))
+
+(defthmd -to-2vec-subtract-general1
+  (implies (and (natp size1)
+                (natp size2)
+                (bitp carry-in)
+                (unsigned-byte-p size1 x)
+                (unsigned-byte-p size2 y))
+           (equal (+ x (- y) (- (rp::binary-not carry-in)))
+                  (2vec-subtract x y (max size1 size2) carry-in)))
+  :otf-flg t
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance -to-2vec-subtract
+                            (size (max size1 size2))))
+           ;;:induct (2vec-subtract x y size carry-in)
+           :in-theory (e/d* (bitp
+                             S-C-SPEC
+                             2vec-subtract
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions)
+                            ((:REWRITE LOGCAR-IS-LOGBIT-0)
+                             unsigned-byte-p)))))
+
+(defthmd 2vec-subtract-binary-subtract
+  (implies (and (natp size1)
+                (natp size2)
+                (bitp carry-in)
+                (unsigned-byte-p size1 x)
+                (unsigned-byte-p size2 y))
+           (equal (2vec-subtract x y (max size1 size2) carry-in)
+                  (+ x (- y) (- (rp::binary-not carry-in)))))
+  :otf-flg t
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance -to-2vec-subtract-general1))
+           ;;:induct (2vec-subtract x y size carry-in)
+           :in-theory nil)))
+
+

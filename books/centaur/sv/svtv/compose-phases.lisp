@@ -56,6 +56,7 @@
 
 
 (defines svex-compose-svtv-phases
+  :ruler-extenders :lambdas
   (define svex-compose-svtv-phases ((x svex-p)
                                     (phase natp)
                                     (data svtv-composedata-p))
@@ -89,7 +90,8 @@
     :guard (svex-case x :call)
     (b* (((unless (mbt (svex-case x :call))) (svex-fix x))
          ((svex-call x))
-         (args (svexlist-compose-svtv-phases x.args phase data)))
+         (args (mbe :logic (svexlist-compose-svtv-phases x.args phase data)
+                    :exec (rev (svexlist-compose-svtv-phases-tailrec x.args phase data nil)))))
       (svex-call-simp x.fn args (svtv-composedata->simp data))))
 
   (define svexlist-compose-svtv-phases ((x svexlist-p)
@@ -101,6 +103,38 @@
         nil
       (cons (svex-compose-svtv-phases (car x) phase data)
             (svexlist-compose-svtv-phases (cdr x) phase data))))
+
+  (define svexlist-compose-svtv-phases-tailrec ((x svexlist-p)
+                                                (phase natp)
+                                                (data svtv-composedata-p)
+                                                (acc svexlist-p))
+    :measure (acl2::nat-list-measure (list phase (svexlist-count x) 1))
+    :returns (new-x (equal new-x (revappend (svexlist-compose-svtv-phases x phase data) (svexlist-fix acc)))
+                    :hints('(:in-theory (enable svex-compose-svtv-phases))))
+    (if (atom x)
+        (svexlist-fix acc)
+      (b* ((new-x1 (b* ((x (svex-fix (car x))))
+                     (svex-case x
+                       :quote x
+                       :var (b* (((svtv-composedata data))
+                                 (look (svex-fastlookup x.name data.nextstates))
+                                 ((when look)
+                                  ;; state var
+                                  (if (zp phase)
+                                      (b* ((look (svex-fastlookup x.name data.initst)))
+                                        (or look (svex-x)))
+                                    (svex-compose-svtv-phases look (1- phase) data))))
+                              ;; input var
+                              (b* ((inalist (nth phase (svex-alistlist-fix data.input-substs)))
+                                   (look (svex-fastlookup x.name inalist)))
+                                (or look (svex-x)
+                                    ;; (svex-var (svex-phase-var x.name phase))
+                                    )))
+                       :call (svex-compose-svtv-phases-call x phase data)))))
+        (svexlist-compose-svtv-phases-tailrec
+         (cdr x) phase data
+         (cons new-x1
+               (svexlist-fix acc))))))
   ///
   (verify-guards svex-compose-svtv-phases)
   (memoize 'svex-compose-svtv-phases-call)
@@ -138,9 +172,11 @@
                                           (svex-alist-eval data.initst env))))
       :hints ('(:expand ((svexlist-compose-svtv-phases x phase data)
                          (:free (nextstates ins initst) (svexlist-eval-unroll-multienv x phase nextstates ins initst)))))
-      :flag svexlist-compose-svtv-phases))
+      :flag svexlist-compose-svtv-phases)
+    :skip-others t)
 
-  (deffixequiv-mutual svex-compose-svtv-phases))
+  (deffixequiv-mutual svex-compose-svtv-phases
+    :hints(("Goal" :in-theory (disable return-type-of-svexlist-compose-svtv-phases-tailrec.new-x)))))
 
 (define svex-alist-compose-svtv-phases ((x svex-alist-p)
                                         (phase natp)

@@ -15,6 +15,7 @@
 (include-book "../types")
 
 (include-book "arrays")
+(include-book "value-integer-get")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -76,8 +77,6 @@
           (pack afixtype '-array-write-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
-         (value-itype->get-to-itype->get
-          (pack 'value- ifixtype '->get-to- ifixtype '->get))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -118,8 +117,7 @@
          (event `(defruled ,name
                    ,formula
                    :enable (exec-expr-asg
-                            value-integer->get
-                            ,value-itype->get-to-itype->get
+                            ,@*atc-value-integer->get-rules*
                             ,atype-array-itype-index-okp
                             ,atype-array-write-itype
                             ,atype-array-write-alt-def

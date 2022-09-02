@@ -143,7 +143,7 @@ sub scan_add_dir {
     my ($base,$the_line) = @_;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
-    # my $regexp = "^[^;]*\\([\\s]*add-include-book-dir!?[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
+    # Support directory supplied as (:key . "path") or just "path"
     my $res = $the_line =~
 	m/^[^;]* # not commented
           \(\s*
@@ -153,11 +153,15 @@ sub scan_add_dir {
             \s+
             :(?<name>[^\s]*)
             \s+
-            "(?<dir>[^"]*[^"\/])  # dir string except for possible trailing slash
-            \/?"
+            (?: (?: # "path":
+              "(?<dir>[^"]*[^"\/])  # dir string except for possible trailing slash
+              \/?"
+             ) | (?: # (:key . "path"):
+              \( \s* :(?<key>[^\s]*)  \s+ \. \s+ "(?<dir>[^"]*[^"\/]) \/?"
+            ))
          /xi;
     if ($res) {
-	my $ans = [add_dir_event, uc($+{name}), $+{dir}, ($+{nonloc} eq "!") ? 0 : 1 ];
+	my $ans = [add_dir_event, uc($+{name}), $+{key}, $+{dir}, ($+{nonloc} eq "!") ? 0 : 1 ];
 	debug_print_event($base, $ans);
 	return $ans;
     }
