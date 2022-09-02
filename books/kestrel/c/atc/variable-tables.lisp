@@ -18,8 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-variable-tables
-  :short "Tables of C variables, and operations on them,
-          used internally by ATC."
+  :short "Tables of ACL2 variables, and operations on these tables."
   :order-subtopics t
   :default-parent t)
 
