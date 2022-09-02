@@ -268,9 +268,12 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable debugdatap))))
   :parents (svtv)
-  :short "Diagnose hardware or stimulus bugs by studying an SVTV run in a special-purpose
+  :short "(Deprecated) Diagnose hardware or stimulus bugs by studying an SVTV run in a special-purpose
           read-eval-print loop."
-  :long "<p>To enter this read-eval-print loop for the first time, run:</p>
+  :long "
+<p>This version of the utility is deprecated in favor of @(see svtv-chase$).</p>
+
+<p>To enter this read-eval-print loop for the first time, run:</p>
 @({
  (svtv-chase svtv env)
  })

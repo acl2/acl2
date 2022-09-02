@@ -3,12 +3,19 @@
 ;; (include-book "centaur/meta/def-formula-checks" :dir :system)
 (include-book "centaur/meta/portcullis" :dir :system)
 
+(include-book "centaur/bitops/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 
 (defpkg "RP"
   (union$ *acl2-exports*
-          '(
-	  acl2::and*
-	  acl2::or*
+          ;;*standard-acl2-imports*
+          *std-pkg-symbols*
+          *bitops-exports*
+          std::*std-exports*
+          
+          
+          '(acl2::and*
+	    acl2::or*
             b*
             define
             repeat
@@ -17,7 +24,8 @@
             bool-fix
             repeat
             rev
-
+	    acl2::r
+	    acl2::defsection
             take-of-len-free
             list-fix
             suffixp
@@ -51,16 +59,14 @@
             acl2::SYMBOL-LIST-LISTP
             acl2::unprettify
 
-
 	    acl2::logapp
 	    acl2::loghead
 	    acl2::logbit
 	    acl2::logtail
-	    
-	    
+
             acl2::Defines
 	    acl2::patbind-ret
-            acl2::in
+            ;;acl2::in
             acl2::for
             acl2::collect
             acl2::sum
@@ -83,5 +89,6 @@
 
 	    cmr::def-formula-checks
 	    cmr::def-formula-checks-default-evl)
-          *common-lisp-symbols-from-main-lisp-package*
-          :test 'eq))
+          ;;*common-lisp-symbols-from-main-lisp-package*
+          :test 'eq
+          ))

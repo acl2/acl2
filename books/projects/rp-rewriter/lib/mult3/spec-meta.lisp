@@ -154,52 +154,113 @@
                                                   '1))
                     '((integerp src1)))|#
 
+
+(define binary-*-p (term)
+  (case-match term
+    (('binary-* & &)
+     t))
+  ///
+  (defthm binary-*-p-implies
+    (implies (binary-*-p term)
+             (case-match term
+               (('binary-* & &)
+                t)))
+    :rule-classes :forward-chaining))
+
+(define binary-+-p (term)
+  (case-match term
+    (('binary-+ & &)
+     t))
+  ///
+  (defthm binary-+-p-implies
+    (implies (binary-+-p term)
+             (case-match term
+               (('binary-+ & &)
+                t)))
+    :rule-classes :forward-chaining))
+
+(define binary-subtract-p (term)
+  (case-match term
+    (('binary-+ & ('unary-- &))
+     t))
+  ///
+  (defthm binary-subtract-p-implies
+    (implies (binary-subtract-p term)
+             (case-match term
+               (('binary-+ & ('unary-- &))
+                t)))
+    :rule-classes :forward-chaining))
+
+
 (define */+-to-mult-spec-meta ((term rp-termp)
                                (context rp-term-listp))
-  (case-match term
-    (('binary-* x y)
-     (b* (((mv size-x integerp-x)
-           (calculate-vec-size x context))
-          ((mv size-y integerp-y)
-           (calculate-vec-size y context))
-          ((unless (and integerp-x
-                        (not (equal size-x -1))
-                        (not (equal size-y -1))
-                        integerp-y))
-           (mv term nil)))
-       (mv `(svl-mult-final-spec ,x ,y ',(+ size-x size-y))
-           `(nil t t t))))
-    (('binary-+ x y)
-     (b* (((mv size-x integerp-x)
-           (calculate-vec-size x context))
-          ((mv size-y integerp-y)
-           (calculate-vec-size y context))
-          ((unless (and integerp-x
-                        integerp-y
-                        (not (equal size-x -1))
-                        (not (equal size-x 1))
-                        (not (equal size-y -1))
-                        (not (equal size-y 1))))
-           (mv term nil)))
-       (mv `(2vec-adder ,x ,y '0 ',(1+ (max size-x size-y)))
-           `(nil t t t t))))
-    (('binary-+ x ('binary-+ y z))
-     (b* (((mv size-x integerp-x)
-           (calculate-vec-size x context))
-          ((mv size-y integerp-y)
-           (calculate-vec-size y context))
-          ((mv size-z integerp-z)
-           (calculate-vec-size z context))
-          ((unless (and integerp-x
-                        integerp-y
-                        integerp-z
-                        (equal size-z 1)
-                        (not (equal size-x -1))
-                        (not (equal size-y -1))))
-           (mv term nil)))
-       (mv `(2vec-adder ,x ,y ,z ',(1+ (max size-x size-y)))
-           `(nil t t t t))))
-    (& (mv term nil))))
+  (cond
+   ((binary-*-p term) ;;('binary-* x y)
+    (b* ((x (cadr term))
+         (y (caddr term))
+         ((mv size-x integerp-x)
+          (calculate-vec-size x context))
+         ((mv size-y integerp-y)
+          (calculate-vec-size y context))
+         ((unless (and integerp-x
+                       (not (equal size-x -1))
+                       (not (equal size-y -1))
+                       integerp-y))
+          (mv term nil)))
+      (mv `(svl-mult-final-spec ,x ,y ',(+ size-x size-y))
+          `(nil t t t))))
+   ((binary-subtract-p term) ;;('binary-+ x ('unary-- y))
+    (b* ((x (cadr term))
+         (y (cadr (caddr term)))
+         ((mv size-x integerp-x)
+          (calculate-vec-size x context))
+         ((mv size-y integerp-y)
+          (calculate-vec-size y context))
+         ((unless (and integerp-x
+                       integerp-y
+                       (not (equal size-x -1))
+                       (not (equal size-y -1))))
+          (mv term nil)))
+      (mv `(2vec-subtract ,x ,y ',(max size-x size-y) '1)
+          `(nil t t t t))))
+   ((and (binary-+-p term)
+         (binary-+-p (caddr term)))
+    (b* ((x (cadr term))
+         (y (cadr (caddr term)))
+         (z (caddr (caddr term)))
+         ((mv size-x integerp-x)
+          (calculate-vec-size x context))
+         ((mv size-y integerp-y)
+          (calculate-vec-size y context))
+         ((mv size-z integerp-z)
+          (calculate-vec-size z context))
+         ((unless (and integerp-x
+                       integerp-y
+                       integerp-z
+                       (equal size-z 1)
+                       (not (equal size-x -1))
+                       (not (equal size-y -1))))
+          (mv term nil)))
+      (mv `(2vec-adder ,x ,y ,z ',(1+ (max size-x size-y)))
+          `(nil t t t t))))
+   ((binary-+-p term)
+    (b* ((x (cadr term))
+         (y (caddr term))
+         ((mv size-x integerp-x)
+          (calculate-vec-size x context))
+         ((mv size-y integerp-y)
+          (calculate-vec-size y context))
+         ((unless (and integerp-x
+                       integerp-y
+                       (not (equal size-x -1))
+                       (not (equal size-x 1))
+                       (not (equal size-y -1))
+                       (not (equal size-y 1))))
+          (mv term nil)))
+      (mv `(2vec-adder ,x ,y '0 ',(1+ (max size-x size-y)))
+          `(nil t t t t))))
+    
+   (t (mv term nil))))
 
 #|(*-to-mult-spec-meta  '(BINARY-* (ACL2::RP 'INTEGERP
                                            (SVL::4VEC-CONCAT$ '23
@@ -234,6 +295,8 @@
     (rp::def-formula-checks */+-to-mult/adder-spec-meta-fchecks
       (svl::bits svl::4vec-concat$ *
                  2vec-adder
+                 2VEC-SUBTRACT
+                 unary--
                  SVL-MULT-FINAL-SPEC
                  binary-or binary-xor binary-and binary-?
                  bit-of binary-not))))
@@ -246,6 +309,10 @@
      (rp::create-regular-eval-lemma svl::4VEC-CONCAT$ 3
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma SVL-MULT-FINAL-SPEC 3
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma 2VEC-SUBTRACT 4
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma unary-- 1 
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma 2vec-adder 4  */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma svl::Bits 3  */+-to-mult/adder-spec-meta-fchecks)
@@ -310,7 +377,7 @@
                              +-IS-SUM)))))
 
 (local
- (defthm unsigned-byte-p-of-logapp
+ (defthm unsigned-byte-p-of-logapp2
    (implies (and (natp size)
                  (natp size2)
                  ;;(<= size2 size)
@@ -356,7 +423,7 @@
             (equal (unsigned-byte-p size (SVL::4VEC-CONCAT$ size2 x y))
                    (unsigned-byte-p (- size size2) y)))
    :hints (("Goal"
-            :use ((:instance unsigned-byte-p-of-logapp
+            :use ((:instance unsigned-byte-p-of-logapp2
                              (y y)
                              (size (- size size2))
                              (size2 size2)))
@@ -372,7 +439,7 @@
                               SV::4VEC->lower
                               SV::4VEC)
                              (+-IS-SUM
-                              unsigned-byte-p-of-logapp
+                              unsigned-byte-p-of-logapp2
                               MOD2-IS-M2
                               FLOOR
                               FLOOR2-IF-F2
@@ -489,9 +556,19 @@
                              check-context-for-integerp-correct
                              logcount)))))
 
+(defret calculate-vec-size-correct-size=1
+  (implies (and (rp-evl-meta-extract-global-facts)
+                (eval-and-all context a)
+                (valid-sc x a)
+                (*/+-to-mult/adder-spec-meta-fchecks state)
+                integerp
+                (equal size 1))
+           (unsigned-byte-p 1 (rp-evlt x a)))
+  :fn calculate-vec-size
+  :hints (("goal"
+           :use ((:instance calculate-vec-size-correct))
+           :in-theory nil)))
 
-
-  
 (defthm */+-to-mult-spec-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts)
                 (eval-and-all context a)
@@ -509,17 +586,10 @@
                                                                context)))
                             (size2 (mv-nth 0
                                            (calculate-vec-size (caddr term)
-                                                               context))))
-                 (:instance +-of-known-sized-vecs
-                            (x (rp-evlt (cadr term) a))
-                            (y (rp-evlt (caddr term) a))
-                            (size1 (mv-nth 0
-                                           (calculate-vec-size (cadr term)
-                                                               context)))
-                            (size2 (mv-nth 0
-                                           (calculate-vec-size (caddr term)
                                                                context)))))
-           :in-theory (e/d* (*/+-to-mult-spec-meta
+           :in-theory (e/d* (+-of-known-sized-vecs-reverse
+                             2vec-subtract-binary-subtract
+                             */+-to-mult-spec-meta
                              regular-eval-lemmas-with-ex-from-rp
                              regular-eval-lemmas)
                             (+-IS-SUM

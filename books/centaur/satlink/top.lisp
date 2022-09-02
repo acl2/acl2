@@ -125,6 +125,11 @@ solver is best for your particular problem, and perhaps to gain some additional
 confidence that a particular problem really is unsatisfiable (by checking it
 with many solvers.)</p>
 
+<p>Special recommendations are for Glucose (no longer the most modern or
+highest-performing, but adequate and needed for certifying certain ACL2
+community books) and Kissat (as of 2020, the best-performing free/open-source
+solver).</p>
+
 
 <h3><a href='http://www.labri.fr/perso/lsimon/glucose/'>Glucose</a> &mdash;
 open source, recommended</h3>
@@ -256,6 +261,14 @@ books:</p>
 
 <p>Newer versions of Lingeling are allegedly able to produce unsat proofs, but
 we haven't figured out how to make it work.</p>
+
+<h3><a href='http://fmv.jku.at/kissat/'>Kissat</a></h3>
+
+<p>Variants of Kissat won most of the major tracks at the 2022 SAT
+competition. It can also be found on Github <a
+href='https://github.com/arminbiere/kissat'>here</a>. It is built using a
+standard @('configure') followed by @('make'); run @('./configure -h') to see
+options.</p>
 
 
 <h3><a

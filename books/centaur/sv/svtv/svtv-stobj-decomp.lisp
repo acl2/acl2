@@ -439,7 +439,7 @@
                              (cw "Trips-vars not quotep: ~x0~%" trips-vars)))
                 (svex-alist-unbound-vars-p trips-vars (base-fsm->nextstate fsm))
                 (equal new-envs (svex-envlist-removekeys trips-vars envs))
-                (force (svex-override-triplelist-fsm-inputs-ok trips envs new-envs initst fsm)))
+                (force (svex-override-triplelist-fsm-inputs-ok trips envs new-envs initst (base-fsm->nextstate fsm))))
            (equal (base-fsm-eval envs initst fsm)
                   (base-fsm-eval new-envs initst fsm)))
   :hints(("Goal" :in-theory (enable base-fsm-check-overridetriples))))

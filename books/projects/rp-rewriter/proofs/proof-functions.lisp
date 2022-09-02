@@ -39,57 +39,14 @@
 (in-package "RP")
 
 (include-book "../macros")
-(local (include-book "local-lemmas"))
 (include-book "../rp-rewriter")
 (include-book "../aux-functions")
-(local (include-book "aux-function-lemmas"))
 (include-book "../eval-functions")
+(local (include-book "aux-function-lemmas"))
+(local (include-book "local-lemmas"))
+
 
 ;;;;;;;;;;;;;;;;;;;
-
-
-(defun eval-sc (lst a)
-  ;;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!OLD FUNCTION
-  ;; "and" all the side-conditions;
-  ;; side conditions is an assoc list.
-  ;; second element in each entry is the side condition that is expected to be
-  ;; correct.
-  ;; first element in each entry is the condition in which the side condition
-  ;; holds.
-  ;; i.e, (if first-element side-condition t)
-  (declare (xargs :guard (and (alistp lst)
-                              (alistp a)
-                              (rp-term-list-listp (strip-cars lst))
-                              (rp-term-list-listp (strip-cdrs lst)))))
-  (if (atom lst)
-      t
-    (and (implies (eval-and-all (caar lst) a)
-                  (eval-and-all (cdar lst) a))
-         (eval-sc (cdr lst) a))))
-
-(defun fnc-alist-to-fnc-call (fnc-alist)
-  (cons (car fnc-alist)
-        (sas 'a 0 (cdr fnc-alist))))
-
-(defun context-fncs-validp (context-fncs)
-  ;;; not used anymore.
-  (if (atom context-fncs)
-      `',(equal context-fncs nil)
-    `(if (booleanp ,(fnc-alist-to-fnc-call (car context-fncs)))
-         ,(context-fncs-validp (cdr context-fncs))
-       'nil)))
-
-;; (create-eval
-;;  (append *valid-context-fnc*
-;;          *small-evl-fncs*)
-;;  big-evl)
-
-;; ;; TEST
-;; (defthm valid-context-fnc*-is-valid
-;;   (implies
-;;    (alistp a)
-;;    (big-evl (context-fncs-validp *valid-context-fnc*) a)))
-
 
 (defun valid-sc-bindings (bindings a)
   (if (atom bindings)
@@ -157,13 +114,8 @@
     (if (atom alst)
         t;(equal alst nil)
       (and (equal (caar alst) nil)
-           (context-free-scp (cdr alst)))))
+           (context-free-scp (cdr alst))))))
 
-  (defun ex-and-eval-sc (term context a)
-    (eval-sc (ext-side-conditions term context) a))
-
-  (defun ex-and-eval-sc-subterms (subterms context a)
-    (eval-sc (ext-side-conditions-subterms subterms context) a)))
 
 (defun-sk valid-sc-any (term)
   (forall a
@@ -173,51 +125,6 @@
   (forall a
           (valid-sc-subterms subterms a)))
 
-(defun valid-rulep-sk-body (rule a)
-  (implies (eval-and-all-nt (rp-hyp rule) a)
-           (and (if (rp-iff-flag rule)
-                    (iff (rp-evl (rp-lhs rule) a)
-                         (rp-evl (rp-rhs rule) a))
-                  (equal (rp-evl (rp-lhs rule) a)
-                         (rp-evl (rp-rhs rule) a)))
-                (implies (include-fnc (rp-rhs rule) 'rp)
-                         (valid-sc-nt (rp-rhs rule) a)))))
-
-(defun-sk valid-rulep-sk (rule)
-  (forall a
-          (valid-rulep-sk-body rule a)))
-
-(defun valid-rulep (rule)
-  (and (rule-syntaxp rule)
-       (valid-rulep-sk rule)))
-
-(defun valid-rulesp (rules)
-  (if (endp rules)
-      (equal rules nil)
-    (and (valid-rulep (car rules))
-         (valid-rulesp (cdr rules)))))
-
-(defun valid-rules-alistp (rules-alistp)
-  (if (endp rules-alistp)
-      (equal rules-alistp nil)
-    (and (consp (car rules-alistp))
-         (symbolp (caar rules-alistp))
-         (valid-rulesp (cdar rules-alistp))
-         (valid-rules-alistp (cdr rules-alistp)))))
-
-(defun valid-rules-list-listp (rules-list)
-  (if (atom rules-list)
-      (equal rules-list nil)
-    (and (valid-rulesp (car rules-list))
-         (valid-rules-list-listp (cdr rules-list)))))
-
-(defun valid-rules-alistp-def2 (rules-alist)
-  (and (alistp rules-alist)
-       (symbol-listp (strip-cars rules-alist))
-       (valid-rules-list-listp (strip-cdrs rules-alist))))
-
-(defun valid-term-syntaxp1 (term)
-  (pseudo-termp term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -423,11 +330,3 @@
   (rp-evl-lst lst a))||#
 
 
-(defun-sk valid-rp-statep (rp-state)
-  (declare (xargs :stobjs (rp-state)))
-  (forall key
-          (or (not (symbolp key))
-              (and (valid-rulesp
-                    (rules-alist-outside-in-get key rp-state))
-                   (valid-rulesp
-                    (rules-alist-inside-out-get key rp-state))))))
