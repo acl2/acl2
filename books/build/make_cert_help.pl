@@ -758,7 +758,13 @@ chmod(0750,$shtmp);
 
 my $START_TIME = mytime();
 
-    system("$STARTJOB", "./$shtmp");
+    my $firstchar = substr $shtmp, 0, 1;
+    if ($firstchar eq "/") {
+        system("$STARTJOB", "$shtmp");
+    }
+    else {
+        system("$STARTJOB", "./$shtmp");
+    }
     $status = $? >> 8;
 
 my $END_TIME = mytime();
