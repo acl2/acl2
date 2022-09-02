@@ -122,8 +122,9 @@ my @run_all_out_of_date = ();
 my @run_all_up_to_date = ();
 my $make = $ENV{"MAKE"} || "make";
 my @make_args = ();
-my $acl2 = $ENV{"ACL2"};
-my $acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
+my $acl2;
+my $acl2_books;
+my $acl2_projects;
 # add default useless runes setting if undefined
 if (! defined($ENV{"ACL2_USELESS_RUNES"}) ) {
     $ENV{"ACL2_USELESS_RUNES"} = "-25";
@@ -315,6 +316,14 @@ COMMAND LINE OPTIONS
            the value of (system-books-dir state) as reported by the
            ACL2 executable, or the location of this script, in that
            order.
+
+   --acl2-projects <file>
+           Use <file> as the ACL2 projects file, containing a keyword
+           value list mapping directory keywords to directory paths
+           (strings). For cert.pl these must be listed one keyword
+           value pair per line.  Normally this is given by the
+           ACL2_PROJECTS environment variable; this argument overrides
+           that variable.
 
    --clean-certs
    --cc
@@ -652,6 +661,7 @@ GetOptions ("help|h"               => sub {
                                            $no_build = 1;},
             "acl2|a=s"             => \$acl2,
             "acl2-books|b=s"       => \$acl2_books,
+	    "acl2-projects=s"      => \$acl2_projects,
             "bin=s"                => sub {
                 shift;
                 my $arg = shift;
@@ -732,95 +742,27 @@ if ($read_timestamps) {
     read_timestamps($read_timestamps);
 }
 
-# If $acl2 is still not set, then set it based on the location of acl2
-# in the path, if available
 
-unless ($acl2) {
-    $acl2 = "acl2";
+
+$acl2 = determine_acl2_exec($acl2);
+unless ($acl2 || $quiet || $no_build) {
+    print(STDERR
+	  "ACL2 executable not found.  Please specify with --acl2 command line
+	  flag or ACL2 environment variable.\n");
 }
 
-# convert user-provided ACL2 to cygwin path, under cygwin
-$acl2 = path_import($acl2);
-# this is probably always /dev/null but who knows under windows
-my $devnull = File::Spec->devnull;
-# get the absolute path
-$acl2 = `which $acl2 2>$devnull`;
-chomp($acl2);  # remove trailing newline
+$acl2_books = determine_acl2_dirs($acl2_books, $acl2_projects, $acl2, $startjob, $RealBin);
 
-if ($acl2) {
-    # canonicalize the path
-    $acl2 = abs_canonical_path($acl2);
-    unless($quiet || $no_build) {
-        print STDERR "ACL2 executable is ${acl2}\n";
-    }
-    $ENV{"ACL2"} = $acl2;
-} else {
-    unless ($quiet || $no_build) {
-        print(STDERR
-"ACL2 executable not found.  Please specify with --acl2 command line
-flag or ACL2 environment variable.\n");
-    }
+unless ($acl2_books || $quiet || $no_build) {
+    print(STDERR
+	  "ACL2 system books not found.  Please specify with --acl2-books
+	  command line flag or ACL2_SYSTEM_BOOKS environment variable.");
 }
 
-# At this point, $acl2 is set, so we know which ACL2 we're using.  To
-# choose a value for $acl2_books if it is not yet set, we try the
-# following in order until one succeeds:
-#   - look for a "books" directory where the ACL2 we're using is located
-#   - run ACL2 and check if (system-books-dir state) evaluates to a directory that exists
-#   - use the parent of the directory containing this script
 
-if (! $acl2_books && $acl2 ) {
-    # was:
-    # my $tmp_acl2_books = rel_path(dirname($acl2), "books");
-    my $tmp_acl2_books = File::Spec->catfile(dirname($acl2), "books");
-    if (-d $tmp_acl2_books) {
-        $acl2_books = $tmp_acl2_books;
-    }
-}
-
-if (! $acl2_books && $acl2 ) {
-    my $dumper1 = # command to send to ACL2
-        '(cw \"~%CERT_PL_VAL:~S0~%\" (acl2::system-books-dir acl2::state))';
-    my $dumper2 = # command to send to STARTJOB
-        'echo "' . $dumper1 . '" | ' .
-        "$acl2 2>$devnull | " .
-        'awk -F: "/CERT_PL_VAL/ { print \$2 }"';
-    my $dumper3 = # command to send to the shell
-        "$startjob -c '$dumper2'";
-    my $tmp_acl2_books = `$dumper3`;
-    chomp($tmp_acl2_books);
-    if (-d $tmp_acl2_books) {
-        $acl2_books = $tmp_acl2_books;
-    }
-}
-
-if (! $acl2_books ) {
-    my $tmp_acl2_books = "$RealBin/..";
-    if (-d $tmp_acl2_books) {
-        $acl2_books = $tmp_acl2_books;
-    }
-}
-
-if (! $acl2_books ) {
-    unless ($quiet || $no_build) {
-        print(STDERR
-"ACL2 system books not found.  Please specify with --acl2-books
-command line flag or ACL2_SYSTEM_BOOKS environment variable.");
-    }
-}
-
-$acl2_books = abs_canonical_path($acl2_books);
 unless($quiet) {
     print(STDERR "System books directory is ${acl2_books}\n");
 }
-
-certlib_add_dir("SYSTEM", $acl2_books);
-# In case we're going to run Make, set the ACL2_SYSTEM_BOOKS
-# and ACL2 environment variables to match our assumption.
-# In cygwin, ACL2 reads paths like c:/foo/bar whereas we're dealing in
-# paths like /cygdrive/c/foo/bar, so "export" it
-my $acl2_books_env = path_export($acl2_books);
-$ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
 
 my $depdb = new Depdb(evcache => $cache, pcert_all => $certlib_opts{"pcert_all"});
 

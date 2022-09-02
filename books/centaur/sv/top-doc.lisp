@@ -53,6 +53,11 @@ book that depends on Glucose being installed.</p>")
                        :short "Stub for missing topic"
                        :long "<p>This topic was omitted from the manual because it is in a
 book that depends on Glucose being installed.</p>")
+                     (defxdoc sv::decomposition-proofs
+                       :parents (sv::sv-tutorial)
+                       :short "Stub for missing topic"
+                       :long "<p>This topic was omitted from the manual because it is in a
+book that depends on Glucose being installed.</p>")
                      :endif))
 
 

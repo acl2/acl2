@@ -22,11 +22,11 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Mertcan Temel <mert.temel@intel.com>
-;; This file is copied over from svtv-override-fact.lisp and updated to fit the needs
+;; This file is copied over from svtv-generalized-thm.lisp and updated to fit the needs
 
 (in-package "SV")
 
-(include-book "svtv-override-fact")
+(include-book "svtv-generalized-thm")
 
 (std::def-primitive-aggregate svtv-equiv-thm-data
   (name
@@ -53,49 +53,49 @@
 
 (program)
 
-(defun svtv-equiv-thm-suffix-index-to-var (var index)
+(defun svtv-equiv-thm-suffix-index-to-var (var pkg-sym index)
   (intern$ (str::cat (symbol-name var)
                      "-"
                      (str::int-to-dec-string index))
-           (symbol-package-name var)))
+           (symbol-package-name pkg-sym)))
 
-(defun svtv-equiv-thm-suffix-index-to-vars-for-svassocs (vars index)
+(defun svtv-equiv-thm-suffix-index-to-vars-for-svassocs (vars pkg-sym index)
   (if (atom vars)
       nil
-    (cons `(,(svtv-equiv-thm-suffix-index-to-var (car vars) index)
+    (cons `(,(svtv-equiv-thm-suffix-index-to-var (car vars) pkg-sym index)
             ',(car vars))
-          (svtv-equiv-thm-suffix-index-to-vars-for-svassocs (cdr vars) index))))
+          (svtv-equiv-thm-suffix-index-to-vars-for-svassocs (cdr vars) pkg-sym index))))
 
-(defun svtv-equiv-thm-suffix-index-to-vars (vars index)
+(defun svtv-equiv-thm-suffix-index-to-vars (vars pkg-sym index)
   (if (atom vars)
       nil
-    (cons (svtv-equiv-thm-suffix-index-to-var (car vars) index)
-          (svtv-equiv-thm-suffix-index-to-vars (cdr vars) index))))
+    (cons (svtv-equiv-thm-suffix-index-to-var (car vars) pkg-sym index)
+          (svtv-equiv-thm-suffix-index-to-vars (cdr vars) pkg-sym index))))
 
-(defun svtv-equiv-thm-suffix-index-to-bindings (bindings index)
-  (b* ((vars (svtv-equiv-thm-suffix-index-to-vars (strip-cars bindings) index)))
+(defun svtv-equiv-thm-suffix-index-to-bindings (bindings pkg-sym index)
+  (b* ((vars (svtv-equiv-thm-suffix-index-to-vars (strip-cars bindings) pkg-sym index)))
     (pairlis$ vars (strip-cdrs bindings))))
 
-(defun svtv-equiv-thm-suffix-index-to-hyps (masks index)
+(defun svtv-equiv-thm-suffix-index-to-hyps (masks pkg-sym index)
   (if (atom masks)
       nil
-    (b* ((rest (svtv-equiv-thm-suffix-index-to-hyps (cdr masks) index))
+    (b* ((rest (svtv-equiv-thm-suffix-index-to-hyps (cdr masks) pkg-sym index))
          (cur (car masks)))
       (case-match cur
         (('unsigned-byte-p num var)
-         (b* ((new-var (svtv-equiv-thm-suffix-index-to-var var index)))
+         (b* ((new-var (svtv-equiv-thm-suffix-index-to-var var pkg-sym index)))
            (cons `(unsigned-byte-p ,num ,new-var)
                  rest)))
         (&
          rest)))))
 
-(defun svtv-equiv-thm-input-vars-to-alist (input-vars index)
+(defun svtv-equiv-thm-input-vars-to-alist (input-vars pkg-sym index)
   (if (atom input-vars)
       nil
     (cons `(cons
             ',(car input-vars)
-            ,(svtv-equiv-thm-suffix-index-to-var (car input-vars) index))
-          (svtv-equiv-thm-input-vars-to-alist (cdr input-vars) index))))
+            ,(svtv-equiv-thm-suffix-index-to-var (car input-vars) pkg-sym index))
+          (svtv-equiv-thm-input-vars-to-alist (cdr input-vars) pkg-sym index))))
 
 (defun svtv-equiv-thm-initial-override-lemma (x)
   (declare (Xargs :mode :program))
@@ -123,32 +123,32 @@
                    (<svtv-1> . ,x.svtv-1)
                    (<svtv-2> . ,x.svtv-2)
                    (<input-bindings-1>
-                    . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-1)))
+                    . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-1)))
                    (<input-bindings-2>
-                    . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-2)))
-                   (<input-vars-1> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-1 1)))
-                   (<input-vars-2> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-2 2)))
+                    . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-2)))
+                   (<input-vars-1> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-1 x.pkg-sym 1)))
+                   (<input-vars-2> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-2 x.pkg-sym 2)))
                    (<outputs-list-1> . ,x.output-vars-1)
                    (<outputs-list-2> . ,x.output-vars-2))
      :splice-alist `((<outputs-1>
-                      . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-1 1))
+                      . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-1 x.pkg-sym 1))
                      (<outputs-2>
-                      . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-2 2)) ;;;;
+                      . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-2 x.pkg-sym 2)) ;;;;
                      (<integerp-concls>
-                      . ,(svtv-ovfact-integerp-conclusions-aux (append
+                      . ,(svtv-genthm-integerp-conclusions-aux (append
                                                                 (svtv-equiv-thm-suffix-index-to-vars
-                                                                 x.output-vars-1 1)
+                                                                 x.output-vars-1 x.pkg-sym 1)
                                                                 (svtv-equiv-thm-suffix-index-to-vars
-                                                                 x.output-vars-2 2))))
+                                                                 x.output-vars-2 x.pkg-sym 2))))
                      (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :pkg-sym x.pkg-sym)))
 
-(defun svtv-equiv-thm-input-binding-hyp-termlist (input-var-bindings index)
+(defun svtv-equiv-thm-input-binding-hyp-termlist (input-var-bindings pkg-sym index)
   (b* (((when (atom input-var-bindings)) nil)
        ((list name term) (car input-var-bindings)))
-    (cons `(equal ,(svtv-equiv-thm-suffix-index-to-var name index) ,term)
-          (svtv-equiv-thm-input-binding-hyp-termlist (cdr input-var-bindings) index))))
+    (cons `(equal ,(svtv-equiv-thm-suffix-index-to-var name pkg-sym index) ,term)
+          (svtv-equiv-thm-input-binding-hyp-termlist (cdr input-var-bindings) pkg-sym index))))
 
 (defun svtv-equiv-mono-lemma (x i)
   (b* (((svtv-equiv-thm-data x))
@@ -239,29 +239,29 @@
          `((<env> . env-1)
            (<svtv> . ,x.svtv-1)
            (<triples> . ,x.triples-name-1)
-           (<input-bindings> . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-1)))
+           (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-1)))
            (<input-vars> . (list . ,(svtv-equiv-thm-input-vars-to-alist
-                                     x.input-vars-1 1)))
+                                     x.input-vars-1 x.pkg-sym 1)))
            )
        `((<env> . env-2)
          (<svtv> . ,x.svtv-2)
          (<triples> . ,x.triples-name-2)
-         (<input-bindings> . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings-2)))
+         (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-2)))
          (<input-vars> . (list . ,(svtv-equiv-thm-input-vars-to-alist
-                                   x.input-vars-2 2)))
+                                   x.input-vars-2 x.pkg-sym 2)))
          ))
      :splice-alist
      (if (equal i 1)
          `((<input-var-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
-                                     (strip-cars x.input-var-bindings-1) 1))
+                                     (strip-cars x.input-var-bindings-1) x.pkg-sym 1))
            (<input-unbound-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
-                                         x.input-vars-1 1))
-           (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist x.input-var-bindings-1 1)))
+                                         x.input-vars-1 x.pkg-sym 1))
+           (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist x.input-var-bindings-1 x.pkg-sym 1)))
        `((<input-var-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
-                                   (strip-cars x.input-var-bindings-2) 2))
+                                   (strip-cars x.input-var-bindings-2) x.pkg-sym 2))
          (<input-unbound-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
-                                       x.input-vars-2 2))
-         (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist x.input-var-bindings-2 2))))
+                                       x.input-vars-2 x.pkg-sym 2))
+         (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist x.input-var-bindings-2 x.pkg-sym 2))))
      :str-alist `(("<I>" . ,(str::int-to-dec-string i))
                   ("<NAME>" . ,(symbol-name x.name))
                   ("<SVTV>" . ,(symbol-name (if (equal i 1) x.svtv-1 x.svtv-2))))
@@ -329,22 +329,24 @@
      :splice-alist
      `((<input-var-svassocs-1> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                    (append x.input-vars-1 (strip-cars x.input-var-bindings-1))
+                                   x.pkg-sym
                                    1))
        (<input-var-svassocs-2> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                    (append x.input-vars-2 (strip-cars x.input-var-bindings-2))
+                                   x.pkg-sym
                                    2))
 
        (<input-binding-hyp> .  ,(append
-                                 (svtv-equiv-thm-input-binding-hyp-termlist x.input-var-bindings-1 1)
+                                 (svtv-equiv-thm-input-binding-hyp-termlist x.input-var-bindings-1 x.pkg-sym 1)
                                  (svtv-equiv-thm-input-binding-hyp-termlist
-                                  x.input-var-bindings-2 2)))
+                                  x.input-var-bindings-2 x.pkg-sym 2)))
 
        (<input-var-instantiation-1> . ,(svtv-equiv-thm-input-var-instantiation
                                         x.input-vars-1 1))
        (<input-var-instantiation-2> . ,(svtv-equiv-thm-input-var-instantiation
                                         x.input-vars-2 2))
-       (<outputs-1> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-1 1))
-       (<outputs-2> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-2 2))
+       (<outputs-1> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-1 x.pkg-sym 1))
+       (<outputs-2> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-2 x.pkg-sym 2))
        (<enable> . ,x.enable))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :features (and x.no-lemmas '(:no-lemmas))
@@ -352,17 +354,17 @@
 
 (defun svtv-equiv-thm-precheck-for-errors (x)
   (b* (((svtv-equiv-thm-data x)))
-    (or (svtv-ovfact-check-variable-list "Input-vars-1" x.input-vars-1)
-        (svtv-ovfact-check-variable-list "Input-vars-2" x.input-vars-2)
-        (svtv-ovfact-check-variable-list "Output-vars-1" x.output-vars-1)
-        (svtv-ovfact-check-variable-list "Output-vars-2" x.output-vars-2)
+    (or (svtv-genthm-check-variable-list "Input-vars-1" x.input-vars-1)
+        (svtv-genthm-check-variable-list "Input-vars-2" x.input-vars-2)
+        (svtv-genthm-check-variable-list "Output-vars-1" x.output-vars-1)
+        (svtv-genthm-check-variable-list "Output-vars-2" x.output-vars-2)
         (and (not (acl2::doublet-listp x.input-var-bindings-1))
              "Input-var-bindings-1 must be a list of two-element lists")
         (and (not (acl2::doublet-listp x.input-var-bindings-2))
              "Input-var-bindings-2 must be a list of two-element lists")
-        (svtv-ovfact-check-variable-list "Keys of input-var-bindings-1"
+        (svtv-genthm-check-variable-list "Keys of input-var-bindings-1"
                                          (strip-cars x.input-var-bindings-1))
-        (svtv-ovfact-check-variable-list "Keys of input-var-bindings-2"
+        (svtv-genthm-check-variable-list "Keys of input-var-bindings-2"
                                          (strip-cars x.input-var-bindings-2))
         (let ((dup-tail (acl2::hons-dups-p (append x.input-vars-1
                                                    (strip-cars x.input-var-bindings-1)
@@ -473,8 +475,8 @@
                      (masks-1 (acl2::fal-extract inputs-1 inmasks-1))
                      (masks-2 (acl2::fal-extract inputs-2 inmasks-2))
                      )
-                  `(and ,@(svtv-equiv-thm-suffix-index-to-hyps (svtv-unsigned-byte-hyps masks-1) 1)
-                        ,@(svtv-equiv-thm-suffix-index-to-hyps (svtv-unsigned-byte-hyps masks-2) 2)
+                  `(and ,@(svtv-equiv-thm-suffix-index-to-hyps (svtv-unsigned-byte-hyps masks-1) pkg-sym 1)
+                        ,@(svtv-equiv-thm-suffix-index-to-hyps (svtv-unsigned-byte-hyps masks-2) pkg-sym 2)
                         ,hyp))
               hyp)))
 

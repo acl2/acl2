@@ -68,7 +68,7 @@
      (equal (svex-eval (svex-lookup var nextst) env)
             (svex-env-lookup var (svtv-cycle-eval-nextst env
                                                        (svex-alist-eval prev-st env)
-                                                       phases x)))
+                                                       phases (base-fsm->nextstate x))))
      :hints (("goal" :use eval-nextsts-of-<fn>
               :in-theory (disable eval-nextsts-of-<fn>)))
      :fn svtv-cycle-compile)
@@ -78,7 +78,7 @@
       (iff (svex-lookup var nextst)
            (svex-env-boundp var (svtv-cycle-eval-nextst env
                                                       (svex-alist-eval prev-st env)
-                                                      phases x)))
+                                                      phases (base-fsm->nextstate x))))
       :hints (("goal" :use eval-nextsts-of-<fn>
                :in-theory (disable eval-nextsts-of-<fn>)))
       :fn svtv-cycle-compile))
@@ -233,16 +233,17 @@
                                            &key (skip 'nil))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatnorm-validp svtv-data))
-  :returns new-svtv-data
+  :returns (mv updated new-svtv-data)
   (if (and (equal (svtv-cyclephaselist-fix phases)
                   (svtv-data->cycle-phases svtv-data))
            (svtv-data->cycle-fsm-validp svtv-data))
-      svtv-data
+      (mv nil svtv-data)
     (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
          (svtv-data (update-svtv-data->cycle-phases phases svtv-data))
-         ((when skip) svtv-data)
-         (svtv-data (update-svtv-data->pipeline-validp nil svtv-data)))
-      (svtv-data-compute-cycle-fsm svtv-data simp)))
+         ((when skip) (mv t svtv-data))
+         (svtv-data (update-svtv-data->pipeline-validp nil svtv-data))
+         (svtv-data (svtv-data-compute-cycle-fsm svtv-data simp)))
+      (mv t svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -260,6 +261,3 @@
   (defret cycle-phases-validp-of-<fn>
     (equal (svtv-data$c->cycle-phases new-svtv-data)
            (svtv-cyclephaselist-fix phases))))
-
-
-       

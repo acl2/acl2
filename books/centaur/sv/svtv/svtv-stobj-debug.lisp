@@ -266,7 +266,7 @@
                (mv vcd-wiremap vcd-vals state))))
 
 
-(define svtv-data-chase-repl (&key 
+(define svtv-chase$-repl (&key 
                               (svtv-data 'svtv-data)
                               (svtv-chase-data 'svtv-chase-data)
                               (state 'state))
@@ -311,7 +311,7 @@
        (svtv-chase-data (set-svtv-chase-data->updates (make-fast-alist fsm.values) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->delays (make-fast-alist flatnorm.delays) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data)))
-    (svtv-data-chase-repl)))
+    (svtv-chase$-repl)))
 
 
 
@@ -522,6 +522,12 @@
     (mv nil make-defsvtv-args)))
 
 
+
+
+
+
+
+
 (define lookup-keyword-with-default ((key symbolp)
                                      (default)
                                      (keyvals keyword-value-listp))
@@ -529,101 +535,7 @@
   (b* ((look (assoc-keyword key keyvals)))
     (if look (cadr look) default)))
 
-(defun svtv-data-debug-defsvtv$-form (make-defsvtv-args-form
-                                      args)
-  (b* (((unless (keyword-value-listp args))
-        (er hard? 'svtv-data-debug-defsvtv$ "Args should be a keyword-value list~%"))
-       (env (cadr (assoc-keyword :env args)))
-       (args (remove-keywords '(:env) args))
-       (svtv-data (lookup-keyword-with-default :svtv-data 'svtv-data args))
-       (moddb (lookup-keyword-with-default :moddb 'moddb args))
-       (aliases (lookup-keyword-with-default :aliases 'aliases args))
-       (vcd-wiremap (lookup-keyword-with-default :vcd-wiremap 'vcd-wiremap args))
-       (vcd-vals (lookup-keyword-with-default :vcd-vals 'vcd-vals args)))
-    `(b* ((x ,make-defsvtv-args-form)
-          ((mv err pipeline-setup ,svtv-data)
-           (defsvtv-stobj-pipeline-setup x ,svtv-data :skip-cycle t))
-          ((when err)
-           (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))
-          ((mv ,vcd-wiremap ,vcd-vals state)
-           (svtv-data-debug-pipeline-aux ,env pipeline-setup . ,args)))
-       (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))))
 
-(defun svtv-data-debug-defsvtv$-fn (defsvtv$-form args)
-  (declare (xargs :mode :program))
-  ;; (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
-  ;;      ((mv err make-defsvtv-args-form)
-  ;;       (translate-defsvtv-form-for-debug defsvtv$-form wrld))
-  ;;      ((when err)
-  ;;       (raise "Malformed defsvtv$-form (second argument).")))
-  `(b* (((mv err make-defsvtv-args-form)
-         (translate-defsvtv-form-for-debug ',defsvtv$-form (w state)))
-        ((when err)
-         (er soft 'svtv-data-debug-defsvtv$
-             "Error translating defsvtv$ form: ~@0~%" make-defsvtv-args-form))
-        (form (svtv-data-debug-defsvtv$-form make-defsvtv-args-form ',args)))
-     (trans-eval-default-warning form 'svtv-data-debug-defsvtv$ state t)))
-
-
-;; (defun svtv-data-debug-defsvtv$-fn (defsvtv$-form
-;;                                      env args
-;;                                      filename
-;;                                      svtv-data
-;;                                      moddb
-;;                                      aliases
-;;                                      vcd-wiremap
-;;                                      vcd-vals
-;;                                      skip-flatten)
-;;   (declare (xargs :mode :program))
-;;   (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
-;;        ((acl2::unless-casematch defsvtv$-form
-;;                                 (defsvtv-name name . args))
-;;         (raise "Malformed defsvtv$-form (second argument)."))
-;;        ((unless (or (eq defsvtv-name 'defsvtv$)
-;;                     (eq defsvtv-name 'defsvtv$-phasewise)))
-;;         (raise "Malformed defsvtv$-form (must be a call of ~x0 or ~x1)."
-;;                'defsvtv$ 'defsvtv$-phasewise))
-;;        ((mv ?stobj defsvtv-args)
-;;         (if (eq defsvtv-name 'defsvtv$)
-;;             (process-defsvtv$-user-args name args)
-;;           (process-defsvtv$-phasewise-user-args name args))))
-;;     `(b* ((x (make-defsvtv-args . ,defsvtv-args))
-;;           ((mv err pipeline-setup ,svtv-data)
-;;            (defsvtv-stobj-pipeline-setup x ,svtv-data))
-;;           ((when err)
-;;            (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))
-;;           ((mv err ,moddb ,aliases ,vcd-wiremap ,vcd-vals state)
-;;            (svtv-data-debug-pipeline-aux ,env pipeline-setup
-;;                                          :filename ,filename
-;;                                          :svtv-data ,svtv-data
-;;                                          :moddb ,moddb
-;;                                          :aliases ,aliases
-;;                                          :vcd-wiremap ,vcd-wiremap
-;;                                          :vcd-vals ,vcd-vals
-;;                                          :skip-flatten ,skip-flatten)))
-;;        (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))))
-
-(defmacro svtv-data-debug-defsvtv$ (defsvtv$-form
-                                     &rest args
-                                     ;; (env 'nil)
-                                     ;; (filename '"svtv-debug.vcd")
-                                     ;; (svtv-data 'svtv-data)
-                                     ;; (moddb 'moddb)
-                                     ;; (aliases 'aliases)
-                                     ;; (vcd-wiremap 'vcd-wiremap)
-                                     ;; (vcd-vals 'vcd-vals)
-                                     ;; (skip-flatten 'nil)
-                                     )
-  (svtv-data-debug-defsvtv$-fn defsvtv$-form args
-                               ;; env
-                               ;; filename
-                               ;; svtv-data
-                               ;; moddb
-                               ;; aliases
-                               ;; vcd-wiremap
-                               ;; vcd-vals
-                               ;; skip-flatten
-                               ))
 
 
 
@@ -669,6 +581,16 @@
     (clear-memoize-table 'svex-eval-svtv-phases-call)
     res))
 
+(define svtv-data-run-phase-fsm ((ins svex-envlist-p)
+                                 (initst svex-env-p)
+                                 (probes svtv-probealist-p)
+                                 &key
+                                 (svtv-data 'svtv-data))
+  :returns (result svex-env-p)
+  (svtv-fsm-run-probes ins initst probes
+                       (svtv-data->namemap svtv-data)
+                       (svtv-data->phase-fsm svtv-data)))
+
 
 (define svtv-data-run-cycle-fsm ((ins svex-envlist-p)
                                  (initst svex-env-p)
@@ -693,11 +615,9 @@
                            (svtv-data->namemap svtv-data)
                            (svtv-data->cycle-fsm svtv-data))
     (b* ((phases (svtv-data->cycle-phases svtv-data)))
-      (svtv-fsm-run-probes (make-fast-alist (svtv-cycle-run-fsm-inputs ins phases))
-                           initst
-                           (svtv-probealist-cycle-adjust probes phases)
-                           (svtv-data->namemap svtv-data)
-                           (svtv-data->phase-fsm svtv-data)))))
+      (svtv-data-run-phase-fsm (make-fast-alist (svtv-cycle-run-fsm-inputs ins phases))
+                              initst
+                              (svtv-probealist-cycle-adjust probes phases)))))
          
 
 
@@ -730,87 +650,215 @@
 
 
 
-(defun svtv-data-run-defsvtv$-form (make-defsvtv-args-form
+
+(define svtv-debug-get-defsvtv-args (form state)
+  :returns (mv err val state)
+  :mode :program
+  (b* (((mv err make-defsvtv-args-form)
+        (translate-defsvtv-form-for-debug form (w state)))
+       ((when err)
+        (er soft 'svtv-debug-get-defsvtv-args "Error translating defsvtv$ form: ~@0~%" make-defsvtv-args-form))
+       ((mv err (cons ?stobjs-out defsvtv-args) state)
+        (trans-eval make-defsvtv-args-form 'svtv-debug-get-defsvtv-args state t))
+       ((when err)
+        (er soft 'svtv-debug-get-defsvtv-args "Error evaluating make-defsvtv-args form ~x0: ~@1" make-defsvtv-args-form err))
+       ;; ((unless (defsvtv-args-p defsvtv-args))
+       ;;  (er soft 'svtv-debug-get-defsvtv-args "Evaluated ~x0, but the result was not a defsvtv-args object~%" make-defsvtv-args-form))
+       
+       ;; ((unless (modalist-addr-p (design->modalist (defsvtv-args->design defsvtv-args))))
+       ;;  (er soft 'svtv-debug-get-defsvtv-args "Evaluated ~x0, but the design specified did not satisfy ~x1~%"
+       ;;      make-defsvtv-args-form '(modalist-addr-p (design->modalist x))))
+       )
+    (mv nil defsvtv-args state)))
+
+
+(define svtv-data-chase-defsvtv-args ((args defsvtv-args-p)
+                                      (env svex-env-p)
+                                      &key
+                                      (svtv-data 'svtv-data)
+                                      (svtv-chase-data 'svtv-chase-data)
+                                      (state 'state))
+  :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args)))
+              (open-input-channel-p *standard-oi* :object state))
+  (b* (((mv err pipeline-setup svtv-data)
+        (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
+       ((when err)
+        (er hard? 'svtv-chase$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
+        (mv svtv-chase-data svtv-data state))
+       ((mv svtv-chase-data state)
+        (svtv-data-chase-pipeline-aux env pipeline-setup)))
+    (mv svtv-chase-data svtv-data state)))
+
+
+(define svtv-chase$-defsvtv-form (form
+                                  (env svex-env-p)
+                                  &key
+                                  (svtv-data 'svtv-data)
+                                  (svtv-chase-data 'svtv-chase-data)
+                                  (state 'state))
+  :mode :program
+  (b* (((mv err defsvtv-args state)
+        (svtv-debug-get-defsvtv-args form state))
+       ((when err)
+        (er hard? 'svtv-chase$ "Error recreating defsvtv-args object: ~@0~%" err)
+        (mv svtv-chase-data svtv-data state)))
+    ;; ec-call to get rid of invariant risk
+    (ec-call (svtv-data-chase-defsvtv-args-fn defsvtv-args env svtv-data svtv-chase-data state))))
+
+(define svtv-chase$ ((svtv svtv-p)
+                     (env svex-env-p)
+                     &key
+                     (svtv-data 'svtv-data)
+                     (svtv-chase-data 'svtv-chase-data)
+                     (state 'state))
+  :mode :program
+  (svtv-chase$-defsvtv-form (svtv->form svtv) env))
+
+(defmacro svtv-data-chase-defsvtv$ (form
+                                    &key
                                     env
-                                    svtv-data)
-  `(b* ((x ,make-defsvtv-args-form)
-        ((mv err pipeline-setup ,svtv-data)
-         (defsvtv-stobj-pipeline-setup x ,svtv-data :skip-cycle t))
-        ((when err)
-         (mv err nil ,svtv-data))
-        (env
-         (svtv-data-run-pipeline-aux ,env pipeline-setup
-                                     :svtv-data ,svtv-data)))
-     (svtv-print-alist-readable env)
-     (mv nil env ,svtv-data)))
+                                    (svtv-data 'svtv-data)
+                                    (svtv-chase-data 'svtv-chase-data))
+  (prog2$ (cw "~x0: deprecated -- use ~x1~%" 'svtv-data-chase-defsvtv$ 'svtv-chase-defsvtv$)
+          `(svtv-chase$-defsvtv-form ',form ,env :svtv-data ,svtv-data :svtv-chase-data ,svtv-chase-data)))
 
-(defun svtv-data-run-defsvtv$-fn (defsvtv$-form
-                                   env
-                                   ;; wrld
-                                   svtv-data)
-  (declare (xargs :mode :program))
-  ;; (b* ((std::__function__ 'svtv-data-run-defsvtv$-fn)
-  ;;      ((mv err make-defsvtv-args-form)
-  ;;       (translate-defsvtv-form-for-debug defsvtv$-form wrld))
-  ;;      ((when err)
-  ;;       (raise "Malformed defsvtv$-form (second argument).")))
-  `(b* (((mv err make-defsvtv-args-form)
-         (translate-defsvtv-form-for-debug ',defsvtv$-form (w state)))
-        ((when err)
-         (er soft 'svtv-data-run-defsvtv$ "Error translating defsvtv$ form: ~@0~%" make-defsvtv-args-form))
-        (form (svtv-data-run-defsvtv$-form make-defsvtv-args-form
-                                           ',env ',svtv-data)))
-     (trans-eval-default-warning form 'svtv-data-run-defsvtv$ state t)))
-
-(defmacro svtv-data-run-defsvtv$ (defsvtv$-form
-                                   &key
-                                   (env 'nil)
-                                   (svtv-data 'svtv-data))
-  (svtv-data-run-defsvtv$-fn defsvtv$-form
-                             env svtv-data))
+(defmacro svtv-chase-defsvtv$ (form
+                               &key
+                               env
+                               (svtv-data 'svtv-data)
+                               (svtv-chase-data 'svtv-chase-data))
+  `(svtv-chase$-defsvtv-form ',form ,env :svtv-data ,svtv-data :svtv-chase-data ,svtv-chase-data))
 
 
 
-(defun svtv-data-chase-defsvtv$-form (make-defsvtv-args-form
-                                      args)
-  (b* (((unless (keyword-value-listp args))
-        (er hard? 'svtv-data-chase-defsvtv$ "Args should be a keyword-value list~%"))
-       (env (cadr (assoc-keyword :env args)))
-       (args (remove-keywords '(:env) args))
-       (svtv-data (lookup-keyword-with-default :svtv-data 'svtv-data args))
-       (svtv-chase-data (lookup-keyword-with-default :svtv-chase-data 'svtv-chase-data args)))
-    `(b* ((x ,make-defsvtv-args-form)
-          ((mv err pipeline-setup ,svtv-data)
-           (defsvtv-stobj-pipeline-setup x ,svtv-data :skip-cycle t))
-          ((when err)
-           (mv err ,svtv-data ,svtv-chase-data state))
-          ((mv ,svtv-chase-data state)
-           (svtv-data-chase-pipeline-aux ,env pipeline-setup . ,args)))
-       (mv err ,svtv-data ,svtv-chase-data state))))
-
-(defun svtv-data-chase-defsvtv$-fn (defsvtv$-form args)
-  (declare (xargs :mode :program))
-  `(b* (((mv err make-defsvtv-args-form)
-         (translate-defsvtv-form-for-debug ',defsvtv$-form (w state)))
-        ((when err)
-         (er soft 'svtv-data-chase-defsvtv$
-             "Error translating defsvtv$ form: ~@0~%" make-defsvtv-args-form))
-        (form (svtv-data-chase-defsvtv$-form make-defsvtv-args-form ',args)))
-     (trans-eval-default-warning form 'svtv-data-chase-defsvtv$ state t)))
 
 
-(defmacro svtv-data-chase-defsvtv$ (defsvtv$-form
-                                     &rest args
-                                     ;; (env 'nil)
-                                     ;; (svtv-data 'svtv-data)
-                                     ;; (svtv-chase-data 'svtv-chase-data)
-                                     ;; (moddb 'moddb)
-                                     ;; (aliases 'aliases)
-                                     ;; (vcd-wiremap 'vcd-wiremap)
-                                     ;; (vcd-vals 'vcd-vals)
-                                     ;; (skip-flatten 'nil)
-                                     )
-  (svtv-data-chase-defsvtv$-fn defsvtv$-form args))
+
+
+(define svtv-data-debug-defsvtv-args ((args defsvtv-args-p)
+                                      (env svex-env-p)
+                                      &key
+                                      ((filename stringp) '"svtv-debug.vcd")
+                                      (svtv-data 'svtv-data)
+                                      (vcd-wiremap 'vcd-wiremap)
+                                      (vcd-vals 'vcd-vals)
+                                      (state 'state))
+  :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args)))
+              (open-input-channel-p *standard-oi* :object state))
+  (b* (((mv err pipeline-setup svtv-data)
+        (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
+       ((when err)
+        (er hard? 'svtv-debug$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
+        (mv vcd-wiremap vcd-vals svtv-data state))
+       ((mv vcd-wiremap vcd-vals state)
+        (svtv-data-debug-pipeline-aux env pipeline-setup :filename filename)))
+    (mv vcd-wiremap vcd-vals svtv-data state)))
+
+
+(define svtv-debug$-defsvtv-form (form
+                                  (env svex-env-p)
+                                  &key
+                                  ((filename stringp) '"svtv-debug.vcd")
+                                  (svtv-data 'svtv-data)
+                                  (vcd-wiremap 'vcd-wiremap)
+                                  (vcd-vals 'vcd-vals)
+                                  (state 'state))
+  :mode :program
+  (b* (((mv err defsvtv-args state)
+        (svtv-debug-get-defsvtv-args form state))
+       ((when err)
+        (er hard? 'svtv-debug$ "Error recreating defsvtv-args object: ~@0~%" err)
+        (mv vcd-wiremap vcd-vals svtv-data state)))
+    ;; ec-call to get rid of invariant risk
+    (ec-call (svtv-data-debug-defsvtv-args-fn defsvtv-args env filename svtv-data vcd-wiremap vcd-vals state))))
+
+(define svtv-debug$ ((svtv svtv-p)
+                     (env svex-env-p)
+                     &key
+                     ((filename stringp) '"svtv-debug.vcd")
+                     (svtv-data 'svtv-data)
+                     (vcd-wiremap 'vcd-wiremap)
+                     (vcd-vals 'vcd-vals)
+                     (state 'state))
+  :mode :program
+  (svtv-debug$-defsvtv-form (svtv->form svtv) env :filename filename))
+
+(defmacro svtv-data-debug-defsvtv$ (form
+                                    &key
+                                    env
+                                    (filename '"svtv-debug.vcd")
+                                    (svtv-data 'svtv-data)
+                                    (vcd-wiremap 'vcd-wiremap)
+                                    (vcd-vals 'vcd-vals))
+  (prog2$ (cw "~x0: deprecated -- use ~x1~%" 'svtv-data-debug-defsvtv$ 'svtv-debug-defsvtv$)
+          `(svtv-debug$-defsvtv-form ',form ,env :filename ,filename :svtv-data ,svtv-data :vcd-wiremap ,vcd-wiremap :vcd-vals ,vcd-vals)))
+
+(defmacro svtv-debug-defsvtv$ (form
+                               &key
+                               env
+                               (filename '"svtv-debug.vcd")
+                               (svtv-data 'svtv-data)
+                               (vcd-wiremap 'vcd-wiremap)
+                               (vcd-vals 'vcd-vals))
+  `(svtv-debug$-defsvtv-form ',form ,env :filename ,filename :svtv-data ,svtv-data :vcd-wiremap ,vcd-wiremap :vcd-vals ,vcd-vals))
+
+
+
+(define svtv-data-run-defsvtv-args ((args defsvtv-args-p)
+                                    (env svex-env-p)
+                                    &key
+                                    (svtv-data 'svtv-data))
+  :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args))))
+  (b* (((mv err pipeline-setup svtv-data)
+        (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
+       ((when err)
+        (er hard? 'svtv-run$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
+        (mv nil svtv-data))
+       (result
+        (svtv-data-run-pipeline-aux env pipeline-setup)))
+    (svtv-print-alist-readable result)
+    (mv result svtv-data)))
+
+
+(define svtv-run$-defsvtv-form (form
+                                  (env svex-env-p)
+                                  &key
+                                  (svtv-data 'svtv-data)
+                                  (state 'state))
+  :mode :program
+  (b* (((mv err defsvtv-args state)
+        (svtv-debug-get-defsvtv-args form state))
+       ((when err)
+        (er hard? 'svtv-run$ "Error recreating defsvtv-args object: ~@0~%" err)
+        (mv nil svtv-data state))
+       ;; ((unless (open-input-channel-p *standard-oi* :object state))
+       ;;  (er hard? 'svtv-run$ "Error: ~x0 isn't an open object input channel!?~%" '*standard-oi*)
+       ;;  (mv nil svtv-data state))
+       ((mv result svtv-data)
+        ;; ec-call to get rid of invariant risk
+        (ec-call (svtv-data-run-defsvtv-args-fn defsvtv-args env svtv-data))))
+    (mv result svtv-data state)))
+
+(define svtv-run$ ((svtv svtv-p)
+                   (env svex-env-p)
+                   &key
+                   (svtv-data 'svtv-data)
+                   (state 'state))
+  :mode :program
+  (svtv-run$-defsvtv-form (svtv->form svtv) env))
+
+(defmacro svtv-data-run-defsvtv$ (form
+                                    &key
+                                    env
+                                    (svtv-data 'svtv-data))
+  (prog2$ (cw "~x0: deprecated -- use ~x1~%" 'svtv-data-run-defsvtv$ 'svtv-run-defsvtv$)
+          `(svtv-run$-defsvtv-form ',form ,env :svtv-data ,svtv-data)))
+
+(defmacro svtv-run-defsvtv$ (form
+                             &key
+                             env
+                             (svtv-data 'svtv-data))
+  `(svtv-run$-defsvtv-form ',form ,env :svtv-data ,svtv-data))
 
 
 
@@ -841,8 +889,7 @@
                                                       (svcall zerox 5 "in")))))))))))
 (local
  (make-event
-  (b* (((mv err (cons ?stobjs-out
-                      (list ?err2 result ?replaced-svtv-data))
+  (b* (((mv result svtv-data
             state)
         (svtv-data-run-defsvtv$
          (defsvtv$-phasewise my-svtv
@@ -855,21 +902,11 @@
              :inputs (("in" in2))
              :outputs (("out" out2)))))
          :env '((in . 5) (in2 . 9))))
-       (stobjs-out-expected  '(nil nil svtv-data))
-       ((unless (equal stobjs-out stobjs-out-expected))
-        (mv (msg "Unexpected stobjs-out: ~x0 expected: ~x1~%" stobjs-out stobjs-out-expected)
-            nil state))
-       ((when err)
-        (mv (msg "Unexpected trans-eval error: ~x0~%" err)
-            nil state))
-       ((when err2)
-        (mv (msg "Unexpected error: ~x0~%" err2)
-            nil state))
        (expected '((OUT . #ux1A) (OUT2 . #ux16)))
        ((unless (equal result expected))
         (mv (msg "Wrong answer: expected ~x0 result ~x1~%" expected result)
-            nil state)))
-    (mv err '(value-triple :ok) state))))
+            nil state svtv-data)))
+    (mv nil '(value-triple :ok) state svtv-data))))
 
 #||
 
@@ -918,3 +955,102 @@
 
 
 ||#
+
+
+
+(defxdoc svtv-chase$
+  :parents (svex-stvs)
+  :short "Diagnose hardware or stimulus bugs by studying an SVTV run in a special-purpose
+          read-eval-print loop."
+  :long
+  "<p>To enter this read-eval-print loop for the first time, run:</p>
+@({
+ (svtv-chase$ svtv env)
+ })
+
+<p>where SVTV is an svtv object (as produced by defsvtv) and env is an
+assignment to the input/override signals of that SVTV.  Depending on the
+complexity of the SVTV, the initial setup done by this command may take a few
+minutes.</p>
+
+<p>When setup is complete, you'll be shown an @('SVTV-CHASE >') prompt.  Typing
+@('?') at this prompt shows the commands that may be used there.  Typically
+you'll start by going to a signal of interest at a certain phase, using the @('O') or
+@('G') commands.  At a given signal/phase, SVTV-CHASE will print the type of
+signal -- primary input, initial state, previous state, or internal signal.
+For internal signals, it will also print the list of signals that are this
+signal's immediate dependencies.  To see the expression driving the current
+signal, you may enter @('EXPR').  The next step is usually to select one of the
+signal's dependencies and go to it, by typing its number.  To go back to the
+signal you just left, you may type @('B') to pop the stack of signal/phase
+positions.</p>
+
+<p>At some point you may want to exit the read-eval-print loop, which you can
+do by typing @('X') at the prompt.  To re-enter the loop, you can skip the
+initial setup by running @('(svtv-chase$-repl)').</p>
+
+<p>See @(see svtv-chase-defsvtv$) for a utility that gives the same behavior
+but doesn't require the SVTV to be defined already.</p>")
+
+(defxdoc svtv-chase-defsvtv$
+  :parents (svtv-chase$)
+  :short "Enter the @(see svtv-chase$) read-eval-print loop without first defining an SVTV."
+  :long "<p>Usage:</p>
+@({
+ (svtv-chase-defsvtv$
+   ;; entire form used to define an SVTV.  May also be DEFSVTV$.
+   (defsvtv$-phasewise ...)
+   :env env)
+ })
+
+<p>See @(see svtv-chase$).  This version is useful in cases where a
+user is debugging the signal settings of an SVTV.  It skips the composition of
+the cycle FSM and pipeline stages, which on large designs can greatly shorten
+the debug loop.</p>")
+
+(defxdoc svtv-debug$
+  :parents (svex-stvs)
+  :short "Dump a VCD waveform showing the internal signals of an SVTV."
+  :long "<p>To dump such a VCD file, use the form:</p>
+@({
+ (svtv-debug$ svtv env
+    :filename \"foo.vcd\") ;; default \"svtv-debug.vcd\"
+ })
+
+<p>See @(see svtv-debug-defsvtv$) for a utility that dumps a VCD without
+requiring the SVTV to be defined already.</p>")
+
+
+(defxdoc svtv-debug-defsvtv$
+  :parents (svtv-debug$)
+  :short "Dump a VCD waveform for an SVTV, without first having defined the SVTV."
+  :long "<p>Usage:</p>
+@({
+ (svtv-debug-defsvtv$
+   ;; entire form used to define an SVTV.  May also be DEFSVTV$.
+   (defsvtv$-phasewise ...)
+   :env env
+   :filename \"my-file.vcd\") ;; default \"svtv-debug.vcd\"
+ })
+
+<p>See @(see svtv-debug$).  This version is useful in cases where a
+user is debugging the signal settings of an SVTV.  It skips the composition of
+the cycle FSM and pipeline stages, which on large designs can greatly shorten
+the debug loop.</p>")
+
+
+(defxdoc svtv-run-defsvtv$
+  :parents (svtv-run)
+  :short "Run an SVTV without first defining it."
+  :long "<p>Usage:</p>
+@({
+ (svtv-run-defsvtv$
+   ;; entire form used to define an SVTV.  May also be DEFSVTV$.
+   (defsvtv$-phasewise ...)
+   :env env)
+ })
+
+<p>This runs a concrete simulation of an SVTV without first fully defining it,
+producing a mapping from output variable names to 4vec values.  It skips the
+composition of the cycle FSM and pipeline stages, which on large designs can
+greatly shorten the debug loop.</p>")

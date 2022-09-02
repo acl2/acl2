@@ -1695,7 +1695,10 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
             term)
            ((and (equal (car term) 'list))
             (trans-list (rp-trans-lst (cdr term))))
-           ((and (is-falist term))
+           ((and (equal (car term) 'falist) ;; not using is-falist so that I
+                 ;; can prove (equal (rp-trans (rp-trans x)) (rp-trans x)). 
+                 (consp (cdr term))
+                 (consp (cddr term)))
             (rp-trans (caddr term)))
            (t (cons-with-hint (car term)
                               (rp-trans-lst (cdr term))
@@ -1859,7 +1862,15 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (define valid-rp-state-syntaxp (rp-state)
   (and (rp-statep rp-state)
-       (valid-rp-state-syntaxp-aux rp-state)))
+       (valid-rp-state-syntaxp-aux rp-state))
+  ///
+  (defthm VALID-RP-STATE-SYNTAXP-implies
+    (implies (VALID-RP-STATE-SYNTAXP rp-state)
+             (AND (RP-STATEP RP-STATE)
+                  (VALID-RP-STATE-SYNTAXP-AUX RP-STATE)))
+    :rule-classes (:forward-chaining)
+    :hints (("Goal"
+             :in-theory (e/d (VALID-RP-STATE-SYNTAXP) ())))))
 
 (defun-sk rp-state-preservedp-sk (old-rp-state new-rp-state)
   (declare (xargs :verify-guards nil))

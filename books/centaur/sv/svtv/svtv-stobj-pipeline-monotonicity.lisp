@@ -875,14 +875,7 @@
          (svex-envlists-agree keys (cdr x) (cdr y)))))
 
 
-(defun base-fsm-eval-mono-ind (ins1 ins2 prev-st1 prev-st2 x)
-  (if (atom ins1)
-      (list ins2 prev-st1 prev-st2)
-    (base-fsm-eval-mono-ind (cdr ins1)
-                            (cdr ins2)
-                            (base-fsm-step (car ins1) prev-st1 x)
-                            (base-fsm-step (car ins2) prev-st2 x)
-                            x)))
+
 
 
 (defthm svex-env-<<=-of-append-extract
@@ -892,26 +885,37 @@
                          (append (svex-env-extract keys b) d)))
   :hints(("Goal" :in-theory (enable svex-env-<<=))))
 
-(defthm partial-monotonicity-of-base-fsm-eval
-  (implies (and (svex-alist-partial-monotonic params (base-fsm->values x))
-                (svex-alist-partial-monotonic params (base-fsm->nextstate x))
-                (svex-env-<<= prev-st1 prev-st2)
-                (svex-envlist-<<= ins1 ins2)
-                (svex-envlists-agree params ins1 ins2)
-                (equal (len ins1) (len ins2))
-                (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (base-fsm->nextstate x)))))
-           (svex-envlist-<<= (base-fsm-eval ins1 prev-st1 x)
-                             (base-fsm-eval ins2 prev-st2 x)))
-  :hints(("Goal" :in-theory (enable base-fsm-eval
-                                    base-fsm-step-outs
-                                    base-fsm-step
-                                    base-fsm-step-env)
-          :expand ((base-fsm-eval ins1 prev-st1 x)
-                   (base-fsm-eval ins2 prev-st2 x)
-                   (svex-envlist-<<= ins1 ins2)
-                   (svex-envlists-agree params ins1 ins2)
-                   (:free (a b c) (svex-envlist-<<= (cons a b) c)))
-          :induct (base-fsm-eval-mono-ind ins1 ins2 prev-st1 prev-st2 x))))
+(encapsulate nil
+  (local
+   (defun base-fsm-eval-mono-ind (ins1 ins2 prev-st1 prev-st2 x)
+     (if (atom ins1)
+         (list ins2 prev-st1 prev-st2)
+       (base-fsm-eval-mono-ind (cdr ins1)
+                               (cdr ins2)
+                               (base-fsm-step (car ins1) prev-st1 (base-fsm->nextstate x))
+                               (base-fsm-step (car ins2) prev-st2 (base-fsm->nextstate x))
+                               x))))
+
+  (defthm partial-monotonicity-of-base-fsm-eval
+    (implies (and (svex-alist-partial-monotonic params (base-fsm->values x))
+                  (svex-alist-partial-monotonic params (base-fsm->nextstate x))
+                  (svex-env-<<= prev-st1 prev-st2)
+                  (svex-envlist-<<= ins1 ins2)
+                  (svex-envlists-agree params ins1 ins2)
+                  (equal (len ins1) (len ins2))
+                  (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (base-fsm->nextstate x)))))
+             (svex-envlist-<<= (base-fsm-eval ins1 prev-st1 x)
+                               (base-fsm-eval ins2 prev-st2 x)))
+    :hints(("Goal" :in-theory (enable base-fsm-eval
+                                      base-fsm-step-outs
+                                      base-fsm-step
+                                      base-fsm-step-env)
+            :expand ((base-fsm-eval ins1 prev-st1 x)
+                     (base-fsm-eval ins2 prev-st2 x)
+                     (svex-envlist-<<= ins1 ins2)
+                     (svex-envlists-agree params ins1 ins2)
+                     (:free (a b c) (svex-envlist-<<= (cons a b) c)))
+            :induct (base-fsm-eval-mono-ind ins1 ins2 prev-st1 prev-st2 x)))))
 
 
 

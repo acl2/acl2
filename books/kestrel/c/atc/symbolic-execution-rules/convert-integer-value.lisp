@@ -16,6 +16,7 @@
 (include-book "../integer-conversions")
 
 (include-book "integers")
+(include-book "value-integer-get")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
@@ -33,74 +34,64 @@
      they are used to prove rules
      used during the symbolic execution."))
 
-  (local (in-theory (enable convert-integer-value
-                            value-integer
-                            value-integer->get
-                            integer-type-rangep
-                            integer-type-min
-                            integer-type-max
-                            ;; shallowly embedded conversions:
-                            sint-from-schar
-                            slong-from-schar
-                            sllong-from-schar
-                            uint-from-schar
-                            ulong-from-schar
-                            ullong-from-schar
-                            sint-from-uchar
-                            slong-from-uchar
-                            sllong-from-uchar
-                            uint-from-uchar
-                            ulong-from-uchar
-                            ullong-from-uchar
-                            sint-from-sshort
-                            slong-from-sshort
-                            sllong-from-sshort
-                            uint-from-sshort
-                            ulong-from-sshort
-                            ullong-from-sshort
-                            sint-from-ushort
-                            slong-from-ushort
-                            sllong-from-ushort
-                            uint-from-ushort
-                            ulong-from-ushort
-                            ullong-from-ushort
-                            slong-from-sint
-                            sllong-from-sint
-                            uint-from-sint
-                            ulong-from-sint
-                            ullong-from-sint
-                            slong-from-uint
-                            sllong-from-uint
-                            ulong-from-uint
-                            ullong-from-uint
-                            ulong-from-slong
-                            sllong-from-slong
-                            ullong-from-slong
-                            sllong-from-ulong
-                            ullong-from-ulong
-                            ullong-from-sllong
-                            ;; modular unsigned constructors:
-                            uint-mod
-                            ulong-mod
-                            ullong-mod
-                            ;; bridge rules for destructors:
-                            value-schar->get-to-schar->get
-                            value-uchar->get-to-uchar->get
-                            value-sshort->get-to-sshort->get
-                            value-ushort->get-to-ushort->get
-                            value-sint->get-to-sint->get
-                            value-uint->get-to-uint->get
-                            value-slong->get-to-slong->get
-                            value-ulong->get-to-ulong->get
-                            value-sllong->get-to-sllong->get
-                            value-ullong->get-to-ullong->get
-                            ;; bridge rules for constructors:
-                            value-sint-to-sint
-                            value-slong-to-slong
-                            value-sllong-to-sllong
-                            value-uint-to-uint
-                            value-ulong-to-ulong
-                            value-ullong-to-ullong)))
+  (make-event
+   `(local (in-theory (enable convert-integer-value
+                              value-integer
+                              ,@*atc-value-integer->get-rules*
+                              integer-type-rangep
+                              integer-type-min
+                              integer-type-max
+                              ;; shallowly embedded conversions:
+                              sint-from-schar
+                              slong-from-schar
+                              sllong-from-schar
+                              uint-from-schar
+                              ulong-from-schar
+                              ullong-from-schar
+                              sint-from-uchar
+                              slong-from-uchar
+                              sllong-from-uchar
+                              uint-from-uchar
+                              ulong-from-uchar
+                              ullong-from-uchar
+                              sint-from-sshort
+                              slong-from-sshort
+                              sllong-from-sshort
+                              uint-from-sshort
+                              ulong-from-sshort
+                              ullong-from-sshort
+                              sint-from-ushort
+                              slong-from-ushort
+                              sllong-from-ushort
+                              uint-from-ushort
+                              ulong-from-ushort
+                              ullong-from-ushort
+                              slong-from-sint
+                              sllong-from-sint
+                              uint-from-sint
+                              ulong-from-sint
+                              ullong-from-sint
+                              slong-from-uint
+                              sllong-from-uint
+                              ulong-from-uint
+                              ullong-from-uint
+                              ulong-from-slong
+                              sllong-from-slong
+                              ullong-from-slong
+                              sllong-from-ulong
+                              ullong-from-ulong
+                              ullong-from-sllong
+                              ;; modular unsigned constructors:
+                              uint-mod
+                              ulong-mod
+                              ullong-mod
+                              ;; bridge rules for constructors:
+                              value-sint-to-sint
+                              value-slong-to-slong
+                              value-sllong-to-sllong
+                              value-uint-to-uint
+                              value-ulong-to-ulong
+                              value-ullong-to-ullong))))
 
   ;; from schar:
 

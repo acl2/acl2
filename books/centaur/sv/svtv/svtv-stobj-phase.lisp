@@ -34,7 +34,8 @@
 (include-book "svtv-stobj")
 (include-book "design-fsm")
 
-(define svtv-data-compute-phase-fsm (svtv-data)
+(define svtv-data-compute-phase-fsm (svtv-data
+                                     (params phase-fsm-params-p))
   :guard (and (svtv-data->flatnorm-validp svtv-data)
               (not (svtv-data->cycle-fsm-validp svtv-data)))
   :guard-hints ((and stable-under-simplificationp
@@ -43,7 +44,8 @@
   (time$
    (b* ((svtv-data (update-svtv-data->phase-fsm (svtv-compose-assigns/delays
                                                  (svtv-data->flatnorm svtv-data)
-                                                 (svtv-data->phase-fsm-setup svtv-data))
+                                                 (svtv-data->phase-fsm-setup svtv-data)
+                                                 params)
                                                 svtv-data)))
      (update-svtv-data->phase-fsm-validp t svtv-data))
    :msg "; Svtv-data phase: ~st seconds, ~sa bytes.~%")
@@ -59,17 +61,19 @@
     (svtv-data$c->phase-fsm-validp new-svtv-data)))
 
 (define svtv-data-maybe-compute-phase-fsm (svtv-data
-                                           (setup phase-fsm-config-p))
+                                           (setup phase-fsm-config-p)
+                                           (params phase-fsm-params-p))
   :guard (svtv-data->flatnorm-validp svtv-data)
-  :returns new-svtv-data
+  :returns (mv updated new-svtv-data)
   (if (and (svtv-data->phase-fsm-validp svtv-data)
            (equal (phase-fsm-config-fix setup)
                   (svtv-data->phase-fsm-setup svtv-data)))
-      svtv-data
+      (mv nil svtv-data)
     (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
          (svtv-data (update-svtv-data->phase-fsm-validp nil svtv-data))
-         (svtv-data (update-svtv-data->phase-fsm-setup setup svtv-data)))
-      (svtv-data-compute-phase-fsm svtv-data)))
+         (svtv-data (update-svtv-data->phase-fsm-setup setup svtv-data))
+         (svtv-data (svtv-data-compute-phase-fsm svtv-data params)))
+      (mv t svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))

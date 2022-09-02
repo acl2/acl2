@@ -15,6 +15,7 @@
 
 (include-book "syntaxp")
 (include-book "promote-value")
+(include-book "value-integer-get")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,14 +78,8 @@
                            (list (pack op-kind '-sint-okp)))
                     ,@*atc-promote-value-rules*
                     result-integer-value
-                    value-integer->get
+                    ,@*atc-value-integer->get-rules*
                     value-integer
-                    value-sint->get-to-sint->get
-                    value-uint->get-to-uint->get
-                    value-slong->get-to-slong->get
-                    value-ulong->get-to-ulong->get
-                    value-sllong->get-to-sllong->get
-                    value-ullong->get-to-ullong->get
                     value-sint-to-sint
                     value-uint-to-uint
                     value-slong-to-slong

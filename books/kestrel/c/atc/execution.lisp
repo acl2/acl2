@@ -146,47 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-div ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute division [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/5]."
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-div
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-div
-                     :required :arithmetic
-                     :supplied arg2)))
-       (err (error (list :undefined-div arg1 arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (if (div-uint-uint-okp val1 val2)
-                       (div-uint-uint val1 val2)
-                     err))
-     ((sintp val1) (if (div-sint-sint-okp val1 val2)
-                       (div-sint-sint val1 val2)
-                     err))
-     ((ulongp val1) (if (div-ulong-ulong-okp val1 val2)
-                        (div-ulong-ulong val1 val2)
-                      err))
-     ((slongp val1) (if (div-slong-slong-okp val1 val2)
-                        (div-slong-slong val1 val2)
-                      err))
-     ((ullongp val1) (if (div-ullong-ullong-okp val1 val2)
-                         (div-ullong-ullong val1 val2)
-                       err))
-     ((sllongp val1) (if (div-sllong-sllong-okp val1 val2)
-                         (div-sllong-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-rem ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute remainder [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/5]."
@@ -701,7 +660,7 @@
        ((when (errorp arg2)) arg2))
     (case (binop-kind op)
       (:mul (mul-values arg1 arg2))
-      (:div (exec-div arg1 arg2))
+      (:div (div-values arg1 arg2))
       (:rem (exec-rem arg1 arg2))
       (:add (exec-add arg1 arg2))
       (:sub (exec-sub arg1 arg2))

@@ -50,7 +50,8 @@
 
 (defevaluator rules-ev rules-ev-list
   ((equal x y) (iff x y) (if x y z) (implies x y) (not x) (typespec-check ts x)
-   (unequiv x y))
+   (unequiv x y)
+   (return-last x y z))
   :namedp t)
 
 (acl2::def-meta-extract rules-ev rules-ev-list)
