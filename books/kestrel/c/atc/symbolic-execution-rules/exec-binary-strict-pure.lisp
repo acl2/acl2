@@ -163,13 +163,7 @@
                               (pack op-kind '- lfixtype)
                               (pack op-kind '- lfixtype '-okp)))
                       ,@(and (member-eq op-kind '(:shl :shr))
-                             (list* 'value-integer->get
-                                    'value-sint->get-to-sint->get
-                                    'value-uint->get-to-uint->get
-                                    'value-slong->get-to-slong->get
-                                    'value-ulong->get-to-ulong->get
-                                    'value-sllong->get-to-sllong->get
-                                    'value-ullong->get-to-ullong->get
+                             (append *atc-value-integer->get-rules*
                                     *atc-sint-get-rules*))
                       ,@*atc-uaconvert-values-rules*
                       ,@*atc-promote-value-rules*)))
