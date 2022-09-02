@@ -18,6 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-variable-tables
+  :parents (atc-event-and-code-generation)
   :short "Tables of ACL2 variables, and operations on these tables."
   :order-subtopics t
   :default-parent t)

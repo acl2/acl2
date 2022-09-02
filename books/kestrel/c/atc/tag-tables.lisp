@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-tag-tables
+  :parents (atc-event-and-code-generation)
   :short "Tables of @(tsee defstruct)s, and operations on these tables."
   :long
   (xdoc::topstring

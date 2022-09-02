@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-object-tables
+  :parents (atc-event-and-code-generation)
   :short "Tables of @(tsee defobjects)s, and operations on these tables."
   :order-subtopics t
   :default-parent t)

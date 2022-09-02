@@ -19,6 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-function-tables
+  :parents (atc-event-and-code-generation)
   :short "Tables of ACL2 functions, and operations on these tables."
   :order-subtopics t
   :default-parent t)
