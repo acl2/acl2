@@ -12,10 +12,11 @@
 (in-package "C")
 
 (include-book "../execution")
+(include-book "../types")
 
 (include-book "syntaxp")
 (include-book "integers")
-(include-book "../types")
+(include-book "value-integer-get")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -90,7 +91,7 @@
                   (exec-cast
                    convert-integer-value
                    value-integer
-                   value-integer->get
+                   ,@*atc-value-integer->get-rules*
                    integer-type-rangep
                    integer-type-min
                    integer-type-max
@@ -104,16 +105,6 @@
                    value-ulong-to-ulong
                    value-sllong-to-sllong
                    value-ullong-to-ullong
-                   value-schar->get-to-schar->get
-                   value-uchar->get-to-uchar->get
-                   value-sshort->get-to-sshort->get
-                   value-ushort->get-to-ushort->get
-                   value-sint->get-to-sint->get
-                   value-uint->get-to-uint->get
-                   value-slong->get-to-slong->get
-                   value-ulong->get-to-ulong->get
-                   value-sllong->get-to-sllong->get
-                   value-ullong->get-to-ullong->get
                    uchar-mod
                    ushort-mod
                    uint-mod
