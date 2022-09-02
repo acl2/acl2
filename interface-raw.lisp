@@ -5215,10 +5215,15 @@
            (t (parse-book-name
                (cond (dir (or (include-book-dir dir state)
                               (er hard ctx
-                                  "Unable to find the :dir argument to ~
+                                  "Unable to resolve the :DIR argument to ~
                                    include-book, ~x0, which should have been ~
-                                   defined by ~v1.  Perhaps the book ~x2 ~
-                                   needs to be recertified."
+                                   defined by ~v1 or by the ~
+                                   project-dir-alist.  Perhaps the book ~x2 ~
+                                   needs to be recertified, or perhaps the ~
+                                   project-dir-alist needs to be set up to ~
+                                   associate a directory with ~x0 and ~
+                                   possibly other keywords (see :DOC ~
+                                   project-dir-alist)."
                                   dir
                                   '(add-include-book-dir add-include-book-dir!)
                                   book-name)))
@@ -9052,7 +9057,7 @@
                        (quit 1))
                   (t (value val))))))))))
 
-(defun project-dir-filename (dir filename filename-dir key ctx state)
+(defun project-dir-filename (dir0 filename filename-dir key ctx state)
 
 ; This function is similar to canonical-dirname!.
 
@@ -9070,7 +9075,7 @@
 ; environment variable to set the directory for :system; otherwise it is the
 ; project-dir-alist file.
 
-  (let* ((dir (extend-pathname+ filename-dir dir t state)))
+  (let* ((dir (extend-pathname+ filename-dir dir0 t state)))
     (cond ((and dir
                 (or (equal dir "")
                     (not (eql (char dir (1- (length dir)))
@@ -9080,23 +9085,23 @@
              (er soft ctx
                  "The project pathname ~x0, supplied in file ~x1 for the key ~
                   ~x2, represents a file but not a directory."
-                 dir filename key))
+                 dir0 filename key))
             (t
              (er soft ctx
                  "The pathname ~x0, supplied by environment variable ~
                   ACL2_SYSTEM_BOOKS, represents a file but not a directory."
-                 dir))))
+                 dir0))))
           (dir (value dir))
           (filename
            (er soft ctx
                "The project pathname ~x0, supplied in file ~x1 for the key ~
                 ~x2, represents a directory that does not exist."
-               dir filename key))
+               dir0 filename key))
           (t
            (er soft ctx
                "The pathname ~x0, supplied by environment variable ~
                 ACL2_SYSTEM_BOOKS, represents a directory that does not exist."
-               dir)))))
+               dir0)))))
 
 (defun project-dir-alist-from-file-rec (lst filename filename-dir ctx state)
 
@@ -9127,17 +9132,16 @@
   (let ((filename-u (pathname-os-to-unix filename (os (w state)) state)))
     (er-let* ((lst (read-file+ filename
                                (msg "Unable to open file ~x0 to read the ~
-                                   project-dir-alist (see :DOC ~
-                                   project-dir-alist)."
+                                     project-dir-alist."
                                     filename)
                                ctx
                                state)))
       (cond ((not (keyword-value-string-listp lst))
              (er soft ctx
-                 "The value read for the project-dir-alist (see :DOC ~
-                  project-dir-alist) must be an alternating list of keywords ~
-                  and strings, starting with a keyword.  But the value read ~
-                  from file ~x0 is ~x1, which does not have that property."
+                 "The value read for the project-dir-alist must be an ~
+                  alternating list of keywords and strings, starting with a ~
+                  keyword.  But the value read from file ~x0 is ~x1, which ~
+                  does not have that property."
                  filename lst))
             ((not (project-dir-file-p filename state))
              (er soft ctx
@@ -9146,8 +9150,7 @@
                   a keyword.  But each line must either be blank, be a ~
                   comment (i.e., its first non-whitespace character is `;'), ~
                   or contain a keyword followed by a filename without `\"' in ~
-                  its name.  File ~x0 does not have that property.  See :DOC ~
-                  project-dir-alist."
+                  its name.  File ~x0 does not have that property."
                  filename))
             (t
              (let ((abs (unix-truename-pathname filename-u nil state)))
@@ -9171,88 +9174,148 @@
 ; We avoid using with-output! below because we get an error pertaining to
 ; acl2-unwind-protect in that case.
 
+; Note that the result is not sorted.  To install it as the value of state
+; global project-dir-alist, we need to sort this result by decreasing length of
+; filenames.
+
   (let* ((old-inh (f-get-global 'inhibit-output-lst state))
          (flg (member-eq 'error old-inh)))
     (er-progn
      (if flg
          (set-inhibit-output-lst (cons 'error old-inh))
        (value nil))
-     (mv-let (erp val state)
-       (project-dir-alist-from-file-0 filename ctx state)
-       (cond (erp (pprogn
-                   (fms "ABORTING start of ACL2!  Address the error message ~
-                         shown above in order to run ACL2."
-                        nil *standard-co* state nil)
-                   (prog2$ (exit 1)
-                           (value nil))))
-             (t (er-progn (if flg
-                              (set-inhibit-output-lst old-inh)
-                            (value nil))
-                          (value val))))))))
+     (er-let* ((val (project-dir-alist-from-file-0 filename ctx state)))
+       (er-progn (if flg
+                     (set-inhibit-output-lst old-inh)
+                   (value nil))
+                 (cond
+                  ((duplicate-keysp-eq val)
+                   (er soft ctx
+                       "The keyword ~x0 occurs more than once in the ~
+                        ACL2_PROJECTS file, ~x1."
+                       (car (duplicate-keysp-eq val))
+                       filename))
+                  ((loop for tail on val thereis
+                         (rassoc-equal (cdar tail) (cdr tail)))
+                   (er soft ctx
+                       "The directory ~x0 is specified more than once in the ~
+                        ACL2_PROJECTS file, ~x1."
+                       (loop for tail on val when
+                             (rassoc-equal (cdar tail) (cdr tail))
+                             do (return (cdar tail)))
+                       filename))
+                  (t (value val))))))))
 
 (defun establish-project-dir-alist (system-dir0 ctx state)
 
+; This function may set the value of state global project-dir-alist.  It is
+; evaluated only for side effect; the return value is irrelevant.
+
 ; System-dir0 is either nil or the value of environment variable
 ; ACL2_SYSTEM_BOOKS (possibly with a trailing slash added).  We assume that
-; state global project-dir-alist has already been set to the
-; system-books-directory; it's not yet an alist.
+; state global project-dir-alist has already been set: to the
+; system-books-directory in the normal case, but to an alist if the executable
+; was created with save-exec.
 
   (declare (xargs :stobjs state :mode :program))
-  (let ((system-books-dir
-         (if system-dir0 ; from getenv$-raw, so a legal ACL2 string if non-nil
-             (extend-pathname+ (cbd) system-dir0 t state)
+  (mv-let (erp val state)
+    (er-let* ((system-books-dir
+               (value (and system-dir0 ; legal ACL2 string from getenv$-raw
+                           (extend-pathname+ (cbd) system-dir0 t state))))
+              (proj-file (getenv$ "ACL2_PROJECTS" state))
+              (proj-alist (if proj-file
+                              (project-dir-alist-from-file proj-file ctx state)
+                            (value nil)))
+              (new-sys-pair (value (assoc-eq :system proj-alist)))
+              (old-project-dir-alist
+               (value (f-get-global 'project-dir-alist state))))
+      (cond
+       ((null proj-file) ; hence also (null new-sys-pair)
+        (pprogn
+         (cond
+          ((stringp old-project-dir-alist)
 
-; Else the value of project-dir-alist is the system books directory, as
-; established in enter-boot-strap-mode.
+; This is the usual case, where the executable was not built with save-exec.
+; So the value old-project-dir-alist of state global project-dir-alist is a
+; string, namely the system books directory used when builing the system; see
+; enter-boot-strap-mode.
 
-           (f-get-global 'project-dir-alist state))))
-    (cond
-     ((alistp system-books-dir)
-      (er soft ctx
-          "The project-dir-alist has already been set, but an attempt is ~
-           being made to set it again.  That is illegal.  The existing value ~
-           of the project-dir-alist is~|~x0."
-          system-books-dir))
-     ((not (stringp system-books-dir))
-      (er soft ctx
-          "Implementation error: The project-dir-alist has value~|~x0~|but ~
-           that is neither a string nor an alist."
-          system-books-dir))
-     (t
-      (er-let*
-          ((filename (getenv$ "ACL2_PROJECTS" state))
-           (alist (if (and filename (not (equal filename "")))
-                      (project-dir-alist-from-file filename ctx state)
-                    (value nil)))
-           (pair (value (assoc-eq :system alist)))
-           (val
-            (cond
-             ((null alist)
-              (value (list (cons :system system-books-dir))))
-             ((and pair
-                   (not (equal (cdr pair) system-books-dir)))
-              (mv-let
-                (erp val state)
-                (er-let* ((dir0 (getenv$ "ACL2_SYSTEM_BOOKS" state)))
-                  (er soft ctx
-                      "ABORTING start of ACL2!  The project-dir-alist read ~
-                       from file ~x0 associates :SYSTEM with ~x1.  This ~
-                       conflicts with the value ~x2 associated with ~
-                       :SYSTEM~@3.  Address this error in order to run ACL2."
-                      filename
-                      (cdr pair)
-                      system-books-dir
-                      (if (and dir0 (not (equal dir0 "")))
-                          (msg " by environment variable ACL2_SYSTEM_BOOKS")
-                        (msg ", which by default is the pathname of the ~
-                              books/ directory of your ACL2 distribution"))))
-                (prog2$ (exit 1)
-                        (mv erp val state))))
-              (pair (value (merge-sort-len>=-cdr alist)))
-              (t (value (merge-sort-len>=-cdr
-                         (acons :SYSTEM system-books-dir alist)))))))
-        (pprogn (f-put-global 'project-dir-alist val state)
-                (value val)))))))
+           (f-put-global 'project-dir-alist
+                         (acons :system
+                                (or system-books-dir old-project-dir-alist)
+                                nil)
+                         state))
+
+; Otherwise the executable was built with save-exec, so project-dir-alist is an
+; alist, not a string.  If the system books directory was specified, then
+; update the project-dir-alist accordingly.
+
+          (system-books-dir
+           (f-put-global 'project-dir-alist
+                         (merge-sort-len>=-cdr
+                          (put-assoc-eq :system
+                                        system-books-dir
+                                        (f-get-global 'project-dir-alist
+                                                      state)))
+                         state))
+          (t ; no change to project-dir-alist
+           state))
+         (value nil)))
+       ((and new-sys-pair     ; hence ACL2_PROJECTS was specified
+             system-books-dir ; hence ACL2_SYSTEM_BOOKS was specified
+             (not (equal (cdr new-sys-pair) system-books-dir)))
+
+; Conflict!  Print an error message and exit.
+
+        (er-let* ((dir0 (getenv$ "ACL2_SYSTEM_BOOKS" state)))
+          (er soft ctx
+              "The project-dir-alist read from file ~x0 associates :SYSTEM ~
+               with ~x1.  This conflicts with the value ~x2 associated with ~
+               :SYSTEM~@3."
+              proj-file
+              (cdr new-sys-pair)
+              system-books-dir
+              (if dir0
+                  (msg " using environment variable ACL2_SYSTEM_BOOKS")
+                (msg ", which is the pathname of the books/ directory of your ~
+                      ACL2 distribution")))))
+       ((rassoc-equal (or system-books-dir old-project-dir-alist)
+                      (remove-assoc-equal :system proj-alist))
+        (let ((pair (rassoc-equal (or system-books-dir old-project-dir-alist)
+                                  (remove-assoc-equal :system proj-alist))))
+          (er soft ctx
+              "The project-dir-alist read from file ~x0 associates keyword ~
+               ~x1 with ~x2, which is also the system books directory."
+              proj-file
+              (car pair)
+              (cdr pair))))
+
+; We get to this point if proj-file is non-nil and there is no conflict in the
+; user's specification of the system books directory.  We set the
+; project-dir-alist to the proj-alist read from the proj-file, except that we
+; add a value for :SYSTEM if one is not already there.
+
+       (t (pprogn
+           (f-put-global 'project-dir-alist
+                         (merge-sort-len>=-cdr
+                          (if new-sys-pair
+                              proj-alist
+                            (acons :SYSTEM
+                                   (or system-books-dir
+                                       (if (stringp old-project-dir-alist)
+                                           old-project-dir-alist
+                                         (cdr (assoc-eq :SYSTEM
+                                                        old-project-dir-alist))))
+                                   proj-alist)))
+                         state)
+           (value nil)))))
+    (cond (erp (pprogn (fms "**ABORTING start of ACL2!**~|Address the error ~
+                             noted above in order to run ACL2.~|See :DOC ~
+                             project-dir-alist."
+                            nil *standard-co* state nil)
+                       (prog2$ (exit 1)
+                               (mv erp val state))))
+          (t (value val)))))
 
 (defun lp (&rest args)
 
