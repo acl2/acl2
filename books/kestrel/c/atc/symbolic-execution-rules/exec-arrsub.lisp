@@ -16,6 +16,7 @@
 
 (include-book "syntaxp")
 (include-book "arrays")
+(include-book "value-integer-get")
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -68,7 +69,7 @@
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub
-                            value-integer->get
+                            ,@*atc-value-integer->get-rules*
                             ,value-itype->get-to-itype->get
                             ,atype-array-itype-index-okp
                             ,atype-array-read-itype
