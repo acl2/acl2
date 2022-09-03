@@ -1,7 +1,7 @@
 ; Bit-vector division
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -189,3 +189,20 @@
                              )
                     0)))
   :hints (("Goal" :in-theory (enable bvdiv-of-bvdiv-arg2))))
+
+(defthm equal-of-bvdiv-and-0
+  (implies (natp size)
+           (equal (equal (bvdiv size x y) 0)
+                  (if (equal 0 (bvchop size y))
+                      t
+                    (< (bvchop size x) (bvchop size y)))))
+  :hints (("Goal" :in-theory (enable bvdiv))))
+
+(defthm bvdiv-when-<
+  (implies (and (< x y)
+                (unsigned-byte-p size x)
+                (unsigned-byte-p size y)
+                (natp size))
+           (equal (bvdiv size x y)
+                  0))
+  :hints (("Goal" :in-theory (enable bvdiv))))

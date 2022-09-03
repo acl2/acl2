@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvsx-def")
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "logext-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "bvchop"))
