@@ -24,6 +24,7 @@
 
 (include-book "acl2s/cgen/cgen-no-thms" :dir :system)
 (include-book "acl2s/cgen/defthm-support-for-on-failure" :dir :system)
+(include-book "acl2s/cgen/defthm-support-for-on-failure-local" :dir :system)
 
 (include-book "acl2s/interface/top" :dir :system)
 (include-book "acl2s/interface/acl2s-utils/top" :dir :system)
