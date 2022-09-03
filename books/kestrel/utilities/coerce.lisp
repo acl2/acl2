@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function coerce
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,3 +51,34 @@
   :hints (("Goal" :use ((:instance coerce-inverse-2 (x x))
                         (:instance coerce-inverse-2 (x y)))
            :in-theory (disable coerce-inverse-2))))
+
+;improve name?
+(defthm coerce-injective
+  (implies (and (equal (coerce x 'list) (coerce y 'list))
+                (stringp x)
+                (stringp y))
+           (equal x y))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (disable COERCE-INVERSE-2)
+           :use ((:instance coerce-inverse-2 (x x))
+                 (:instance coerce-inverse-2 (x y))))))
+
+(defthm consp-of-coerce
+  (implies (stringp str)
+           (equal (consp (coerce str 'list))
+                  (not (equal str ""))))
+  :hints (("Goal" :use ((:instance coerce-injective (x str) (y ""))
+                        (:instance completion-of-coerce (x str) (y 'list))))))
+
+(defthm equal-of-len-of-coerce-and-0
+  (equal (equal (len (coerce str 'list)) 0)
+         (or (not (stringp str))
+             (equal "" str)))
+  :hints (("Goal" :use consp-of-coerce
+           :in-theory (disable consp-of-coerce))))
+
+;drop?
+(DEFthmd COERCE-INVERSE-1-forced
+  (IMPLIES (force (CHARACTER-LISTP X))
+           (EQUAL (COERCE (COERCE X 'STRING) 'LIST)
+                  X)))

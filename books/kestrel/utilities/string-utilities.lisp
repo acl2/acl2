@@ -16,6 +16,7 @@
 ;; TODO: Split this book
 
 (include-book "read-chars")
+(local (include-book "coerce"))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -104,36 +105,10 @@
   (and (stringp str)
        (not (empty-stringp str))))
 
-(defthmd consp-when-true-listp
-  (implies (true-listp x)
-           (equal (consp x)
-                  (not (equal x nil)))))
-
-(defthm coerce-injective
-  (implies (and (equal (coerce x 'list) (coerce y 'list))
-                (stringp x)
-                (stringp y))
-           (equal x y))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (disable COERCE-INVERSE-2)
-           :use ((:instance coerce-inverse-2 (x x))
-                 (:instance coerce-inverse-2 (x y))))))
-
-;fixme pull out all this string stuff
-(defthm consp-of-coerce
-  (implies (stringp str)
-           (iff (consp (coerce str 'list))
-                (not (equal str ""))))
-  :hints (("Goal" :in-theory (enable consp-when-true-listp)
-           :use ((:instance coerce-injective (x str) (y ""))
-                 (:instance completion-of-coerce (x str) (y 'list))))))
-
-(defthm equal-of-len-of-coerce-and-0
-  (equal (equal (len (coerce str 'list)) 0)
-         (or (not (stringp str))
-             (equal "" str)))
-  :hints (("Goal" :use consp-of-coerce
-           :in-theory (disable consp-of-coerce))))
+;; (defthmd consp-when-true-listp
+;;   (implies (true-listp x)
+;;            (equal (consp x)
+;;                   (not (equal x nil)))))
 
 (local (in-theory (disable nth))) ;fixme
 
@@ -171,11 +146,6 @@
   :hints (("Goal" :in-theory (enable subseq))))
 
 ;(in-theory (enable subseq))
-
-(DEFthm COERCE-INVERSE-1-forced
-  (IMPLIES (force (CHARACTER-LISTP X))
-           (EQUAL (COERCE (COERCE X 'STRING) 'LIST)
-                  X)))
 
 ;returns (mv string-before-char rest-of-string)
 (defund split-string-before-char (str char)
