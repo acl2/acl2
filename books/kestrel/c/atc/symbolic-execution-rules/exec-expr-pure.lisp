@@ -59,6 +59,15 @@
                                  compst)))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-member
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :member))
+             (equal (exec-expr-pure e compst)
+                    (exec-member (exec-expr-pure (expr-member->target e)
+                                                 compst)
+                                 (expr-member->name e))))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-memberp
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :memberp))
@@ -187,6 +196,7 @@
     '(exec-expr-pure-when-ident
       exec-expr-pure-when-const
       exec-expr-pure-when-arrsub
+      exec-expr-pure-when-member
       exec-expr-pure-when-memberp
       exec-expr-pure-when-arrsub-of-memberp
       exec-expr-pure-when-unary
@@ -202,6 +212,8 @@
       (:e expr-const->get)
       (:e expr-arrsub->arr)
       (:e expr-arrsub->sub)
+      (:e expr-member->target)
+      (:e expr-member->name)
       (:e expr-memberp->target)
       (:e expr-memberp->name)
       (:e expr-unary->op)

@@ -36,6 +36,7 @@
                                        exec-const
                                        exec-iconst
                                        exec-arrsub
+                                       exec-member
                                        exec-memberp
                                        exec-arrsub-of-memberp
                                        exec-unary

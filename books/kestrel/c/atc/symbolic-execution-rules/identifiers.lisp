@@ -51,7 +51,8 @@
      @('(read-static-var <ident> ...)'),
      @('(write-var <ident> ...)'),
      @('(write-static-var <ident> ...)'),
-     @('(type-struct <ident>)'), and
+     @('(type-struct <ident>)'),
+     @('(exec-member <ident>)'), and
      @('(exec-memberp ... <ident> ...)')."))
 
   (defruled equal-of-ident-and-const
@@ -119,6 +120,12 @@
              (equal (type-struct tag)
                     (type-struct (ident (ident->name tag))))))
 
+  (defruled exec-member-of-const-identifier
+    (implies (and (syntaxp (quotep mem))
+                  (identp mem))
+             (equal (exec-member val mem)
+                    (exec-member val (ident (ident->name mem))))))
+
   (defruled exec-memberp-of-const-identifier
     (implies (and (syntaxp (quotep mem))
                   (identp mem))
@@ -156,5 +163,6 @@
     write-var-of-const-identifier
     write-static-var-of-const-identifier
     type-struct-of-const-identifier
+    exec-member-of-const-identifier
     exec-memberp-of-const-identifier
     exec-arrsub-of-memberp-of-const-identifier))
