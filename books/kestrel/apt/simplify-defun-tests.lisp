@@ -4126,34 +4126,3 @@ of :?, namely, (:? X).
                    :mode :logic ; added manually
                    :VERIFY-GUARDS T))
    (+ 5 X)))
-
-; We repeat that test now with cgen loaded.  Thanks to Eric Smith for pointing
-; out a previous failure, where cgen's :backtrack hints were causing rewrite$
-; to fail.  Now we erase those hints during make-event expansion; see
-; with-simplify-setup-fn.
-
-; Note that we're currently in :logic mode.
-(include-book "acl2s/cgen/top" :dir :system) ; include counterexample stuff
-(acl2s-defaults :set testing-enabled t)
-(defun program-mode-test2 (x)
-  (declare (xargs :guard (integerp x)))
-  (+ 2 3 x))
-(program)
-(simplify program-mode-test2)
-(logic)
-(must-be-redundant
- (DEFUN PROGRAM-MODE-TEST2$1 (X)
-   (DECLARE (XARGS :GUARD (INTEGERP X)
-                   :mode :logic ; added manually
-                   :VERIFY-GUARDS T))
-   (+ 5 X)))
-
-; And here's a test not involving :program mode with cgen testing.
-
-(deftest
-  (defun foo (x) (+ 10 23 x))
-  (simplify-defun foo)
-  (must-be-redundant
-    (DEFUN FOO$1 (X) (+ 33 X))
-    (DEFTHM FOO-BECOMES-FOO$1
-      (EQUAL (FOO X) (FOO$1 X)))))
