@@ -449,18 +449,25 @@
                                                              prec-tags
                                                              fn
                                                              ctx
-                                                             state))
-               ((unless (equal type (type-pointer (type-struct tag))))
-                (er-soft+ ctx t (irr)
-                          "The reading of a ~x0 structure with member ~x1 ~
-                           is applied to a term ~x2 returning ~x3, ~
-                           but a ~x0 operand is expected. ~
-                           This is indicative of provably dead code, ~
-                           given that the code is guard-verified."
-                          (type-struct tag) member arg type)))
-            (acl2::value (list (make-expr-memberp :target arg-expr
-                                                  :name member)
-                               mem-type))))
+                                                             state)))
+            (cond ((equal type (type-struct tag))
+                   (acl2::value (list (make-expr-member :target arg-expr
+                                                        :name member)
+                                      mem-type)))
+                  ((equal type (type-pointer (type-struct tag)))
+                   (acl2::value (list (make-expr-memberp :target arg-expr
+                                                         :name member)
+                                      mem-type)))
+                  (t (er-soft+ ctx t (irr)
+                               "The reading of a ~x0 structure with member ~x1 ~
+                                is applied to a term ~x2 returning ~x3, ~
+                                but a an operand of type ~x4 or ~x5 ~
+                                is expected. ~
+                                This is indicative of provably dead code, ~
+                                given that the code is guard-verified."
+                               tag member arg type
+                               (type-struct tag)
+                               (type-pointer (type-struct tag)))))))
          ((mv okp index struct tag member index-type elem-type)
           (atc-check-struct-read-array term prec-tags))
          ((when okp)
@@ -5249,12 +5256,14 @@
      generated in @(see atc-exec-arrsub-rules-generation).")
    (xdoc::p
     "For a scalar member (which must have integer type),
-     we generate a single theorem that
-     rewrites calls of @(tsee exec-memberp)
+     we generate two theorems that
+     rewrite calls of @(tsee exec-member) and @(tsee exec-memberp)
      to calls of the reader.")
    (xdoc::p
     "For an array member (which must have integer element type),
-     we generate 10 theorems, one for each integer index type.
+     we generate 10 theorems, one for each integer index type,
+     and just for @(tsee exec-memberp) for now
+     (support for @(tsee exec-member) is forthcoming).
      The theorem rewrites calls of @(tsee exec-arrsub-of-memberp)
      to calls of the readers.
      The generation of these theorems relies on the fact that
@@ -5278,16 +5287,33 @@
                (raise "Internal error: not one reader ~x0." readers)
                (mv nil nil nil)))
              (reader (car readers))
-             (thm-name (pack 'exec-member-read-when-
-                             recognizer
-                             '-and-
-                             (ident->name memname)))
-             ((mv thm-name names-to-avoid)
-              (fresh-logical-name-with-$s-suffix thm-name
+             (thm-member-name (pack 'exec-member-read-when-
+                                    recognizer
+                                    '-and-
+                                    (ident->name memname)))
+             ((mv thm-member-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix thm-member-name
                                                  nil
                                                  names-to-avoid
                                                  wrld))
-             (formula
+             (thm-memberp-name (pack 'exec-memberp-read-when-
+                                     recognizer
+                                     '-and-
+                                     (ident->name memname)))
+             ((mv thm-memberp-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix thm-memberp-name
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+             (formula-member
+              `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
+                             (valuep struct)
+                             (value-case struct :struct)
+                             (,recognizer struct))
+                        (equal (exec-member struct
+                                            (ident ,(ident->name memname)))
+                               (,reader struct))))
+             (formula-memberp
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                              (valuep ptr)
                              (value-case ptr :pointer)
@@ -5302,21 +5328,39 @@
                                              (ident ,(ident->name memname))
                                              compst)
                                (,reader struct))))
-             (hints `(("Goal"
-                       :in-theory
-                       '(exec-memberp
-                         not-errorp-when-valuep
-                         value-resultp-when-valuep
-                         value-result-fix-when-value-resultp
-                         ,recognizer
-                         ,reader
-                         ,not-error-thm
-                         ,fixer-recognizer-thm))))
-             ((mv event &) (evmac-generate-defthm thm-name
-                                                  :formula formula
-                                                  :hints hints
-                                                  :enable nil)))
-          (mv (list event) (list thm-name) names-to-avoid)))
+             (hints-member `(("Goal"
+                              :in-theory
+                              '(exec-member
+                                not-errorp-when-valuep
+                                value-resultp-when-valuep
+                                value-result-fix-when-value-resultp
+                                ,recognizer
+                                ,reader
+                                ,not-error-thm
+                                ,fixer-recognizer-thm))))
+             (hints-memberp `(("Goal"
+                               :in-theory
+                               '(exec-memberp
+                                 not-errorp-when-valuep
+                                 value-resultp-when-valuep
+                                 value-result-fix-when-value-resultp
+                                 ,recognizer
+                                 ,reader
+                                 ,not-error-thm
+                                 ,fixer-recognizer-thm))))
+             ((mv event-member &)
+              (evmac-generate-defthm thm-member-name
+                                     :formula formula-member
+                                     :hints hints-member
+                                     :enable nil))
+             ((mv event-memberp &)
+              (evmac-generate-defthm thm-memberp-name
+                                     :formula formula-memberp
+                                     :hints hints-memberp
+                                     :enable nil)))
+          (mv (list event-member event-memberp)
+              (list thm-member-name thm-memberp-name)
+              names-to-avoid)))
        ((unless (type-case type :array))
         (prog2$
          (raise "Internal error: member type ~x0." type)
