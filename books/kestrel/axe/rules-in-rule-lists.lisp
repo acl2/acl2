@@ -44,7 +44,6 @@
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/len" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/cons" :dir :system)
 (include-book "kestrel/lists-light/rules" :dir :system) ; for CONS-EQUAL-REWRITE-CONSTANT-VERSION

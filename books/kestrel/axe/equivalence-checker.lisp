@@ -88,7 +88,6 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
-(local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 
 (local (in-theory (e/d (true-listp-when-nat-listp-rewrite)

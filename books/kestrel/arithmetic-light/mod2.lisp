@@ -21,7 +21,6 @@
 (local (include-book "expt"))
 (local (include-book "expt2"))
 (local (include-book "times-and-divides"))
-(local (include-book "times"))
 (local (include-book "plus-and-minus"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
