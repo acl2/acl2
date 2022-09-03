@@ -478,18 +478,20 @@
 
 (defthm mod-of-+-same-arg1
   (implies (and (rationalp x)
-                (rationalp y)
-                (< 0 y))
+                (rationalp y))
            (equal (mod (+ y x) y)
-                  (mod x y)))
+                  (if (equal 0 y)
+                      (fix x)
+                    (mod x y))))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
 
 (defthm mod-of-+-same-arg2
-  (implies (and (integerp x)
-                (rationalp y)
-                (< 0 y))
+  (implies (and (rationalp x)
+                (rationalp y))
            (equal (mod (+ x y) y)
-                  (mod x y))))
+                  (if (equal 0 y)
+                      (fix x)
+                    (mod x y)))))
 
 (defthm multiple-when-mod-0-cheap
   (implies (and (equal 0 (mod n m))

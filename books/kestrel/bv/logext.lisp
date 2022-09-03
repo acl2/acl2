@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "logext-def")
 (include-book "getbit")
 (local (include-book "logapp"))
 (local (include-book "ihs/logops-lemmas" :dir :system))

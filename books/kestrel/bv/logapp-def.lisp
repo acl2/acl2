@@ -1,7 +1,7 @@
 ; BV Library: A lightweight book providing logapp.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; The definitions in this file come from books/ihs. See the copyright there.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,10 +14,15 @@
 
 ;the definitions below are compatible with books/ihs/basic-definitions
 
-(local (include-book "../../ihs/basic-definitions"))
 (local (include-book "../arithmetic-light/mod"))
+(local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/numerator"))
+(local (include-book "../arithmetic-light/ash"))
+(local (include-book "../arithmetic-light/divides"))
+(local (include-book "logand"))
+
+(local (in-theory (enable ash)))
 
 (defun expt2$inline (n)
   (declare (xargs :guard (natp n)))
@@ -28,13 +33,15 @@
                        (ash 1 (the unsigned-byte n))))))
 
 (defmacro expt2 (n)
-  (list 'expt2$inline n))(defun imod$inline (i j)
-       (declare (xargs :guard (and (integerp i)
-                                   (and (integerp j) (not (= 0 j))))))
-       (let ((__function__ 'imod))
-            (declare (ignorable __function__))
-            (mbe :logic (mod (ifix i) (ifix j))
-                 :exec (mod i j))))
+  (list 'expt2$inline n))
+
+(defun imod$inline (i j)
+  (declare (xargs :guard (and (integerp i)
+                              (and (integerp j) (not (= 0 j))))))
+  (let ((__function__ 'imod))
+    (declare (ignorable __function__))
+    (mbe :logic (mod (ifix i) (ifix j))
+         :exec (mod i j))))
 
 (defmacro imod (i j)
   (list 'imod$inline i j))
