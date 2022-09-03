@@ -44,6 +44,8 @@
 (include-book "resize-list")
 (include-book "make-list-ac")
 (include-book "list-sets")
+(include-book "position-equal-ac")
+(include-book "position-equal")
 
 ;; Books about non-built-in functions:
 (include-book "equiv-def")
