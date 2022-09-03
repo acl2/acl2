@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; See tests in string-utilities.lisp
+;; See tests in string-utilities-tests.lisp
 
 ;; TODO: Split this book
 
@@ -28,6 +28,7 @@
 ;terminator may often be #\;
 ;takes a list of chars and a terminator and returns (mv <chars-before-terminator> <chars-after-terminator>)
 ;; Returns (mv chars-before-terminator chars-after-terminator).
+;; TODO: Compare to read-chars-to-terminator.
 (defund readthroughterminator-aux (char-lst terminator)
   (declare (xargs ; :mode :program
             :measure (len char-lst)
@@ -84,8 +85,6 @@
     (declare (ignore chars-after))
     (coerce chars-before 'string)))
 
-;(local (assert-equal (substring-before-terminator "abcde" #\c) "ab"))
-
 (defund substring-after-terminator (str terminator)
   (declare (xargs :guard (and (stringp str)
                               (characterp terminator))))
@@ -94,16 +93,14 @@
     (declare (ignore chars-before))
     (coerce chars-after 'string)))
 
-;(local (assert-equal (substring-after-terminator "abcde" #\c) "de"))
+;; (defun empty-stringp (str)
+;;   (declare (xargs :guard t))
+;;   (equal "" str))
 
-(defun empty-stringp (str)
-  (declare (xargs :guard t))
-  (equal "" str))
-
-(defun non-empty-stringp (str)
-  (declare (xargs :guard t))
-  (and (stringp str)
-       (not (empty-stringp str))))
+;; (defun non-empty-stringp (str)
+;;   (declare (xargs :guard t))
+;;   (and (stringp str)
+;;        (not (empty-stringp str))))
 
 ;; (defthmd consp-when-true-listp
 ;;   (implies (true-listp x)
@@ -112,40 +109,12 @@
 
 (local (in-theory (disable nth))) ;fixme
 
-;use this more
-(defund strcdr (str)
-  (declare (xargs :guard (non-empty-stringp str)))
-  (subseq str 1 (length str)))
-
-(defthm stringp-of-strcdr
-  (implies (stringp str)
-           (stringp (strcdr str)))
-  :hints (("Goal" :in-theory (enable strcdr))))
-
-;fixme use more
-(defund strcar (str)
-  (declare (xargs :guard (non-empty-stringp str)))
-  (char str 0))
-
-(defthm characterp-of-strcar
-  (implies (and (stringp str)
-                (not (equal "" str)))
-           (characterp (strcar str)))
-  :hints (("Goal" :in-theory (enable strcar))))
-
 ;fixme pull out this string stuff into a library
 
 (defthm acl2-count-when-string
   (implies (stringp x)
            (equal (acl2-count x)
                   (length x))))
-
-(defthm stringp-of-subseq
-  (implies (stringp seq)
-           (stringp (subseq seq start end)))
-  :hints (("Goal" :in-theory (enable subseq))))
-
-;(in-theory (enable subseq))
 
 ;returns (mv string-before-char rest-of-string)
 (defund split-string-before-char (str char)
@@ -176,9 +145,6 @@
     (declare (ignore chars-before-item))
     (coerce rest-chars 'string)))
 
-;(local (assert-equal (drop-string-before-char "abcde" #\c) "cde"))
-;(local (assert-equal (drop-string-before-char "abcde" #\X) ""))
-
 (defund substring-before-char (str char)
   (declare (xargs :guard (and (stringp str)
                               (characterp char))))
@@ -186,10 +152,6 @@
     (read-chars-to-terminator (coerce str 'list) char)
     (declare (ignore rest-chars))
     (coerce chars-before-item 'string)))
-
-;(local (assert-equal (substring-before-char "abcde" #\c) "ab"))
-;(local (assert-equal (substring-before-char "abcde" #\X) "abcde")) ;is this what we want?
-
 
 ;returns (mv string-up-through-terminator rest-string)
 (defund read-string-to-last-terminator (str terminator)
@@ -230,17 +192,3 @@
   (stringp (substring-after-last-occurrence str char))
   :hints (("Goal" :in-theory (enable substring-after-last-occurrence))))
 
-;(local (assert-equal (substring-before-last-occurrence "ab.cd.ef.gh" #\.) "ab.cd.ef"))
-
-(defund digit-string-range-p (str i j)
-  (declare (xargs :guard (and (stringp str)
-                              (natp i)
-                              (natp j)
-                              (<= i (length str))
-                              (<= j (length str))
-                              (<= i j))
-                  :measure (nfix (- (nfix j) (nfix i)))))
-  (if (>= (nfix i) (nfix j))
-      t
-    (and (digit-char-p (char str i))
-         (digit-string-range-p str (+ (nfix i) 1) j))))
