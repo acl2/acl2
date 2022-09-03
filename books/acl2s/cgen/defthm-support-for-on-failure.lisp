@@ -6,7 +6,7 @@
 
  The redefinition was motivated by discussions with Eric Smith and
  Alessandro Coglio, who saw various issues with slowdowns due to cgen,
- e.g., in one case a c::defstruct form was taking ~700 seconnds with
+ e.g., in one case a c::defstruct form was taking ~700 seconds with
  cgen on, but only ~4 seconds without it. Even after setting timeouts
  to small numbers, on my machine the defstruct took ~12 seconds, which
  was still significantly slower, so we considered doing something I
@@ -37,7 +37,7 @@
  that the defthm is tried, once, with testing enabled.
 
  Finally, the :no-retry keyword argument is used to get the behavior
- of defthm before it was redefined, ie, it is just the appropriate
+ of defthm before it was redefined, i.e., it is just the appropriate
  call to defthm-fn. There is no need to use this argument at the top
  level, but if you do, then there is only one call to defthm-fn and
  with testing-enabled set to nil, no testing is done, otherwise we do
