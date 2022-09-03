@@ -484,3 +484,20 @@
 
   (fty::deffixequiv expr-list-constp
     :args ((x expr-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fundef-to-fun-declon ((fundef fundefp))
+  :returns (declon fun-declonp)
+  :short "Function declaration of a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As also explained in @(tsee fundef),
+     a function definition is essentially a function declaration plus a body,
+     but it is not quite defined like that
+     for the technical reasons explained there.
+     But this ACL2 function explicates that mapping."))
+  (make-fun-declon :tyspec (fundef->tyspec fundef)
+                   :declor (fundef->declor fundef))
+  :hooks (:fix))
