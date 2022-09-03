@@ -23,3 +23,6 @@
 (include-book "string-ends-withp")
 (include-book "string-starts-withp")
 (include-book "add-prefix-to-strings")
+(include-book "strcar")
+(include-book "strcdr")
+(include-book "subseq")
