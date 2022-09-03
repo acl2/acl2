@@ -17,19 +17,52 @@
 (include-book "sbvdiv")
 (include-book "bvdiv")
 (include-book "rules8") ; for stuff like FLOOR-OF-SUM-OF-MINUS-EXPT-AND-BVCHOP
-(include-book "rules") ; make local
-(local (include-book "arith")) ;drop?
+(include-book "rules") ; make local or drop
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 
 (in-theory (enable floor-when-multiple)) ;drop?
+
+;gen
+(defthm unsigned-byte-p-of-sbvdivdown
+  (unsigned-byte-p 32 (sbvdivdown 32 x y))
+  :hints (("Goal" :in-theory (enable sbvdivdown))))
+
+(defthm sbvdivdown-of-bvchop-arg2
+  (implies (posp size)
+           (equal (sbvdivdown size (bvchop size x) y)
+                  (sbvdivdown size x y)))
+  :hints (("Goal" :in-theory (enable sbvdivdown))))
+
+(defthm sbvdivdown-of-bvchop-arg3
+  (implies (posp size)
+           (equal (sbvdivdown size y (bvchop size x))
+                  (sbvdivdown size y x)))
+  :hints (("Goal" :in-theory (enable sbvdivdown))))
+
+(defthm sbvdivdown-when-bvchop-known-subst-arg2
+  (implies (and (equal (bvchop size x) free)
+                (syntaxp (quotep free))
+                (posp size))
+           (equal (sbvdivdown size x y)
+                  (sbvdivdown size free y)))
+  :hints (("Goal" :in-theory (enable sbvdivdown))))
+
+(defthm sbvdivdown-when-bvchop-known-subst-arg3
+  (implies (and (equal (bvchop size x) free)
+                (syntaxp (quotep free))
+                (posp size))
+           (equal (sbvdivdown size y x)
+                  (sbvdivdown size y free)))
+  :hints (("Goal" :in-theory (enable sbvdivdown))))
 
 (defthmd sbvdivdown-rewrite-case-1
   (implies (and (equal 0 (bvchop size y))
@@ -38,7 +71,7 @@
                   0))
   :hints (("Goal" :in-theory (enable sbvdiv sbvdivdown logext logapp))))
 
-(defthmd sbvdivdown-rewrite-case-2
+(defthm sbvdivdown-rewrite-case-2
   (implies (and (not (equal 0 (bvchop size y)))
                 (and (sbvle size 0 x)
                      (sbvle size 0 y))
@@ -69,31 +102,14 @@
                                    SBVLT-REWRITE
                                    ;anti-bvplus
                                    )))))
-;gen
-(defthm unsigned-byte-p-of-sbvdivdown
-  (unsigned-byte-p 32 (sbvdivdown 32 x y))
-  :hints (("Goal" :in-theory (enable sbvdivdown))))
 
-(in-theory (enable SBVDIVDOWN-REWRITE-CASE-2))
-
-(defthm sbvdivdown-of-bvplus-minus4
-  (implies (unsigned-byte-p 31 x) ;gen!
-           (equal (sbvdivdown 32 (bvplus 32 4294967292 x) 4)
-                  (bvplus 32 -1 (sbvdivdown 32 x 4))))
-  :hints (("Goal" :in-theory (e/d (sbvdivdown bvplus bvdiv logext-of-plus)
-                                  (BVLT-OF-BVCHOP-ARG2
-                                   BVLT-OF-BVCHOP-ARG3)))))
-
-;(local (in-theory (disable SBVLT-REWRITE)))
-
-;move
 (defthmd sbvdivdown-rewrite-case-4
   (implies (and (not (equal 0 (bvchop size y)))
                 (not (and (sbvle size 0 x)
                           (sbvle size 0 y)))
                 (not (and (sbvlt size x 0)
                           (sbvlt size y 0)))
-                (equal 0 (sbvrem size x y)) ;fixme use bvmod instead?
+                (equal 0 (sbvrem size x y)) ;todo: use bvmod instead?
                 (natp x)
                 (natp y)
                 (posp size))
@@ -107,7 +123,7 @@
                                    sbvlt ;sbvrem
                                    BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                    bvchop-when-top-bit-not-1
-;bvchop-of-sum-cases
+                                   bvchop-of-sum-cases
                                    bvmod
                                    bvuminus
                                    bvminus
@@ -119,9 +135,19 @@
 ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
                                    ;SBVDIV-rewrite
-                                   )))))
+                                      )))))
 
-;move
+
+;; ;move
+;; (defthm equal-of-0-and-mod-forward
+;;   (implies (and (equal 0 (mod (+ x y) z))
+;;                 (rationalp x)
+;;                 (rationalp y)
+;;                 (rationalp z))
+;;            (integerp (+ (/ x z) (/ y z))))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable equal-of-0-and-mod))))
+
 (defthmd sbvdivdown-rewrite-case-5
   (implies (and (not (equal 0 (bvchop size y)))
                 (not (and (sbvle size 0 x)
@@ -142,7 +168,7 @@
                                    sbvlt ;sbvrem
                                    BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                    bvchop-when-top-bit-not-1
-                                   ;;bvchop-of-sum-cases
+                                   bvchop-of-sum-cases
                                    bvmod
                                    bvuminus
                                    bvminus
@@ -167,7 +193,7 @@
                                    )))))
 
 ;need to turn sbvdivdown into STP primitives (sbvdiv may be further turned into bvdiv?)
-(defthm sbvdivdown-rewrite
+(defthmd sbvdivdown-rewrite
   (implies (and (posp size)
                 (natp x)
                 (natp y))
@@ -197,52 +223,50 @@
                               sbvdivdown-rewrite-case-5)
                            (bvdiv)))))
 
-(defthm SBVDIVDOWN-of-bvchop-arg2
+(defthm sbvdivdown-rewrite-gen
   (implies (posp size)
-           (equal (SBVDIVDOWN SIZE (BVCHOP SIZE X) y)
-                  (SBVDIVDOWN SIZE X y)))
-  :hints (("Goal" :in-theory (enable SBVDIVDOWN))))
-
-(defthm SBVDIVDOWN-of-bvchop-arg3
-  (implies (posp size)
-           (equal (SBVDIVDOWN SIZE y (BVCHOP SIZE X))
-                  (SBVDIVDOWN SIZE y X)))
-  :hints (("Goal" :in-theory (enable SBVDIVDOWN))))
-
-(defthm sbvdivdown-when-bvchop-known-subst-arg3
-  (implies (and (equal (bvchop size x) free)
-                (syntaxp (quotep free))
-                (posp size)
-                )
-           (equal (sbvdivdown size y x)
-                  (sbvdivdown size y free)))
-  :hints (("Goal" :in-theory (enable sbvdivdown))))
-
-(defthm sbvdivdown-when-bvchop-known-subst-arg2
-  (implies (and (equal (bvchop size x) free)
-                (syntaxp (quotep free))
-                (posp size)
-                )
            (equal (sbvdivdown size x y)
-                  (sbvdivdown size free y)))
-  :hints (("Goal" :in-theory (enable sbvdivdown))))
+                  (if (equal 0 (bvchop size y))
+                      0
+                      (if (and (sbvle size 0 x) (sbvle size 0 y))
+                          (bvdiv (+ -1 size) x y)
+                          (if (and (sbvlt size x 0) (sbvlt size y 0))
+                              (sbvdiv size x y)
+                              (if (equal 0 (sbvrem size x y))
+                                  (sbvdiv size x y)
+                                  (bvplus size -1 (sbvdiv size x y))))))))
+  :hints (("Goal" :use (:instance sbvdivdown-rewrite (x (bvchop size x)) (y (bvchop size y)))
+           :in-theory (disable sbvdivdown-rewrite
+                               ;;sbvdiv-rewrite
+                               sbvrem-rewrite))))
 
-(DEFTHM SBVDIVDOWN-REWRITE-gen
-  (IMPLIES (POSP SIZE)
-           (EQUAL
-            (SBVDIVDOWN SIZE X Y)
-            (IF (EQUAL 0 (BVCHOP SIZE Y))
-                0
-                (IF (AND (SBVLE SIZE 0 X) (SBVLE SIZE 0 Y))
-                    (BVDIV (+ -1 SIZE) X Y)
-                    (IF (AND (SBVLT SIZE X 0) (SBVLT SIZE Y 0))
-                        (SBVDIV SIZE X Y)
-                        (IF (EQUAL 0 (SBVREM SIZE X Y))
-                            (SBVDIV SIZE X Y)
-                            (BVPLUS SIZE -1 (SBVDIV SIZE X Y))))))))
-  :hints (("Goal" :use (:instance SBVDIVDOWN-REWRITe (x (bvchop size x)) (y (bvchop size y)))
-           :in-theory (disable SBVDIVDOWN-REWRITe
-                               ;;SBVDIV-rewrite
-                               SBVREM-REWRITE))))
+(local
+ (defthm bvdiv-lemma
+   (implies (and (integerp x)
+                 (<= 4 (bvchop 31 x)))
+            (equal (bvdiv 31 (+ -4 x) 4)
+                   (+ -1 (bvdiv 31 x 4))))
+   :hints (("Goal" :in-theory (enable bvdiv
+                                      bvchop-of-sum-cases)))))
 
-(in-theory (disable SBVDIVDOWN-REWRITE))
+;drop?
+(defthm sbvdivdown-of-bvplus-minus4
+  (implies (unsigned-byte-p 31 x) ;gen!
+           (equal (sbvdivdown 32 (bvplus 32 4294967292 x) 4)
+                  (bvplus 32 -1 (sbvdivdown 32 x 4))))
+  :otf-flg t
+  :hints (("Goal" :in-theory (e/d (;sbvdivdown
+                                   sbvdiv
+                                   bvplus
+                                   ;;bvdiv
+                                   bvmod
+                                   logext-of-plus
+                                   bvuminus
+                                   sbvlt-rewrite
+                                   ;SBVDIVDOWN-REWRITE-CASE-2
+                                   bvchop-of-sum-cases
+                                   getbit-of-plus
+                                   truncate-becomes-floor-gen
+                                   )
+                                  (BVLT-OF-BVCHOP-ARG2
+                                   BVLT-OF-BVCHOP-ARG3)))))
