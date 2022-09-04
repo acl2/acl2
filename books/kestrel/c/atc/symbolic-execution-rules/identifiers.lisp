@@ -132,6 +132,14 @@
              (equal (exec-memberp val mem compst)
                     (exec-memberp val (ident (ident->name mem)) compst))))
 
+  (defruled exec-arrsub-of-member-of-const-identifier
+    (implies
+     (and (syntaxp (quotep mem))
+          (identp mem))
+     (equal
+      (exec-arrsub-of-member str mem sub)
+      (exec-arrsub-of-member str (ident (ident->name mem)) sub))))
+
   (defruled exec-arrsub-of-memberp-of-const-identifier
     (implies
      (and (syntaxp (quotep mem))
@@ -165,4 +173,5 @@
     type-struct-of-const-identifier
     exec-member-of-const-identifier
     exec-memberp-of-const-identifier
+    exec-arrsub-of-member-of-const-identifier
     exec-arrsub-of-memberp-of-const-identifier))

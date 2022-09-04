@@ -956,10 +956,11 @@
        (xdoc::li "@('ullong')"))
       "@('T') is the C element type of the array type of @('<member>'),
        @('U') is the C type corresponding to @('<type>'), and
-       @('V') is the pointer type to
-       the C structure type represented by @('<tag>').
-       This represents an access to
-       an element of a structure member by pointer.")
+       @('V') is the C structure type represented by @('<tag>')
+       or the pointer type to that C structure type.
+       This represents an access to an element of a structure member,
+       by value if @('V') is the C structure type
+       or by pointer if @('V') is the pointer type to the C structure type.")
      (xdoc::li
       "A call of @(tsee sint-from-boolean) on
        an expression term for @('fn') returning boolean,
