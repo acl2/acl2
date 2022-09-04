@@ -91,7 +91,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |read_aggreg| (|i| |a|)
+(defun |read_aggreg_by_value| (|i| |a|)
+  (declare
+   (xargs
+    :guard
+    (and
+     (c::sintp |i|)
+     (struct-|scalar_and_array|-p |a|)
+     (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
+  (struct-|scalar_and_array|-read-|aggreg|-sint |i| |a|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_aggreg_by_pointer| (|i| |a|)
   (declare
    (xargs
     :guard
@@ -233,7 +245,8 @@
         |allpos_by_pointer|
         |read_scalar_by_value|
         |read_scalar_by_pointer|
-        |read_aggreg|
+        |read_aggreg_by_value|
+        |read_aggreg_by_pointer|
         |return1|
         |return2|
         |return3|
