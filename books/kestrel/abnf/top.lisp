@@ -70,6 +70,11 @@
      "Executable operations on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
+     "Some basic parsing primitives usable as part of larger parsers.")
+    (xdoc::li
+     "Some very preliminary tools to generate
+      parsing functions from grammar rules.")
+    (xdoc::li
      "Examples of use of the parser, the abstractor, and some grammar operations
       on a few real-world ABNF grammars (e.g. for HTTP)."))
 
