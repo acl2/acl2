@@ -12965,15 +12965,15 @@
                    ((keywordp dir)
                     (msg
                      "among the list of those legal values, ~x0"
-                     (cons :system
-                           (strip-cars
-                            (append
-                             (project-dir-alist state)
-                             (cdr (assoc-eq :include-book-dir-alist
-                                            (table-alist 'acl2-defaults-table
-                                                         (w state))))
-                             (table-alist 'include-book-dir!-table
-                                          (w state)))))))
+                     (strip-cars
+                      (union-eq
+                       (project-dir-alist state)
+                       (append
+                        (cdr (assoc-eq :include-book-dir-alist
+                                       (table-alist 'acl2-defaults-table
+                                                    (w state))))
+                        (table-alist 'include-book-dir!-table
+                                     (w state)))))))
                    (t "a keyword"))))
              (t ,(if (eq soft-or-hard 'soft)
                      '(value dir-value)
@@ -26287,8 +26287,8 @@
 (defun change-include-book-dir (keyword dir0 caller state)
 
 ; Caller is add-include-book-dir, add-include-book-dir!,
-; delete-include-book-dir!, or delete-include-book-dir.  Dir is nil if and only
-; caller is one of the latter two.
+; delete-include-book-dir!, or delete-include-book-dir.  Dir0 is nil if and
+; only caller is one of the latter two.
 
 ; See the Essay on Include-book-dir-alist.
 
@@ -26334,8 +26334,8 @@
                caller keyword))
           ((and dir (not (stringp dir)))
            (er soft ctx
-               "The second argument of ~x0 must be a string or a sysfile ~
-                (i.e., of the form (:keyword . string)), but ~x1 is not."
+               "The second argument of ~x0 must be a string or ~
+                of the form (:keyword . string), but ~x1 is not."
                caller dir))
           (t
            (let ((dir (and dir

@@ -11,11 +11,12 @@
 
 (in-package "ACL2")
 
-;; See tests in string-utilities.lisp
+;; See tests in string-utilities-tests.lisp
 
 ;; TODO: Split this book
 
 (include-book "read-chars")
+(local (include-book "coerce"))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -27,6 +28,7 @@
 ;terminator may often be #\;
 ;takes a list of chars and a terminator and returns (mv <chars-before-terminator> <chars-after-terminator>)
 ;; Returns (mv chars-before-terminator chars-after-terminator).
+;; TODO: Compare to read-chars-to-terminator.
 (defund readthroughterminator-aux (char-lst terminator)
   (declare (xargs ; :mode :program
             :measure (len char-lst)
@@ -83,8 +85,6 @@
     (declare (ignore chars-after))
     (coerce chars-before 'string)))
 
-;(local (assert-equal (substring-before-terminator "abcde" #\c) "ab"))
-
 (defund substring-after-terminator (str terminator)
   (declare (xargs :guard (and (stringp str)
                               (characterp terminator))))
@@ -93,70 +93,21 @@
     (declare (ignore chars-before))
     (coerce chars-after 'string)))
 
-;(local (assert-equal (substring-after-terminator "abcde" #\c) "de"))
+;; (defun empty-stringp (str)
+;;   (declare (xargs :guard t))
+;;   (equal "" str))
 
-(defun empty-stringp (str)
-  (declare (xargs :guard t))
-  (equal "" str))
+;; (defun non-empty-stringp (str)
+;;   (declare (xargs :guard t))
+;;   (and (stringp str)
+;;        (not (empty-stringp str))))
 
-(defun non-empty-stringp (str)
-  (declare (xargs :guard t))
-  (and (stringp str)
-       (not (empty-stringp str))))
-
-(defthmd consp-when-true-listp
-  (implies (true-listp x)
-           (equal (consp x)
-                  (not (equal x nil)))))
-
-(defthm coerce-injective
-  (implies (and (equal (coerce x 'list) (coerce y 'list))
-                (stringp x)
-                (stringp y))
-           (equal x y))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (disable COERCE-INVERSE-2)
-           :use ((:instance coerce-inverse-2 (x x))
-                 (:instance coerce-inverse-2 (x y))))))
-
-;fixme pull out all this string stuff
-(defthm consp-of-coerce
-  (implies (stringp str)
-           (iff (consp (coerce str 'list))
-                (not (equal str ""))))
-  :hints (("Goal" :in-theory (enable consp-when-true-listp)
-           :use ((:instance coerce-injective (x str) (y ""))
-                 (:instance completion-of-coerce (x str) (y 'list))))))
-
-(defthm equal-of-len-of-coerce-and-0
-  (equal (equal (len (coerce str 'list)) 0)
-         (or (not (stringp str))
-             (equal "" str)))
-  :hints (("Goal" :use consp-of-coerce
-           :in-theory (disable consp-of-coerce))))
+;; (defthmd consp-when-true-listp
+;;   (implies (true-listp x)
+;;            (equal (consp x)
+;;                   (not (equal x nil)))))
 
 (local (in-theory (disable nth))) ;fixme
-
-;use this more
-(defund strcdr (str)
-  (declare (xargs :guard (non-empty-stringp str)))
-  (subseq str 1 (length str)))
-
-(defthm stringp-of-strcdr
-  (implies (stringp str)
-           (stringp (strcdr str)))
-  :hints (("Goal" :in-theory (enable strcdr))))
-
-;fixme use more
-(defund strcar (str)
-  (declare (xargs :guard (non-empty-stringp str)))
-  (char str 0))
-
-(defthm characterp-of-strcar
-  (implies (and (stringp str)
-                (not (equal "" str)))
-           (characterp (strcar str)))
-  :hints (("Goal" :in-theory (enable strcar))))
 
 ;fixme pull out this string stuff into a library
 
@@ -164,18 +115,6 @@
   (implies (stringp x)
            (equal (acl2-count x)
                   (length x))))
-
-(defthm stringp-of-subseq
-  (implies (stringp seq)
-           (stringp (subseq seq start end)))
-  :hints (("Goal" :in-theory (enable subseq))))
-
-;(in-theory (enable subseq))
-
-(DEFthm COERCE-INVERSE-1-forced
-  (IMPLIES (force (CHARACTER-LISTP X))
-           (EQUAL (COERCE (COERCE X 'STRING) 'LIST)
-                  X)))
 
 ;returns (mv string-before-char rest-of-string)
 (defund split-string-before-char (str char)
@@ -206,9 +145,6 @@
     (declare (ignore chars-before-item))
     (coerce rest-chars 'string)))
 
-;(local (assert-equal (drop-string-before-char "abcde" #\c) "cde"))
-;(local (assert-equal (drop-string-before-char "abcde" #\X) ""))
-
 (defund substring-before-char (str char)
   (declare (xargs :guard (and (stringp str)
                               (characterp char))))
@@ -216,10 +152,6 @@
     (read-chars-to-terminator (coerce str 'list) char)
     (declare (ignore rest-chars))
     (coerce chars-before-item 'string)))
-
-;(local (assert-equal (substring-before-char "abcde" #\c) "ab"))
-;(local (assert-equal (substring-before-char "abcde" #\X) "abcde")) ;is this what we want?
-
 
 ;returns (mv string-up-through-terminator rest-string)
 (defund read-string-to-last-terminator (str terminator)
@@ -260,17 +192,3 @@
   (stringp (substring-after-last-occurrence str char))
   :hints (("Goal" :in-theory (enable substring-after-last-occurrence))))
 
-;(local (assert-equal (substring-before-last-occurrence "ab.cd.ef.gh" #\.) "ab.cd.ef"))
-
-(defund digit-string-range-p (str i j)
-  (declare (xargs :guard (and (stringp str)
-                              (natp i)
-                              (natp j)
-                              (<= i (length str))
-                              (<= j (length str))
-                              (<= i j))
-                  :measure (nfix (- (nfix j) (nfix i)))))
-  (if (>= (nfix i) (nfix j))
-      t
-    (and (digit-char-p (char str i))
-         (digit-string-range-p str (+ (nfix i) 1) j))))
