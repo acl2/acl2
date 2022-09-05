@@ -9130,7 +9130,7 @@
 (defun project-dir-alist-from-file-0 (filename ctx state)
   (declare (xargs :stobjs state :mode :program))
   (let ((filename-u (pathname-os-to-unix filename (os (w state)) state)))
-    (er-let* ((lst (read-file+ filename
+    (er-let* ((lst (read-file+ filename-u
                                (msg "Unable to open file ~x0 to read the ~
                                      project-dir-alist."
                                     filename)
@@ -9143,7 +9143,7 @@
                   keyword.  But the value read from file ~x0 is ~x1, which ~
                   does not have that property."
                  filename lst))
-            ((not (project-dir-file-p filename state))
+            ((not (project-dir-file-p filename-u state))
              (er soft ctx
                  "The value read for the project-dir-alist is, as expected, ~
                   an alternating list of keywords and strings, starting with ~
@@ -9153,7 +9153,7 @@
                   its name.  File ~x0 does not have that property."
                  filename))
             (t
-             (let ((abs (unix-truename-pathname filename-u nil state)))
+             (let ((abs (canonical-unix-pathname filename-u nil state)))
                (cond
                 ((null abs)
                  (er soft ctx
@@ -9221,7 +9221,12 @@
   (mv-let (erp val state)
     (er-let* ((system-books-dir
                (value (and system-dir0 ; legal ACL2 string from getenv$-raw
-                           (extend-pathname+ (cbd) system-dir0 t state))))
+                           (extend-pathname+
+                            (cbd)
+                            (pathname-os-to-unix system-dir0
+                                                 (os (w state))
+                                                 state)
+                            t state))))
               (proj-file (getenv$ "ACL2_PROJECTS" state))
               (proj-alist (if proj-file
                               (project-dir-alist-from-file proj-file ctx state)
@@ -9281,6 +9286,13 @@
                       ACL2 distribution")))))
        ((rassoc-equal (or system-books-dir old-project-dir-alist)
                       (remove-assoc-equal :system proj-alist))
+
+; The test above will be false if system-books-dir is nil and
+; old-project-dir-alist is an alist (because the executable was created by
+; save-exec).  That's fine if you think about it: when system-books-dir is nil,
+; our only concern is that old-project-dir-alist is a string that will be the
+; system books directory.
+
         (let ((pair (rassoc-equal (or system-books-dir old-project-dir-alist)
                                   (remove-assoc-equal :system proj-alist))))
           (er soft ctx
@@ -9289,6 +9301,35 @@
               proj-file
               (car pair)
               (cdr pair))))
+       ((and (not
+              (stringp old-project-dir-alist)) ; from save-exec (optimization)
+             (let ((wrld (w state)))
+               (or (conflicting-symbol-alists
+                    proj-alist
+                    (cdr (assoc-eq :include-book-dir-alist
+                                   (table-alist 'acl2-defaults-table wrld))))
+                   (conflicting-symbol-alists
+                    proj-alist
+                    (table-alist 'include-book-dir!-table wrld)))))
+        (let* ((wrld (w state))
+               (c1 (conflicting-symbol-alists
+                    proj-alist
+                    (cdr (assoc-eq :include-book-dir-alist
+                                   (table-alist 'acl2-defaults-table wrld)))))
+               (c2 (conflicting-symbol-alists
+                    proj-alist
+                    (table-alist 'include-book-dir!-table wrld))))
+          (mv-let (k new old fn)
+            (if c1
+                (mv (car c1) (cadr c1) (cddr c1) 'add-include-book-dir)
+              (mv (car c2) (cadr c2) (cddr c2) 'add-include-book-dir!))
+            (er soft ctx
+                "The project-dir-alist read from file ~x0 assigns the value ~
+                 ~x1 to the key ~x2.  But before the present ACL2 executable ~
+                 was created with save-exec, that key was associated with a ~
+                 different value by ~x3, namely, ~x4."
+                proj-file new k fn old))))
+            
 
 ; We get to this point if proj-file is non-nil and there is no conflict in the
 ; user's specification of the system books directory.  We set the

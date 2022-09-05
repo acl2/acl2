@@ -6578,7 +6578,7 @@
           (t (prog2$
               (er-hard? ctx "Missing project"
                         "The project-dir-alist needs an entry for the keyword ~
-                         but that keyword is missing the current ~
+                         ~x0 but that keyword is missing the current ~
                          project-dir-alist, ~x1.  See :DOC project-dir-alist."
                         key alist)
 ; Dumb default so caller gets a sufficiently short string:

@@ -5229,3 +5229,16 @@
         (t (merge-len>=-cdr (merge-sort-len>=-cdr (evens l))
                             (merge-sort-len>=-cdr (odds l))))))
 
+(defun conflicting-symbol-alists (a1 a2)
+
+; Returns nil if some key has different values in a1 and a2; otherwise return
+; (key v1 . v2) where key is bound to vi in ai (i=1,2).  We consider only the
+; first binding of each key in a2.
+
+  (declare (xargs :guard (and (symbol-alistp a1)
+                              (symbol-alistp a2))))
+  (cond ((endp a1) nil)
+        (t (let ((pair (assoc-eq (caar a1) a2)))
+             (cond ((and pair (not (equal (cdr pair) (cdar a1))))
+                    (list* (car pair) (cdar a1) (cdr pair)))
+                   (t (conflicting-symbol-alists (cdr a1) a2)))))))
