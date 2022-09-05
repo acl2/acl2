@@ -25,19 +25,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |read_x_from_point2D| (|s|)
+(defun |read_x_from_point2D_by_value| (|s|)
+  (declare (xargs :guard (struct-|point2D|-p |s|)))
+  (struct-|point2D|-read-|x| |s|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_x_from_point2D_by_pointer| (|s|)
   (declare (xargs :guard (c::pointer (struct-|point2D|-p |s|))))
   (struct-|point2D|-read-|x| |s|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |read_y_from_point2D| (|s|)
+(defun |read_y_from_point2D_by_value| (|s|)
+  (declare (xargs :guard (struct-|point2D|-p |s|)))
+  (struct-|point2D|-read-|y| |s|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_y_from_point2D_by_pointer| (|s|)
   (declare (xargs :guard (c::pointer (struct-|point2D|-p |s|))))
   (struct-|point2D|-read-|y| |s|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |allpos| (|point|)
+(defun |allpos_by_value| (|point|)
+  (declare (xargs :guard (struct-|point3D|-p |point|)))
+  (c::sint-from-boolean
+   (and (c::boolean-from-sint
+         (c::gt-slong-slong (struct-|point3D|-read-|x| |point|)
+                            (c::slong-dec-const 0)))
+        (c::boolean-from-sint
+         (c::gt-slong-slong (struct-|point3D|-read-|y| |point|)
+                            (c::slong-dec-const 0)))
+        (c::boolean-from-sint
+         (c::gt-slong-slong (struct-|point3D|-read-|z| |point|)
+                            (c::slong-dec-const 0))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |allpos_by_pointer| (|point|)
   (declare (xargs :guard (c::pointer (struct-|point3D|-p |point|))))
   (c::sint-from-boolean
    (and (c::boolean-from-sint
@@ -52,13 +79,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |read_scalar| (|a|)
+(defun |read_scalar_by_value| (|a|)
+  (declare (xargs :guard (struct-|scalar_and_array|-p |a|)))
+  (struct-|scalar_and_array|-read-|scalar| |a|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_scalar_by_pointer| (|a|)
   (declare (xargs :guard (c::pointer (struct-|scalar_and_array|-p |a|))))
   (struct-|scalar_and_array|-read-|scalar| |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |read_aggreg| (|i| |a|)
+(defun |read_aggreg_by_value| (|i| |a|)
+  (declare
+   (xargs
+    :guard
+    (and
+     (c::sintp |i|)
+     (struct-|scalar_and_array|-p |a|)
+     (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
+  (struct-|scalar_and_array|-read-|aggreg|-sint |i| |a|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_aggreg_by_pointer| (|i| |a|)
   (declare
    (xargs
     :guard
@@ -192,11 +237,16 @@
         |point3D|
         |integers|
         |scalar_and_array|
-        |read_x_from_point2D|
-        |read_y_from_point2D|
-        |allpos|
-        |read_scalar|
-        |read_aggreg|
+        |read_x_from_point2D_by_value|
+        |read_x_from_point2D_by_pointer|
+        |read_y_from_point2D_by_value|
+        |read_y_from_point2D_by_pointer|
+        |allpos_by_value|
+        |allpos_by_pointer|
+        |read_scalar_by_value|
+        |read_scalar_by_pointer|
+        |read_aggreg_by_value|
+        |read_aggreg_by_pointer|
         |return1|
         |return2|
         |return3|
