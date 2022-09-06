@@ -307,12 +307,12 @@
                                unsigned-byte-p-of-bvand-simple))))
 
 (defthm getbit-of-bvand
-  (implies (and (< bit size)
-                (natp bit)
+  (implies (and (< n size)
+                (natp n)
                 (natp size))
-           (equal (getbit bit (bvand size x y))
-                  (bvand 1 (getbit bit x)
-                           (getbit bit y))))
+           (equal (getbit n (bvand size x y))
+                  (bvand 1 (getbit n x)
+                           (getbit n y))))
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthm getbit-of-bvand-eric
