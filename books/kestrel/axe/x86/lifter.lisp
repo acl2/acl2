@@ -1670,7 +1670,7 @@
                  `(defun ,loop-fn (,@param-names)
                     (declare (xargs :measure ,measure))
                     ,defun-body)))
-        (state (submit-event defun state))
+        (state (acl2::submit-event-brief defun state))
 
         ;; TODO: Need to prove that x86p is preserved... ugh... example: show that nth 0 of the loop function is a SIGNED-BYTE-P '64.
 

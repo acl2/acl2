@@ -80,7 +80,7 @@
 (defun submit-event-helper (event print throw-errorp state)
   (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
                               (booleanp throw-errorp))
-                  :mode :program ;; because we call trans-eval-error-triple
+                  :mode :program ; because this calls trans-eval-error-triple
                   :stobjs state))
   (progn$ (and print (cw "(Submitting event:~%")) ;todo: it would be nice print the event name (if there is one) or to say "event 3 of 9" or whatever
           (and print
@@ -151,12 +151,12 @@
     (declare (ignore erp))
     state))
 
-;deprecate?  or improve to take a :print argument (will have to make it a macro) and replace the 3 versions above
-;returns state
-;throws an error if the event fails
-(defun submit-event (event state)
-  (declare (xargs :mode :program :stobjs state))
-  (submit-event-brief event state))
+;; ;deprecate?  or improve to take a :print argument (will have to make it a macro) and replace the 3 versions above
+;; ;returns state
+;; ;throws an error if the event fails
+;; (defun submit-event (event state)
+;;   (declare (xargs :mode :program :stobjs state))
+;;   (submit-event-brief event state))
 
 ;returns state
 ;throws an error if any event fails

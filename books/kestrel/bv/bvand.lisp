@@ -105,8 +105,7 @@
                          (quotep x)
                          (quotep size)))
            (equal (bvand size x (bvand size y z))
-                  (bvand size (bvand size x y) z)))
-  :hints (("Goal" :in-theory (enable bvand))))
+                  (bvand size (bvand size x y) z))))
 
 (defthm bvand-when-size-is-not-positive
   (implies (<= size 0)
@@ -116,8 +115,7 @@
 
 (defthm bvand-of-0-arg1
   (equal (bvand 0 x y)
-         0)
-  :hints (("Goal" :in-theory (enable bvand))))
+         0))
 
 (defthm bvand-when-x-is-not-an-integer
   (implies (not (integerp x))
@@ -251,8 +249,7 @@
                 (natp size)
                 (integerp size2))
            (equal (bvand size2 mask i)
-                  (bvchop size i)))
-  :hints (("Goal" :in-theory (enable bvand))))
+                  (bvchop size i))))
 
 ;doesn't bind any free vars
 ;add syntaxp hyp - does compute integer-length several times..
@@ -302,9 +299,10 @@
 (defthm bitp-of-bvand-of-1
   (bitp (bvand 1 x y))
   :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvand-simple (size 1))
-           :in-theory (disable unsigned-byte-p-of-bvand
-                               unsigned-byte-p-of-bvand-simple))))
+  ;; :hints (("Goal" :use (:instance unsigned-byte-p-of-bvand-simple (size 1))
+  ;;          :in-theory (disable unsigned-byte-p-of-bvand
+  ;;                              unsigned-byte-p-of-bvand-simple)))
+  )
 
 (defthm getbit-of-bvand
   (implies (and (< bit size)
@@ -319,14 +317,9 @@
   (implies (and (< 1 size) ;if size is 0 or 1, other rules should fire?
                 (< n size) ;other case?
                 (natp n)
-                (integerp size)
-                )
+                (integerp size))
            (equal (getbit n (bvand size x y))
-                  (bvand 1 (getbit n x) (getbit n y))))
-  :hints (("Goal" :cases ((and (integerp x) (integerp y))
-                          (and (integerp x) (not (integerp y)))
-                          (and (not (integerp x)) (integerp y)))
-           :in-theory (enable getbit-when-val-is-not-an-integer))))
+                  (bvand 1 (getbit n x) (getbit n y)))))
 
 (local
  (defun induct-floor-by-2-floor-by-2-sub-1 (x y n)
