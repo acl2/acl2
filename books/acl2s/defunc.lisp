@@ -1912,6 +1912,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (defunc-timeout (get-defunc-timeout))
             (defunc-timeout (or timeout-arg (* 3/4 (or defunc-timeout 10000))))
             (timeout (min ccg-timeout defunc-timeout))
+            (name-bad? (arity name (w state)))
+            ((when name-bad?)
+             (er hard 'defunc
+                 "~%The name ~x0 is already defined."
+                 name))
             (args (list* (car args)
                          `(declare (xargs :time-limit ,timeout))
                          (cdr args)))
