@@ -64,7 +64,6 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
-(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)

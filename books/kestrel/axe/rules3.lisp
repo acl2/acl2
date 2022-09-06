@@ -17693,7 +17693,7 @@
 
 ;todo: move this stuff to bv library but needs equal-of-slice:
 
-(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
 ;move
 (defthm *-of-expt-and-expr-of-+-of---same

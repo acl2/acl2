@@ -19,7 +19,6 @@
 (local (include-book "plus-and-minus"))
 (local (include-book "plus"))
 (local (include-book "minus"))
-(local (include-book "floor"))
 (local (include-book "divides"))
 
 (in-theory (disable rem))

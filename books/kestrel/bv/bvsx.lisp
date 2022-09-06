@@ -19,7 +19,6 @@
 (local (include-book "slice"))
 (local (include-book "repeatbit"))
 (local (include-book "repeatbit2"))
-(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

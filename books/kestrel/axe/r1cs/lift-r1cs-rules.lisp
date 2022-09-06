@@ -791,7 +791,7 @@
                   (neg (mul y x p) p)))
   :hints (("Goal" :in-theory (enable MUL add))))
 
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+;;(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;move
