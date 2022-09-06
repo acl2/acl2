@@ -328,3 +328,21 @@
                                      MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                      )
                                   ()))))
+
+(defthm leftrotate32-of-leftrotate32
+  (implies (and (natp k1)
+                (natp k2))
+           (equal (leftrotate32 k1 (leftrotate32 k2 x))
+                  (leftrotate32 (bvplus 5 k1 k2) x)))
+  :hints (("Goal" :in-theory (enable leftrotate32
+                                     ;leftrotate
+                                     ;;natp bvchop-of-sum-cases
+                                     bvplus
+                                     ))))
+
+;see leftrotate32-of-leftrotate32
+;; (defthm leftrotate32-of-bvuminus-and-leftrotate32
+;;   (implies (natp amt)
+;;            (equal (leftrotate32 (bvuminus '5 amt) (leftrotate32 amt val))
+;;                   (bvchop 32 val)))
+;;   :hints (("Goal" :in-theory (e/d (leftrotate32 leftrotate bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))

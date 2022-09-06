@@ -13,7 +13,7 @@
 
 (include-book "rules") ; for ACL2::BITNOT-BECOMES-BITXOR-WITH-1 ?
 (include-book "bvplus")
-(include-book "leftrotate")
+;(include-book "leftrotate")
 (include-book "rightrotate")
 (include-book "bvcat")
 (include-book "bitnot")
@@ -27,6 +27,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
+;mixes abstractions
 (defthm bvplus-of-expt-2
   (equal (bvplus size x (expt 2 size))
          (bvchop size x))
@@ -161,6 +162,7 @@
   :hints (("Goal" :cases ((equal 0 highsize))
            :in-theory (enable ACL2::BVXOR-ALL-ONES-HELPER-ALT))))
 
+;move
 (defthm bvcat-of-slice-same-becomes-rightrotate
   (implies (and (equal upper-bit 31) ;gen!
                 (equal upper-bit (+ -1 highsize lowsize))
@@ -691,33 +693,8 @@
            (equal (bvcat size1 (bvxor size1 a1 b1) size2 (bvxor size2 a2 b2))
                   (bvxor (+ size1 size2) (bvcat size1 a1 size2 a2) (bvcat size1 b1 size2 b2)))))
 
-;todo: gen the 32
-(defthmd bvcat-becomes-rightrotate
-  (implies (and (equal mid+1 (+ 1 mid))
-                (equal highsize (+ 1 mid))
-                (equal lowsize (- 31 mid))
-                (< mid 31)
-                (natp mid))
-           (equal (bvcat highsize
-                         (slice mid 0 x)
-                         lowsize
-                         (slice 31 mid+1 x))
-                  (acl2::rightrotate 32 (+ 1 mid) x)))
-  :hints (("Goal" :in-theory (enable ACL2::RIGHTROTATE))))
 
-;usual case (slice down to 0 has become bvchop)
-(defthmd bvcat-becomes-rightrotate-2
-  (implies (and (equal highsize size)
-                (equal lowsize (- 32 size))
-                (< size 31)
-                (natp size))
-           (equal (bvcat highsize
-                         (bvchop size x) ;todo: won't the size here go away usually?
-                         lowsize
-                         (slice 31 size x))
-                  (acl2::rightrotate 32 size x)))
-  :hints (("Goal" :in-theory (e/d (ACL2::RIGHTROTATE) (ACL2::RIGHTROTATE-BECOMES-LEFTROTATE)))))
-
+;move
 (defthmd bvcat-31-of-getbit-31-becomes-rightrotate
   (equal (bvcat 31 x 1 (getbit 31 x))
          (acl2::rightrotate 32 31 x)))

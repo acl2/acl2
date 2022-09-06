@@ -5026,13 +5026,6 @@
   :hints (("Goal" :in-theory (e/d (bvxor bvchop-of-logtail-becomes-slice)
                                   (LOGXOR-BVCHOP-BVCHOP)))))
 
-;; ;add some of these?
-;; (defthm leftrotate32-of-logext-32
-;;   (equal (leftrotate32 amd (logext 32 x))
-;;          (leftrotate32 amd x))
-;;   :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))
-
-
 (defthmd bvnot-blast
   (implies (and (< 1 size) ;for size=1 go to bitnot
                 (INTEGERP X)
@@ -5076,7 +5069,6 @@
                            (+ (- AMOUNT) 32)
                            val))))
   :hints (("Goal" :in-theory (enable trim bvchop-of-leftrotate32-both))))
-
 
 ;todo: add full trim support for rotate ops
 ;todo: only do this if the amt is a constant?
@@ -5570,25 +5562,6 @@
                 (posp N))
            (EQUAL (bvchop n x)
                   (bvcat 1 k1 (+ -1 n) k2))))
-
-;see leftrotate32-of-leftrotate32
-;; (defthm leftrotate32-of-bvuminus-and-leftrotate32
-;;   (implies (natp amt)
-;;            (equal (leftrotate32 (bvuminus '5 amt) (leftrotate32 amt val))
-;;                   (bvchop 32 val)))
-;;   :hints (("Goal" :in-theory (e/d (leftrotate32 leftrotate bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
-
-;move
-(defthm leftrotate32-of-leftrotate32
-  (implies (and (natp k1)
-                (natp k2))
-           (equal (leftrotate32 k1 (leftrotate32 k2 x))
-                  (leftrotate32 (bvplus 5 k1 k2) x)))
-  :hints (("Goal" :in-theory (enable leftrotate32
-                                     ;leftrotate
-                                     ;;natp bvchop-of-sum-cases
-                                     bvplus
-                                     ))))
 
 (defthm bvminus-of-bvchop-gen-arg2
   (implies (and (<= size1 size2)
