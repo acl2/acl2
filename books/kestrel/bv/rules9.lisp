@@ -11,8 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "rules") ; for ACL2::BITNOT-BECOMES-BITXOR-WITH-1 ?
+(include-book "single-bit") ; for ACL2::BITNOT-BECOMES-BITXOR-WITH-1 ?
+(include-book "bvcat-rules") ; make local?
+(include-book "bitwise") ; make local?
 (include-book "bvplus")
+(include-book "rules") ; for getbit-of-plus
 ;(include-book "leftrotate")
 (include-book "rightrotate")
 (include-book "bvcat")
@@ -81,15 +84,6 @@
                   (bvplus 32 (bvplus 32 x y) z)))
   :hints (("Goal" :in-theory (enable acl2::bvplus))))
 
-(defthm bvcat-of-slice-tighten
-  (implies (and (<= highsize (- high low))
-                ;; (<= low high)
-                (natp highsize)
-                (natp low)
-                (natp high))
-           (equal (bvcat highsize (slice high low x) lowsize lowval)
-                  (bvcat highsize (slice (+ -1 low highsize) low x) lowsize lowval))))
-
 (defthm bvcat-of-bitnot-low
   (implies (natp highsize)
            (equal (bvcat highsize highval 1 (bitnot lowbit))
@@ -112,7 +106,9 @@
                   (bvxor (+ highsize lowsize)
                                (bvchop lowsize -1) ;todo: improve?
                                (bvcat highsize highval lowsize lowbit))))
-  :hints (("Goal" :in-theory (enable ACL2::BVXOR-ALL-ONES-HELPER-ALT))))
+  :hints (("Goal" :in-theory (enable
+                              ACL2::BVXOR-ALL-ONES-HELPER-ALT
+                              ))))
 
 (defthm bvcat-of-bvxor-low-when-quotep
   (implies (and (syntaxp (quotep k))
