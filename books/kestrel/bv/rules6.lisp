@@ -118,7 +118,7 @@
                   (bvcat size1 (bvxor size1 z y) lowsize x)))
   :hints (("Goal" :in-theory (enable bvcat))))
 
-(in-theory (disable bvxor-trim-arg2 bvxor-trim-arg1)) ;bozo
+;(in-theory (disable bvxor-trim-arg2 bvxor-trim-arg1)) ;bozo
 
 ;do we trim logexts?
 (defthm bvxor-of-logext
@@ -355,7 +355,7 @@
 ;(theory-invariant (incompatible (:rewrite add-bvchop-to-bvxor-1) (:rewrite bvchop-identity)))
 ;(theory-invariant (incompatible (:rewrite add-bvchop-to-bvxor-2) (:rewrite bvchop-identity)))
 
-(in-theory (enable bvxor-trim-arg1 bvxor-trim-arg2))
+;(in-theory (enable bvxor-trim-arg1 bvxor-trim-arg2))
 
 (defthmd bvmult-pad-arg1
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
@@ -392,6 +392,7 @@
 (theory-invariant (incompatible (:rewrite bvmult-pad-arg2) (:rewrite BVCAT-OF-0)))
 
 ;bozo more like this for other ops (some may exist and need to be turned on)
+;todo: use trim, not bvchop
 (defthm bvmult-trim-arg1
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< size newsize)
@@ -403,6 +404,7 @@
                                   (bvmult-pad-arg1
                                    bvmult-pad-arg2)))))
 
+;todo: use trim, not bvchop
 (defthm bvmult-trim-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< size newsize)

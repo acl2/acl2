@@ -39,6 +39,7 @@
 (include-book "kestrel/bv/bvif2" :dir :system) ; for BVLT-OF-BVIF-ARG2-SAFE
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
+(include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
 (include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?

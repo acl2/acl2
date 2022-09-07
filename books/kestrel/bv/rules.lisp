@@ -58,6 +58,7 @@
 (include-book "bvcat-rules")
 (include-book "bvsx-rules")
 (include-book "bitwise")
+(include-book "trim")
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -1038,15 +1039,6 @@
                            (y x))
            :in-theory (e/d ( ;bvmult
                             ) (BVMULT-OF-BVCHOP-arg2)))))
-
-(defthm bvchop-of-bvminus
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (bvchop size1 (bvminus size2 y z))
-                  (bvminus size1 y z)))
-  :hints (("Goal" :in-theory (enable bvminus ;bvchop-bvchop
-                                   ))))
 
 (defthm bvplus-bound-2
   (implies (and (<= (expt 2 size) k)
@@ -3239,24 +3231,6 @@
 (defthm booleanp-of-unsigned-byte-p-forced
   (booleanp (unsigned-byte-p-forced size x)))
 
-;; ;not true?
-;; (defthm bvchop-of-bvdiv2
-;;   (implies (and (<= size1 size2)
-;;                 (natp size2)
-;;                 (natp size1))
-;;            (equal (bvchop size1 (bvdiv size2 x y))
-;;                   (bvdiv size1 x y)))
-;;   :hints (("Goal" :in-theory (enable bvdiv))))
-
-;; ;not true?
-;; (defthm trim-of-bvdiv
-;;   (implies (and (<= size1 size2)
-;;                 (natp size2)
-;;                 (natp size1))
-;;            (equal (trim size1 (bvdiv size2 x y))
-;;                   (bvdiv size1 x y)))
-;;   :hints (("Goal" :in-theory (enable))))
-
 (defthmd logtail-becomes-slice-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (integerp newsize)
@@ -3510,85 +3484,6 @@
            ;; this says x <= y but matches better
            (not (< y x))))
 
-;BOZO lots more rules like this
-;rename?
-(defthm bvxor-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize))
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvxor outersize x y)
-                  (bvxor outersize (trim outersize x) y)))
-  :hints (("Goal" :in-theory (enable bvxor trim))))
-
-;rename?
-(defthm bvxor-trim-arg2
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize))
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvxor outersize x y)
-                  (bvxor outersize x (trim outersize y))))
-  :hints (("Goal" :in-theory (enable bvxor trim))))
-
-(defthm bvif-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize)) ;bozo newsize is a bad name
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvif outersize test x y)
-                  (bvif outersize test (trim outersize x) y)))
-  :hints (("Goal" :in-theory (enable bvif trim))))
-
-(defthm bvif-trim-arg2
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize)) ;bozo newsize is a bad name
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvif outersize test x y)
-                  (bvif outersize test x (trim outersize y))))
-  :hints (("Goal" :in-theory (enable bvif trim))))
-
-;; these should have 'trim' in the name:
-
-;watch out for loops
-(defthm bvcat-tighten-high-arg
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize highval) (newsize))
-                (syntaxp (quotep highsize))
-                (< highsize newsize)
-                (natp highsize)
-                (natp newsize)
-                (integerp lowval)
-                (integerp highval)
-                (integerp lowval)
-                (natp lowsize)
-                )
-           (equal (bvcat highsize highval lowsize lowval)
-                  (bvcat highsize (trim highsize highval) lowsize lowval)))
-  :hints (("Goal" :in-theory (enable bvcat-of-bvchop-high trim))))
-
-(defthm bvcat-tighten-low-arg
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize lowval) (newsize))
-                (syntaxp (quotep lowsize))
-                (< lowsize newsize)
-                (natp highsize)
-                (natp newsize)
-                (integerp lowval)
-                (integerp highval)
-                (integerp lowval)
-                (natp lowsize)
-                )
-           (equal (bvcat highsize highval lowsize lowval)
-                  (bvcat highsize highval lowsize (trim lowsize lowval))))
-  :hints (("Goal" :in-theory (enable bvcat-of-bvchop-low trim))))
 
 ;gross proof?
 (defthmd bit-blast-peel-off-low
@@ -4107,39 +4002,6 @@
                   (myif test (bvchop size x) (bvchop size y))))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
-;combine these
-(defthm trim-of-bvsx
-  (implies (and (<= n new-size)
-                (natp n)
-                (natp new-size)
-                (posp old-size))
-           (equal (trim n (bvsx new-size old-size val))
-                  (if (<= old-size n)
-                      (bvsx n old-size val)
-                    (bvchop N VAL))))
-  :hints (("Goal" :in-theory (enable trim bvsx))))
-
-(defthm trim-of-slice
-  (implies (and (natp n)
-                (natp high)
-                (natp low))
-           (equal (trim n (slice high low x))
-                  (if (<= n (+ 1 (- high low)))
-                      (slice (+ -1 n low) low x)
-                    (slice high low x))))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm trim-of-bvcat
-  (implies (and (natp n)
-                (natp lowsize)
-                (natp highsize))
-           (equal (trim n (bvcat highsize highval lowsize lowval))
-                  (if (<= n lowsize)
-                      (bvchop n lowval) ;don't want to leave a trim (e.g. around a variable)
-                    (bvcat (min (binary-+ n (unary-- lowsize))
-                                highsize)
-                           highval lowsize lowval))))
-  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm logtail-of-floor-of-expt
   (implies (and (integerp x)
@@ -4661,39 +4523,6 @@
                 (syntaxp (quotep free))
                 (not (unsigned-byte-p free k)))
            (not (equal x k))))
-
-;; only do this if amount and size are constants?
-(defthmd trim-of-leftrotate32
-  (implies (and (<= size 32)
-                (<= amount 32)
-                (natp size)
-                (natp amount))
-           (equal (trim size (leftrotate32 amount val))
-                  (if (< amount size)
-                      (bvcat (- size amount)
-                             val
-                             amount
-                             (SLICE (+ -1 32)
-                                    (+ (- AMOUNT) 32)
-                                    VAL) )
-                    (slice (+ -1 (- AMOUNT) SIZE 32)
-                           (+ (- AMOUNT) 32)
-                           val))))
-  :hints (("Goal" :in-theory (enable trim bvchop-of-leftrotate32-both))))
-
-;todo: add full trim support for rotate ops
-;todo: only do this if the amt is a constant?
-(defthmd trim-of-1-and-leftrotate
-  (implies (and (< amt width) ; avoids mod in rhs
-                (natp amt)
-                (natp width))
-           (equal (trim 1 (leftrotate width amt x))
-                  (if (< 0 width)
-                      (if (< 0 amt) ; this case
-                          (getbit (+ width (- amt)) x)
-                        (getbit amt x))
-                    0)))
-  :hints (("Goal" :in-theory (enable trim leftrotate))))
 
 (defthm bvif-of-logext-arg1
   (implies (and (<= n m)
