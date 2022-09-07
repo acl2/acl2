@@ -412,3 +412,106 @@
                                    slice-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    logtail-of-bvchop-becomes-slice)))))
+
+
+;; TODO: organize this stuff:
+
+(defthm bvcat-getbit-slice-same
+  (implies (and (equal lowindex (+ 1 bitindex))
+                (equal size2 (+ 1 highindex (- lowindex) highsize))
+                (<= lowindex highindex) ;bozo
+                (natp bitindex)
+                (natp highindex)
+                (natp lowindex)
+                (integerp highval)
+                (natp highsize)
+                (< 0 highsize)
+                (integerp b))
+           (equal (bvcat size2 (bvcat highsize highval (+ 1 highindex (- lowindex)) (slice highindex lowindex b)) 1 (getbit bitindex b))
+                  (bvcat highsize highval (+ 2 highindex (- lowindex)) (slice highindex bitindex b)))))
+
+(defthm bvcat-slice-getbit-same
+  (implies (and (equal (+ 1 highindex) bitindex)
+                (equal size2 (+ 1 highindex (- lowindex)))
+                (<= lowindex highindex) ;bozo
+                (natp bitindex)
+                (natp highindex)
+                (natp lowindex)
+                (integerp highval)
+                (natp highsize)
+                (< 0 highsize)
+                (integerp b))
+           (equal (bvcat (+ 1 highsize) (bvcat highsize highval 1 (getbit bitindex b)) size2 (slice highindex lowindex b))
+                  (bvcat highsize highval (+ 1 bitindex (- lowindex)) (slice bitindex lowindex b)))))
+
+(defthm bvcat-slice-slice-same
+  (implies (and (equal (+ -1 lowindex2) highindex1)
+                (equal size1 (+ 1 highindex1 (- lowindex1)))
+                (equal size2 (+ 1 highindex2 (- lowindex2)))
+                (equal size3 (+ size2 highsize))
+                (<= lowindex2 highindex2) ;bozo
+                (<= lowindex1 highindex1) ;bozo
+                (natp highindex1)
+                (natp lowindex1)
+                (natp highindex2)
+                (natp lowindex2)
+                (integerp highval)
+                (natp highsize)
+                (< 0 highsize)
+                (integerp b))
+           (equal (bvcat size3 (bvcat highsize highval size2 (slice highindex2 lowindex2 b)) size1 (slice highindex1 lowindex1 b))
+                  (bvcat highsize highval (+ 1 highindex2 (- lowindex1)) (slice highindex2 lowindex1 b))
+                  )))
+
+;; tightens the upper size
+;use a more general rule?
+(defthm bvcat-tighten
+  (implies (and (< (+ lowsize highsize) size)
+                (< 0 highsize) ;bozo
+                (natp size)
+                (natp lowsize)
+                (natp highsize)
+                (natp lowsize2)
+                ;;(integerp x)
+                ;;(integerp y)
+                ;;(integerp z)
+                )
+           (equal (bvcat size (bvcat highsize x lowsize z) lowsize2 y)
+                  (bvcat (+ lowsize highsize) (bvcat highsize x lowsize z) lowsize2 y)))
+  :hints (("Goal" :cases ((and (integerp z) (integerp y))
+                          (and (integerp z) (not (integerp y)))
+                          (and (not (integerp z)) (integerp y)))
+           :in-theory (e/d (bvcat) (;bvchop-of-* ;fixme
+                                    logtail-of-bvchop-becomes-slice)))))
+
+;move
+(DEFTHM BVCAT-SLICE-SLICE-SAME-2
+  (IMPLIES (AND (EQUAL LOWINDEX2 size1)
+                (EQUAL SIZE2 (+ 1 HIGHINDEX2 (- LOWINDEX2)))
+                (EQUAL SIZE3 (+ SIZE2 HIGHSIZE))
+                (<= LOWINDEX2 HIGHINDEX2)
+                (natp size1)
+                (NATP HIGHINDEX2)
+                (NATP LOWINDEX2)
+                (INTEGERP HIGHVAL)
+                (NATP HIGHSIZE)
+                (< 0 HIGHSIZE)
+                (INTEGERP B))
+           (EQUAL (bvcat
+                   SIZE3
+                   (bvcat
+                    HIGHSIZE HIGHVAL SIZE2 (SLICE HIGHINDEX2 LOWINDEX2 B)) SIZE1 B)
+                  (bvcat
+                   HIGHSIZE HIGHVAL (+ 1 HIGHINDEX2 0)
+                   (SLICE HIGHINDEX2 0 B))))
+  :hints (("Goal" :use (:instance BVCAT-SLICE-SLICE-SAME (lowindex1 0) (highindex1 (+ -1 size1)))
+           :in-theory (disable BVCAT-SLICE-SLICE-SAME))))
+
+(defthm bvcat-of-slice-tighten
+  (implies (and (<= highsize (- high low))
+                ;; (<= low high)
+                (natp highsize)
+                (natp low)
+                (natp high))
+           (equal (bvcat highsize (slice high low x) lowsize lowval)
+                  (bvcat highsize (slice (+ -1 low highsize) low x) lowsize lowval))))
