@@ -25,13 +25,6 @@
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
-(defthm slice-of-bitand-too-high
-  (implies (and (<= 1 low)
-                (natp low))
-           (equal (slice high low (bitand x y))
-                  0))
-  :hints (("Goal" :in-theory (enable bitand slice-too-high-is-0))))
-
 (defthm lessthan-256-backchain
   (implies (and (unsigned-byte-p 8 x))
            (< x 256)))
@@ -108,8 +101,6 @@
 ;; (thm
 ;;  (equal (SLICE '19 '14 (bvcat '8 y '8 x))
 ;;         (slice
-
-
 
 ;bozo drop some hyps
 
@@ -719,23 +710,6 @@
   :hints (("Goal" :in-theory (e/d (bvsx) (;BVCHOP-32-LOGEXT-8
                                           )))))
 
-
-
-(defthm getbit-of-bvor-when-other-bit-is-0-arg1
-  (implies (and (equal (getbit n x) 0)
-                (< n size)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvor size x y))
-                  (getbit n y))))
-
-(defthm getbit-of-bvor-when-other-bit-is-0-arg2
-  (implies (and (equal (getbit n x) 0)
-                (< n size)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvor size y x))
-                  (getbit n y))))
 
 ;; (skip -proofs
 ;;  (defthmd floor-when-not-evenp

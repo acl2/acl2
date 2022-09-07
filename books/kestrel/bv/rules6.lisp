@@ -118,30 +118,6 @@
                   (bvcat size1 (bvxor size1 z y) lowsize x)))
   :hints (("Goal" :in-theory (enable bvcat))))
 
-(defthm bvxor-of-slice-tighten
-  (implies (and (<= size (- high low))
-                (natp size)
-                (< 0 size)
-                (natp low)
-                (natp high)
-                )
-           (equal (bvxor size x (slice high low y))
-                  (bvxor size x (slice (+ low size -1) low y))))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
-(defthm bvxor-of-slice-tighten-alt
-  (implies (and (<= size (- high low))
-                (natp size)
-                (< 0 size)
-                (natp low)
-                (natp high)
-;                (integerp x)
- ;               (integerp y)
-                )
-           (equal (bvxor size (slice high low y) x)
-                  (bvxor size (slice (+ low size -1) low y) x)))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
 (in-theory (disable bvxor-trim-arg2 bvxor-trim-arg1)) ;bozo
 
 ;do we trim logexts?
@@ -168,58 +144,6 @@
            (equal (bvxor size1 y (logext size2 x))
                   (bvxor size1 x y)))
   :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
-(defthm bvand-of-slice-tighten-2
-  (implies (and (< size (+ 1 high (- low)))
-                (< 0 size)
-                (natp size)
-                (natp low)
-                (natp high)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (BVAND size y (SLICE high low x))
-                  (BVAND size y (SLICE (+ low size -1) low x))))
-  :hints (("Goal" :in-theory (enable bvand))))
-
-(defthm bvand-of-slice-tighten-1
-  (implies (and (< size (+ 1 high (- low)))
-                (< 0 size)
-                (natp size)
-                (natp low)
-                (natp high)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (BVAND size (SLICE high low x) y)
-                  (BVAND size (SLICE (+ low size -1) low x) y)))
-  :hints (("Goal" :in-theory (enable bvand))))
-
-(defthm bvxor-of-slice-tighten-2
-  (implies (and (< size (+ 1 high (- low)))
-                (< 0 size)
-                (natp size)
-                (natp low)
-                (natp high)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (BVXOR size y (SLICE high low x))
-                  (BVXOR size y (SLICE (+ low size -1) low x))))
-  :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP)))))
-
-(defthm bvxor-of-slice-tighten-1
-  (implies (and (< size (+ 1 high (- low)))
-                (< 0 size)
-                (natp size)
-                (natp low)
-                (natp high)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (BVXOR size (SLICE high low x) y)
-                  (BVXOR size (SLICE (+ low size -1) low x) y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP)))))
 
 (in-theory (disable integer-length)) ; todo
 
@@ -253,34 +177,6 @@
                                       )
            :cases ((equal x 0)))))
 
-(defthm bvcat-getbit-slice-same
-  (implies (and (equal lowindex (+ 1 bitindex))
-                (equal size2 (+ 1 highindex (- lowindex) highsize))
-                (<= lowindex highindex) ;bozo
-                (natp bitindex)
-                (natp highindex)
-                (natp lowindex)
-                (integerp highval)
-                (natp highsize)
-                (< 0 highsize)
-                (integerp b))
-           (equal (bvcat size2 (bvcat highsize highval (+ 1 highindex (- lowindex)) (slice highindex lowindex b)) 1 (getbit bitindex b))
-                  (bvcat highsize highval (+ 2 highindex (- lowindex)) (slice highindex bitindex b)))))
-
-(defthm bvcat-slice-getbit-same
-  (implies (and (equal (+ 1 highindex) bitindex)
-                (equal size2 (+ 1 highindex (- lowindex)))
-                (<= lowindex highindex) ;bozo
-                (natp bitindex)
-                (natp highindex)
-                (natp lowindex)
-                (integerp highval)
-                (natp highsize)
-                (< 0 highsize)
-                (integerp b))
-           (equal (bvcat (+ 1 highsize) (bvcat highsize highval 1 (getbit bitindex b)) size2 (slice highindex lowindex b))
-                  (bvcat highsize highval (+ 1 bitindex (- lowindex)) (slice bitindex lowindex b)))))
-
 ;; (thm
 ;;  (IMPLIES (AND (<= SIZE SIZE2)
 ;;                (natp SIZE)
@@ -307,46 +203,6 @@
   :hints (("Goal" :in-theory (enable))))
 
 (theory-invariant (incompatible (:rewrite bvchop-of-logxor) (:rewrite bvchop-of-logxor-back)))
-
-(defthm bvcat-slice-slice-same
-  (implies (and (equal (+ -1 lowindex2) highindex1)
-                (equal size1 (+ 1 highindex1 (- lowindex1)))
-                (equal size2 (+ 1 highindex2 (- lowindex2)))
-                (equal size3 (+ size2 highsize))
-                (<= lowindex2 highindex2) ;bozo
-                (<= lowindex1 highindex1) ;bozo
-                (natp highindex1)
-                (natp lowindex1)
-                (natp highindex2)
-                (natp lowindex2)
-                (integerp highval)
-                (natp highsize)
-                (< 0 highsize)
-                (integerp b))
-           (equal (bvcat size3 (bvcat highsize highval size2 (slice highindex2 lowindex2 b)) size1 (slice highindex1 lowindex1 b))
-                  (bvcat highsize highval (+ 1 highindex2 (- lowindex1)) (slice highindex2 lowindex1 b))
-                  )))
-
-;use trim?
-(defthm bvxor-of-bvor-tighten
-  (implies (and (< size size2)
-                (natp size)
-                (natp size2))
-           (equal (bvxor size (bvor size2 x y) z)
-                  (bvxor size (bvor size x y) z)))
- :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP BVCHOP-1-BECOMES-GETBIT)))))
-
-;bozo more like this (all combinations!)
-;how about a macro to prove all combinations of a given theorem.  you put in a placeholder a bunch of substitutions
-;and it does the product...
-;use trim?
-(defthm bvxor-of-bvor-tighten-2
-  (implies (and (< size size2)
-                (natp size)
-                (natp size2))
-           (equal (bvxor size z (bvor size2 x y))
-                  (bvxor size z (bvor size x y))))
- :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP BVCHOP-1-BECOMES-GETBIT)))))
 
 ;; (thm
 ;;  (implies (and (natp size)
@@ -378,42 +234,7 @@
   :hints (("Goal"
            :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE (x (bvxor size x y))
                            (newsize size))
-           :in-theory (e/d ( ) (LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
-
-;here we tighten the call to size...
-(defthm slice-of-bvxor-tighten2
-  (implies (and (<= n high)
-                (<= low n)
-                (natp high)
-                (natp low)
-                (natp n))
-           (equal (slice high low (bvxor n x y))
-                  (slice (+ -1 n) low (bvxor n x y))))
-  :hints (("Goal" :in-theory (e/d (slice) (slice-becomes-bvchop
-                                           logtail-becomes-slice-bind-free
-                                           logtail-of-bvchop-becomes-slice
-                                           bvchop-of-logtail-becomes-slice)))))
-
-
-;use a more general rule?
-(defthm bvcat-tighten
-  (implies (and (< (+ lowsize highsize) size)
-                (< 0 highsize) ;bozo
-                (natp size)
-                (natp lowsize)
-                (natp highsize)
-                (natp lowsize2)
-                ;;(integerp x)
-                ;;(integerp y)
-                ;;(integerp z)
-                )
-           (equal (bvcat size (bvcat highsize x lowsize z) lowsize2 y)
-                  (bvcat (+ lowsize highsize) (bvcat highsize x lowsize z) lowsize2 y)))
-  :hints (("Goal" :cases ((and (integerp z) (integerp y))
-                          (and (integerp z) (not (integerp y)))
-                          (and (not (integerp z)) (integerp y)))
-           :in-theory (e/d (bvcat) (bvchop-of-* ;fixme
-                                    logtail-of-bvchop-becomes-slice)))))
+           :in-theory (e/d () (LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
 
 ;(bvmult 4 (bvxor 4 12 10) 6)
 ;(bvxor 4 (bvmult 4 12 6) (bvmult 4 10 6))
@@ -521,18 +342,6 @@
 ;;                  (repeatbit (+ 1 high (- low)) bit)))
 ;;  )
 
-;gen the bvand to any op?
-(defthm slice-of-bvand-tighten-high-index
-  (implies (and (<= size high)
-                (<= low size) ;bozo
-                (< 0 size)
-                (natp high)
-                (natp size)
-                (natp low))
-           (equal (slice high low (bvand size x y))
-                  (slice (+ -1 size) low (bvand size x y))))
-  :hints (("Goal" :in-theory (enable bvand))))
-
 ;We prefer, for example:
 ;(bvxor x (bvchop 8 (foo x)) (slice 7 0 y))
 ;to
@@ -626,8 +435,7 @@
                 (integerp lowval)
                 )
            (equal (bvcat highsize highval lowsize lowval)
-                  (bvcat
-                           highsize highval lowsize (bvcat (- lowsize newsize) 0 newsize lowval))))
+                  (bvcat highsize highval lowsize (bvcat (- lowsize newsize) 0 newsize lowval))))
   :hints (("Goal" :in-theory (e/d (bvchop-identity
                                    bvcat-of-bvchop-low)
                                   (bvmult-pad-arg1
@@ -676,6 +484,7 @@
                                   (BVMULT-PAD-ARG1
                                    BVMULT-PAD-ARG2)))))
 
+;move
 (defthm collect-constants-<-/
   (implies (and (syntaxp (and (quotep a)
                               (quotep b)))
@@ -687,6 +496,7 @@
            (equal (< a (* b x))
                   (< (/ a b) x))))
 
+;move
 (defthm collect-constants-<-/-two
   (implies (and (syntaxp (and (quotep a)
                               (quotep b)))
@@ -751,6 +561,7 @@
            (equal (logext size x)
                   (logext size (bvchop size x)))))
 
+;not used?
 (defthmd bvxor-pad-arg1
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize size)
@@ -769,6 +580,7 @@
                                    bvmult-pad-arg2
                                    )))))
 
+;not used?
 (defthmd bvxor-pad-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< newsize size)
@@ -846,25 +658,4 @@
            :in-theory (e/d (<-of-constant-when-unsigned-byte-p-size-param)
                            ( plus-becomes-bvplus-arg1-free)))))
 
-;move
-(DEFTHM BVCAT-SLICE-SLICE-SAME-2
-  (IMPLIES (AND (EQUAL LOWINDEX2 size1)
-                (EQUAL SIZE2 (+ 1 HIGHINDEX2 (- LOWINDEX2)))
-                (EQUAL SIZE3 (+ SIZE2 HIGHSIZE))
-                (<= LOWINDEX2 HIGHINDEX2)
-                (natp size1)
-                (NATP HIGHINDEX2)
-                (NATP LOWINDEX2)
-                (INTEGERP HIGHVAL)
-                (NATP HIGHSIZE)
-                (< 0 HIGHSIZE)
-                (INTEGERP B))
-           (EQUAL (bvcat
-                   SIZE3
-                   (bvcat
-                    HIGHSIZE HIGHVAL SIZE2 (SLICE HIGHINDEX2 LOWINDEX2 B)) SIZE1 B)
-                  (bvcat
-                   HIGHSIZE HIGHVAL (+ 1 HIGHINDEX2 0)
-                   (SLICE HIGHINDEX2 0 B))))
-  :hints (("Goal" :use (:instance BVCAT-SLICE-SLICE-SAME (lowindex1 0) (highindex1 (+ -1 size1)))
-           :in-theory (disable BVCAT-SLICE-SLICE-SAME))))
+

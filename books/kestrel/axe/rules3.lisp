@@ -64,6 +64,7 @@
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
@@ -8686,11 +8687,6 @@
                   (BVMULT '6 '5 x)))
   :hints (("Goal" :in-theory (e/d (bvmult) (BVCHOP-OF-*)))))
 
-;; (defun my-ceiling (x)
-;;   (if (integerp x)
-;;       x
-;;     (+ 1 (floor x 1))))
-
 (defthm bvlt-of-bvmult-for-sha1-gen
   (implies  (and (bvle 5 x 6)
                  (equal k 24)
@@ -8783,15 +8779,6 @@
            (equal (BVPLUS '7 '41 (BVMULT '5 '5 x))
                   (BVPLUS '6 '41 (BVMULT '5 '5 x)))))
 
-(defthm ceiling-in-terms-of-floor-alt
-  (implies (and (rationalp i)
-                (rationalp j))
-           (equal (ceiling i j)
-                  (if (integerp (/ i j))
-                      (/ i j)
-                    (+ 1 (floor i j)))))
-  :hints (("Goal" :in-theory (enable ceiling floor))))
-
 (defthmd floor-bound-hack-31
   (implies (and (<= X (FLOOR 31 J))
                 (rationalp x)
@@ -8843,8 +8830,7 @@
              (unsigned-byte-p 5 k))
             (equal (bvlt '5 (bvmult '5 j x) k)
                    (bvlt '5 x (ceiling k j))))
-  :hints (("Subgoal 11.1''" :cases ((< x 0))) ;yuck!
-          ("Goal"
+  :hints (("Goal"
            :use ((:instance floor-bound-hack-31)
 ;                 (:instance bvchop-identity (i (* J X)) (size 5))
  ;                (:instance bvchop-identity (i k) (size 5))
@@ -8855,7 +8841,8 @@
                                  bvmult bvchop-when-i-is-not-an-integer
                                  floor-type-1
                                  floor-bounded-by-/
-                                 bvchop-when-top-bit-1)
+                                 bvchop-when-top-bit-1
+                                 ceiling-in-terms-of-floor-alt)
                            (;bvchop-identity
                             ;bvchop-identity-cheap
                             plus-1-and-bvchop-becomes-bvplus ;fixme
@@ -12301,10 +12288,6 @@
                                   (anti-slice)))))
 
 
-
-;new:
-(in-theory (disable BLAST-BVXOR-32-INTO-8 BLAST-BVAND-32-INTO-8))
-
 ;;
 ;; PICK-A-BIT proofs
 ;;
@@ -12380,19 +12363,6 @@
                 (natp free)
                 )
            (not (equal 0 x))))
-
-(defthmd getbit-of-bvand-core
-  (implies (and (< n size) (posp size))
-           (equal (getbit n (bvand size x y))
-                  (bvand 1 (getbit n x) (getbit n y))))
-  :hints
-  (("Goal"
-    :in-theory
-    (e/d
-     (getbit bvand bvchop-of-logtail slice)
-     (slice-becomes-getbit bvchop-1-becomes-getbit
-                           bvchop-of-logtail-becomes-slice
-                           LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
 
 (local (in-theory (enable bvand-1-becomes-bitand
                            getbit-of-bvand-core)))
@@ -12595,6 +12565,7 @@
 
 
 ;gen the 0!
+;rename
 (defthmd bound-when-low-bits-0-helper
   (implies (and (syntaxp (quotep size))
                 (equal 0 (bvchop free x))
@@ -12612,6 +12583,7 @@
 
                             bvminus-becomes-bvplus-of-bvuminus)))))
 
+;rename
 (defthm bound-when-low-bits-0
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -12625,6 +12597,7 @@
   :hints (("Goal" :use (:instance bound-when-low-bits-0-helper (x (bvchop size x)))
            :in-theory (disable bound-when-low-bits-0-helper))))
 
+;rename
 (defthm bound-when-low-bits-0-alt
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -12659,20 +12632,6 @@
            (equal (* 8 x)
                   (bvmult (+ 3 free) 8 x)))
   :hints (("Goal" :in-theory (enable bvmult natp))))
-
-;introduces!
-(defthm ceiling-in-terms-of-floor2
-  (implies (and (rationalp i)
-                (rationalp j)
-                (not (equal 0 j)) ;fixme
-                )
-           (equal (ceiling i j)
-                  (if (equal 0 (mod i j))
-                      (/ i j)
-                      (+ 1 (floor i j)))))
-  :hints (("Goal" :in-theory (enable ceiling floor))))
-
-
 
 ;gen
 (defthm integerp-of-/-of-64
@@ -13305,16 +13264,6 @@
   (equal (BINARY-* (BVCAT '25 x '6 '0) '1/4)
          (BVCAT '25 x '4 '0))
   :hints (("Goal" :in-theory (e/d (slice bvcat) ( anti-slice)))))
-
-(defthm ceiling-in-terms-of-floor3
-  (implies (and (rationalp i)
-                (rationalp j)
-                (not (equal 0 j)))
-           (equal (ceiling i j)
-                  (if (equal 0 (mod i j))
-                      (floor i j)
-                      (+ 1 (floor i j)))))
-  :hints (("Goal" :in-theory (enable ceiling floor))))
 
 (defthm getbit-when-not-bvlt-constant
   (implies (and (not (bvlt '32 x k))

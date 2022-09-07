@@ -11,7 +11,8 @@
 
 (in-package "ACL2")
 
-(include-book "rules") ;drop?
+(include-book "rules") ;drop? for signed-byte-p-when-top-bit-0
+(local (include-book "unsigned-byte-p"))
 (include-book "getbit")
 (include-book "repeatbit")
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
@@ -23,6 +24,8 @@
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
 
 ;(local (in-theory (enable boolor booland)))
+
+(local (in-theory (disable signed-byte-p)))
 
 ; if x has a zero in it, and is negative, it can't be too big
 (defthm getbit-of-0-bound-when-negative
