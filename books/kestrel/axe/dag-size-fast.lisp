@@ -208,8 +208,8 @@
 ;; Smashes the array named 'size-array.
 ;; We could just compare to the result of dag-size-fast, but not if we optimize this to use the limit
 (defund dag-size-less-thanp (dag limit)
-  (declare (xargs :guard (and (and (pseudo-dagp dag)
-                                   (< (len dag) 2147483647))
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (< (len dag) 2147483647)
                               (natp limit))))
   (if (<= limit (len dag)) ;todo: avoid doing the whole len once limit items are found
       ;; Avoid any size computation for huge dags (assumes the dag is reduced
