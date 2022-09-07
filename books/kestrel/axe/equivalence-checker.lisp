@@ -8130,7 +8130,7 @@
          (top-level-conjuncts (get-boolands-and-conjuncts (+ -1 dag-len) dag-array-name dag-array nil))
          ;; likewise, if something is a negated top-level conjunct (or the negation of such, etc.) don't consider it
          ;; this removes conjuncts that are calls of not, but we never split on a call of not anyway:
-         (nodes-not-to-consider-splitting-on (strip-nots-lst top-level-conjuncts dag-array-name dag-array dag-len))
+         (nodes-not-to-consider-splitting-on (strip-all-nots-lst top-level-conjuncts dag-array-name dag-array dag-len))
 ;fixme could sort nodes-not-to-consider-splitting-on and do something faster
          (candidates (set-difference$ candidates nodes-not-to-consider-splitting-on))
          (- (cw "(Split candidates: ~x0)~%" candidates)))

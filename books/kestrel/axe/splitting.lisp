@@ -69,7 +69,7 @@
 
 ;strip off any number of nested calls to not
 ;returns the "core" nodenum, or nil if the "core" is a constant
-(defund strip-nots (nodenum-or-quotep dag-array-name dag-array)
+(defund strip-all-nots (nodenum-or-quotep dag-array-name dag-array)
   (declare (xargs :guard (if (natp nodenum-or-quotep)
                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                            t)
@@ -88,32 +88,32 @@
                           (mbt (< (darg1 expr) nodenum-or-quotep))))
                 :error
               ;; keep looking:
-              (strip-nots (darg1 expr) dag-array-name dag-array))
+              (strip-all-nots (darg1 expr) dag-array-name dag-array))
           nodenum-or-quotep ;we've found the "core" node
           )))))
 
-(defthm natp-of-strip-nots
-  (implies (and (strip-nots nodenum-or-quotep dag-array-name dag-array)
+(defthm natp-of-strip-all-nots
+  (implies (and (strip-all-nots nodenum-or-quotep dag-array-name dag-array)
                 (if (natp nodenum-or-quotep)
                     (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                   t))
-           (natp (strip-nots nodenum-or-quotep dag-array-name dag-array)))
-  :hints (("Goal" :in-theory (enable strip-nots car-becomes-nth-of-0))))
+           (natp (strip-all-nots nodenum-or-quotep dag-array-name dag-array)))
+  :hints (("Goal" :in-theory (enable strip-all-nots car-becomes-nth-of-0))))
 
-(defthm strip-nots-when-consp
+(defthm strip-all-nots-when-consp
   (implies (consp nodenum-or-quotep)
-           (equal (strip-nots nodenum-or-quotep dag-array-name dag-array)
+           (equal (strip-all-nots nodenum-or-quotep dag-array-name dag-array)
                   nil))
-  :hints (("Goal" :in-theory (enable strip-nots))))
+  :hints (("Goal" :in-theory (enable strip-all-nots))))
 
-(defthm <-of-strip-nots
+(defthm <-of-strip-all-nots
   (implies (and (dargp-less-than nodenum-or-quotep dag-len)
                 (if (natp nodenum-or-quotep)
                     (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                   t)
-                (strip-nots nodenum-or-quotep dag-array-name dag-array))
-           (< (strip-nots nodenum-or-quotep dag-array-name dag-array) dag-len))
-  :hints (("Goal" :in-theory (enable strip-nots))))
+                (strip-all-nots nodenum-or-quotep dag-array-name dag-array))
+           (< (strip-all-nots nodenum-or-quotep dag-array-name dag-array) dag-len))
+  :hints (("Goal" :in-theory (enable strip-all-nots))))
 
 ;;;
 ;;; strip-nots-and-maybe-extend
@@ -124,7 +124,7 @@
   (declare (xargs :guard (if (natp nodenum-or-quotep)
                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                            t)))
-  (let ((res (strip-nots nodenum-or-quotep dag-array-name dag-array)))
+  (let ((res (strip-all-nots nodenum-or-quotep dag-array-name dag-array)))
     (if res
         (cons res acc)
       acc)))
@@ -159,28 +159,28 @@
   :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend))))
 
 ;;;
-;;; strip-nots-lst
+;;; strip-all-nots-lst
 ;;;
 
 ;returns a list of nodenums (omits constants and nodenums of constants)
-(defund strip-nots-lst (nodenums dag-array-name dag-array dag-len)
+(defund strip-all-nots-lst (nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (nat-listp nodenums)
                               (all-< nodenums dag-len))))
   (if (endp nodenums)
       nil
-    (let ((res (strip-nots (first nodenums) dag-array-name dag-array)))
+    (let ((res (strip-all-nots (first nodenums) dag-array-name dag-array)))
       (if res
           (cons res
-                (strip-nots-lst (rest nodenums) dag-array-name dag-array dag-len))
-        (strip-nots-lst (rest nodenums) dag-array-name dag-array dag-len)))))
+                (strip-all-nots-lst (rest nodenums) dag-array-name dag-array dag-len))
+        (strip-all-nots-lst (rest nodenums) dag-array-name dag-array dag-len)))))
 
-(defthm all-natp-of-strip-nots-lst
+(defthm all-natp-of-strip-all-nots-lst
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (nat-listp nodenums)
                 (all-< nodenums dag-len))
-           (all-natp (strip-nots-lst nodenums dag-array-name dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable strip-nots-lst nat-listp))))
+           (all-natp (strip-all-nots-lst nodenums dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable strip-all-nots-lst nat-listp))))
 
 ;;;
 ;;; maybe-add-split-candidates
@@ -508,7 +508,7 @@
          (candidate-nodenums (find-node-to-split-candidates-work-list literal-nodenums dag-array-name dag-array dag-len done-array nil))
          (candidate-nodenums (merge-sort-< candidate-nodenums))
          (candidate-nodenums (remove-duplicates-from-grouped-list candidate-nodenums))
-         (literals-after-stripping-nots (strip-nots-lst literal-nodenums dag-array-name dag-array dag-len))
+         (literals-after-stripping-nots (strip-all-nots-lst literal-nodenums dag-array-name dag-array dag-len))
          (literals-after-stripping-nots (merge-sort-< literals-after-stripping-nots))
          ;remove dups from literals-after-stripping-nots?
          ;;fixme take advantage of the sorting to call a linear-time version of this:
