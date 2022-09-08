@@ -331,13 +331,16 @@ if overrides are modified.  But there may be some cases where it is better to
 allow either only a few specific signals to be overridden, or else disallow a
 few particular signals from being overridden.</li>
 
-<li>@(':clocks') may be set to a list of clock input variable names. If this is
-provided, then an analysis will be done before computing the phase FSM to
-determine what other signals are derived clocks, and avoid providing
-conditional overrides on these derived clock signals.  It may be important to
-avoid building conditional overrides on such signals because they can prevent
-important simplifications that reduce the size of the expressions
-produced.</li>
+<li>@(':clocks') may be set to a list of clock input variable names (often just
+a singleton). If this is provided, then an analysis will be done before
+computing the phase FSM to determine what other signals are derived clocks, and
+avoid providing conditional overrides on these derived clock signals.  It may
+be important to avoid building conditional overrides on such signals because
+they can prevent important simplifications that reduce the size of the
+expressions produced.  Additionally, if these clock signals are set in the
+@(':phases') argument and not in the @(':cycle-phases'), their assignments in
+each phase will initially be used to simplify the nextstate before composing
+the pipeline.</li>
 
 <li>@(':phase-scc-limit') affects the phase FSM constructed in cases where
 there is an apparent combinational loop at the bit level.  An apparent

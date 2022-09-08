@@ -231,7 +231,8 @@
                       (implies (and (svarlist-p x)
                                     (string-listp y)
                                     (eql (len x) (len y)))
-                               (svtv-namemap-p (pairlis$ x y))))))
+                               (svtv-namemap-p (pairlis$ x y)))
+                      :hints(("Goal" :in-theory (enable pairlis$))))))
   :returns (mv err
                (namemap svtv-name-lhs-map-p)
                (probes svtv-probealist-p))
