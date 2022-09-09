@@ -28,5 +28,6 @@
 
 (include-book "acl2s/interface/top" :dir :system)
 (include-book "acl2s/interface/acl2s-utils/top" :dir :system)
+(include-book "acl2s/defunc-testing" :dir :system)
 
 |#
