@@ -35,8 +35,8 @@ Linux version of Eclipse and ACL2s on Windows machines.
 </p>
 
 <p>
-Note that there is a FAQ at the bottom of this topic. Check there
-first if you run into any issues!
+If you run into any issues, check out the @(see acl2s-installation-faq)
+topic.
 </p>
 
 <h3>Requirements</h3>
@@ -127,28 +127,7 @@ occurring.
   that you just created.</li>
 </ol>
 </li>
-<li>Get started with Eclipse
-<ol>
-  <li>Create a new Eclipse project by selecting New -&gt; Project... -&gt;
-  General -&gt; Project and giving it a name (whatever you would
-  like)</li>
-  <li>Right click on the project on the left hand side of the screen
-  and select New -&gt; Other... -&gt; ACL2s -&gt; ACL2s/Lisp file. Change
-  the name of the file if you'd like, and leave the rest of the
-  settings untouched. Click \"Finish\".</li>
-  <li>Click on the green \"play\" button at the top of the
-  screen: <icon src=\"res/acl2s/icons/acl2_restart.gif\" alt=\"restart session\"/>
-  Eclipse will ask you if you want it to certify system
-  books; click \"Yes\".</li>
-  <li>After Eclipse pops up a window saying that certification is
-  done, click on the green \"play\" button again.</li>
-  <li>Type @('(+ 1 1)') in the @('.lisp') file that you created, and click
-  on the icon with the single down arrow at the top of the
-  screen. Confirm that @('2') is eventually shown in the @('.lisp.a2s')
-  file that Eclipse generated. If so, your installation is
-  working!</li>
-</ol>
-</li>
+<li>Get started with Eclipse by working through the @(see acl2s-tutorial). </li>
 </ol>
 ")
 
@@ -167,6 +146,11 @@ occurring.
 will depend on your computer's specs and on the speed of your internet
 connection. You can use your computer while the installation is
 occurring.</p>
+
+<p>
+If you run into any issues, check out the @(see acl2s-installation-faq)
+topic.
+</p>
 
 <h3 id=\"instructions\">Instructions</h3>
 <p>A video walking through installation is available
@@ -238,25 +222,7 @@ anyway\".</li>
 <li>After the installation is complete, Eclipse will ask you if you
 would like to restart Eclipse Platform. Select \"Restart
 Now\". This will close Eclipse and reopen it.</li></ol></li>
-<li>Get started with Eclipse<ol>
-<li>Create a new Eclipse project by selecting New &rarr; Project... &rarr;
-General &rarr; Project and giving it a name (whatever you would
-like)</li>
-<li>Right click on the project on the left hand side of the screen
-and select New &rarr; Other... &rarr; ACL2s &rarr; ACL2s/Lisp file. Change
-the name of the file if you'd like, and leave the rest of the
-settings untouched. Click \"Finish\".</li>
-<li>Click on the green \"play\" button at the top of the
-screen: <icon src=\"res/acl2s/icons/acl2_restart.gif\" alt=\"restart session\"/>
-Eclipse will ask you if you want it to certify system
-books; click \"Yes\".</li>
-<li>After Eclipse pops up a window saying that certification is
-done, click on the green \"play\" button again.</li>
-<li>Type <code>(+ 1 1)</code> in the @('.lisp') file that you created, and click
-on the icon with the single down arrow at the top of the
-screen. Confirm that <code>2</code> is eventually shown in the @('.lisp.a2s')
-file that Eclipse generated. If so, your installation is
-working!</li></ol></li>
+<li>Get started with Eclipse by working through the @(see acl2s-tutorial). </li>
 </ol>
 ")
 
@@ -299,26 +265,155 @@ times throughout the process.</li>
 <li>Download <a href=\"https://cs2800.atwalter.com/cs2800/eclipse-with-plugins.tar.gz\">our Eclipse archive</a> and unpack it somewhere on your computer.</li>
 <li>Run Eclipse by running <code>./eclipse/eclipse</code> from the directory
 that you unpacked the Eclipse package inside of.</li></ol></li>
-<li>Get started with Eclipse<ol>
-<li>Create a new Eclipse project by selecting New &rarr; Project... &rarr;
-General &rarr; Project and giving it a name (whatever you would
-like)</li>
-<li>Right click on the project on the left hand side of the screen
-and select New &rarr; Other... &rarr; ACL2s &rarr; ACL2s/Lisp file. Change
-the name of the file if you'd like, and leave the rest of the
-settings untouched. Click \"Finish\".</li>
-<li>Click on the green \"play\" button at the top of the
-screen: <icon src=\"res/acl2s/icons/acl2_restart.gif\" alt=\"restart session\"/>
-Eclipse will ask you if you want it to certify system
-books; click \"Yes\".</li>
-<li>After Eclipse pops up a window saying that certification is
-done, click on the green \"play\" button again.</li>
-<li>Type <code>(+ 1 1)</code> in the @('.lisp') file that you created, and click
-on the icon with the single down arrow at the top of the
-screen. Confirm that <code>2</code> is eventually shown in the @('.lisp.a2s')
-file that Eclipse generated. If so, your installation is
-working!</li></ol></li>
+<li>Get started with Eclipse by working through the @(see acl2s-tutorial). </li>
 </ol>
 ")
 
+(defxdoc acl2s-installation-faq
+  :parents (acl2s-installation)
+  :short "FAQ related to ACL2s installation"
+  :long
+  "
+<h3>Running ACL2s on Khoury Virtual Desktops</h3>
+If you're a Northeastern student, you can run ACL2s using the Khoury
+Virtual Desktops Infrastructure (VDI). See the
+<a href=\"https://www.khoury.northeastern.edu/systems/vdi/\" >
+  documentation</a>. You have many options including using
+an <a href=\"https://view.khoury.northeastern.edu/portal/webclient/index.html#/\"
+> HTML client</a> that allows you to log into a virtual machine and
+run ACL2s using a browser. Use your Khoury CS account credentials and
+select \"CCIS-WINDOWS\"; then select \"Linux Lab\" and you will see a
+Desktop. Use the file explorer and click on \"Other Locations\",
+\"Computer\", \"bin\" and then \"acl2s\". Drap the acl2s icon to your
+Desktop while holding \"Alt\" or \"Option\" (on Mac) and when you release
+it, a menu will pop up;  select \"link here\" and you will have a direct
+link to ACL2s in your Desktop. Double click on the acl2s icon in
+your desktop and this will start ACL2s on your VM.
 
+
+<h3>FAQ</h3>
+
+If you are running into a problem on Windows that is not covered by
+the below FAQ items, please try removing your WSL Ubuntu installation
+and going back through the instructions, ensuring that the output that
+you see matches that shown in the installation video linked to in the
+installation instructions. <b>Note that this will remove all of the
+data in the WSL installation, so be sure to backup any files inside it
+that you want to keep.</b> You can remove your WSL Ubuntu installation
+by running <code>wsl --unregister Ubuntu</code>. Then, follow the
+installation instructions as normal, except that you do not need to
+reinstall Xming if you already have it installed.
+
+<h4>General FAQ</h4>
+<ul class=\"morespace\">
+  <li><span class=\"question\">Why can't I access the Khoury VDI system?</span><br/>Ensure that
+    you are connected to the Northeastern network, or are using the
+    Northeastern VPN. You cannot connect to the VDI system from
+    outside of Northeastern's network without using the VPN.<br/>
+    Check that you are using your Khoury account credentials to log
+    in, which may be different from your Northeastern account
+    credentials.
+  </li>
+  <li><span class=\"question\">I already have a version of Eclipse installed for another
+    class, can I use that?</span><br/>  We do not support using an
+    existing Eclipse installation. If you are using Windows, the
+    version of Eclipse that we install will be kept separate from
+    Eclipse that is installed directly on Windows (which is the
+    typical configuration). If you are using macOS, then when
+    installing Eclipse, you can drag and drop it to a different
+    location than your existing Eclipse installation (for example,
+    install Eclipse into a folder on your Desktop instead of to
+    Applications). These two Eclipses will coexist peacefully, and
+    will not interfere with each other.
+  </li>
+</ul>
+<h4>Windows FAQ</h4>
+<ul class=\"morespace\">
+  <li>@('./eclipse/eclipse')<span class=\"question\"> doesn't open a window, or just
+      sits there forever without opening a window!</span><br/>  Ensure
+      that Xming is open and running (check your system tray by
+      clicking on the ^ button on the bottom right corner of your
+      screen). If it is, try exiting it (by right-clicking on the X
+      icon and selecting \"Exit\") and reopening it by running the
+      ACL2sXming xlaunch file. If that does not work, then ensure that
+      Xming has permissions to use both private and public
+      networks. You can do this by opening the Windows menu and
+      searching for \"Allow an app through Windows Firewall\". In the
+      window that comes up, scroll down to \"Xming X Server\" and ensure
+      that the checkbox to the left of it and the two checkboxes to
+      the right of it are all checked. You may need to click on the
+      \"Change settings\" button at the top right of the window to be
+      able to check the boxes.
+  </li>
+  <li><span class=\"question\">Double-clicking on the ACL2sXming file doesn't do
+      anything!</span><br/>  If you have no other issues, this is
+      OK. Double-clicking on the file will add an icon to your system
+      tray (click on the ^ button near the bottom-right corner of your
+      screen), but will not open a new window. If you are having
+      problems, or if no X icon is added to your system tray, try
+      downloading the ACL2sXming xlaunch file again, by right-clicking
+      on the \"here\" link in the Windows installation instructions and
+      choosing \"Save Link As...\".
+  </li>
+  <li><code>wsl --install</code><span class=\"question\"> gives me an error!</span><br/>Try
+      installing the \"Ubuntu\" app on the Windows App Store, and then
+      running it (search for Ubuntu in the Start Menu). If this works,
+      you do not need to run <code>wsl --install</code>.
+  </li>
+  <li><span class=\"question\">When I try to start a session, Eclipse tells me that an error
+    occurred and that it could not start a session!</span><br/>Ensure that
+    you ran the wsl.sh script as a non-root user (see the Windows
+    install instructions for more information)
+  </li>
+  <li><span class=\"question\">In Windows, I can't find the folder that
+      corresponds to my Eclipse workspace!</span><br/>
+    <ol>
+      <li>Get the workspace path you chose for Eclipse (File &rarr; Switch
+      Workspace &rarr; Other in Eclipse, and the path there will be
+      whatever workspace you are currently using), which should look
+        something like <code>/mnt/c/...</code>.</li>
+      <li>Take that path and replace the @('/mnt/c/')
+      with @('C:\\'), and replace all forward
+        slashes @('/') with back-slashes @('\\').</li>
+      <li>Open the Windows run dialog (Windows key + R) and enter the
+        updated path, and then press enter.</li>
+    </ol>
+    This will open the Windows folder that corresponds to your Eclipse
+    workspace. You can then create a shortcut to this folder so it is
+    easier to get to next time.
+  </li>
+</ul>
+
+<h4>macOS FAQ</h4>
+<ul class=\"morespace\">
+  <li><span class=\"question\">When I run <code>brew install acl2s --force-bottle</code>
+    , Homebrew tells me there is no bottle available!</span><br/>  If
+    you are on a M1 Mac and you are not running macOS Monterey, you
+    can either update to macOS Monterey and re-run the command, or you
+    can build ACL2s from scratch, which will take a fair amount of
+    time (at least an hour). To build ACL2s from scratch, run
+    <code>brew install acl2s</code>.<br/>If you are on an Intel Mac and
+    are running macOS Mojava or earlier, you can either update to
+    macOS Catalina or later (if that is supported on your computer),
+    or build ACL2s from scratch using the instructions above.
+  </li>
+  <li><span class=\"question\">Eclipse is using the dark theme, and I can't read any of the
+  text!</span><br/>Go to Eclipse &rarr; Preferences &rarr; General &rarr; Appearance
+  and select \"Light\" in the dropdown next to \"Theme\".</li>
+  <li><span class=\"question\">When I try to start a session, Eclipse tells me that an error
+    occurred and that it could not start a session!</span><br/>Ensure that
+    the <code>brew install acl2s --force-bottle</code> command
+    succeeded. Try running it again to ensure that it worked.
+  </li>
+  <li><span class=\"question\">When I try to run any of the brew commands, I get a message
+      saying \"command not found: brew\".</span><br/>  When you install
+      brew, it sometimes will print out a message saying \"Run these
+      two commands in your terminal to add Homebrew to your PATH\". If
+      you don't run the two commands, Homebrew will not function
+      correctly. Assuming you are on a M1 Mac, try running the command
+      <code>echo 'eval $(/opt/homebrew/bin/brew shellenv)' &gt;&gt; ~/.zprofile</code>
+      and opening a new Terminal window.
+  </li>
+</ul>
+
+")

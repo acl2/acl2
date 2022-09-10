@@ -20,7 +20,7 @@ etc.
 </p>
 
 
-<h3>Get Set..</h3>
+<h3>Get Set...</h3>
 <p> The first time you run Eclipse, it will prompt you for a
 \"workspace\" location. This is where Eclipse will save your
 configuration and layout and is the default location for your ACL2s
@@ -128,45 +128,38 @@ clicking the
 icon in the toolbar.
 </p>
 
-<div class=\"modal\" id=\"modal1\">
-  <div class=\"content\">
-    <a class=\"close switch\" gumby-trigger=\"|#modal1\"><i class=\"icon-cancel\"></i></a>
-    <div class=\"row\">
-      <div class=\"ten columns centered\">
-        <h3>First-time ACL2s initialization process</h3>
-        <p><em>The first time you start a session,</em> there is some
-            bookkeeping that ACL2s must take care of.  This will
-            happen automatically (except for a couple confirmation
-            dialogs), but the process could take several minutes
-            (5-10).
-      </p>
+<box>
+<h4>Note: First-time ACL2s initialization...</h4>
 
-      <p> First, the ACL2 Image for Eclipse will need to fix .cert
-        files for the absolute path of Eclipse on your computer.  If
-        you move Eclipse, this step will automatically be repeated. Be
-        patient and let it finish this one-time bookkeeping task, it
-        might take around 5 minutes.
-      </p>
+<p>
+<em>The first time you start a session,</em> there is some
+bookkeeping that ACL2s must take care of.  This will happen
+automatically (except for a couple confirmation dialogs), but the
+process could take several minutes (5-10).
+</p>
+
+<p>
+First, the ACL2 Image for Eclipse will need to fix .cert files for the
+absolute path of Eclipse on your computer.  If you move Eclipse, this
+step will automatically be repeated. Be patient and let it finish this
+one-time bookkeeping task, it might take around 5 minutes.
+</p>
       
-      <p> Second, the ACL2s <em>system books</em>, our visible and invisible
-        extensions to ACL2, need to be certified and compiled by ACL2.
-        This step could be required again if you change your ACL2
-        version or when you update ACL2s to a new version.
-      </p>
-      </div>
-    </div>
-  </div>
-</div>
-<p class=\"medium btn info\"><a href=\"index.html#\" class=\"switch\" gumby-trigger=\"#modal1\">Note: ACL2s initialization...</a></p>
+<p>
+Second, the ACL2s <em>system books</em>, our visible and invisible
+extensions to ACL2, need to be certified and compiled by ACL2.  This
+step could be required again if you change your ACL2 version or when
+you update ACL2s to a new version.
+</p>
 
-
-
+</box>
 
 <p>
 After this bookkeeping, you should be able to click the \"restart
 session\" icon on the toolbar and have ACL2 start up, resulting in the
 \"<tt>ACL2 &gt;</tt>\" prompt.
 </p>
+
 
 <p>
 <b>Type an \"immediate command\" for ACL2</b>, such as
@@ -237,12 +230,9 @@ left), it might show some information about a failed termination
 proof that caused ACL2 to reject the definition.
 </p>
 
+<box>
+<h4>More Details: Meaning of green and gray highlighting?</h4>
 
-<div class=\"modal\" id=\"modal2\">
-  <div class=\"content\">
-    <a class=\"close switch\" gumby-trigger=\"|#modal2\"><i class=\"icon-cancel\" ></i></a>
-<div class=\"row\">
-  <div class=\"ten columns centered\">
     <p> The plugin models two \"lines\" in a .lisp file: the \"completed
       line\" and the \"todo line\".  These \"lines\" are only visible as the
       boundary between regions with different highlighting.  The
@@ -259,12 +249,7 @@ proof that caused ACL2 to reject the definition.
       the buffer the \"working region\", which is the freely editable
       part.
     </p>
-  </div>
-</div>
-</div>
-</div>
-<p class=\"medium btn info\"><a href=\"index.html#\" class=\"switch\" gumby-trigger=\"#modal2\">More Details: Meaning of green and gray highlighting?</a></p>
-
+</box>
 
 
 <p>So what was the meaning of the flash of green highlighting?
@@ -273,7 +258,7 @@ Clicking \"advance todo\" moved the \"todo line\" from between
 ...)</code>  to after <code>(defun fib ...)</code>.  With
 at least one form in the \"todo region\", the session started processing
 the first (and only) one.  If you look at the session output, you see
-that the attempt to admit our <code>fib</code> function failed.  The
+that the attempt to admit our @('fib') function failed.  The
 attempt to prove termination failed.  If the next \"todo\" form fails,
 the plugin moves the todo line back to the point of the completed
 line, \"cancelling\" the todo operations and prompting the user to fix
@@ -281,7 +266,7 @@ the rejected form.
 </p>
 
 <p>
-<b>Fix our <code>fib</code> definition</b>: the previous one had
+<b>Fix our @('fib') definition</b>: the previous one had
 parameters to the <code>&lt;</code> comparison swapped.  ACL2 admits
 this one:
 @({
@@ -319,7 +304,7 @@ accepted.
 
 
   <h2>Introduction</h2>
-  <p>@(see acl2) is a powerful system for integrated
+  <p><see topic=\"@(url acl2::acl2)\">ACL2</see> is a powerful system for integrated
 modeling, simulation, and inductive reasoning.  Under expert control,
 it has been used to verify some of the most complex theorems to have
 undergone mechanical verification.  In addition to its maturity and
@@ -339,9 +324,9 @@ or even engine RPMs.
 <p>
 Pushing aside the analogies, ACL2s includes powerful features that
 provide users with more automation and support for specifying
-conjectures and proving theorems. This includes <a href=\"index.html#guide_ccg\"
->CCG termination analysis</a> and automated <a href=\"index.html#guide_RT\" >
-Counterexample generation</a>. In addition, ACL2s is \"safer\" by constructing and
+conjectures and proving theorems. This includes <see topic=\"@(url acl2::ccg)\">
+CCG termination analysis</see> and automated <see topic=\"@(url acl2::cgen)\">
+Counterexample generation</see>. In addition, ACL2s is \"safer\" by constructing and
 enforcing abstractions based on what is meaningful interaction with
 ACL2. For example, unlike the traditional ACL2 development environment
 (the command-line theorem prover and Emacs), pressing Return at the
@@ -382,7 +367,6 @@ even more intuitive, self-teaching, etc.  in the future.
   "
 <h3>General</h3>
 
-<a name=\"faq_3264\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
      <td><strong>Is my OS 32 bit or 64 bit?</strong></td> </tr>
@@ -416,7 +400,8 @@ for Java.</td></tr>
 <tr> <td>Q:</td>
      <td><strong>Where do I learn about all this Eclipse lingo?</strong></td> </tr>
 <tr> <td>A:</td>
-     <td>See the <a href=\"http://help.eclipse.org/luna/index.jsp?topic=%2Forg.eclipse.platform.doc.user%2FgettingStarted%2Fqs-01.htm&cp=0_1_0\">\"Basic Tutorial\" section of the <em>Workbench User Guide</em></a>.
+     <td>See the <a href=\"http://help.eclipse.org/2022-06/topic/org.eclipse.platform.doc.user/gettingStarted/qs-02a.htm\">Basic
+Tutorial section of the <em>Workbench User Guide</em></a>.
 </td></tr>
 </table><br/>
 
