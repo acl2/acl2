@@ -1431,7 +1431,7 @@
                                 (add-to-set-eq (caar wrld) ans)))
         (t (collect-world-globals (cdr wrld) ans))))
 
-(defun primordial-world-globals (operating-system)
+(defun primordial-world-globals (operating-system project-dir-alist)
 
 ; This function is the standard place to initialize a world global.
 ; Among the effects of this function is to set the global variable
@@ -1571,6 +1571,7 @@
                     (loop$-alist nil)
                     (common-lisp-compliant-lambdas nil)
                     (rewrite-quoted-constant-rules nil)
+                    (project-dir-alist ,project-dir-alist)
                     )))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
@@ -1623,7 +1624,7 @@
                              (getpropc fn 'recognizer-alist nil wrld))
                        wrld))))))
 
-(defun primordial-world (operating-system)
+(defun primordial-world (operating-system project-dir-alist)
 
 ; Warning: Names converted during the boot-strap from :program mode to :logic
 ; mode will, we believe, have many properties erased by renew-name.  Consider
@@ -1701,7 +1702,8 @@
                         (putprop-recognizer-alist
                          *initial-recognizer-alist*
                          (primordial-world-globals
-                          operating-system))))))))))))))))))))
+                          operating-system
+                          project-dir-alist))))))))))))))))))))
       t
       nil))))
 
@@ -2049,7 +2051,7 @@
                             (package-entry-book-path package-entry)
                             defpkg-book-path
                             w
-                            (project-dir-alist state))))
+                            (project-dir-alist w))))
                       ((and package-entry
                             (or hidden-p
                                 (not (package-entry-hidden-p package-entry))))
@@ -9458,7 +9460,13 @@
                                        (and (not dir-p) ; indeterminate if dir-p
                                             x)))))))))))
     (and result
-         (pathname-os-to-unix result (os (w state)) state))))
+         (pathname-os-to-unix result
+
+; At one time the next argument was (os (w state)).  But we changed that when
+; calling this function during the boot-strap, when (w state) was still nil.
+
+                              (get-os)
+                              state))))
 
 (defun unix-truename-pathname (x dir-p state)
 
@@ -9531,10 +9539,11 @@
 ; argument, canon-p; when this is true, then the result is either canonical or
 ; nil.
 
-  (let* ((os (os (w state)))
+  (let* ((wrld (w state))
+         (os (os wrld))
          (ctx 'extend-pathname)
          (dir (if (keywordp dir0)
-                  (project-dir-lookup dir0 (project-dir-alist state) ctx)
+                  (project-dir-lookup dir0 (project-dir-alist wrld) ctx)
                 dir0))
          (file-name1 (expand-tilde-to-user-home-dir
                       file-name os ctx state))
@@ -9858,7 +9867,7 @@
         (mv-let (full-book-name directory-name familiar-name)
           (parse-book-name cbd (cadr form) nil ctx state)
           (declare (ignore directory-name familiar-name))
-          (let ((x (filename-to-sysfile full-book-name state)))
+          (let ((x (filename-to-sysfile full-book-name (w state))))
             (cond ((consp x) ; (sysfile-p x)
                    (mv t
                        (list* 'include-book
@@ -9882,7 +9891,7 @@
                   (t (mv nil form)))))))
       (t (assert$
           (stringp (cadr form))
-          (let ((sysfile (filename-to-sysfile (cadr form) state)))
+          (let ((sysfile (filename-to-sysfile (cadr form) (w state))))
             (cond ((consp sysfile) ; (sysfile-p sysfile)
                    (mv t
                        (list* 'include-book
@@ -9930,11 +9939,13 @@
        (mv t
            (list (car form)
                  (cadr form)
-                 (filename-to-sysfile (extend-pathname cbd (caddr form) state)
-                                      state)))))
+                 (filename-to-sysfile (extend-pathname cbd
+                                                       (caddr form)
+                                                       state)
+                                      (w state))))))
      (t (let ((sysfile (if (consp (caddr form)) ; presumably sysfile-p holds
                            (caddr form)
-                         (filename-to-sysfile (caddr form) state))))
+                         (filename-to-sysfile (caddr form) (w state)))))
           (cond ((consp sysfile) ; (sysfile-p sysfile)
                  (mv t (list (car form)
                              (cadr form)
@@ -10119,7 +10130,7 @@
      (mv-let
        (erp val state)
        (defpkg-items-rec new-kpa old-kpa
-         (project-dir-alist state)
+         (project-dir-alist (w state)) ; avoid w here in case w isn't installed
          ctx w state nil)
        (assert$
         (null erp)
@@ -10316,7 +10327,8 @@
   (state-global-let*
    ((inhibit-output-lst *valid-output-names*))
    (hidden-defpkg-events1 kpa
-                          (project-dir-alist state)
+; We use (w state) just below instead of w, in case w isn't installed.
+                          (project-dir-alist (w state))
                           w ctx state nil)))
 
 (defun fix-portcullis-cmds1 (dir cmds cbds ans names ctx state)
@@ -11315,23 +11327,23 @@
 
   (sysfile-to-filename-include-book-alist1 x local-markers-allowedp state nil))
 
-(defun filename-to-sysfile-ttag-alist-val (lst state)
+(defun filename-to-sysfile-ttag-alist-val (lst wrld)
   (declare (xargs :guard (and (true-listp lst)
                               (string-listp (remove1 nil lst)))))
   (cond ((endp lst) nil)
         ((null (car lst))
-         (cons nil (filename-to-sysfile-ttag-alist-val (cdr lst) state)))
-        (t (cons (filename-to-sysfile (car lst) state)
-                 (filename-to-sysfile-ttag-alist-val (cdr lst) state)))))
+         (cons nil (filename-to-sysfile-ttag-alist-val (cdr lst) wrld)))
+        (t (cons (filename-to-sysfile (car lst) wrld)
+                 (filename-to-sysfile-ttag-alist-val (cdr lst) wrld)))))
 
-(defun filename-to-sysfile-ttag-alistp (ttag-alist state)
+(defun filename-to-sysfile-ttag-alistp (ttag-alist wrld)
   (declare (xargs :guard (ttag-alistp ttag-alist nil)))
   (cond ((endp ttag-alist) nil)
         (t (acons (caar ttag-alist)
-                  (filename-to-sysfile-ttag-alist-val (cdar ttag-alist) state)
-                  (filename-to-sysfile-ttag-alistp (cdr ttag-alist) state)))))
+                  (filename-to-sysfile-ttag-alist-val (cdar ttag-alist) wrld)
+                  (filename-to-sysfile-ttag-alistp (cdr ttag-alist) wrld)))))
 
-(defun filename-to-sysfile-cert-annotations (ca state)
+(defun filename-to-sysfile-cert-annotations (ca wrld)
   (declare (xargs :guard (cert-annotationsp ca nil)))
   (case-match ca
     (((':SKIPPED-PROOFSP . sp)
@@ -11342,7 +11354,7 @@
        ,@(and ttags-singleton
               (case-match ttags-singleton
                 (((':TTAGS . ttags))
-                 `((:TTAGS . ,(filename-to-sysfile-ttag-alistp ttags state))))
+                 `((:TTAGS . ,(filename-to-sysfile-ttag-alistp ttags wrld))))
                 (& (er hard 'filename-to-sysfile-cert-annotations
                        "Implementation error: unexpected shape, ~x0."
                        ca))))))
@@ -11350,15 +11362,15 @@
            "Implementation error: unexpected shape, ~x0."
            ca))))
 
-(defun filename-to-sysfile-include-book-entry (entry state)
+(defun filename-to-sysfile-include-book-entry (entry wrld)
   (declare (xargs :guard (include-book-alist-entry-p entry nil)))
-  (list* (filename-to-sysfile (car entry) state)
+  (list* (filename-to-sysfile (car entry) wrld)
          (cadr entry)
          (caddr entry)
-         (filename-to-sysfile-cert-annotations (cadddr entry) state)
+         (filename-to-sysfile-cert-annotations (cadddr entry) wrld)
          (cddddr entry)))
 
-(defun filename-to-sysfile-include-book-alist1 (x local-markers-allowedp state
+(defun filename-to-sysfile-include-book-alist1 (x local-markers-allowedp wrld
                                                   acc)
 
 ; See filename-to-sysfile-include-book-alist.
@@ -11373,24 +11385,24 @@
                  (cond ((and local-markers-allowedp
                              (include-book-alist-entry-p entry nil))
                         (list 'local (filename-to-sysfile-include-book-entry
-                                      entry state)))
+                                      entry wrld)))
                        (t :error)))
                 (& (cond ((include-book-alist-entry-p fst nil)
-                          (filename-to-sysfile-include-book-entry fst state))
+                          (filename-to-sysfile-include-book-entry fst wrld))
                          (t :error))))))
         (cond ((eq new-fst :error) :error)
               (t (filename-to-sysfile-include-book-alist1
                   (cdr x)
                   local-markers-allowedp
-                  state
+                  wrld
                   (cons new-fst acc))))))))
 
-(defun filename-to-sysfile-include-book-alist (x local-markers-allowedp state)
+(defun filename-to-sysfile-include-book-alist (x local-markers-allowedp wrld)
 
 ; See sysfile-to-filename-include-book-alist.  This simply works in the
 ; opposite direction.
 
-  (filename-to-sysfile-include-book-alist1 x local-markers-allowedp state nil))
+  (filename-to-sysfile-include-book-alist1 x local-markers-allowedp wrld nil))
 
 (defun keyword-listp (x)
   (declare (xargs :guard t))
@@ -12643,7 +12655,7 @@
          (post-alist3-sysfile (filename-to-sysfile-include-book-alist
                                post-alist3-abs
                                t ; local-markers-allowedp
-                               state)))
+                               (w state))))
     (make-certificate-file1 file portcullis
                             (concatenate 'string certification-file ".temp")
                             post-alist3-sysfile expansion-alist cert-data
@@ -12936,7 +12948,7 @@
           :guard-hints (("Goal" :in-theory (enable state-p1)))))
   (cond
    ((and (keywordp dir)
-         (project-dir-lookup dir (project-dir-alist state) nil))) 
+         (project-dir-lookup dir (project-dir-alist (w state)) nil))) 
    ((raw-include-book-dir-p state)
     (or (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir!-alist state)))
         (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir-alist state)))))
@@ -12967,7 +12979,7 @@
                      "among the list of those legal values, ~x0"
                      (strip-cars
                       (union-eq
-                       (project-dir-alist state)
+                       (project-dir-alist (w state))
                        (append
                         (cdr (assoc-eq :include-book-dir-alist
                                        (table-alist 'acl2-defaults-table
@@ -14032,7 +14044,7 @@
                                         (if (f-get-global 'script-mode state)
                                             (relativize-book-path
                                              path
-                                             (project-dir-alist state)
+                                             (project-dir-alist (w state))
                                              (and (null dir)
                                                   user-book-name))
                                           path)))
@@ -17331,7 +17343,7 @@
                                                       (filename-to-sysfile-include-book-alist
                                                        pre-alist-abs
                                                        nil
-                                                       state)))
+                                                       (w state))))
                                                     (portcullis-wrld-known-package-alist
                                                      (value
                                                       (global-val
@@ -26338,14 +26350,14 @@
                 of the form (:keyword . string), but ~x1 is not."
                caller dir))
           (t
-           (let ((dir (and dir
-                           (maybe-add-separator
-                            (extend-pathname (cbd) dir state))))
-                 (fname (project-dir-lookup keyword
-                                            (project-dir-alist state)
-                                            nil))
-                 (raw-p (raw-include-book-dir-p state))
-                 (wrld (w state)))
+           (let* ((dir (and dir
+                            (maybe-add-separator
+                             (extend-pathname (cbd) dir state))))
+                  (wrld (w state))
+                  (fname (project-dir-lookup keyword
+                                             (project-dir-alist wrld)
+                                             nil))
+                  (raw-p (raw-include-book-dir-p state)))
              (cond
               ((and fname
                     (not (equal fname dir)))

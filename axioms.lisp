@@ -12334,7 +12334,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let* ((old-book-path
             (reverse (unrelativize-book-path
                       (package-entry-book-path package-entry)
-                      (project-dir-alist *the-live-state*))))
+                      (project-dir-alist (w *the-live-state*)))))
            (current-book-path
             (reverse
              (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
@@ -14626,7 +14626,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (print-readably . nil)
     (print-right-margin . nil)
     (program-fns-with-raw-code . ,*initial-program-fns-with-raw-code*)
-    (project-dir-alist . nil) ; set in enter-boot-strap-mode and perhaps lp
     (prompt-function . default-print-prompt)
     (prompt-memo . nil)
     (proof-tree . nil)
@@ -19830,12 +19829,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                        (list (cons #\0 filename))))))
           (t nil))))
 
+#-acl2-loop-only
 (defun mswindows-drive (filename state)
+
+; At one time this was admitted in the logic in program mode (without the
+; readtime conditional #-acl2-loop-only).  But we changed that when replacing
+; (os (w state)) by (get-os), as discussed below.
 
 ; We get the drive from filename if possible, else from cbd.
 
   (declare (xargs :mode :program))
-  (or (and (eq (os (w state)) :mswindows)
+  (or (and (eq (get-os)
+
+; At one time we had (os (w state)) above instead of (get-os).  But we changed
+; that when calling this function during the boot-strap, when (w state) was
+; still nil.
+
+               :mswindows)
            (or (and filename (mswindows-drive1 filename))
                (let ((cbd (f-get-global 'connected-book-directory state)))
                  (cond (cbd (mswindows-drive1 cbd))
@@ -19867,9 +19877,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (eql (char str0 0) *directory-separator*))
 
 ; Warning: Do not append the drive if there is already a drive present.  We
-; rely on this in LP, where we initialize state global 'system-books-dir based
-; on environment variable ACL2_SYSTEM_BOOKS, which might already have a drive
-; that differs from that of the user.
+; rely on this in LP, where we initialize the system books directory based on
+; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
+; differs from that of the user.
 
                   (string-append (mswindows-drive nil state)
                                  str0))
@@ -19920,7 +19930,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (if (equal str "")
       str
-    (let ((os (os (w state))))
+    (let ((os
+
+; At one time the next argument was (os (w state)).  But we changed that when
+; calling this function during the boot-strap, when (w state) was still nil.
+
+           (get-os)))
       (case os
         (:unix str)
         (:mswindows
@@ -21567,7 +21582,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(temp-touchable-vars
     temp-touchable-fns
 
-    project-dir-alist
     user-home-dir
 
     acl2-version
@@ -21921,7 +21935,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                     (unrelativize-book-path
                                      (package-entry-book-path entry)
                                      (project-dir-alist
-                                      *the-live-state*))))))))))))
+                                      (w *the-live-state*)))))))))))))
                 (t nil))))))
         ((typep x 'string)
          (bad-lisp-stringp x))

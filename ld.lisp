@@ -1626,7 +1626,7 @@
                        (cons #\l (f-get-global 'ld-level state))
                        (cons #\c (f-get-global 'connected-book-directory
                                                state))
-                       (cons #\b (project-dir-alist state)))
+                       (cons #\b (project-dir-alist (w state))))
                  (standard-co state)
                  state
                  (ld-evisc-tuple state))))))
