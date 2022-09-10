@@ -2,8 +2,6 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(xdoc::add-resource-directory "acl2s" "doc-assets")
-
 (defxdoc acl2s-tutorial
   :parents (acl2::acl2-sedan)
   :short "A short ACL2s tutorial"
@@ -44,7 +42,7 @@ to get to the Eclipse \"workbench\".
 
 <p>To familiarize yourself with some Eclipse vocabulary and navigating
 the workbench, we recommend going through
-the <a href=\"http://help.eclipse.org/luna/index.jsp?topic=%2Forg.eclipse.platform.doc.user%2FgettingStarted%2Fqs-01.htm&cp=0_1_0\">Basic
+the <a href=\"http://help.eclipse.org/2022-06/topic/org.eclipse.platform.doc.user/gettingStarted/qs-02a.htm\">Basic
 Tutorial</a> section of the Workbench User Guide.
 </p>
 
@@ -57,7 +55,7 @@ your ACL2 developments and click <b>Finish</b>.
 <b>Open the \"ACL2 Development\" perspective</b>:  Select
 <b>Window</b> | <b>Open Perspective</b> | <b>ACL2 Development</b>.
 You could have instead clicked on the
-<img src=\"res/acl2s/new_persp.gif\" width=\"16\" height=\"16\"/> icon in the top-right corner.
+<icon src=\"res/acl2s/new_persp.gif\" width=\"16\" height=\"16\"/> icon in the top-right corner.
 The new perspective will change the layout of your workbench.
 </p>
 
@@ -113,7 +111,7 @@ you open to develop <tt>test.lisp</tt>.</li>
 <p>
 <b>Open <tt>test.lisp.a2s</tt></b> by double-clicking it in the
 Project Explorer.  Alternatively, hit Ctrl+Shift+o
-(Mac: <img src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\"
+(Mac: <icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\"
 alt=\"Command\"/>+Shift+o) in the editor for <tt>test.lisp</tt>.  This is
 the key sequence for switching between corresponding .lisp and
 .lisp.a2s editors, opening the other if necessary.  You should now be
@@ -126,7 +124,7 @@ session is running.
 <p>
 <b>Start a session</b> for testing our code in <tt>test.lisp</tt> by
 clicking the
-<img src=\"res/acl2s/icons/acl2_restart.gif\" width=\"16\" height=\"16\" alt=\"restart session\"/>
+<icon src=\"res/acl2s/icons/acl2_restart.gif\" width=\"16\" height=\"16\" alt=\"restart session\"/>
 icon in the toolbar.
 </p>
 
@@ -228,9 +226,9 @@ history, so we don't need to insert those above the line.
 <p>
 <b>Try moving the line</b> past the definition we gave
 for <tt>fib</tt> by pressing the \"advance todo\" button on the toolbar
-(<img src=\"res/acl2s/icons/advance.gif\" width=\"16\" height=\"16\"/> or
+(<icon src=\"res/acl2s/icons/advance.gif\" width=\"16\" height=\"16\"/> or
 Ctrl+Shift+I on PC or
-<img src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift+I
+<icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift+I
 on Mac).
 Watch carefully and you will see the definition for <tt>fib</tt> flash green.
 Because it did not turn from green to gray, our definition of <tt>fib</tt> was
@@ -378,7 +376,7 @@ even more intuitive, self-teaching, etc.  in the future.
 
 
 (defxdoc ACL2s-FAQ
-  :parents (acl2-sedan)
+  :parents (acl2::acl2-sedan)
   :short "Frequently Asked Questions"
   :long
   "
@@ -800,27 +798,24 @@ in its string library.</li>
 ")
  
 (defxdoc acl2s-user-guide
-  :parents (acl2::acl2-sedan acl2::macro-libraries acl2s::defunc)
+  :parents (acl2::acl2-sedan)
   :short "ACL2 Sedan User Guide"
   :long
   "
 <p>
-            This guide showcases the important parts of the ACL2 Sedan
-            user experience. We assume you already have a running
-            ACL2s session; if not go
-            to <a href=\"index.html#tutorial\">Get Started</a>. The ACL2
-            <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____ACL2-TUTORIAL\">tutorial</a>
-            is a fine place to learn about the ACL2 language, logic
-            and theorem proving system. For in-depth documentation
-            about the ACL2 itself refer to the
-            <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/\">
-            manual</a>.
-          </p>
+This guide showcases the important parts of the ACL2 Sedan user
+experience. We assume you already have a running ACL2s session; if not
+check out the @(see acl2s-tutorial).  The ACL2 tutorial (@(see
+acl2::acl2-tutorial)) is a fine place to learn about the ACL2
+language, logic and theorem proving system. For in-depth documentation
+about ACL2 itself refer to @(see acl2::acl2).
+</p>
+
 
         <div class=\"left-center\" data-target=\"cheat_sheet\">
           <h2>Cheat Sheet</h2>
           A cheat sheet is available with a summary of key bindings and command types:
-          <a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/sheet.html\">HTML</a> or <a href=\"sheet.pdf\">PDF</a>.
+          <a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/sheet.html\">HTML</a> or <a href=\"res/acl2s/sheet.pdf\">PDF</a>.
         </div>
 
 <div class=\"left-center\" data-target=\"guide_customization\">
@@ -1219,10 +1214,10 @@ application menus (under <b>ACL2</b> or <b>Navigate</b>).
 <b>Mac OS X Note:</b>
 The keybindings below are for PC users.  The Mac equivalents (if available)
 are the same except that Ctrl+Shift is replaced by
-<img src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift.  For
+<icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift.  For
 example, <em>Interrupt</em> is still Ctrl+Break (if you have a Break key), but
 switching editors is
-<img src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift+o.
+<icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift+o.
 </p>
 
 <table>
@@ -1328,7 +1323,7 @@ the session.
 <tr><td>
 \"Clean Session\"
 </td><td>
-<img src=\"res/acl2s/icons/acl2_clean.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/acl2_clean.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 Opens a dialog box with options to clear the session history, the typed
 command history, and others.  Clearing the session history will stop the
@@ -1341,7 +1336,7 @@ so use them cautiously.  Shortcut: Alt+Delete.
 <tr><td>
 \"(Re)start Session\"
 </td><td>
-<img src=\"res/acl2s/icons/acl2_restart.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/acl2_restart.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 Starts a fresh, new ACL2 session, with its output going to the current or
@@ -1360,7 +1355,7 @@ interaction out of the operation) and \"Undo/cancel all forms\" before
 <tr><td>
 \"Stop Session\"
 </td><td>
-<img src=\"res/acl2s/icons/acl2_stop.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/acl2_stop.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 If ACL2 is running in this (or the corresponding) .a2s editor, stop it cleanly
@@ -1374,7 +1369,7 @@ is left where it is.
 <tr><td>
 \"Interrupt Session\"
 </td><td>
-<img src=\"res/acl2s/icons/acl2_interrupt.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/acl2_interrupt.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 If ACL2 is processing a command form, this will break it back out to the
@@ -1393,7 +1388,7 @@ line.
 <tr><td>
 \"Undo/cancel all forms\"
 </td><td>
-<img src=\"res/acl2s/icons/clean.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/clean.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 This moves both the \"completed\" line and the \"todo\" line to the top of the
@@ -1408,7 +1403,7 @@ all the way to the top.
 <tr><td>
 \"Undo/cancel last form\"
 </td><td>
-<img src=\"res/acl2s/icons/retreat.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/retreat.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 If there are any \"todo\" forms, the last will be cancelled.  If it was
@@ -1428,7 +1423,7 @@ single form.
 <tr><td>
 \"Cancel all \"todo\" forms\"
 </td><td>
-<img src=\"res/acl2s/icons/cancel.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/cancel.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 The \"todo\" line is moved to be even with the \"completed\" line.  If the next
@@ -1442,7 +1437,7 @@ undoing of all \"todo\" forms.
 <tr><td>
 \"Advance todo line\"
 </td><td>
-<img src=\"res/acl2s/icons/advance.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/advance.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 The \"todo\" line is advanced by one command form.  This will often cause ACL2 to
@@ -1458,7 +1453,7 @@ the line by a single form.
 <tr><td>
 \"Move todo up/down past cursor\" (.lisp only)
 </td><td>
-<img src=\"res/acl2s/icons/move.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/move.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 If the \"todo\" line is above the cursor, it is advanced until it reaches
@@ -1514,7 +1509,7 @@ This is helpful for finding definitions and uses of functions and variables.
 <tr><td>
 Certify as book
 </td><td>
-<img src=\"res/acl2s/icons/acl2_book.gif\" width=\"16\" height=\"16\"/>
+<icon src=\"res/acl2s/icons/acl2_book.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
 See <a href=\"user_guide.html#guide_book\">book development</a>.  Alt+C
@@ -1619,11 +1614,9 @@ extending and improving it since then.
 
 <h4>Documentation</h4>
 <p>
-A readable and example-oriented description of
-the <code>defdata</code> framework appears in the ACL2 2014 Workshop
-paper <a href=\"http://arxiv.org/abs/1406.1557\">Data Definitions in
-ACL2 Sedan</a>.  Furthur documentation is also available by
-submitting <code>:doc defdata</code> inside an ACL2s session.
+See @(see defdata::defdata) for defdata's documentation. In particular,
+a readable and example-oriented description of defdata framework appears
+in the ACL2 2014 Workshop paper linked at the bottom of that topic.
 </p>
 </div>
 
@@ -1659,9 +1652,7 @@ plugin.
 
 <h4>Documentation</h4>
 <p>
-For documentation on usage and settings please refer to <code>:doc
-cgen</code> from inside a session.  See in particular <code>:doc
-test?</code>.
+See @(see test?) and @(see cgen) for more documentation.
 </p>
 
 </div>
@@ -1676,8 +1667,7 @@ is a reusable collection of definitions and other
 <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EVENTS\">events</a>
 (<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event forms</a>,
 actually).  A valid book can be certified to demonstrate its validity and/or
-to prepare it for
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____INCLUDE-BOOK\">inclusion</a> elsewhere.
+to prepare it for inclusion using @(see include-book) elsewhere.
 </p><p>
 To develop a .lisp file as a book in ACL2s, either create the file using
 the ACL2s/Lisp file wizard selecting \"Create with book code\", or put this at the
@@ -1704,7 +1694,7 @@ Any <em>tangent</em> from book-valid forms will begin gray highlight.  Such
 tangents should eventually be undone and removed before certification.
 </p><p>
 To ensure your book is valid/certifiable, save your changes and choose
-\"Certify as book\" from the menu or toolbar (<img src=\"res/acl2s/icons/acl2_book.gif\"
+\"Certify as book\" from the menu or toolbar (<icon src=\"res/acl2s/icons/acl2_book.gif\"
 width=\"16\" height=\"16\"/>).  An Eclipse console will dump the output of the
 certification process and indicate success or failure when finished.
 </p>
@@ -1716,7 +1706,7 @@ special significance, indicating the .lisp file is intended to define
 a book.  Our approach might seem strange at first, but it really works
 pretty well with the seemingly obscure requirements ACL2 has for books.
 This and the next subsection get into the details and the justification.
-</p><p><img src=\"res/acl2s/book_dev.png\" width=\"424\" height=\"400\" align=\"right\"/>
+</p><p><icon src=\"res/acl2s/book_dev.png\" width=\"424\" height=\"400\" align=\"right\"/>
 The <em>preamble</em> is everything that comes before the
 <code>begin-book</code>.  This defines what ACL2 authors call the
 <em>certification world</em> for the book, which become the book's
