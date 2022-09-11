@@ -8758,14 +8758,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond
    ((equal test ''eq)
     `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
-              :logic (position-equal-ac item lst)
-              :exec  (position-ac-eq-exec item lst)))
+              :logic (position-equal-ac item lst acc)
+              :exec  (position-ac-eq-exec item lst acc)))
    ((equal test ''eql)
     `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
               :logic (position-equal-ac item lst acc)
               :exec  (position-ac-eql-exec item lst acc)))
    (t ; (equal test 'equal)
-    `(position-equal-ac ,item ,lst))))
+    `(position-equal-ac ,item ,lst ,acc))))
 
 ; Position
 
