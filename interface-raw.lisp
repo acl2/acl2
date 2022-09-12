@@ -7163,48 +7163,41 @@
 
 ; The next set-w will avail itself of the empty frame left above.
 
-  (set-w 'extension
-         (primordial-world operating-system)
-         *the-live-state*)
-
-; Set the system books directory now that the operating-system has been defined
-; (needed by pathname-os-to-unix).  Note that the value of state global
-; project-dir-alist will eventually be an alist that includes a pair mapping
-; :system to the system books directory, but at this point, that value is just
-; that directory.
-
-  (cond (system-books-dir
-         (let* ((dir (unix-full-pathname
-                      (cond
-                       ((symbolp system-books-dir)
-                        (symbol-name system-books-dir))
-                       ((stringp system-books-dir)
-                        system-books-dir)
-                       (t (er hard 'initialize-acl2
-                              "Unable to complete initialization, because the ~
-                               supplied system books directory, ~x0, is not a ~
-                               string."
-                              system-books-dir)))))
-                (msg (bad-lisp-stringp dir)))
-           (when msg
-             (interface-er
-              "The value of the system-books-dir argument of ~
-               ENTER-BOOT-STRAP-MODE, which is ~x0, is not a legal ACL2 ~
-               string.~%~@1"
-              dir msg))
-           (f-put-global 'project-dir-alist ; see comment above
-                         (canonical-dirname! (maybe-add-separator dir)
-                                             'enter-boot-strap-mode
-                                             *the-live-state*)
-                         *the-live-state*)))
-        (t (f-put-global 'project-dir-alist ; see comment above
-                         (concatenate
-                          'string
-                          (canonical-dirname! (our-pwd)
-                                              'enter-boot-strap-mode
-                                              *the-live-state*)
-                          "books/")
-                         *the-live-state*)))
+  (let ((project-dir-alist
+         (acons :system
+                (cond
+                 (system-books-dir
+                  (let* ((dir (unix-full-pathname
+                               (cond
+                                ((symbolp system-books-dir)
+                                 (symbol-name system-books-dir))
+                                ((stringp system-books-dir)
+                                 system-books-dir)
+                                (t (er hard 'initialize-acl2
+                                       "Unable to complete initialization, ~
+                                        because the supplied system books ~
+                                        directory, ~x0, is not a string."
+                                       system-books-dir)))))
+                         (msg (bad-lisp-stringp dir)))
+                    (when msg
+                      (interface-er
+                       "The value of the system-books-dir argument of ~
+                        ENTER-BOOT-STRAP-MODE, which is ~x0, is not a legal ~
+                        ACL2 string.~%~@1"
+                       dir msg))
+                    (canonical-dirname! (maybe-add-separator dir)
+                                        'enter-boot-strap-mode
+                                        *the-live-state*)))
+                 (t (concatenate
+                     'string
+                     (canonical-dirname! (our-pwd)
+                                         'enter-boot-strap-mode
+                                         *the-live-state*)
+                     "books/")))
+                nil)))
+    (set-w 'extension
+           (primordial-world operating-system project-dir-alist)
+           *the-live-state*))
 
 ; Inhibit proof-tree output during the build, including pass-2 if present.
 
@@ -9066,10 +9059,9 @@
 ; resolved.
 
 ; As of August 2022 when we introduced the project-dir-alist, for sysfiles
-; other than :system, this code had been in LP for a few years for computing
-; the system books directory (which was stored in state global
-; 'system-books-dir).  We use this same code for other project-dir-alist
-; entries.
+; whose keyword is not necessarily :system.  This code had been in LP for a few
+; years for computing the system books directory.  We use this same code for
+; other project-dir-alist entries.
 
 ; Filename is used for error reporting.  It is nil when we are using an
 ; environment variable to set the directory for :system; otherwise it is the
@@ -9206,6 +9198,22 @@
                        filename))
                   (t (value val))))))))
 
+(defun replace-project-dir-alist (project-dir-alist)
+  (let ((doublet (assoc-eq 'global-value
+                           (get 'project-dir-alist *current-acl2-world-key*))))
+    (assert (and (consp doublet)
+                 (consp (cdr doublet))
+                 (not (eq (cadr doublet) *acl2-property-unbound*))))
+    (setf (cadr doublet) project-dir-alist))
+  (loop for trip in (lookup-world-index 'event 0 (w *the-live-state*))
+        when (and (eq (car trip) 'project-dir-alist)
+                  (eq (cadr trip) 'global-value))
+        do (progn (setf (cddr trip)
+                        (merge-sort-len>=-cdr project-dir-alist))
+                  (return t))
+        finally (error "Implementation error: Failure in ~
+                        replace-project-dir-alist!")))
+
 (defun establish-project-dir-alist (system-dir0 ctx state)
 
 ; This function may set the value of state global project-dir-alist.  It is
@@ -9214,7 +9222,7 @@
 ; System-dir0 is either nil or the value of environment variable
 ; ACL2_SYSTEM_BOOKS (possibly with a trailing slash added).  We assume that
 ; state global project-dir-alist has already been set: to the
-; system-books-directory in the normal case, but to an alist if the executable
+; system books directory in the normal case, but to an alist if the executable
 ; was created with save-exec.
 
   (declare (xargs :stobjs state :mode :program))
@@ -9233,39 +9241,14 @@
                             (value nil)))
               (new-sys-pair (value (assoc-eq :system proj-alist)))
               (old-project-dir-alist
-               (value (f-get-global 'project-dir-alist state))))
+               (value (project-dir-alist (w state)))))
       (cond
        ((null proj-file) ; hence also (null new-sys-pair)
-        (pprogn
-         (cond
-          ((stringp old-project-dir-alist)
-
-; This is the usual case, where the executable was not built with save-exec.
-; So the value old-project-dir-alist of state global project-dir-alist is a
-; string, namely the system books directory used when builing the system; see
-; enter-boot-strap-mode.
-
-           (f-put-global 'project-dir-alist
-                         (acons :system
-                                (or system-books-dir old-project-dir-alist)
-                                nil)
-                         state))
-
-; Otherwise the executable was built with save-exec, so project-dir-alist is an
-; alist, not a string.  If the system books directory was specified, then
-; update the project-dir-alist accordingly.
-
-          (system-books-dir
-           (f-put-global 'project-dir-alist
-                         (merge-sort-len>=-cdr
-                          (put-assoc-eq :system
-                                        system-books-dir
-                                        (f-get-global 'project-dir-alist
-                                                      state)))
-                         state))
-          (t ; no change to project-dir-alist
-           state))
-         (value nil)))
+        (when system-books-dir
+          (replace-project-dir-alist (put-assoc-eq :system
+                                                   system-books-dir
+                                                   old-project-dir-alist)))
+        (value nil))
        ((and new-sys-pair     ; hence ACL2_PROJECTS was specified
              system-books-dir ; hence ACL2_SYSTEM_BOOKS was specified
              (not (equal (cdr new-sys-pair) system-books-dir)))
@@ -9284,8 +9267,9 @@
                   (msg " using environment variable ACL2_SYSTEM_BOOKS")
                 (msg ", which is the pathname of the books/ directory of your ~
                       ACL2 distribution")))))
-       ((rassoc-equal (or system-books-dir old-project-dir-alist)
-                      (remove-assoc-equal :system proj-alist))
+       ((rassoc-equal (or system-books-dir
+                          (cdr (assoc-eq :system old-project-dir-alist)))
+                      (remove-assoc-eq :system proj-alist))
 
 ; The test above will be false if system-books-dir is nil and
 ; old-project-dir-alist is an alist (because the executable was created by
@@ -9293,7 +9277,9 @@
 ; our only concern is that old-project-dir-alist is a string that will be the
 ; system books directory.
 
-        (let ((pair (rassoc-equal (or system-books-dir old-project-dir-alist)
+        (let ((pair (rassoc-equal (or system-books-dir
+                                      (cdr (assoc-eq :system
+                                                     old-project-dir-alist)))
                                   (remove-assoc-equal :system proj-alist))))
           (er soft ctx
               "The project-dir-alist read from file ~x0 associates keyword ~
@@ -9301,16 +9287,15 @@
               proj-file
               (car pair)
               (cdr pair))))
-       ((and (not
-              (stringp old-project-dir-alist)) ; from save-exec (optimization)
-             (let ((wrld (w state)))
-               (or (conflicting-symbol-alists
-                    proj-alist
-                    (cdr (assoc-eq :include-book-dir-alist
-                                   (table-alist 'acl2-defaults-table wrld))))
-                   (conflicting-symbol-alists
-                    proj-alist
-                    (table-alist 'include-book-dir!-table wrld)))))
+       ((and ; proj-file is non-nil
+         (let ((wrld (w state)))
+           (or (conflicting-symbol-alists
+                proj-alist
+                (cdr (assoc-eq :include-book-dir-alist
+                               (table-alist 'acl2-defaults-table wrld))))
+               (conflicting-symbol-alists
+                proj-alist
+                (table-alist 'include-book-dir!-table wrld)))))
         (let* ((wrld (w state))
                (c1 (conflicting-symbol-alists
                     proj-alist
@@ -9329,27 +9314,20 @@
                  was created with save-exec, that key was associated with a ~
                  different value by ~x3, namely, ~x4."
                 proj-file new k fn old))))
-            
 
-; We get to this point if proj-file is non-nil and there is no conflict in the
-; user's specification of the system books directory.  We set the
-; project-dir-alist to the proj-alist read from the proj-file, except that we
-; add a value for :SYSTEM if one is not already there.
+; We get to this point if proj-file is non-nil and there is no conflict.  We
+; set the project-dir-alist to the proj-alist read from the proj-file, except
+; that we add a value for :SYSTEM if one is not already there.
 
-       (t (pprogn
-           (f-put-global 'project-dir-alist
-                         (merge-sort-len>=-cdr
-                          (if new-sys-pair
-                              proj-alist
-                            (acons :SYSTEM
-                                   (or system-books-dir
-                                       (if (stringp old-project-dir-alist)
-                                           old-project-dir-alist
-                                         (cdr (assoc-eq :SYSTEM
-                                                        old-project-dir-alist))))
-                                   proj-alist)))
-                         state)
-           (value nil)))))
+       (t
+        (replace-project-dir-alist
+         (if new-sys-pair
+             proj-alist
+           (acons :system
+                  (or system-books-dir
+                      (cdr (assoc-eq :system old-project-dir-alist)))
+                  proj-alist)))
+        (value nil))))
     (cond (erp (pprogn (fms "**ABORTING start of ACL2!**~|Address the error ~
                              noted above in order to run ACL2.~|See :DOC ~
                              project-dir-alist."

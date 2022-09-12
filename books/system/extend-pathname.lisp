@@ -114,3 +114,4 @@
 (verify-termination extend-pathname+) ; not guards
 
 (verify-termination extend-pathname) ; not guards
+

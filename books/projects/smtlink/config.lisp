@@ -32,14 +32,6 @@
             (all-boundp acl2::*initial-global-table*
                         (global-table x)))))
 
-(local
- (defthm boundp-of-project-dir-alist
-   (implies (state-p state)
-            (acl2::f-boundp-global 'acl2::project-dir-alist state))
-   :hints (("Goal"
-            :in-theory (disable all-boundp-of-initial-glb)
-            :use ((:instance all-boundp-of-initial-glb (x state)))))))
-
 (defconsts *default-smtlink-config*
   (b* ((sys-dir (acl2::system-books-dir state))
        ((unless (stringp sys-dir))
