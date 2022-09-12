@@ -27,6 +27,7 @@
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/sbvdivdown" :dir :system)
+(include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
 (include-book "rules1") ;drop? for BV-ARRAY-WRITE-EQUAL-REWRITE-ALT, to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
@@ -56,6 +57,7 @@
 (local (include-book "kestrel/bv/arith" :dir :system)) ; for INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR, etc.
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
+(local (include-book "kestrel/bv/trim-rules" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -4867,9 +4869,14 @@
                 (equal (getbit 3 x) 0))
            (equal (equal (slice 4 3 x) 0)
                   (equal (slice 4 4 x) 0)))
-  :hints (("Goal" :in-theory (disable GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
+  :hints (("Goal" :in-theory (e/d (;bvcat logapp
+                                         )
+                                  (GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
                                       BVCAT-EQUAL-REWRITE-ALT
-                                      BVCAT-EQUAL-REWRITE)
+                                      BVCAT-EQUAL-REWRITE
+                                      ;bvcat-tighten-low-arg
+                                      bvcat-tighten-upper-size
+                                      bvcat-of-0-arg2))
            :use (:instance split-with-bvcat (x (slice 4 3 x)) (hs 1) (ls 1)))))
 
 (defthm bvlt-when-bvchop-hack

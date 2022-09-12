@@ -16,6 +16,7 @@
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "kestrel/bv/trim-intro-rules" :dir :system)
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 
