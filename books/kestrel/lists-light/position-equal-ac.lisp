@@ -45,3 +45,9 @@
            (< (POSITION-EQUAL-ac item lst 0)
               (len lst)))
   :hints (("Goal" :use (:instance position-equal-ac-bound (acc 0)))))
+
+(defthm position-equal-ac-when-not-member-equal
+  (implies (not (member-equal item lst))
+           (equal (position-equal-ac item lst acc)
+                  nil))
+  :hints (("Goal" :in-theory (enable position-equal-ac))))
