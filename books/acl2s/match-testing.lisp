@@ -8,7 +8,7 @@
 (in-package "ACL2S")
 (include-book "acl2s/custom" :dir :system :ttags :all)
 (set-termination-method :ccg)
-(acl2s-defaults :set testing-enabled t)
+;(acl2s-defaults :set testing-enabled nil)
 
 ;; Examples from the documentation
 
