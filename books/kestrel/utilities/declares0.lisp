@@ -633,8 +633,12 @@
       nil
     (let ((arg (first declare-args)))
       (if (eq 'xargs (ffn-symb arg))
-          (cons `(xargs ,@(remove-xarg xarg (fargs arg)))
-                (remove-xarg-in-declare-args xarg (rest declare-args)))
+          (let ((new-xargs (remove-xarg xarg (fargs arg))))
+            (if (null new-xargs)
+                ;; Drop an empty xargs:
+                (remove-xarg-in-declare-args xarg (rest declare-args))
+              (cons `(xargs ,@new-xargs)
+                    (remove-xarg-in-declare-args xarg (rest declare-args)))))
         (cons arg (remove-xarg-in-declare-args xarg (rest declare-args)))))))
 
 (defthm all-declare-argp-of-remove-xarg-in-declare-args
@@ -657,8 +661,12 @@
                               (all-declarep declares))))
   (if (atom declares)
       nil
-    (cons (remove-xarg-in-declare xarg (first declares))
-          (remove-xarg-in-declares xarg (rest declares)))))
+    (let ((new-declare (remove-xarg-in-declare xarg (first declares))))
+      (if (equal new-declare '(declare))
+          ;; Drop an empty declare:
+          (remove-xarg-in-declares xarg (rest declares))
+        (cons new-declare
+              (remove-xarg-in-declares xarg (rest declares)))))))
 
 (defthm all-declare-argp-of-remove-xarg-in-declares
   (implies (all-declarep declares)
