@@ -1,7 +1,7 @@
 ; A simple, tail-recursive version of repeat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,11 +42,7 @@
            (equal (append (repeat n v) acc)
                   (repeat-tail n v acc)))
   :hints (("Goal" :induct (repeat-tail n v acc)
-           :in-theory (e/d (repeat-tail repeat-opener-end)
-                           (;list::open-equiv
-                            ;list::equal-append-reduction!
-                            ;LIST::APPEND-REPEAT-SINGLETON-SAME ;looped
-                            )))))
+           :in-theory (enable repeat-tail repeat-alt-def))))
 
 ;to prevent repeat from executing with huge n, we use the following scheme:
 ;never execute repeat, but rewrite repeat on small constant arguments to repeat-tail and execute repeat-tail
