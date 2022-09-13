@@ -179,7 +179,7 @@
         (elaborate-mut-rec-option-cmp option-value option-name clique-members ctx))
        ((when erp)
         ;; alist-or-msg is a msgp:
-        (er hard? ctx (message-string alist-or-msg) (message-alist alist-or-msg))
+        (er hard? ctx "~@0" alist-or-msg)
         nil))
     alist-or-msg))
 
