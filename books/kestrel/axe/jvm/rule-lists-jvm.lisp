@@ -1378,7 +1378,7 @@
              ;; myif-intervening-and-negated-hack
              ;; myif-comparison-hack
              ))
-   '(slice-trim-dag-all                      ;new
+   '(slice-trim-axe-all                      ;new
      ;;array-reduction-when-all-same-improved2 ;looped?
      update-nth-becomes-update-nth2
      )))
@@ -1430,7 +1430,7 @@
              unicity-of-0
              fix-of-len
              integerp-when-signed-byte-p))
-   '(slice-trim-dag-all                      ;new
+   '(slice-trim-axe-all                      ;new
      ;;array-reduction-when-all-same-improved2 ;looped?
      update-nth-becomes-update-nth2)))
 
