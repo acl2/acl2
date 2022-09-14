@@ -1233,7 +1233,7 @@
            :in-theory (disable EQUAL-OF-SLICE-AND-SLICE
                                BVCAT-OF-GETBIT-AND-X-ADJACENT
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TIGHTEN-LOW-ARG
+                               BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -1249,7 +1249,7 @@
                                   )
            :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TIGHTEN-LOW-ARG
+                               BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -1386,7 +1386,7 @@
                                   )
            :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TIGHTEN-LOW-ARG
+                               BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -1481,7 +1481,7 @@
            :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT
                                ;hack1112
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TIGHTEN-LOW-ARG
+                               BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -4869,7 +4869,7 @@
                                   (GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
                                       BVCAT-EQUAL-REWRITE-ALT
                                       BVCAT-EQUAL-REWRITE
-                                      ;bvcat-tighten-low-arg
+                                      ;bvcat-trim-arg4
                                       bvcat-tighten-upper-size
                                       bvcat-of-0-arg2))
            :use (:instance split-with-bvcat (x (slice 4 3 x)) (hs 1) (ls 1)))))
