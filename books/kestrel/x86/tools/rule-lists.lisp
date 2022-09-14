@@ -991,8 +991,8 @@
             x86isa::part-install-width-low-becomes-bvcat-32
             x86isa::rflags-is-n32p-unforced
              ;targets unsigned-byte-p-of-rflags
-;                    acl2::bvcat-trim-arg2-dag-all
- ;                   acl2::bvcat-trim-arg1-dag-all
+;                    acl2::bvcat-trim-arg4-axe-all
+ ;                   acl2::bvcat-trim-arg2-axe-all
 
             x86isa::64-bit-modep-of-xw
             x86isa::64-bit-modep-of-mv-nth-1-of-wb

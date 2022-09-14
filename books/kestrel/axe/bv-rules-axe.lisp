@@ -80,7 +80,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvnot-trim-dag-all
+(defthmd bvnot-trim-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvnot size x)
                   (bvnot size (trim size x))))
@@ -88,7 +88,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bitnot-trim-dag-all
+(defthmd bitnot-trim-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'all dag-array))
            (equal (bitnot x)
                   (bitnot (trim 1 x))))
@@ -96,13 +96,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvminus-trim-arg1-dag-all
+(defthmd bvminus-trim-arg2-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvminus size x y)
                   (bvminus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvminus-trim-arg2-dag-all
+(defthmd bvminus-trim-arg3-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvminus size y x)
                   (bvminus size y (trim size x))))
@@ -110,7 +110,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvuminus-trim-dag-all
+(defthmd bvuminus-trim-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (posp size) ; gen?
                 )
@@ -120,7 +120,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd slice-trim-dag-all
+(defthmd slice-trim-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe-plus-one high x 'all dag-array))
                 (<= low high)
                 (natp low)
@@ -135,7 +135,7 @@
 ;; (bvchop 1 (slice 3 2 x))
 ;; (GETBIT 0 (SLICE 3 2 X))
 ;; (GETBIT 0 (bvchop 1 (SLICE 3 2 X)))
-(defthmd getbit-trim-dag-all
+(defthmd getbit-trim-axe-all
   (implies (and (< 0 n) ;if n=0 it's already being trimmed by the getbit (BOZO make sure we can simplify such cases..)
                 (axe-syntaxp (term-should-be-trimmed-axe-plus-one n x 'all dag-array))
                 (integerp n))
@@ -143,7 +143,7 @@
                   (getbit n (trim (+ 1 n) x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-;; (defthmd getbit-trim-dag-all-gen
+;; (defthmd getbit-trim-axe-all-gen
 ;;   (implies (and (<= 0 n)
 ;;                 (axe-syntaxp (term-should-be-trimmed-axe-plus-one n x 'all dag-array))
 ;;                 (integerp n))
@@ -153,7 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvcat-trim-arg1-dag
+(defthmd bvcat-trim-arg2-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe highsize highval 'non-arithmetic dag-array))
                 (natp highsize)
                 ;; (natp lowsize)
@@ -162,7 +162,7 @@
                   (bvcat highsize (trim highsize highval) lowsize lowval)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvcat-trim-arg2-dag
+(defthmd bvcat-trim-arg4-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe lowsize lowval 'non-arithmetic dag-array))
                 ;; (natp highsize)
                 (natp lowsize)
@@ -171,7 +171,7 @@
                   (bvcat highsize highval lowsize (trim lowsize lowval))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvcat-trim-arg1-dag-all
+(defthmd bvcat-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe highsize highval 'all dag-array))
                 (natp highsize)
                 ;; (natp lowsize)
@@ -180,7 +180,7 @@
                   (bvcat highsize (trim highsize highval) lowsize lowval)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvcat-trim-arg2-dag-all
+(defthmd bvcat-trim-arg4-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe lowsize lowval 'all dag-array))
                 ;; (natp highsize)
                 (natp lowsize)
