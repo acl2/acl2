@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(ld "acl2s-pkg.lsp")
+; cert-flags: ? t :ttags :all
+
