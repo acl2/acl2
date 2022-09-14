@@ -12,7 +12,7 @@
 
 (local (include-book "integerp"))
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "floor"))
 (local (include-book "numerator"))
 (local (include-book "denominator"))
