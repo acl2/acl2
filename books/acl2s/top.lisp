@@ -12,16 +12,18 @@
 (include-book "acl2s/custom" :dir :system :ttags :all)
 (include-book "acl2s/acl2s-sigs" :dir :system :ttags :all)
 (include-book "acl2s/mode-acl2s-dependencies" :dir :system :ttags :all)
-(include-book "acl2s/defdata-testing" :dir :system :ttags :all)
 ;(include-book "projects/smtlink/top" :dir :system :ttags :all)
 ;(include-book "projects/smtlink/examples/basictypes" :dir :system :ttags :all)
 (include-book "acl2s/sorting/sorting" :dir :system :ttags :all)
 (include-book "acl2s/match" :dir :system :ttags :all)
+(include-book "acl2s/installation" :dir :system :ttags :all)
+(include-book "acl2s/extra-doc" :dir :system :ttags :all)
 
 #|
 
 ; Hack for cert.pl ;
 
+(include-book "acl2s/defdata-testing" :dir :system :ttags :all)
 (include-book "acl2s/cgen/cgen-no-thms" :dir :system)
 (include-book "acl2s/cgen/defthm-support-for-on-failure" :dir :system)
 (include-book "acl2s/cgen/defthm-support-for-on-failure-local" :dir :system)
@@ -29,5 +31,6 @@
 (include-book "acl2s/interface/top" :dir :system)
 (include-book "acl2s/interface/acl2s-utils/top" :dir :system)
 (include-book "acl2s/defunc-testing" :dir :system)
+(include-book "acl2s/match-testing" :dir :system)
 
 |#

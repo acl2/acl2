@@ -361,6 +361,9 @@
       guard-checking-on
       current-flg
       raw-mode-p
+
+      acl2s
+      acl2-sedan
       )
    (union-eq
     (union-eq 

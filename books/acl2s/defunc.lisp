@@ -77,13 +77,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :mode :program
                   :guard (symbolp fun-name)
                   :stobjs (state)))
-  (b* (((mv cl-set &) (guard-clauses-for-clique (list fun-name)
-                                                T ;debug-p
-                                                (ens state)
-                                                (w state)
-                                                (f-get-global 'safe-mode state)
-                                                (gc-off state)
-                                                nil))
+  (b* (((mv cl-set &)
+        (guard-clauses-for-clique (list fun-name)
+                                  T ;debug-p
+                                  (ens state)
+                                  (w state)
+                                  (f-get-global 'safe-mode state)
+                                  (gc-off state)
+                                  nil))
        (guard-ob (prettyify-clause-set cl-set (let*-abstractionp state) (w state)))
        ;;(- (cw "fn: ~x0 and body-contract-obligation: ~x1~%" fun-name guard-ob))
        )
