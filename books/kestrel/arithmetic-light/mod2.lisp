@@ -14,13 +14,13 @@
 ;; STATUS: This book could use some cleaning up.
 
 (include-book "mod")
-(local (include-book "divides"))
+(local (include-book "divide"))
 (local (include-book "times"))
 (local (include-book "floor"))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;to prove mod-expt-mod, mod-bound, etc.
 (local (include-book "expt"))
 (local (include-book "expt2"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus-and-minus"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 

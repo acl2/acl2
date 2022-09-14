@@ -18,7 +18,7 @@
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
-(local (include-book "divides"))
+(local (include-book "divide"))
 (local (include-book "times"))
 
 ;; Returns the floor of the base 2 logarithm of the positive rational x.  Not meaningful for 0.

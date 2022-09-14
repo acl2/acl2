@@ -19,7 +19,7 @@
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/numerator"))
 (local (include-book "../arithmetic-light/ash"))
-(local (include-book "../arithmetic-light/divides"))
+(local (include-book "../arithmetic-light/divide"))
 (local (include-book "logand"))
 
 (local (in-theory (enable ash)))

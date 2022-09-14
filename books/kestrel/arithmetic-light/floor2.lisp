@@ -17,7 +17,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "times"))
 (local (include-book "minus"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus"))
 (local (include-book "plus-and-minus"))
 (local (include-book "mod"))
