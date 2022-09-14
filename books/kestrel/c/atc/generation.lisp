@@ -5322,7 +5322,6 @@
              (formula-member
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                              (valuep struct)
-                             (value-case struct :struct)
                              (,recognizer struct))
                         (equal (exec-member struct
                                             (ident ,(ident->name memname)))
@@ -5455,7 +5454,6 @@
           (formula-member
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (valuep struct)
-                          (value-case struct :struct)
                           (,recognizer struct)
                           (equal array
                                  (value-struct-read (ident
