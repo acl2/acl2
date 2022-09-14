@@ -33,4 +33,13 @@
 (include-book "acl2s/defunc-testing" :dir :system)
 (include-book "acl2s/match-testing" :dir :system)
 
+(include-book "acl2s/distribution/acl2s-hooks/acl2s-book-support" :dir :system)
+(include-book "acl2s/distribution/acl2s-hooks/acl2s" :dir :system)
+(include-book "acl2s/distribution/acl2s-hooks/canonical-print" :dir :system)
+(include-book "acl2s/distribution/acl2s-hooks/categorize-input" :dir :system)
+(include-book "acl2s/distribution/acl2s-hooks/interaction-hooks" :dir :system)
+(include-book "acl2s/distribution/acl2s-hooks/markup-hooks" :dir :system)
+(include-book "acl2s/distribution/acl2s-hooks/protection-hooks" :dir :system)
+(include-book "acl2s/distribution/acl2s-hooks/super-history" :dir :system)
+
 |#
