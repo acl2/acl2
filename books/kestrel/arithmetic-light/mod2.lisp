@@ -44,8 +44,7 @@
                   (mod a 2)))
   :hints (("Goal" :cases ((not (acl2-numberp a))
                           (rationalp a))
-           :in-theory (disable ;DIVISIBILITY-IN-TERMS-OF-FLOOR
-                       mod-cancel))))
+           :in-theory (disable mod-cancel))))
 
 ;gross proof? use a bound lemma?
 (defthm integerp-of-*-of-/-and-mod

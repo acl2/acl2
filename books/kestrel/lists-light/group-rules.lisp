@@ -278,8 +278,7 @@
                             len-of-cdr
                             consp-of-cdr
                             EQUAL-OF-0-AND-MOD)
-                           (DIVISIBILITY-IN-TERMS-OF-FLOOR
-                            TAKE-OF-CDR-BECOMES-SUBRANGE
+                           (TAKE-OF-CDR-BECOMES-SUBRANGE
                             NTH-OF-CDR
                             ;; list::NTH-OF-CDR
                             ;; LIST::EQUAL-APPEND-REDUCTION!

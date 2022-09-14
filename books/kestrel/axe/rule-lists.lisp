@@ -674,8 +674,8 @@
 
      bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017
 
-     bvif-trim-constant-arg1
-     bvif-trim-constant-arg2
+     ;;bvif-trim-constant-arg1
+     ;;bvif-trim-constant-arg2
 
      bvuminus-of-bvuminus
 
