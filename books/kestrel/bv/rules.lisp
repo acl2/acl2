@@ -71,8 +71,8 @@
 (local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
@@ -7061,6 +7061,3 @@
                 (unsigned-byte-p-forced xsize x))
            (not (equal x k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-
-

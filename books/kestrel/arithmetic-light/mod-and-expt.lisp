@@ -17,7 +17,7 @@
 (local (include-book "mod"))
 (local (include-book "expt2"))
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 
 (defthmd mod-expt-split ;looped
   (implies (and (integerp x)

@@ -33,8 +33,8 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
 ;move
 (defthm floor-of-*-same-arg2

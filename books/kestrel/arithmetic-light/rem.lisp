@@ -15,11 +15,11 @@
 (local (include-book "mod"))
 (local (include-book "floor"))
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus-and-minus"))
 (local (include-book "plus"))
 (local (include-book "minus"))
-(local (include-book "divides"))
+(local (include-book "divide"))
 
 (in-theory (disable rem))
 

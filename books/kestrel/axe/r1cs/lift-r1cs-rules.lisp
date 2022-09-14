@@ -650,7 +650,7 @@
 
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 
 ;; (thm
 ;;  (implies ..
@@ -686,7 +686,7 @@
            (INTEGERP (* (/ K1) K2)))
   :hints (("Goal" :in-theory (enable ACL2::POWER-OF-2P))))
 
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
 (defthm add-of-mul-and-mul-combine
   (implies (and (syntaxp (and (quotep k1)
@@ -791,7 +791,7 @@
                   (neg (mul y x p) p)))
   :hints (("Goal" :in-theory (enable MUL add))))
 
-;;(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+;;(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;move

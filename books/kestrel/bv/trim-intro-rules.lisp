@@ -68,7 +68,7 @@
 ;; these should have 'trim' in the name:
 
 ;watch out for loops
-(defthm bvcat-tighten-high-arg
+(defthm bvcat-trim-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize highval) (newsize))
                 (syntaxp (quotep highsize))
                 (< highsize newsize)
@@ -83,7 +83,7 @@
                   (bvcat highsize (trim highsize highval) lowsize lowval)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvcat-tighten-low-arg
+(defthm bvcat-trim-arg4
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize lowval) (newsize))
                 (syntaxp (quotep lowsize))
                 (< lowsize newsize)
@@ -100,7 +100,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvif-trim-arg1
+(defthm bvif-trim-arg3
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize)) ;bozo newsize is a bad name
                 (> innersize outersize) ;only fire if strictly greater
                 (natp outersize)
@@ -111,7 +111,7 @@
                   (bvif outersize test (trim outersize x) y)))
   :hints (("Goal" :in-theory (enable bvif trim))))
 
-(defthm bvif-trim-arg2
+(defthm bvif-trim-arg4
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize)) ;bozo newsize is a bad name
                 (> innersize outersize) ;only fire if strictly greater
                 (natp outersize)
@@ -124,25 +124,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; ;improve to handle non-constants
+;; (defthmd bvif-trim-constant-arg3
+;;   (implies (and (syntaxp (and (quotep x)
+;;                               (quotep size)))
+;;                 (not (unsigned-byte-p size x))
+;;                 (natp size) ; prevent loops
+;;                 )
+;;            (equal (bvif size test x y)
+;;                   (bvif size test (trim size x) y)))
+;;   :hints (("Goal" :in-theory (enable trim))))
 
-;improve to handle non-constants
-(defthmd bvif-trim-constant-arg1
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep size)))
-                (not (unsigned-byte-p size x))
-                (natp size) ; prevent loops
-                )
-           (equal (bvif size test x y)
-                  (bvif size test (trim size x) y)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-;improve to handle non-constants
-(defthmd bvif-trim-constant-arg2
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep size)))
-                (not (unsigned-byte-p size x))
-                (natp size) ; prevent loops
-                )
-           (equal (bvif size test y x)
-                  (bvif size test y (trim size x))))
-  :hints (("Goal" :in-theory (enable trim))))
+;; ;improve to handle non-constants
+;; (defthmd bvif-trim-constant-arg4
+;;   (implies (and (syntaxp (and (quotep x)
+;;                               (quotep size)))
+;;                 (not (unsigned-byte-p size x))
+;;                 (natp size) ; prevent loops
+;;                 )
+;;            (equal (bvif size test y x)
+;;                   (bvif size test y (trim size x))))
+;;   :hints (("Goal" :in-theory (enable trim))))
