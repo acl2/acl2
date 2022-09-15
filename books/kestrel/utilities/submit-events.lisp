@@ -75,11 +75,9 @@
             (print-events-with-elision (rest events)))))
 
 ;; Returns (mv erp state) where erp is non-nil if the event failed.
-;; Throws an error if the event fails and THROW-ERRORP is non-nil.
 ;; TODO: Consider using PSO to print proof output only upon failure.
-(defun submit-event-helper (event print throw-errorp state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
-                              (booleanp throw-errorp))
+(defun submit-event-helper-core (event print state)
+  (declare (xargs :guard (member-eq print '(nil :brief t :verbose))
                   :mode :program ; because this calls trans-eval-error-triple
                   :stobjs state))
   (progn$ (and print (cw "(Submitting event:~%")) ;todo: it would be nice print the event name (if there is one) or to say "event 3 of 9" or whatever
@@ -115,14 +113,24 @@
                                         'submit-event-helper ;todo: pass in a better context
                                         state))
               (if erp
-                  (if throw-errorp
-                      (prog2$ (er hard? 'submit-event-helper "Failed to submit event: ~X01" event nil)
-                              (mv erp state))
-                    (prog2$ (and print (cw "EVENT FAILED!)~%"))
-                            (mv erp state)))
-                ;; Success:
+                  (prog2$ (and print (cw "Error.)~%"))
+                          (mv erp state))
+                ;; No error:
                 (prog2$ (and print (cw "~x0)~%" result))
                         (mv nil state)))))))
+
+;; Returns (mv erp state) where erp is non-nil if the event failed.
+;; Throws an error if the event fails and THROW-ERRORP is non-nil.
+;; TODO: Consider using PSO to print proof output only upon failure.
+(defun submit-event-helper (event print throw-errorp state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
+                              (booleanp throw-errorp))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (mv-let (erp state)
+    (submit-event-helper-core event print state)
+    (prog2$ (and erp throw-errorp (er hard? 'submit-event-helper "Failed to submit event: ~X01" event nil))
+            (mv erp state))))
 
 ;returns state
 ;throws an error if the event fails
@@ -161,16 +169,15 @@
 ;returns state
 ;throws an error if any event fails
 (defun submit-events-aux (events print state)
-  (declare (xargs :mode :program
-                  :guard (member-eq print '(nil :brief :verbose))
+  (declare (xargs :guard (member-eq print '(nil :brief :verbose))
+                  :mode :program
                   :stobjs state))
   (if (endp events)
       state
-    (let* ((event (first events)))
-      (mv-let (erp state)
-        (submit-event-helper event print t state)
-        (declare (ignore erp))
-        (submit-events-aux (rest events) print state)))))
+    (mv-let (erp state)
+      (submit-event-helper (first events) print t state)
+      (declare (ignore erp))
+      (submit-events-aux (rest events) print state))))
 
 ;returns state
 ;throws an error if any event fails
