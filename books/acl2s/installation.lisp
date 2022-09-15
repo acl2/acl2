@@ -186,9 +186,9 @@ and download either the Arm64 DMG installer (if you are on a M1
 Mac) or the x64 DMG installer. Then, open the DMG and run the
 installer inside of it.</li></ol></li>
 <li>Install Eclipse<ol>
-<li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-SDK-4.25-macosx-cocoa-aarch64.dmg&r=1\">M1
+<li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-SDK-4.25-macosx-cocoa-aarch64.dmg&amp;r=1\">M1
 Mac</a>
-or <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-SDK-4.25-macosx-cocoa-x86_64.dmg&r=1\">x86
+or <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-SDK-4.25-macosx-cocoa-x86_64.dmg&amp;r=1\">x86
 Mac</a>.</li>
 <li>Open the downloaded file and click and drag the Eclipse icon
   into your Applications folder.</li>
