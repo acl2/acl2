@@ -2376,8 +2376,7 @@
      the resulting term is the code of the new function's body (see below).
      Then we construct an @(tsee if) as follows.
      The test is the conjunction of @('(newp1 x1)'), ..., @('(newpn xn)').
-     The `else' branch is @('nil') or @('(mv nil ... nil')),
-     depending on whether @('old') returns single or multiple results.
+     The `else' branch is @('undefined').
      For the `then' branch, there are three cases:
      (i) if no results are transformed, we use the core term above;
      (ii) if @('old') is single-valued and its (only) result is transformed,
@@ -2390,13 +2389,7 @@
      in which case we omit test and `else' branch.
      If the compatibility flag is set and @('old') is non-recursive,
      we omit test and `else' branch as well;
-     this is temporary.")
-   (xdoc::p
-    "The `else' branch should use quoted @('nil')s,
-     but we use unquoted ones just so that the untranslation
-     does not turn the @(tsee if) into an @(tsee and).
-     Technically, the unquoted @('nil')s are ``variable'' (symbols),
-     and thus untranslation leaves them alone."))
+     this is temporary."))
   (b* ((x1...xn (formals old$ wrld))
        (m (number-of-results old$ wrld))
        (old-body (if (non-executablep old$ wrld)
