@@ -493,6 +493,110 @@
 
 (must-succeed*
 
+ (test-title "Check UNDEFINED input on single-valued function.")
+
+ (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (+ 1 (IDENTITY X))
+         NIL))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined :auto)
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (+ 1 (IDENTITY X))
+         NIL))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined ':auto)
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (+ 1 (IDENTITY X))
+         :auto))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined (+ x 1))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (+ 1 (IDENTITY X))
+         (+ x 1)))))
+
+ (must-succeed*
+   (must-fail (isodata f ((x (natp natp identity identity))) :undefined (mv 0 0)))
+   (must-fail (isodata f ((x (natp natp identity identity))) :undefined y))
+   (must-fail (isodata f ((x (natp natp identity identity))) :undefined (f (+ x 1)))))
+
+ :with-output-off nil)
+
+(must-succeed*
+
+ (test-title "Check UNDEFINED input on multi-valued function.")
+
+ (defun f (x) ; OLD with just a top-level MV
+   (declare (xargs :guard (natp x)))
+   (mv (+ x x) (* x x)))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (MV (+ (IDENTITY X) (IDENTITY X))
+             (* (IDENTITY X) (IDENTITY X)))
+         (MV NIL NIL)))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined :auto)
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (MV (+ (IDENTITY X) (IDENTITY X))
+             (* (IDENTITY X) (IDENTITY X)))
+         (MV NIL NIL)))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined (mv (+ x 1) (* 42 x)))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (MV (+ (IDENTITY X) (IDENTITY X))
+             (* (IDENTITY X) (IDENTITY X)))
+         (MV (+ x 1) (* 42 x))))))
+
+ (must-succeed*
+  (must-fail (isodata f ((x (natp natp identity identity))) :undefined 0))
+  (must-fail (isodata f ((x (natp natp identity identity))) :undefined (mv 0 0 0)))
+  (must-fail (isodata f ((x (natp natp identity identity))) :undefined (mv y 0)))
+  (must-fail (isodata f ((x (natp natp identity identity))) :undefined (mv (f (+ x 1)) 0))))
+
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
  (test-title "Check NEWP input, when ISO is not a name.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD

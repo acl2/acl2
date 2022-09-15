@@ -116,6 +116,7 @@
      "(isodata old"
      "         isomaps"
      "         :predicate           ; default nil"
+     "         :undefined           ; default :auto"
      "         :new-name            ; default :auto"
      "         :new-enable          ; default :auto"
      "         :old-to-new-name     ; default from table"
@@ -381,6 +382,17 @@
        refer to the case in which @(':predicate') is @('nil'),
        while the sections with `Predicate' in their title
        refer to the case in which @(':predicate') is @('t')."))
+
+    (xdoc::desc
+     "@(':undefined') &mdash; default @(':auto')"
+     (xdoc::p
+      "Denotes the value that the generated new function must return
+       outside of the new domain.")
+     (xdoc::evmac-desc-term
+      :free-vars "@('x1'), ..., @('xn')"
+      :1res nil
+      :guard nil
+      :dont-call "@('old')"))
 
     (xdoc::desc-apt-input-new-name)
 
