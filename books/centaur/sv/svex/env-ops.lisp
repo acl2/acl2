@@ -357,7 +357,10 @@ provides.</p>")
   (deffixcong svex-env-equiv svex-env-equiv (append a b) b)
 
   (defrefinement svex-env-equiv svex-envs-similar
-    :hints ((witness))))
+    :hints ((witness)))
+
+  (defcong svex-envs-similar equal (svex-env-extract keys x) 2
+    :hints(("Goal" :in-theory (enable svex-env-extract)))))
 
 
 
@@ -674,7 +677,12 @@ of @(see svex-env-lookup), and they bind the same variables.")
   (defthm svex-alist-eval-of-svarlist-x-subst
     (equal (svex-alist-eval (svarlist-x-subst x) env)
            (svarlist-x-env x))
-    :hints(("Goal" :in-theory (enable svarlist-x-env svex-alist-eval)))))
+    :hints(("Goal" :in-theory (enable svarlist-x-env svex-alist-eval))))
+
+  (defthm svex-alist-keys-of-svarlist-x-subst
+    (equal (svex-alist-keys (svarlist-x-subst x))
+           (svarlist-fix x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
 
 (defthm svex-env-p-of-pairlis$

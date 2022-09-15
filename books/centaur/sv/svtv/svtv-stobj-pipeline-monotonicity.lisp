@@ -373,12 +373,6 @@
   :hints (("goal" :use ((:instance svex-alist-compose-preserves-svex-alist-partial-monotonic
                          (params2 nil) (params params))))))
 
-
-(defthm svex-alist-keys-of-svarlist-x-subst
-  (equal (svex-alist-keys (svarlist-x-subst vars))
-         (svarlist-fix vars))
-  :hints(("Goal" :in-theory (enable svarlist-fix svarlist-x-subst svex-alist-keys))))
-
 (defthm svex-alist-monotonic-p-of-svarlist-x-subst
   (svex-alist-monotonic-p (svarlist-x-subst vars))
   :hints(("Goal" :in-theory (enable svex-alist-monotonic-p))))

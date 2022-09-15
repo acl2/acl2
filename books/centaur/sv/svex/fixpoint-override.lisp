@@ -74,18 +74,6 @@
 
 
 
-(define svar-override-triplelist-env-ok ((x svar-override-triplelist-p)
-                                         (env svex-env-p)
-                                         (ref-env svex-env-p))
-  (if (atom x)
-      t
-    (and (b* (((svar-override-triple x1) (car x))
-              (ref (svex-env-lookup x1.refvar ref-env))
-              (val (svex-env-lookup x1.valvar env))
-              (test (svex-env-lookup x1.testvar env)))
-           (equal (4vec-bit?! test val 0)
-                  (4vec-bit?! test ref 0)))
-         (svar-override-triplelist-env-ok (cdr x) env ref-env))))
 
 
 (local
@@ -340,53 +328,149 @@
 
 
 
-(defthm svex-width-of-override-mux
-  (equal (svex-width (svcall bit?! (svex-var a) (svex-var b) (svex-var c)))
-         nil)
-  :hints(("Goal" :in-theory (enable svex-width))))
+
+(local (defthm member-svar-override-triplelist->testvars-when-testvar-of-lookup-refvar
+         (implies (member-equal (svar-fix v) (svar-override-triplelist->refvars triples))
+                  (member-equal (svar-override-triple->testvar
+                                 (svar-override-triplelist-lookup-refvar v triples))
+                                (svar-override-triplelist->testvars triples)))
+         :hints(("Goal" :in-theory (enable svar-override-triplelist->testvars
+                                           svar-override-triplelist-lookup-refvar
+                                           svar-override-triplelist->refvars)))))
+
+(local (defthm member-svar-override-triplelist->valvars-when-valvar-of-lookup-refvar
+         (implies (member-equal (svar-fix v) (svar-override-triplelist->refvars triples))
+                  (member-equal (svar-override-triple->valvar
+                                 (svar-override-triplelist-lookup-refvar v triples))
+                                (svar-override-triplelist->valvars triples)))
+         :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
+                                           svar-override-triplelist-lookup-refvar
+                                           svar-override-triplelist->refvars)))))
 
 
 (defsection svex-width-of-svex-compose-override-alist
+
+  ;; (local (defthm eval-override-alist-of-cons-irrel
+  ;;          (implies (and (not (member-equal (svar-fix v) (svar-override-triplelist->testvars triples)))
+  ;;                        (not (member-equal (svar-fix v) (svar-override-triplelist->valvars triples)))
+  ;;                        (not (member-equal (svar-fix v) (svar-override-triplelist->refvars triples))))
+  ;;                   (equal (svex-alist-eval (svar-override-triplelist->override-alist triples)
+  ;;                                           (cons (cons v val) rest))
+  ;;                          (svex-alist-eval (svar-override-triplelist->override-alist triples)
+  ;;                                           rest)))
+  ;;          :hints(("Goal" :in-theory (enable svar-override-triplelist->override-alist
+  ;;                                            svar-override-triplelist->testvars
+  ;;                                            svar-override-triplelist->refvars
+  ;;                                            svex-alist-eval svex-apply svex-eval
+  ;;                                            svex-env-lookup-of-cons-split)))))
+
+  (local (defthm eval-override-alist-when-testvars-x
+           (implies (and (not (intersectp-equal (svar-override-triplelist->refvars triples)
+                                                (svar-override-triplelist->testvars triples)))
+                         ;; (not (intersectp-equal (svar-override-triplelist->valvars triples)
+                         ;;                        (svar-override-triplelist->testvars triples)))
+                         ;; (no-duplicatesp-equal (svar-override-triplelist->testvars triples))
+                         )
+                    (svex-envs-equivalent (svex-alist-eval (svar-override-triplelist->override-alist triples)
+                                                           (append (svarlist-x-env (svar-override-triplelist->testvars triples))
+                                                                   env))
+                                          (svex-env-extract (svar-override-triplelist->refvars triples) env)))
+           :hints(("Goal" :in-theory (enable svex-envs-equivalent
+                                             svex-apply svex-eval)))))
+
+  (local (defthm svex-eval-lemma-for-svex-width-limited-p-of-svex-compose-override-alist-when-not
+           (implies (and (not (intersectp-equal (svex-vars x) (svarlist-fix testvars))))
+                    (equal (svex-eval x (append (svex-env-extract refvars env)
+                                                (svarlist-x-env testvars)
+                                                env))
+                           (svex-eval x env)))
+           :hints(("Goal" :in-theory (enable svex-eval-equal-when-extract-vars-similar
+                                             svex-envs-similar)))))
   
-  (local (defthm kind-of-svex-compose
-           (implies (case-split (not (svex-case x :var)))
-                    (equal (svex-kind (svex-compose x a))
-                           (svex-kind x)))
-           :hints(("Goal" :expand ((svex-compose x a))))))
+  
+  (local
+   (defthm svex-width-limited-p-of-svex-compose-override-alist-when-limited
+     (implies (svex-width-limited-p width x)
+              (svex-width-limited-p width (svex-compose x (svar-override-triplelist->override-alist triples))))
+     :hints(("Goal" :expand ((svex-width-limited-p width (svex-compose x (svar-override-triplelist->override-alist triples))))
+             :use ((:instance svex-width-limited-p-necc
+                    (x x)
+                    (env (let ((env1 (svex-width-limited-p-witness width (svex-compose x (svar-override-triplelist->override-alist triples)))))
+                           (append (svex-alist-eval
+                                    (svar-override-triplelist->override-alist triples) env1)
+                                   env1)))))))))
 
-  (local (defthm svex-compose-when-var
-           (implies (svex-case x :var)
-                    (equal (svex-compose x a)
-                           (or (svex-lookup (svex-var->name x) a)
-                               (svex-fix x))))
-           :hints(("Goal" :expand ((svex-compose x a))))))
+  (local
+   (defthm svex-width-limited-p-of-svex-compose-override-alist-when-not
+     (implies (and (not (svex-width-limited-p width x))
+                   (not (intersectp-equal (svex-vars x) (svar-override-triplelist->testvars triples)))
+                   (not (intersectp-equal (svar-override-triplelist->refvars triples)
+                                          (svar-override-triplelist->testvars triples))))
+              (not (svex-width-limited-p width (svex-compose x (svar-override-triplelist->override-alist triples)))))
+     :hints(("Goal" :expand ((svex-width-limited-p width x))
+             :use ((:instance svex-width-limited-p-necc
+                    (x (svex-compose x (svar-override-triplelist->override-alist triples)))
+                    (env (append (svarlist-x-env (svar-override-triplelist->testvars triples))
+                                 (svex-width-limited-p-witness width x)))))))))
 
-  (local (defthm svex-compose-when-quote
-           (implies (svex-case x :quote)
-                    (equal (svex-compose x a) (svex-fix x)))
-           :hints(("Goal" :expand ((svex-compose x a))))))
+  (defthm svex-width-limited-p-of-svex-compose-override-alist
+    (implies (and (not (intersectp-equal (svex-vars x) (svar-override-triplelist->testvars triples)))
+                  (not (intersectp-equal (svar-override-triplelist->refvars triples)
+                                         (svar-override-triplelist->testvars triples))))
+             (iff (svex-width-limited-p width (svex-compose x (svar-override-triplelist->override-alist triples)))
+                  (svex-width-limited-p width x))))
+
+  (defthm svex-width-lower-boundp-of-svex-compose-override-alist
+    (implies (and (not (intersectp-equal (svex-vars x) (svar-override-triplelist->testvars triples)))
+                  (not (intersectp-equal (svar-override-triplelist->refvars triples)
+                                         (svar-override-triplelist->testvars triples))))
+             (iff (svex-width-lower-boundp width (svex-compose x (svar-override-triplelist->override-alist triples)))
+                  (svex-width-lower-boundp width x)))
+    :hints ((and stable-under-simplificationp
+                 (b* ((lit (assoc 'svex-width-lower-boundp clause))
+                      (witness `(svex-width-lower-boundp-witness . ,(cdr lit)))
+                      (other (if (eq (caddr lit) 'x)
+                                 '(svex-compose x (svar-override-triplelist->override-alist triples))
+                               'x)))
+                   `(:expand (,lit)
+                     :use ((:instance svex-width-lower-boundp-necc
+                            (x ,other)
+                            (width2 ,witness))))))))
   
   (defthm svex-width-of-svex-compose-override-alist
-    (equal (svex-width (svex-compose x (svar-override-triplelist->override-alist triples)))
-           (svex-width x))
-    :hints(("Goal" :in-theory (e/d ((:i svex-width)) (max))
-            :induct (svex-width x)
-            :do-not-induct t
-            :expand ((svex-width x)
-                     (:free (a) (svex-compose x a))
-                     (:free (a) (svexlist-compose (svex-call->args x) a))
-                     (:free (a) (svexlist-compose (cdr (svex-call->args x)) a))
-                     (:free (a) (svexlist-compose (cddr (svex-call->args x)) a))
-                     (:free (a) (svexlist-compose (cdddr (svex-call->args x)) a))
-                     (:free (val) (svex-width (svex-quote val)))
-                     (:free (name) (svex-width (svex-var name)))
-                     (:free (fn args) (svex-width (svex-call fn args)))))))
+    (implies (and (not (intersectp-equal (svex-vars x) (svar-override-triplelist->testvars triples)))
+                  (not (intersectp-equal (svar-override-triplelist->refvars triples)
+                                         (svar-override-triplelist->testvars triples))))
+             (equal (svex-width (svex-compose x (svar-override-triplelist->override-alist triples)))
+                    (svex-width x)))
+    :hints (("Goal" :use ((:instance not-limited-p-when-not-svex-width
+                           (x x) (width (svex-width (svex-compose x (svar-override-triplelist->override-alist triples)))))
+                          (:instance not-limited-p-when-not-svex-width
+                           (x (svex-compose x (svar-override-triplelist->override-alist triples))) (width (svex-width x)))
+                          (:instance svex-width-when-limited
+                           (x x))
+                          (:instance svex-width-when-limited
+                           (x (svex-compose x (svar-override-triplelist->override-alist triples)))))
+             :in-theory (e/d (svex-width-unique)
+                             (svex-width-when-limited
+                              not-limited-p-when-not-svex-width)))))
 
   (defthm svex-alist-width-of-svex-alist-compose-override-alist
-    (equal (svex-alist-width (svex-alist-compose x (svar-override-triplelist->override-alist triples)))
-           (svex-alist-width x))
-    :hints(("Goal" :in-theory (enable svex-alist-width svex-alist-compose svex-acons)))))
+    (implies (and (not (intersectp-equal (svex-alist-vars x) (svar-override-triplelist->testvars triples)))
+                  (not (intersectp-equal (svar-override-triplelist->refvars triples)
+                                         (svar-override-triplelist->testvars triples))))
+             (equal (svex-alist-width (svex-alist-compose x (svar-override-triplelist->override-alist triples)))
+                    (svex-alist-width x)))
+    :hints(("Goal" :in-theory (enable svex-alist-width
+                                      svex-alist-vars
+                                      svex-alist-compose svex-acons)))))
 
+
+(local (defthm not-intersectp-testvars/refvars-when-not-intersectp-and-subsetp
+         (implies (And (subsetp-equal refvars keys)
+                       (not (intersectp-equal testvars keys)))
+                  (not (intersectp-equal refvars testvars)))
+         :hints(("Goal" :in-theory (enable intersectp-equal subsetp-equal)))))
 
 (local
  (defthm svex-alist-eval-least-fixpoint-of-overrides
@@ -425,23 +509,6 @@
                      :in-theory (enable svex-env-boundp-iff-member-alist-keys)
                      :do-not-induct t))))
 
-   (local (defthm member-svar-override-triplelist->testvars-when-testvar-of-lookup-refvar
-            (implies (member-equal (svar-fix v) (svar-override-triplelist->refvars triples))
-                     (member-equal (svar-override-triple->testvar
-                                    (svar-override-triplelist-lookup-refvar v triples))
-                                   (svar-override-triplelist->testvars triples)))
-            :hints(("Goal" :in-theory (enable svar-override-triplelist->testvars
-                                              svar-override-triplelist-lookup-refvar
-                                              svar-override-triplelist->refvars)))))
-
-   (local (defthm member-svar-override-triplelist->valvars-when-valvar-of-lookup-refvar
-            (implies (member-equal (svar-fix v) (svar-override-triplelist->refvars triples))
-                     (member-equal (svar-override-triple->valvar
-                                    (svar-override-triplelist-lookup-refvar v triples))
-                                   (svar-override-triplelist->valvars triples)))
-            :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
-                                              svar-override-triplelist-lookup-refvar
-                                              svar-override-triplelist->refvars)))))
 
    (local (Defthm 4vec-bit?!-branches-same
             (equal (4vec-bit?! test x x)

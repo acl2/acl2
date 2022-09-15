@@ -242,7 +242,7 @@
 
 
 (define svex-alist-env-x-count ((x svex-alist-p)
-                                    (env svex-env-p))
+                                (env svex-env-p))
   :returns (x-count natp :rule-classes :type-prescription)
   :guard (svex-alist-width x)
   :verify-guards nil
@@ -739,12 +739,6 @@
                   (svex-alist-monotonic-on-vars vars start-subst)
                   (svex-alist-monotonic-on-vars (svex-alist-keys x) x))
              (svex-alist-monotonic-on-vars vars iter-subst))))
-
-(defthm svex-alist-keys-of-svarlist-x-subst
-  (equal (svex-alist-keys (svarlist-x-subst keys))
-         (svarlist-fix keys))
-  :hints(("Goal" :in-theory (enable svarlist-x-subst svex-alist-keys))))
-
 
 (defthm svex-alist-monotonic-on-vars-of-svarlist-x-subst
   (svex-alist-monotonic-on-vars vars (svarlist-x-subst keys))

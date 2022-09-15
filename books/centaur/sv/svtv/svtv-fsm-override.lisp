@@ -327,39 +327,6 @@ properties of the SVTV and its conditional overrides.</li>
                   (svex-env-boundp v env))
          :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-fix alist-keys)))))
 
-(define svar-override-triplelist-env-ok ((x svar-override-triplelist-p)
-                                         (override-env svex-env-p)
-                                         (ref-env svex-env-p))
-  (if (atom x)
-      t
-    (acl2::and*
-     (b* (((svar-override-triple trip) (car x))
-          (testval (svex-env-lookup trip.testvar override-env))
-          (valval (svex-env-lookup trip.valvar override-env))
-          (refval (svex-env-lookup trip.refvar ref-env)))
-       (or (equal (4vec-bit?! testval valval 0)
-                  (4vec-bit?! testval refval 0))
-           (prog2$ (cw "~x0: failed signal: ~x1.~%" std::__function__ trip.refvar)
-                   (svtv-print-alist-readable
-                    `((test . ,(2vec (logand (4vec->upper testval) (4vec->lower testval))))
-                      (val  . ,(4vec-bit?! testval valval 0))
-                      (ref  . ,(4vec-bit?! testval refval 0)))))))
-     (svar-override-triplelist-env-ok (cdr x) override-env ref-env)))
-  ///
-  (defthm svar-override-triplelist-env-ok-in-terms-of-svex-override-triplelist-env-ok
-    (equal (svar-override-triplelist-env-ok x override-env (svex-alist-eval values prev-env))
-           (svex-override-triplelist-env-ok
-            (svar->svex-override-triplelist x values)
-            override-env prev-env))
-    :hints(("Goal" :in-theory (enable svex-override-triplelist-env-ok
-                                      svar->svex-override-triplelist))))
-
-  (defthm svar-override-triplelist-env-ok-of-append-ref-envs-when-subsetp-first
-    (implies (subsetp-equal (svar-override-triplelist->refvars x)
-                            (alist-keys (svex-env-fix ref-env)))
-             (equal (svar-override-triplelist-env-ok x override-env (append ref-env ref-env2))
-                    (svar-override-triplelist-env-ok x override-env ref-env)))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist->refvars)))))
 
 (local (defthmd svex-env-boundp-iff-member-svex-env-alist-keys
          (iff (svex-env-boundp v env)
@@ -1081,9 +1048,6 @@ properties of the SVTV and its conditional overrides.</li>
 (defcong svex-envs-similar equal (svex-alistlist-eval x env) 2
   :hints(("Goal" :in-theory (enable svex-alistlist-eval)))
   :package :function)
-
-(defcong svex-envs-similar equal (svex-env-extract keys x) 2
-  :hints(("Goal" :in-theory (enable svex-env-extract))))
 
 (local
  (defthm svex-env-p-nth-of-svex-envlist-p
