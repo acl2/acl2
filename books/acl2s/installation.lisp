@@ -186,9 +186,9 @@ and download either the Arm64 DMG installer (if you are on a M1
 Mac) or the x64 DMG installer. Then, open the DMG and run the
 installer inside of it.</li></ol></li>
 <li>Install Eclipse<ol>
-<li>Download the Eclipse version appropriate for your machine: <a href=\"https://cs2800.atwalter.com/cs2800/eclipse-platform-4.21-macosx-cocoa-aarch64.dmg\">M1
+<li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-SDK-4.25-macosx-cocoa-aarch64.dmg&r=1\">M1
 Mac</a>
-or <a href=\"https://cs2800.atwalter.com/cs2800/eclipse-platform-4.21-macosx-cocoa-x86_64.dmg\">x86
+or <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-SDK-4.25-macosx-cocoa-x86_64.dmg&r=1\">x86
 Mac</a>.</li>
 <li>Open the downloaded file and click and drag the Eclipse icon
   into your Applications folder.</li>
@@ -393,7 +393,7 @@ reinstall Xming if you already have it installed.
     can build ACL2s from scratch, which will take a fair amount of
     time (at least an hour). To build ACL2s from scratch, run
     <code>brew install acl2s</code>.<br/>If you are on an Intel Mac and
-    are running macOS Mojava or earlier, you can either update to
+    are running macOS Mojave or earlier, you can either update to
     macOS Catalina or later (if that is supported on your computer),
     or build ACL2s from scratch using the instructions above.
   </li>
@@ -413,6 +413,10 @@ reinstall Xming if you already have it installed.
       correctly. Assuming you are on a M1 Mac, try running the command
       <code>echo 'eval $(/opt/homebrew/bin/brew shellenv)' &gt;&gt; ~/.zprofile</code>
       and opening a new Terminal window.
+  </li>
+  <li><span class=\"question\">When I double click on the Eclipse application, nothing happens!</span><br/>Ensure that you have Java installed. To check, open
+  Terminal (e.g. by searching for it in Spotlight) and run @('java -version'). If
+  a version number is printed, you have Java installed.
   </li>
 </ul>
 
