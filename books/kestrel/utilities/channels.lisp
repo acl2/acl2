@@ -255,3 +255,8 @@
   :hints (("Goal" :in-theory (e/d (state-p
                                    symbolp-when-assoc-equal-of-open-input-channels-and-state-p1)
                                   (open-input-channels)))))
+
+(defthm assoc-equal-of-open-input-channels-when-open-input-channel-p
+  (implies (open-input-channel-p channel :byte state)
+           (assoc-equal channel (open-input-channels state)))
+  :hints (("Goal" :in-theory (enable open-input-channel-p open-input-channel-p1))))

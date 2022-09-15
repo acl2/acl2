@@ -30,13 +30,6 @@
                            open-input-channel-any-p1
                            mv-nth)))
 
-;move
-(local
- (defthm assoc-equal-of-open-input-channels-when-open-input-channel-p
-   (implies (open-input-channel-p channel :byte state)
-            (assoc-equal channel (open-input-channels state)))
-   :hints (("Goal" :in-theory (enable open-input-channel-p open-input-channel-p1)))))
-
 ;; A stobj with a single field, which is a byte array.
 (defstobj byte-array-stobj
   (bytes :type (array (unsigned-byte 8) (0)) ; initially empty
