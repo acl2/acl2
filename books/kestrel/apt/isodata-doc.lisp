@@ -388,11 +388,17 @@
      (xdoc::p
       "Denotes the value that the generated new function must return
        outside of the new domain.")
-     (xdoc::evmac-desc-term
-      :free-vars "@('x1'), ..., @('xn')"
-      :1res nil
-      :guard nil
-      :dont-call "@('old')"))
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use @('nil') or @('(mv nil ... nil)') for single-value
+        and multi-value functions respectively.")
+      (xdoc::li
+       "Any other term. It must be a term that only references logic-mode
+        functions and that includes no free variables other than
+        @('x1'), ..., @('xn'). This term must have no output
+        @(see acl2::stobj)s. This term must not reference @('old').")))
 
     (xdoc::desc-apt-input-new-name)
 
