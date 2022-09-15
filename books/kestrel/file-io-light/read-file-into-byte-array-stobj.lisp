@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; See also read-file-into-byte-array-stobj2.lisp.
+;; See also read-file-into-byte-array-stobj2.lisp, which might be faster.
 
 (include-book "kestrel/utilities/byte-array-stobj" :dir :system)
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
