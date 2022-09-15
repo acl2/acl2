@@ -30,19 +30,14 @@ from the workspace you use for Java or other eclipse projects.
 </p>
 
 <p>
-Note: ACL2 does not understand network share paths. If the default is
-on a network share path, you should \"Map network drive\" in Windows and
-use a path on that drive.
-</p>
-
-<p>
-If you get a welcome window, you can click the \"Go to workbench\" icon
-to get to the Eclipse \"workbench\".
+If you get a welcome window, you can either click on \"Hide\" at the
+top-right corner of the screen or click on the \"X\" button to the right
+of the \"Welcome\" tab at the top of the screen.
 </p>
 
 <p>To familiarize yourself with some Eclipse vocabulary and navigating
 the workbench, we recommend going through
-the <a href=\"http://help.eclipse.org/2022-06/topic/org.eclipse.platform.doc.user/gettingStarted/qs-02a.htm\">Basic
+the <a href=\"http://help.eclipse.org/2022-09/topic/org.eclipse.platform.doc.user/gettingStarted/qs-02a.htm\">Basic
 Tutorial</a> section of the Workbench User Guide.
 </p>
 
@@ -57,6 +52,16 @@ your ACL2 developments and click <b>Finish</b>.
 You could have instead clicked on the
 <icon src=\"res/acl2s/new_persp.gif\" width=\"16\" height=\"16\"/> icon in the top-right corner.
 The new perspective will change the layout of your workbench.
+</p>
+
+<p>
+Note that, on macOS, depending on where the workspace and project
+directories are located, you may get a popup asking you to give Eclipse
+access to one of your folders (typically Documents or Desktop). You should
+respond \"Yes\" if you're comfortable letting Eclipse access these folders
+(so it can access your workspace and project folders), or respond \"No\" and
+move your workspace somewhere that macOS does not require permission to
+access (see <a href=\"https://support.apple.com/guide/mac-help/control-access-to-files-and-folders-on-mac-mchld5a35146/mac\">this Apple help page</a> for more information).
 </p>
 
 <p>
@@ -75,11 +80,10 @@ syntax-based coloring:
 
 @({
 ; Computes the nth fibonacci number (maybe?)
-(defun fib (n)
-  (if (and (integerp n) 
-           (< n 2))
-      (+ (fib (- n 1)) (fib (- n 2)))
-    1))
+(definec fib (n :nat) :nat
+  (match n
+    ((:or 0 1) (+ (fib (1- n)) (fib (- n 2))))
+    (& 1)))
 })
 </p>
 
@@ -89,7 +93,7 @@ Upon creating the new file, an <em>editor</em> has now opened in the
 Around the editor area are <em>views</em>,
 such as the <em>Project Explorer</em> view to the left and <em>Outline</em> view
 to the right.  From their title areas, these can be dragged around, tiled,
-minimized, etc.  You probably also noticed that <tt>(defun fib (n)</tt> showed up in
+minimized, etc.  You probably also noticed that <tt>(definec fib (n :nat) :nat</tt> showed up in
 the Outline view, which you can use to navigate the top-level forms of your
 file.
 </p>
@@ -180,7 +184,7 @@ input, because it's just computation that returns a value.  Another
 example is a \"QUERY\" such as <code>:pe strip-cars</code>, which
 prints out information about the current history or \"world\", in this
 case the definition of the function \"strip-cars\".
-<code>(defun successor (x) (1+ x))</code> is an \"EVENT\" because it
+<code>(definec successor (x :int) :int (1+ x))</code> is an \"EVENT\" because it
 (potentially) changes the history.
 See <a href=\"index.html#guide_classifications\">Command Classifications</a> in
 the guide for more detail.
@@ -202,7 +206,7 @@ you submitted the form that caused the error.
 
 <p>
 <b>Switch back to the .lisp editor</b> where you will discover the
-<code>(defun successor (x) (1+ x))</code> form we submitted in the
+<code>(definec successor (x :int) :int (1+ x))</code> form we submitted in the
 session editor has been \"inserted\" above what we had typed previously!
 Also, that form is \"above the line\" and read-only.  This is
 part of the intrinsic linkage between <tt>somename.lisp</tt> and
@@ -254,8 +258,8 @@ proof that caused ACL2 to reject the definition.
 
 <p>So what was the meaning of the flash of green highlighting?
 Clicking \"advance todo\" moved the \"todo line\" from between
-  <code>(defun successor ...)</code> and <code>(defun fib
-...)</code>  to after <code>(defun fib ...)</code>.  With
+  <code>(definec successor ...)</code> and <code>(definec fib
+...)</code>  to after <code>(definec fib ...)</code>.  With
 at least one form in the \"todo region\", the session started processing
 the first (and only) one.  If you look at the session output, you see
 that the attempt to admit our @('fib') function failed.  The
@@ -267,15 +271,14 @@ the rejected form.
 
 <p>
 <b>Fix our @('fib') definition</b>: the previous one had
-parameters to the <code>&lt;</code> comparison swapped.  ACL2 admits
-this one:
+the bodies of the two match cases swapped.  ACL2 admits
+this definition:
 @({
 ; Computes the nth fibonacci number
-(defun fib (n)
-  (if (and (integerp n) 
-           (< 2 n))
-      (+ (fib (- n 1)) (fib (- n 2)))
-    1))
+(definec fib (n :nat) :nat
+  (match n
+    ((:or 0 1) 1)
+    (& (+ (fib (1- n)) (fib (- n 2))))))
 })
 
 Now clicking \"advance todo\" should result in the definition flashing
@@ -882,132 +885,10 @@ part of the startup output of a session, as below:
 @({
 ========================================================================
 Executing /home/peterd/acl2s.exe
-Starting ACL2 in mode \"Recursion and Induction\"
+Starting ACL2 in mode \"ACL2s\"
 })
 
-<h4>Introductory modes</h4>
-<p>
-These modes are intended for those learning ACL2.  They all modify ACL2
-to print results in a way that is itself \"evalable\":
-</p>
-
-<pre><code>
-ACL2 &gt;VALUE <i>(cons 'a (cons 'b nil))</i>
-(LIST 'A 'B)
-ACL2 &gt;VALUE <i>(cons 1 (cons 2 3))</i>
-(CONS 1 (CONS 2 3))
-ACL2 &gt; 
-</code></pre>
-
-
-<p>
-Here are the introductory modes:
-</p>
-
-<table>
-<thead>
-  <tr>
-    <th>Mode</th>
-    <th>Description</th>
-  </tr>
-</thead>
-<tbody>
-<tr><td><b>Bare Bones</b><br/><em>(introductory)</em></td><td>
-<p>
-Bare Bones is a mode that is used to teach
-the semantics of ACL2 using a minimal subset of built-in functions.
-The mode introduces ACL2 as a
-programming language with contracts (a \"typed\" ACL2) to the
-students, using a \"minimal\" subset of primitive functions.
-For example, in the case of the Booleans, all that is built-in
-are the constants t and nil and the functions if and equal.
-
-Everything else is built on top of that.
-</p>
-</td></tr>
-<tr><td><b>Programming</b><br/><em>(introductory)</em></td><td>
-<p>
-This mode is designed around exploring ACL2 as a programming language of
-untyped, total functions.  The only caveat is that definitions in
-\"Programming\" mode are not checked for termination.  Consequently, logically
-invalid, non-terminating definitions are possible, but this freedom should
-be familiar to programmers.  \"Programming\" mode also removes some
-restrictions and warnings about \"silly\" definitions, and any attempts at
-proof fail.
-</p><p>
-<em>A note for experienced ACL2 users:</em>
-Primarily, this mode uses 
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____PROGRAM\">program</a> mode and
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____SET-GUARD-CHECKING\">guard-checking :none</a>.
-</p>
-</td></tr>
-<tr><td valign=\"top\"><b>Recursion &amp; Induction</b><br/><em>(introductory)</em></td><td>
-<p>
-This mode is intended to be the next step for students comfortable with
-ACL2 programming and writing proofs by hand.  The primary feature of this
-mode is that it only performs induction with explicit hints.  Its
-non-standard <code><b>theorem</b></code> event also disables any generated
-rules by default (like
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____DEFTHMD\"><code>defthmd</code></a>).
-Induction and theory extension are disabled *not* to discourage use, but to
-force the user to give some guidance to ACL2, with
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____HINTS\">hints</a>.
-Automatic generalization and irrelevance elimination are also disabled for
-proofs in this mode--to encourage writing appropriate lemmas.
-</p><p>
-Here's an example script for Recursion &amp; Induction mode:
-@({
-(defun app (x y)
-  (if (consp x)
-    (cons (car x) (app (cdr x) y))
-    y))
-
-(defun rev (x)
-  (if (consp x)
-    (app (rev (cdr x)) (cons (car x) nil))
-    nil))
-
-(theorem rev-app-single 
-  (equal (rev (app l (list v)))
-         (cons v (rev l)))
-  :hints ((\"Goal\" :induct (rev l))))
-
-(theorem rev-rev
-  (implies (true-listp x)
-    (equal (rev (rev x)) x))
-  :hints ((\"Goal\" :induct (rev x)
-                  :in-theory (enable rev-app-single))))
-})
-</p><p>
-Here's the general form of <code>theorem</code>:
-@({
-(theorem &lt;name&gt;
-  &lt;formula&gt;
-  [:hints ((\"Goal\" [:induct &lt;term&gt;]
-                   [:in-theory (enable &lt;name1&gt;
-		                       ...
-				       &lt;nameK&gt;)]))])
-})
-where things in [ ] are optional, etc. etc.
-</p><p> R&amp;I mode also includes CCG termination analysis and, for
-cases in which that fails, is configured to use lexicographic ordering
-for termination proofs.  It also supports specifying Data Definitions
-(<code>:doc defdata</code>) and automated Counterexample Generation
-(<code>:doc cgen</code>).
-</p>
-</td></tr>
-
-</tbody>
-</table>
-
-<h4>Standard/Industrial modes</h4>
-<p>
-In addition to removing prover restrictions present in introductory modes,
-these modes are more friendly to customization.  By default, ACL2s will only
-load <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____ACL2-CUSTOMIZATION\">acl2-customization
-files</a> in non-introductory modes.  (There is a preference controlling this.)
-</p>
-
+<h4>Standard modes</h4>
 <table>
 <thead>
   <tr>
@@ -1018,8 +899,7 @@ files</a> in non-introductory modes.  (There is a preference controlling this.)
 <tbody>
 <tr><td><b>ACL2s</b></td><td>
 <p>
-This mode is full-featured. It is like the Recursion&amp; Induction
-  mode, but with no restrictions on the theorem prover.
+This mode is full-featured and places no restrictions on the theorem prover.
 </p><p>
 This is the recommended mode for a standard ACL2s user.
 </p>
@@ -1073,8 +953,8 @@ order of commonness or importance to the user:
 </thead>
 <tbody>
 <tr><td><b>EVENT</b></td><td>
-These correspond to ACL2
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event forms</a>,
+These correspond to ACL2 
+<a href=\"@(url acl2::embedded-event-form)\">embedded event forms</a>,
 which are those forms that can appear in <a href=\"user_guide.html#guide_book\">books</a>.
 Calls to <tt>defun</tt>, <tt>defmacro</tt>, and <tt>defthm</tt> are examples
 of embedded event forms and <b>EVENT</b>s.
@@ -1090,17 +970,17 @@ A precise definition is that if ACL2 permits <tt>(cons </tt>
 </p><p>
 <em>Advanced Note</em>: some <b>VALUE</b> forms
 have transient side effects, but they have no logical consequence (e.g.
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____CW\">CW</a>
+<a href=\"@(url acl2::cw)\">CW</a>
 and
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____WORMHOLE\">WORMHOLE</a>).
+<a href=\"@(url acl2::wormhole)\">WORMHOLE</a>).
 </p>
 </td></tr>
 <tr><td valign=\"top\"><b>QUERY</b></td><td>
 These are calls to some built-in ACL2 functions that report information about
 the current state but are known not to modify state.  Examples include
-<tt>(<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____PE\">pe</a> 'append)</tt>
+@('(pe 'append)')
 and
-<tt>(<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____PBT\">pbt</a> 0)</tt>.
+@('(pbt 0)').
 </td></tr>
 <tr><td valign=\"top\"><b>UNDO</b><br/>(internal initiation only)</td><td>
 Various UI actions which have to do with \"undoing\" or \"moving the line up\"
@@ -1130,9 +1010,7 @@ violations that would cause input to be staticly ill-formed are:
 <li>wrong number of parameters to a function/macro</li>
 <li>use of an undefined function/macro</li>
 <li>first element of an invocation list is not a symbol or lambda expression</li>
-<li>mismatch between expected and actual
-\"<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____MV\">mv</a></li>
-shape\"
+<li>mismatch between expected and actual @('mv') shape</li>
 </ul>
 </p>
 </td></tr>
