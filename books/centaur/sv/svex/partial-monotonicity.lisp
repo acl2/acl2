@@ -557,11 +557,6 @@
            :hints (("goal" :expand ((:with svex-alist-monotonic-in-terms-of-lookup
                                      (svex-alist-monotonic-p (append x y))))))))
 
-  (local (defthm svex-alist-keys-of-svex-alist-extract
-           (equal (svex-alist-keys (svex-alist-extract keys x))
-                  (svarlist-fix keys))
-           :hints(("Goal" :in-theory (enable svex-alist-extract svex-alist-keys)))))
-
   (local (defthm len-of-svex-env-extract
            (equal (len (svex-env-extract keys x))
                   (len keys))

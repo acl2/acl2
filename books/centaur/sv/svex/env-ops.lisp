@@ -481,7 +481,12 @@ of @(see svex-env-lookup), and they bind the same variables.")
 ; the change, after v8-0, to keep LET expressions on right-hand-sides of
 ; rewrite rules, like this one.
 
-                 (hons-assoc-equal-of-svex-alist-fix))))))
+                 (hons-assoc-equal-of-svex-alist-fix)))))
+
+  (defthm svex-alist-keys-of-svex-alist-extract
+    (equal (svex-alist-keys (svex-alist-extract keys x))
+           (svarlist-fix keys))
+    :hints(("Goal" :in-theory (enable svex-alist-extract svex-alist-keys)))))
 
 
 

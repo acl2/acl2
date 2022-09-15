@@ -315,61 +315,6 @@ properties of the SVTV and its conditional overrides.</li>
 
 
 
-(defprod svar-override-triple
-  ((testvar svar-p)
-   (valvar svar-p)
-   (refvar svar-p))
-  :layout :list)
-
-(fty::deflist svar-override-triplelist :elt-type svar-override-triple :true-listp t)
-
-(define svar->svex-override-triplelist ((x svar-override-triplelist-p)
-                                        (values svex-alist-p))
-  :returns (triples svex-override-triplelist-p)
-  (if (atom x)
-      nil
-    (cons (b* (((svar-override-triple x1) (car x)))
-            (make-svex-override-triple :testvar x1.testvar
-                                       :valvar x1.valvar
-                                       :valexpr (or (svex-fastlookup x1.refvar values)
-                                                    (svex-x))))
-          (svar->svex-override-triplelist (cdr x) values)))
-  ///
-  (defret len-of-<fn>
-    (equal (len triples) (len x))))
-
-
-(defprojection svar-override-triplelist->valvars ((x svar-override-triplelist-p))
-  :returns (valvars svarlist-p)
-  (svar-override-triple->valvar x))
-
-(defprojection svar-override-triplelist->testvars ((x svar-override-triplelist-p))
-  :returns (testvars svarlist-p)
-  (svar-override-triple->testvar x)
-  ///
-  (defthm svex-override-triplelist-testvars-of-svar->svex-override-triplelist
-    (equal (svex-override-triplelist-testvars (svar->svex-override-triplelist x values))
-           (svar-override-triplelist->testvars x))
-    :hints(("Goal" :in-theory (enable svex-override-triplelist-testvars
-                                      svar->svex-override-triplelist)))))
-
-(defprojection svar-override-triplelist->refvars ((x svar-override-triplelist-p))
-  :returns (refvars svarlist-p)
-  (svar-override-triple->refvar x))
-
-(define svar-override-triplelist-lookup-valvar ((valvar svar-p) (table svar-override-triplelist-p))
-  :returns (val (iff (svar-override-triple-p val) val))
-  (b* (((when (atom table)) nil)
-       ((svar-override-triple x1) (svar-override-triple-fix (car table)))
-       ((when (equal (svar-fix valvar) x1.valvar)) x1))
-    (svar-override-triplelist-lookup-valvar valvar (cdr table)))
-  ///
-  (defret lookup-valvar-under-iff
-    (iff val
-         (member-equal (svar-fix valvar)
-                       (svar-override-triplelist->valvars table)))))
-
-
 
 
 (local (defthm consp-hons-assoc-equal
