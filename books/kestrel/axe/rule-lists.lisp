@@ -1507,8 +1507,8 @@
     ;; bvmult-trim-arg2-dag
     bvminus-trim-arg2-axe-all
     bvminus-trim-arg3-axe-all
-    bvplus-trim-arg1-dag-all
-    bvplus-trim-arg2-dag-all
+    bvplus-trim-arg2-axe-all
+    bvplus-trim-arg3-axe-all
     bvuminus-trim-axe-all
     bvnot-trim-axe-all
     bvand-trim-arg1-dag-all
@@ -1538,7 +1538,7 @@
     bvif-trim-arg2-dag
     ;; bvif-trim-arg1-dag-all ; use instead?
     ;; bvif-trim-arg2-dag-all ; use instead?
-    leftrotate32-trim-amt-all))
+    leftrotate32-trim-arg1-axe-all))
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
@@ -1805,7 +1805,7 @@
     slice-of-bvmult-of-expt-gen-constant-version
 ;ceiling-in-terms-of-floor2 ;introduces ;make a bvceil operator? ;removed in favor of the 3 rule?
     ceiling-in-terms-of-floor3
-    floor-when-usb-bind-free-dag
+    floor-of-expt2-becomes-slice-when-bv-axe
     *-becomes-bvmult-8
     ceiling-of-*-same
     <-of-*-of-constant-and-*-of-constant
@@ -2707,8 +2707,8 @@
 ;want this to fire late (after the rule for write of write with the same index, for example)
 (table axe-rule-priorities-table 'bv-array-write-does-nothing 10)
 
-(table axe-rule-priorities-table 'bvplus-trim-arg1-dag -3) ;we should trim before commuting the nest
-(table axe-rule-priorities-table 'bvplus-trim-arg2-dag -3) ;we should trim before commuting the nest
+(table axe-rule-priorities-table 'bvplus-trim-arg2-axe -3) ;we should trim before commuting the nest
+(table axe-rule-priorities-table 'bvplus-trim-arg3-axe -3) ;we should trim before commuting the nest
 (table axe-rule-priorities-table 'bvplus-associative -1) ;trying with this before the commutative rules
 
 ;new:
@@ -2726,8 +2726,8 @@
 ;; (defconst *super-rules*
 ;;   '(
 ;; ;   slice-of-bvplus-low
-;; ;;;    bvplus-trim-arg1-dag
-;;  ;;;   bvplus-trim-arg2-dag
+;; ;;;    bvplus-trim-arg2-axe
+;;  ;;;   bvplus-trim-arg3-axe
 
 ;; ;;;    bv-array-write-trim-value
 ;; ;                                         bv-array-write-of-bvminus-32
