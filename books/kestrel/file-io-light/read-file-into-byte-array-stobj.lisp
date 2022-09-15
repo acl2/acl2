@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also read-file-into-byte-array-stobj2.lisp.
+
 (include-book "kestrel/utilities/byte-array-stobj" :dir :system)
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 ;; (include-book "kestrel/utilities/channel-contents" :dir :system)
@@ -87,7 +89,6 @@
 ;; occurred) or else the bytes field of BYTE-ARRAY-STOBJ contains the contents of FILENAME.
 (defund read-file-into-byte-array-stobj (filename byte-array-stobj state)
   (declare (xargs :guard (stringp filename)
-                  :guard-debug t
                   :stobjs (byte-array-stobj state)))
   ;; Get the file lenght so we know how big to make the array (or I suppose we
   ;; could resize the array when needed):
