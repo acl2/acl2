@@ -86,7 +86,7 @@
 
 (defprod flatnorm-res
   ((assigns svex-alist)
-   (delays svar-map)
+   (delays svex-alist)
    (constraints constraintlist)))
 
 (define flatten-res-vars ((x flatten-res-p))
@@ -234,37 +234,7 @@
   (defret <fn>-subset-of-keys
     (subsetp-equal override-vars (svex-alist-keys assigns))))
 
-(define svtv-delay-alist ((x svar-map-p)
-                          (internal-signals svarlist-p)
-                          (masks svex-mask-alist-p))
-  ;; Converts an alist mapping delayed vars to undelayed vars (or more
-  ;; generally, delay-n+1 to delay-n vars) into an svex-alist where the bound
-  ;; value of each delayed variable is either (1) the corresponding undelayed
-  ;; variable, if it is an internal signal bound in the given alist or (2) the
-  ;; masked value of the undelayed variable, if not (for the case in which the
-  ;; variable is a primary input).
-  :returns (xx svex-alist-p)
-  :measure (len (svar-map-fix x))
-  (b* ((x (svar-map-fix x))
-       ((when (atom x)) nil)
-       ((cons key val) (car x))
-       ((when (member-equal (svar-fix val) (svarlist-fix internal-signals)))
-        (cons (cons key (svex-var val))
-              (svtv-delay-alist (cdr x) internal-signals masks)))
-       (mask (svex-mask-lookup (svex-var key) masks)))
-    (cons (cons key
-                (svcall bit?
-                        (svex-quote (2vec (sparseint-val mask)))
-                        (svex-var val)
-                        (svex-quote (2vec 0))))
-          (svtv-delay-alist (cdr x) internal-signals masks)))
-  ///
-  (defret svex-alist-keys-of-<fn>
-    (equal (svex-alist-keys xx)
-           (alist-keys (svar-map-fix x)))
-    :hints(("Goal" :in-theory (enable alist-keys svar-map-fix svex-alist-keys))))
 
-  (defcong set-equiv equal (svtv-delay-alist x internal-signals masks) 2))
        
 
 (defprod phase-fsm-config
@@ -285,9 +255,7 @@
                         (svtv-assigns-override-vars flatnorm.assigns config)))
        ((acl2::with-fast override-alist))
        (overridden-assigns (svex-alist-compose flatnorm.assigns override-alist))
-       (masks (svexlist-mask-alist (svex-alist-vals flatnorm.assigns)))
-       (overridden-delays (svex-alist-compose (svtv-delay-alist (fast-alist-clean flatnorm.delays)
-                                                                (svex-alist-keys flatnorm.assigns) masks)
+       (overridden-delays (svex-alist-compose (fast-alist-clean flatnorm.delays)
                                               override-alist)))
     (mv overridden-assigns overridden-delays))
   ///
@@ -297,7 +265,7 @@
 
   (defret svex-alist-keys-of-<fn>-delays
     (equal (svex-alist-keys delay-alist)
-           (alist-keys (fast-alist-clean (flatnorm-res->delays flatnorm))))))
+           (svex-alist-keys (fast-alist-clean (flatnorm-res->delays flatnorm))))))
 
 (local (defthm append-subset-under-set-equiv
            (implies (subsetp a b)
@@ -339,19 +307,6 @@
 
 
 
-(local
- (defthm svex-compose-delays-in-terms-of-svtv-delay-alist
-   (equal (svex-compose-delays delays updates masks)
-          (svex-alist-compose
-           (svtv-delay-alist delays (svex-alist-keys updates) masks)
-           updates))
-   :hints(("Goal" :in-theory (enable svex-compose-delays
-                                     svtv-delay-alist
-                                     svex-alist-compose
-                                     svex-acons
-                                     svex-compose
-                                     svexlist-compose)))))
-
 (defprod phase-fsm-params
   ((scc-selfcompose-limit maybe-natp
                           "Limit on the number of times to self-compose a set
@@ -382,8 +337,7 @@ to a small number is usually practical if there is such a problem.")
                                           :rewrite params.rewrite
                                           :scc-selfcompose-limit params.scc-selfcompose-limit))))
        (updates2 (fast-alist-fork updates1 (make-fast-alist (svex-alist-compose override-alist updates1))))
-       (masks (svexlist-mask-alist (svex-alist-vals flatnorm.assigns)))
-       (nextstates (svex-compose-delays (fast-alist-clean flatnorm.delays) updates2 masks)))
+       (nextstates (svex-alist-compose (fast-alist-clean flatnorm.delays) updates2)))
     (fast-alist-free updates2)
     (make-base-fsm :values updates1 :nextstate nextstates))
   ///
@@ -508,8 +462,7 @@ to a small number is usually practical if there is such a problem.")
                     (svex-assigns-compose overridden-assigns :rewrite rewrite
                                           :scc-selfcompose-limit selfcompose-limit))))
        (updates2 (svex-alist-compose override-alist updates1))
-       (masks (svexlist-mask-alist (svex-alist-vals updates2)))
-       (nextstates (with-fast-alist updates2 (svex-compose-delays delays updates2 masks))))
+       (nextstates (with-fast-alist updates2 (svex-alist-compose delays updates2))))
     (mv nil
         (make-base-fsm :values updates1
                        :nextstate (fast-alist-clean nextstates))

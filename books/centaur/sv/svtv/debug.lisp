@@ -273,7 +273,7 @@
        `((design     :type (satisfies design-p)           :initially ,(make-design :top ""))
          (modidx     :type (integer 0 *)                  :initially 0)
          (assigns    :type (satisfies svex-alist-p)       :initially nil)
-         (delays     :type (satisfies svar-map-p)         :initially nil)
+         (delays     :type (satisfies svex-alist-p)       :initially nil)
          (updates    :type (satisfies svex-alist-p)       :initially nil)
          (nextstates :type (satisfies svex-alist-p)       :initially nil)
          (svtv       :type (satisfies svtv-p)             :initially ,(make-svtv :nphases 0))

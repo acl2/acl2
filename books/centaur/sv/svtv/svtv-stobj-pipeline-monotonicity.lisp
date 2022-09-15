@@ -276,7 +276,8 @@
   (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
                 (svtv-data-obj->flatnorm-validp obj)
                 (svtv-data-obj->flatten-validp obj))
-           (svarlist-addr-p (svar-map-vars (flatnorm-res->delays (svtv-data-obj->flatnorm obj)))))
+           (and (svarlist-addr-p (svex-alist-vars (flatnorm-res->delays (svtv-data-obj->flatnorm obj))))
+                (svarlist-addr-p (svex-alist-keys (flatnorm-res->delays (svtv-data-obj->flatnorm obj))))))
   :hints (("Goal" :use ((:instance svtv-data$ap-implies-flatnorm-okp
                          (x (svtv-data-obj-to-stobj-logic obj)) )
                         (:instance svtv-data$ap-implies-flatten-okp
@@ -434,6 +435,7 @@
 
 
 
+
 (defthm svtv-data-obj-ok-implies-svex-alist-partial-monotonic-of-phase-fsm-values
   (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
                 (svtv-data-obj->flatnorm-validp obj)
@@ -484,13 +486,22 @@
          :hints(("Goal" :in-theory (e/d (acl2::set-unequal-witness-correct)
                                         (fast-alist-clean))))))
 
+(local (defthm svex-alist-keys-of-fast-alist-clean-under-set-equiv
+         (set-equiv (svex-alist-keys (fast-alist-clean x))
+                    (svex-alist-keys x))
+         :hints(("Goal" :in-theory (e/d (acl2::set-unequal-witness-correct
+                                         svex-lookup)
+                                        (fast-alist-clean))))))
 
 
-(local (defthm svarlist-addr-p-of-alist-keys-when-svarlist-addr-p-of-svar-map-vars
-         (implies (and (svar-map-p x)
-                       (svarlist-addr-p (svar-map-vars x)))
-                  (svarlist-addr-p (alist-keys x)))
-         :hints(("Goal" :in-theory (enable alist-keys svar-map-vars)))))
+
+;; (local (defthm svarlist-addr-p-of-alist-keys-when-svarlist-addr-p-of-svar-map-vars
+;;          (implies (and (svar-map-p x)
+;;                        (svarlist-addr-p (svar-map-vars x)))
+;;                   (svarlist-addr-p (alist-keys x)))
+;;          :hints(("Goal" :in-theory (enable alist-keys svar-map-vars)))))
+
+
 
 (defthm svtv-data-obj-ok-implies-svarlist-addr-keys-of-phase-fsm-nextstate
   (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
@@ -561,28 +572,10 @@
 
 
 
-(defthm svex-monotonic-p-of-delay-alist-call
-  (svex-monotonic-p (svcall bit? (svex-quote mask) (svex-var v) 0))
-  :hints(("Goal" :in-theory (enable svex-monotonic-p
-                                    svex-apply
-                                    svex-eval-of-svex-var))))
-
-
-(defthm svex-alist-monotonic-p-of-svtv-delay-alist
-  (svex-alist-monotonic-p (svtv-delay-alist x internals masks))
-  :hints(("Goal" :in-theory (enable svtv-delay-alist))))
 
 
 
 
-(defthm svtv-flatnorm-apply-overrides-delays-monotonic
-  (implies (svarlist-non-override-test-p (svex-alist-keys (flatnorm-res->assigns flatnorm)))
-           (svex-alist-partial-monotonic
-            (svarlist->override-tests
-             (svtv-assigns-override-vars (flatnorm-res->assigns flatnorm) config))
-            (mv-nth 1 (svtv-flatnorm-apply-overrides flatnorm config))))
-  :hints(("Goal" :in-theory (e/d (svtv-flatnorm-apply-overrides)
-                                 (fast-alist-clean)))))
 
 
 (local
@@ -595,6 +588,70 @@
    :hints (("goal" :use ((:instance svex-alist-compose-preserves-svex-alist-partial-monotonic
                           (params2 params)))))))
 
+(defthm svex-looup-of-fast-alist-clean
+  (Equal (svex-lookup k (fast-alist-clean x))
+         (svex-lookup k x))
+  :hints(("Goal" :in-theory (e/d (svex-lookup) (fast-alist-clean)))))
+
+
+(defthm svex-alist-monotonic-p-of-fast-alist-clean
+  (implies (svex-alist-monotonic-p x)
+           (svex-alist-monotonic-p (fast-alist-clean x)))
+  :hints(("Goal" :expand ((:with svex-alist-monotonic-in-terms-of-lookup
+                           (svex-alist-monotonic-p (fast-alist-clean x))))
+          :in-theory (e/d ()
+                          (fast-alist-clean)))))
+
+(defthm svtv-flatnorm-apply-overrides-delays-monotonic
+  (implies (and (svarlist-non-override-test-p (svex-alist-keys (flatnorm-res->assigns flatnorm)))
+                (svex-alist-monotonic-p (flatnorm-res->delays flatnorm)))
+           (svex-alist-partial-monotonic
+            (svarlist->override-tests
+             (svtv-assigns-override-vars (flatnorm-res->assigns flatnorm) config))
+            (mv-nth 1 (svtv-flatnorm-apply-overrides flatnorm config))))
+  :hints(("Goal" :in-theory (e/d (svtv-flatnorm-apply-overrides)
+                                 (fast-alist-clean)))))
+
+
+
+(local
+ (defthm svex-alist-compose-preserves-partial-monotonic-same-params
+   (implies (and (svex-alist-partial-monotonic params x)
+                 (svex-alist-partial-monotonic params a)
+                 (svex-compose-alist-selfbound-keys-p params a))
+            (svex-alist-partial-monotonic params (svex-alist-compose x a)))
+   :hints (("goal" :use ((:instance svex-alist-compose-preserves-svex-alist-partial-monotonic
+                          (params2 params)))))))
+
+(local (defthm svex-monotonic-p-of-zerox-var
+         (svex-monotonic-p (svcall zerox (svex-quote w) (svex-var name)))
+         :hints(("Goal" :in-theory (enable svex-monotonic-p
+                                           svex-apply svex-eval)))))
+
+(local
+ (defthm svex-alist-monotonic-p-of-svar-map-truncate-by-var-decls
+   (implies (svex-alist-monotonic-p acc)
+            (svex-alist-monotonic-p (svar-map-truncate-by-var-decls map decls acc)))
+   :hints(("Goal" :in-theory (enable svar-map-truncate-by-var-decls)))))
+
+(defthm svex-alist-monotonic-p-nil
+  (svex-alist-monotonic-p nil)
+  :hints(("Goal" :in-theory (enable svex-alist-monotonic-p))))
+
+(local
+ (defret svex-alist-monotonic-p-of-svtv-normalize-assigns-delays
+   (svex-alist-monotonic-p (flatnorm-res->delays res))
+   :hints(("Goal" :in-theory (e/d (svtv-normalize-assigns
+                                   svex-normalize-assigns)
+                                  (fast-alist-clean))
+           :do-not-induct t))
+   :fn svtv-normalize-assigns))
+
+(defthm delays-monotonic-of-svtv-data-obj->flatnorm
+  (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                (svtv-data-obj->flatnorm-validp x)
+                (svtv-data-obj->flatten-validp x))
+           (svex-alist-monotonic-p (flatnorm-res->delays (svtv-data-obj->flatnorm x)))))
 
 
 (defthm svtv-data-obj-ok-implies-svex-alist-partial-monotonic-of-phase-fsm-nextstate
@@ -619,16 +676,6 @@
                            (phase-fsm-validp-of-svtv-data-obj
                             phase-fsm-composition-p-implies-netevalcomp-p
                             flatnorm-of-svtv-data-obj)))))
-
-
-(local
- (defthm svex-alist-compose-preserves-partial-monotonic-same-params
-   (implies (and (svex-alist-partial-monotonic params x)
-                 (svex-alist-partial-monotonic params a)
-                 (svex-compose-alist-selfbound-keys-p params a))
-            (svex-alist-partial-monotonic params (svex-alist-compose x a)))
-   :hints (("goal" :use ((:instance svex-alist-compose-preserves-svex-alist-partial-monotonic
-                          (params2 params)))))))
 
 (defthm svex-alist-compose-rw-under-svex-alist-eval-equiv
   (svex-alist-eval-equiv (svex-alist-compose-rw x subst)
