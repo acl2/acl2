@@ -1467,11 +1467,11 @@
                ;; ;; doing this earlier may interfere with bvcat reconstruction:
                (
                 ;;  ;; would be better to use these:
-                acl2::bvcat-trim-arg1-dag ;does not trim bvplus, etc
-                acl2::bvcat-trim-arg2-dag ;does not trim bvplus, etc
-                ;;  acl2::bvcat-trim-arg1-dag-all
-                ;;  acl2::bvcat-trim-arg2-dag-all
-                ;;  acl2::getbit-trim-dag-all-gen
+                acl2::bvcat-trim-arg2-axe ;does not trim bvplus, etc
+                acl2::bvcat-trim-arg4-axe ;does not trim bvplus, etc
+                ;;  acl2::bvcat-trim-arg2-axe-all
+                ;;  acl2::bvcat-trim-arg4-axe-all
+                ;;  acl2::getbit-trim-axe-all-gen
                 acl2::bvcat-equal-bvcat
                 acl2::bitxor-commutative-2-increasing-axe
                 acl2::bitxor-commutative-increasing-axe

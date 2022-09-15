@@ -1499,18 +1499,18 @@
 (defun trim-rules ()
   (declare (xargs :guard t))
   '(;; -all and -non-all versions?
-    slice-trim-dag-all ;new
-    getbit-trim-dag-all  ;new
+    slice-trim-axe-all ;new
+    getbit-trim-axe-all  ;new
     bvmult-trim-arg1-dag-all  ;seemed to need this for rc6 decrypt
     bvmult-trim-arg2-dag-all  ;seemed to need this for rc6 decrypt
     ;; bvmult-trim-arg1-dag
     ;; bvmult-trim-arg2-dag
-    bvminus-trim-arg1-dag-all
-    bvminus-trim-arg2-dag-all
+    bvminus-trim-arg2-axe-all
+    bvminus-trim-arg3-axe-all
     bvplus-trim-arg1-dag-all
     bvplus-trim-arg2-dag-all
-    bvuminus-trim-dag-all
-    bvnot-trim-dag-all
+    bvuminus-trim-axe-all
+    bvnot-trim-axe-all
     bvand-trim-arg1-dag-all
     bvand-trim-arg2-dag-all
     ;; bvand-trim-arg1-dag
@@ -1523,17 +1523,17 @@
     bvxor-trim-arg2-dag
     ;; bvxor-trim-arg1-dag-all ; use instead?
     ;; bvxor-trim-arg2-dag-all ; use instead?
-    bitnot-trim-dag-all
+    bitnot-trim-axe-all
     bitxor-trim-arg1-dag-all
     bitxor-trim-arg2-dag-all
     bitor-trim-arg1-dag-all
     bitor-trim-arg2-dag-all
     bitand-trim-arg1-dag-all
     bitand-trim-arg2-dag-all
-    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
-    bvcat-trim-arg1-dag-all
-    ;; bvcat-trim-arg1-dag
-    ;; bvcat-trim-arg2-dag
+    bvcat-trim-arg4-axe-all ;hope these are okay; seemed key for rc2 and maybe other proofs
+    bvcat-trim-arg2-axe-all
+    ;; bvcat-trim-arg2-axe
+    ;; bvcat-trim-arg4-axe
     bvif-trim-arg1-dag
     bvif-trim-arg2-dag
     ;; bvif-trim-arg1-dag-all ; use instead?
@@ -1579,8 +1579,8 @@
 
 (defun all-trim-rules ()
   (declare (xargs :guard t))
-  (append '(;bvcat-trim-arg1-dag-all
-;bvcat-trim-arg2-dag-all
+  (append '(;;bvcat-trim-arg2-axe-all
+            ;;bvcat-trim-arg4-axe-all
             )
           (trim-rules)))
 
