@@ -77,7 +77,7 @@ occurring.
   </li>
   <li>Run @('mkdir C:\\wslDistroStorage')</li>
   <li>Run @('wsl --import acl2s C:\\wslDistroStorage\\acl2s Downloads\\distro.tar.gz')</li>
-  <li>Run @('wsl -d acl2s') and confirm that the output is something like @({cs2800@YOURCOMPUTER:/mnt/c/Users/yourusername}). If so, you can close the terminal.</li>
+  <li>Run @('wsl -d acl2s') and confirm that the output is something like @({cs2800@YOURCOMPUTER:/mnt/c/Users/yourusername}). If so, you can close the terminal. Note that this may take some time and you may see some errors about @('DISPLAY') first.</li>
   </ol>
 </li>
 <li>Install Xming and launch it
@@ -109,8 +109,8 @@ occurring.
 </li>
 <li>Run Eclipse
 <ol>
-  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/run-acl2s.bat\">run-acl2s.bat</a> and save it somewhere memorable.</li>
-  <li>Double click on @('run-acl2s.bat') to launch a WSL terminal and Eclipse.</li>
+  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/run-acl2s.bat\">run-acl2s.bat</a> and save it somewhere memorable. Note that depending on your browser, you might get a warning when you download this file, but you should click \"Keep\" or \"Download Anyways\".</li>
+  <li>Double click on @('run-acl2s.bat') to launch a WSL terminal and Eclipse. A window titled \"Windows protected your PC\" may appear. If so, click on \"More info\" and then \"Run anyways\" at the bottom of the window.</li>
   <li>When Eclipse asks for a workspace, enter @('/mnt/c/<FOLDER>'),
   where @('<FOLDER>') should be replaced with the name of the folder
   that you just created.</li>
