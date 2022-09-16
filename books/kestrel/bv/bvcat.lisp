@@ -23,7 +23,7 @@
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/plus-and-minus"))
 (local (include-book "../arithmetic-light/plus"))
-(local (include-book "../arithmetic-light/times-and-divides"))
+(local (include-book "../arithmetic-light/times-and-divide"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/floor")) ;drop?

@@ -52,6 +52,7 @@
 (include-book "find-index")
 (include-book "firstn-def")
 (include-book "firstn")
+(include-book "repeat-def")
 (include-book "repeat")
 (include-book "reverse-list-def")
 (include-book "reverse-list")

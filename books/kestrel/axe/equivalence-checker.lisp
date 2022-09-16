@@ -88,7 +88,6 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
-(local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 
 (local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
@@ -799,7 +798,7 @@
         (prog2$ (cw "Reusing pre-existing defthm ~x0.~%" desired-name)
                 (mv desired-name state))
       (let* ((actual-name (packnew desired-name))
-             (state (submit-event `(defthm ,actual-name ,body :hints ,hints) state))) ;fixme what about the otf-flg?
+             (state (submit-event-brief `(defthm ,actual-name ,body :hints ,hints) state))) ;fixme what about the otf-flg?
         (mv actual-name state)))))
 
 (defun drop-unmentioned-vars-and-their-terms (vars terms mentioned-vars vars-acc terms-acc)
@@ -5582,7 +5581,7 @@
          (fn-body (fn-body fn t (w state)))
          (fn-formals (fn-formals fn (w state)))
          (expanded-expr (sublis-var-simple (pairlis$ fn-formals (fargs expr)) fn-body))
-         (state (submit-event `(defthm ,defthm-name
+         (state (submit-event-brief `(defthm ,defthm-name
                                  (equal ,expr
                                         ,expanded-expr)
                                  :rule-classes nil
@@ -6642,7 +6641,7 @@
         (prog2$ (cw "Reusing pre-existing defun ~x0.~%" desired-name)
                 (mv desired-name state))
       (let* ((actual-name (packnew desired-name))
-             (state (submit-event `(skip-proofs (defun ,actual-name ,formals (declare (xargs :normalize nil)) ,body)) state))) ;fixme what about the otf-flg?
+             (state (submit-event-brief `(skip-proofs (defun ,actual-name ,formals (declare (xargs :normalize nil)) ,body)) state))) ;fixme what about the otf-flg?
         (mv actual-name state)))))
 
 ;returns (mv new-fn-name alias-lemma-name alias-base-case-lemma-name state)
@@ -6856,7 +6855,7 @@
                     (split-tail-function-helper fn limited-fn formals reps-formal exit-test-expr update-expr-list state)
                     (let* ((split-lemma-name (packnew fn '-split-lemma))
                            (state
-                            (submit-event
+                            (submit-event-brief
                              ;; split-amount is a free var
                              `(defthm ,split-lemma-name
                                  (equal (,fn ,@formals)
@@ -7043,7 +7042,7 @@
                                                   t
                                                   state)
                     (let* ((expander-lemma-name (packnew fn '-one-last-step-expander))
-                           (state (submit-event `(defthm ,expander-lemma-name
+                           (state (submit-event-brief `(defthm ,expander-lemma-name
                                                      (equal (,fn ,@formals)
                                                             (if ,exit-test-expr
                                                                 ,base-case-expr
@@ -8131,7 +8130,7 @@
          (top-level-conjuncts (get-boolands-and-conjuncts (+ -1 dag-len) dag-array-name dag-array nil))
          ;; likewise, if something is a negated top-level conjunct (or the negation of such, etc.) don't consider it
          ;; this removes conjuncts that are calls of not, but we never split on a call of not anyway:
-         (nodes-not-to-consider-splitting-on (strip-nots-lst top-level-conjuncts dag-array-name dag-array dag-len))
+         (nodes-not-to-consider-splitting-on (strip-all-nots-lst top-level-conjuncts dag-array-name dag-array dag-len))
 ;fixme could sort nodes-not-to-consider-splitting-on and do something faster
          (candidates (set-difference$ candidates nodes-not-to-consider-splitting-on))
          (- (cw "(Split candidates: ~x0)~%" candidates)))
@@ -9466,7 +9465,7 @@
                                             (,fn ,@(replace-in-terms2 all-formals
                                                                       (acons formal `(make-tuple 0 ,tuple-length ,formal) nil)))))
                             :hints (("Goal" :in-theory (union-theories '(MAKE-TUPLE-DROPPER) (theory 'minimal-theory))))))
-                 (state (submit-event defthm state)))
+                 (state (submit-event-brief defthm state)))
             (make-rules-to-expose-tuple-elements-for-formals (rest formals)
                                                              (rest args)
                                                              (+ 1 formal-num)
@@ -9559,7 +9558,7 @@
                                         state result-array-stobj)
         (if erp
             (mv erp nil state result-array-stobj)
-          (let ((state (submit-event `(defthm ,defthm-name
+          (let ((state (submit-event-brief `(defthm ,defthm-name
                                         (equal ,expr
                                                ;;pull out this pattern?
                                                (dag-val-with-axe-evaluator ',dag
@@ -9975,7 +9974,7 @@
                                              increment-dags-defthm-name interpreted-function-alist state))
            (state (prove-embedded-dags-equal exit-test-dag new-exit-test-dag `((equal ,duplicate-numcdrs-formal ,numcdrs-formal))
                                              exit-test-dags-agree-defthm-name interpreted-function-alist state))
-           (state (submit-event `(defthm ,exit-test-defthm-name
+           (state (submit-event-brief `(defthm ,exit-test-defthm-name
                                    (implies (equal ,numcdrs-formal ,duplicate-numcdrs-formal)
                                             (iff ,exit-test-expr
                                                  ,new-exit-test-expr))
@@ -9986,7 +9985,7 @@
                                 state))
            (state (prove-embedded-dags-equal base-case-dag new-base-case-dag `((equal ,duplicate-numcdrs-formal ,numcdrs-formal))
                                              base-case-dags-agree-defthm-name interpreted-function-alist state))
-           (state (submit-event `(defthm ,base-case-defthm-name
+           (state (submit-event-brief `(defthm ,base-case-defthm-name
                                    (implies (equal ,numcdrs-formal ,duplicate-numcdrs-formal)
                                             (equal ,base-case-expr
                                                    ,new-base-case-expr))
@@ -10480,7 +10479,7 @@
           (mv erp nil nil state result-array-stobj)
         (let* ((simplified-conclusion (dag-to-term simplified-dag))
                (defthm-name (packnew rule-base conclusion-number))
-               (state (submit-event `(defthm ,defthm-name
+               (state (submit-event-brief `(defthm ,defthm-name
                                        (implies ,(make-conjunction-from-list hyps)
                                                 (equal ,conclusion
                                                        ,simplified-conclusion))
@@ -10613,7 +10612,7 @@
                   :rule-classes nil
                   :hints (("Goal" :in-theory  (union-theories (theory 'minimal-theory)
                                                               '(,connection-relation-name))))))
-       (state (submit-event defthm state))
+       (state (submit-event-brief defthm state))
        (- (cw "(simplifying the update for ~x0: ~x1~%" new-formal updated-new-formal-in-terms-of-new-formals))
        (fns-to-open (top-fns-of-terms ;;had strip-cars but that crashed on a variable
                      (strip-cdrs old-formal-update-expr-alist)))
@@ -10658,7 +10657,7 @@
                        (formals-mentioned (get-vars-from-term update-expr))
                        (ignored-formals (set-difference-eq possible-formals formals-mentioned)) ;fixme just drop some formals? might affect the callers
 ;fixme don't bother to make the defun if the expression is small?
-                       (state (submit-event `(defun ,new-update-fn (,@possible-formals)
+                       (state (submit-event-brief `(defun ,new-update-fn (,@possible-formals)
                                                (declare (xargs :normalize nil))
                                                ,@(and ignored-formals `((declare (ignore ,@ignored-formals))))
                                                ,update-expr) state))
@@ -10834,7 +10833,7 @@
        (- (cw "Connection equalities: ~x0~%" connection-equalities))
        (connection-relation-name (packnew fn '-and- new-fn '-connection-relation))
        (connection-relation-formals (append formals new-formals old-vars-in-explanations))
-       (state (submit-event
+       (state (submit-event-brief
                `(defun ,connection-relation-name (,@connection-relation-formals)
                   (declare (xargs :normalize nil))
                   (and ,@connection-equalities))
@@ -10845,7 +10844,7 @@
 
        ;;Proves that the new-exit-test-expr is right:
        (exit-tests-equal-helper-1-lemma-name (packnew fn '-exit-tests-equal-helper-1))
-       (state (submit-event `(defthm ,exit-tests-equal-helper-1-lemma-name
+       (state (submit-event-brief `(defthm ,exit-tests-equal-helper-1-lemma-name
                                (implies (and (,invariant-name ,@formals-in-invar ,@old-vars-in-invar) ;is this needed?
                                              (,connection-relation-name ,@connection-relation-formals))
                                         (iff ,exit-test-expr
@@ -11468,7 +11467,7 @@
           ;;now we just put in a skip-proofs and so trust that the
           ;;simplification works (seems no less safe than trusting the
           ;;prover...)
-          (let* ((state (submit-event `(skip-proofs
+          (let* ((state (submit-event-brief `(skip-proofs
                                         (defthm ,defthm-name
                                           (implies (and ,@facts-to-assume)
                                                    (equal ,fact
@@ -11554,7 +11553,7 @@
                                 (cons new-invar invar-set-without-the-improved-invar)))
                (new-defthm-name (packnew defthm-base-name defthm-count))
                ;;prove that the invariant call is equivalent to the new invariant set:
-               (state (submit-event `(defthm ,new-defthm-name
+               (state (submit-event-brief `(defthm ,new-defthm-name
                                        (iff (,invariant-name ,@invariant-formals)
                                             (and ,@new-invar-set
                                                  ,@unchanged-component-invars))
@@ -11581,7 +11580,7 @@
           (let* ((defthm-base-name (packnew invariant-name '-improvement-lemma-))
                  (first-defthm-name (packnew defthm-base-name 0))
                  ;; the first theorem just says that the call of the invariant is equal to its body (trivial)
-                 (state (submit-event `(defthm ,first-defthm-name
+                 (state (submit-event-brief `(defthm ,first-defthm-name
                                          ;;iff seemed necessary here (not sure why equal didn't work)
                                          (iff (,invariant-name ,@invariant-formals)
                                               (and ,@regular-invars
@@ -11840,7 +11839,7 @@
        (expanded-exit-test-theorem-name (packnew fn '-expanded-exit-test-theorem))
        (state
         ;;this is trival if exit-test-is-a-simple-callp is nil.  otherwise it follows from the expansion of the function (ffixme is :normalize an issue?):
-        (submit-event `(defthm ,expanded-exit-test-theorem-name
+        (submit-event-brief `(defthm ,expanded-exit-test-theorem-name
                          (iff ,exit-test-expr
                               ,expanded-exit-test-expr)
                          :hints (("goal" :in-theory (union-theories (theory 'minimal-theory)
@@ -11875,7 +11874,7 @@
        (simplified-expanded-exit-test-theorem-name (packnew fn '-simplified-expanded-exit-test-theorem))
        ;;make sure to include here anything we used above to simplify the exit test (fffixme do the simplification and the proof simultaneously?):
        (state
-        (submit-event `(defthm ,simplified-expanded-exit-test-theorem-name
+        (submit-event-brief `(defthm ,simplified-expanded-exit-test-theorem-name
                          (implies (,better-invariant-name ,@better-invariant-formals)
                                   (iff ,expanded-exit-test-expr
                                        ,simplified-expanded-exit-test-expr))
@@ -12378,7 +12377,7 @@
                      (mv nil t rand state result-array-stobj))
            (prog2$ (cw "Making the theorem ~x0:~%" defthm-name)
                    (let ((state
-                          (submit-event
+                          (submit-event-brief
                            ;;where should this go?  should we use a clause processor?
                            ;;ffixme perhaps miter-and-merge should submit the defthm??
                            ;;skip-proofs here are bad?
@@ -14196,7 +14195,7 @@
                               (connection-theorem-helper3-name (packnew connection-theorem-name '-helper3))
                               (connection-theorem-helper4-name (packnew connection-theorem-name '-helper4))
                               (induction-fn-name (packnew 'joint-induct- fn1 '-and- fn2))
-                              (state (submit-event (make-induction-function fn1 fn2 induction-fn-name state) state))
+                              (state (submit-event-brief (make-induction-function fn1 fn2 induction-fn-name state) state))
                               (proved-final-claim-implies-rv-predicate-theorem-name (packnew proved-final-claim-name '-implies- rv-predicate-name))
                               (state (submit-events
                                       `((defun ,rv-predicate-name ,rv-predicate-formals

@@ -35,7 +35,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
 (defthm group-becomes-group2
   (implies (and (equal 0 (mod (len x) n))
@@ -278,8 +278,7 @@
                             len-of-cdr
                             consp-of-cdr
                             EQUAL-OF-0-AND-MOD)
-                           (DIVISIBILITY-IN-TERMS-OF-FLOOR
-                            TAKE-OF-CDR-BECOMES-SUBRANGE
+                           (TAKE-OF-CDR-BECOMES-SUBRANGE
                             NTH-OF-CDR
                             ;; list::NTH-OF-CDR
                             ;; LIST::EQUAL-APPEND-REDUCTION!

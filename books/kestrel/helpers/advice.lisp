@@ -64,7 +64,6 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
-(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
@@ -1403,14 +1402,15 @@
         (if (member-eq (car most-recent-failed-theorem) '(thm rule))
             (mv :thm ; no name
                 (cadr most-recent-failed-theorem)
-                (assoc-eq :hints (cddr most-recent-failed-theorem))
-                (assoc-eq :otf-flg (cddr most-recent-failed-theorem)))
+                (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem)))
+                (cadr (assoc-keyword :otf-flg (cddr most-recent-failed-theorem))))
           ;; Must be a defthm, etc:
           (mv (cadr most-recent-failed-theorem)
               (caddr most-recent-failed-theorem)
-              (assoc-eq :hints (cdddr most-recent-failed-theorem))
-              (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
+              (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
+              (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
+       (- (and verbose (cw "Original hints were:~%~X01:~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        (raw-checkpoint-clauses (checkpoint-list ;-pretty
                                 t               ; todo: consider non-top

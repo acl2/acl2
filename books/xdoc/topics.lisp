@@ -667,7 +667,10 @@ As might be expected:</p>
 <li>If the target directory does not exist, it will be created.</li>
 
 <li>If the target directory already exists, it <color rgb=\"#ff0000\">will be
-overwritten</color>.</li>
+overwritten</color>.  (<b><color rgb=\"#ff0000\">WARNING</color></b>: So, the
+target directory should not be one containing files that you want to keep, such
+as the directory containing the file that invokes @('xdoc::save'), or its
+parent directory (or its parent, etc.).)</li>
 
 </ul>
 

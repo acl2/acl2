@@ -1725,6 +1725,53 @@
              (make-blocked-mbt new)
            new))))
 
+#!acl2
+(defun assume-true-false-hlp (term rrec wrld state)
+
+; This function is an interface to ACL2 source function
+; assume-true-false-heavy-linearp.
+
+  (declare (xargs :stobjs state))
+  (b* (((mv term notp)
+        (cond ((and (ffn-symb-p term 'if)
+                    (equal (fargn term 2) *nil*)
+                    (equal (fargn term 3) *t*))
+               (mv (fargn term  1) t))
+              (t (mv term nil))))
+       (rcnst (access rewrite$-record rrec :rcnst))
+       (type-alist (access rewrite$-record rrec :type-alist))
+       (pot-lst (access rewrite$-record rrec :pot-lst))
+       (gstack (access rewrite$-record rrec :gstack)))
+    (mv-let (step-limit must-be-true must-be-false
+                        true-type-alist false-type-alist
+                        true-pot-lst false-pot-lst
+                        ts-ttree)
+            (assume-true-false-heavy-linearp
+             term
+             (rewrite-stack-limit wrld) ; rdepth
+             *default-step-limit*
+             type-alist
+             '?           ; ignored obj
+             *geneqv-iff* ; geneqv ignored by add-terms-and-lemmas
+             nil          ; pequiv-info ignored by add-terms-and-lemmas
+             wrld state
+             nil ; fnstack = nil in rewrite$*
+             nil ; ancestors = nil in rewrite$*
+             (access rewrite-constant rcnst
+                     :backchain-limit-rw)
+             pot-lst
+             rcnst
+             gstack
+             nil ; ttree ignored by add-terms-and-lemmas
+             )
+            (declare (ignore step-limit))
+            (cond (notp (mv must-be-false must-be-true
+                            false-type-alist true-type-alist
+                            false-pot-lst true-pot-lst ts-ttree))
+                  (t    (mv must-be-true must-be-false
+                            true-type-alist false-type-alist
+                            true-pot-lst false-pot-lst ts-ttree))))))
+
 (defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld
                                          state)
 
@@ -1739,25 +1786,17 @@
      (b* (((er (cons tst2 runes-tst))
            (rewrite1 tst alist *geneqv-iff* rrec ctx wrld state))
           (runes (union-equal? runes-tst runes))
-          (rcnst (access acl2::rewrite$-record rrec :rcnst))
-          (ens (access acl2::rewrite-constant rcnst
-                       :current-enabled-structure))
-          (ok-to-force (acl2::ok-to-force rcnst))
-          (type-alist (access acl2::rewrite$-record rrec :type-alist))
-          (pot-lst (access acl2::rewrite$-record rrec :pot-lst))
           ((mv must-be-true
                must-be-false
                true-type-alist
                false-type-alist
+               true-pot-lst
+               false-pot-lst
                ts-ttree)
-           (acl2::assume-true-false tst2 nil ok-to-force nil type-alist ens
-                                    wrld pot-lst nil nil)))
-       (cond (must-be-true
-              (rewrite-augmented-term-rec tbr alist geneqv rrec
-                                          (all-runes-in-ttree ts-ttree runes)
-                                          ctx wrld state))
-             (must-be-false
-              (rewrite-augmented-term-rec fbr alist geneqv rrec
+           (acl2::assume-true-false-hlp tst2 rrec wrld state)))
+       (cond ((or must-be-true must-be-false)
+              (rewrite-augmented-term-rec (if must-be-true tbr fbr)
+                                          alist geneqv rrec
                                           (all-runes-in-ttree ts-ttree runes)
                                           ctx wrld state))
              (t (b* (((er (cons tbr2 runes))
@@ -1765,21 +1804,31 @@
                                                   (change acl2::rewrite$-record
                                                           rrec
                                                           :type-alist
-                                                          true-type-alist)
+                                                          true-type-alist
+                                                          :pot-lst
+                                                          true-pot-lst)
                                                   runes ctx wrld state))
                      ((er (cons fbr2 runes))
                       (rewrite-augmented-term-rec fbr alist geneqv
                                                   (change acl2::rewrite$-record
                                                           rrec
                                                           :type-alist
-                                                          false-type-alist)
+                                                          false-type-alist
+                                                          :pot-lst
+                                                          false-pot-lst)
                                                   runes ctx wrld state))
+                     (rcnst (access acl2::rewrite$-record rrec :rcnst))
                      ((mv term ttree)
                       (rewrite-if1 (maybe-reconstruct-blocked-mbt tst tst2)
                                    tbr2 fbr2
                                    nil ; swapped-p
-                                   type-alist
-                                   geneqv ens ok-to-force wrld nil)))
+                                   (access acl2::rewrite$-record rrec
+                                           :type-alist)
+                                   geneqv
+                                   (access acl2::rewrite-constant rcnst
+                                           :current-enabled-structure)
+                                   (acl2::ok-to-force rcnst)
+                                   wrld nil)))
                   (value (cons term (all-runes-in-ttree ttree runes))))))))
     ((('LAMBDA formals body) . actuals)
      (b* (((er (cons rewritten-actuals runes-actuals))

@@ -7,3 +7,5 @@
 (include-book "cgen/top" :ttags :all)
 (include-book "top" :ttags :all)
 (include-book "ccg/ccg" :ttags ((:ccg)) :load-compiled-file nil)
+(include-book "installation")
+(include-book "extra-doc")

@@ -13,7 +13,6 @@
 
 (include-book "bvchop")
 (include-book "kestrel/booleans/booleans" :dir :system) ;todo: reduce
-(include-book "trim")
 (local (include-book "unsigned-byte-p"))
 
 ;note that the test is a boolean, not a bit vector
@@ -220,14 +219,6 @@
                   (not test)))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm trim-of-bvif
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvif size2 test x y))
-                  (bvif size1 test x y)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
-
 (defthm bvif-of-myif-t-nil
   (equal (bvif size (myif test t nil) x y)
          (bvif size test x y))
@@ -247,25 +238,7 @@
                   (bvif size test y (bvif size test2 tp ep))))
     :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthmd bvif-trim-constant-arg1
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep size)))
-                (not (unsigned-byte-p size x))
-                (natp size) ; prevent loops
-                )
-           (equal (bvif size test x y)
-                  (bvif size test (bvchop size x) y)))
-  :hints (("Goal" :in-theory (enable bvif))))
 
-(defthmd bvif-trim-constant-arg2
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep size)))
-                (not (unsigned-byte-p size x))
-                (natp size) ; prevent loops
-                )
-           (equal (bvif size test y x)
-                  (bvif size test y (bvchop size x))))
-  :hints (("Goal" :in-theory (enable bvif))))
 
 ;dup
 (defthm unsigned-byte-p-of-bvif-gen2

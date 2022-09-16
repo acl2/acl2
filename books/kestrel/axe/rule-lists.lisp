@@ -674,8 +674,8 @@
 
      bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017
 
-     bvif-trim-constant-arg1
-     bvif-trim-constant-arg2
+     ;;bvif-trim-constant-arg1
+     ;;bvif-trim-constant-arg2
 
      bvuminus-of-bvuminus
 
@@ -1499,18 +1499,18 @@
 (defun trim-rules ()
   (declare (xargs :guard t))
   '(;; -all and -non-all versions?
-    slice-trim-dag-all ;new
-    getbit-trim-dag-all  ;new
+    slice-trim-axe-all ;new
+    getbit-trim-axe-all  ;new
     bvmult-trim-arg1-dag-all  ;seemed to need this for rc6 decrypt
     bvmult-trim-arg2-dag-all  ;seemed to need this for rc6 decrypt
     ;; bvmult-trim-arg1-dag
     ;; bvmult-trim-arg2-dag
-    bvminus-trim-arg1-dag-all
-    bvminus-trim-arg2-dag-all
-    bvplus-trim-arg1-dag-all
-    bvplus-trim-arg2-dag-all
-    bvuminus-trim-dag-all
-    bvnot-trim-dag-all
+    bvminus-trim-arg2-axe-all
+    bvminus-trim-arg3-axe-all
+    bvplus-trim-arg2-axe-all
+    bvplus-trim-arg3-axe-all
+    bvuminus-trim-axe-all
+    bvnot-trim-axe-all
     bvand-trim-arg1-dag-all
     bvand-trim-arg2-dag-all
     ;; bvand-trim-arg1-dag
@@ -1523,22 +1523,22 @@
     bvxor-trim-arg2-dag
     ;; bvxor-trim-arg1-dag-all ; use instead?
     ;; bvxor-trim-arg2-dag-all ; use instead?
-    bitnot-trim-dag-all
+    bitnot-trim-axe-all
     bitxor-trim-arg1-dag-all
     bitxor-trim-arg2-dag-all
     bitor-trim-arg1-dag-all
     bitor-trim-arg2-dag-all
     bitand-trim-arg1-dag-all
     bitand-trim-arg2-dag-all
-    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
-    bvcat-trim-arg1-dag-all
-    ;; bvcat-trim-arg1-dag
-    ;; bvcat-trim-arg2-dag
+    bvcat-trim-arg4-axe-all ;hope these are okay; seemed key for rc2 and maybe other proofs
+    bvcat-trim-arg2-axe-all
+    ;; bvcat-trim-arg2-axe
+    ;; bvcat-trim-arg4-axe
     bvif-trim-arg1-dag
     bvif-trim-arg2-dag
     ;; bvif-trim-arg1-dag-all ; use instead?
     ;; bvif-trim-arg2-dag-all ; use instead?
-    leftrotate32-trim-amt-all))
+    leftrotate32-trim-arg1-axe-all))
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
@@ -1579,8 +1579,8 @@
 
 (defun all-trim-rules ()
   (declare (xargs :guard t))
-  (append '(;bvcat-trim-arg1-dag-all
-;bvcat-trim-arg2-dag-all
+  (append '(;;bvcat-trim-arg2-axe-all
+            ;;bvcat-trim-arg4-axe-all
             )
           (trim-rules)))
 
@@ -1805,7 +1805,7 @@
     slice-of-bvmult-of-expt-gen-constant-version
 ;ceiling-in-terms-of-floor2 ;introduces ;make a bvceil operator? ;removed in favor of the 3 rule?
     ceiling-in-terms-of-floor3
-    floor-when-usb-bind-free-dag
+    floor-of-expt2-becomes-slice-when-bv-axe
     *-becomes-bvmult-8
     ceiling-of-*-same
     <-of-*-of-constant-and-*-of-constant
@@ -2707,8 +2707,8 @@
 ;want this to fire late (after the rule for write of write with the same index, for example)
 (table axe-rule-priorities-table 'bv-array-write-does-nothing 10)
 
-(table axe-rule-priorities-table 'bvplus-trim-arg1-dag -3) ;we should trim before commuting the nest
-(table axe-rule-priorities-table 'bvplus-trim-arg2-dag -3) ;we should trim before commuting the nest
+(table axe-rule-priorities-table 'bvplus-trim-arg2-axe -3) ;we should trim before commuting the nest
+(table axe-rule-priorities-table 'bvplus-trim-arg3-axe -3) ;we should trim before commuting the nest
 (table axe-rule-priorities-table 'bvplus-associative -1) ;trying with this before the commutative rules
 
 ;new:
@@ -2726,8 +2726,8 @@
 ;; (defconst *super-rules*
 ;;   '(
 ;; ;   slice-of-bvplus-low
-;; ;;;    bvplus-trim-arg1-dag
-;;  ;;;   bvplus-trim-arg2-dag
+;; ;;;    bvplus-trim-arg2-axe
+;;  ;;;   bvplus-trim-arg3-axe
 
 ;; ;;;    bv-array-write-trim-value
 ;; ;                                         bv-array-write-of-bvminus-32

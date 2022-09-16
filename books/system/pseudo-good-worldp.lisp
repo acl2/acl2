@@ -1873,6 +1873,9 @@
     (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
     (REWRITE-QUOTED-CONSTANT-RULES
      (pseudo-rewrite-quoted-constant-rulesp val))
+    (PROJECT-DIR-ALIST (and (alistp val)
+                            (keyword-listp (strip-cars val))
+                            (string-listp (strip-cdrs val))))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------

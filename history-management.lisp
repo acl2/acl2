@@ -6539,13 +6539,13 @@
   (declare (xargs :guard (sysfile-p x)))
   (cdr x))
 
-(defun project-dir-alist (state)
-  (declare (xargs :stobjs state))
-  (f-get-global 'project-dir-alist state))
+(defun project-dir-alist (wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (global-val 'project-dir-alist wrld))
 
 (defun project-dir-lookup (key alist ctx)
 
-; At the top level, alist is presumably (project-dir-alist state).  We
+; At the top level, alist is presumably (project-dir-alist (w state)).  We
 ; guarantee that the value of key in alist exists and is a string.  Except, we
 ; allow that to fail if ctx is nil, returning nil in that case.
 
@@ -6555,12 +6555,16 @@
 
   (declare (xargs :guard t))
   (let ((ans (if (stringp alist)
-                 (if (eq key :system)
-                     alist
-                   (er hard? 'project-dir-alist
-                       "Attempted to look up a key, ~x0, other than :system ~
-                        before initializing project-dir-alist!"
-                       key))
+
+; The first implementation of the project-dir-alist set it to a string during
+; the boot-strap.  We don't do that any more.
+
+                 (er hard? 'project-dir-alist
+                     "Implementation error: The project-dir-alist is a ~
+                      string, ~x0.  Please contact the implementors, as this ~
+                      suggests a part of the initial implementation of the ~
+                      project-dir-alist that remains to be updated."
+                     alist)
                (cdr (hons-assoc-equal key alist)))))
     (cond ((and (stringp ans)
 
@@ -6584,13 +6588,17 @@
 ; Dumb default so caller gets a sufficiently short string:
               *directory-separator-string*)))))
 
-(defun project-dir (key state)
-  (declare (xargs :guard (state-p state)))
-  (project-dir-lookup key (project-dir-alist state) 'project-dir))
+(defun project-dir (key wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (project-dir-lookup key (project-dir-alist wrld) 'project-dir))
 
 (defun system-books-dir (state)
+
+; As of this writing, this function is not used in the ACL2 sources.  But it's
+; convenient to introduce it here for use in books.
+
   (declare (xargs :stobjs state))
-  (project-dir :system state))
+  (project-dir :system (w state)))
 
 (defun project-dir-prefix-entry (filename project-dir-alist)
 
@@ -6610,7 +6618,7 @@
 
 (defun relativize-book-path (filename project-dir-alist action)
 
-; Project-dir-alist is presumably the value of (project-dir-alist state).
+; Project-dir-alist is presumably the value of (project-dir-alist (w state)).
 ; There are three possibilities, depending on action, which should either be
 ; :make-cons (the default), nil, or a book name as supplied to include-book
 ; (hence without the .lisp extension).
@@ -6651,8 +6659,8 @@
    (t (cons (relativize-book-path (car lst) project-dir-alist action)
             (relativize-book-path-lst (cdr lst) project-dir-alist action)))))
 
-(defun filename-to-sysfile (filename state)
-  (relativize-book-path filename (project-dir-alist state) :make-cons))
+(defun filename-to-sysfile (filename wrld)
+  (relativize-book-path filename (project-dir-alist wrld) :make-cons))
 
 (defun print-book-path (book-path indent channel state)
   (assert$
@@ -6666,7 +6674,7 @@
        (print-indented-list
         (cond ((f-get-global 'script-mode state)
                (relativize-book-path-lst book-path
-                                         (project-dir-alist state)
+                                         (project-dir-alist (w state))
                                          nil))
               (t book-path))
         (1+ indent) 0 channel nil state)

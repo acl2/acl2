@@ -16,8 +16,8 @@
 
 (local (include-book "floor"))
 (local (include-book "expt"))
-(local (include-book "divides"))
-(local (include-book "times-and-divides"))
+(local (include-book "divide"))
+(local (include-book "times-and-divide"))
 (local (include-book "times"))
 (local (include-book "plus"))
 

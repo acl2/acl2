@@ -18,7 +18,7 @@
 ;(include-book "kestrel/bv/rotate" :dir :system) ;for LEFTROTATE32-OF-BVCHOP-5
 (include-book "rules1") ;for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 ;(include-book "axe-rules") ;for BVAND-OF-CONSTANT-TIGHTEN-DAG-VERSION
-;(include-book "bv-rules-axe") ;for BVCAT-TRIM-ARG2-DAG-ALL
+;(include-book "bv-rules-axe") ;for BVCAT-TRIM-ARG4-AXE-ALL
 ;(include-book "axe-rules-mixed") ;for NOT-EQUAL-MAX-INT-WHEN-<=
 ;(include-book "kestrel/jvm/jvm-rules" :dir :system) ;for G-OF-G-OF-SET-FIELD-WHEN-PAIRS-DIFFERENT
 ;(include-book "jvm-rules-axe") ;for SET-FIELD-OF-SET-FIELD-REORDER-PAIRS

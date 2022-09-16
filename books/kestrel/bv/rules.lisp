@@ -57,6 +57,8 @@
 (include-book "getbit-rules")
 (include-book "bvcat-rules")
 (include-book "bvsx-rules")
+(include-book "bitwise")
+(include-book "trim")
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -69,8 +71,8 @@
 (local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
@@ -847,34 +849,6 @@
                   (bvnot 1 x)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthm bvxor-of-bvand-tighten-alt
-  (implies (and (< size1 size2)
-                (integerp z)
-                (natp size1)
-                (natp size2))
-           (equal (bvxor size1 z (bvand size2 x y))
-                  (bvxor size1 z (bvand size1 x y))))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
-(defthm bvand-of-bvxor-tighten
-  (implies (and (< size1 size2)
-                (integerp z)
-                (natp size1)
-                (natp size2))
-           (equal (bvand size1 (bvxor size2 x y) z)
-                  (bvand size1 (bvxor size1 x y) z)))
-  :hints (("Goal" :in-theory (enable bvxor bvand))))
-
-(defthm bvand-of-bvxor-tighten-alt
-  (implies (and (< size1 size2)
-                (integerp z)
-                (natp size1)
-                (natp size2))
-           (equal (bvand size1 z (bvxor size2 x y))
-                  (bvand size1 z (bvxor size1 x y))))
-  :hints (("Goal" :in-theory (enable bvxor bvand))))
-
-
 (defthm integerp-when-unsigned-byte-p-free
   (implies (unsigned-byte-p free x) ;FREE is a free var., so this rule should be cheap
            (integerp x)))
@@ -1065,15 +1039,6 @@
                            (y x))
            :in-theory (e/d ( ;bvmult
                             ) (BVMULT-OF-BVCHOP-arg2)))))
-
-(defthm bvchop-of-bvminus
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (bvchop size1 (bvminus size2 y z))
-                  (bvminus size1 y z)))
-  :hints (("Goal" :in-theory (enable bvminus ;bvchop-bvchop
-                                   ))))
 
 (defthm bvplus-bound-2
   (implies (and (<= (expt 2 size) k)
@@ -1384,25 +1349,6 @@
 (in-theory (disable bvxor-commutative-2))
 (theory-invariant (incompatible (:rewrite bvxor-commutative-2) (:rewrite bvxor-commutative-2-alt)))
 
-;use trim?
-(defthm bitxor-of-slice-arg1
-  (implies (and (<= low high)
-                (natp low)
-                (natp high))
-           (equal (bitxor (slice high low x) y)
-                  (bitxor (getbit low x) y)))
-  :hints (("Goal" :in-theory (e/d (bitxor) (BVXOR-1-BECOMES-BITXOR)))))
-
-;use trim?
-;bozo analogue for bvand?
-(defthm bitxor-of-slice-arg2
-  (implies (and (<= low high)
-                (natp low)
-                (natp high))
-           (equal (bitxor y (slice high low x))
-                  (bitxor y (getbit low x))))
-  :hints (("Goal" :in-theory (e/d (bitxor) (BVXOR-1-BECOMES-BITXOR)))))
-
 ;bozo think about these...
 (defthm bvcat-bvxor-neighbors-hack
   (implies (and (equal n+1 (+ 1 n))
@@ -1607,67 +1553,6 @@
 ;;               (equal 0 (getbit 0 y))))
 ;;   :hints (("Goal" :in-theory (e/d (xor mynot bitxor bvxor) (BVXOR-1-BECOMES-BITXOR)))))
 
-
-;gen the 1
-;drop, since bvxor should go to bitxor first?
-(defthmd bvxor-1
-  (equal (bvxor 1 1 x)
-         (bvnot 1 x))
-  :hints (("Goal"
-           :cases ((equal 0 (getbit 0 x)))
-           :use ((:instance BVCHOP-LOGNOT-BVCHOP (n 1)))
-           :in-theory (e/d (bvxor bvnot bitxor ;LOGXOR*
-    ;                                          bvchop
-    ;lognot getbit
-                                  )
-                           (SLICE-BECOMES-GETBIT
-                            GETBIT-WHEN-NOT-0
-                            BVCHOP-LOGNOT-BVCHOP
-    ;BVCHOP-1-BECOMES-GETBIT
-                            BVXOR-1-BECOMES-BITXOR)))))
-
-;we should either prefer xors to nots, or vice versa (weird 4 rule loop if we are not careful)
-(theory-invariant (incompatible (:rewrite bvxor-1) (:rewrite bitnot-becomes-bitxor-with-1)))
-
-;bozo how can we decide which branch to move the lognot into?
-(defthmd bvnot-of-bvxor-1
-  (equal (bvnot 1 (bvxor 1 x y))
-         (bvxor 1 (bvnot 1 x) y))
-  :hints (("Goal" :in-theory (enable bitxor-split))))
-
-(defthm bvnot-of-bvxor-1-back
-   (equal (bvxor 1 (bvnot 1 x) y)
-          (bvnot 1 (bvxor 1 x y)))
-   :hints (("Goal" :use (:instance bvnot-of-bvxor-1))))
-
-(defthm bvnot-of-bvxor-1-back-alt
-  (equal (bvxor 1 y (bvnot 1 x))
-         (bvnot 1 (bvxor 1 y x)))
-  :hints (("Goal" :use (:instance bvnot-of-bvxor-1-back)
-           :in-theory (e/d (BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2) ( bvnot-of-bvxor-1-back)))))
-
-;(local (in-theory (enable BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2))) ;hope these don't loop
-
-;gen the size!  or use bitnot
-(defthm bvxor-of-x-and-bvnot-x
-  (equal (bvxor 1 (bvnot 1 x) x)
-         1))
-
-(defthm bvxor-of-x-and-bvnot-x-alt
-  (equal (bvxor 1 x (bvnot 1 x))
-         1)
-  :hints (("Goal" :in-theory (e/d (bitxor-commutative-2)
-                                  (equal-of-0-and-bitxor)))))
-
-(defthm bvxor-of-x-and-bvnot-x-alt-3terms
-  (equal (bvxor 1 x (bvxor 1 (bvnot 1 x) y))
-         (bvnot 1 y))
-  :hints (("Goal" :in-theory (enable bitxor-commutative-2))))
-
-(defthm bvxor-of-x-and-bvnot-x-3terms
-  (equal (bvxor 1 (bvnot 1 x) (bvxor 1 x y))
-         (bvnot 1 y)))
-
 (defthm getbit-lognot-getbit
   (equal (getbit 0 (lognot (getbit 0 x)))
          (getbit 0 (lognot x)))
@@ -1683,14 +1568,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bitnot) (BITNOT-BECOMES-BITXOR-WITH-1 ;bozo
 ;;                                         )))))
 
-(defthm bvxor-of-bvnot-1
-  (equal (bvxor 1 (bvnot 1 x) y)
-         (bvnot 1 (bvxor 1 x y))))
-
-(defthm bvxor-of-bvnot-2
-  (equal (bvxor 1 y (bvnot 1 x))
-         (bvnot 1 (bvxor 1 y x)))
-  :hints (("Goal" :in-theory (enable bitxor-commutative-2))))
 
 ;;
 ;; bool-to-bit - do we translate this op to stp?
@@ -1778,44 +1655,6 @@
                   (slice highbit lowbit (bvmult (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
            :in-theory (e/d (slice bvor natp bvmult) ( slice-becomes-bvchop BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
-
-(defthm bvxor-of-bvxor-tighten
-  (implies (and (< size1 size2)
-                (integerp z)
-                (natp size1)
-                (natp size2))
-           (equal (bvxor size1 (bvxor size2 x y) z)
-                  (bvxor size1 (bvxor size1 x y) z)))
-  :hints (("Goal" :in-theory (enable bvxor bvand))))
-
-(defthm bvxor-of-bvxor-tighten-alt
-  (implies (and (< size1 size2)
-                (integerp z)
-                (natp size1)
-                (natp size2))
-           (equal (bvxor size1 z (bvxor size2 x y))
-                  (bvxor size1 z (bvxor size1 x y))))
-  :hints (("Goal" :in-theory (enable bvxor bvand))))
-
-;use trim
-(defthm bvor-of-bvxor-tighten
-  (implies (and (< size1 size2)
-                (integerp z)
-                (natp size1)
-                (natp size2))
-           (equal (bvor size1 (bvxor size2 x y) z)
-                  (bvor size1 (bvxor size1 x y) z)))
-  :hints (("Goal" :in-theory (enable bvor bvxor bvand))))
-
-;use trim
-(defthm bvor-of-bvxor-tighten-alt
-  (implies (and (< size1 size2)
-                (integerp z)
-                (natp size1)
-                (natp size2))
-           (equal (bvor size1 z (bvxor size2 x y))
-                  (bvor size1 z (bvxor size1 x y))))
-  :hints (("Goal" :in-theory (enable bvor bvxor bvand))))
 
 (defthm slice-of-bvand
   (implies (and (< highbit size)
@@ -2290,8 +2129,6 @@
                   (bitand y (getbit low x))))
   :hints (("Goal" :in-theory (enable bitand bvand))))
 
-
-
 (defthm bitxor-commutative-alt
   (implies (syntaxp (smaller-bvxor-arg b a))
            (equal (bitxor a b)
@@ -2318,46 +2155,6 @@
   :hints (("Goal" :in-theory (e/d (bitnot bvnot-1-becomes-bitnot-better)
                                   (bitnot-becomes-bitxor-with-1 ;bozo
                                    )))))
-
-;rewrite to have bitnot in lhs?
-(defthm bitor-x-not-x
-  (equal (bitor x (bvnot 1 x))
-         1)
-  :hints (("Goal" :cases ((equal (bvchop 1 x) 1)
-                          (equal (bvchop 1 x) 0))
-           :in-theory (e/d (bitor bvor
-                                  getbit
-                                  bitxor
-                                  bvxor
-                                  bitnot
-                                  )
-                           (bvchop-1-becomes-getbit
-                            slice-becomes-getbit
-                            bvxor-1-becomes-bitxor)))))
-
-;rewrite to have bitnot in lhs?
-(defthm bitor-x-not-x-alt
-  (equal (bitor (bvnot 1 x) x)
-         1)
-  :hints (("Goal" :use (:instance bitor-x-not-x)
-           :in-theory (disable bitor-x-not-x))))
-
-;or go to bitnot
-(defthm bitxor-x-not-x
-   (equal (bitxor x (bvnot 1 x))
-          1)
-   :hints (("Goal" :in-theory (e/d (bitnot) (equal-of-0-and-bitxor)))))
-
-(defthm bitxor-x-not-x-alt
-   (equal (bitxor (bvnot 1 x) x)
-          1)
-   :hints (("Goal" :in-theory (enable bitnot))))
-
-;bozo gen the 1 and eventually the bvnot
-(defthm getbit-of-bvnot-too-high
-  (equal (getbit 1 (bvnot 1 x))
-         0)
-  :hints (("Goal" :in-theory (enable bitnot))))
 
 ;this showed up in the unrolled aes spec
 (defthm bvif-1-equal-1-y-x-bitxor-1-x
@@ -3434,24 +3231,6 @@
 (defthm booleanp-of-unsigned-byte-p-forced
   (booleanp (unsigned-byte-p-forced size x)))
 
-;; ;not true?
-;; (defthm bvchop-of-bvdiv2
-;;   (implies (and (<= size1 size2)
-;;                 (natp size2)
-;;                 (natp size1))
-;;            (equal (bvchop size1 (bvdiv size2 x y))
-;;                   (bvdiv size1 x y)))
-;;   :hints (("Goal" :in-theory (enable bvdiv))))
-
-;; ;not true?
-;; (defthm trim-of-bvdiv
-;;   (implies (and (<= size1 size2)
-;;                 (natp size2)
-;;                 (natp size1))
-;;            (equal (trim size1 (bvdiv size2 x y))
-;;                   (bvdiv size1 x y)))
-;;   :hints (("Goal" :in-theory (enable))))
-
 (defthmd logtail-becomes-slice-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (integerp newsize)
@@ -3705,85 +3484,6 @@
            ;; this says x <= y but matches better
            (not (< y x))))
 
-;BOZO lots more rules like this
-;rename?
-(defthm bvxor-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize))
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvxor outersize x y)
-                  (bvxor outersize (trim outersize x) y)))
-  :hints (("Goal" :in-theory (enable bvxor trim))))
-
-;rename?
-(defthm bvxor-trim-arg2
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize))
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvxor outersize x y)
-                  (bvxor outersize x (trim outersize y))))
-  :hints (("Goal" :in-theory (enable bvxor trim))))
-
-(defthm bvif-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize)) ;bozo newsize is a bad name
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvif outersize test x y)
-                  (bvif outersize test (trim outersize x) y)))
-  :hints (("Goal" :in-theory (enable bvif trim))))
-
-(defthm bvif-trim-arg2
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize)) ;bozo newsize is a bad name
-                (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvif outersize test x y)
-                  (bvif outersize test x (trim outersize y))))
-  :hints (("Goal" :in-theory (enable bvif trim))))
-
-;; these should have 'trim' in the name:
-
-;watch out for loops
-(defthm bvcat-tighten-high-arg
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize highval) (newsize))
-                (syntaxp (quotep highsize))
-                (< highsize newsize)
-                (natp highsize)
-                (natp newsize)
-                (integerp lowval)
-                (integerp highval)
-                (integerp lowval)
-                (natp lowsize)
-                )
-           (equal (bvcat highsize highval lowsize lowval)
-                  (bvcat highsize (trim highsize highval) lowsize lowval)))
-  :hints (("Goal" :in-theory (enable bvcat-of-bvchop-high trim))))
-
-(defthm bvcat-tighten-low-arg
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize lowval) (newsize))
-                (syntaxp (quotep lowsize))
-                (< lowsize newsize)
-                (natp highsize)
-                (natp newsize)
-                (integerp lowval)
-                (integerp highval)
-                (integerp lowval)
-                (natp lowsize)
-                )
-           (equal (bvcat highsize highval lowsize lowval)
-                  (bvcat highsize highval lowsize (trim lowsize lowval))))
-  :hints (("Goal" :in-theory (enable bvcat-of-bvchop-low trim))))
 
 ;gross proof?
 (defthmd bit-blast-peel-off-low
@@ -4169,40 +3869,7 @@
                             ;EXPT-COLLECT-HACK
                             )))))
 
-;we currently prefer bvnot for mutli-bit opens and bitxor with 1 for single bit ops <- a bit weird
-;not sure that's a good choice..  bvnot can interfere with the bvxor cancel rules..
-(defthmd bvxor-all-ones-helper
-  (equal (bvxor size (+ -1 (expt 2 size)) x)
-         (bvnot size x))
-  :hints (("Goal" :in-theory (e/d (bvnot ;mine for lemmas!
-                                   bvxor
-                                   LOGEQV
-                                   logorc1
-                                   ;;bvxor-blast
-                                   logxor
-                                   lognot-of-logand
-                                   )
-                                  (BITNOT-BECOMES-BITXOR-WITH-1
-                                   ;;BITXOR-OF-1-BECOMES-BITNOT-ARG1 ;looped
-                                   )))))
 
-(defthmd bvxor-all-ones-helper-alt
-  (equal (bvxor size x (+ -1 (expt 2 size)))
-         (bvnot size x))
-  :hints (("Goal" :use (:instance bvxor-all-ones-helper)
-           :in-theory (disable bvxor-all-ones-helper))))
-
-;we currently prefer bvnot for mutli-bit opens and bitxor with 1 for single bit ops <- a bit weird
-;not sure that's a good choice..  bvnot can interfere with the bvxor cancel rules..
-(defthmd bvxor-all-ones
-  (implies (and (syntaxp (and (quotep mask)
-                              (quotep size)))
-                (equal mask (+ -1 (expt 2 size))) ;fixme allow the sizes to differ?
-                )
-           (equal (bvxor size mask x)
-                  (bvnot size x)))
-  :hints (("Goal" :use (:instance bvxor-all-ones-helper)
-           :in-theory (disable bvxor-all-ones-helper))))
 
 ;repeatbit of 1 now gets simplified
 (defthm bvxor-of-repeatbit-of-1
@@ -4211,121 +3878,6 @@
            (equal (bvxor n (repeatbit n 1) x)
                   (bvnot n x)))
   :hints (("Goal" :in-theory (enable bvxor bvnot REPEATBIT logxor logeqv logorc1 lognot-of-logand))))
-
-;since it can be expensive to do this in general??...
-(defthm getbit-of-bvxor-when-other-bit-is-0-arg1
-  (implies (and (equal (getbit n x) 0)
-                (< n size)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvxor size x y))
-                  (getbit n y)))
-  :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
-
-;ffixme think these over
-(defthm getbit-of-bvxor-when-other-bit-is-0-arg2
-  (implies (and (equal (getbit n x) 0)
-                (< n size)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvxor size y x))
-                  (getbit n y)))
-  :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
-
-(defthmd bvand-of-bvnot-same-helper
-  (implies (unsigned-byte-p size x)
-           (equal (bvand size x (bvnot size x))
-                  0))
-  :hints (("Goal" :cases ((Natp size))
-           :in-theory (e/d (bvand bvnot logand-of-bvchop)
-                           (bvand-commutative)))))
-
-(defthm bvand-of-bvnot-same
-  (equal (bvand size x (bvnot size x))
-         0)
-  :hints (("Goal" :cases ((natp size))
-           :use (:instance bvand-of-bvnot-same-helper (x (bvchop size x))))))
-
-(defthm bvand-of-bvnot-same-alt
-  (equal (bvand size (bvnot size x) x)
-         0)
-  :hints (("Goal" :use (:instance bvand-of-bvnot-same))))
-
-;;(add-invisible-fns bvand bvnot)  ;;todo: it would be nice for this to work
-
-(defthm bvand-of-bvand-of-bvnot-same
-  (equal (bvand size x (bvand size (bvnot size x) y))
-         0)
-  :hints (("Goal" :use (:instance bvand-associative
-                                  (y (bvnot size x))
-                                  (z y)))))
-
-(defthm bvand-of-bvand-of-bvnot-same-alt
-  (equal (bvand size (bvnot size x) (bvand size x y))
-         0)
-  :hints (("Goal" :use (:instance bvand-of-bvand-of-bvnot-same)
-           :in-theory (disable bvand-of-bvand-of-bvnot-same))))
-
-(defthmd bvnot-becomes-bvxor
-  (implies (and (syntaxp (quotep size)) ;drop?
-;                (integerp x)
-                (natp size))
-           (equal (bvnot size x)
-                  (bvxor size (+ -1 (expt 2 size)) x)))
-  :hints (("Goal" :use (:instance bvxor-all-ones (mask (+ -1 (expt 2 size))))
-           :in-theory (disable bvxor-all-ones))))
-
-(theory-invariant (incompatible (:rewrite bvnot-becomes-bvxor) (:rewrite bvxor-all-ones)))
-
-;bozo more like this, or a general rule with a syntaxp hyp?
-(defthm getbit-of-bvand-too-high
-  (implies (and (<= size n)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvand size x y))
-                  0))
-  :hints (("Goal" :in-theory (enable getbit-too-high))))
-
-;; this is x AND NOT(x) = 0 when we represent the NOT as an XOR with ones
-(defthm bvand-of-bvxor-of-ones-same
-  (implies (and (syntaxp (and (quotep k)            ;new
-                              (quotep size)))
-                (equal k (+ -1 (expt 2 size))))
-           (equal (bvand size x (bvxor size k x))
-                  0))
-  :hints (("Goal" :in-theory (enable ;BVXOR-ALL-ONES-GEN
-                              bvxor-all-ones-helper-alt))))
-
-;; this is NOT(x) AND x = 0 when we represent the NOT as an XOR with ones
-(defthm bvand-of-bvxor-of-ones-same-alt
-  (implies (and (syntaxp (and (quotep k) ;new
-                              (quotep size)))
-                (equal k (+ -1 (expt 2 size))))
-           (equal (bvand size (bvxor size k x) x)
-                  0))
-  :hints (("Goal" :in-theory (enable ;BVXOR-ALL-ONES-GEN
-                              bvxor-all-ones-helper-alt))))
-
-(defthm bvand-of-bvand-of-bvxor-of-ones-same
-  (implies (equal k (+ -1 (expt 2 size)))
-           (equal (bvand size x (bvand size (bvxor size k x) y))
-                  0))
-  :hints (("Goal" :use (:instance bvand-of-bvand-of-bvnot-same)
-           :in-theory (e/d (BVXOR-ALL-ONES-HELPER-ALT) ( bvand-of-bvand-of-bvnot-same)))))
-
-(defthm bvand-of-bvand-of-bvxor-of-ones-same-alt
-  (implies (equal k (+ -1 (expt 2 size)))
-           (equal (bvand size (bvxor size k x) (bvand size x y))
-                  0))
-  :hints (("Goal" :use (:instance bvand-of-bvand-of-bvnot-same)
-           :in-theory (e/d (bvxor-all-ones-helper-alt) ( bvand-of-bvand-of-bvnot-same)))))
-
-;may help when size is not a constant
-(defthm bvand-of-bvxor-of-ones-same-another-alt
-  (equal (bvand size x (bvxor size x (+ -1 (expt 2 size))))
-         0)
-  :hints
-  (("Goal" :in-theory (enable bvxor-all-ones-helper-alt))))
 
 (defthm bvxor-of-myif-1
   (equal (bvxor size (myif test a b) y)
@@ -4450,39 +4002,6 @@
                   (myif test (bvchop size x) (bvchop size y))))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
-;combine these
-(defthm trim-of-bvsx
-  (implies (and (<= n new-size)
-                (natp n)
-                (natp new-size)
-                (posp old-size))
-           (equal (trim n (bvsx new-size old-size val))
-                  (if (<= old-size n)
-                      (bvsx n old-size val)
-                    (bvchop N VAL))))
-  :hints (("Goal" :in-theory (enable trim bvsx))))
-
-(defthm trim-of-slice
-  (implies (and (natp n)
-                (natp high)
-                (natp low))
-           (equal (trim n (slice high low x))
-                  (if (<= n (+ 1 (- high low)))
-                      (slice (+ -1 n low) low x)
-                    (slice high low x))))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm trim-of-bvcat
-  (implies (and (natp n)
-                (natp lowsize)
-                (natp highsize))
-           (equal (trim n (bvcat highsize highval lowsize lowval))
-                  (if (<= n lowsize)
-                      (bvchop n lowval) ;don't want to leave a trim (e.g. around a variable)
-                    (bvcat (min (binary-+ n (unary-- lowsize))
-                                highsize)
-                           highval lowsize lowval))))
-  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm logtail-of-floor-of-expt
   (implies (and (integerp x)
@@ -4836,51 +4355,6 @@
                            (;bvchop-+-cancel
                             )))))
 
-(defthm bvand-of-bvand-of-bvnot-same-xor-version
-  (implies (AND (SYNTAXP (AND (QUOTEP MASK) (QUOTEP SIZE)))
-                (EQUAL MASK (+ -1 (EXPT 2 SIZE))))
-           (equal (bvand size x (bvand size (bvxor size mask x) y))
-                  0))
-  :hints (("Goal" :in-theory (disable BVAND-OF-BVAND-OF-BVNOT-SAME)
-           :use (BVXOR-ALL-ONES
-                 (:instance bvand-of-bvand-of-bvnot-same)))))
-
-(defthm bvand-of-bvand-of-bvnot-same-alt-xor-version
-  (implies (AND (SYNTAXP (AND (QUOTEP MASK) (QUOTEP SIZE)))
-                (EQUAL MASK (+ -1 (EXPT 2 SIZE))))
-           (equal (bvand size (bvxor size mask x) (bvand size x y))
-                  0))
-  :hints (("Goal" :in-theory (disable BVAND-OF-BVAND-OF-BVNOT-SAME-alt)
-           :use (BVXOR-ALL-ONES
-                 (:instance bvand-of-bvand-of-bvnot-same-alt)))))
-
-(defthm equal-of-bvxor-ones-and-bvnot
-  (implies (and (syntaxp (and (quotep mask) (quotep size)))
-                (equal mask (+ -1 (expt 2 size))))
-           (equal (equal (bvxor size mask x) (bvnot size x))
-                  t))
-  :hints (("Goal" :in-theory (enable bvxor-all-ones-helper))))
-
-(defthm equal-of-bvnot-and-bvxor-ones
-  (implies (and (syntaxp (and (quotep mask) (quotep size)))
-                (equal mask (+ -1 (expt 2 size))))
-           (equal (equal (bvnot size x) (bvxor size mask x))
-                  t))
-  :hints (("Goal" :use (:instance equal-of-bvxor-ones-and-bvnot)
-           :in-theory (disable equal-of-bvxor-ones-and-bvnot))))
-
-
-
-(defthm bitand-of-bitxor-of-1-same
-  (equal (bitand x (bitxor 1 x))
-         0)
-  :hints (("Goal" :in-theory (e/d (bitand bitxor bitnot) (BVXOR-1-BECOMES-BITXOR)))))
-
-(defthm bitand-of-bitxor-of-1-same-alt
-  (equal (bitand x (bitand (bitxor 1 x) w)) ;yuck: replacing w with y fails due to alpha order
-         0)
-  :hints (("Goal" :in-theory (e/d (bitand bitxor bitnot) (BVXOR-1-BECOMES-BITXOR)))))
-
 ;fixme gen!
 (defthm bvlt-of-floor-arg2
   (implies (integerp x)
@@ -4924,7 +4398,6 @@
          (bvand n x (bvif n test a b)))
   :hints (("Goal" :in-theory (e/d (myif bvif bvand)
                                   ( ;BIT-BLAST-32-ALT
-                                   BLAST-BVAND-32-INTO-8
                                    )))))
 
 (defthm bvand-of-myif-arg1
@@ -4932,7 +4405,7 @@
          (bvand n (bvif n test a b) x))
   :hints (("Goal" :in-theory (e/d (myif bvif bvand)
                                   ( ;BIT-BLAST-32-ALT
-                                   BLAST-BVAND-32-INTO-8)))))
+                                   )))))
 
 
 
@@ -5026,13 +4499,6 @@
   :hints (("Goal" :in-theory (e/d (bvxor bvchop-of-logtail-becomes-slice)
                                   (LOGXOR-BVCHOP-BVCHOP)))))
 
-;; ;add some of these?
-;; (defthm leftrotate32-of-logext-32
-;;   (equal (leftrotate32 amd (logext 32 x))
-;;          (leftrotate32 amd x))
-;;   :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))
-
-
 (defthmd bvnot-blast
   (implies (and (< 1 size) ;for size=1 go to bitnot
                 (INTEGERP X)
@@ -5057,40 +4523,6 @@
                 (syntaxp (quotep free))
                 (not (unsigned-byte-p free k)))
            (not (equal x k))))
-
-;; only do this if amount and size are constants?
-(defthmd trim-of-leftrotate32
-  (implies (and (<= size 32)
-                (<= amount 32)
-                (natp size)
-                (natp amount))
-           (equal (trim size (leftrotate32 amount val))
-                  (if (< amount size)
-                      (bvcat (- size amount)
-                             val
-                             amount
-                             (SLICE (+ -1 32)
-                                    (+ (- AMOUNT) 32)
-                                    VAL) )
-                    (slice (+ -1 (- AMOUNT) SIZE 32)
-                           (+ (- AMOUNT) 32)
-                           val))))
-  :hints (("Goal" :in-theory (enable trim bvchop-of-leftrotate32-both))))
-
-
-;todo: add full trim support for rotate ops
-;todo: only do this if the amt is a constant?
-(defthmd trim-of-1-and-leftrotate
-  (implies (and (< amt width) ; avoids mod in rhs
-                (natp amt)
-                (natp width))
-           (equal (trim 1 (leftrotate width amt x))
-                  (if (< 0 width)
-                      (if (< 0 amt) ; this case
-                          (getbit (+ width (- amt)) x)
-                        (getbit amt x))
-                    0)))
-  :hints (("Goal" :in-theory (enable trim leftrotate))))
 
 (defthm bvif-of-logext-arg1
   (implies (and (<= n m)
@@ -5570,25 +5002,6 @@
                 (posp N))
            (EQUAL (bvchop n x)
                   (bvcat 1 k1 (+ -1 n) k2))))
-
-;see leftrotate32-of-leftrotate32
-;; (defthm leftrotate32-of-bvuminus-and-leftrotate32
-;;   (implies (natp amt)
-;;            (equal (leftrotate32 (bvuminus '5 amt) (leftrotate32 amt val))
-;;                   (bvchop 32 val)))
-;;   :hints (("Goal" :in-theory (e/d (leftrotate32 leftrotate bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
-
-;move
-(defthm leftrotate32-of-leftrotate32
-  (implies (and (natp k1)
-                (natp k2))
-           (equal (leftrotate32 k1 (leftrotate32 k2 x))
-                  (leftrotate32 (bvplus 5 k1 k2) x)))
-  :hints (("Goal" :in-theory (enable leftrotate32
-                                     ;leftrotate
-                                     ;;natp bvchop-of-sum-cases
-                                     bvplus
-                                     ))))
 
 (defthm bvminus-of-bvchop-gen-arg2
   (implies (and (<= size1 size2)
