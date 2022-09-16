@@ -70,7 +70,7 @@ occurring.
 </li>
 <li>Download and set up the ACL2s WSL image
   <ol>
-  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.
+  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
   <li>Open up a new (non-admininistrator) terminal by opening the Windows
       menu at the bottom left hand side of the screen and searching for
       @('cmd').
