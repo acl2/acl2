@@ -61,22 +61,23 @@ occurring.
   can be done by opening the Windows menu at the bottom left hand
   side of the screen and searching for @('cmd'). Then, right click
   on the \"Command Prompt\" item and select \"Run as administrator\".</li>
-  <li>Run @('wsl --install')</li>
-  <li>NOTE: if the above command does not work, try installing Ubuntu
-  from the Windows App Store.</li>
-  <li>If this command finishes saying \"A reboot is required\", you
-  should reboot your computer.</li>
+  <li>Run @('dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart')</li>
+  <li>Run @('dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart')</li>
+  <li>Restart your computer and reopen an administrator terminal as
+      you did previously.</li>
+  <li>Run @('wsl --update')</li>
   </ol>
 </li>
-<li>Set up a user account in WSL
+<li>Download and set up the ACL2s WSL image
   <ol>
-  <li>After rebooting (if neccesary), a window titled \"Ubuntu\" should
-  pop up saying \"Installing, this may take a few minutes...\"</li>
-  <li>If no such window pops up, open the Windows menu, search for
-  \"Ubuntu\", and run it.</li>
-  <li>Follow the prompts for creating a new user account in WSL. You
-  can choose whatever username and password you like, they do not
-  need to be the same as your Windows username and password.</li>
+  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
+  <li>Open up a new (non-admininistrator) terminal by opening the Windows
+      menu at the bottom left hand side of the screen and searching for
+      @('cmd').
+  </li>
+  <li>Run @('mkdir C:\\wslDistroStorage')</li>
+  <li>Run @('wsl --import acl2s C:\\wslDistroStorage\\acl2s Downloads\\distro.tar.gz')</li>
+  <li>Run @('wsl -d acl2s') and confirm that the output is something like @({cs2800@YOURCOMPUTER:/mnt/c/Users/yourusername}). If so, you can close the terminal. Note that this may take some time and you may see some errors about @('DISPLAY') first.</li>
   </ol>
 </li>
 <li>Install Xming and launch it
@@ -98,19 +99,6 @@ occurring.
   public networks.</li>
   </ol>
 </li>
-<li>Download and run our installation script
-<ol>
-  <li>Ensure that the following command is run as a <b>non-root
-  user</b>. If the Ubuntu terminal starts with @('root@...') when you start
-  it up, you are running as a root user. Otherwise, you are OK.</li>
-  <li>In the Ubuntu shell, run @({wget \"cs2800.atwalter.com/cs2800/wsl.sh\" && chmod +x wsl.sh})
-  to download and set the script as runnable.</li>
-  <li>Then, run @({./wsl.sh}). The script will prompt for your password
-  one or more times. When it prompts during the Homebrew install,
-  just press enter to accept the default installation directory.</li>
-  <li>Run <code>source ~/.profile</code></li>
-</ol>
-</li>
 <li>Create a folder for your CS2800 files on your @('C:') drive
 <ol>
   <li>Open File Explorer, select \"This PC\" on the left, double click
@@ -121,7 +109,8 @@ occurring.
 </li>
 <li>Run Eclipse
 <ol>
-  <li>Run @({./eclipse/eclipse})</li>
+  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/run-acl2s.bat\">run-acl2s.bat</a> and save it somewhere memorable. Note that depending on your browser, you might get a warning when you download this file, but you should click \"Keep\" or \"Download Anyways\".</li>
+  <li>Double click on @('run-acl2s.bat') to launch a WSL terminal and Eclipse. A window titled \"Windows protected your PC\" may appear. If so, click on \"More info\" and then \"Run anyways\" at the bottom of the window.</li>
   <li>When Eclipse asks for a workspace, enter @('/mnt/c/<FOLDER>'),
   where @('<FOLDER>') should be replaced with the name of the folder
   that you just created.</li>
@@ -172,7 +161,7 @@ Infrastructure (VDI).</li></ol></li>
 opening Finder and selecting Go -&gt; Utilities in the menu bar,
 and opening Terminal in that folder.</li>
 <li>Go to <a href=\"https://brew.sh\">brew.sh</a> and copy-paste the
-command starting with <code>/bin/bash</code> on the top of that page
+command starting with @('/bin/bash') on the top of that page
 into a Terminal window, then press enter. You only need to run that
 single command, and can safely ignore the other instructions on
 Homebrew's website. You may need to enter your password one or more
@@ -186,9 +175,9 @@ and download either the Arm64 DMG installer (if you are on a M1
 Mac) or the x64 DMG installer. Then, open the DMG and run the
 installer inside of it.</li></ol></li>
 <li>Install Eclipse<ol>
-<li>Download the Eclipse version appropriate for your machine: <a href=\"https://cs2800.atwalter.com/cs2800/eclipse-platform-4.21-macosx-cocoa-aarch64.dmg\">M1
+<li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-platform-4.25-macosx-cocoa-aarch64.dmg&amp;r=1\">M1
 Mac</a>
-or <a href=\"https://cs2800.atwalter.com/cs2800/eclipse-platform-4.21-macosx-cocoa-x86_64.dmg\">x86
+or <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-platform-4.25-macosx-cocoa-x86_64.dmg&amp;r=1\">x86
 Mac</a>.</li>
 <li>Open the downloaded file and click and drag the Eclipse icon
   into your Applications folder.</li>
@@ -212,15 +201,12 @@ window, enter @('ACL2s') next to \"Name:\" and
 @('http://cs2800.atwalter.com/p2') next to \"Location\". Then, click
 \"Add\", which will close the pop-up.</li>
 <li>The middle of the window should now show \"ACL2s Plugin Update
-Site\". Click on the checkbox to the left of it and click \"Next&gt;\" 
+Site\". Click on the checkbox to the left of it and click \"Next&gt;\"
 at the bottom of the window.</li>
 <li>In the next window, click \"Finish\" at the bottom right of the
-screen. If a pop-up appears that says \"Warning: Installing
-unsigned software for which the authenticity or validity cannot
-be established. Continue with installation?\", click \"Install
-anyway\".</li>
+screen. If a pop-up appears that says \"Trust\" at the top and has two entries in a table at the top, click \"Select All\" and then \"Trust Selected\" at the bottom.</li>
 <li>After the installation is complete, Eclipse will ask you if you
-would like to restart Eclipse Platform. Select \"Restart
+would like to restart Eclipse. Select \"Restart
 Now\". This will close Eclipse and reopen it.</li></ol></li>
 <li>Get started with Eclipse by working through the @(see acl2s-tutorial). </li>
 </ol>
@@ -244,27 +230,41 @@ reach out to Drew.</p>
 <ol>
 <li>Ensure the following software is installed on your machine. If not,
 install using your Linux distribution's package manager.<ul>
-<li>Java 11 or greater (OpenJDK is fine too) (<code>openjdk-11-jre</code> or newer on Ubuntu)</li>
-<li><code>git</code></li>
-<li><code>curl</code></li>
-<li><code>procps</code></li>
-<li><code>file</code></li>
-<li>\"Development tools\" (<code>build-essential</code> on Ubuntu)</li></ul><ol>
-<li>If you are on an older version of Ubuntu, you may need to install <code>libswt-gtk-4-jni</code> and <code>xutils-dev</code> as well.</li></ol></li>
+<li>Java 11 or greater (OpenJDK is fine too) (@('openjdk-11-jre') or newer on Ubuntu)</li>
+<li>@('git')</li>
+<li>@('curl')</li>
+<li>@('procps')</li>
+<li>@('file')</li>
+<li>\"Development tools\" (@('build-essential') on Ubuntu)</li></ul><ol>
+<li>If you are on an older version of Ubuntu, you may need to install @('libswt-gtk-4-jni') and @('xutils-dev') as well.</li></ol></li>
 <li>Install Homebrew<ol>
 <li>Go to <a href=\"https://brew.sh\">brew.sh</a> and copy-paste the
-command starting with <code>/bin/bash</code> on the top of that page
+command starting with @('/bin/bash') on the top of that page
 into a terminal shell, then press enter. You only need to run that
 single command, and can safely ignore the other instructions on
 Homebrew's website. You may need to enter your password one or more
 times throughout the process.</li>
 </ol></li>
 <li>Tap and install ACL2s<ol>
-<li>Run <code>brew tap mister-walter/acl2s</code> and then <code>brew install acl2s --force-bottle</code> inside of a terminal. <b>Do not</b> follow any of Homebrew's suggestions regarding installing <code>gcc</code>.</li></ol></li>
+<li>Run <code>brew tap mister-walter/acl2s</code> and then <code>brew install acl2s --force-bottle</code> inside of a terminal. <b>Do not</b> follow any of Homebrew's suggestions regarding installing @('gcc').</li></ol></li>
 <li>Install Eclipse<ol>
-<li>Download <a href=\"https://cs2800.atwalter.com/cs2800/eclipse-with-plugins.tar.gz\">our Eclipse archive</a> and unpack it somewhere on your computer.</li>
+<li>Download <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-platform-4.25-linux-gtk-x86_64.tar.gz&amp;r=1\">Eclipse</a> and unpack it somewhere on your computer.</li>
 <li>Run Eclipse by running <code>./eclipse/eclipse</code> from the directory
-that you unpacked the Eclipse package inside of.</li></ol></li>
+that you unpacked the Eclipse package inside of.</li>
+<li>In the menu bar, click on Help &rarr; Install New Software...</li>
+<li>Click on \"Add...\" in the screen that comes up. In the resulting
+window, enter @('ACL2s') next to \"Name:\" and
+@('http://cs2800.atwalter.com/p2') next to \"Location\". Then, click
+\"Add\", which will close the pop-up.</li>
+<li>The middle of the window should now show \"ACL2s Plugin Update
+Site\". Click on the checkbox to the left of it and click \"Next&gt;\" 
+at the bottom of the window.</li>
+<li>In the next window, click \"Finish\" at the bottom right of the
+screen. If a pop-up appears that says \"Trust\" at the top and has two entries in a table at the top, click \"Select All\" and then \"Trust Selected\" at the bottom.</li>
+<li>After the installation is complete, Eclipse will ask you if you
+would like to restart Eclipse. Select \"Restart
+Now\". This will close Eclipse and reopen it.</li>
+</ol></li>
 <li>Get started with Eclipse by working through the @(see acl2s-tutorial). </li>
 </ol>
 ")
@@ -355,11 +355,6 @@ reinstall Xming if you already have it installed.
       on the \"here\" link in the Windows installation instructions and
       choosing \"Save Link As...\".
   </li>
-  <li><code>wsl --install</code><span class=\"question\"> gives me an error!</span><br/>Try
-      installing the \"Ubuntu\" app on the Windows App Store, and then
-      running it (search for Ubuntu in the Start Menu). If this works,
-      you do not need to run <code>wsl --install</code>.
-  </li>
   <li><span class=\"question\">When I try to start a session, Eclipse tells me that an error
     occurred and that it could not start a session!</span><br/>Ensure that
     you ran the wsl.sh script as a non-root user (see the Windows
@@ -393,7 +388,7 @@ reinstall Xming if you already have it installed.
     can build ACL2s from scratch, which will take a fair amount of
     time (at least an hour). To build ACL2s from scratch, run
     <code>brew install acl2s</code>.<br/>If you are on an Intel Mac and
-    are running macOS Mojava or earlier, you can either update to
+    are running macOS Mojave or earlier, you can either update to
     macOS Catalina or later (if that is supported on your computer),
     or build ACL2s from scratch using the instructions above.
   </li>
@@ -413,6 +408,10 @@ reinstall Xming if you already have it installed.
       correctly. Assuming you are on a M1 Mac, try running the command
       <code>echo 'eval $(/opt/homebrew/bin/brew shellenv)' &gt;&gt; ~/.zprofile</code>
       and opening a new Terminal window.
+  </li>
+  <li><span class=\"question\">When I double click on the Eclipse application, nothing happens!</span><br/>Ensure that you have Java installed. To check, open
+  Terminal (e.g. by searching for it in Spotlight) and run @('java -version'). If
+  a version number is printed, you have Java installed.
   </li>
 </ul>
 

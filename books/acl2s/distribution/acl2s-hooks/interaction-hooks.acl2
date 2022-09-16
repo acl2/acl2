@@ -1,0 +1,5 @@
+; cert-flags: ? t :ttags :all
+(ld "acl2s-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "interaction-hooks" ACL2::? T :TTAGS :all)
