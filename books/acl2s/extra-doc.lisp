@@ -48,7 +48,7 @@ group <b>General</b>.  Give a name to the project that will contain
 your ACL2 developments and click <b>Finish</b>.
 </p><p>
 <b>Open the \"ACL2 Development\" perspective</b>:  Select
-<b>Window</b> | <b>Open Perspective</b> | <b>ACL2 Development</b>.
+<b>Window</b> | <b>Perspective</b> | <b>Open Perspective</b> | <b>Other...</b> and then select <b>ACL2 Development</b> and then <b>Open</b> in the window that appears.
 You could have instead clicked on the
 <icon src=\"res/acl2s/new_persp.gif\" width=\"16\" height=\"16\"/> icon in the top-right corner.
 The new perspective will change the layout of your workbench.
@@ -132,36 +132,9 @@ clicking the
 icon in the toolbar.
 </p>
 
-<box>
-<h4>Note: First-time ACL2s initialization...</h4>
-
 <p>
-<em>The first time you start a session,</em> there is some
-bookkeeping that ACL2s must take care of.  This will happen
-automatically (except for a couple confirmation dialogs), but the
-process could take several minutes (5-10).
-</p>
-
-<p>
-First, the ACL2 Image for Eclipse will need to fix .cert files for the
-absolute path of Eclipse on your computer.  If you move Eclipse, this
-step will automatically be repeated. Be patient and let it finish this
-one-time bookkeeping task, it might take around 5 minutes.
-</p>
-      
-<p>
-Second, the ACL2s <em>system books</em>, our visible and invisible
-extensions to ACL2, need to be certified and compiled by ACL2.  This
-step could be required again if you change your ACL2 version or when
-you update ACL2s to a new version.
-</p>
-
-</box>
-
-<p>
-After this bookkeeping, you should be able to click the \"restart
-session\" icon on the toolbar and have ACL2 start up, resulting in the
-\"<tt>ACL2 &gt;</tt>\" prompt.
+ACL2 should start up, resulting in a .a2s file opening up and the \"<tt>ACL2S &gt;</tt>\" prompt
+appearing after a few seconds.
 </p>
 
 
