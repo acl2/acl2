@@ -62,7 +62,7 @@ occurring.
   side of the screen and searching for @('cmd'). Then, right click
   on the \"Command Prompt\" item and select \"Run as administrator\".</li>
   <li>Run @('dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart')</li>
-  <li>Run @('dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart)</li>
+  <li>Run @('dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart')</li>
   <li>Restart your computer and reopen an administrator terminal as
       you did previously.</li>
   <li>Run @('wsl --update')</li>
