@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -550,7 +550,7 @@
        (antecedent-conjuncts (cons old-guard
                                    (negate-terms (take (1- k) conditions$))))
        (antecedent (conjoin antecedent-conjuncts))
-       (consequent (term-guard-obligation (nth (1- k) conditions$) state))
+       (consequent (term-guard-obligation (nth (1- k) conditions$) t state))
        (formula (implicate antecedent consequent)))
     (make-evmac-appcond :name name :formula formula)))
 
@@ -583,7 +583,7 @@
        (new (if (= k 0)
                 (car (last news))
               (nth (1- k) news)))
-       (consequent (term-guard-obligation new state))
+       (consequent (term-guard-obligation new t state))
        (formula (implicate antecedent consequent)))
     (make-evmac-appcond :name name :formula formula)))
 

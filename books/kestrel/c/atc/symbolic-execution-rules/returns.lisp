@@ -14,6 +14,8 @@
 (include-book "../integer-operations")
 (include-book "../arrays")
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-integer-ops-1-return-rewrite-rules*
