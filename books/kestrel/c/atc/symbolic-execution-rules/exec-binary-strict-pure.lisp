@@ -21,6 +21,8 @@
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-sint-get-rules
@@ -107,7 +109,7 @@
                             (equal
                              (,exec-binary-strict-pure-of-op-and-ltype x y)
                              (,op-ltype-rtype x y))))
-         (enables (if (member-eq (binop-kind op) '(:mul :div))
+         (enables (if (member-eq (binop-kind op) '(:mul :div :rem))
                       `(,exec-binary-strict-pure-of-op-and-ltype
                         ,op-values
                         ,op-arithmetic-values
@@ -170,7 +172,7 @@
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
-                   :disable truncate)))
+                   :disable (truncate rem))))
       (mv name event))
     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
@@ -203,7 +205,7 @@
          (lpred (pack lfixtype 'p))
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
-         (exec-op (if (member-eq (binop-kind op) '(:mul :div))
+         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -247,7 +249,7 @@
     (b* (((when (endp ops)) (mv nil nil))
          (op (car ops))
          (op-kind (binop-kind op))
-         (exec-op (if (member-eq (binop-kind op) '(:mul :div))
+         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op

@@ -33,7 +33,7 @@
     "We promote the operand
      and then we apply the operation on the integer.
      In our current formalization,
-     integers are the only arithmetic value.
+     integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
      if/when we extend out model with non-integer arithmetic values."))
   (b* ((val (promote-value val)))
@@ -54,7 +54,7 @@
     "We promote the operand
      and then we apply the operation on the integer.
      In our current formalization,
-     integers are the only arithmetic value.
+     integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
      if/when we extend out model with non-integer arithmetic value."))
   (b* ((val (promote-value val)))
@@ -76,7 +76,7 @@
     "We perform the usual arithmetic conversions
      and then we apply the operation on the integers.
      In our current formalization,
-     integers are the only arithmetic value.
+     integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
      if/when we extend out model with non-integer arithmetic values."))
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
@@ -92,18 +92,43 @@
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply @('/') to arithmetic values [C:6.5.5/3] [C:6.5.5/5]."
+  :short "Apply @('/') to arithmetic values
+          [C:6.5.5/3] [C:6.5.5/5] [C:6.5.5/6]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We perform the usual arithmetic conversions
      and then we apply the operation on the integers.
      In our current formalization,
-     integers are the only arithmetic value.
+     integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
      if/when we extend out model with non-integer arithmetic values."))
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (div-integer-values val1 val2))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp
+                                           type-of-value-of-uaconvert-values)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rem-arithmetic-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+  :returns (resval value-resultp)
+  :short "Apply @('%') to arithmetic values
+          [C:6.5.5/3] [C:6.5.5/5] [C:6.5.5/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We perform the usual arithmetic conversions
+     and then we apply the operation on the integers.
+     In our current formalization,
+     integers are the only arithmetic values.
+     This ACL2 function will be extended with more cases
+     if/when we extend out model with non-integer arithmetic values."))
+  (b* (((mv val1 val2) (uaconvert-values val1 val2)))
+    (rem-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
