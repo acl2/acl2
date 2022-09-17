@@ -598,7 +598,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ xdoc::evmac-desc-term (&key
-                                  (subject '"It")
+                                  (subject 'nil)
                                   (free-vars 'nil)
                                   (1res 'nil)
                                   (guard 'nil)
@@ -614,11 +614,13 @@
     "This utility provides some customization facilities:")
    (xdoc::ul
     (xdoc::li
-     "The @('subject') parameter must be XDOC text
-      that describes the subject of the assertion of the requirements.
-      The default is the string @('\"It\"'),
-      which should be appropriate if this text follows
-      some preceding text that describes what the input is for.")
+     "The @('subject') parameter must be either @('nil')
+      or XDOC text that describes
+      the subject of the assertion of the requirements.
+      The default is @('nil'), which means that there is no subject,
+      and the description starts with \"A term that...\".
+      If not @('nil'), the description starts with
+      \"<i>subject</i> must be a term...\".")
     (xdoc::li
      "The @('free-vars') parameter must be one of the following:
       (i) XDOC text that describes the allowed free variables in the term;
@@ -651,37 +653,40 @@
     "This utility may need to be extended and generalized in the future,
      in particular with more customization facilities."))
   `(xdoc::&&
-    (xdoc::p
-     ,subject
-     " must be a term that only references logic-mode functions"
-     ,(if free-vars
-          `(xdoc::&&
-            " and that includes no free variables other than "
-            ,free-vars)
-        "")
-     ". This term must have no output @(see acl2::stobj)s."
-     ,(if 1res
-          " This term must return
-              a single (i.e. non-@(tsee acl2::mv)) value."
-        "")
-     ,(cond ((eq guard t) " This term
-                             must only call guard-verified functions,
-                             except possibly
-                             in the @(':logic') subterms of @(tsee acl2::mbe)s
-                             or via @(tsee acl2::ec-call).")
-            ((eq guard nil) "")
-            (t `(xdoc::&&
-                 " If " ,guard ", then this term
-                    must only call guard-verified functions,
-                    except possibly
-                    in the @(':logic') subterms of @(tsee acl2::mbe)s
-                    or via @(tsee acl2::ec-call).")))
-     ,(if dont-call
-          `(xdoc::&& " This term must not reference " ,dont-call ".")
-        "")
-     ,(if additional
-          `(xdoc::&& " " ,additional)
-        ""))))
+    ,@(if subject
+          (list subject " must be a")
+        (list "A"))
+    " term that only references logic-mode functions"
+    ,(if free-vars
+         `(xdoc::&&
+           " and that includes no free variables other than "
+           ,free-vars)
+       "")
+    ". This term must have no output @(see acl2::stobj)s."
+    ,(if 1res
+         " This term must return
+          a single (i.e. non-@(tsee acl2::mv)) value."
+       "")
+    ,(cond ((eq guard t) " This term
+                          must only call guard-verified functions,
+                          except possibly
+                          in the @(':logic') subterms of @(tsee acl2::mbe)s
+                          or via @(tsee acl2::ec-call).")
+           ((eq guard nil) "")
+           (t `(xdoc::&&
+                " If "
+                ,guard
+                ", then this term
+                 must only call guard-verified functions,
+                 except possibly
+                 in the @(':logic') subterms of @(tsee acl2::mbe)s
+                 or via @(tsee acl2::ec-call).")))
+    ,(if dont-call
+         `(xdoc::&& " This term must not reference " ,dont-call ".")
+       "")
+    ,(if additional
+         `(xdoc::&& " " ,additional)
+       "")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
