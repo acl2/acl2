@@ -841,12 +841,12 @@
      (make-evmac-appcond?
       :doma-guard
       (cond ((symbolp doma$) (uguard doma$ wrld))
-            (t (term-guard-obligation (lambda-body doma$) state)))
+            (t (term-guard-obligation (lambda-body doma$) t state)))
       :when guard-thms$)
      (make-evmac-appcond?
       :domb-guard
       (cond ((symbolp domb$) (uguard domb$ wrld))
-            (t (term-guard-obligation (lambda-body domb$) state)))
+            (t (term-guard-obligation (lambda-body domb$) t state)))
       :when guard-thms$)
      (make-evmac-appcond?
       :alpha-guard
@@ -855,7 +855,7 @@
                   (t (lambda-formals alpha$))))
            (alpha-guard
             (cond ((symbolp alpha$) (uguard alpha$ wrld))
-                  (t (term-guard-obligation (lambda-body alpha$) state)))))
+                  (t (term-guard-obligation (lambda-body alpha$) t state)))))
         (implicate (apply-term doma$ a1...an)
                    (subcor-var alpha-formals
                                a1...an
@@ -868,7 +868,7 @@
                   (t (lambda-formals beta$))))
            (beta-guard
             (cond ((symbolp beta$) (uguard beta$ wrld))
-                  (t (term-guard-obligation (lambda-body beta$) state)))))
+                  (t (term-guard-obligation (lambda-body beta$) t state)))))
         (implicate (apply-term domb$ b1...bm)
                    (subcor-var beta-formals
                                b1...bm
