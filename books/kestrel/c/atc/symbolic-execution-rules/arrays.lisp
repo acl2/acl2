@@ -13,6 +13,8 @@
 
 (include-book "../arrays")
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection array-tau-rules

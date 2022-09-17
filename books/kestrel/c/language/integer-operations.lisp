@@ -907,7 +907,46 @@
        ((when (equal mathint2 0)) (error :division-by-zero))
        (result (truncate mathint1 mathint2))
        (resval (result-integer-value result (type-of-value val1)))
-       ((when (errorp resval)) (error (list :undefined-mul
+       ((when (errorp resval)) (error (list :undefined-div
+                                            (value-fix val1)
+                                            (value-fix val2)))))
+    resval)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rem-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval value-resultp)
+  :short "Apply @('%') to integer values [C:6.5.5/5] [C:6.5.5/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the operands [C:6.3.1.8/1].
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function.")
+   (xdoc::p
+    "It is an error if the divisor is 0 [C:6.5.5/5].")
+   (xdoc::p
+    "We use @(tsee rem) because it matches the use of @(tsee truncate),
+     in terms of the relationship between quotient and remainder [C:6.5.5/6],
+     in the definition of @('/') in @(tsee rem-integer-values)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2))
+       ((when (equal mathint2 0)) (error :division-by-zero))
+       (result (rem mathint1 mathint2))
+       (resval (result-integer-value result (type-of-value val1)))
+       ((when (errorp resval)) (error (list :undefined-rem
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)

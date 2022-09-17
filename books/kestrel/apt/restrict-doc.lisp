@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -48,7 +48,13 @@
       This transformation adds restrictions to the guard,
       and wraps the body with a test for the restrictions,
       which may enable further optimizations
-      by taking advantage of the added restrictions.")
+      by taking advantage of the added restrictions.
+      As a special case, this transformation can leave the guard unchanged
+      but wrap the body with a test for the guard,
+      thus treating the guard as the restriction:
+      this may enable further optimizations
+      by effectively removing from consideration, in the body of the function,
+      conditions under which the guard does not hold.")
 
     (xdoc::apt-design-notes-ref restrict))
 
@@ -151,24 +157,48 @@
      (xdoc::p
       "Denotes the restricting predicate for the domain of @('old'),
        i.e. the predicate that will be added to the guard
+       (unless this input is @(':guard'), see below),
        and as the test that wraps the body.")
      (xdoc::p
-      "The special value @(':guard') can be used to denote the guard predicate itself.")
-     (xdoc::evmac-desc-term
-      :free-vars "@('x1'), ..., @('xn')"
-      :1res t
-      :guard "the generated function is guard-verified
-              (which is determined by the @(':verify-guards') input; see below)"
-      :dont-call "@('old')")
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       (xdoc::&&
+        (xdoc::evmac-desc-term
+         :free-vars "@('x1'), ..., @('xn')"
+         :1res t
+         :guard "the generated function is guard-verified
+                 (which is determined by the @(':verify-guards') input;
+                 see below)"
+         :dont-call "@('old')")
+        "This term must not be the keyword @(':guard'),
+         i.e. if the @('restriction') input is @(':guard'),
+         it is treated as denoting the guard (see below),
+         and not as denoting the term @(':guard'),
+         which may be denoted by using the quoted @('\':guard')
+         as the @('restriction') input instead
+         (even though there is no use case for doing so)."))
+      (xdoc::li
+       "They keyword @(':guard')."))
      (xdoc::p
-      "The term denotes the predicate @('(lambda (x1 ... xn) restriction)').")
+      "The @('restriction') input denotes
+       the predicate @('(lambda (x1 ... xn) old-guard<x1,...,xn>)')
+       if @('restriction') is @(':guard'),
+       otherwise it denotes the predicate @('(lambda (x1 ... xn) restriction)').
+       In the rest of this documentation page,
+       we refer to this predicate as
+       @('(lambda (x1 ... xn) pred<x1,...,xn>)').")
      (xdoc::p
-      "In order to highlight the dependence on @('x1'), ..., @('xn'),
-       in the rest of this documentation page,
-       @('restriction<x1,...,xn>') is used for @('restriction').")
+      "Using @(':guard') as the @('restriction') input
+       is essentially equivalent to using
+       the guard term of @('old') as the @('restriction') input.
+       However, using @(':guard') is simpler and more robust
+       (in the face of changes to the guard),
+       and leads to a simpler guard in the new function
+       (see `Generated Events' below).")
      (xdoc::p
       "In the " *restrict-design-notes* ",
-       @('(lambda (x1 ... xn) restriction<x1,...,xn>)') is denoted by @($R$)."))
+       @('(lambda (x1 ... xn) pred<x1,...,xn>)') is denoted by @($R$)."))
 
     (xdoc::desc
      "@(':undefined') &mdash; default @(':undefined')"
@@ -221,19 +251,19 @@
      ":restriction-of-rec-calls"
      (xdoc::&&
       (xdoc::p
-       "@('(lambda (x1 ... xn) restriction<x1,...,xn>)')
+       "@('(lambda (x1 ... xn) pred<x1,...,xn>)')
         is preserved across the recursive calls of @('old'):")
       (xdoc::codeblock
-       "(implies restriction<x1,...,xn>"
+       "(implies pred<x1,...,xn>"
        "         (and (implies context1<x1,...,xn,?f>"
-       "                       restriction<update1-x1<x1,...,xn,?f>,"
-       "                                   ...,"
-       "                                   update1-xn<x1,...,xn,?f>>)"
+       "                       pred<update1-x1<x1,...,xn,?f>,"
+       "                            ...,"
+       "                            update1-xn<x1,...,xn,?f>>)"
        "              ..."
        "              (implies contextm<x1,...,xn,?f>"
-       "                       restriction<updatem-x1<x1,...,xn,?f>,"
-       "                                   ...,"
-       "                                   updatem-xn<x1,...,xn,?f>>)))")
+       "                       pred<updatem-x1<x1,...,xn,?f>,"
+       "                            ...,"
+       "                            updatem-xn<x1,...,xn,?f>>)))")
       (xdoc::p
        "where @('?f') is an @('n')-ary stub that replaces @('old')
         (this only applies to reflexive functions; see above)."))
@@ -249,10 +279,10 @@
         on every value in the guard of @('old'):")
       (xdoc::codeblock
        "(implies old-guard<x1,...,xn>"
-       "         restriction-guard<x1,...,xn>)")
+       "         pred-guard<x1,...,xn>)")
       (xdoc::p
-       "where @('restriction-guard<x1,...,xn>') is
-        the guard obligation of @('restriction<x1,...,xn>')."))
+       "where @('pred-guard<x1,...,xn>') is
+        the guard obligation of @('pred<x1,...,xn>')."))
      :design-notes *restrict-design-notes*
      :design-notes-appcond "@($\\mathit{GR}$)"
      :presence "the generated function is guard-verified
@@ -270,13 +300,13 @@
      (xdoc::codeblock
       ";; when old is not recursive:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt$ restriction<x1,...,xn>)"
+      "  (if (mbt$ pred<x1,...,xn>)"
       "      old-body<x1,...,xn>"
       "    undefined))"
       ""
       ";; when old is recursive:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt$ restriction<x1,...,xn>)"
+      "  (if (mbt$ pred<x1,...,xn>)"
       "      old-body<x1,...,xn,"
       "               (new update1-x1<x1,...,xn,new>"
       "                    ..."
@@ -291,12 +321,14 @@
        the measure term and well-founded relation of @('new')
        are the same as @('old').")
      (xdoc::p
-      "The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)').")
+      "The guard is @('(and old-guard<x1,...,xn> pred<x1,...,xn>)')
+       if the @('restriction') input is not @(':guard').
+       Otherwise, the guard is just @('old-guard<x1,...,xn>').")
      (xdoc::p
       "Since the restriction test follows from the guard,
        the test is wrapped by @(tsee mbt$).
        The use of @(tsee mbt$), as opposed to @(tsee mbt),
-       avoids requiring @('restriction') to be boolean-valued.")
+       avoids requiring @('pred<x1,...,xn>') to be boolean-valued.")
      (xdoc::p
       "In the " *restrict-design-notes* ",
        @('new') is denoted by @($f'$)."))
@@ -307,7 +339,7 @@
       "Theorem that relates @('old') to @('new'):")
      (xdoc::codeblock
       "(defthm old-to-new"
-      "  (implies restriction<x1,...,xn>"
+      "  (implies pred<x1,...,xn>"
       "           (equal (old x1 ... xn)"
       "                  (new x1 ... xn))))")
      (xdoc::p
@@ -320,7 +352,7 @@
       "Theorem that relates @('new') to @('old'):")
      (xdoc::codeblock
       "(defthm new-to-old"
-      "  (implies restriction<x1,...,xn>"
+      "  (implies pred<x1,...,xn>"
       "           (equal (new x1 ... xn)"
       "                  (old x1 ... xn))))")
      (xdoc::p
