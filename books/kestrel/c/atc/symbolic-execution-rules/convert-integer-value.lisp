@@ -20,6 +20,8 @@
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-convert-integer-value-rules
