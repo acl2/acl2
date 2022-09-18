@@ -44,6 +44,9 @@
 ;; The shared memory is an alist mapping symbols to values (integers).
 
 (in-package "SB")
+(include-book "std/util/defrule" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
 (set-ignore-ok t)
 
 (in-theory (disable assoc put-assoc nth update-nth))

@@ -129,6 +129,9 @@
          (state (set-fmt-soft-right-margin 400 state)))
     state))
 
+;; Same as in centaur/fty.
+(defun pos-fix (x) (declare (xargs :guard t)) (if (posp x) x 1))
+
 (defund unwiden-margins (state)
   (declare (xargs :stobjs state
                   :guard-hints (("Goal" :in-theory (enable boundp-global)))))
