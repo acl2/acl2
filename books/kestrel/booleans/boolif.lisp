@@ -108,3 +108,23 @@
            (equal (boolif test x y)
                   (bool-fix y)))
   :rule-classes nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd boolif-of-if-arg1
+  (equal (boolif (if test test1 test2) x y)
+         (boolif (boolif test test1 test2) x y)))
+
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg1) (:defintion boolif)))
+
+(defthmd boolif-of-if-arg2
+  (equal (boolif test (if test x1 x2) y)
+         (boolif test (boolif test x1 x2) y)))
+
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg2) (:defintion boolif)))
+
+(defthmd boolif-of-if-arg3
+  (equal (boolif test x (if test y1 y2))
+         (boolif test x (boolif test y1 y2))))
+
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg3) (:defintion boolif)))

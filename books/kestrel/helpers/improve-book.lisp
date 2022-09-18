@@ -37,21 +37,6 @@
     (submit-event-helper event print nil state)
     (mv erp nil state)))
 
-;; Reads and then submits all the events in FILENAME.
-;; Returns (mv erp state).
-;; Example: (replay-book "helper.lisp" state)
-(defun replay-book (filename state)
-  (declare (xargs :guard (stringp filename)
-                  :mode :program ; because this ultimately calls trans-eval-error-triple
-                  :stobjs state))
-  (mv-let (erp events state)
-    (read-objects-from-file filename state)
-    (if erp
-        (mv erp state)
-      (let ((state (submit-events events state)))
-        (mv nil ; no error
-            state)))))
-
 ;; Submits the EVENTS.  If an error is encountered, it is returned and further events are ignored.
 ;; Returns (mv erp state).
 (defun submit-and-check-events (events print state)
@@ -98,7 +83,7 @@
   (mv-let (erp state)
     (submit-event-helper event print nil state)
     (if erp
-        (prog2$ (cw "ERROR submitting event ~X01." event nil)
+        (prog2$ (cw "ERROR submitting event ~X01.~%" event nil)
                 (mv :error-submitting-event state))
       (mv nil state))))
 

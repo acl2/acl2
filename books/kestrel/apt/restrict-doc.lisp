@@ -213,7 +213,7 @@
      (xdoc::p
       "Even if the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
-       the term may call non-guard-verified functions.
+       the term needs not be guard-verified.
        Since the term is governed by the negation of the guard
        (see the generated new function, below),
        the verification of its guards always succeeds trivially.")
