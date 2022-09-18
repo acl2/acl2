@@ -1207,6 +1207,7 @@
     unsigned-byte-p-forced-of-leftrotate32
     unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-repeatbit
+    unsigned-byte-p-forced-of-bool-to-bit
     ;;todo bvshl
     ;;todo bvshr
     ;;todo bvashr
