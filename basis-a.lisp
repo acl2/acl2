@@ -8043,8 +8043,7 @@
              (let* (,@(and (not (eq st 'state))
                            `((,st (,creator))))
                     ,@(cond ((eq st 'state)
-                             '((*inside-with-local-state* t)
-                               (*wormholep*
+                             '((*wormholep*
 
 ; We are in a local state, so it is irrelevant whether or not we are in a
 ; wormhole, since (conceptually at least) the local state will be thrown away
