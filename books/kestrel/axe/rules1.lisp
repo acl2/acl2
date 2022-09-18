@@ -16,14 +16,13 @@
 
 ;;  This file was called axerulescore.lisp.
 
-(include-book "list-rules")
+;;(include-book "list-rules")
 (include-book "kestrel/bv-lists/list-patterns" :dir :system) ;for negated-elems-listp
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)
 (include-book "kestrel/bv-lists/bvnth" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
-(local (include-book "kestrel/bv-lists/bytes-to-bits2" :dir :system))
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
@@ -35,7 +34,7 @@
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;todo
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
-;(local (include-book "kestrel/bv/arith" :dir :system)) ; for expt-collect-hack
+(local (include-book "kestrel/bv-lists/bytes-to-bits2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -1793,7 +1792,7 @@
   :hints (("Goal" :cases ((equal (+ 1 KEY) (len rhs)))
            :in-theory (e/d (BV-ARRAY-CLEAR bv-array-write BV-ARRAY-READ update-nth2
                                            UPDATE-NTH-WHEN-EQUAL-OF-NTH
-                                           equal-of-update-nth)
+                                           equal-of-update-nth-new)
                            (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
@@ -2499,7 +2498,7 @@
                                                   take
                                                   UNSIGNED-BYTE-P-OF-INTEGER-LENGTH-GEN)
                                   (update-nth-becomes-update-nth2-extend-gen
-                                   EQUAL-OF-UPDATE-NTH
+                                   EQUAL-OF-UPDATE-NTH-new
                                    FIRSTN-BECOMES-TAKE-GEN
                                    natp)))))
 
