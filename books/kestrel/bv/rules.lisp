@@ -3225,6 +3225,10 @@
            (unsigned-byte-p-forced n (repeatbit n bit)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
+(defthm unsigned-byte-p-forced-of-bool-to-bit
+  (unsigned-byte-p-forced 1 (bool-to-bit x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
 ;fixme add the rest of the unsigned-byte-p-forced rules!
 
 ;justifies adding unsigned-byte-p-forced to the list of known predicates
