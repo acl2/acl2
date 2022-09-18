@@ -7514,6 +7514,7 @@
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
            memoize
+           program
            push
            reset-future-parallelism-variables
            set-duplicate-keys-action

@@ -360,6 +360,12 @@
 
 (defun acl2-set-character-encoding ()
 
+; Warning: If we change from :iso-8859-1, consider the effect on the raw Lisp
+; code in read-file-into-string2.  That function allocates a string and copies
+; a stream into it.  Presumably that works because the stream is interpreted as
+; a character stream (since character is the default element-type for open) and
+; a each byte in the file is treated as a single character in that stream.
+
 ; We set the character encoding (see discussion above).
 
   #+allegro

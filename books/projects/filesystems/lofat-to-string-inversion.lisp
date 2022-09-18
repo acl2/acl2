@@ -1064,11 +1064,11 @@
   disk-image-to-lofat-guard-lemma-1
   (iff
    (< (len (explode (read-file-into-string2
-                     image-path 0 *initialbytcnt* state)))
+                     image-path 0 *initialbytcnt* close state)))
       *initialbytcnt*)
    (<
     (len
-     (explode (read-file-into-string2 image-path 0 nil state)))
+     (explode (read-file-into-string2 image-path 0 nil close state)))
     *initialbytcnt*))
   :rule-classes
   (:rewrite
@@ -1079,10 +1079,10 @@
       *initialbytcnt*
       (len
        (explode
-        (read-file-into-string2 image-path 0 nil state))))
+        (read-file-into-string2 image-path 0 nil close state))))
      (equal
       (len (explode (read-file-into-string2
-                     image-path 0 *initialbytcnt* state)))
+                     image-path 0 *initialbytcnt* close state)))
       *initialbytcnt*)))))
 
 (defthm
@@ -1109,11 +1109,11 @@
    (equal
     (nth
      n
-     (explode (read-file-into-string2 image-path 0 16 state)))
+     (explode (read-file-into-string2 image-path 0 16 close state)))
     (nth
      n
      (explode
-      (read-file-into-string2 image-path 0 nil state)))))
+      (read-file-into-string2 image-path 0 nil close state)))))
   :hints (("goal" :in-theory (enable nth))))
 
 (defthm
@@ -1123,35 +1123,35 @@
     (mv-nth
      1
      (read-reserved-area fat32$c
-                         (read-file-into-string2 image-path 0 nil state)))
+                         (read-file-into-string2 image-path 0 nil close state)))
     0)
    (and
     (equal
      (combine16u
       (char-code
        (nth 12
-            (explode (read-file-into-string2 image-path 0 nil state))))
+            (explode (read-file-into-string2 image-path 0 nil close state))))
       (char-code
        (nth 11
-            (explode (read-file-into-string2 image-path 0 nil state)))))
+            (explode (read-file-into-string2 image-path 0 nil close state)))))
      (bpb_bytspersec
       (mv-nth
        0
        (read-reserved-area fat32$c
-                           (read-file-into-string2 image-path 0 nil state)))))
+                           (read-file-into-string2 image-path 0 nil close state)))))
     (equal
      (combine16u
       (char-code
        (nth 15
-            (explode (read-file-into-string2 image-path 0 nil state))))
+            (explode (read-file-into-string2 image-path 0 nil close state))))
       (char-code
        (nth 14
-            (explode (read-file-into-string2 image-path 0 nil state)))))
+            (explode (read-file-into-string2 image-path 0 nil close state)))))
      (bpb_rsvdseccnt
       (mv-nth
        0
        (read-reserved-area fat32$c
-                           (read-file-into-string2 image-path 0 nil state)))))))
+                           (read-file-into-string2 image-path 0 nil close state)))))))
   :hints (("Goal" :in-theory (enable read-reserved-area get-initial-bytes)) ))
 
 (encapsulate
@@ -1194,14 +1194,14 @@
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))
+          (read-file-into-string2 image-path 0 nil close state))))
        1/4
        (bpb_bytspersec
         (mv-nth
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))))
+          (read-file-into-string2 image-path 0 nil close state))))))
      (integerp
       (*
        1/4
@@ -1210,13 +1210,13 @@
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))
+          (read-file-into-string2 image-path 0 nil close state))))
        (bpb_fatsz32
         (mv-nth
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))))))
+          (read-file-into-string2 image-path 0 nil close state))))))))
 
   (defthm
     disk-image-to-lofat-guard-lemma-22
@@ -1267,7 +1267,7 @@
    (<=
     16
     (len
-     (explode (read-file-into-string2 image-path 0 16 state))))
+     (explode (read-file-into-string2 image-path 0 16 close state))))
    (stringp
     (read-file-into-string2
      image-path 16
@@ -1278,19 +1278,19 @@
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))))
-     state))))
+                 (read-file-into-string2 image-path 0 nil close state))))))
+     close state))))
 
 (defthm
   disk-image-to-lofat-guard-lemma-7
   (implies
    (<= 16
-       (len (explode (read-file-into-string2 image-path 0 16 state))))
+       (len (explode (read-file-into-string2 image-path 0 16 close state))))
    (stringp
     (read-file-into-string2
      image-path 16
@@ -1300,18 +1300,18 @@
        (combine16u
         (char-code
          (nth 12
-              (explode (read-file-into-string2 image-path 0 nil state))))
+              (explode (read-file-into-string2 image-path 0 nil close state))))
         (char-code
          (nth 11
-              (explode (read-file-into-string2 image-path 0 nil state)))))
+              (explode (read-file-into-string2 image-path 0 nil close state)))))
        (combine16u
         (char-code
          (nth 15
-              (explode (read-file-into-string2 image-path 0 nil state))))
+              (explode (read-file-into-string2 image-path 0 nil close state))))
         (char-code
          (nth 14
-              (explode (read-file-into-string2 image-path 0 nil state)))))))
-     state)))
+              (explode (read-file-into-string2 image-path 0 nil close state)))))))
+     close state)))
   :hints (("goal" :in-theory (enable read-reserved-area))))
 
 (defthm
@@ -1342,7 +1342,7 @@
      1
      (read-reserved-area
       fat32$c
-      (read-file-into-string2 image-path 0 nil state)))
+      (read-file-into-string2 image-path 0 nil close state)))
     0)
    (equal
     (len
@@ -1357,14 +1357,14 @@
            0
            (read-reserved-area
             fat32$c
-            (read-file-into-string2 image-path 0 nil state))))
+            (read-file-into-string2 image-path 0 nil close state))))
          (bpb_rsvdseccnt
           (mv-nth
            0
            (read-reserved-area
             fat32$c
-            (read-file-into-string2 image-path 0 nil state))))))
-       state)))
+            (read-file-into-string2 image-path 0 nil close state))))))
+       close state)))
     (+
      -16
      (*
@@ -1373,13 +1373,13 @@
         0
         (read-reserved-area
          fat32$c
-         (read-file-into-string2 image-path 0 nil state))))
+         (read-file-into-string2 image-path 0 nil close state))))
       (bpb_rsvdseccnt
        (mv-nth
         0
         (read-reserved-area
          fat32$c
-         (read-file-into-string2 image-path 0 nil state))))))))
+         (read-file-into-string2 image-path 0 nil close state))))))))
   :hints (("goal" :in-theory (enable read-reserved-area))))
 
 (defthm
@@ -1396,39 +1396,39 @@
          (combine16u
           (char-code
            (nth 12
-                (explode (read-file-into-string2 image-path 0 nil state))))
+                (explode (read-file-into-string2 image-path 0 nil close state))))
           (char-code
            (nth 11
-                (explode (read-file-into-string2 image-path 0 nil state)))))
+                (explode (read-file-into-string2 image-path 0 nil close state)))))
          (combine16u
           (char-code
            (nth 15
-                (explode (read-file-into-string2 image-path 0 nil state))))
+                (explode (read-file-into-string2 image-path 0 nil close state))))
           (char-code
            (nth 14
-                (explode (read-file-into-string2 image-path 0 nil state)))))))
-       state)))
+                (explode (read-file-into-string2 image-path 0 nil close state)))))))
+       close state)))
     (+
      -16
      (*
       (combine16u
        (char-code
         (nth 12
-             (explode (read-file-into-string2 image-path 0 nil state))))
+             (explode (read-file-into-string2 image-path 0 nil close state))))
        (char-code
         (nth 11
-             (explode (read-file-into-string2 image-path 0 nil state)))))
+             (explode (read-file-into-string2 image-path 0 nil close state)))))
       (combine16u
        (char-code
         (nth 15
-             (explode (read-file-into-string2 image-path 0 nil state))))
+             (explode (read-file-into-string2 image-path 0 nil close state))))
        (char-code
         (nth 14
-             (explode (read-file-into-string2 image-path 0 nil state))))))))
+             (explode (read-file-into-string2 image-path 0 nil close state))))))))
    (equal
     (read-reserved-area
      fat32$c
-     (read-file-into-string2 image-path 0 nil state))
+     (read-file-into-string2 image-path 0 nil close state))
     (mv
      (update-bpb_bytspersec
       512
@@ -1466,24 +1466,24 @@
   (implies
    (and
     (<= 16
-        (len (explode (read-file-into-string2 image-path 0 16 state))))
+        (len (explode (read-file-into-string2 image-path 0 16 close state))))
     (>=
      (combine16u
       (char-code
        (nth 12
-            (explode (read-file-into-string2 image-path 0 nil state))))
+            (explode (read-file-into-string2 image-path 0 nil close state))))
       (char-code
        (nth 11
-            (explode (read-file-into-string2 image-path 0 nil state)))))
+            (explode (read-file-into-string2 image-path 0 nil close state)))))
      512)
     (>=
      (combine16u
       (char-code
        (nth 15
-            (explode (read-file-into-string2 image-path 0 nil state))))
+            (explode (read-file-into-string2 image-path 0 nil close state))))
       (char-code
        (nth 14
-            (explode (read-file-into-string2 image-path 0 nil state)))))
+            (explode (read-file-into-string2 image-path 0 nil close state)))))
      1))
    (equal
     (read-reserved-area
@@ -1494,25 +1494,25 @@
        (combine16u
         (char-code
          (nth 12
-              (explode (read-file-into-string2 image-path 0 nil state))))
+              (explode (read-file-into-string2 image-path 0 nil close state))))
         (char-code
          (nth 11
-              (explode (read-file-into-string2 image-path 0 nil state)))))
+              (explode (read-file-into-string2 image-path 0 nil close state)))))
        (combine16u
         (char-code
          (nth 15
-              (explode (read-file-into-string2 image-path 0 nil state))))
+              (explode (read-file-into-string2 image-path 0 nil close state))))
         (char-code
          (nth 14
-              (explode (read-file-into-string2 image-path 0 nil state))))))
-      state))
+              (explode (read-file-into-string2 image-path 0 nil close state))))))
+      close state))
     (read-reserved-area fat32$c
-                        (read-file-into-string2 image-path 0 nil state))))
+                        (read-file-into-string2 image-path 0 nil close state))))
   :hints
   (("goal"
     :in-theory (disable read-reserved-area-correctness-1)
     :use (:instance read-reserved-area-correctness-1
-                    (str (read-file-into-string2 image-path 0 nil state))))))
+                    (str (read-file-into-string2 image-path 0 nil close state))))))
 
 (defthm
   disk-image-to-lofat-guard-lemma-14
@@ -1521,7 +1521,7 @@
     (mv-nth
      1
      (read-reserved-area fat32$c
-                         (read-file-into-string2 image-path 0 nil state)))
+                         (read-file-into-string2 image-path 0 nil close state)))
     0)
    (equal
     (read-reserved-area
@@ -1533,15 +1533,15 @@
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state)))))
-      state))
+                 (read-file-into-string2 image-path 0 nil close state)))))
+      close state))
     (read-reserved-area fat32$c
-                        (read-file-into-string2 image-path 0 nil state))))
+                        (read-file-into-string2 image-path 0 nil close state))))
   :hints
   (("goal"
     :in-theory (e/d (read-reserved-area nth-when->=-n-len-l)
@@ -1580,7 +1580,7 @@
     (mv-nth
      1
      (read-reserved-area fat32$c
-                         (read-file-into-string2 image-path 0 nil state)))
+                         (read-file-into-string2 image-path 0 nil close state)))
     0)
    (iff
     (<
@@ -1593,47 +1593,47 @@
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state))))
+                   (read-file-into-string2 image-path 0 nil close state))))
          (bpb_rsvdseccnt
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
+                   (read-file-into-string2 image-path 0 nil close state)))))
         (*
          4
          (fat-entry-count
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
-        state)))
+                   (read-file-into-string2 image-path 0 nil close state)))))
+        close state)))
      (*
       4
       (fat-entry-count
        (mv-nth
         0
         (read-reserved-area fat32$c
-                            (read-file-into-string2 image-path 0 nil state))))))
+                            (read-file-into-string2 image-path 0 nil close state))))))
     (<
-     (len (explode (read-file-into-string2 image-path 0 nil state)))
+     (len (explode (read-file-into-string2 image-path 0 nil close state)))
      (+
       (* 4
          (fat-entry-count
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
+                   (read-file-into-string2 image-path 0 nil close state)))))
       (*
        (bpb_bytspersec
         (mv-nth
          0
          (read-reserved-area fat32$c
-                             (read-file-into-string2 image-path 0 nil state))))
+                             (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))))))))
+                 (read-file-into-string2 image-path 0 nil close state))))))))))
 
 (defthm
   disk-image-to-lofat-guard-lemma-19
@@ -1644,7 +1644,7 @@
       1
       (read-reserved-area
        fat32$c
-       (read-file-into-string2 image-path 0 nil state)))
+       (read-file-into-string2 image-path 0 nil close state)))
      0)
     (<=
      (+
@@ -1655,23 +1655,23 @@
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state)))))
+          (read-file-into-string2 image-path 0 nil close state)))))
       (*
        (bpb_bytspersec
         (mv-nth
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))
+          (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))))
+          (read-file-into-string2 image-path 0 nil close state))))))
      (len
       (explode
-       (read-file-into-string2 image-path 0 nil state)))))
+       (read-file-into-string2 image-path 0 nil close state)))))
    (equal
     (read-file-into-string2
      image-path
@@ -1681,13 +1681,13 @@
         0
         (read-reserved-area
          fat32$c
-         (read-file-into-string2 image-path 0 nil state))))
+         (read-file-into-string2 image-path 0 nil close state))))
       (bpb_rsvdseccnt
        (mv-nth
         0
         (read-reserved-area
          fat32$c
-         (read-file-into-string2 image-path 0 nil state)))))
+         (read-file-into-string2 image-path 0 nil close state)))))
      (*
       4
       (fat-entry-count
@@ -1695,8 +1695,8 @@
         0
         (read-reserved-area
          fat32$c
-         (read-file-into-string2 image-path 0 nil state)))))
-     state)
+         (read-file-into-string2 image-path 0 nil close state)))))
+     close state)
     (implode
      (take
       (*
@@ -1706,7 +1706,7 @@
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state)))))
+          (read-file-into-string2 image-path 0 nil close state)))))
       (nthcdr
        (*
         (bpb_bytspersec
@@ -1714,15 +1714,15 @@
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state))))
+           (read-file-into-string2 image-path 0 nil close state))))
         (bpb_rsvdseccnt
          (mv-nth
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state)))))
+           (read-file-into-string2 image-path 0 nil close state)))))
        (explode
-        (read-file-into-string2 image-path 0 nil state)))))))
+        (read-file-into-string2 image-path 0 nil close state)))))))
   :hints
   (("goal"
     :in-theory (enable take-of-nthcdr)
@@ -1843,7 +1843,7 @@
 (defthm
   disk-image-to-lofat-guard-lemma-25
   (implies
-   (stringp (read-file-into-string2 image-path 0 nil state))
+   (stringp (read-file-into-string2 image-path 0 nil close state))
    (iff
     (stringp
      (read-file-into-string2
@@ -1856,20 +1856,20 @@
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state)))))
+           (read-file-into-string2 image-path 0 nil close state)))))
        (*
         (bpb_bytspersec
          (mv-nth
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state))))
+           (read-file-into-string2 image-path 0 nil close state))))
         (bpb_rsvdseccnt
          (mv-nth
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state))))))
+           (read-file-into-string2 image-path 0 nil close state))))))
       (+
        (-
         (*
@@ -1879,27 +1879,27 @@
            0
            (read-reserved-area
             fat32$c
-            (read-file-into-string2 image-path 0 nil state))))))
+            (read-file-into-string2 image-path 0 nil close state))))))
        (*
         (bpb_bytspersec
          (mv-nth
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state))))
+           (read-file-into-string2 image-path 0 nil close state))))
         (bpb_fatsz32
          (mv-nth
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state))))
+           (read-file-into-string2 image-path 0 nil close state))))
         (bpb_numfats
          (mv-nth
           0
           (read-reserved-area
            fat32$c
-           (read-file-into-string2 image-path 0 nil state))))))
-      state))
+           (read-file-into-string2 image-path 0 nil close state))))))
+      close state))
     (<=
      (+
       (*
@@ -1909,22 +1909,22 @@
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state)))))
+          (read-file-into-string2 image-path 0 nil close state)))))
       (*
        (bpb_bytspersec
         (mv-nth
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))
+          (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))))
+          (read-file-into-string2 image-path 0 nil close state))))))
      (length
-      (read-file-into-string2 image-path 0 nil state))))))
+      (read-file-into-string2 image-path 0 nil close state))))))
 
 (defthm
   disk-image-to-lofat-guard-lemma-27
@@ -1938,18 +1938,18 @@
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
+                   (read-file-into-string2 image-path 0 nil close state)))))
       (*
        (bpb_bytspersec
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state)))))))
+                 (read-file-into-string2 image-path 0 nil close state)))))))
     (<=
      (+
       (* 4
@@ -1957,19 +1957,19 @@
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
+                   (read-file-into-string2 image-path 0 nil close state)))))
       (*
        (bpb_bytspersec
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))))
-     (len (explode (read-file-into-string2 image-path 0 nil state)))))
+                 (read-file-into-string2 image-path 0 nil close state))))))
+     (len (explode (read-file-into-string2 image-path 0 nil close state)))))
    (iff
     (<
      (len
@@ -1983,18 +1983,18 @@
            (mv-nth 0
                    (read-reserved-area
                     fat32$c
-                    (read-file-into-string2 image-path 0 nil state)))))
+                    (read-file-into-string2 image-path 0 nil close state)))))
          (*
           (bpb_bytspersec
            (mv-nth 0
                    (read-reserved-area
                     fat32$c
-                    (read-file-into-string2 image-path 0 nil state))))
+                    (read-file-into-string2 image-path 0 nil close state))))
           (bpb_rsvdseccnt
            (mv-nth 0
                    (read-reserved-area
                     fat32$c
-                    (read-file-into-string2 image-path 0 nil state))))))
+                    (read-file-into-string2 image-path 0 nil close state))))))
         (+
          (-
           (*
@@ -2003,24 +2003,24 @@
             (mv-nth 0
                     (read-reserved-area
                      fat32$c
-                     (read-file-into-string2 image-path 0 nil state))))))
+                     (read-file-into-string2 image-path 0 nil close state))))))
          (*
           (bpb_bytspersec
            (mv-nth 0
                    (read-reserved-area
                     fat32$c
-                    (read-file-into-string2 image-path 0 nil state))))
+                    (read-file-into-string2 image-path 0 nil close state))))
           (bpb_fatsz32
            (mv-nth 0
                    (read-reserved-area
                     fat32$c
-                    (read-file-into-string2 image-path 0 nil state))))
+                    (read-file-into-string2 image-path 0 nil close state))))
           (bpb_numfats
            (mv-nth 0
                    (read-reserved-area
                     fat32$c
-                    (read-file-into-string2 image-path 0 nil state))))))
-        state)))
+                    (read-file-into-string2 image-path 0 nil close state))))))
+        close state)))
      (+
       (-
        (*
@@ -2029,57 +2029,57 @@
          (mv-nth 0
                  (read-reserved-area
                   fat32$c
-                  (read-file-into-string2 image-path 0 nil state))))))
+                  (read-file-into-string2 image-path 0 nil close state))))))
       (*
        (bpb_bytspersec
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_fatsz32
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_numfats
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state)))))))
+                 (read-file-into-string2 image-path 0 nil close state)))))))
     (<
-     (len (explode (read-file-into-string2 image-path 0 nil state)))
+     (len (explode (read-file-into-string2 image-path 0 nil close state)))
      (+
       (* (bpb_bytspersec
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state))))
+                   (read-file-into-string2 image-path 0 nil close state))))
          (bpb_rsvdseccnt
           (mv-nth 0
                   (read-reserved-area
                    fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
+                   (read-file-into-string2 image-path 0 nil close state)))))
       (*
        (bpb_bytspersec
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_fatsz32
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))
+                 (read-file-into-string2 image-path 0 nil close state))))
        (bpb_numfats
         (mv-nth 0
                 (read-reserved-area
                  fat32$c
-                 (read-file-into-string2 image-path 0 nil state))))))))))
+                 (read-file-into-string2 image-path 0 nil close state))))))))))
 
 (defthm
   disk-image-to-lofat-guard-lemma-28
   (implies
-   (stringp (read-file-into-string2 image-path 0 nil state))
+   (stringp (read-file-into-string2 image-path 0 nil close state))
    (iff
     (stringp
      (read-file-into-string2
@@ -2090,13 +2090,13 @@
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state))))
+          (read-file-into-string2 image-path 0 nil close state))))
        (bpb_rsvdseccnt
         (mv-nth
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state)))))
+          (read-file-into-string2 image-path 0 nil close state)))))
       (*
        4
        (fat-entry-count
@@ -2104,8 +2104,8 @@
          0
          (read-reserved-area
           fat32$c
-          (read-file-into-string2 image-path 0 nil state)))))
-      state))
+          (read-file-into-string2 image-path 0 nil close state)))))
+      close state))
     (<=
      (*
       (bpb_bytspersec
@@ -2113,16 +2113,16 @@
         0
         (read-reserved-area
          fat32$c
-         (read-file-into-string2 image-path 0 nil state))))
+         (read-file-into-string2 image-path 0 nil close state))))
       (bpb_rsvdseccnt
        (mv-nth
         0
         (read-reserved-area
          fat32$c
-         (read-file-into-string2 image-path 0 nil state)))))
+         (read-file-into-string2 image-path 0 nil close state)))))
      (len
       (explode
-       (read-file-into-string2 image-path 0 nil state)))))))
+       (read-file-into-string2 image-path 0 nil close state)))))))
 
 (defthm
   disk-image-to-lofat-guard-lemma-29
@@ -2147,8 +2147,8 @@
 (defthm
   disk-image-to-lofat-guard-lemma-31
   (iff
-   (stringp (read-file-into-string2 image-path 0 16 state))
-   (stringp (read-file-into-string2 image-path 0 nil state))))
+   (stringp (read-file-into-string2 image-path 0 16 close state))
+   (stringp (read-file-into-string2 image-path 0 nil close state))))
 
 (defthm
   disk-image-to-lofat-guard-lemma-32
@@ -2160,18 +2160,18 @@
        0
        (read-reserved-area
         fat32$c
-        (read-file-into-string2 image-path 0 nil state))))
+        (read-file-into-string2 image-path 0 nil close state))))
      (bpb_rsvdseccnt
       (mv-nth
        0
        (read-reserved-area
         fat32$c
-        (read-file-into-string2 image-path 0 nil state)))))
+        (read-file-into-string2 image-path 0 nil close state)))))
     16)
    (equal
     (read-reserved-area
      fat32$c
-     (read-file-into-string2 image-path 0 nil state))
+     (read-file-into-string2 image-path 0 nil close state))
     (mv
      (update-bpb_bytspersec
       512

@@ -55,7 +55,7 @@
         (mv `(:failed-to-get-file-length ,filename) byte-array-stobj state)
       (if (not (unsigned-byte-p 59 file-length)) ; we could weaken this check, but it lets the indexing use fixnums
           (mv `(:file-too-long ,filename) byte-array-stobj state)
-        (let ((str (read-file-into-string2 filename 0 nil state)))
+        (let ((str (read-file-into-string2 filename 0 nil :default state)))
           (if (or (not str)
                   (< (length str) file-length))
               (mv :error-reading-file byte-array-stobj state)
