@@ -1,0 +1,27 @@
+include:
+  project: 'clci/gitlab-ci'
+  ref: release/v2-dev
+  file:
+    - definitions.gitlab-ci.yml
+    - test-pipeline.gitlab-ci.yml
+
+variables:
+  CLCI_INSTALL_QUICKLISP_CLIENT: "yes"
+  # Off by default because it's proprietary and has a separate license.
+  CLCI_TEST_ALLEGRO: "yes"
+  # Off by default because the Docker image is a bit out of date, due to
+  # upstream churn.
+  CLCI_TEST_CLASP: "yes"
+  # Alexandria is a non-commercial project, so we can use the express version
+  # of Allegro for testing.
+  I_AGREE_TO_ALLEGRO_EXPRESS_LICENSE: "yes"
+
+# This section is not strictly required, but prevents Gitlab CI from launching
+# multiple redundent pipelines when a Merge Request is opened.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'

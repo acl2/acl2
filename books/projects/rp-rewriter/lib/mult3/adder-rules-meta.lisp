@@ -47,6 +47,9 @@
 (local
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
 
+(local
+ (in-theory (enable falist-consistent)))
+
 (define adder-and (x y)
   (and$ x y)
   ///

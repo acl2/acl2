@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1024,7 +1024,7 @@
 
 ; That brings us to the main function we've been wanting: the one that
 ; determines what generated equivalence relations must be maintained
-; across the the arguments of fn in order to maintain a given
+; across the arguments of fn in order to maintain a given
 ; generated equivalence relation for the fn-expression itself.  Because
 ; we form new geneqvs from stored ones in the database, we have to
 ; have the enabled structure so we filter out disabled congruence
@@ -4873,7 +4873,7 @@
 ; completed since there were three very-long running certifications still in
 ; progress (about 3 hours each).  Among those, we noticed
 ; books/nonstd/workshops/2017/cayley/cayley1c.lisp, whose certification went
-; far enough for us to see the the proof of 8-COMPOSITION-LAW completed but
+; far enough for us to see the proof of 8-COMPOSITION-LAW completed but
 ; took 7560.97 seconds, far exceeding the 6.49 seconds taken in a recent run.
 ; It thus seemed obvious that such a change would likely cause massive changes
 ; to be necessary not only in the community books, but also in proprietary
@@ -6586,7 +6586,7 @@
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
    (top-clause . current-clause)
    ((splitter-output . current-literal) . oncep-override)
-   (nonlinearp . cheap-linearp)
+   (nonlinearp . heavy-linearp)
    (case-split-limitations . forbidden-fns)
    . backchain-limit-rw)
   t)
@@ -6645,8 +6645,9 @@
 ; Nonlinearp -- A boolean indicating whether nonlinear arithmetic should be
 ; considered to be active.
 
-; Cheap-linearp -- A boolean indicating whether linear arithmetic should avoid
-; rewriting terms to turn into polys and avoid adding linear lemmas.
+; Heavy-linearp -- Indicates whether linear arithmetic should rewrite terms to
+; turn into polys and add linear lemmas.  When :heavy, do extra work when
+; rewriting IF calls.
 
 ; We always obtain our rewrite-constant by loading relevant information into
 ; the following empty constant.  Warning: The constant below is dangerously
@@ -6669,7 +6670,7 @@
         :fns-to-be-ignored-by-rewrite nil
         :force-info nil
         :nonlinearp nil
-        :cheap-linearp nil
+        :heavy-linearp t
         :oncep-override :clear
         :pt nil
         :restrictions-alist nil
@@ -6677,6 +6678,9 @@
         :terms-to-be-ignored-by-rewrite nil
         :top-clause nil
         :backchain-limit-rw nil))
+
+(defstub heavy-linear-p () t)
+(defattach heavy-linear-p constant-nil-function-arity-0)
 
 ; So much for the rcnst.
 
@@ -7628,9 +7632,18 @@
                                  (cond
                                   (erp (exit-brr-wormhole state))
                                   (val
-                                   (er-progn (set-ld-error-action :continue state)
-; The aliases had better ensure that every exit  is via exit-brr-wormhole.
-                                             (value :invisible)))
+                                   (er-progn
+                                    (set-ld-error-action :continue state)
+                                    (with-output
+                                      :off :all
+                                      (disable-ubt
+                                       (msg "Note that ~x0 was executed when ~
+                                             an interactive break occurred ~
+                                             due to a monitored rule; see ~
+                                             :DOC break-rewrite."
+                                            'disable-ubt)))
+; The aliases had better ensure that every exit is via exit-brr-wormhole.
+                                    (value :invisible)))
                                   (t (exit-brr-wormhole state))))))
                :ld-prompt  nil
                :ld-missing-input-ok nil
@@ -8898,10 +8911,13 @@
                  state
                  evisc-tuple))
                ((eq (cadr failure-reason) 'rewrote-to)
-                (msg ":HYP ~x0 rewrote to ~X12."
+                (msg ":HYP ~x0 rewrote to ~X12.~@3"
                      n
                      (cddr failure-reason)
-                     evisc-tuple))
+                     evisc-tuple
+                     (if (equal (cddr failure-reason) *nil*)
+                         "  (See :DOC tail-biting if this surprises you.)"
+                       "")))
                ((member-eq (cadr failure-reason) '(syntaxp
                                                    syntaxp-extended
                                                    bind-free
@@ -10494,23 +10510,24 @@
 ; consider is that obj2 is not of the form (:FNCALL fn arglist).  Then we
 ; claim, without proof (but by appeal to plausibility!), that term0 is provably
 ; a member of the finite list ('THM1 'THM2 ...), where (THM1 THM2 ...)
-; enumerates the theorems of w that can be returned by rewrite-rule-term and
-; meta-extract-formula when called by meta-extract-global-fact+.  We thus need
-; to show that for each member 'THM of this list, (ev' 'THM aa) is a theorem of
-; w'.  By the (argument of the) Evaluator Elimination Lemma, (ev' 'THM aa) is
-; provably equal to the instance of THM obtained by replacing each variable x
-; by the term (cdr (assoc 'x aa)).  Since THM is a theorem of w and hence w',
-; so is this instance.  It remains to consider the other case, i.e., to show
-; that for obj2 = (:FNCALL fn arglist), (ev' term0 aa) is a theorem of w'.
-; Since we are assuming that term0 is not *t*, we know that (w st2) = (w
-; *the-live-state*), which is w, and we also know (by inspection of the
-; definition of fncall-term) that term0 = (fncall-term fn arglist st2) for a
-; logic-mode function symbol fn of w whose input arity is the length of
-; arglist.  But (fncall-term fn arglist st2) is the term (equal (fn . arglist)
-; 'val) where (magic-ev-fncall fn arglist st2 ...) = (mv nil val).  We arrange
-; that magic-ev-fncall has unknown-constraints, but we conceive of it as being
-; axiomatized using clocked, logic mode definitions that follow the definitions
-; supporting ev-fncall -- in particular, a clocked, logic-mode version of
+; enumerates the theorems of w that can be returned by rewrite-rule-term,
+; linear-lemma-term, and meta-extract-formula when called by
+; meta-extract-global-fact+.  We thus need to show that for each member 'THM of
+; this list, (ev' 'THM aa) is a theorem of w'.  By the (argument of the)
+; Evaluator Elimination Lemma, (ev' 'THM aa) is provably equal to the instance
+; of THM obtained by replacing each variable x by the term (cdr (assoc 'x aa)).
+; Since THM is a theorem of w and hence w', so is this instance.  It remains to
+; consider the other case, i.e., to show that for obj2 = (:FNCALL fn arglist),
+; (ev' term0 aa) is a theorem of w'.  Since we are assuming that term0 is not
+; *t*, we know that (w st2) = (w *the-live-state*), which is w, and we also
+; know (by inspection of the definition of fncall-term) that term0 =
+; (fncall-term fn arglist st2) for a logic-mode function symbol fn of w whose
+; input arity is the length of arglist.  But (fncall-term fn arglist st2) is
+; the term (equal (fn . arglist) 'val) where (magic-ev-fncall fn arglist st2
+; ...) = (mv nil val).  We arrange that magic-ev-fncall has
+; unknown-constraints, but we conceive of it as being axiomatized using
+; clocked, logic mode definitions that follow the definitions supporting
+; ev-fncall -- in particular, a clocked, logic-mode version of
 ; ev-fncall-rec-logical -- such that (mv t nil) is returned when the clock
 ; expires.  (All of those functions are conceptually in the ground-zero theory,
 ; but they need not be defined in the ACL2 system implementation.)  Then the
@@ -10675,35 +10692,35 @@
 (defmacro rdepth-error (form &optional preprocess-p)
   (if preprocess-p
       (let ((ctx ''preprocess))
-        `(prog2$ (er hard ,ctx
-                     "The call depth limit of ~x0 has been exceeded in the ~
-                      ACL2 preprocessor (a sort of rewriter).  There might be ~
-                      a loop caused by some set of enabled simple rules.  To ~
-                      see why the limit was exceeded, ~@1retry the proof with ~
-                      :hints~%  :do-not '(preprocess)~%and then follow the ~
-                      directions in the resulting error message.  See :DOC ~
-                      rewrite-stack-limit for a possible solution when there ~
-                      is not a loop."
-                     (rewrite-stack-limit wrld)
-                     (if (f-get-global 'gstackp state)
-                         ""
-                       "execute~%  :brr t~%and next "))
+        `(prog2$ (er-hard
+                  ,ctx "Call depth"
+                  "The call depth limit of ~x0 has been exceeded in the ACL2 ~
+                   preprocessor (a sort of rewriter).  There might be a loop ~
+                   caused by some set of enabled simple rules.  To see why ~
+                   the limit was exceeded, ~@1retry the proof with :hints~%  ~
+                   :do-not '(preprocess)~%and then follow the directions in ~
+                   the resulting error message.  See :DOC rewrite-stack-limit ~
+                   for a possible solution when there is not a loop."
+                  (rewrite-stack-limit wrld)
+                  (if (f-get-global 'gstackp state)
+                      ""
+                    "execute~%  :brr t~%and next "))
                  ,form))
     (let ((ctx ''rewrite))
-      `(prog2$ (er hard ,ctx
-                   "The call depth limit of ~x0 has been exceeded in the ACL2 ~
-                    rewriter.  To see why the limit was exceeded, ~@1execute ~
-                    the form (cw-gstack) or, for less verbose output, instead ~
-                    try (cw-gstack :frames 30).  You may then notice a loop ~
-                    caused by some set of enabled rules, some of which you ~
-                    can then disable; see :DOC disable.  For a possible ~
-                    solution when there is not a loop, see :DOC ~
-                    rewrite-stack-limit."
-                   (rewrite-stack-limit wrld)
-                   (if (f-get-global 'gstackp state)
-                       ""
-                     "first execute~%  :brr ~
-                      t~%and then try the proof again, and then "))
+      `(prog2$ (er-hard
+                ,ctx "Call depth"
+                "The call depth limit of ~x0 has been exceeded in the ACL2 ~
+                 rewriter.  To see why the limit was exceeded, ~@1execute the ~
+                 form (cw-gstack) or, for less verbose output, instead try ~
+                 (cw-gstack :frames 30).  You may then notice a loop caused ~
+                 by some set of enabled rules, some of which you can then ~
+                 disable; see :DOC disable.  For a possible solution when ~
+                 there is not a loop, see :DOC rewrite-stack-limit."
+                (rewrite-stack-limit wrld)
+                (if (f-get-global 'gstackp state)
+                    ""
+                  "first execute~%  :brr t~%and then try the proof again, and ~
+                   then "))
                ,form))))
 
 (defun bad-synp-hyp-msg1 (hyp bound-vars all-vars-bound-p wrld)
@@ -13776,6 +13793,132 @@
                           (declare (ignore rewrittenp))
                           (mv step-limit term1 ttree)))))))
 
+(defun assume-true-false-heavy-linearp (test ; &extra formals
+                                        rdepth step-limit
+                                        type-alist obj geneqv pequiv-info
+                                        wrld state
+                                        fnstack ancestors
+                                        backchain-limit
+                                        simplify-clause-pot-lst
+                                        rcnst gstack ttree)
+
+; This is the interface to assume-true-false when rewriting is done when rcst
+; specifies the use of heavy-linearp.
+
+  (declare (ignore obj))
+  (mv-let (must-be-true
+           must-be-false
+           true-type-alist
+           false-type-alist
+           ts-ttree)
+
+; See the long comment above the calls of assume-true-false in rewrite-if.
+
+    (assume-true-false test nil
+                       (ok-to-force rcnst)
+                       nil type-alist
+                       (access rewrite-constant rcnst
+                               :current-enabled-structure)
+                       wrld
+                       simplify-clause-pot-lst
+                       (access rewrite-constant rcnst :pt)
+                       nil)
+    (cond
+     ((or must-be-true must-be-false)
+      (mv step-limit must-be-true must-be-false
+          true-type-alist false-type-alist
+          simplify-clause-pot-lst simplify-clause-pot-lst ts-ttree))
+     (t ; Note that ts-ttree is irrelevant.
+      (let ((test+ (list test)))
+      (sl-let
+         (contradictionp true-pot-lst)
+         (rewrite-entry
+          (add-terms-and-lemmas test+ nil t)
+          :obj t)
+         (cond
+          (contradictionp
+           (mv step-limit nil t nil false-type-alist
+               nil simplify-clause-pot-lst
+               (push-lemma
+                *fake-rune-for-linear*
+                (access poly contradictionp :ttree))))
+          (t
+           (sl-let
+            (contradictionp false-pot-lst)
+            (rewrite-entry
+             (add-terms-and-lemmas test+ nil nil)
+             :obj nil)
+            (cond
+             (contradictionp
+              (mv step-limit t nil true-type-alist nil
+                  simplify-clause-pot-lst nil
+                  (push-lemma
+                   *fake-rune-for-linear*
+                   (access poly contradictionp :ttree))))
+             (t (mv step-limit nil nil true-type-alist false-type-alist
+                    true-pot-lst false-pot-lst nil))))))))))))
+
+(defun rewrite-if-finish (test unrewritten-test left right alist
+                               swapped-p
+                               must-be-true must-be-false
+                               true-type-alist false-type-alist
+                               true-pot-lst false-pot-lst
+                               ts-ttree ; &extra formals
+                               rdepth step-limit
+                               type-alist obj geneqv pequiv-info wrld state
+                               fnstack ancestors backchain-limit
+                               simplify-clause-pot-lst rcnst gstack ttree)
+  (cond
+   (must-be-true
+    (if (and unrewritten-test
+             (geneqv-refinementp 'iff geneqv wrld)
+             (equal unrewritten-test left))
+        (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
+      (rewrite-entry (rewrite left alist 2)
+                     :type-alist true-type-alist
+                     :simplify-clause-pot-lst true-pot-lst
+                     :ttree (cons-tag-trees ts-ttree ttree))))
+   (must-be-false
+    (rewrite-entry (rewrite right alist 3)
+                   :type-alist false-type-alist
+                   :simplify-clause-pot-lst false-pot-lst
+                   :ttree (cons-tag-trees ts-ttree ttree)))
+   (t (let ((ttree (normalize-rw-any-cache ttree)))
+        (sl-let
+         (rewritten-left ttree)
+         (if (and unrewritten-test
+                  (geneqv-refinementp 'iff geneqv wrld)
+                  (equal unrewritten-test left))
+             (mv step-limit *t* ttree)
+           (sl-let (rw-left ttree1)
+                   (rewrite-entry (rewrite left alist 2)
+                                  :type-alist true-type-alist
+                                  :simplify-clause-pot-lst true-pot-lst
+                                  :ttree (rw-cache-enter-context ttree))
+                   (mv step-limit
+                       rw-left
+                       (rw-cache-exit-context ttree ttree1))))
+         (sl-let (rewritten-right ttree1)
+                 (rewrite-entry (rewrite right alist 3)
+                                :type-alist false-type-alist
+                                :simplify-clause-pot-lst false-pot-lst
+                                :ttree (rw-cache-enter-context
+                                        ttree))
+                 (mv-let
+                   (rewritten-term ttree)
+                   (rewrite-if1 test
+                                rewritten-left rewritten-right
+                                swapped-p
+                                type-alist geneqv
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                (ok-to-force rcnst)
+                                wrld
+                                (rw-cache-exit-context ttree ttree1))
+                   (rewrite-entry
+                    (rewrite-with-lemmas
+                     rewritten-term)))))))))
+
 (defun rewrite-if (test unrewritten-test left right alist ; &extra formals
                         rdepth step-limit
                         type-alist obj geneqv pequiv-info wrld state fnstack
@@ -13828,13 +13971,27 @@
                (mv step-limit *t* ttree)
              (rewrite-entry (rewrite left alist 2)))
          (rewrite-entry (rewrite right alist 3))))
-      (t (let ((ens (access rewrite-constant rcnst :current-enabled-structure)))
-           (mv-let
-             (must-be-true
-              must-be-false
-              true-type-alist
-              false-type-alist
-              ts-ttree)
+      ((eq (access rewrite-constant rcnst :heavy-linearp) :heavy)
+       (sl-let (must-be-true
+                must-be-false
+                true-type-alist
+                false-type-alist
+                true-pot-lst
+                false-pot-lst
+                ts-ttree)
+               (rewrite-entry (assume-true-false-heavy-linearp test))
+               (rewrite-entry
+                (rewrite-if-finish test unrewritten-test left right alist
+                                   swapped-p
+                                   must-be-true must-be-false
+                                   true-type-alist false-type-alist
+                                   true-pot-lst false-pot-lst
+                                   ts-ttree))))
+      (t (mv-let (must-be-true
+                  must-be-false
+                  true-type-alist
+                  false-type-alist
+                  ts-ttree)
 
 ; Once upon a time, the call of assume-true-false below was replaced by a call
 ; of repetitious-assume-true-false.  See the Essay on Repetitive Typing.  This
@@ -13879,60 +14036,29 @@
 ; power when rewriting the current clause, because it is potentially expensive
 ; and the user can see (and therefore change) what is going on.
 
-             (if ancestors
-                 (assume-true-false test nil
-                                    (ok-to-force rcnst)
-                                    nil type-alist ens wrld
-                                    simplify-clause-pot-lst
-                                    (access rewrite-constant rcnst :pt)
-                                    nil)
+           (if ancestors
                (assume-true-false test nil
                                   (ok-to-force rcnst)
-                                  nil type-alist ens wrld nil nil nil))
-             (cond
-              (must-be-true
-               (if (and unrewritten-test
-                        (geneqv-refinementp 'iff geneqv wrld)
-                        (equal unrewritten-test left))
-                   (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
-                 (rewrite-entry (rewrite left alist 2)
-                                :type-alist true-type-alist
-                                :ttree (cons-tag-trees ts-ttree ttree))))
-              (must-be-false
-               (rewrite-entry (rewrite right alist 3)
-                              :type-alist false-type-alist
-                              :ttree (cons-tag-trees ts-ttree ttree)))
-              (t (let ((ttree (normalize-rw-any-cache ttree)))
-                   (sl-let
-                    (rewritten-left ttree)
-                    (if (and unrewritten-test
-                             (geneqv-refinementp 'iff geneqv wrld)
-                             (equal unrewritten-test left))
-                        (mv step-limit *t* ttree)
-                      (sl-let (rw-left ttree1)
-                              (rewrite-entry (rewrite left alist 2)
-                                             :type-alist true-type-alist
-                                             :ttree (rw-cache-enter-context ttree))
-                              (mv step-limit
-                                  rw-left
-                                  (rw-cache-exit-context ttree ttree1))))
-                    (sl-let (rewritten-right ttree1)
-                            (rewrite-entry (rewrite right alist 3)
-                                           :type-alist false-type-alist
-                                           :ttree (rw-cache-enter-context
-                                                   ttree))
-                            (mv-let
-                              (rewritten-term ttree)
-                              (rewrite-if1 test
-                                           rewritten-left rewritten-right
-                                           swapped-p
-                                           type-alist geneqv ens
-                                           (ok-to-force rcnst)
-                                           wrld
-                                           (rw-cache-exit-context ttree ttree1))
-                              (rewrite-entry
-                               (rewrite-with-lemmas
-                                rewritten-term)))))))))))))))
+                                  nil type-alist
+                                  (access rewrite-constant rcnst
+                                          :current-enabled-structure)
+                                  wrld
+                                  simplify-clause-pot-lst
+                                  (access rewrite-constant rcnst :pt)
+                                  nil)
+             (assume-true-false test nil
+                                (ok-to-force rcnst)
+                                nil type-alist
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                wrld nil nil nil))
+           (rewrite-entry
+            (rewrite-if-finish test unrewritten-test left right alist
+                               swapped-p
+                               must-be-true must-be-false
+                               true-type-alist false-type-alist
+                               simplify-clause-pot-lst simplify-clause-pot-lst
+                               ts-ttree))))))))
 
 (defun rewrite-args (args alist bkptr rewritten-args-rev
                           deep-pequiv-lst shallow-pequiv-lst
@@ -14916,7 +15042,7 @@
 
 ; Note that we reverse below even though we do not reverse in the analogous
 ; function, relieve-hyps1-free-1.  That is because in relieve-hyps1-free-1, the
-; the failure-reason-lst is built by traversing a type-alist whose entries are
+; failure-reason-lst is built by traversing a type-alist whose entries are
 ; in reverse order from the order of hypotheses encountered that created those
 ; entries; but here, the unify-subst-lst is processed in order.
 
@@ -17203,7 +17329,7 @@
      (sl-let
       (new-entry new-ttree)
       (rewrite-entry (rewrite temp-entry nil 'multiply-alists2)
-                     :obj nil
+                     :obj '?
                      :geneqv nil
                      :pequiv-info nil
 
@@ -17914,7 +18040,7 @@
 
 ; Var-list is a list of pot labels.  If we have not yet multiplied
 ; the polys corresponding to those labels, we do so and add them to the
-; the simplify-clause-pot-lst.  Products-already-tried is a list of the
+; simplify-clause-pot-lst.  Products-already-tried is a list of the
 ; factors we have already tried, and pot-lst-to-look-in is the pot-lst
 ; from which we get our polys.
 
@@ -18593,7 +18719,7 @@
          (contradictionp new-pot-lst)
          (if (and (nvariablep (car new-vars))
                   (not (flambda-applicationp (car new-vars)))
-                  (not (access rewrite-constant rcnst :cheap-linearp)))
+                  (access rewrite-constant rcnst :heavy-linearp))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
                                  (getpropc (ffn-symb (car new-vars))
@@ -18790,7 +18916,7 @@
         (cond
          ((or (flambda-applicationp
                (car new-vars))
-              (access rewrite-constant rcnst :cheap-linearp))
+              (not (access rewrite-constant rcnst :heavy-linearp)))
           (mv step-limit nil simplify-clause-pot-lst))
          (t
           (rewrite-entry
@@ -19258,7 +19384,7 @@
      (sl-let
       (term-lst ttree-lst)
       (if (and (access rewrite-constant rcnst :nonlinearp)
-               (not (access rewrite-constant rcnst :cheap-linearp)))
+               (access rewrite-constant rcnst :heavy-linearp))
 
 ; This call to rewrite-linear-term-lst is new to Version_2.7.
 ; We wish to be able to have a different normal form when doing

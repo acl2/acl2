@@ -902,7 +902,9 @@
                  (not (EQUAL (CAR I0) 'QUOTE)))
             (not (rp-termp i0)))
    :hints (("Goal"
-            :in-theory (e/d (rp-termp is-rp) ())))))
+            :expand ((RP-TERMP I0))
+            :in-theory (e/d (FALIST-CONSISTENT
+                             rp-termp is-rp) ())))))
 
 (local
 

@@ -16,17 +16,22 @@
 (include-book "bytes")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
+(include-book "errors")
 (include-book "types")
 (include-book "portable-ascii-identifiers")
-(include-book "errors")
 (include-book "integer-formats")
 (include-book "integer-ranges")
 (include-book "tag-environments")
 (include-book "static-semantics")
 (include-book "values")
+(include-book "integer-operations")
+(include-book "arithmetic-operations")
 (include-book "pointer-operations")
 (include-book "array-operations")
 (include-book "structure-operations")
+(include-book "operations")
+(include-book "computation-states")
+(include-book "dynamic-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

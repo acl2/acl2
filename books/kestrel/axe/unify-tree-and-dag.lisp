@@ -26,7 +26,15 @@
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
-;; (local (in-theory (enable member-equal-becomes-memberp)))
+(local
+ ;; This version uses memberp
+ (defthm assoc-equal-iff
+   (implies (alistp alist)
+            (iff (assoc-equal key alist)
+                 (memberp key (strip-cars alist))))
+   :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal)))))
+
+;; (local (in-theory (enable member-equalx-becomes-memberp)))
 
 (local (in-theory (disable symbol-alistp strip-cdrs)))
 
@@ -236,13 +244,6 @@
                                      unify-tree-with-dag-node
                                      axe-tree-vars
                                      axe-tree-vars-lst))))
-
-(local
- (defthm assoc-equal-iff
-  (implies (alistp alist)
-           (iff (assoc-equal key alist)
-                (memberp key (strip-cars alist))))
-  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal)))))
 
 ;; ;; The alist returned binds exactly the free vars.
 (defthm-flag-unify-tree-with-dag-node

@@ -25,6 +25,9 @@
 
 (in-package "SV")
 
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
+
 (include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
 (include-book "centaur/fgl/checks" :dir :system) ;; integer-length-bound
 (include-book "centaur/fgl/fgl-object" :dir :system) ;; for syntaxp checks
@@ -157,7 +160,7 @@
            :hints(("Goal" :in-theory (enable svex-alist-vals
                                              svex-alist-keys
                                              svex-alist-eval)))))
-  
+
   (defthmd svex-alistlist-eval-in-terms-of-svex-alistlist->svexes
     (equal (svex-alistlist-eval x env)
            (b* ((svexes (svex-alistlist->svexes x))
@@ -275,7 +278,7 @@
                                      (env1 svex-env-p)
                                      (env2 svex-env-p))
   :measure (+ (len env1) (len env2))
-  :hooks nil ;; 
+  :hooks nil ;;
   :guard-debug t
   (b* (((when (atom env1)) (if (atom env2) t nil))
        ;; (cond ((atom env2) t)
@@ -315,11 +318,11 @@
            (iff (hons-assoc-equal k x)
                 (member-equal k (Alist-keys x)))
            :hints(("Goal" :in-theory (enable alist-keys)))))
-  
+
   (local (in-theory (disable (:d svex-envs-correspond-except)
                              member-equal
                              no-duplicatesp-equal)))
-  
+
   (defthm svex-envs-correspond-except-implies-agree-except
     (implies (and (svex-envs-correspond-except vars env1 env2)
                   (svex-env-p env1)
@@ -371,7 +374,7 @@
                               (x env1) (y env2) (vars (alist-keys vars))
                               (var (caar env1))))))))
             )))
-                 
+
 (local (in-theory (disable acl2::hons-dups-p)))
 
 (local (defthm alist-keys-of-pairlis
@@ -514,7 +517,7 @@
     (svex-env-lookup v x)
     ///
     (fgl::remove-fgl-rewrite svex-env-no-1s-lookup))
-  
+
   (defthmd svex-env-lookup-when-svex-env-no-1s-p
     (implies (and (svex-env-keys-no-1s-p vars x)
                   (member-equal (svar-fix v) (svarlist-fix vars)))

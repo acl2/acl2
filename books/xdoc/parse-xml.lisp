@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Updated 7/2022 for more entities: Matt Kaufmann <matthew.j.kaufmann@gmail.com>
 
 (in-package "XDOC")
 (include-book "autolink")
@@ -65,7 +66,7 @@
 ;
 ;    (:ENTITY TYPE) represents entities like &amp;
 ;
-;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :NDASH, :MDASH, :RARR, LSQUO, RSQUO, LDQUO, or RDQUO
+;      - TYPE is :AMP, :LT, :GT, etc.
 
 
 
@@ -272,6 +273,151 @@
        (close (list :CLOSE name)))
     (mv nil n (list open close))))
 
+(defun keyword-from-entity-string (s)
+
+; Probably most entities encountered in practice are lower-case, and probably
+; most exceptions are capitalized, e.g., &Alpha; .  We upcase all those except
+; ones that start with an uppercase letter (actually any character Z or below).
+; This could create duplicates in principle, but that's unlikely, and we check
+; for them below.  Of course, we can make exceptions if necessary.
+
+  (let ((name (if (and (not (equal s "")) ; always true?
+                       (char<= (char s 0) #\Z))
+                  s
+                (acl2::string-upcase s))))
+    (intern name "KEYWORD")))
+
+(defun entity-strings-to-keywords-fal (strings fal)
+  (cond ((endp strings) fal)
+        (t (entity-strings-to-keywords-fal
+            (cdr strings)
+            (hons-acons (car strings)
+                        (list :ENTITY
+                              (keyword-from-entity-string (car strings)))
+                        fal)))))
+
+(defun entity-keywords-to-strings-fal (strings fal)
+  (cond ((endp strings) fal)
+        (t (entity-keywords-to-strings-fal
+            (cdr strings)
+            (hons-acons (keyword-from-entity-string (car strings))
+                        (concatenate 'string
+                                     "&"
+                                     (car strings)
+                                     ";")
+                        fal)))))
+
+(defconst *entity-strings*
+
+; Warning: Keep this in sync with *entitytok-as-plaintext-fal* below,
+; *xml-entity-stuff* in prepare-topic.lisp, wrapXdocFragment in
+; fancy/xslt.js, and (defxdoc entities ...) in topics.lisp.
+
+  '("amp"
+    "lt"
+    "gt"
+    "quot"
+    "apos"
+    "nbsp"
+    "ndash"
+    "mdash"
+    "larr"
+    "rarr"
+    "harr"
+    "lang"
+    "rang"
+    "hellip"
+    "lsquo"
+    "rsquo"
+    "ldquo"
+    "rdquo"
+    "and"
+    "or"
+    "not"
+    "ne"
+    "le"
+    "ge"
+    "mid"
+    "times"
+
+; capitalized Greek letters
+
+    "Alpha"
+    "Beta"
+    "Gamma"
+    "Delta"
+    "Epsilon"
+    "Zeta"
+    "Eta"
+    "Theta"
+    "Iota"
+    "Kappa"
+    "Lambda"
+    "Mu"
+    "Nu"
+    "Xi"
+    "Omicron"
+    "Pi"
+    "Rho"
+    "Sigma"
+    "Tau"
+    "Upsilon"
+    "Phi"
+    "Chi"
+    "Psi"
+    "Omega"
+
+; lower case Greek letters
+
+    "alpha"
+    "beta"
+    "gamma"
+    "delta"
+    "epsilon"
+    "zeta"
+    "eta"
+    "theta"
+    "iota"
+    "kappa"
+    "lambda"
+    "mu"
+    "nu"
+    "xi"
+    "omicron"
+    "pi"
+    "rho"
+    "sigma"
+    "tau"
+    "upsilon"
+    "phi"
+    "chi"
+    "psi"
+    "omega"
+
+; math symbols (ok to add more)
+
+    "forall"
+    "exist"
+    "empty"
+    "isin"
+    "notin"
+    "prod"
+    "sum"
+    ))
+
+(defconst *entity-strings-to-keywords-fal*
+  (entity-strings-to-keywords-fal *entity-strings* nil))
+
+(defconst *entity-keywords-to-strings-fal*
+  (let* ((fal (entity-keywords-to-strings-fal *entity-strings* nil))
+         (dup (acl2::duplicate-keysp-eq fal)))
+    (if dup
+        (er hard 'top
+            "Implementation error: Found duplicate keyword, ~x0!  See ~
+             books/xdoc/parse-xml.lisp ."
+            dup)
+      fal)))
+
 (defun read-entity (x n xl)
   ;; Assumes (char x n) is "&"
   "Returns (MV ERR N TOK)"
@@ -285,20 +431,8 @@
             n nil))
        (n (+ 1 n)) ;; eat the ;
        (str (str::rchars-to-string rchars))
-       ((when (equal str "amp"))  (mv nil n '(:ENTITY :AMP)))
-       ((when (equal str "lt"))   (mv nil n '(:ENTITY :LT)))
-       ((when (equal str "gt"))   (mv nil n '(:ENTITY :GT)))
-       ((when (equal str "quot")) (mv nil n '(:ENTITY :QUOT)))
-       ((when (equal str "apos")) (mv nil n '(:ENTITY :APOS)))
-       ((when (equal str "nbsp")) (mv nil n '(:ENTITY :NBSP)))
-       ((when (equal str "ndash")) (mv nil n '(:ENTITY :NDASH)))
-       ((when (equal str "mdash")) (mv nil n '(:ENTITY :MDASH)))
-       ((when (equal str "rarr")) (mv nil n '(:ENTITY :RARR)))
-       ((when (equal str "lsquo")) (mv nil n '(:ENTITY :LSQUO)))
-       ((when (equal str "rsquo")) (mv nil n '(:ENTITY :RSQUO)))
-       ((when (equal str "ldquo")) (mv nil n '(:ENTITY :LDQUO)))
-       ((when (equal str "rdquo")) (mv nil n '(:ENTITY :RDQUO)))
-       )
+       (doublet (cdr (hons-get str *entity-strings-to-keywords-fal*)))
+       ((when doublet) (mv nil n doublet)))
     (mv (str::cat "Unsupported entity: &" str ";" *nls*
                   "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
         n nil)))
@@ -334,38 +468,106 @@
 
 ; Basic tag balance checking with nice error reporting
 
-
 (defun entitytok-as-entity (x)
-  (case (entitytok-type x)
-    (:AMP   "&amp;")
-    (:LT    "&lt;")
-    (:GT    "&gt;")
-    (:QUOT  "&quot;")
-    (:APOS  "&apos;")
-    (:NBSP  "&nbsp;")
-    (:NDASH "&ndash;")
-    (:MDASH "&mdash;")
-    (:RARR  "&rarr;")
-    (:LSQUO "&lsquo;")
-    (:RSQUO "&rsquo;")
-    (:LDQUO "&ldquo;")
-    (:RDQUO "&rdquo;")))
+  (cdr (hons-get (entitytok-type x)
+                 *entity-keywords-to-strings-fal*)))
+
+(defconst *entitytok-as-plaintext-fal*
+
+; Warning: Keep this in sync with *entity-strings* above, *xml-entity-stuff* in
+; prepare-topic.lisp, and wrapXdocFragment in fancy/xslt.js, and (defxdoc
+; entities ...) in topics.lisp.
+
+  (make-fast-alist
+   '((:AMP   . "&")
+     (:LT    . "<")
+     (:GT    . ">")
+     (:QUOT  . "\"")
+     (:APOS  . "'")
+     (:NBSP  . " ") ; wart: disappears when preceded only by spaces except in <code>..</code>
+     (:NDASH . "--")
+     (:MDASH . "---")
+     (:LARR  . "<--")
+     (:RARR  . "-->")
+     (:HARR  . "<->")
+     (:LANG  . "<")
+     (:RANG  . ">")
+     (:HELLIP . "...")
+     (:LSQUO . "`")
+     (:RSQUO . "'")
+     (:LDQUO . "``")
+     (:RDQUO . "''")
+     (:AND   . "&")
+     (:OR    . "\\/")
+     (:NOT   . "~")
+     (:NE    . "!=")
+     (:LE    . "<=")
+     (:GE    . ">=")
+     (:MID   . "|")
+     (:TIMES . "\\times")
+
+     (:|Alpha|   . "\\Alpha")
+     (:|Beta|    . "\\Beta")
+     (:|Gamma|   . "\\Gamma")
+     (:|Delta|   . "\\Delta")
+     (:|Epsilon| . "\\Epsilon")
+     (:|Zeta|    . "\\Zeta")
+     (:|Eta|     . "\\Eta")
+     (:|Theta|   . "\\Theta")
+     (:|Iota|    . "\\Iota")
+     (:|Kappa|   . "\\Kappa")
+     (:|Lambda|  . "\\Lambda")
+     (:|Mu|      . "\\Mu")
+     (:|Nu|      . "\\Nu")
+     (:|Xi|      . "\\Xi")
+     (:|Omicron| . "\\Omicron")
+     (:|Pi|      . "\\Pi")
+     (:|Rho|     . "\\Rho")
+     (:|Sigma|   . "\\Sigma")
+     (:|Tau|     . "\\Tau")
+     (:|Upsilon| . "\\Upsilon")
+     (:|Phi|     . "\\Phi")
+     (:|Chi|     . "\\Chi")
+     (:|Psi|     . "\\Psi")
+     (:|Omega|   . "\\Omega")
+
+     (:ALPHA   . "\\alpha")
+     (:BETA    . "\\beta")
+     (:GAMMA   . "\\gamma")
+     (:DELTA   . "\\delta")
+     (:EPSILON . "\\epsilon")
+     (:ZETA    . "\\zeta")
+     (:ETA     . "\\eta")
+     (:THETA   . "\\theta")
+     (:IOTA    . "\\iota")
+     (:KAPPA   . "\\kappa")
+     (:LAMBDA  . "\\lambda")
+     (:MU      . "\\mu")
+     (:NU      . "\\nu")
+     (:XI      . "\\xi")
+     (:OMICRON . "\\omicron")
+     (:PI      . "\\pi")
+     (:RHO     . "\\rho")
+     (:SIGMA   . "\\sigma")
+     (:TAU     . "\\tau")
+     (:UPSILON . "\\upsilon")
+     (:PHI     . "\\phi")
+     (:CHI     . "\\chi")
+     (:PSI     . "\\psi")
+     (:OMEGA   . "\\omega")
+
+     (:FORALL  . "\\forall")
+     (:EXIST   . "\\exist")
+     (:EMPTY   . "\\empty")
+     (:ISIN    . "\\isin")
+     (:NOTIN   . "\\notin")
+     (:PROD    . "\\prod")
+     (:SUM     . "\\sum")
+     )))
 
 (defun entitytok-as-plaintext (x)
-  (case (entitytok-type x)
-    (:AMP   "&")
-    (:LT    "<")
-    (:GT    ">")
-    (:QUOT  "\"")
-    (:APOS  "'")
-    (:NBSP  " ")
-    (:NDASH "--")
-    (:MDASH "---")
-    (:RARR  "-->")
-    (:LSQUO "`")
-    (:RSQUO "'")
-    (:LDQUO "``")
-    (:RDQUO "''")))
+  (cdr (hons-get (entitytok-type x)
+                 *entitytok-as-plaintext-fal*)))
 
 (defun flatten-token-for-errormsg (x)
   (cond ((opentok-p x)
@@ -385,7 +587,6 @@
       ""
     (str::cat (flatten-token-for-errormsg (car x))
               (flatten-tokens-for-errormsg (cdr x)))))
-
 
 (defun nearby-text (index str)
   (let* ((strlen (length str))

@@ -368,24 +368,24 @@
 (defthmd bvand-tighten-1
   (implies (and (unsigned-byte-p newsize x)
                 (< newsize size)
-                (integerp y)
                 (natp size)
                 (natp newsize))
            (equal (bvand size x y)
                   (bvand newsize x y)))
-  :hints (("Goal" :in-theory (enable bvand
-                                     logand-of-bvchop))))
+  :hints (("Goal" :cases ((integerp y))
+           :in-theory (enable bvand
+                              logand-of-bvchop))))
 
 (defthmd bvand-tighten-2
   (implies (and (unsigned-byte-p newsize y)
                 (< newsize size)
-                (integerp x)
                 (natp size)
                 (natp newsize))
            (equal (bvand size x y)
                   (bvand newsize x y)))
-  :hints (("Goal" :in-theory (enable bvand
-                                     logand-of-bvchop))))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (enable bvand
+                              logand-of-bvchop))))
 
 (defthm <=-of-bvand-arg1-linear
   (implies (natp x)
@@ -397,4 +397,9 @@
   (implies (natp y)
            (<= (bvand size x y) y))
   :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthmd bvchop-of-logand-becomes-bvand
+  (equal (bvchop size (logand x y))
+         (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))

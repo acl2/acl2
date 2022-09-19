@@ -1328,6 +1328,24 @@
                             +-is-sum
                             svl::bits-of-bits-1)))))
 
+
+(def-rp-rule bits-of----of-bitp
+  (implies (and (syntaxp (quotep size))
+                (posp size)
+                (bitp x)
+                (natp start)) 
+           (equal (svl::bits (-- x) start size)
+                  (if (equal size 1)
+                      x
+                    (svl::4vec-concat$ 1
+                                       x
+                                       (svl::bits (-- x) 0 (1- size))))))
+  :hints (("Goal"
+           :in-theory (e/d (-- svl::bits) (+-is-sum)))))
+
+
+
+
 ;; -------------------------------------------------------------------------------
 ;; -------------------------------------------------------------------------------
 
@@ -1388,12 +1406,14 @@
 
   (def-rp-rule :disabled-for-acl2 t
     unsigned-byte-p-redefined-with-loghead
-    (implies (natp size)
+    (implies (and (natp size)
+                  (syntaxp :rewriting-main-term))
              (equal (unsigned-byte-p size x)
-                    (and (integerp x)
+                    (and (hide (unsigned-byte-p size x))
+                         (integerp x)
                          (equal x (loghead size x)))
                     #|(and (hide (unsigned-byte-p size x))
-                    (integerp x) ; ; ; ;
+                    (integerp x) ; ; ; ; ;
                     (equal (ash x (- size)) 0))|#))
     :hints (("Goal"
              :expand ((hide (unsigned-byte-p size x)))
@@ -1412,9 +1432,10 @@
                   (syntaxp (atom x)))
              (equal (unsigned-byte-p size x)
                     (and (integerp x)
+                         (hide (unsigned-byte-p size x))
                          (equal x (loghead size x)))
                     #|(and (hide (unsigned-byte-p size x))
-                    (integerp x) ; ; ;
+                    (integerp x) ; ; ; ;
                     (equal (ash x (- size)) 0))|#))
     :hints (("Goal"
              :expand ((hide (unsigned-byte-p size x)))
@@ -1789,12 +1810,38 @@
   (add-rp-rule pull-out-dumb-twos-complement
                :rw-direction :both))
 
+
+;; reduction or/and stuff
 (def-rp-rule 4vec-reduction-and-of---bitp
   (implies (bitp x)
            (equal (sv::4vec-reduction-and (-- x))
                   (- x)))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
+
+
+(def-rp-rule 
+  4vec-reduction-or-to-4vec-bitor-for-mult-proofs
+  (implies (and (integerp x)
+                (equal (sv::4vec-rsh 7 x) 0)
+                (syntaxp (not (cons-count-compare x 300))))
+           (equal (sv::4vec-reduction-or x)
+                  (- (sv::4vec-bitor (sv::4vec-part-select 0 1 x)
+                                     (- (sv::4vec-reduction-or (sv::4vec-rsh 1 x)))))))
+  :hints (("Goal"
+           :in-theory '(svl::4vec-reduction-or-to-4vec-bitor))))
+
+(rp::def-rp-rule 4vec-times-to-*
+   (implies (and (integerp x)
+                 (integerp y))
+            (equal (sv::4vec-times x y)
+                   (* x y)))
+   :hints (("Goal"
+            :in-theory (e/d (SV::4VEC->UPPER
+                             SV::4VEC->LOWER
+                             sv::4vec-times) ()))))
+
+
 
 (bump-all-meta-rules)
 

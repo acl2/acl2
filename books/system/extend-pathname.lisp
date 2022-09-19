@@ -109,5 +109,10 @@
 
 (verify-termination expand-tilde-to-user-home-dir)
 
-(verify-termination extend-pathname)
+(verify-termination project-dir-lookup) ; and guards
+
+(verify-termination extend-pathname+) ; not guards
+
+(verify-termination extend-pathname) ; not guards
+
 

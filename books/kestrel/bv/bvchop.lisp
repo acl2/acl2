@@ -23,15 +23,11 @@
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/mod-and-expt"))
 
-;move
-(defthm unsigned-byte-p-of-0-arg1
-  (equal (unsigned-byte-p 0 x)
-         (equal 0 x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
+;drop?
 (in-theory (disable unsigned-byte-p))
 
 ;(in-theory (disable BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P)) ;slow
+;drop?
 (in-theory (disable mod floor))
 
 ;for Axe
@@ -125,20 +121,20 @@
 ;allow the sizes to differ?
 ;or just use the meta rule...
 (defthm bvchop-of-*-of-bvchop
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (bvchop size (* (bvchop size x) y))
-                   (bvchop size (* x y))))
-   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (enable bvchop))))
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (* (bvchop size x) y))
+                  (bvchop size (* x y))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable bvchop))))
 
 (defthm bvchop-of-*-of-bvchop-arg2
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (bvchop size (* x (bvchop size y)))
-                   (bvchop size (* x y))))
-   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (enable bvchop))))
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (* x (bvchop size y)))
+                  (bvchop size (* x y))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable bvchop))))
 
 ;rename
 (defthm bvchop-+-bvchop-better
@@ -155,7 +151,7 @@
                   0))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (e/d (bvchop) (;FLOOR-MINUS-ERIC-BETTER ;drop the disable once this is fixed
-                                             )))))
+                                            )))))
 
 (defthm unsigned-byte-p-of-bvchop
   (implies (<= size size1)
@@ -194,12 +190,12 @@
 
 ;rename
 (defthm bvchop-shift
-   (implies (integerp x)
-            (equal (bvchop n (* 2 x))
-                   (if (posp n)
-                       (* 2 (bvchop (+ -1 n) x))
-                     0)))
-   :hints (("Goal" :in-theory (enable bvchop mod-expt-split))))
+  (implies (integerp x)
+           (equal (bvchop n (* 2 x))
+                  (if (posp n)
+                      (* 2 (bvchop (+ -1 n) x))
+                    0)))
+  :hints (("Goal" :in-theory (enable bvchop mod-expt-split))))
 
 (defthm bvchop-when-i-is-not-an-integer-cheap
   (implies (not (integerp i))
@@ -219,7 +215,7 @@
                 (equal free (bvchop freesize x))
                 (syntaxp (quotep free))
                 (syntaxp (quotep freesize))
-                ;gets computed:
+                ;;gets computed:
                 (not (equal free (bvchop freesize const))))
            (not (equal const x))))
 
@@ -291,7 +287,7 @@
   :hints (("Goal"
            :use (:instance integerp-of-expt-when-natp (i (+ m (- n))) (r 2))
            :in-theory (e/d (bvchop mod-cancel
-                                    expt-of-+)
+                                   expt-of-+)
                            (integerp-of-expt-when-natp)))))
 
 (defthm bvchop-shift-gen-alt
@@ -305,7 +301,7 @@
   :hints (("Goal"
            :use (:instance integerp-of-expt-when-natp (i (+ m (- n))) (r 2))
            :in-theory (e/d (bvchop mod-cancel
-                                    expt-of-+)
+                                   expt-of-+)
                            (integerp-of-expt-when-natp)))))
 
 (defthm bvchop-sum-drop-bvchop
@@ -374,7 +370,7 @@
                       (+ -1 (expt 2 size1))
                     (+ -1 (expt 2 size2))))))
 
-;gen to any bv...
+
 (defthm bvchop-impossible-value
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p size k))
@@ -458,7 +454,7 @@
            (equal (bvchop size (+ k x))
                   (if (equal 0 (bvchop size x))
                       (+ -1 (expt 2 size))
-                      (+ -1 (bvchop size x)))))
+                    (+ -1 (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
 ;rename
@@ -503,6 +499,15 @@
                   (bvchop size x)))
   :hints (("Goal":in-theory (enable bvchop))))
 
+(defthm bvchop-of-+-of-expt-gen
+  (implies (and (<= size size2)
+                (integerp x)
+                (integerp size)
+                (integerp size2))
+           (equal (bvchop size (+ x (expt 2 size2)))
+                  (bvchop size x)))
+  :hints (("Goal":in-theory (enable bvchop))))
+
 (defthm bvchop-of-+-of-expt-alt
   (implies (integerp x)
            (equal (bvchop size (+ (expt 2 size) x))
@@ -521,7 +526,7 @@
                 (equal k (bvchop free x))
                 (syntaxp (quotep k))
                 (<= size free)
-                ;(natp size)
+                ;;(natp size)
                 (integerp free))
            (equal (bvchop size x)
                   (bvchop size k))))
@@ -535,7 +540,7 @@
                       0
                     (expt 2 size2))))
   :hints (("Goal" :in-theory (e/d (bvchop) (;mod-of-expt-of-2-constant-version mod-of-expt-of-2
-                                             )))))
+                                            )))))
 
 ;can this be expensive?
 ;rename?
@@ -660,7 +665,7 @@
   (implies (and (syntaxp (quotep k)) ;new..
                 (power-of-2p k) ;(equal k (expt 2 (+ -1 (integer-length k))))
                 (integerp x)
-                ;(natp k)
+                ;;(natp k)
                 )
            (equal (mod x k)
                   (bvchop (+ -1 (integer-length k)) x)))
@@ -668,10 +673,10 @@
            :use (:instance mod-of-expt-of-2
                            (m (+ -1 (integer-length k)))))))
 
-(theory-invariant (incompatible (:definition bvchop) (:rewrite MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))
+(theory-invariant (incompatible (:definition bvchop) (:rewrite mod-of-expt-of-2-constant-version)))
 
 (defthm bitp-of-bvchop-of-1
-  (bitp (acl2::bvchop 1 x)))
+  (bitp (bvchop 1 x)))
 
 (defthm bvchop-+-cancel-cross
   (implies (and (force (integerp i))
@@ -695,7 +700,7 @@
   (implies (and (<= size n)
                 (integerp x)
                 (natp n)
-                ;(natp size)
+                ;;(natp size)
                 )
            (equal (bvchop size (* x (expt 2 n)))
                   0))

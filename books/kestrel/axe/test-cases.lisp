@@ -1,4 +1,4 @@
-; The Axe equivalence checker
+; Test cases for the Axe Equivalence Checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2022 Kestrel Institute

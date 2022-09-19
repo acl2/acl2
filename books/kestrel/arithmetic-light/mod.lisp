@@ -665,10 +665,17 @@
 (defthm unsigned-byte-p-of-mod
   (implies (and (unsigned-byte-p size y)
                 (< 0 y)
-                ;; (natp size)
                 (integerp x))
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal"
+           :in-theory (enable unsigned-byte-p))))
+
+;rename?
+(defthm unsigned-byte-p-of-mod2
+  (implies (and (unsigned-byte-p size y)
+                (unsigned-byte-p size x))
+           (unsigned-byte-p size (mod x y)))
+  :hints (("Goal" :cases ((equal 0 y))
            :in-theory (enable unsigned-byte-p))))
 
 (defthm mod-of-+-of---when-equal-of-mod-arg1

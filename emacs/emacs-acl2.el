@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -892,6 +892,8 @@ beginning of the string that was processed."
 (put 'with-fast-alist      'lisp-indent-function 'defun)
 (put 'WITH-FAST-ALISTS      'lisp-indent-function 'defun)
 (put 'with-fast-alists      'lisp-indent-function 'defun)
+(put 'WITH-GLOBAL-STOBJ     'lisp-indent-function 'defun)
+(put 'with-global-stobj     'lisp-indent-function 'defun)
 (put 'WITH-LOCAL-STOBJ      'lisp-indent-function 'defun)
 (put 'with-local-stobj      'lisp-indent-function 'defun)
 (put 'WITH-OPEN-FILE 'lisp-indent-function 'defun)

@@ -1,0 +1,125 @@
+hey emacs, show me an -*- mode: outline -*-
+
+* Version 0.8, released 2013-01-14
+
+** bug fixes
+
+Stack overflow problems on several implementations have been fixed.
+(Thanks to Zach Beane for pointing this out.)
+
+Anton Kovalenko contributed several fixes to the bzip2 code.
+
+Several bugs have been fixed with the Gray streams support.  (Thanks to
+Anton Kovalenko and Felix Lange for the fixes and zort on Github for a
+bug report.)
+
+Gray streams support works with recent versions of Allegro Common Lisp.
+(Thanks to Dave Cooper.)
+
+** improvements
+
+Consing when computing the CRC32 checksum for gzip has been reduced.
+(Thanks to Zach Beane for permission to pull his code from Salza.)
+
+MAKE-DECOMPRESSING-STREAM now singals an error if Gray streams are not
+supported.  (Thanks to Felix Lange.)
+
+** new features
+
+A new method on DECOMPRESS has been added for decompressing files into
+memory.
+
+CLISP now supports decompressing streams.  (Thanks to Felix Lange.)
+
+* Version 0.7.4, released 2009-10-26
+
+** bug fixes
+
+CRC32 checksums are now calculated properly.  (Thanks to Sven Van
+Caekenberghe.)
+
+** improvements
+
+READ-SEQUENCE is now supported on Gray streams, which may result in a
+significant performance boost.
+
+* Version 0.7.3, released 2009-05-09
+
+** bug fixes
+
+Checksum errors now throw the correct error, rather than complaining
+about an unknown checksum-mismatch error.  (Thanks to _3b on #lisp.)
+
+Fixed an error when decompressing raw deflate data.  (Thanks to _3b on
+#lisp.)
+
+Fixed an error in rare cases when reading checksums.  (Thanks to _3b on
+#lisp.)
+
+* Version 0.7.2, released 2008-12-20
+
+** bug fixes
+
+Gray streams now work correctly.  (Thanks to Austin Haas.)
+
+* Version 0.7.1, released 2008-12-17
+
+** bug fixes
+
+Fixed some errors related to confusion between keywords and CHIPZ
+symbols.  (Thanks to Austin Haas and Tomas Zellerin.)
+
+* Version 0.7.0, released 2008-10-24
+
+** new features
+
+bzip2 decompression is now included.  Please see the documentation for
+more details.
+
+** improvements
+
+DECOMPRESS now supports the keyword argument :BUFFER-SIZE.  Please see
+the documentation for more details.
+
+Checksum verification is now performed for gzip and zlib data.
+
+* Version 0.6.1, released 2008-10-03
+
+** bug fixes
+
+Various fixes have been applied to increase Chipz's portability.
+(Thanks to Zach Beane.)
+
+* Version 0.6.0, released 2008-09-27
+
+** new features
+
+Gray streams are now supported on Lispworks, CMUCL, Allegro, and
+OpenMCL.
+
+There has been a significant amount of optimization work done on the
+library and decompression shows better than order-of-magnitude speedups
+on SBCL.
+
+* Version 0.5.1, released 2008-02-09
+
+** bug fixes
+
+DECOMPRESS now handles :INPUT-END properly in all cases.  (Thanks to
+Jeremy English.)
+
+* Version 0.5, released 2008-01-02
+
+Completely redid the structure of the library.  The API is now modeled
+after that of `zlib', with convenience functions added.
+
+Gray streams interfaces added.
+
+* Version 0.1.1, released 2006-01-27
+
+Fixed PROCESS-NO-COMPRESS-BLOCK to read from the underlying stream,
+rather than the bitstream.  (Thanks to Eric Marsden.)
+
+* Version 0.1, released 2006-01-27
+
+Initial release.

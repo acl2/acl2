@@ -22,14 +22,9 @@
 
 ;; TODO: Some of these are not BV rules.
 
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
-(local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
-(local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
-(local (include-book "kestrel/bv/sbvdiv" :dir :system))
 ;(include-book "bv-rules-axe0") ;drop?
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
-(local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
 (include-book "kestrel/bv/defs" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
@@ -37,9 +32,13 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "known-booleans")
+(local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
+(local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
+(local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
+(local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
+(local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -768,6 +767,39 @@
                   (+ y (+ x z))))
   :hints (("Goal" :in-theory (enable))))
 
+(defthmd if-becomes-bvif-1-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
+
+(defthmd if-becomes-bvif-2-axe
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced ysize y))
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif unsigned-byte-p-forced))))
+
+(defthmd if-becomes-bvif-3-axe
+  (implies (and (unsigned-byte-p ysize y) ; ysize is a free variable
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p-forced xsize x))
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif unsigned-byte-p-forced))))
+
+(defthmd if-becomes-bvif-4-axe
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
+                (unsigned-byte-p ysize y) ; ysize is a free variable
+                )
+           (equal (if test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
 (defthmd myif-becomes-bvif-1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -778,7 +810,7 @@
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
 (defthmd myif-becomes-bvif-2-axe
-  (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y))
            (equal (myif test x y)
@@ -786,12 +818,20 @@
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
 (defthmd myif-becomes-bvif-3-axe
-  (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y))
-           (equal (myif test y x)
-                  (bvif (max xsize ysize) test y x)))
+  (implies (and (unsigned-byte-p ysize y) ; ysize is a free variable
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p-forced xsize x))
+           (equal (myif test x y)
+                  (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
+
+(defthmd myif-becomes-bvif-4-axe
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
+                (unsigned-byte-p ysize y) ; ysize is a free variable
+                )
+           (equal (myif test x y)
+                  (bvif (max xsize ysize) test x y)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthmd slice-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1654,17 +1694,7 @@
                                     ) (;anti-bvplus ;max
                                     sum-bound-lemma)))))
 
-(defthmd if-becomes-bvif
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y)
-                (natp xsize)
-                (natp ysize)
-                )
-           (equal (if test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
+
 
 ;free var rule from usb to integerp of the index?
 
@@ -2110,13 +2140,13 @@
   :hints (("Goal" :in-theory (e/d (trim) nil))))
 
 (defthmd logxor-becomes-bvxor-axe
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p xsize x)
                 (unsigned-byte-p ysize y))
            (equal (logxor x y)
-                  (acl2::bvxor (max xsize ysize) x y)))
-  :hints (("Goal" :in-theory (enable acl2::bvxor))))
+                  (bvxor (max xsize ysize) x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2129,3 +2159,25 @@
 ;bozo more like this?  gen the 0?
 (defthmd bv-array-read-non-negative
   (not (< (bv-array-read esize len index data) 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm not-equal-of-constant-and-bv-term-axe
+  (implies (and (syntaxp (quotep k))
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (syntaxp (quotep xsize))
+                (not (unsigned-byte-p xsize k)) ; gets computed
+                (unsigned-byte-p-forced xsize x))
+           (not (equal k x)))
+  :rule-classes nil ; since in ACL2, xsize not is bound when used
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm not-equal-of-constant-and-bv-term-alt-axe
+  (implies (and (syntaxp (quotep k))
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (syntaxp (quotep xsize))
+                (not (unsigned-byte-p xsize k)) ; gets computed
+                (unsigned-byte-p-forced xsize x))
+           (not (equal x k)))
+  :rule-classes nil ; since in ACL2, xsize not is bound when used
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))

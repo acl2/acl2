@@ -37,10 +37,12 @@
 (include-book "../mods/compile")
 (include-book "../svex/4vmask")
 (include-book "../svex/assigns-compose")
+(include-book "../svex/unroll")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/auto-bindings" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
 (include-book "std/util/defredundant" :dir :system)
+(include-book "centaur/misc/hons-remove-dups" :dir :System)
 (local (include-book "../svex/alist-thms"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/alists/fal-extract" :dir :system))
@@ -313,7 +315,7 @@
                    :exec (eql nphases phase)))
         (mv nil (and state-machine
                      (svex-alist-compose-svtv-phases
-                      (svtv-composedata->nextstates data)
+                      (nth phase (svtv-composedata->nextstates data))
                       (1- (lposfix nphases)) data))))
        (phase-outalist (svex-alist-compose (svtv-outputs->outalist outs phase) updates))
        (composed-outalist (svex-alist-compose-svtv-phases
@@ -328,6 +330,7 @@
     (prog2$ (fast-alist-free (car x))
             (fast-alist-free-list (cdr x)))))
 
+(local (in-theory (disable hons-dups-p)))
 
 (define svtv-compile-lazy ((nphases posp)
                             (ins svtv-lines-p)
@@ -339,11 +342,23 @@
                             (state-machine))
   :returns (mv (outalist svex-alist-p)
                (final-state svex-alist-p))
+  :prepwork ((local (defthm svarlist-p-of-remove-duplicates
+                      (implies (svarlist-p x)
+                               (svarlist-p (remove-duplicates-equal x))))))
   (b* (((with-fast prev-state updates state-updates))
        (in-alists (svtv-allphases-inputs 0 nphases ins overrides in-vars))
-       (data (make-svtv-composedata :nextstates state-updates :input-substs in-alists :initst prev-state))
+       (state-vars (acl2::hons-remove-dups (svex-alist-keys state-updates)))
+       (state-updates (with-fast-alist state-updates
+                        (svex-alist-extract state-vars state-updates)))
+       (prev-state    (with-fast-alist prev-state
+                        (svex-alist-extract state-vars prev-state)))
+       (composedata (svtv-precompose-phases (lposfix nphases)
+                                            (make-svtv-precompose-data
+                                             :nextstate state-updates
+                                             :input-substs (make-fast-alists in-alists)
+                                             :initst prev-state)))
        ((mv outalist final-state)
-        (svtv-compile-phases-lazy 0 nphases outs updates data state-machine)))
+        (svtv-compile-phases-lazy 0 nphases outs updates composedata state-machine)))
     (fast-alist-free-list in-alists)
     (clear-memoize-table 'svex-compose)
     (clear-memoize-table 'svex-compose-svtv-phases-call)
@@ -485,6 +500,28 @@
             (pairlis$ overrideconds (replicate (len overrideconds) mask))
             (svtv-collect-masks (cdr x)))))
 
+
+(define svtv-collect-inmap ((overridesp booleanp)
+                            (x svtv-lines-p)
+                            (acc svtv-inputmap-p))
+  :prepwork ((local (defthm svtv-inputmap-p-of-pairlis$-repeat
+                      (implies (and (svarlist-p vars)
+                                    (svtv-inputtype-p elem)
+                                    (equal len (len vars)))
+                               (svtv-inputmap-p (pairlis$ vars (repeat len elem))))
+                      :hints(("Goal" :in-theory (enable pairlis$ repeat))))))
+  :returns (new-acc svtv-inputmap-p)
+  (b* (((when (Atom x)) (svtv-inputmap-fix acc))
+       ((svtv-line xf) (car x))
+       (vars (svtv-entries->vars xf.entries))
+       (overrideconds (and overridesp
+                           (svtv-entries->overrideconds xf.entries))))
+    (svtv-collect-inmap
+     overridesp (cdr x)
+     (append (pairlis$ vars (replicate (len vars) (if overridesp :override-val :input)))
+             (pairlis$ overrideconds (replicate (len overrideconds) :override-test))
+             acc))))
+
 (fty::deffixcong true-list-list-equiv true-list-list-equiv (append a b) a
   :hints(("Goal" :in-theory (enable true-list-list-fix))))
 (fty::deffixcong true-list-list-equiv true-list-list-equiv (append a b) b
@@ -570,7 +607,8 @@
                       (pre-simplify)
                       (initial-state-vars)
                       (keep-final-state)
-                      (keep-all-states))
+                      (keep-all-states)
+                      form)
   :parents (defsvtv)
   :short "Main subroutine of @(see defsvtv), which extracts output formulas from
           the provided design."
@@ -694,7 +732,11 @@
        ;; Compute the masks for the input/output varaiables.
        (inmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks ins))))
        (override-inmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks overrides))))
-       (outmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks outs)))))
+       (outmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks outs))))
+       (inmap (svtv-collect-inmap nil ;; inputs
+                                  ins nil))
+       (inmap (svtv-collect-inmap t ;; overrides
+                                   overrides inmap)))
     (fast-alist-free updates-for-outs)
     (mv (make-svtv :name           name
                    :outexprs       outexprs
@@ -702,13 +744,15 @@
                    :states         all-states
                    :inmasks        (append inmasks override-inmasks)
                    :outmasks       outmasks
+                   :inmap          inmap
                    :orig-ins       orig-ins
                    :orig-overrides orig-overrides
                    :orig-outs      orig-outs
                    :orig-internals orig-internals
                    :expanded-ins       ins
                    :expanded-overrides overrides
-                   :nphases        nphases)
+                   :nphases        nphases
+                   :form           form)
         moddb aliases)))
 
 
@@ -830,49 +874,83 @@
 
 
 
-(define svtv-autohyps-aux ((x svar-boolmasks-p))
+
+
+
+
+
+(define svtv-autohyps-aux ((x svar-boolmasks-p)
+                           (map svtv-inputmap-p))
   :hooks nil
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x)))) (svtv-autohyps-aux (cdr x)))
-       ((cons var mask) (car x)))
+       ((unless (mbt (consp (car x)))) (svtv-autohyps-aux (cdr x) map))
+       ((cons var mask) (car x))
+       ((when (eq (cdr (hons-get var (svtv-inputmap-fix map))) :override-test))
+        (svtv-autohyps-aux (cdr x) map)))
     (cons `(unsigned-byte-p ,(integer-length mask) ,var)
-          (svtv-autohyps-aux (cdr x)))))
+          (svtv-autohyps-aux (cdr x) map))))
 
 (define svtv-autohyps ((x svtv-p))
   :hooks nil
-  `(and . ,(svtv-autohyps-aux (svtv->inmasks x))))
+  `(and . ,(b* ((inmap (svtv->inmap x)))
+             (with-fast-alist inmap
+               (svtv-autohyps-aux (svtv->inmasks x)
+                                  inmap)))))
 
-(define svtv-autoins-aux ((x svar-boolmasks-p))
+(define svtv-autoins-aux ((x svar-boolmasks-p)
+                          (map svtv-inputmap-p))
   :hooks nil
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x)))) (svtv-autoins-aux (cdr x)))
-       (var (caar x)))
+       ((unless (mbt (consp (car x)))) (svtv-autoins-aux (cdr x) map))
+       (var (caar x))
+       ((when (eq (cdr (hons-get var (svtv-inputmap-fix map))) :override-test))
+        (svtv-autoins-aux (cdr x) map)))
     (cons `(cons ',var ,var)
-          (svtv-autoins-aux (cdr x)))))
+          (svtv-autoins-aux (cdr x) map))))
 
 (define svtv-autoins ((x svtv-p))
   :hooks nil
-  `(list . ,(reverse (svtv-autoins-aux (svtv->inmasks x)))))
+  `(list . ,(reverse (b* ((inmap (svtv->inmap x)))
+                       (with-fast-alist inmap
+                         (svtv-autoins-aux (svtv->inmasks x)
+                                           inmap))))))
 
-(define svtv-autobinds-aux ((x svar-boolmasks-p))
+(define svtv-autobinds-aux ((x svar-boolmasks-p)
+                            (map svtv-inputmap-p))
   :hooks nil
   (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x)))) (svtv-autobinds-aux (cdr x)))
-       ((cons var mask) (car x)))
+       ((unless (mbt (consp (car x)))) (svtv-autobinds-aux (cdr x) map))
+       ((cons var mask) (car x))
+       ((when (eq (cdr (hons-get var (svtv-inputmap-fix map))) :override-test))
+        (svtv-autobinds-aux (cdr x) map)))
     (cons `(:nat ,var ,(integer-length mask))
-          (svtv-autobinds-aux (cdr x)))))
+          (svtv-autobinds-aux (cdr x) map))))
 
 (define svtv-autobinds ((x svtv-p))
   :hooks nil
-  `(gl::auto-bindings . ,(svtv-autobinds-aux (svtv->inmasks x))))
+  `(gl::auto-bindings . ,(b* ((inmap (svtv->inmap x)))
+                           (with-fast-alist inmap
+                             (svtv-autobinds-aux (svtv->inmasks x)
+                                                 inmap)))))
 
+
+(define svtv-non-override-test-input-vars ((x svarlist-p)
+                                           (map svtv-inputmap-p))
+  :returns (new-x svarlist-p)
+  (if (atom x)
+      nil
+    (if (eq (cdr (hons-get (svar-fix (car x)) (svtv-inputmap-fix map))) :override-test)
+        (svtv-non-override-test-input-vars (cdr x) map)
+      (cons (svar-fix (car x)) (svtv-non-override-test-input-vars (cdr x) map))))
+  ///
+  (local (in-theory (enable svarlist-fix))))
 
 (define defsvtv-default-names (vars)
   (if (atom vars)
       nil
     (cons `(,(car vars) ',(car vars))
           (defsvtv-default-names (cdr vars)))))
-
+  
 ;; bozo this is duplicated in ../decomp.lisp
 (defthmd assoc-of-acons
   (equal (assoc key (cons (cons k v) a))
@@ -916,7 +994,8 @@
 (std::defredundant :names (svex-env-lookup-of-cons
                            svex-env-boundp-of-cons))
 
-
+(local (fty::deflist svarlist :elt-type svar :true-listp t :elementp-of-nil nil))
+         
 
 (define defsvtv-events ((svtv svtv-p)
                         (design-const symbolp)
@@ -1004,7 +1083,11 @@ defined with @(see sv::defsvtv).</p>"
                               (str::cat (symbol-name name) "-AUTOBINDS")
                               name))
        (invars (mergesort (alist-keys (svtv->inmasks svtv))))
-       (invar-defaults (defsvtv-default-names invars))
+       (inmap (svtv->inmap svtv))
+       ((acl2::with-fast inmap))
+       (non-override-test-invars (svtv-non-override-test-input-vars invars inmap))
+       (non-override-test-invars-unsorted (svtv-non-override-test-input-vars (alist-keys (svtv->inmasks svtv)) inmap))
+       (invar-defaults (defsvtv-default-names non-override-test-invars))
        (cmds `((defconst ,stvconst ',svtv)
 
                ,@(and define-mod
@@ -1055,7 +1138,7 @@ defined with @(see sv::defsvtv).</p>"
                                    (eqlablep)
                                    acl2::assoc-eql-exec-is-assoc-equal))))
                          (declare (ignorable x)) ;; incase there are no input vars
-                         (b* (((acl2::assocs . ,invars) x))
+                         (b* (((acl2::assocs . ,non-override-test-invars) x))
                            (,name-autohyps)))
 
                        (add-to-ruleset! gl::shape-spec-obj-in-range-backchain
@@ -1066,7 +1149,7 @@ defined with @(see sv::defsvtv).</p>"
 
                        (define ,name-env-autohyps ((x svex-env-p))
                          (declare (ignorable x)) ;; incase there are no input vars
-                         (b* (((svassocs . ,invars) x))
+                         (b* (((svassocs . ,non-override-test-invars) x))
                            (,name-autohyps)))
 
                        (add-to-ruleset! svtv-autohyps ,name-autohyps-fn)
@@ -1082,15 +1165,15 @@ defined with @(see sv::defsvtv).</p>"
                          (implies (syntaxp (quotep k))
                                   (equal (assoc k (,name-autoins))
                                          (case k
-                                           . ,(autoins-lookup-cases invars))))
+                                           . ,(autoins-lookup-cases non-override-test-invars))))
                          :hints (("goal" :in-theory (e/d** (,name-autoins-fn
                                                             assoc-of-acons
                                                             assoc-of-nil
                                                             car-cons cdr-cons
                                                             member-equal
                                                             (member-equal)))
-                                  ,@(if (consp invars)
-                                        `(:cases ,(autoins-lookup-casesplit invars 'k))
+                                  ,@(if (consp non-override-test-invars)
+                                        `(:cases ,(autoins-lookup-casesplit non-override-test-invars 'k))
                                       nil))))
 
                        (defthm ,(intern-in-package-of-symbol
@@ -1099,14 +1182,14 @@ defined with @(see sv::defsvtv).</p>"
                          (implies (syntaxp (quotep k))
                                   (equal (svex-env-lookup k (,name-autoins))
                                          (case (svar-fix k)
-                                           . ,(autoins-svex-env-lookup-cases invars))))
+                                           . ,(autoins-svex-env-lookup-cases non-override-test-invars))))
                          :hints (("goal" :in-theory (e/d** (,name-autoins-fn
                                                             svex-env-lookup-of-cons
                                                             svex-env-lookup-in-empty
                                                             car-cons cdr-cons
                                                             (svar-p)))
-                                  ,@(if (consp invars)
-                                        `(:cases ,(autoins-lookup-casesplit invars '(svar-fix k)))
+                                  ,@(if (consp non-override-test-invars)
+                                        `(:cases ,(autoins-lookup-casesplit non-override-test-invars '(svar-fix k)))
                                       nil))))
 
                        (defthm ,(intern-in-package-of-symbol
@@ -1114,7 +1197,7 @@ defined with @(see sv::defsvtv).</p>"
                                  name)
                          (implies (syntaxp (quotep k))
                                   (iff (svex-env-boundp k (,name-autoins))
-                                       (member-equal (svar-fix k) ',invars)))
+                                       (member-equal (svar-fix k) ',non-override-test-invars)))
                          :hints (("goal" :in-theory (e/d** (,name-autoins-fn
                                                             svex-env-boundp-of-cons
                                                             svex-env-boundp-of-nil
@@ -1122,8 +1205,8 @@ defined with @(see sv::defsvtv).</p>"
                                                             (svar-p)
                                                             member-equal
                                                             (member-equal)))
-                                  ,@(if (consp invars)
-                                        `(:cases ,(autoins-lookup-casesplit invars '(svar-fix k)))
+                                  ,@(if (consp non-override-test-invars)
+                                        `(:cases ,(autoins-lookup-casesplit non-override-test-invars '(svar-fix k)))
                                       nil))))
 
 
@@ -1137,18 +1220,18 @@ defined with @(see sv::defsvtv).</p>"
                                    (eqlablep)
                                    acl2::assoc-eql-exec-is-assoc-equal))))
                          (declare (ignorable x)) ;; in case there are no input vars
-                         (b* (((acl2::assocs . ,invars) x))
+                         (b* (((acl2::assocs . ,non-override-test-invars) x))
                            (,name-autoins)))
 
                        (define ,name-env-autoins ((x svex-env-p))
                          (declare (ignorable x)) ;; in case there are no input vars
                          :returns (env svex-env-p :hints(("Goal" :in-theory (enable ,name-autoins))))
-                         (b* (((svassocs . ,invars) x))
+                         (b* (((svassocs . ,non-override-test-invars) x))
                            (,name-autoins))
                          ///
                          (defret ,name-env-autoins-in-terms-of-svex-env-extract
                            (equal env
-                                  (svex-env-extract ',(rev (alist-keys (svtv->inmasks svtv))) x))
+                                  (svex-env-extract ',(rev non-override-test-invars-unsorted) x))
                            :hints(("Goal" :in-theory (enable svex-env-extract ,name-autoins)))))
 
                        (add-to-ruleset! svtv-autoins ,name-autoins-fn)
@@ -1173,6 +1256,7 @@ defined with @(see sv::defsvtv).</p>"
                                  name)
                          (equal (assoc k (,name-alist-autoins x))
                                 (and (member k (svtv->ins ,stvconst))
+                                     (not (equal (cdr (assoc k (svtv->inmap ,stvconst))) :override-test))
                                      (cons k (cdr (assoc k x)))))
                          :hints (("goal" :in-theory (e/d** (,name-alist-autoins
                                                             ,name-autoins-fn
@@ -1180,7 +1264,8 @@ defined with @(see sv::defsvtv).</p>"
                                                             assoc-of-nil
                                                             car-cons cdr-cons
                                                             member-equal
-                                                            (svtv->ins))))))
+                                                            (svtv->ins)
+                                                            (svtv->inmap))))))
 
 
                        (defthm ,(intern-in-package-of-symbol
@@ -1240,7 +1325,7 @@ defined with @(see sv::defsvtv).</p>"
                     keep-all-states
                     define-macros
                     define-mod
-                    parents short long)
+                    parents short long form)
   :guard (modalist-addr-p (design->modalist design))
   :irrelevant-formals-ok t
   :hooks nil
@@ -1248,12 +1333,13 @@ defined with @(see sv::defsvtv).</p>"
   (b* ((svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify
                (or state-machine initial-state-vars)
                (or state-machine keep-final-state)
-               keep-all-states))
+               keep-all-states form))
        ((unless svtv)
         (raise "failed to generate svtv")))
     (defsvtv-events svtv design-const labels define-macros define-mod parents short long)))
 
-(defmacro defsvtv (name &key design mod
+(defmacro defsvtv (&whole form
+                          name &key design mod
                         labels
                         inputs
                         overrides
@@ -1276,12 +1362,16 @@ defined with @(see sv::defsvtv).</p>"
                    ,(or design mod) ',(or design mod) ,labels ,simplify
                    ,pre-simplify
                    ,state-machine ,initial-state-vars ,keep-final-state ,keep-all-states
-                   ,define-macros ,define-mod ',parents ,short ,long))))
+                   ,define-macros ,define-mod ',parents ,short ,long ',form))))
 
 (defxdoc svtv-stimulus-format
   :parents (defsvtv)
-  :short "Syntax for inputs/outputs/overrides/internals entries of @(see defsvtv) forms"
+  :short "(Deprecated) Syntax for inputs/outputs/overrides/internals entries of @(see defsvtv) forms"
   :long "
+
+<p>This stimulus format can still be used in @(see defsvtv$) and
+the (deprecated) @('defsvtv'), but the @(':phases') format is recommended
+instead.</p>
 
 <p>An SVTV is a timing diagram-like format similar to @(see acl2::esim) @(see
 acl2::symbolic-test-vectors).  Each of the fields @(':inputs'), @(':outputs'),
@@ -1372,8 +1462,10 @@ phase.</li>
 
 (defxdoc defsvtv
   :parents (svex-stvs)
-  :short "Create an SVTV structure for some simulation pattern of a hardware design."
+  :short "(Deprecated) Create an SVTV structure for some simulation pattern of a hardware design."
   :long "
+
+<p>This is deprecated in favor of @(see defsvtv$).</p>
 
 <p>See the @(see sv-tutorial) and the parent topic @(see svex-stvs) for
 higher-level discussion; here, we provide a reference for the arguments.</p>
@@ -1873,7 +1965,9 @@ irrelevant inputs are removed.</p>"
 
 
 
-
+(defxdoc svtv
+  :parents (svex-stvs)
+  :short "A shorter name for @(see svex-stvs), i.e. SVEX Symbolic Test Vectors.")
 
 (defxdoc svex-stvs
   :parents (sv)
@@ -1903,28 +1997,29 @@ The result of defining a symbolic test vector is an expression (@(see svex))
 for each output in terms of the input variables.</p>
 
 <h3>Defining an SVTV</h3>
-<p>There are two utilities for defining svex-based S(V)TVs: the original @(see
-defsvtv), and the newer @(see defsvtv$), which uses the @(see svtv-data) stobj
-framework to keep track of logical relationships between the results of
-different steps in the process and support better debugging tools.  These
-utilities both begin with SV modules as produced by the @(see vl-to-svex)
-tools, go through the steps described in @(see svex-compilation) to produce a
-finite state machine representation of the design, and then compose the FSM
-phases together to create the output expressions in terms of the input
-variables according to the I/O specification.  Both use a similar timing
-diagram syntax for describing the I/O specification, and both support a variant
-@(see defsvtv-phasewise), @(see defsvtv$-phasewise) that tend to make it easier
-to edit these I/O specifications.</p>
+
+<p>The recommended utility for defining svex-based S(V)TVs is @(see defsvtv$).
+Previous versions these, @('defsvtv') and @('defsvtv-phasewise') are deprecated
+since @('defsvtv$') supports better debugging tools, has a more coherent
+logical story, and support better methods for decomposition.  This takes an SV
+hierarchical design as produced by the @(see vl-to-svex) tools, goes through
+the steps described in @(see svex-compilation) to produce a finite state
+machine representation of the design, and then composes the FSM phases together
+to create the output expressions in terms of the input variables according to
+the I/O specification.</p>
 
 <h3>Testing, Proof, and Debugging</h3>
+
 <p>Once an SVTV is defined, the function @(see svtv-run) can be used to run
 tests on it, and is also the usual target for proofs about it.  There are also
-some useful debugging utilities, @(see svtv-debug) for dumping waveforms and
-@(see svtv-chase) for chasing down the root causes of signal values.  See @(see
-svtv-data) for versions of these utilities that can shorten the debug loop when
-using SVTVs defined with @(see defsvtv$).</p>
+some useful debugging utilities: @(see svtv-debug$) for dumping waveforms and
+@(see svtv-chase$) for chasing down the root causes of signal values.</p>
 
-
+<p>When working on defining an SVTV, sometimes one goes through many iterations
+before all the signal settings are right.  A few utilities support debugging
+concrete runs of SVTVs without first performing all the computation necessary
+to define them.  See @(see svtv-debug-defsvtv$), @(see
+svtv-chase-defsvtv$), and @(see svtv-run-defsvtv$).</p>
 
 <h3>Symbolic Simulation</h3>
 
@@ -1943,44 +2038,11 @@ helps symbolic execution speed, but can cause an error like:</p>
 
 <h3>Decomposition Proofs</h3>
 
-<p>The book \"svex/decomp.lisp\" contains a proof strategy for proving that the
-composition of two or more STV runs is equivalent to some other STV run.  It
-provides a computed hint that provides a good theory for rewriting such rules,
-then a meta rule that can reverse the decomposition, and an invocation of GL to
-finish off any mismatches due to svex simplification.  Here is an example
-showing that the composition of STVs @('stv-a') and @('stv-b') is equivalent to
-@('stv-c'):</p>
+<p>See @(see svtv-decomposition) and in particular @(see
+def-svtv-generalized-thm) for the recommended method for doing proofs by
+decomposition on SVTVs.</p>
 
-@({
- (defthm a-and-b-compose-to-c
-  (implies (stv-c-autohyps)
-           (b* ((c-out (stv-run (stv-c) (stv-c-autoins)))
-                (a-ins (stv-a-autoins))
-                (a-out (stv-run (stv-a) a-ins))
-                ;; may be various ways of making the input to the 2nd phase
-                (b-ins (stv-b-alist-autoins (append a-ins a-out)))
-                (b-out (stv-run (stv-b) b-ins)))
-             (and
-               ;; may be various forms for the final equivalence
-               (equal (extract-keys *my-keys* b-out)
-                      (extract-keys *my-keys* c-out))
-               (equal (cdr (assoc 'out b-out))
-                      (cdr (assoc 'out c-out)))
-               (equal b-out c-out))))
-  :hints ((sv::svdecomp-hints :hyp (stv-c-autohyps)
-                                :g-bindings (stv-c-autobinds)
-                                :enable (extract-keys-of-cons))))
- })
-
-<p>The @(':hyp') and @(':g-bindings') arguments to svdecomp-hints are for the
-GL phase.  Usually some autohyps and autobindings from your STV are
-appropriate. @(':enable') allows you to add rules to use in the initial
-rewriting phase before the meta rule is used.  This can help on occasion when
-you want to use some particular function to (e.g.) construct the alist for some
-subsequent step or to extract values to compare.</p>
-
-<p>More information about the decomposition strategy is in @(see svex-decomp),
-or will be someday.</p>")
+")
 
 (defxdoc svtv-versus-stv
   :parents (svex-stvs)

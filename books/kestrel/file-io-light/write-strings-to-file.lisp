@@ -1,6 +1,6 @@
 ; A function to write a sequence of strings to a file
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "write-strings-to-channel")
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
+(local (include-book "open-output-channel"))
 
 ;; Writes the STRINGS to FILENAME, overwriting its previous contents.
 ;; Effectively, all the STRINGS get concatenated and the result becomes the new

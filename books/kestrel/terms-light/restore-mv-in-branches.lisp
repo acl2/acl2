@@ -68,6 +68,7 @@
                   ,@(fargs term))
               (if (or (member-eq fn fns-to-assume-ok)
                       (eq 'do$ fn) ; Matt K. mod 11/2021 for addition to *stobjs-out-invalid*
+                      (eq 'read-user-stobj-alist fn) ; Matt K. mod 07/2022 for addition to *stobjs-out-invalid*
                       )
                   term
                 (if (not (function-symbolp fn wrld))

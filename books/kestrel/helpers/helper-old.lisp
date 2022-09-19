@@ -70,15 +70,15 @@
                (cw "WARNING: This tool can not see the full command history.  Execute (adjust-ld-history t state) to enable that.")
                ))
        (state (set-print-case :downcase state)) ; make all printing downcase
-       (most-recent-theorem (most-recent-theorem state)) ; can this be a defrule?
-       (theorem-type (car most-recent-theorem))
+       (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state)) ; can this be a defrule?
+       (theorem-type (car most-recent-failed-theorem))
        (body (if (eq 'thm theorem-type)
-                 (second most-recent-theorem)
-               (third most-recent-theorem) ; for defthm
+                 (second most-recent-failed-theorem)
+               (third most-recent-failed-theorem) ; for defthm
                ))
        (name (if (eq 'thm theorem-type)
                  "the thm"
-               (symbol-name (second most-recent-theorem)) ; for defthm
+               (symbol-name (second most-recent-failed-theorem)) ; for defthm
                ))
        ((mv erp provedp hints-found state)
         (try-to-find-hints-for-claim body state))

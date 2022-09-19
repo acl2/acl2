@@ -758,9 +758,9 @@ chmod(0750,$shtmp);
 
 my $START_TIME = mytime();
 
-    # Single quotes to try to protect against file names with dollar signs and similar.
-    system("$STARTJOB '$shtmp'");
-    $status = $? >> 8;
+$shtmp = File::Spec->file_name_is_absolute($shtmp) ? $shtmp : "./$shtmp";
+system("$STARTJOB", "$shtmp");
+$status = $? >> 8;
 
 my $END_TIME = mytime();
 

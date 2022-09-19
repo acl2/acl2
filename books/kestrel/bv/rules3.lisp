@@ -14,7 +14,6 @@
 (include-book "rules")
 (include-book "bvashr")
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
-;(local (include-book "arith"))
 (local (include-book "rules0"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -26,47 +25,12 @@
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
-;bozo drop any special cases
-(defthm slice-bound
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep high)
-                              (quotep low)))
-                (<= (expt 2 (+ 1 high (- low))) k)
-                (<= low high) ;bozo
-                (natp high)
-                (natp low)
-                )
-           (< (slice high low x) k))
-  :hints (("Goal" :use (:instance UNSIGNED-BYTE-P-OF-SLICE (n (+ 1 high (- low))))
-           :in-theory (e/d (UNSIGNED-BYTE-P)( UNSIGNED-BYTE-P-OF-SLICE UNSIGNED-BYTE-P-OF-SLICE-GEN)))))
-
 (defthm slice-of-bitand-too-high
   (implies (and (<= 1 low)
                 (natp low))
            (equal (slice high low (bitand x y))
                   0))
   :hints (("Goal" :in-theory (enable bitand slice-too-high-is-0))))
-
-;rename
-(defthmd bvplus-recollapse
-  (implies (and (integerp x) ;these are new, since bvplus ifixes its args
-                (integerp y))
-           (equal (bvchop size (+ x y))
-                  (bvplus size x y)))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-(theory-invariant (incompatible (:definition bvplus) (:rewrite bvplus-recollapse)))
-
-;here we drop the bvchop (and thus avoid conflicts with the anti-bvplus rules)
-(defthmd bvplus-opener
-  (implies (and (unsigned-byte-p size (+ x y))
-                (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (bvplus size x y)
-                  (+ x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
-                                            )))))
 
 (defthm lessthan-256-backchain
   (implies (and (unsigned-byte-p 8 x))
@@ -113,6 +77,7 @@
   :hints (("Goal" :use (:instance plus-bvcat-with-0)
            :in-theory (disable plus-bvcat-with-0))))
 
+;rename and move
 (defthm collect-constants-<-/
   (implies (and (syntaxp (and (quotep a)
                               (quotep b)))
@@ -124,6 +89,7 @@
            (equal (< a (* b x))
                   (< (/ a b) x))))
 
+;rename and move
 (defthm collect-constants-<-/-two
   (implies (and (syntaxp (and (quotep a)
                               (quotep b)))
@@ -179,10 +145,8 @@
                  (bind-free (bind-newsize-to-constant-size k) (newsize))
                  (unsigned-byte-p newsize k)
                  (< newsize size)
-                 (integerp x)
                  (natp size)
-                 (natp newsize)
-                 )
+                 (natp newsize))
             (equal (bvand size k x)
                    (bvand newsize k x)))
    :hints (("Goal" :in-theory (enable bvand-tighten-1))))

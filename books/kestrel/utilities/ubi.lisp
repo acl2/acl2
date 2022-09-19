@@ -1,8 +1,14 @@
 ; Copyright (C) 2016, Regents of the University of Texas
+; Copyright (C) 2022 Kestrel Institute
 ; Written by Matt Kaufmann
+; Supporting Author: Eric Smith (eric.smith@kestrel.edu)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
+
+;; See documentation in ubi-doc.lisp.
 
 (program)
 
@@ -26,15 +32,31 @@
         (t (cmds-back-to-boot-strap (cdr wrld) acc))))
 
 (defconst *keeper-cmds*
-  '(defpkg include-book xdoc add-include-book-dir add-include-book-dir! set-in-theory-redundant-okp))
+  '(include-book ; keep the initial segment of include-books
+    ;; These things can appear in the world before the include-books (e.g., if
+    ;; they are in an acl2-customization file; to prevent :ubi from ever
+    ;; undoing anything in your acl2-customzation file, put (reset-prehistory)
+    ;; at the end of that file):
+    defpkg
+    ;; xdoc
+    add-include-book-dir
+    add-include-book-dir!
+    set-in-theory-redundant-okp))
+
+;; Look inside certain wrappers when deciding to keep a command:
+(defun unwrap-cmd-for-ubi (cmd)
+  (if (not (consp cmd))
+      cmd
+    (if (eq 'local (car cmd))
+        (cadr cmd)
+      (if (eq 'with-output (car cmd))
+          (car (last cmd))
+        cmd))))
 
 (defun initial-keeper-cmds-length (cmds keeper-cmds acc)
   (cond ((endp cmds) acc)
         (t (let* ((cmd0 (car cmds))
-                  (cmd (if (and (consp cmd0)
-                                (eq (car cmd0) 'local))
-                           (cadr cmd0)
-                         cmd0))
+                  (cmd (unwrap-cmd-for-ubi cmd0))
                   (keeper-p (and (consp cmd)
                                  (member-eq (car cmd) keeper-cmds))))
              (cond (keeper-p (initial-keeper-cmds-length (cdr cmds)
@@ -58,6 +80,7 @@
                    (value :invisible)))
           (t (ubu len-keeper-cmds)))))
 
+;; Args are treated just like the *keeper-cmds*.
 (defmacro ubi (&rest args)
   (declare (xargs :guard (symbol-listp args)))
   `(ubi-fn ',args state))

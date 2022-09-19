@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -63,6 +63,27 @@
 ; value is a type-prescription record.  In the case of a :translate entry, each
 ; key is an event name (currently, a function symbol or the name of a defthm
 ; event) that is associated with a list of translate-cert-data-record records.
+
+; Note added 7/2022: We have observed that for a book's portcullis commands,
+; :CERT-DATA is included for type-prescriptions but not for translations.  This
+; distinction may well have been unintentional, but it seems harmless.  We see
+; no reason why the stored type prescriptions for portcullis commands are
+; problematic, and since we do not generally expect many defun or defthm events
+; among the portcullis commands (other than those evaluated within include-book
+; commands), there is little to be lost by ignoring saved translation
+; information for these.  This distinction in what is stored as cert-data for
+; portcullis commands is a byproduct of our process: translation cert-data is
+; determined while processing events under certify-book, while
+; type-prescription cert-data is determined at the conclusion of such
+; processing; see cert-data-for-certificate.  To see this distinction, let
+; foo.lisp be any trivial book and execute the following commands.
+
+;   (defun f1 (x) x) (local (defun f2 (x) x)) (defun g (x) x)
+;   (certify-book "foo" ?)
+;   (read-file "foo.cert" state)
+
+; We see that the :CERT-DATA in foo.cert has :TYPE-PRESCRIPTION entries for f1
+; and f3, but has no :TRANSLATE entries.
 
 ; Part 2: Type Prescriptions
 
@@ -267,41 +288,41 @@
 
 ; Part 3: Translate
 
-; During the first pass of certify-book, a fast-alist is built up as the value
-; of the world global, TRANSLATE-CERT-DATA.  (See update-translate-cert-data.)
-; This fast-alist will ultimately be the value stored in the :translate entry
-; of the :cert-data field of the book's certificate.  When including a book,
-; that field will be the value of the cert-data given to
-; process-embedded-events in include-book-fn1.
+; During the first pass of certify-book, an alist is built up as the value of
+; the world global, 'translate-cert-data.  (See update-translate-cert-data.)
+; This alist will ultimately be the value stored in the :translate entry of the
+; :cert-data field of the book's certificate, after making it into a
+; fast-alist.  When including a book, that field will be the value of the
+; cert-data given to process-embedded-events in include-book-fn1.
 
-; In order for that fast-alist to be valid when consulted during include-book
-; (via the calls of get-translate-cert-data-record), we use function
-; store-cert-data to decide when to store into the world global,
-; TRANSLATE-CERT-DATA.  We must skip results of translation computed on behalf
-; of local events, which will of course be irrelevant (or even misleading) when
-; later including the book.  We also need to skip translations computed during
-; make-event expansion, but that happens automatically because we are recording
-; the results in a world global and the world is reverted after make-event
-; expansion.  We also take other measures in store-cert-data.  In particular,
-; we sometimes avoid storing results computed during the first pass of an
-; encapsulate (which is skipped during include-book), though that is not
-; necessary since the world is rolled back after that pass -- and note that we
-; don't want to use pass1 encapsulate results to avoid translating in pass2,
-; because that would avoid local incompatibility checking.  (For the same
-; reason, we don't retrieve :translate cert-data during the include-book phase
-; of certify-book.)  Also, we avoid worrying about lambda objects.  See
-; store-cert-data for details.
+; That fast-alist will be stored in state global 'cert-data during
+; include-book.  In order for it to be valid (when consulted via the calls of
+; get-translate-cert-data-record), we use function store-cert-data to decide
+; when to store into the world global, 'translate-cert-data.  We must skip
+; results of translation computed on behalf of local events, which will of
+; course be irrelevant (or even misleading) when later including the book.  We
+; also need to skip translations computed during make-event expansion, but that
+; happens automatically because we are recording the results in a world global
+; and the world is reverted after make-event expansion.  We also take other
+; measures in store-cert-data.  In particular, we sometimes avoid storing
+; results computed during the first pass of an encapsulate (which is skipped
+; during include-book), though that is not necessary since the world is rolled
+; back after that pass -- and note that we don't want to use pass1 encapsulate
+; results to avoid translating in pass2, because that would avoid local
+; incompatibility checking.  (For the same reason, we don't retrieve :translate
+; cert-data during the include-book phase of certify-book.)  Also, we avoid
+; worrying about lambda objects.  See store-cert-data for details.
 
 ; Remarks (in no particular order).
 
 ; (1) We considered explicitly avoiding storing translation results from inside
 ; progn!, simply because of the unbounded flexibility of progn!.  But we view
 ; it unlikely that progn! would cause a problem, since the only truly obvious
-; way to build a confusing cert-data entry (fast-alist) for the :translate key
-; seems to be to use redefinition, in which case we write an empty :translate
-; entry into the certificate (see cert-data-for-certificate); and besides,
-; progn! requires a trust tag, so we are sort of off the hook as far as weird
-; end cases are concerned.
+; way to build a confusing cert-data entry (alist) for the :translate key seems
+; to be to use redefinition, in which case we write an empty :translate entry
+; into the certificate (see cert-data-for-certificate); and besides, progn!
+; requires a trust tag, so we are sort of off the hook as far as weird end
+; cases are concerned.
 
 ; (2) One can certify books in community books directory
 ; books/system/tests/cert-data/ and look at their certificates with (read-file
@@ -344,9 +365,9 @@
 
 ; (6) Because of our calls of make-fast-alist in the definition of the function
 ; fast-cert-data, it is unnecessary to store cert-data entries as fast-alists
-; in the .cert file.  But profiling suggests that it is harmless to do so.
-; Note that the relevant alists are already fast-alists anyhow; we'd have to
-; free them if we want to avoid storing them as fast-alists.
+; in the .cert file.  But profiling has suggested that it is harmless to do so.
+; The type-prescription cert-data is already a fast-alists anyhow; we'd have to
+; free it if we want to avoid storing it as a fast-alist.
 
 ; (7) As a sort of optimization, saving space in .cert files at the expense of
 ; time: we could perhaps loosen the cons-count-bounded restriction in
@@ -438,7 +459,10 @@
                (contains-lambda-object-listp (cdr x))))))
 )
 
-(defun store-cert-data (val wrld state)
+(defun store-cert-data (listp val wrld state)
+
+; Listp is true when val is a list of terms, false when val is a term.
+
   (and (let ((info (f-get-global 'certify-book-info state)))
          (and info
               (not (access certify-book-info info :include-book-phase))))
@@ -446,9 +470,7 @@
        (not ; not inside include-book
         (global-val 'include-book-path wrld))
 
-; The next conjunct is optional, as explained in the Essay on Cert-data.  Note
-; that in function encapsulate-fn, we are careful during encapsulate pass 1 to
-; avoid stealing the fast-alist stored in world global translate-cert-data.
+; The next conjunct is optional, as explained in the Essay on Cert-data.
 
        (not ; not "obviously" in encapsulate pass1
         (and (in-encapsulatep (global-val 'embedded-event-lst wrld) nil)
@@ -463,7 +485,9 @@
 ; quoted lambdas.  If the need arises, one can look into removing this
 ; restriction.
 
-       (not (contains-lambda-objectp val))
+       (not (if listp
+                (contains-lambda-object-listp val)
+              (contains-lambda-objectp val)))
 
 ; The following heuristic check could be reconsidered.  It is intended to keep
 ; .cert files from being too big.
@@ -488,23 +512,21 @@
   ((type . inputs) . (value . (fns . vars)))
   t)
 
-(defun update-translate-cert-data-fn (name installed-wrld wrld
-                                           type inputs value fns vars)
-  (let ((old-translate-cert-data (global-val 'translate-cert-data
-                                             installed-wrld)))
+(defun update-translate-cert-data-fn (name installed-wrld wrld type inputs
+                                      value fns vars)
+  (let* ((old-translate-cert-data (global-val 'translate-cert-data
+                                              installed-wrld))
+         (new (make translate-cert-data-record
+                    :type type
+                    :inputs inputs
+                    :value value
+                    :fns fns
+                    :vars vars))
+         (old-lst (cdr (assoc-eq name old-translate-cert-data))))
     (global-set 'translate-cert-data
-                (let ((new (make translate-cert-data-record
-                                 :type type
-                                 :inputs inputs
-                                 :value value
-                                 :fns fns
-                                 :vars vars))
-                      (old-lst (cdr (hons-get name old-translate-cert-data))))
-                  (if (member-equal new old-lst)
-                      old-translate-cert-data
-                    (hons-acons name
-                                (cons new old-lst)
-                                old-translate-cert-data)))
+                (acons name
+                       (cons new old-lst)
+                       old-translate-cert-data)
                 wrld)))
 
 (defmacro update-translate-cert-data (name installed-wrld wrld
@@ -4446,7 +4468,7 @@
    (subversive-p
 
 ; We avoid storing a runic type-prescription rule for any subversive function,
-; because our fixed-point algorithm assumes the the definition provably
+; because our fixed-point algorithm assumes that the definition provably
 ; terminates, which may not be the case for subversive functions.
 
 ; Below is a series of two examples.  The first is the simpler of the two, and
@@ -6076,9 +6098,16 @@
                       (useless-runes-2 (change useless-runes useless-runes
                                                :data fal)))
                  (cond
+
+; We avoid useless-runes in ACL2(p), since proofs can go in a different
+; direction than ACL2(p).  We use a different mechanism for avoiding
+; useless-runes in ACL2(p) than in ACL2(r); see useless-runes-value and
+; useless-runes-filename.  It's not clear which is better, but it's also not
+; clear that there's much reason to change either one at this point.
+
                   #+acl2-par
                   ((f-get-global 'waterfall-parallelism state)
-                   (mv nil nil useless-runes-2))
+                   (mv 'read-but-skip nil useless-runes-2))
                   (t (mv 'read
                          (change useless-runes useless-runes
                                  :tag 'THEORY
@@ -6452,7 +6481,8 @@
        (with-useless-runes-aux wur-name state)
        (pprogn
         (case r/w
-          (read (f-put-global 'useless-runes wur-2 state))
+          ((read #+acl2-par read-but-skip)
+           (f-put-global 'useless-runes wur-2 state))
           (write (prog2$ (accumulated-persistence t) state))
           (otherwise state))
         (state-global-let*
@@ -6569,6 +6599,8 @@
     (COERCE-OBJECT-TO-STATE      (NIL)           (STATE))
     (USER-STOBJ-ALIST            (STATE)         (NIL))
     (UPDATE-USER-STOBJ-ALIST     (NIL STATE)     (STATE))
+; Do not add entry for READ-USER-STOBJ-ALIST, which is in *stobjs-out-invalid*.
+    (WRITE-USER-STOBJ-ALIST      (NIL NIL STATE) (STATE))
     (BIG-CLOCK-NEGATIVE-P        (STATE)         (NIL))
     (DECREMENT-BIG-CLOCK         (STATE)         (STATE))
     (STATE-P                     (STATE)         (NIL))
@@ -6739,7 +6771,7 @@
     (check-sum-inc . nil)
     (update-iprint-ar-fal . nil)
 
-; Aset1-trusetd is an untouchable version of aset1 that we use in our source
+; Aset1-trusted is an untouchable version of aset1 that we use in our source
 ; code when we believe that there is no invariant-risk.  We could create
 ; similar trusted analogues of other built-ins mapped to t above.
 
@@ -7119,21 +7151,34 @@
                   (fourth (car lst)))
                  (get-irrelevants (cdr lst))))))
 
-(defun chk-all-stobj-names (lst msg ctx wrld state)
+(defun chk-all-stobj-names (lst src msg ctx wrld state)
 
-; Cause an error if any element of lst is not a legal stobj name in wrld.
+; Cause an error if any element of lst is not a legal stobj name in wrld.  Src
+; is :stobjs, 'signature-stobjs, or :global-stobjs, indicating whether this
+; check is done in a context where we are checking the :stobjs keyword value,
+; stobjs in a signature, or the :global-stobjs keyword value.
 
   (cond ((endp lst) (value nil))
         ((not (stobjp (car lst) t wrld))
          (er soft ctx
-             "Every name used as a stobj (whether declared explicitly via the ~
-              :STOBJS keyword argument or implicitly via *-notation) must ~
-              have been previously defined as a single-threaded object with ~
-              defstobj or defabsstobj.  ~x0 is used as stobj name ~#1~[~/in ~
-              ~@1 ~]but has not been defined as a stobj."
+             "Every name used as a stobj ~@0 must have been previously ~
+              defined as a single-threaded object with defstobj or ~
+              defabsstobj.  ~x1 is used as stobj name ~#2~[~/in ~@2 ~]but has ~
+              not been defined as a stobj."
+             (cond ((eq src :stobjs)
+                    "with a :STOBJS keyword")
+                   ((eq src :stobjs?)
+                    "(whether declared explicitly via the :STOBJS keyword ~
+                     argument or implicitly via *-notation)")
+                   ((eq src :global-stobjs)
+                    "with a :GLOBAL-STOBJS keyword")
+                   (t (er hard ctx
+                          "Implementation error: unexpected case of src, ~x0. ~
+                           Please report this error to the ACL2 implementors."
+                          src)))
              (car lst)
              msg))
-        (t (chk-all-stobj-names (cdr lst) msg ctx wrld state))))
+        (t (chk-all-stobj-names (cdr lst) src msg ctx wrld state))))
 
 (defun get-declared-stobj-names (edcls ctx wrld state)
 
@@ -7165,6 +7210,7 @@
                    lst))
               (t (er-progn
                   (chk-all-stobj-names lst
+                                       :STOBJS
                                        (msg "... :stobjs ~x0 ..."
                                             (cadr temp))
                                        ctx wrld state)
@@ -10913,7 +10959,7 @@
                       (cond
                        ((f-get-global 'including-uncertified-p state)
 
-; We skip soome checks for :type-prescription xargs when including an
+; We skip some checks for :type-prescription xargs when including an
 ; uncertified book, because they are presumably intended to pass but actually
 ; might not pass.  In a certified book we expect type-prescription information
 ; to be preserved in the certificate's cert-data, from local include-book
@@ -10938,6 +10984,17 @@
                                         (cdr type-prescription-lst)
                                         ens wrld ctx state))))))))))
 
+(defun global-stobjs-prop (names bodies guards wrld)
+  (mv-let (reads writes fns-seen)
+    (collect-global-stobjs-lst bodies wrld nil nil names)
+    (mv-let (reads writes fns-seen)
+      (collect-global-stobjs-lst guards wrld reads writes fns-seen)
+      (declare (ignore fns-seen))
+      (cond (writes (cons (set-difference-eq reads writes)
+                          writes))
+            (reads (cons reads nil)) ; (cons reads writes)
+            (t nil)))))
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -10956,101 +11013,101 @@
         (reclassifying-all-programp (and (eq rc 'reclassifying)
                                          (all-programp names wrld))))
     (er-let*
-     ((wrld1 (chk-just-new-names names 'function rc ctx wrld state))
-      (wrld2 (update-w
-              big-mutrec
-              (store-stobjs-ins
-               names stobjs-in-lst
-               (putprop-x-lst2
+        ((wrld1 (chk-just-new-names names 'function rc ctx wrld state))
+         (wrld2 (update-w
+                 big-mutrec
+                 (store-stobjs-ins
+                  names stobjs-in-lst
+                  (putprop-x-lst2
 
 ; Warning: We rely on these 'formals properties, placed in reverse order from
 ; names, in the function termination-theorem-fn-subst (and its supporting
 ; functions).
 
-                names 'formals arglists
-                (putprop-x-lst1
-                 names 'symbol-class symbol-class
-                 wrld1)))))
-      (untranslated-measures
+                   names 'formals arglists
+                   (putprop-x-lst1
+                    names 'symbol-class symbol-class
+                    wrld1)))))
+         (untranslated-measures
 
 ; If the defun-mode is :program, or equivalently, the symbol-class is :program,
 ; then we don't need the measures, other than to check that non-recursive
 ; functions aren't given measures.
 
-       (get-measures fives ctx state))
-      (measures (translate-measures untranslated-measures
-                                    (not (eq symbol-class :program))
-                                    ctx wrld2
-                                    state))
-      (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
-                                                    ctx
+          (get-measures fives ctx state))
+         (measures (translate-measures untranslated-measures
+                                       (not (eq symbol-class :program))
+                                       ctx wrld2
+                                       state))
+         (ruler-extenders-lst (get-ruler-extenders-lst symbol-class fives
+                                                       ctx
 
 ; Warning: If you move this binding of ruler-extenders-lst, then consider
 ; whether the 'formals property is still set on the new functions in wrld2.
 
-                                                    wrld2 state))
-      (rel (get-unambiguous-xargs-flg
-            :WELL-FOUNDED-RELATION
-            fives
-            (default-well-founded-relation wrld2)
-            ctx state))
-      (do-not-translate-hints
-       (value (or assumep
-                  (eq (ld-skip-proofsp state) 'initialize-acl2))))
-      (hints (if (or do-not-translate-hints
-                     (eq defun-mode :program))
-                 (value nil)
-               (let ((hints (get-hints fives)))
-                 (if hints
-                     (translate-hints+
-                      (cons "Measure Lemma for" (car names))
-                      hints
-                      default-hints
-                      ctx wrld2 state)
-                   (value nil)))))
-      (guard-hints (if (or do-not-translate-hints
-                           (eq defun-mode :program))
-                       (value nil)
+                                                       wrld2 state))
+         (rel (get-unambiguous-xargs-flg
+               :WELL-FOUNDED-RELATION
+               fives
+               (default-well-founded-relation wrld2)
+               ctx state))
+         (do-not-translate-hints
+          (value (or assumep
+                     (eq (ld-skip-proofsp state) 'initialize-acl2))))
+         (hints (if (or do-not-translate-hints
+                        (eq defun-mode :program))
+                    (value nil)
+                  (let ((hints (get-hints fives)))
+                    (if hints
+                        (translate-hints+
+                         (cons "Measure Lemma for" (car names))
+                         hints
+                         default-hints
+                         ctx wrld2 state)
+                      (value nil)))))
+         (guard-hints (if (or do-not-translate-hints
+                              (eq defun-mode :program))
+                          (value nil)
 
 ; We delay translating the guard-hints until after the definition is installed,
 ; so that for example the hint setting :in-theory (enable foo), where foo is
 ; being defined, won't cause an error.
 
-                     (value (append (get-guard-hints fives)
-                                    default-hints))))
-      (std-hints #+:non-standard-analysis
-                 (cond
-                  ((and std-p (not assumep))
-                   (translate-hints+
-                    (cons "Std-p for" (car names))
-                    (get-std-hints fives)
-                    default-hints
-                    ctx wrld2 state))
-                  (t (value nil)))
-                 #-:non-standard-analysis
-                 (value nil))
-      (otf-flg (if do-not-translate-hints
-                   (value nil)
-                 (get-unambiguous-xargs-flg :OTF-FLG
-                                            fives t ctx state)))
-      (guard-debug (get-unambiguous-xargs-flg :GUARD-DEBUG
-                                              fives
+                        (value (append (get-guard-hints fives)
+                                       default-hints))))
+         (std-hints #+:non-standard-analysis
+                    (cond
+                     ((and std-p (not assumep))
+                      (translate-hints+
+                       (cons "Std-p for" (car names))
+                       (get-std-hints fives)
+                       default-hints
+                       ctx wrld2 state))
+                     (t (value nil)))
+                    #-:non-standard-analysis
+                    (value nil))
+         (otf-flg (if do-not-translate-hints
+                      (value nil)
+                    (get-unambiguous-xargs-flg :OTF-FLG
+                                               fives t ctx state)))
+         (guard-debug (get-unambiguous-xargs-flg :GUARD-DEBUG
+                                                 fives
 
 ; Note: If you change the following default for guard-debug, then consider
 ; changing it in verify-guards as well, and fix the "Otherwise" message about
 ; :guard-debug in prove-guard-clauses.
 
-                                              nil ; guard-debug default
-                                              ctx state))
-      (measure-debug (get-unambiguous-xargs-flg :MEASURE-DEBUG
-                                                fives
-                                                nil ; measure-debug default
-                                                ctx state))
-      (guard-simplify (get-unambiguous-xargs-flg :GUARD-SIMPLIFY
-                                                 fives
-                                                 t ; guard-simplify default
+                                                 nil ; guard-debug default
                                                  ctx state))
-      (guard-simplify
+         (measure-debug (get-unambiguous-xargs-flg :MEASURE-DEBUG
+                                                   fives
+                                                   nil ; measure-debug default
+                                                   ctx state))
+         (guard-simplify (get-unambiguous-xargs-flg :GUARD-SIMPLIFY
+                                                    fives
+                                                    t ; guard-simplify default
+                                                    ctx state))
+         (guard-simplify
 
 ; Keep this in sync with guard-simplify-p and a similar check in
 ; chk-acceptable-verify-guards-cmp.  Unlike that function, here we return
@@ -11059,49 +11116,49 @@
 ; it maintains the use of the symbol GUARD-SIMPLIFY to denote a legal value for
 ; :guard-simplify.
 
-       (cond ((member-eq guard-simplify '(t :limited))
-              (value guard-simplify))
-             (t (er soft ctx "~@0" (guard-simplify-msg guard-simplify)))))
-      (split-types-lst (get-boolean-unambiguous-xargs-flg-lst
-                        :SPLIT-TYPES fives nil ctx state))
-      (normalizeps (get-boolean-unambiguous-xargs-flg-lst
-                    :NORMALIZE fives t ctx state))
-      (loop$-recursion-lst
+          (cond ((member-eq guard-simplify '(t :limited))
+                 (value guard-simplify))
+                (t (er soft ctx "~@0" (guard-simplify-msg guard-simplify)))))
+         (split-types-lst (get-boolean-unambiguous-xargs-flg-lst
+                           :SPLIT-TYPES fives nil ctx state))
+         (normalizeps (get-boolean-unambiguous-xargs-flg-lst
+                       :NORMALIZE fives t ctx state))
+         (loop$-recursion-lst
 
 ; It will be illegal to specify a non-nil :loop$-recursion setting in any of
 ; the defuns of a mutually recursive clique.  But to tell whether that has
 ; happened we first need to collect all the :loop$-recursion settings...
 
-       (get-unambiguous-xargs-flg-lst
-        :LOOP$-RECURSION
-        fives
-        nil ; :loop$-recursion default value
-        ctx state))
-      (type-prescription-lst
-       (get-xargs-type-prescription-lst fives ctx state)))
-     (er-progn
-      (cond
-       ((and (consp (cdr loop$-recursion-lst))
-             (not (all-nils loop$-recursion-lst)))
-        (er soft ctx
-            "We do not support the declaration of non-nil :LOOP$-RECURSION ~
+          (get-unambiguous-xargs-flg-lst
+           :LOOP$-RECURSION
+           fives
+           nil ; :loop$-recursion default value
+           ctx state))
+         (type-prescription-lst
+          (get-xargs-type-prescription-lst fives ctx state)))
+      (er-progn
+       (cond
+        ((and (consp (cdr loop$-recursion-lst))
+              (not (all-nils loop$-recursion-lst)))
+         (er soft ctx
+             "We do not support the declaration of non-nil :LOOP$-RECURSION ~
              settings in MUTUAL-RECURSION."))
-       ((and (null (cdr loop$-recursion-lst))
-             (car loop$-recursion-lst)
-             (not (eq (car loop$-recursion-lst) t)))
-        (er soft ctx
-            "The only legal values for the XARGS key :LOOP$-RECURSION are T ~
+        ((and (null (cdr loop$-recursion-lst))
+              (car loop$-recursion-lst)
+              (not (eq (car loop$-recursion-lst) t)))
+         (er soft ctx
+             "The only legal values for the XARGS key :LOOP$-RECURSION are T ~
              and NIL.  ~x0 is not allowed."
-            (car loop$-recursion-lst)))
-       ((and (car loop$-recursion-lst)
-             (global-val 'boot-strap-flg wrld))
-        (er soft ctx
-            "Implementors are not allowed to use :LOOP$-RECURSION in system ~
+             (car loop$-recursion-lst)))
+        ((and (car loop$-recursion-lst)
+              (global-val 'boot-strap-flg wrld))
+         (er soft ctx
+             "Implementors are not allowed to use :LOOP$-RECURSION in system ~
              code!"))
-       (t (value nil)))
-      (er-let*
-          ((wrld2a
-            (if (car loop$-recursion-lst)
+        (t (value nil)))
+       (er-let*
+           ((wrld2a
+             (if (car loop$-recursion-lst)
 
 ; When (car loop$-recursion-lst) is non-nil we know it is actually T and that
 ; this is a singly-recursive defun of a fn in which the user has declared xargs
@@ -11116,15 +11173,15 @@
 ; has no pre-existing badge so we can just cons a new one on.  The resulting
 ; world is wrld2a and will be used henceforth.
 
-                (let* ((badge-table
-                        (table-alist 'badge-table wrld2))
-                       (userfn-structure
-                        (cdr (assoc-eq :badge-userfn-structure badge-table)))
-                       (fn (car names))
-                       (badge (make apply$-badge
-                                    :arity (length (car arglists))
-                                    :out-arity 1 ; see note below
-                                    :ilks t)))
+                 (let* ((badge-table
+                         (table-alist 'badge-table wrld2))
+                        (userfn-structure
+                         (cdr (assoc-eq :badge-userfn-structure badge-table)))
+                        (fn (car names))
+                        (badge (make apply$-badge
+                                     :arity (length (car arglists))
+                                     :out-arity 1 ; see note below
+                                     :ilks t)))
 
 ; Note: We have thought about allowing multi-valued functions here.  The
 ; trouble is that we can't know the :out-arity until we've translated and we
@@ -11138,70 +11195,74 @@
 ; to be used to supply the rest of the function's values.  So we just await
 ; user complaints!
 
-                  (update-w
-                   t
-                   (putprop
-                    fn
-                    'stobjs-out
-                    '(NIL)
+                   (update-w
+                    t
                     (putprop
-                     'badge-table
-                     'table-alist
-                     (put-assoc-eq :badge-userfn-structure
-                                   (put-badge-userfn-structure-tuple-in-alist
-                                    (make-badge-userfn-structure-tuple
-                                     fn nil badge)
-                                    userfn-structure)
-                                   badge-table)
-                     wrld2))))
-                (value wrld2))))
-        (er-progn
-         (cond
-          ((not (and (symbolp rel)
-                     (assoc-eq
-                      rel
-                      (global-val 'well-founded-relation-alist
-                                  wrld2a))))
-           (er soft ctx
-               "The :WELL-FOUNDED-RELATION specified by XARGS must be a ~
+                     fn
+                     'stobjs-out
+                     '(NIL)
+                     (putprop
+                      'badge-table
+                      'table-alist
+                      (put-assoc-eq :badge-userfn-structure
+                                    (put-badge-userfn-structure-tuple-in-alist
+                                     (make-badge-userfn-structure-tuple
+                                      fn nil badge)
+                                     userfn-structure)
+                                    badge-table)
+                      wrld2))))
+               (value wrld2))))
+         (er-progn
+          (cond
+           ((not (and (symbolp rel)
+                      (assoc-eq
+                       rel
+                       (global-val 'well-founded-relation-alist
+                                   wrld2a))))
+            (er soft ctx
+                "The :WELL-FOUNDED-RELATION specified by XARGS must be a ~
                 symbol which has previously been shown to be a well-founded ~
                 relation.  ~x0 has not been. See :DOC well-founded-relation."
-               rel))
-          (t (value nil)))
-         (let ((mp (cadr (assoc-eq
-                          rel
-                          (global-val 'well-founded-relation-alist
-                                      wrld2a)))))
-           (er-let*
-               ((bodies-and-bindings
-                 (translate-bodies non-executablep ; t or :program
-                                   names
-                                   arglists
-                                   (get-bodies fives)
+                rel))
+           (t (value nil)))
+          (let ((mp (cadr (assoc-eq
+                           rel
+                           (global-val 'well-founded-relation-alist
+                                       wrld2a)))))
+            (er-let*
+                ((bodies-and-bindings
+
+; Keep this call in sync with the call of translate-bodies near the end of this
+; definition.
+
+                  (translate-bodies non-executablep ; t or :program
+                                    names
+                                    arglists
+                                    (get-bodies fives)
 ; bindings0 =
-                                   (if (car loop$-recursion-lst)
-                                       (list (cons (car names) '(NIL)))
-                                       (pairlis$ names names))
-                                   stobjs-in-lst ; see "slight abuse" comment below
-                                   reclassifying-all-programp
-                                   ctx wrld2a state)))
-             (let* ((bodies (car bodies-and-bindings))
-                    (bindings
-                     (super-defun-wart-bindings
-                      (cdr bodies-and-bindings)))
-                    #+:non-standard-analysis
-                    (non-classical-fns
-                     (get-non-classical-fns bodies wrld2a)))
-               (er-progn
-                (if assumep
-                    (value nil)
-                    (er-progn
-                     (chk-stobjs-out-bound names bindings ctx state)
+                                    (if (car loop$-recursion-lst)
+                                        (list (cons (car names) '(NIL)))
+                                      (pairlis$ names names))
+                                    stobjs-in-lst ; see "slight abuse" comment below
+                                    reclassifying-all-programp
+                                    ctx wrld2a state)))
+              (let* ((bodies (car bodies-and-bindings))
+                     (bindings
+                      (super-defun-wart-bindings
+                       (cdr bodies-and-bindings)))
                      #+:non-standard-analysis
-                     (chk-no-recursive-non-classical
-                      non-classical-fns
-                      names mp rel measures bodies ctx wrld2a state)))
-                (if (car loop$-recursion-lst)
+                     (non-classical-fns
+                      (get-non-classical-fns bodies wrld2a)))
+                (er-progn
+                 (if assumep
+                     (value nil)
+                   (er-progn
+                    (chk-stobjs-out-bound names bindings ctx state)
+                    #+:non-standard-analysis
+                    (chk-no-recursive-non-classical
+                     non-classical-fns
+                     names mp rel measures bodies ctx wrld2a state)))
+                 (if (car loop$-recursion-lst)
 
 ; If loop$-recursion was allowed, we have to check every lambda object in the
 ; body is well-formed and that the only ones that call fn are in loop$ scions,
@@ -11209,33 +11270,33 @@
 ; scion using them.  We also make sure at least on loop$ scion has a lambda
 ; that calls fn, just to confirm that :loop$-recursion t is necessary.
 
-                    (chk-lambdas-for-loop$-recursion
-                     (car names)
-                     (car bodies)
-                     wrld2a ctx state)
-                    (value nil))
-                (let* ((wrld30 (store-super-defun-warts-stobjs-in
-                                names wrld2a))
-                       (wrld31 (store-stobjs-out names bindings wrld30))
-                       (wrld3 #+:non-standard-analysis
-                              (if (or std-p
-                                      (null non-classical-fns))
-                                  wrld31
-                                (putprop-x-lst1 names 'classicalp
-                                                nil wrld31))
-                              #-:non-standard-analysis
-                              wrld31)
-                       (wrld4 (if (store-cert-data (car bodies-and-bindings)
-                                                   wrld
-                                                   state)
-                                  (update-translate-cert-data
-                                   (car names) wrld wrld3
-                                   :type :translate-bodies
-                                   :inputs names
-                                   :value bodies-and-bindings
-                                   :fns (all-fnnames-lst bodies)
-                                   :vars (state-globals-set-by-lst bodies nil))
-                                wrld3)))
+                     (chk-lambdas-for-loop$-recursion
+                      (car names)
+                      (car bodies)
+                      wrld2a ctx state)
+                   (value nil))
+                 (let* ((wrld30 (store-super-defun-warts-stobjs-in
+                                 names wrld2a))
+                        (wrld31 (store-stobjs-out names bindings wrld30))
+                        (wrld3 #+:non-standard-analysis
+                               (if (or std-p
+                                       (null non-classical-fns))
+                                   wrld31
+                                 (putprop-x-lst1 names 'classicalp
+                                                 nil wrld31))
+                               #-:non-standard-analysis
+                               wrld31)
+                        (wrld4 (if (store-cert-data t bodies wrld state)
+                                   (update-translate-cert-data
+                                    (car names) wrld wrld3
+                                    :type :translate-bodies
+                                    :inputs names
+                                    :value bodies-and-bindings
+                                    :fns (all-fnnames-lst bodies)
+                                    :vars (state-globals-set-by-lst bodies nil))
+                                 wrld3))
+                        (guards0 (get-guards fives split-types-lst nil
+                                             wrld2a)))
 
 ; Note: If :loop$-recursion t was specified for fn then wrld3 now contains the
 ; output arity of fn (in the stobjs-out property of fn).  Thus, translation
@@ -11243,8 +11304,13 @@
 ; is needed below, except in the optimizations using wrld2a as noted in the
 ; next Note.
 
-                  (er-let* ((guards (translate-term-lst
-                                     (get-guards fives split-types-lst nil wrld2a)
+                   (er-let* ((guards
+
+; Keep this call in sync with the call of translate-term-list near the end of
+; this definition.
+
+                              (translate-term-lst
+                               guards0
 
 ; Note: The use of wrld2a in get-guards above is just an optimization.  We
 ; should more properly use wrld3 or even wrld4, but we know the presence of the
@@ -11264,14 +11330,14 @@
 ; By prohibiting them from modifying state we don't have to answer the
 ; questions about when they run.
 
-                                     '(nil)
+                               '(nil)
 
 ; Logic-modep:
 ; Since guards have nothing to do with the logic, and since they may
 ; legitimately have mode :program, we set logic-modep to nil here.  This arg is
 ; used for each guard.
 
-                                     nil
+                               nil
 
 ; Known-stobjs-lst:
 ; Here is a slight abuse.  Translate-term-lst is expecting, in this
@@ -11284,7 +11350,7 @@
 ; stobjsp.  Technically we ought to map over the stobjs-in-lst and
 ; change each element to its collect-non-x nil.
 
-                                     stobjs-in-lst ctx
+                               stobjs-in-lst ctx
 
 ; Note the use below of wrld3 instead of wrld2a.  It is important that the
 ; proper stobjs-out be put on the new functions before we translate the guards!
@@ -11304,11 +11370,11 @@
 ;    :hints (("goal" :use ((:instance foo (x nil)))))
 ;    :rule-classes nil)
 
-                                     wrld3
-                                     state))
-                            (split-types-terms
-                             (translate-term-lst
-                              (get-guards fives split-types-lst t wrld2a)
+                               wrld3
+                               state))
+                             (split-types-terms
+                              (translate-term-lst
+                               (get-guards fives split-types-lst t wrld2a)
 
 ; Note: Wrld2a above is just the same optimization noted after the previous use
 ; of get-guards above.
@@ -11316,132 +11382,195 @@
 ; The arguments below are the same as those for the preceding call of
 ; translate-term-lst.
 
-                              '(nil) nil stobjs-in-lst ctx wrld3 state)))
-                    (er-progn
-                     (if (eq defun-mode :logic)
+                               '(nil) nil stobjs-in-lst ctx wrld3 state)))
+                     (er-progn
+                      (if (eq defun-mode :logic)
 
 ; Although translate checks for inappropriate calls of :program functions,
 ; translate11 and translate1 do not.
 
-                         (er-progn
-                          (chk-logic-subfunctions
-                           names names
-                           guards wrld3 "guard"
-                           ctx state)
-                          (chk-logic-subfunctions
-                           names names
-                           split-types-terms wrld3
-                           "split-types expression"
-                           ctx state)
-                          (chk-logic-subfunctions
-                           names names
-                           bodies wrld3 "body"
-                           ctx state))
-                         (value nil))
-                     (if (global-val 'boot-strap-flg (w state))
-                         (value nil)
-                         (er-progn
-                          (chk-badged-quoted-subfunctions
-                           names names
-                           guards wrld3 "guard"
-                           ctx state)
-                          (chk-badged-quoted-subfunctions
-                           names names
-                           split-types-terms wrld3
-                           "split-types expression"
-                           ctx state)
-                          (chk-badged-quoted-subfunctions
-                           names names
-                           bodies wrld3 "body"
-                           ctx state)))
-                     (if (eq symbol-class :common-lisp-compliant)
-                         (er-progn
-                          (chk-common-lisp-compliant-subfunctions
-                           names names guards wrld3 "guard" ctx state)
-                          (chk-common-lisp-compliant-subfunctions
-                           names names split-types-terms wrld3
-                           "split-types expression" ctx state)
-                          (chk-common-lisp-compliant-subfunctions
-                           names names bodies wrld3 "body" ctx state))
-                         (value nil))
-                     (mv-let
-                       (erp val state)
+                          (er-progn
+                           (chk-logic-subfunctions
+                            names names
+                            guards wrld3 "guard"
+                            ctx state)
+                           (chk-logic-subfunctions
+                            names names
+                            split-types-terms wrld3
+                            "split-types expression"
+                            ctx state)
+                           (chk-logic-subfunctions
+                            names names
+                            bodies wrld3 "body"
+                            ctx state))
+                        (value nil))
+                      (if (global-val 'boot-strap-flg (w state))
+                          (value nil)
+                        (er-progn
+                         (chk-badged-quoted-subfunctions
+                          names names
+                          guards wrld3 "guard"
+                          ctx state)
+                         (chk-badged-quoted-subfunctions
+                          names names
+                          split-types-terms wrld3
+                          "split-types expression"
+                          ctx state)
+                         (chk-badged-quoted-subfunctions
+                          names names
+                          bodies wrld3 "body"
+                          ctx state)))
+                      (if (eq symbol-class :common-lisp-compliant)
+                          (er-progn
+                           (chk-common-lisp-compliant-subfunctions
+                            names names guards wrld3 "guard" ctx state)
+                           (chk-common-lisp-compliant-subfunctions
+                            names names split-types-terms wrld3
+                            "split-types expression" ctx state)
+                           (chk-common-lisp-compliant-subfunctions
+                            names names bodies wrld3 "body" ctx state))
+                        (value nil))
+                      (mv-let
+                        (erp val state)
 ; This mv-let is just an aside that lets us conditionally check a bunch of
 ; conditions we needn't do in assumep mode.
-                       (cond
-                        (assumep (mv nil nil state))
-                        (t
-                         (let ((ignores (get-ignores fives))
-                               (ignorables (get-ignorables fives))
-                               (irrelevants-alist (get-irrelevants-alist fives)))
-                           (er-progn
-                            (chk-free-and-ignored-vars-lsts names
-                                                            arglists
-                                                            guards
-                                                            split-types-terms
-                                                            measures
-                                                            ignores
-                                                            ignorables
-                                                            bodies
-                                                            ctx state)
-                            (chk-irrelevant-formals names arglists
-                                                    guards
-                                                    split-types-terms
-                                                    measures
-                                                    ignores
-                                                    ignorables
-                                                    irrelevants-alist
-                                                    bodies ctx state)
-                            (chk-mutual-recursion names bodies ctx
-                                                  state)))))
-                       (cond
-                        (erp (mv erp val state))
-                        (t (er-let* ((new-lambda$-alist-pairs
-                                      (if non-executablep
-                                          (value nil)
-                                          (chk-acceptable-lambda$-translations
-                                           symbol-class
-                                           guards bodies
-                                           ctx wrld3 state)))
-                                     (new-loop$-alist-pairs
-                                      (if non-executablep
-                                          (value nil)
-                                          (chk-acceptable-loop$-translations
-                                           symbol-class
-                                           guards bodies
-                                           ctx wrld3 state))))
-                             (value (list 'chk-acceptable-defuns
-                                          names
-                                          arglists
-                                          docs
-                                          nil ; doc-pairs
-                                          guards
-                                          measures
-                                          ruler-extenders-lst
-                                          mp
-                                          rel
-                                          hints
-                                          guard-hints
-                                          std-hints ;nil for non-std
-                                          otf-flg
-                                          bodies
+                        (cond
+                         (assumep (mv nil nil state))
+                         (t
+                          (let ((ignores (get-ignores fives))
+                                (ignorables (get-ignorables fives))
+                                (irrelevants-alist (get-irrelevants-alist fives)))
+                            (er-progn
+                             (chk-free-and-ignored-vars-lsts names
+                                                             arglists
+                                                             guards
+                                                             split-types-terms
+                                                             measures
+                                                             ignores
+                                                             ignorables
+                                                             bodies
+                                                             ctx state)
+                             (chk-irrelevant-formals names arglists
+                                                     guards
+                                                     split-types-terms
+                                                     measures
+                                                     ignores
+                                                     ignorables
+                                                     irrelevants-alist
+                                                     bodies ctx state)
+                             (chk-mutual-recursion names bodies ctx
+                                                   state)))))
+                        (cond
+                         (erp (mv erp val state))
+                         (t (er-let* ((new-lambda$-alist-pairs
+                                       (if non-executablep
+                                           (value nil)
+                                         (chk-acceptable-lambda$-translations
                                           symbol-class
-                                          normalizeps
-                                          reclassifying-all-programp
-                                          wrld4
-                                          non-executablep
-                                          guard-debug
-                                          measure-debug
-                                          split-types-terms
-                                          (make lambda-info
-                                                :loop$-recursion
-                                                (car loop$-recursion-lst)
-                                                :new-lambda$-alist-pairs
-                                                new-lambda$-alist-pairs
-                                                :new-loop$-alist-pairs
-                                                new-loop$-alist-pairs)
-                                          guard-simplify
-                                          type-prescription-lst)))))))))))))))))))
+                                          guards bodies
+                                          ctx wrld3 state)))
+                                      (new-loop$-alist-pairs
+                                       (if non-executablep
+                                           (value nil)
+                                         (chk-acceptable-loop$-translations
+                                          symbol-class
+                                          guards bodies
+                                          ctx wrld3 state)))
+
+; We conclude by extending the world with the 'global-stobjs property when
+; appropriate, in which case we check that this doesn't cause the bodies or
+; guards to violate the global-stobjs invariants.  We start by obtaining that
+; property from the currently installed world, wrld2a, to support efficiency of
+; the re-translations below.  Those re-translations are nevertheless
+; heavy-handed, as we are only checking for errors pertaining to the
+; global-stobjs invariants; but we don't expect this to be a big drain on
+; overall efficiency, and of course there is no re-translation at all
+; with-global-stobj isn't used (or, as we see below if there is no recursion).
+
+                                      (global-stobjs-prop
+                                       (value
+                                        (global-stobjs-prop names bodies guards
+                                                            wrld2a)))
+                                      (wrld5 (value (if global-stobjs-prop
+                                                        (putprop-x-lst1
+                                                         names
+                                                         'global-stobjs
+                                                         global-stobjs-prop
+                                                         wrld4)
+                                                      wrld4)))
+                                      (ignore ; see comment above
+                                       (cond
+                                        ((and global-stobjs-prop
+                                              (not assumep)
+                                              (or (ffnnamesp-lst
+                                                   names bodies)
+                                                  (ffnnamesp-lst
+                                                   names guards)))
+
+; There is recursion, so we will retranslate the guards and bodies as discussed
+; above.
+
+                                         (er-progn
+                                          (update-w t wrld5)
+
+; Keep this call in sync with the call of translate-bodies earlier in this
+; definition.
+
+                                          (translate-bodies
+                                           non-executablep
+                                           names
+                                           arglists
+                                           (get-bodies fives)
+                                           (if (car loop$-recursion-lst)
+                                               (list (cons (car names) '(NIL)))
+                                             (pairlis$ names names))
+                                           stobjs-in-lst
+                                           reclassifying-all-programp
+                                           ctx wrld5 state)
+
+; Keep this call in sync with the call of translate-term-list near the end of
+; this definition.
+
+                                          (translate-term-lst
+                                           guards0
+                                           '(nil)
+                                           nil
+                                           stobjs-in-lst ctx
+                                           wrld5
+                                           state)))
+                                        (t (value nil)))))
+                              (value (list 'chk-acceptable-defuns
+                                           names
+                                           arglists
+                                           docs
+                                           nil ; doc-pairs
+                                           guards
+                                           measures
+                                           ruler-extenders-lst
+                                           mp
+                                           rel
+                                           hints
+                                           guard-hints
+                                           std-hints ;nil for non-std
+                                           otf-flg
+                                           bodies
+                                           symbol-class
+                                           normalizeps
+                                           reclassifying-all-programp
+                                           wrld5
+                                           non-executablep
+                                           guard-debug
+                                           measure-debug
+                                           split-types-terms
+                                           (make lambda-info
+                                                 :loop$-recursion
+                                                 (car loop$-recursion-lst)
+                                                 :new-lambda$-alist-pairs
+                                                 new-lambda$-alist-pairs
+                                                 :new-loop$-alist-pairs
+                                                 new-loop$-alist-pairs)
+                                           guard-simplify
+                                           type-prescription-lst)))))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -12165,7 +12294,11 @@
    (t (cons (list (car names)
                   (formals (car names) wrld)
                   (stobjs-in (car names) wrld)
-                  (stobjs-out (car names) wrld))
+
+; The following would normally be (stobjs-out (car names) wrld).  However, we
+; get a build-time error from read-user-stobj-alist in that case.
+
+                  (getpropc (car names) 'stobjs-out '(nil) wrld))
             (make-udf-insigs (cdr names) wrld)))))
 
 (defun intro-udf (insig wrld)

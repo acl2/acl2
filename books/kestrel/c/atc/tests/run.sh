@@ -35,4 +35,4 @@ set -e
 ./operators
 ./ops-diff-types
 ./structs
-./structs-with-arrays
+./ext-objs

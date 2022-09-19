@@ -50,8 +50,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-conversion ((stype typep) (dtype typep))
-  :guard (and (type-integerp stype)
-              (type-integerp dtype)
+  :guard (and (type-nonchar-integerp stype)
+              (type-nonchar-integerp dtype)
               (not (equal stype dtype)))
   :returns (event pseudo-event-formp)
   :short "Event to generate the conversion between C integer types."
@@ -127,7 +127,7 @@
                                               <dtype>-integerp-alt-def))))
          :hooks (:fix))))
 
-  :guard-hints (("Goal" :in-theory (enable type-integerp
+  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp
                                            type-signed-integerp
                                            type-unsigned-integerp))))
 
@@ -135,8 +135,8 @@
 
 (define atc-def-integer-conversions-loop-inner ((stype typep)
                                                 (dtypes type-listp))
-  :guard (and (type-integerp stype)
-              (type-integer-listp dtypes))
+  :guard (and (type-nonchar-integerp stype)
+              (type-nonchar-integer-listp dtypes))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the conversions
           between a source type and each of a list of destination types."
@@ -155,8 +155,8 @@
 
 (define atc-def-integer-conversions-loop-outer ((stypes type-listp)
                                                 (dtypes type-listp))
-  :guard (and (type-integer-listp stypes)
-              (type-integer-listp dtypes))
+  :guard (and (type-nonchar-integer-listp stypes)
+              (type-nonchar-integer-listp dtypes))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the conversions
           between each of a list of source types
@@ -174,8 +174,8 @@
 
 (make-event
  `(progn ,@(atc-def-integer-conversions-loop-outer
-            *integer-nonbool-nonchar-types*
-            *integer-nonbool-nonchar-types*)))
+            *nonchar-integer-types**
+            *nonchar-integer-types**)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

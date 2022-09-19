@@ -723,6 +723,7 @@
 
             the-check
             ;; get-prefixes:
+            ;; todo: drop these if we are no longer using xw:
             x86isa::get-prefixes-does-not-modify-x86-state-in-app-view-new ;targets mv-nth-3-of-get-prefixes
             x86isa::mv-nth-0-of-get-prefixes-of-xw-of-irrel
             x86isa::mv-nth-1-of-get-prefixes-of-xw-of-irrel
@@ -776,8 +777,8 @@
             x86isa::canonical-address-p-between-special3
             x86isa::canonical-address-p-between-special4
 
-            acl2::hack-arith-cancel
-            acl2::<-of-+-of-1-same-alt ;pretty specific
+            acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-2-1
             acl2::integerp-of-+-when-integerp-1-cheap
             x86isa::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap
@@ -1004,6 +1005,7 @@
             x86isa::mv-nth-of-if
             x86isa::canonical-address-p-of-if
             read-in-terms-of-nth-and-pos-eric-4-bytes
+            read-in-terms-of-nth-and-pos-eric-8-bytes
 
             jle-condition-rewrite-1
             jle-condition-rewrite-2
@@ -1057,6 +1059,7 @@
             X86ISA::!MS
             X86ISA::!MS$a
 
+            acl2::bv-array-read-shorten-axe
             )))
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
@@ -1069,11 +1072,13 @@
      standard-assumptions-core-64
      standard-state-assumption-32
      standard-assumptions-mach-o-64
+     standard-assumptions-elf-64
      standard-assumptions-pe-64
-     bytes-loaded-in-text-section-64
+     bytes-loaded-at-address-64
      ;; Mach-O stuff:
      acl2::get-mach-o-code
      acl2::subroutine-address-mach-o
+     acl2::get-mach-o-symbol-table
      acl2::get-mach-o-code-address
      acl2::get-mach-o-section-base-1
      acl2::get-mach-o-section-base-2
@@ -1110,6 +1115,20 @@
      acl2::lookup-pe-symbol-base-2
      acl2::lookup-pe-symbol-unroll
      acl2::subroutine-address-within-text-section-pe-64
+     ;; ELF stuff:
+     acl2::lookup-equal-safe
+     acl2::subroutine-address-elf
+     acl2::get-elf-symbol-table
+     acl2::get-elf-section-address
+     acl2::get-elf-section-bytes
+     acl2::get-elf-code
+     acl2::get-elf-code-address
+     acl2::get-elf-section-header-base-1
+     acl2::get-elf-section-header-base-2
+     acl2::get-elf-section-header-unroll
+     acl2::get-elf-symbol-address-base-1
+     acl2::get-elf-symbol-address-base-2
+     acl2::get-elf-symbol-address-unroll
 
      ;;     read64
 ;     read-becomes-mv-nth-1-of-rb
@@ -1124,21 +1143,24 @@
      eql
      acl2::+-commutative-axe
      unicity-of-0
-     all-addreses-of-stack-slots
+     ;; all-addreses-of-stack-slots
      ms X86ISA::ms$A
      fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
      canonical-address-p-of-0
      addresses-of-subsequent-stack-slots
-     addresses-of-subsequent-stack-slots-aux-base
-     addresses-of-subsequent-stack-slots-aux-unroll
+     ;; addresses-of-subsequent-stack-slots-aux-base
+     ;; addresses-of-subsequent-stack-slots-aux-unroll
+     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux
      x86isa::canonical-address-listp-of-cons
      x86isa::canonical-address-p-between-special1
      x86isa::canonical-address-p-between-special2
      x86isa::canonical-address-p-between-special3
      acl2::fold-consts-in-+
      x86isa::canonical-address-listp-of-nil
-     )
+     acl2::integerp-of-+-when-integerp-1-cheap
+     x86isa::integerp-of-xr-rgf-4
+     x86isa::fix-of-xr-rgf-4)
    (acl2::lookup-rules)))
 
 (defun myif-rules ()

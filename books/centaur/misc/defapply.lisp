@@ -841,7 +841,11 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                  assoc-eql-exec-is-assoc-equal
                                  alistp-pairlis$
                                  atom not eq
-                                 symbol-listp-forward-to-true-listp)))
+                                 ;; Matt K. mod for rule changes 7/15/2022:
+                                 ;; symbol-listp-forward-to-true-listp
+                                 symbol-listp-forward-to-eqlable-listp
+                                 eqlable-listp-forward-to-atom-listp
+                                 atom-listp-forward-to-true-listp)))
 
        (mutual-recursion
         (defun _name_-ev-concrete (x a appalist)

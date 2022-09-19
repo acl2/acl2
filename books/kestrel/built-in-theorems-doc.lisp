@@ -299,7 +299,11 @@
   :parents (built-in-theorems)
   :short "Built-in theorems about lists."
   :long
-  "@(def symbol-listp-forward-to-true-listp)
+; Matt K. mod, 7/15/2022: symbol-listp-forward-to-true-listp is being removed,
+; but its effect follows from the three I've added just below.
+  "@(def symbol-listp-forward-to-eqlable-listp)
+   @(def eqlable-listp-forward-to-atom-listp)
+   @(def atom-listp-forward-to-true-listp)
    @(def true-listp-append)
    @(def append-to-nil)
    @(def character-listp-forward-to-eqlable-listp)

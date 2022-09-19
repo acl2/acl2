@@ -1,7 +1,7 @@
 ; Utilities for dealing with temporary directories
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,8 +14,12 @@
 (include-book "get-process-id")
 (include-book "get-username")
 (include-book "std/util/bstar" :dir :system)
+(local (include-book "kestrel/utilities/w" :dir :system))
+(local (include-book "read-acl2-oracle"))
 
 (in-theory (disable mv-nth)) ;make local?
+
+(local (in-theory (disable w state-p1 read-acl2-oracle put-global)))
 
 (defttag temp-dirs) ; due to the sys-call+
 
@@ -46,6 +50,11 @@
            (state-p1 (mv-nth 1 (choose-temp-dir-name state))))
   :hints (("Goal" :in-theory (enable choose-temp-dir-name))))
 
+(defthm w-of-mv-nth-1-of-choose-temp-dir-name
+  (equal (w (mv-nth 1 (choose-temp-dir-name state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (choose-temp-dir-name) (put-global)))))
+
 ;; Returns (mv temp-dir-name state).  Retrieves or creates a name for a temp dir
 ;; by combining the username and the process id.  The result is something like
 ;; /tmp/ewsmith/TEMP-12345, where 12345 is the PID.  Stores the result in the
@@ -75,6 +84,11 @@
            (state-p1 (mv-nth 1 (temp-dir-name state))))
   :hints (("Goal" :in-theory (enable temp-dir-name))))
 
+(defthm w-of-mv-nth-1-of-temp-dir-name
+  (equal (w (mv-nth 1 (temp-dir-name state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (temp-dir-name) (put-global)))))
+
 ;; Returns (mv temp-dir-name state). Uses the state global
 ;; 'temp-dir-for-this-process.  Makes the temp dir if it doesn't already exist.
 (defund maybe-make-temp-dir (state)
@@ -99,6 +113,11 @@
 (defthm state-p1-of-mv-nth-1-of-maybe-make-temp-dir
   (implies (state-p1 state)
            (state-p1 (mv-nth 1 (maybe-make-temp-dir state))))
+  :hints (("Goal" :in-theory (enable maybe-make-temp-dir))))
+
+(defthm w-of-mv-nth-1-of-maybe-make-temp-dir
+  (equal (w (mv-nth 1 (maybe-make-temp-dir state)))
+         (w state))
   :hints (("Goal" :in-theory (enable maybe-make-temp-dir))))
 
 ;; Disallow anything that could confuse the rm -rf command (whitespace, dots, etc.)

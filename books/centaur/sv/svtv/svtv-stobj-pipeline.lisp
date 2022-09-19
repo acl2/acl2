@@ -54,8 +54,7 @@
        (outs (svtv-fsm-run-compile setup.inputs setup.overrides setup.initst
                                    (make-svtv-fsm :base-fsm fsm
                                                   :namemap (svtv-data$c->namemap svtv-data))
-                                   outvars
-                                   simp))
+                                   outvars precomp-inputs simp))
        (result (svtv-probealist-extract-alist setup.probes outs)))
     (implies (equal (svex-alist-keys setup.initst)
                     (svex-alist-keys (base-fsm->nextstate fsm)))
@@ -70,8 +69,7 @@
        (outs (svtv-fsm-run-compile setup.inputs setup.overrides setup.initst
                                    (make-svtv-fsm :base-fsm fsm
                                                   :namemap (svtv-data$c->namemap svtv-data))
-                                   outvars
-                                   simp))
+                                   outvars precomp-inputs simp))
        (result (svtv-probealist-extract-alist setup.probes outs)))
     (implies (svtv-data$c-pipeline-okp svtv-data pipeline)
              (svex-alist-eval-equiv result pipeline)))
@@ -80,13 +78,16 @@
                              svtv-data$c-pipeline-okp-necc))))
 
 
-(define svtv-data-compute-pipeline (svtv-data &key ((simp svex-simpconfig-p) 't))
+(define svtv-data-compute-pipeline (svtv-data &key ((simp svex-simpconfig-p) 't)
+                                              ((precomp-inputs svarlist-p) 'nil))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               ;; (svtv-data->flatten-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
-              (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+              (b* ((st-vars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                (and (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
+                            st-vars)
+                     (not (acl2::hons-intersect-p precomp-inputs st-vars)))))
   :guard-debug t
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
@@ -100,7 +101,7 @@
                                     setup.inputs setup.overrides setup.initst
                                     (make-svtv-fsm :base-fsm fsm
                                                    :namemap (svtv-data->namemap svtv-data))
-                                    outvars simp)))
+                                    outvars precomp-inputs simp)))
         (result (svtv-probealist-extract-alist setup.probes outs))
         (- (fast-alistlist-clean outs))
         (svtv-data (update-svtv-data->pipeline result svtv-data)))
@@ -120,19 +121,23 @@
 
 (define svtv-data-maybe-compute-pipeline ((pipeline-setup pipeline-setup-p)
                                           svtv-data
-                                          &key ((simp svex-simpconfig-p) 't))
+                                          &key ((simp svex-simpconfig-p) 't)
+                                          ((precomp-inputs svarlist-p) 'nil))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
-              (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
-  :returns new-svtv-data
+              (b* ((st-vars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                (and (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
+                            st-vars)
+                     (not (acl2::hons-intersect-p precomp-inputs st-vars)))))
+  :returns (mv updated new-svtv-data)
   (if (and (equal (pipeline-setup-fix pipeline-setup)
                   (svtv-data->pipeline-setup svtv-data))
            (svtv-data->pipeline-validp svtv-data))
-      svtv-data
+      (mv nil svtv-data)
     (b* ((svtv-data (update-svtv-data->pipeline-validp nil svtv-data))
-         (svtv-data (update-svtv-data->pipeline-setup pipeline-setup svtv-data)))
-      (svtv-data-compute-pipeline svtv-data :simp simp)))
+         (svtv-data (update-svtv-data->pipeline-setup pipeline-setup svtv-data))
+         (svtv-data (svtv-data-compute-pipeline svtv-data :simp simp :precomp-inputs precomp-inputs)))
+      (mv t svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))

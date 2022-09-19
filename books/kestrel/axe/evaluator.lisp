@@ -21,7 +21,8 @@
 ;; TODO: To evaluate a function defined using MBE, we might prefer to evaluate the :exec part.
 
 ;try to include less (but we need the functions to eval them)
-(include-book "kestrel/utilities/world" :dir :system) ;for fn-definedp
+(include-book "kestrel/world-light/function-symbolsp" :dir :system)
+(include-book "kestrel/world-light/fn-definedp" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
@@ -657,7 +658,8 @@
 ;TODO Would be nice to track the call chain so we can report it in the error message.
 (defund get-immediate-supporting-fns (fn-name throw-errorp wrld)
   (declare (xargs :guard (and (symbolp fn-name)
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (function-symbolp fn-name wrld))))
   (if (member-eq fn-name *acl2-primitives*)
       (hard-error 'get-immediate-supporting-fns "Trying to get the body of the ACL2 primitive ~x0.  Consider adding it to the base evaluator.  Or investigate why a function that calls this function (transitively) is suddenly appearing."
                   (acons #\0 fn-name nil))
@@ -665,11 +667,19 @@
         ;; an undefined function has no supporters
         (prog2$ (cw "(Note: Undefined function ~x0 is present in DAG.)~%" fn-name)
                 nil)
-      (let* ((body (fn-body fn-name throw-errorp wrld)))
-        (get-called-fns body)))))
+      (let* ((body (fn-body fn-name throw-errorp wrld))
+             (called-fns (get-called-fns body)))
+        (if (not (function-symbolsp called-fns wrld))
+            (prog2$ (er hard? 'get-immediate-supporting-fns "Unknown function(s) among those returned by get-called-fns: ~x0." called-fns)
+                    nil)
+          called-fns)))))
 
 (defthm symbol-listp-of-get-immediate-supporting-fns
   (symbol-listp (get-immediate-supporting-fns fn-name throw-errorp wrld))
+  :hints (("Goal" :in-theory (enable get-immediate-supporting-fns))))
+
+(defthm function-symbolsp-of-get-immediate-supporting-fns
+  (function-symbolsp (get-immediate-supporting-fns fn-name throw-errorp wrld) wrld)
   :hints (("Goal" :in-theory (enable get-immediate-supporting-fns))))
 
 ;this is a worklist algorithm
@@ -681,6 +691,7 @@
                               (symbol-listp fns)
                               (symbol-listp done-list)
                               (plist-worldp wrld)
+                              (function-symbolsp fns wrld)
                               (symbol-listp acc))))
   (if (zp count)
       (er hard? 'get-all-supporting-fns-aux "limit reached.")
@@ -724,7 +735,8 @@
 ;todo: exclude the evaluator functions themselves?
 (defund get-non-built-in-supporting-fns-list (fn-names wrld)
   (declare (xargs :guard (and (symbol-listp fn-names)
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (function-symbolsp fn-names wrld))))
   (get-all-supporting-fns-aux 1000000000
                               fn-names
                               *axe-evaluator-functions* ;(append *acl2-primitives* *axe-evaluator-functions*) ;stops when it hits one of these..
@@ -869,12 +881,13 @@
                               (plist-worldp wrld))))
   (if (quotep dag)
       dag
-    (let* ((dag-vars (dag-vars dag))
-           (dag-fns (dag-fns dag))
-           (supporting-fns (get-non-built-in-supporting-fns-list dag-fns wrld))
-           (supporting-interpreted-function-alist (make-interpreted-function-alist supporting-fns wrld))
-           )
-      `(dag-val-with-axe-evaluator ',dag
-                                   ,(make-acons-nest dag-vars)
-                                   ',supporting-interpreted-function-alist
-                                   '0))))
+    (let ((dag-vars (dag-vars dag))
+          (dag-fns (dag-fns dag)))
+      (if (not (function-symbolsp dag-fns wrld))
+          (er hard? 'embed-dag-in-term "Some functions are not in the world: ~X01." dag-fns nil)
+        (let* ((supporting-fns (get-non-built-in-supporting-fns-list dag-fns wrld))
+               (supporting-interpreted-function-alist (make-interpreted-function-alist supporting-fns wrld)))
+          `(dag-val-with-axe-evaluator ',dag
+                                       ,(make-acons-nest dag-vars)
+                                       ',supporting-interpreted-function-alist
+                                       '0))))))

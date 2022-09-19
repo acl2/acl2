@@ -203,8 +203,8 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    GET-SERIALIZE-CHARACTER
-    TRUST-MFC
+    ER-HARD?
+    PROJECT-DIR-ALIST
   ))
 
 (defconst *special-ops*

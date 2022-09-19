@@ -727,12 +727,6 @@
                      x)))
   :hints (("Goal" :in-theory (enable bvplus acl2::bvchop-of-sum-cases))))
 
-(defthm bvchop-of-logxor-becomes-bvxor
-  (implies (natp n)
-           (equal (bvchop n (logxor x y))
-                  (bvxor n x y)))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
 (defthmd bvcat-of-logtail-low
   (implies (and (natp lowsize)
                 (natp highsize)

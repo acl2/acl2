@@ -1,0 +1,15 @@
+NOTE: This README is for files originally distributed as part of the
+ACL2 system: acl2-doc-open-url.el, acl2-doc.el, emacs-acl2.el, and
+monitor.el.  Other files in this directory are available (as of this
+writing, fancy-string-syntax.el).
+
+NOTE: This directory is intended for recent Emacs versions.  If you
+are using Emacs 24, consider using files in emacs/ instead (i.e.,
+relative to the present directory, ../../emacs/).
+
+File emacs-acl2.el provides quite a few utilities.  Some make it easy
+to use proof-trees (see :DOC proof-tree).  This file also loads the
+ACL2-Doc Emacs browser for ACL2 documentation, and loads a file that
+provides support for xdoc-link-mode, used by the web-based acl2+books
+documentation.  See the top of emacs-acl2.el for more complete
+documentation.

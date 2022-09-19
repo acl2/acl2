@@ -1154,7 +1154,7 @@
 
   (xdoc::p
    "The term @('(init-fun-env <constant>)') constructs the "
-   (xdoc::seetopic "atc-function-environments" "C function environment")
+   (xdoc::seetopic "function-environments" "C function environment")
    " of the generated translation unit.")
 
   (xdoc::p
@@ -1220,7 +1220,7 @@
     export these theorems from the @(tsee encapsulate).")
 
   (xdoc::p
-   "See @(tsee atc-proof-support) and @(tsee atc-implementation) for details
+   "See @(tsee atc-implementation) for details
     on the generated theorems and their proofs.")
 
   (atc-tutorial-section "Code Generation after the Events")

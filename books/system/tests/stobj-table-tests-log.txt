@@ -117,20 +117,11 @@ ACL2 !>>(DEFMACRO
              'QUOTE
              (CONS
               (CONS
-               (CONS
-                'ASSERT-EVENT
-                (CONS
-                 (CONS
-                  'EQUAL
-                  (CONS
-                   (CONS READ-I (CONS STOBJ 'NIL))
-                   (CONS
-                        (CONS 'QUOTE
-                              (CONS (CONS '0
-                                          (CONS '0 (CONS '0 (CONS '0 'NIL))))
-                                    'NIL))
-                        'NIL)))
-                 'NIL))
+               (CONS 'ASSERT-EVENT
+                     (CONS (CONS 'EQUAL
+                                 (CONS (CONS READ-I (CONS STOBJ 'NIL))
+                                       '('(0 0 0 0))))
+                           'NIL))
                (CONS
                 (CONS
                   'ASSERT-EVENT
@@ -149,38 +140,19 @@ ACL2 !>>(DEFMACRO
                                           (CONS STOBJ 'NIL)))
                               'NIL))
                   (CONS
-                   (CONS
-                    'ASSERT-EVENT
-                    (CONS
-                     (CONS
-                      'EQUAL
-                      (CONS
-                       (CONS READ-I (CONS STOBJ 'NIL))
-                       (CONS
-                        (CONS 'QUOTE
-                              (CONS (CONS '1
-                                          (CONS '2 (CONS '3 (CONS '0 'NIL))))
-                                    'NIL))
-                        'NIL)))
-                     'NIL))
+                   (CONS 'ASSERT-EVENT
+                         (CONS (CONS 'EQUAL
+                                     (CONS (CONS READ-I (CONS STOBJ 'NIL))
+                                           '('(1 2 3 0))))
+                               'NIL))
                    (CONS
                     (CONS UPDATE-I (CONS STOBJ 'NIL))
                     (CONS
-                     (CONS
-                      'ASSERT-EVENT
-                      (CONS
-                       (CONS
-                        'EQUAL
-                        (CONS
-                         (CONS READ-I (CONS STOBJ 'NIL))
-                         (CONS
-                          (CONS
-                              'QUOTE
-                              (CONS (CONS '2
-                                          (CONS '4 (CONS '6 (CONS '0 'NIL))))
-                                    'NIL))
-                          'NIL)))
-                       'NIL))
+                     (CONS 'ASSERT-EVENT
+                           (CONS (CONS 'EQUAL
+                                       (CONS (CONS READ-I (CONS STOBJ 'NIL))
+                                             '('(2 4 6 0))))
+                                 'NIL))
                      (CONS
                       (CONS TBL-CLEAR (CONS STOBJ 'NIL))
                       (CONS
@@ -196,39 +168,20 @@ ACL2 !>>(DEFMACRO
                          'NIL))
                        (CONS
                         (CONS
-                         'ASSERT-EVENT
-                         (CONS
-                          (CONS
-                           'EQUAL
-                           (CONS
-                            (CONS READ-I (CONS STOBJ 'NIL))
-                            (CONS
-                             (CONS
-                              'QUOTE
-                              (CONS (CONS '0
-                                          (CONS '0 (CONS '0 (CONS '0 'NIL))))
-                                    'NIL))
-                             'NIL)))
-                          'NIL))
+                            'ASSERT-EVENT
+                            (CONS (CONS 'EQUAL
+                                        (CONS (CONS READ-I (CONS STOBJ 'NIL))
+                                              '('(0 0 0 0))))
+                                  'NIL))
                         (CONS
                          (CONS UPDATE-I (CONS STOBJ 'NIL))
                          (CONS
                           (CONS
-                           'ASSERT-EVENT
-                           (CONS
-                            (CONS
-                             'EQUAL
-                             (CONS
-                              (CONS READ-I (CONS STOBJ 'NIL))
-                              (CONS
-                               (CONS
-                                'QUOTE
-                                (CONS
-                                    (CONS '1
-                                          (CONS '2 (CONS '3 (CONS '0 'NIL))))
-                                    'NIL))
-                               'NIL)))
-                            'NIL))
+                            'ASSERT-EVENT
+                            (CONS (CONS 'EQUAL
+                                        (CONS (CONS READ-I (CONS STOBJ 'NIL))
+                                              '('(1 2 3 0))))
+                                  'NIL))
                           (CONS
                            (CONS TBL-INIT
                                  (CONS '100
@@ -238,19 +191,10 @@ ACL2 !>>(DEFMACRO
                             (CONS
                              'ASSERT-EVENT
                              (CONS
-                              (CONS
-                               'EQUAL
-                               (CONS
-                                (CONS READ-I (CONS STOBJ 'NIL))
-                                (CONS
-                                 (CONS
-                                  'QUOTE
-                                  (CONS
-                                    (CONS '0
-                                          (CONS '0 (CONS '0 (CONS '0 'NIL))))
-                                    'NIL))
-                                 'NIL)))
-                              'NIL))
+                                  (CONS 'EQUAL
+                                        (CONS (CONS READ-I (CONS STOBJ 'NIL))
+                                              '('(0 0 0 0))))
+                                  'NIL))
                             (CONS (CONS UPDATE-I (CONS STOBJ 'NIL))
                                   'NIL)))))))))))))))
               'NIL))

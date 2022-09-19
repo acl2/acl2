@@ -1148,7 +1148,7 @@
                        monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state))
             (b* ((node-replacement-alist-for-this-node (node-replacement-alist-for-context full-context dag-array known-booleans print)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  ;; This is an attempt to include the context information in the assumptions used for free var matching:
-                 (context-exprs-for-this-node (context-to-exprs full-context dag-array)) ;fffixme this gets redone over and over for context-for-all-nodes?
+                 (context-exprs-for-this-node (context-to-exprs full-context dag-array dag-len)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  (refined-assumption-alist-for-this-node (extend-refined-assumption-alist context-exprs-for-this-node refined-assumption-alist))
                  ;;(context-assumptions (get-extra-assumptions full-context predicate-nodenum-term-alist))
                  ;;(dummy (and context-assumptions (cw "Using ~x0 context assumption(s) for node ~x1.~%" (len context-assumptions) nodenum)))
@@ -2138,8 +2138,8 @@
 ;; (defmacro simplify-terms-to-new-terms (terms rule-alist &key (monitor 'nil))
 ;;   `(simplify-terms-to-new-terms-fn ,terms ,rule-alist ,monitor state))
 
-
 ;;Returns (mv erp old-term new-term state) where old-term is nil if nothing simplified.
+;; TODO: Deprecate
 (defun find-a-term-to-simplify (terms-to-simplify rule-alist monitored-rules all-terms state)
   (declare (xargs :mode :program :stobjs state))
   (if (endp terms-to-simplify)
@@ -2149,7 +2149,8 @@
         ;; could instead call rewrite-term...
         (simp-term term :rule-alist rule-alist
                    :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
-                   :monitor monitored-rules)
+                   :monitor monitored-rules
+                   :check-inputs nil)
         (if erp
             (mv erp nil nil state)
           (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
@@ -2159,57 +2160,120 @@
               ;;term was simplified, so stop this pass:
               (mv nil term result-term state))))))))
 
-;fixme compare to improve-invars
-;fixme handle boolands?
-;; Returns (mv erp new-terms state) where new-terms is a set of terms whose conjunction is equal to the conjunction of terms.
-(defun simplify-terms (terms ;hyps
-                       ;;print
-                       rule-alist
-                       monitored-rules
-                       state)
-  (declare (xargs :mode :program :stobjs state))
-  (mv-let (erp old-term new-term state)
-    (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
-    (if erp
-        (mv erp nil state)
-      (if (not old-term)
-          ;; Nothing more could be done:
-          (mv nil terms state)
-        (if (equal *t* new-term) ;todo: also check for *nil*?
-            ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
-            (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
-          (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
+;; ;; See also improve-invars.
+;; ;fixme handle boolands?
+;; ;; Returns (mv erp new-terms state) where new-terms is a set of terms whose conjunction is equal to the conjunction of terms.
+;; ;; TODO: Deprecate
+;; (defun simplify-terms (terms
+;;                        ;;print
+;;                        rule-alist
+;;                        monitored-rules
+;;                        state)
+;;   (declare (xargs :mode :program :stobjs state))
+;;   (mv-let (erp old-term new-term state)
+;;     (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
+;;     (if erp
+;;         (mv erp nil state)
+;;       (if (not old-term)
+;;           ;; Nothing more could be done:
+;;           (mv (erp-nil) terms state)
+;;         (if (equal *t* new-term) ;todo: also check for *nil*?
+;;             ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
+;;             (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
+;;           (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+;;             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
 
-;; Simplify all the terms, which are implicitly conjoined, assuming all the
-;; others (being careful not to let two terms each simplify the other to true).
-;todo: maybe translate the terms
-;; Returns (mv erp new-terms state).
-(defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
+
+;; ;; TODO: Deprecate in favor of simplify-terms-repeatedly
+;; ;; Simplify all the terms, which are implicitly conjoined, each assuming all the
+;; ;; others (being careful not to let two terms each simplify the other to true).
+;; ;todo: maybe translate the terms
+;; ;; Returns (mv erp new-terms state).
+;; (defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
+;;   (declare (xargs :guard (and (pseudo-term-listp terms)
+;;                               (rule-alistp rule-alist)
+;;                               (symbol-listp monitored-rules)) ;todo: turn some of these into checks
+;;                   :stobjs state
+;;                   :mode :program))
+;;   (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
+;;     (simplify-terms terms rule-alist monitored-rules state)))
+
+;; ;; TODO: Deprecate
+;; ;; Returns (mv erp new-terms state).
+;; (defmacro simplify-terms-using-each-other (terms rule-alist &key (monitor 'nil))
+;;   `(simplify-terms-using-each-other-fn ,terms ,rule-alist ,monitor state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp new-terms againp state) where NEW-TERMS is a set of terms
+;; whose conjunction is equal to the conjunction of the TERMS and the
+;; DONE-TERMS.
+(defun simplify-terms-once (terms
+                            done-terms ; an accumulator, also used as assumptions
+                            ;;print
+                            rule-alist
+                            monitored-rules
+                            againp
+                            state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (pseudo-term-listp done-terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)) ;todo: turn some of these into checks
+                              (symbol-listp monitored-rules)
+                              (booleanp againp))
                   :stobjs state
                   :mode :program))
-  (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
-    (simplify-terms terms rule-alist monitored-rules state)))
+  (if (endp terms)
+      (mv (erp-nil) (reverse-list done-terms) againp state)
+    (b* ((term (first terms))
+         ((mv erp result-dag state) ;; could instead call rewrite-term...
+          (simp-term term
+                     :rule-alist rule-alist
+                     ;; Can assume all the other terms, because, if any is false, the whole conjunction is false:
+                     :assumptions (append (rest terms) done-terms) ; note that we don't use the term to simplify itself!
+                     :monitor monitored-rules
+                     :check-inputs nil))
+         ((when erp) (mv erp nil nil state))
+         (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
+      (if (equal result-term term) ;; no change:
+          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules againp state)
+        (if (equal *t* result-term) ;todo: also check for *nil*?
+            ;; if the term became t, drop it:
+            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
+          (let ((conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules t state)))))))
 
-;; Returns (mv erp new-terms state).
-(defmacro simplify-terms-using-each-other (terms rule-alist &key (monitor 'nil))
-  `(simplify-terms-using-each-other-fn ,terms ,rule-alist ,monitor state))
+;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
+;; whose conjunction is equal to the conjunction of the TERMS.
+(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules state)
+  (declare (xargs :guard (and (natp passes-left)
+                              (pseudo-term-listp terms)
+                              (rule-alistp rule-alist)
+                              (symbol-listp monitored-rules))
+                  :stobjs state
+                  :mode :program))
+  (if (zp passes-left)
+      (prog2$ (cw "NOTE: Limit reached when simplifying terms repeatedly.~%")
+              (mv (erp-nil) terms state))
+    (b* (((mv erp new-terms againp state)
+          (simplify-terms-once terms nil rule-alist monitored-rules nil state))
+         ((when erp) (mv erp nil state)))
+      (if againp
+          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules state)
+        (mv (erp-nil) new-terms state)))))
 
-;; todo: make these into proper tests:
+;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
+;; whose conjunction is equal to the conjunction of the TERMS.
+(defun simplify-terms-repeatedly (terms rule-alist monitored-rules state)
+  (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (rule-alistp rule-alist)
+                              (symbol-listp monitored-rules))
+                  :stobjs state
+                  :mode :program))
+  (let ((len (len terms)))
+    ;; We add 1 so that if len=1 we get at least 2 passes:
+    (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules state)))
 
-;gives (Y (EQUAL X '3)):
-;;(simplify-terms-using-each-other '((if (equal x '3) y z)  (equal x '3)) nil)
-
-;; gives ('NIL (EQUAL X '4))
-;;(simplify-terms-using-each-other '((equal (car (cons x y)) '3) (equal x '4)) (make-axe-rules '(car-cons) (w state)))
-
-;; (defun foo (x) x)
-;; ;gives (W (EQUAL X '3) Y)
-;; ; foo opens, then the result is flattened, giving conjuncts of (equal x '3) and y, then (equal x '3) is used to simplify (if (equal x '3) w v)
-;; (simplify-terms-using-each-other '((foo (if (equal x '3) y 'nil)) (if (equal x '3) w v)) (make-axe-rules '(foo) (w state)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version translates the term it is given
 ;; Returns (mv erp dag).

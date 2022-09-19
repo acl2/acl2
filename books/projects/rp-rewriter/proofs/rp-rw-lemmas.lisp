@@ -134,8 +134,7 @@
                      ;;  ACL2::|a <= b & b < c  =>  a < c|)
                      ;; (:FORWARD-CHAINING
                      ;;  ACL2::|a < b & b <= c  =>  a < c|)
-                       
-                       
+
                      DUMB-NEGATE-LIT2$INLINE
                      NONNIL-P
                      RP-EQUAL-CNT
@@ -196,7 +195,6 @@
 
                      ))))))
 
-
 (with-output
   :off (warning event  prove  observation)
   :on error
@@ -245,7 +243,6 @@
                             is-if
                             is-rp)
                            ()))))
-
 
 (local
  (defthmd context-syntaxp-def
@@ -320,7 +317,8 @@
   (implies (and (context-syntaxp context)
                 (rp-termp term))
            (RP-TERMP (mv-nth 0 (rp-check-context term dont-rw context
-                                                 :rw-context-flg rw-context-flg))))
+                                                 :rw-context-flg rw-context-flg
+                                                 :attach-sc attach-sc))))
   :hints (("Goal" :in-theory (e/d
                               (context-syntaxp
                                rp-termp
@@ -343,7 +341,7 @@
   :hints (("Goal" :in-theory (e/d (hons-get HONS-ASSOC-EQUAL
                                             rules-alistp)
                                   (
-;;                                   (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                                   ;;                                   (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                                    (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
                                    (:DEFINITION TRUE-LISTP)
                                    (:DEFINITION ALWAYS$)
@@ -439,7 +437,7 @@
                             rp-evl-of-rp-equal2
                             (:TYPE-PRESCRIPTION IS-RP$INLINE)
                             (:DEFINITION RP-TRANS-BINDINGS)
-;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            ;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION IS-FALIST)
                             (:DEFINITION TRANS-LIST)
                             (:REWRITE RP-EVL-OF-LAMBDA)
@@ -583,14 +581,15 @@
                    (iff (rp-evlt (cadr term) a)
                         (rp-evlt (caddr term) a))))))
 
-
 (defthm rp-check-context-is-correct-iff
   (implies
    (and  (context-syntaxp context)
          iff-flg
          (eval-and-all context a))
    (iff (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context
-                                             :RW-CONTEXT-FLG RW-CONTEXT-FLG)) a)
+                                             :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                             :attach-sc attach-sc))
+                 a)
         (rp-evlt term a)))
   :hints (("Subgoal *1/3"
            :use ((:instance rp-evlt-of-rp-equal
@@ -614,10 +613,12 @@
           ("goal"
            :do-not-induct t
            :induct (rp-check-context term dont-rw context
-                                     :RW-CONTEXT-FLG RW-CONTEXT-FLG)
+                                     :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                     :attach-sc attach-sc)
            :expand ((EVAL-AND-ALL CONTEXT A)
                     (rp-check-context term dont-rw context
-                                      :RW-CONTEXT-FLG RW-CONTEXT-FLG) ;
+                                      :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                      :attach-sc attach-sc) ;
                     (:free (x y) (IS-RP (LIST 'RP (cons 'QUOTE x) y))))
            :in-theory (e/d (rp-check-context
                             ;;RP-EVLT-OF-RP-EQUAL-2
@@ -661,7 +662,10 @@
     (context-syntaxp context)
     (eval-and-all context a)
     (not iff-flg))
-   (equal (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG)) a)
+   (equal (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context
+                                               :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                               :attach-sc attach-sc))
+                   a)
           (rp-evlt term a)))
   :hints (("Goal"
            :in-theory (e/d (rp-check-context
@@ -851,20 +855,12 @@
    IS-HONSED-ASSOC-EQ-VALUES
    #|RP-RW-APPLY-FALIST-META||#
    nonnil-p
-   EX-AND-EVAL-SC
-   EX-AND-EVAL-SC-SUBTERMS
+
    (:type-prescription symbol-alistp)
    rp-trans
    rp-trans-lst)))
 
-(local
- (defthm UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep
-   (implies (and (rp-statep rp-state)
-                 (booleanp x))
-            (rp-statep (update-rw-limit-throws-error x rp-state)))
-   :hints (("Goal"
-            :in-theory (e/d (rp-statep
-                             UPDATE-RW-LIMIT-THROWS-ERROR) ())))))
+
 
 (local
  (defthm booleanp-rw-limit-throws-error
@@ -876,39 +872,44 @@
 
 
 
+;; rw-only-with-context
 
 (defthm-rw-only-with-context
   (defthm rp-statep-of-rw-only-with-context
-    (and (implies (rp-statep rp-state)
-                  (rp-statep (mv-nth 1 (rw-only-with-context term dont-rw context iff-flg limit rp-state
-                                                             state))))
-         (implies (valid-rp-statep rp-state)
-                  (valid-rp-statep (mv-nth 1 (rw-only-with-context term dont-rw context iff-flg limit rp-state
-                                                                   state))))
-         (implies (valid-rp-state-syntaxp rp-state)
-                  (valid-rp-state-syntaxp (mv-nth 1 (rw-only-with-context term dont-rw context iff-flg limit rp-state
-                                                                          state)))))
+    (b* ((rp-state-res (mv-nth 1 (rw-only-with-context term dont-rw context iff-flg limit rp-state
+                                                       state))))
+      (and (implies (rp-statep rp-state)
+                    (rp-statep rp-state-res))
+           (implies (valid-rp-statep rp-state)
+                    (valid-rp-statep rp-state-res))
+           (implies (valid-rp-state-syntaxp rp-state)
+                    (valid-rp-state-syntaxp rp-state-res))
+           (implies (rp-state-preservedp rp-state-old rp-state)
+                    (rp-state-preservedp rp-state-old rp-state-res))))
     :flag rw-only-with-context)
   (defthm rp-statep-of-rw-only-with-context-if
-    (and (implies (rp-statep rp-state)
-                  (rp-statep (mv-nth 1 (rw-only-with-context-if term dont-rw context iff-flg limit rp-state
-                                                                state))))
-         (implies (valid-rp-statep rp-state)
-                  (valid-rp-statep (mv-nth 1 (rw-only-with-context-if term dont-rw context iff-flg limit rp-state
-                                                                      state))))
-         (implies (valid-rp-state-syntaxp rp-state)
-                  (valid-rp-state-syntaxp (mv-nth 1 (rw-only-with-context-if term dont-rw context iff-flg limit rp-state
-                                                                             state)))))
+    (b* ((rp-state-res (mv-nth 1 (rw-only-with-context-if term dont-rw context iff-flg limit rp-state
+                                                          state))))
+      (and (implies (rp-statep rp-state)
+                    (rp-statep rp-state-res))
+           (implies (valid-rp-statep rp-state)
+                    (valid-rp-statep rp-state-res))
+           (implies (valid-rp-state-syntaxp rp-state)
+                    (valid-rp-state-syntaxp rp-state-res))
+           (implies (rp-state-preservedp rp-state-old rp-state)
+                    (rp-state-preservedp rp-state-old rp-state-res))))
     :flag rw-only-with-context-if)
   (defthm rp-statep-of-rw-only-with-context-subterms
-    (and (implies (rp-statep rp-state)
-                  (rp-statep (mv-nth 1 (rw-only-with-context-subterms lst dont-rw
-                                                                      context limit rp-state state))))
-         (implies (valid-rp-statep rp-state)
-                  (valid-rp-statep (mv-nth 1 (rw-only-with-context-subterms lst
-                                                                            dont-rw context limit rp-state state))))
-         (implies (valid-rp-state-syntaxp rp-state)
-                  (valid-rp-state-syntaxp (mv-nth 1 (rw-only-with-context-subterms lst dont-rw context limit rp-state state)))))
+    (b* ((rp-state-res (mv-nth 1 (rw-only-with-context-subterms lst dont-rw
+                                                                context limit rp-state state))))
+      (and (implies (rp-statep rp-state)
+                    (rp-statep rp-state-res ))
+           (implies (valid-rp-statep rp-state)
+                    (valid-rp-statep rp-state-res))
+           (implies (valid-rp-state-syntaxp rp-state)
+                    (valid-rp-state-syntaxp rp-state-res))
+           (implies (rp-state-preservedp rp-state-old rp-state)
+                    (rp-state-preservedp rp-state-old rp-state-res))))
     :flag rw-only-with-context-subterms)
   :hints (("Goal"
            :do-not-induct t
@@ -917,22 +918,25 @@
                             rw-only-with-context-subterms)
                            (VALID-RP-STATEP)))))
 
+
 (defthm rp-statep-of-rw-only-with-context-lst$iff-flg=t
-  (and (implies (rp-statep rp-state)
-                (rp-statep (mv-nth 1 (rw-only-with-context-lst$iff-flg=t lst dont-rw
-                                                                         context limit rp-state state))))
-       (implies (valid-rp-statep rp-state)
-                (valid-rp-statep (mv-nth 1 (rw-only-with-context-lst$iff-flg=t lst dont-rw
-                                                                               context limit rp-state state))))
-       (implies (valid-rp-state-syntaxp rp-state)
-                (valid-rp-state-syntaxp (mv-nth 1 (rw-only-with-context-lst$iff-flg=t lst dont-rw
-                                                                                      context limit rp-state state)))))
+  (b* ((rp-state-res (mv-nth 1 (rw-only-with-context-lst$iff-flg=t lst dont-rw
+                                                                   context limit rp-state state))))
+    (and (implies (rp-statep rp-state)
+                  (rp-statep rp-state-res))
+         (implies (valid-rp-statep rp-state)
+                  (valid-rp-statep rp-state-res))
+         (implies (valid-rp-state-syntaxp rp-state)
+                  (valid-rp-state-syntaxp rp-state-res))
+         (implies (rp-state-preservedp rp-state-old rp-state)
+                  (rp-state-preservedp rp-state-old rp-state-res))))
   :hints (("Goal"
            :do-not-induct t
            :induct (rw-only-with-context-lst$iff-flg=t lst dont-rw
                                                        context limit rp-state state)
            :in-theory (e/d (rw-only-with-context-lst$iff-flg=t)
                            (VALID-RP-STATEP)))))
+
 
 (defthm booleanp-of-rw-context-disabled
   (implies (rp-statep rp-state)
@@ -941,6 +945,12 @@
   :hints (("Goal"
            :in-theory (e/d (rp-statep
                             rw-context-disabled) ()))))
+
+
+
+
+
+;;;;;;;;;;;
 
 (encapsulate
   nil
@@ -1180,7 +1190,6 @@
                   (mv-nth 1 (rp-rw-and term1 term2 context  limit rp-state state))))
         :flag rp-rw-and)
 
-
       (defthm rp-rw-subterms-retuns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
@@ -1234,6 +1243,146 @@
                                 (:TYPE-PRESCRIPTION ACL2::BINARY-AND*)
                                 (:TYPE-PRESCRIPTION ACL2::BINARY-OR*)
                                 RP-STAT-ADD-TO-RULES-USED)))))))
+
+
+
+#|(encapsulate
+  nil
+
+  (local
+   (in-theory (disable ACL2::CDR-OF-APPEND-WHEN-CONSP
+                       RP-EQUAL
+                       VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP
+                       RP-TERM-LISTP-APPEND
+                       RP-EXTRACT-CONTEXT
+                       RP-RW-RULE-AUX
+                       IS-RP-PSEUDO-TERMP
+                       IS-IF-RP-TERMP
+                       IS-IF-RP-TERMP)))
+
+  (with-output
+    :off (warning event  prove  observation)
+    :gag-mode :goals
+    :on error
+
+    (defthm-rp-rw
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 1 (rp-rw term dont-rw context iff-flg  limit rp-state state))))
+        :flag rp-rw)
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-rule
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
+        :flag rp-rw-rule)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-context
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 2 (rp-rw-context old-context new-context limit
+                                           rp-state state))))
+        :flag rp-rw-context)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-context-loop
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 1 (rp-rw-context-loop context limit loop-limit
+                                                rp-state state))))
+        :flag rp-rw-context-loop)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-relieve-hyp
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 1 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings limit rp-state state))))
+        :flag rp-rw-relieve-hyp)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-context-main
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 1 (rp-rw-context-main term context enabled
+                                                quick-enabled limit rp-state state))))
+        :flag rp-rw-context-main)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-if-retuns
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg   limit
+                                      rp-state state))))
+        :flag rp-rw-if)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-if-branch-retuns
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 2 (rp-rw-if-branch cond-rw then then-dont-rw
+                                             context
+                                             iff-flg  limit rp-state state))))
+        :flag rp-rw-if-branch)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-and-retuns
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 1 (rp-rw-and term1 term2 context  limit rp-state state))))
+        :flag rp-rw-and)
+
+      (defthm RP-STATE-PRESERVEDP-of-rp-rw-subterms
+        (implies (rp-state-preservedp rp-state-old rp-state)
+                 (RP-STATE-PRESERVEDP
+                  rp-state-old
+                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context  limit
+                                            rp-state state))))
+        :flag rp-rw-subterms)
+
+      :hints (("goal"
+               :expand ((RP-RW-CONTEXT-LOOP CONTEXT
+                                            LIMIT LOOP-LIMIT RP-STATE STATE)
+                        (rp-rw-if-branch cond-rw then then-dont-rw
+                                         context
+                                         iff-flg  limit rp-state state)
+                        (RP-RW-CONTEXT-MAIN TERM
+                                            CONTEXT NIL QUICK-ENABLED LIMIT
+                                            RP-STATE STATE)
+                        (RP-RW-CONTEXT-MAIN TERM
+                                            CONTEXT enabled nil LIMIT RP-STATE STATE)
+                        (rp-rw-relieve-hyp term-lst dont-rw context rule
+                                           stack-index var-bindings limit rp-state state)
+                        (rp-rw-context-main term context enabled QUICK-ENABLED limit rp-state state)
+                        (rp-rw-and term1 term2 context  limit rp-state
+                                   state)
+                        (rp-rw-context old-context new-context limit
+                                       rp-state state)
+                        (rp-rw-if term dont-rw context
+                                  nil  limit rp-state state)
+                        (rp-rw-if term dont-rw
+                                  context nil  limit rp-state state)
+                        (rp-rw-rule term dont-rw rules-for-term
+                                    context iff-flg outside-in-flg limit
+                                    rp-state state)
+                        (rp-rw-if term dont-rw context
+                                  iff-flg  limit rp-state state)
+                        (rp-rw-if term dont-rw
+                                  context iff-flg  limit rp-state state)
+                        (rp-rw term dont-rw context iff-flg  limit rp-state
+                               state)
+                        (rp-rw term dont-rw
+                               context nil  limit rp-state state)
+                        (rp-rw-subterms subterms dont-rw context  limit
+                                        rp-state state))
+               :in-theory (e/d (rp-stat-add-to-rules-used)
+                               (;;update-rules-used
+                                show-used-rules-flg
+                                update-nth
+                                RP-STATE-PRESERVEDP
+                                rp-stat-add-to-rules-used)))))))|#
 
 (encapsulate
   nil
@@ -1335,8 +1484,8 @@
                :expand ((RP-RW-CONTEXT-LOOP CONTEXT
                                             LIMIT LOOP-LIMIT RP-STATE STATE)
                         (rp-rw-if-branch cond-rw then then-dont-rw
-                                 context
-                                 iff-flg  limit rp-state state)
+                                         context
+                                         iff-flg  limit rp-state state)
                         (RP-RW-CONTEXT-MAIN TERM
                                             CONTEXT NIL QUICK-ENABLED LIMIT
                                             RP-STATE STATE)
@@ -1424,7 +1573,6 @@
                             car-cons
                             RP-TERM-LISTP)
                            ()))))
-
 
 ;;:i-am-here
 
@@ -1670,7 +1818,6 @@ a)
              :in-theory (e/d (is-rp rp-termp) ()))))
 
 
-
   (with-output
     :off (warning event  prove  observation)
     :gag-mode :goals
@@ -1717,7 +1864,7 @@ a)
                       (valid-rp-state-syntaxp rp-state))
                  (let ((res (mv-nth 0
                                     (rp-rw-if term dont-rw context  iff-flg
-                                               limit rp-state state))))
+                                              limit rp-state state))))
                    (and (rp-termp res)
 
                         )))
@@ -1827,7 +1974,7 @@ a)
                           CONTEXT NIL  LIMIT RP-STATE STATE)
                 (RP-RW-IF TERM DONT-RW CONTEXT
                           IFF-FLG  LIMIT RP-STATE STATE)
-                
+
                 (rp-rw-subterms nil dont-rw context  limit
                                 rp-state state)
                 (rp-rw-if term dont-rw context
@@ -2053,11 +2200,16 @@ a)
     (implies (and (valid-sc term a)
                   (eval-and-all context a)
                   (valid-sc-subterms context a))
-             (valid-sc (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG)) a))
+             (valid-sc (mv-nth 0 (rp-check-context term dont-rw context
+                                                   :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                                   :attach-sc attach-sc))
+                       a))
     :hints (("goal"
              :expand ((EVAL-AND-ALL CONTEXT A))
              :do-not-induct t
-             :induct (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG)
+             :induct (rp-check-context term dont-rw context
+                                       :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                       :attach-sc attach-sc)
              :in-theory (e/d (rp-check-context
                               is-falist
                               is-rp
@@ -2299,7 +2451,7 @@ a)
                               rp-rw-subterms)
                              (rp-rw
                               valid-sc
-;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              ;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:REWRITE
                                EVAL-AND-ALL-CONTEXT-FROM-WHEN-VALID-SC)
                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
@@ -2511,7 +2663,6 @@ a)
                                    LEMMA108
                                    (:REWRITE VALID-SC-CONS)))))))|#
 
-
 (defthm valid-sc-subterms-of-udpate-nth
   (implies (and (valid-sc val a)
                 (valid-sc-subterms lst a)
@@ -2554,7 +2705,6 @@ a)
                   (+ -1 (LEN OLD-CONTEXT))))
   :hints (("Goal"
            :in-theory (e/d (len) ()))))
-
 
 
 (DEFTHM
@@ -2602,10 +2752,8 @@ a)
                             eval-and-all)
                            ()))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;rw-only-with-context
-
 
 
 
@@ -2722,8 +2870,13 @@ a)
     (context-syntaxp context)
     (eval-and-all context a)
     (not iff-flg)
-    (is-rp (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))))
-   (equal (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))) a)
+    (is-rp (mv-nth 0 (rp-check-context term dont-rw context
+                                       :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                       :attach-sc attach-sc))))
+   (equal (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context
+                                                      :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                                      :attach-sc attach-sc)))
+                   a)
           (rp-evlt term a)))
   :hints (("Goal"
            :use ((:instance rp-check-context-is-correct))
@@ -2741,8 +2894,12 @@ a)
     (context-syntaxp context)
     (eval-and-all context a)
     iff-flg
-    (is-rp (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))))
-   (iff (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context :RW-CONTEXT-FLG RW-CONTEXT-FLG))) a)
+    (is-rp (mv-nth 0 (rp-check-context term dont-rw context
+                                       :RW-CONTEXT-FLG RW-CONTEXT-FLG :attach-sc attach-sc))))
+   (iff (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context
+                                                    :RW-CONTEXT-FLG RW-CONTEXT-FLG
+                                                    :attach-sc attach-sc)))
+                 a)
         (rp-evlt term a)))
   :hints (("Goal"
            :use ((:instance rp-check-context-is-correct-iff))
@@ -2970,7 +3127,7 @@ a)
                     (context-syntaxp context)
                     (valid-sc-subterms context a)
 
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (valid-rp-statep rp-state))
                (let ((res
@@ -2995,7 +3152,7 @@ a)
 
                     (valid-sc-subterms context a)
 
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (eval-and-all context a)
                     (valid-sc term a)
@@ -3021,7 +3178,7 @@ a)
 
                     (valid-sc-subterms context a)
 
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (eval-and-all context a)
                     (valid-sc term a)
@@ -3036,7 +3193,6 @@ a)
                                 (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw-if)
 
-
     (defthm rp-evl-and-side-cond-consistent-rp-rw-if-branch
       (implies (and (rp-termp then)
                     (rp-termp cond-rw)
@@ -3048,7 +3204,7 @@ a)
 
                     (valid-sc-subterms context a)
 
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (eval-and-all context a)
                     (valid-sc then a)
@@ -3079,7 +3235,7 @@ a)
 
                     (valid-sc-subterms context a)
 
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (eval-and-all context a)
                     (valid-sc-subterms term-lst a)
@@ -3099,7 +3255,7 @@ a)
 
                     (valid-sc-subterms context a)
 
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (eval-and-all context a)
 
@@ -3128,7 +3284,7 @@ a)
                     (valid-rp-statep rp-state)
 
                     (rp-evl-meta-extract-global-facts :state state)
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (valid-sc-subterms new-context a)
                     (valid-sc-subterms old-context a)
@@ -3152,7 +3308,7 @@ a)
                     (valid-rp-statep rp-state)
 
                     (rp-evl-meta-extract-global-facts :state state)
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (valid-sc-subterms context a)
                     (eval-and-all context a)
@@ -3174,7 +3330,7 @@ a)
                     (valid-rp-statep rp-state)
 
                     (rp-evl-meta-extract-global-facts :state state)
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (valid-sc term a)
                     (valid-sc-subterms context a)
@@ -3203,7 +3359,7 @@ a)
                     (eval-and-all context a)
                     (valid-rp-statep rp-state)
 
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
 
                     (valid-sc-subterms subterms a)
                     )
@@ -3239,7 +3395,7 @@ a)
                               rp-termp
                               is-rp
                               rp-evl-of-variable
-;;                              (:rewrite acl2::o-p-o-infp-car)
+                              ;;                              (:rewrite acl2::o-p-o-infp-car)
                               (:definition eval-and-all)
                               (:type-prescription valid-sc)
                               (:type-prescription ex-from-synp)
@@ -3252,8 +3408,8 @@ a)
                               (:type-prescription should-not-rw$inline)
                               (:rewrite valid-sc-cons)
                               (:rewrite not-include-rp-means-valid-sc)
-;;                              (:forward-chaining
-;;                               acl2::|a <= b & ~(a = b)  =>  a < b|)
+                              ;;                              (:forward-chaining
+                              ;;                               acl2::|a <= b & ~(a = b)  =>  a < b|)
                               (:type-prescription check-if-relieved-with-rp)
                               (:rewrite not-include-rp)
                               (:rewrite evl-of-extract-from-rp-2)
@@ -3264,6 +3420,9 @@ a)
                               (:rewrite rp-evl-of-rp-equal-loosesubterms)
                               (:type-prescription is-rp-loose$inline)
                               rp-evlt-of-apply-bindings-to-evl
+                              rp-evlt-of-apply-bindings-to-evl-when-list-is-not-present
+                              rp-apply-bindings-to-evlt
+                              rp-apply-bindings-subterms-to-evlt-lst
                               (:rewrite
                                rp-ex-counterpart-is-term-not-quotep)
                               rp-trans
@@ -3284,7 +3443,7 @@ a)
                                  iff-flg outside-in-flg limit
                                  rp-state state))
               (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT
-                                    NIL  LIMIT RP-STATE STATE)
+                               NIL  LIMIT RP-STATE STATE)
               (RP-RW-CONTEXT-LOOP NIL LIMIT LOOP-LIMIT RP-STATE STATE)
               (RP-RW-CONTEXT-MAIN TERM CONTEXT
                                   ENABLED NIL LIMIT RP-STATE STATE)
@@ -3296,7 +3455,7 @@ a)
               (rp-rw-context-main term context nil QUICK-ENABLED limit rp-state
                                   state)
               (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT
-                                    IFF-FLG  LIMIT RP-STATE STATE)
+                               IFF-FLG  LIMIT RP-STATE STATE)
               (rp-rw-and term1 term2 context  limit rp-state state)
               (RP-RW-CONTEXT NIL NEW-CONTEXT  LIMIT RP-STATE STATE)
               (RP-RW-CONTEXT NIL NEW-CONTEXT  LIMIT RP-STATE STATE)
@@ -3329,7 +3488,7 @@ a)
               (rp-rw-if term dont-rw context
                         nil  limit rp-state state)
               (rp-rw-subterms subterms dont-rw context
-                               limit  rp-state state)
+                              limit  rp-state state)
               (rp-rw-subterms (cdr subterms)
                               (cdr dont-rw)
                               context  (+ -1 limit)
@@ -3338,5 +3497,5 @@ a)
                               (cddr dont-rw)
                               context  (+ -2 limit)
                               rp-state state)
-              (rp-rw-subterms nil dont-rw context 
+              (rp-rw-subterms nil dont-rw context
                               limit  rp-state state))))))

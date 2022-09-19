@@ -76,6 +76,14 @@
 
   (cdr (hons-get (intern topic "ACL2") topic-to-rendered-table)))
 
+(defun print-missing-topic-name (name)
+  (wormhole-eval 'xdoc-missing-link
+                 '(lambda (acl2::whs)
+                    (set-wormhole-data
+                     acl2::whs
+                     (cons name (wormhole-data acl2::whs))))
+                 nil))
+
 (defun text-matches-mangle (text mangle topic-to-rendered-table)
 
 ; Text is xdoc source text ending with text of the form "[topic" (with a
@@ -135,8 +143,10 @@
          (rendered (and start ; optimization
                         (topic-to-rendered mangle topic-to-rendered-table))))
     (cond
-     ((or (null start) (null rendered))
+     ((null start)
       nil)
+     ((null rendered)
+      (print-missing-topic-name (subseq text start (length text))))
      (t
       (let* ((text-topic0 (subseq text start (length text)))
              (acl2-prefix-posn (search "acl2::" text-topic0 :test 'char-equal))
@@ -592,7 +602,15 @@
                                    0)))
                   (prepend-each-line (make-list level :initial-element #\Space)
                                      text start-from (length text) acc))
-              (let ((wrapped (word-wrap-paragraph text level wrap-col)))
+              (let ((wrapped
+
+; Note that text origially marked as &nbsp; disappears when preceded only by
+; spaces except in <code>..</code>, because of the following call of
+; word-wrap-paragraph (note that here codep = nil).  It might take some code
+; reorganization to fix that problem, because at this point, each &nbsp; has
+; already been converted to a space.
+
+                     (word-wrap-paragraph text level wrap-col)))
                 (str::revappend-chars wrapped acc)))))
     (tokens-to-terminal rest wrap-col open-tags list-nums acc)))
 
@@ -736,10 +754,27 @@
        (ans (cons #\Newline ans)))
     (mv (str::rchars-to-string ans) state)))
 
+(defun warn-on-missing-topic-names (state)
+  (cond ((acl2::warning-off-p "xdoc-link" state)
+         nil)
+        (t (wormhole-eval
+            'xdoc-missing-link
+            '(lambda (acl2::whs)
+               (let ((data (wormhole-data acl2::whs)))
+                 (and data
+                      (acl2::warning$-cw
+                       'xdoc
+                       "Please note the following broken topic link ~
+                        name~#0~[~/s~]: ~&0.  To suppress such warnings: ~x1."
+                       (reverse (remove-duplicates-equal data))
+                       '(toggle-inhibit-warning "xdoc-link")))))
+            nil))))
+
 (defun display-topic (x all-topics state)
   (b* (((mv text state) (topic-to-text x all-topics state))
        (state (princ$ text *standard-co* state)))
-    state))
+    (prog2$ (warn-on-missing-topic-names state)
+            state)))
 
 
 ; We previously tried to see if there was an acl2 doc topic.  But now that we

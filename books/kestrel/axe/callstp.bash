@@ -35,7 +35,7 @@ else
     exit 1
 fi
 
-echo "CALLING STP"
+# echo "CALLING STP"
 
 ## Requires a relatively new STP:
 stp ${COUNTEREXAMPLE_ARGS} -r ${INPUT_FILE} > ${OUTPUT_FILE}

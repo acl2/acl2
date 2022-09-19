@@ -731,7 +731,8 @@ nextstate and update functions given a timing diagram.</p>
                     ((filename  stringp) '"svtv-debug.vcd")
                     (state 'state))
   :parents (svex-stvs)
-  :short "Dump a VCD waveform showing the internal signals of an svex STV."
+  :short "(Deprecated) Dump a VCD waveform showing the internal signals of an svex STV."
+  :long "<p>This is deprecated in favor of @(see svtv-debug$).</p>"
   :prepwork ((local (in-theory (disable max))))
   :verbosep t
   (b* (((acl2::local-stobjs moddb aliases debugdata vcd-wiremap vcd-vals)

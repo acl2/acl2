@@ -722,9 +722,6 @@
            (equal (equal a (nth n x))
                   (if (< n (len x)) nil (equal a nil)))))
 
-;(in-theory (enable array-elem-2d))
-
-
 ;; (defthm store-array-list-open-on-consp
 ;;   (implies (consp ref-list)
 ;;            (equal (STORE-ARRAY-LIST REF-LIST CONTENTS-LIST HEAP)
@@ -734,8 +731,6 @@
 ;;                                                  (CDR CONTENTS-LIST)
 ;;                                                  HEAP))))
 ;;   :hints (("Goal" :in-theory (enable store-array-list))))
-
-;(in-theory (enable list::len-of-cdr))
 
 ;; (defthm s-of-s-becomes-set-field
 ;;   (equal (S ad (cons rentry rentries) heap)
@@ -752,8 +747,6 @@
 ;;                              set)))
 ;;  :hints (("Goal" :in-theory (enable new-ads-slice))))
 
-
-
 ;; (skip -proofs
 ;;  (defthm array-ref-listp-byte-case-when-dims-nil-better
 ;;    (equal (array-ref-listp ref-list items-left nil ':byte heap)
@@ -767,9 +760,6 @@
 ;;                      )
 ;;             :in-theory (e/d (array-ref-listp) (array-ref-listp-byte-case-when-dims-nil))
 ;;             ))))
-
-
-;(in-theory (disable jvm::initialize-one-dim-array)) ;fixme move
 
 ;; (defthm integerp-nth-from-byte-p-list
 ;;   (implies (and (byte-p-list lst)
@@ -906,8 +896,6 @@
 ;;                                            nil))
 ;;            :in-theory (e/d (store-array-2d) (SET::PICK-A-POINT-SUBSET-STRATEGY
 ;;                                              TAKE-WHEN-<=-OF-LEN)))))
-
-(in-theory (disable all-true-listp))
 
 ;; (defthm STORE-ARRAY-of-set-field-diff
 ;;   (implies (not (equal ad ad2))
@@ -1597,8 +1585,6 @@
 
 ;(in-theory (disable byte-p-list))
 
-(theory-invariant (incompatible (:rewrite logatil-OF-LOGEXT-GEN) (:rewrite LOGEXT-OF-LOGTAIL)))
-
 ;(in-theory (disable S-SHL-BECOMES-LOGAPP-GEN))
 
 ;; (defthm integerp-of-array-elem-2d-gen
@@ -1800,10 +1786,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvxor
 ;;                                    ) ()))))
 
-(local (in-theory (disable ;BVCHOP-LEQ
-                   ;LOGTAIL-LEQ
-                   )))
-
 ;should we break the tie between x and (lognot 1 x) when commuting bvxor's ops?
 
 ;; (defun strip-off-mynot-call (term)
@@ -1942,6 +1924,7 @@
 
 ;(in-theory (disable list::nth-of-cons))
 
+;rename
 (defthm nth-of-plus-constant
   (implies (and (syntaxp (quotep k))
                 (< 0 k)
@@ -1986,35 +1969,34 @@
 ;;                        )
 ;;            :expand ((keep-every-nth 4 (cons a (cons b (cons c (cons d rst)))))))))
 
-(defthmd split-list-hack
-  (implies (and (consp x)
-                (true-listp x))
-           (equal (append (take (+ -1 (len x)) x) (list (nth (+ -1 (len x)) x)))
-                  x)))
+;dup in jvm-rules
+;; ;; Splits off the last element
+;; (defthmd split-list-hack
+;;   (implies (and (consp x)
+;;                 (true-listp x))
+;;            (equal (append (take (+ -1 (len x)) x)
+;;                           (list (nth (+ -1 (len x)) x)))
+;;                   x)))
 
-;              (EQUAL (LIST (NTH (+ -1 (LEN X)) X))
-;                     (NTHCDR (+ -1 (LEN X)) X))
+;; ;              (EQUAL (LIST (NTH (+ -1 (LEN X)) X))
+;; ;                     (NTHCDR (+ -1 (LEN X)) X))
 
-
-(defthm perm-cons-last-to-rest
-  (implies (and (true-listp x)
-                (consp x))
-           (perm (cons (nth (+ -1 (len x)) x)
-                            (take (+ -1 (len x)) x))
-                      x))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :use (:instance split-list-hack)
-           :in-theory (e/d ( ;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
-                            ) (;LIST::EQUAL-APPEND-REDUCTION!
-                               ;;LIST::EQUAL-APPEND-REDUCTION!-ALT
-                               )))))
+;dup in jvm-rules
+;; (defthm perm-cons-last-to-rest
+;;   (implies (and (true-listp x)
+;;                 (consp x))
+;;            (perm (cons (nth (+ -1 (len x)) x)
+;;                             (take (+ -1 (len x)) x))
+;;                       x))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :use (:instance split-list-hack)
+;;            :in-theory (e/d ( ;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
+;;                             ) (;LIST::EQUAL-APPEND-REDUCTION!
+;;                                ;;LIST::EQUAL-APPEND-REDUCTION!-ALT
+;;                                )))))
 
 ;newly disabled:  move up!
 ;(in-theory (disable BAG::MEMBERP-SUBBAGP)) ;introduces bag reasoning!
-
-(defthm memberp-of-cdr-when-not-memberp
-  (implies (not (memberp x lst))
-           (not (memberp x (cdr lst)))))
 
 ;(in-theory (disable LIST::FIX-OF-NTHCDR))
 
@@ -2031,8 +2013,7 @@
                 (< end (len lst)) ;new
 ;                (natp start)
                 )
-           (equal (memberp x (subrange start end lst))
-                  nil))
+           (not (memberp x (subrange start end lst))))
   :hints (("Goal" :in-theory (e/d (subrange take)
                                   (;anti-subrange
                                    )))))
@@ -2093,21 +2074,21 @@
 
 
 ;bozo gen
-(defthm oddp-9-tighten
+(defthmd oddp-9-tighten
   (implies (and (oddp x)
                 (integerp x))
            (equal (< x 9)
                   (<= x 7))))
 
 ;bozo hope this doesn't loop
-(defthm oddp-9-tighten2
+(defthmd oddp-9-tighten2
   (implies (and (not (equal x 9))
                 (oddp x)
                 (integerp x))
            (equal (< 9 x)
                   (< 7 x))))
 
-(defthm oddp-9-7-rule
+(defthmd oddp-9-7-rule
   (implies (and (oddp x)
                 (integerp x)
                 (<= x 9)
@@ -2261,14 +2242,14 @@
 
 ;; (theory-invariant (incompatible (:rewrite bvxor-1-of-getbit-arg1) (:rewrite bvxor-1-add-getbit-arg1)))
 
-;drop?
-(defthmd cddr-take-becomes-subrange
-  (equal (cddr (take 32 x))
-         (subrange 2 31 x))
-  :hints (("Goal" :in-theory (e/d (subrange cdr-of-cdr-becomes-nthcdr)
-                                  (;nthcdr-of-take
-;anti-subrange
-                                   )))))
+;; ;drop?
+;; (defthmd cddr-take-becomes-subrange
+;;   (equal (cddr (take 32 x))
+;;          (subrange 2 31 x))
+;;   :hints (("Goal" :in-theory (e/d (subrange cdr-of-cdr-becomes-nthcdr)
+;;                                   (;nthcdr-of-take
+;; ;anti-subrange
+;;                                    )))))
 
 ;; (defthm hide-old-equal-current-equality-5-1
 ;;   (implies (syntaxp (and (equal s0 's0)
@@ -2497,25 +2478,25 @@
   :hints (("Goal" :in-theory (enable myif))))
 
 ;gen? -alt?
-(defthm myif-of-logext-logior-32-hack
+(defthmd myif-of-logext-logior-32-hack
   (implies (signed-byte-p 32 x)
            (equal (myif test x (logext 32 (bvor 32 y x)))
                   (logext 32 (bvor 32 (myif test 0 y) x))))
   :hints (("Goal" :in-theory (enable myif))))
 
-;BOZO think about the extra logext here
-(defthm myif-of-logext-logior-32-hack-2
-  (implies t;(signed-byte-p 32 x)
-           (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
-                  (logext 32 (bvor 32 (myif test 0 y) x))))
-  :hints (("Goal" :in-theory (enable myif))))
+;; ;BOZO think about the extra logext here
+;; (defthmd myif-of-logext-logior-32-hack-2
+;;   (implies t;(signed-byte-p 32 x)
+;;            (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
+;;                   (logext 32 (bvor 32 (myif test 0 y) x))))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm myif-of-logior-32-hack
-  (implies (and (natp n)
-                (unsigned-byte-p n x))
-           (equal (myif test x (bvor n y x))
-                  (bvor n (myif test 0 y) x)))
-  :hints (("Goal" :in-theory (enable myif))))
+;; (defthmd myif-of-logior-32-hack
+;;   (implies (and (natp n)
+;;                 (unsigned-byte-p n x))
+;;            (equal (myif test x (bvor n y x))
+;;                   (bvor n (myif test 0 y) x)))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;; ;wouldn't fire?
 ;; (defthm myif-of-logior-32-hack-two
@@ -2524,13 +2505,6 @@
 ;;            (equal (myif test (bvor n y x) x)
 ;;                   (bvor n (myif test 0 y) x)))
 ;;   :hints (("Goal" :in-theory (enable myif))))
-
-;BOZO think about the extra logext here
-(defthm myif-of-logext-logior-32-hack-2
-  (implies t;(signed-byte-p 32 x)
-           (equal (myif test (logext 32 x) (logext 32 (bvor 32 y x)))
-                  (logext 32 (bvor 32 (myif test 0 y) x))))
-  :hints (("Goal" :in-theory (enable myif))))
 
 ;; (defthm myif-equal-bit-0-64
 ;;   (implies (unsigned-byte-p 1 bit)
@@ -2614,11 +2588,11 @@
 
 ;(in-theory (disable bvmult-with-usb1))
 
-;do we want this?
-(defthm getbit-list-of-myif
-  (equal (getbit-list n (myif test x y))
-         (myif test (getbit-list n x) (getbit-list n y)))
-  :hints (("Goal" :in-theory (enable myif))))
+;; ;do we want this?
+;; (defthm getbit-list-of-myif
+;;   (equal (getbit-list n (myif test x y))
+;;          (myif test (getbit-list n x) (getbit-list n y)))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 
 ;; ;bozo same for intp-list, etc.
@@ -2983,10 +2957,6 @@
            (not (< c a)))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 2))))
 
-(defthm memberp-nth-1-cdr
-  (equal (MEMBERP (NTH 1 x) (CDR x))
-         (< 1 (len x))))
-
 ;move to be next to the other one
 (defthm not-less-when->=-max-of-containing-bag
   (implies (and (<= (maxelem bag) k)
@@ -3140,15 +3110,6 @@
 ;;   (("Goal" :DO-NOT-INDUCT T
 ;;     :IN-THEORY (E/D (UPDATE-NTH-REWRITE) ((FORCE))))))
 
-
-(defthm less-than-max-hack
-  (implies (< z y)
-           (< z (MAX y x))))
-
-(defthm less-than-max-hack-alt
-  (implies (< z x)
-           (< z (MAX y x))))
-
 ;disgusting...
 (defthm if-hack
   (implies (integerp x)
@@ -3270,20 +3231,18 @@
 (defthm impossible-value-1
   (implies (and (<= free x)
                 (< k free))
-           (equal (equal k x)
-                  nil)))
+           (not (equal k x))))
 
 (defthm impossible-value-2
   (implies (and (<= free x)
                 (< k free))
-           (equal (equal x k)
-                  nil)))
+           (not (equal x k))))
 
-;bozo this seemed necessary to get rid of some logext32's. - where did they come from?
-;trying disabled...
-(defthmd usbp8-implies-sbp32
-  (implies (unsigned-byte-p 8 x)
-           (signed-byte-p 32 x)))
+;; ;bozo this seemed necessary to get rid of some logext32's. - where did they come from?
+;; ;trying disabled...
+;; (defthmd usbp8-implies-sbp32
+;;   (implies (unsigned-byte-p 8 x)
+;;            (signed-byte-p 32 x)))
 
 ;; (defund iushr32 (r s)
 ;;   (bvchop 32 (jvm::iushr r s)))
@@ -3345,13 +3304,6 @@
                                     nil)))))
   :hints (("Goal" :in-theory (e/d (take; list::nth-append
                                    ) (take-of-cdr-becomes-subrange)))))
-
-;BOZO really the other should be called -cheap and this one should have no suffix
-(defthm memberp-of-cons-irrel-strong
-  (implies (not (equal a b))
-           (equal (memberp a (cons b x))
-                  (memberp a x)))
-  :hints (("Goal" :in-theory (enable MEMBERP-OF-CONS))))
 
 ;could restrict this to constants k and free
 (defthm bound-lemma

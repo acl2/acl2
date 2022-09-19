@@ -786,6 +786,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum initer
+  :short "Fixtype of initializers [C:6.7.9]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only model initializers tht consists of
+     either a single expression or a list of expressions,
+     where the latter models a list between curly braces
+     of initializers consisting of single expressions.
+     Note that, since currently we do not model the comma operator,
+     our use of any expressions here
+     matches the use of assignment expressions in [C]."))
+  (:single ((get expr)))
+  (:list ((get expr-list)))
+  :pred initerp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption initer-option
+  initer
+  :short "Fixtype of optional initializers."
+  :pred initer-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod obj-declon
   :short "Fixtype of object declarations [C:6.7]."
   :long
@@ -799,8 +824,7 @@
     "For now we define an object declaration as consisting of
      a type specification sequence,
      an object declarator,
-     and an initializing expression.
-     We could easily make the initializer optional for greater generality.")
+     and an optional initializer.")
    (xdoc::p
     "For now we model
      no storage class specifiers
@@ -810,10 +834,10 @@
    (xdoc::p
     "An object declaration as defined here is like
      a parameter declaration (as defined in our abstract syntax)
-     with an initializer."))
+     with an optional initializer."))
   ((tyspec tyspecseq)
    (declor obj-declor)
-   (init expr))
+   (init? initer-optionp))
   :tag :obj-declon
   :pred obj-declonp)
 

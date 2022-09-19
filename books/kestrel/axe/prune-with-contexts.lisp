@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; This book is not used anywhere?
+
 (include-book "dag-arrays")
 (include-book "dag-array-builders")
 (include-book "contexts")
@@ -31,21 +33,22 @@
              (dargp tp)
            (dargp ep))))
 
-(defthm wf-dagp-of-make-empty-array-and-make-dag-parent-array-with-name2-of-make-empty-array
-  (implies (and (posp size)
-                (<= size *maximum-1-d-array-length*))
-           (wf-dagp 'dag-array
-                    (make-empty-array 'dag-array size)
-                    '0
-                    'dag-parent-array
-                    (make-dag-parent-array-with-name2
-                     '0
-                     'dag-array
-                     (make-empty-array 'dag-array size)
-                     'dag-parent-array)
-                    'nil
-                    'nil))
-  :hints (("Goal" :in-theory (enable wf-dagp))))
+;; (defthm wf-dagp-of-make-empty-array-and-make-dag-parent-array-with-name2-of-make-empty-array
+;;   (implies (and (posp size)
+;;                 (<= size *maximum-1-d-array-length*))
+;;            (wf-dagp 'dag-array
+;;                     (make-empty-array 'dag-array size)
+;;                     '0
+;;                     'dag-parent-array
+;;                     ;; or rewrite this call (note the 0):
+;;                     (make-dag-parent-array-with-name2
+;;                      '0
+;;                      'dag-array
+;;                      (make-empty-array 'dag-array size)
+;;                      'dag-parent-array)
+;;                     'nil
+;;                     'nil))
+;;   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 ;; given:
 ;;  context array
@@ -54,7 +57,7 @@
 ;;  renaming-array from old to new
 ;; move nodes from old dag-array to new-dag-array, except resolve ifs
 ;; given an if: get its context.  try to extend the context with the test, and with the negation of the test.  replace with the (renamed) then/else branch as appropriate.  if handling bvif/boolif, may have to build some fresh nodes that do the fixing (maybe skip if we can tell it's not needed from the type).  maybe handle boolor/booland (in general, any boolean node).  the context analysis will re-do some work already done when determining how contexts propagate from the if to its childern.
-;; Returns (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;; Returns (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund prune-with-contexts-aux (old-nodenum ; counts up
                                  old-dag-array
                                  old-dag-len
@@ -106,6 +109,7 @@
                ;; Try to resolve the test of the if/myif
                (let ((resolved-test ; will be :true, :false, or :unknown
                       (let* ((test-darg (darg1 expr))
+                             ;; Only used to check for quotep, since the context uses the old node numbers:
                              (renamed-test (if (consp test-darg) ;test for quotep (rare)
                                                test-darg ;don't attempt to rename
                                              (rename-darg test-darg 'renaming-array renaming-array))))
@@ -132,7 +136,7 @@
                             (renamed-else-darg (if (consp else-darg) ; test for quotep
                                                    else-darg
                                                  (rename-darg else-darg 'renaming-array renaming-array)))
-                            ;; This node maps to its (renamed) else branch:
+                            ;; The IF/MYIF node maps to its (renamed) else branch:
                             (renaming-array (aset1 'renaming-array renaming-array old-nodenum renamed-else-darg)))
                        (prune-with-contexts-aux (+ 1 old-nodenum) old-dag-array old-dag-len context-array
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -143,7 +147,7 @@
                               (renamed-then-darg (if (consp then-darg) ; test for quotep
                                                      then-darg
                                                    (rename-darg then-darg 'renaming-array renaming-array)))
-                              ;; This node maps to its (renamed) then branch:
+                              ;; The IF/MYIF node maps to its (renamed) then branch:
                               (renaming-array (aset1 'renaming-array renaming-array old-nodenum renamed-then-darg)))
                          (prune-with-contexts-aux (+ 1 old-nodenum) old-dag-array old-dag-len context-array
                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -179,8 +183,6 @@
 ;;            )
 ;;   :rule-classes :linear
 ;;   :hints (("Goal" :in-theory (enable prune-with-contexts-aux))))
-
-;(local (in-theory (enable renaming-arrayp))) ;todo
 
 (def-dag-builder-theorems (prune-with-contexts-aux old-nodenum old-dag-array old-dag-len context-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
   (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -298,19 +300,15 @@
                                                     )))))
   (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
        (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
-       ;; Make the auxiliary data structures for the DAG:
-       ((mv old-dag-parent-array
-            & ;dag-constant-alist (todo: don't generate)
-            & ;dag-variable-alist (todo: don't generate)
-            )
-        (make-dag-indices 'old-dag-array old-dag-array 'dag-parent-array old-dag-len)) ;note the old-dag-parent-array has name 'dag-parent-array (todo: generalize make-full-context-array-with-parents below?)
+       (old-dag-parent-array  ; only used once below, then further below another array gets the name 'dag-parent-array
+        (make-dag-parent-array-with-name2 old-dag-len 'old-dag-array old-dag-array 'dag-parent-array) ; note the old-dag-parent-array has name 'dag-parent-array (todo: generalize make-full-context-array-with-parents below?)
+        )
        ;; Now figure out the context we can use for each node
        ;; TODO: If this doesn't contain any information, consider skipping the prune
        (context-array (make-full-context-array-with-parents 'old-dag-array old-dag-array old-dag-len old-dag-parent-array))
        ;; ((when ...) ; could check here whether there is any context information to use
        ;;  (and print (cw ")~%"))
        ;;  (mv (erp-nil) dag limits state))
-
        (renaming-array (make-empty-array 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
        ;;todo: make a util for making an empty dag and its aux structures
        (dag-array (make-empty-array 'dag-array old-dag-len)) ;todo: leave some slack space?
@@ -320,7 +318,7 @@
         (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
        ((mv erp renaming-array dag-array
             dag-len
-            & & & ;dag-parent-array dag-constant-alist dag-variable-alist ; todo: save time by not making these?
+            & & & ;dag-parent-array dag-constant-alist dag-variable-alist ; todo: save time by not making these? might be hard...
             )
         (prune-with-contexts-aux 0
                                  old-dag-array

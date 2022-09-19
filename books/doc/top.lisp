@@ -116,7 +116,7 @@
 (include-book "centaur/getopt/demo" :dir :system)
 (include-book "centaur/getopt/demo2" :dir :system)
 (include-book "centaur/bed/top" :dir :system)
-
+(include-book "centaur/misc/def-bounds" :dir :system)
 
 (include-book "centaur/satlink/top" :dir :system) ; see July 2021 comment above
 (include-book "centaur/satlink/check-config" :dir :system)
@@ -179,7 +179,7 @@
 (include-book "tools/do-not" :dir :system)
 (include-book "tools/plev" :dir :system)
 (include-book "tools/plev-ccl" :dir :system)
-(include-book "tools/with-supporters" :dir :system)
+(include-book "tools/with-supporters-doc" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
 (include-book "tools/removable-runes" :dir :system)
 (include-book "tools/oracle-time" :dir :system)

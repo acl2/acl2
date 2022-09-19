@@ -1,7 +1,7 @@
 ; BV Library: The definition of getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "slice-def")
 (local (include-book "../arithmetic-light/floor")) ; for FLOOR-DIVIDE-BY-SAME
 (local (include-book "../arithmetic-light/expt"))
+(local (include-book "../arithmetic-light/mod"))
 
 ;; Extract bit N from the bit vector X, where the numbering starts at 0 for the
 ;; least significant bit.
@@ -33,3 +34,10 @@
   (mbe :logic (slice n n x)
        ;;i think this is faster than calling slice:
        :exec (mod (ash x (- n)) 2)))
+
+(in-theory (disable (:type-prescription getbit))) ; too weak, use bitp-of-getbit-type instead
+
+(defthm bitp-of-getbit-type
+  (bitp (getbit n x))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable getbit slice bvchop))))

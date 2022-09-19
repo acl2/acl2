@@ -19,6 +19,13 @@
                   x))
   :hints (("Goal" :in-theory (enable true-list-fix))))
 
+(defthm true-list-fix-when-not-cons-cheap
+  (implies (not (consp x))
+           (equal (true-list-fix x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable true-list-fix))))
+
 (defthm true-listp-of-true-list-fix
   (true-listp (true-list-fix x)))
 

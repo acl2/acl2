@@ -26,11 +26,11 @@
 
 (local (in-theory (disable mv-nth symbol-alistp)))
 
-;; We keep the body of the lambda unchanged (for C generation, this must be a
+;; We keep the body of the lambda unchanged (for C generation, this may often be a
 ;; call of a function on its formals).
 ;;
 ;; First we get the (non-trivial) bindings.  These all happen simultaneously, and the goal is to serialize them.
-;; Next, try to find one a "safe" that can go first (because the var it binds is not used by the other bindings).
+;; Next, try to find a "safe" one that can go first (because the var it binds is not used by the other bindings).
 ;; Repeatedly add such safe ones.
 ;; When no safe ones are left, a temporary must be added.  for example:
 ;;
@@ -40,9 +40,9 @@
 ;;   ...)
 ;;  ...)
 ;;
-;; becomes:
+;; becomes essentially:
 ;;
-;; (let
+;; (let*
 ;;  ((a-temp a) ; save the value of a
 ;;   (a <expr>)
 ;;   (b ...a-temp...) ; changed to use a-temp
@@ -52,7 +52,7 @@
 ;; Once we add the temporary (and the binding that is now safe), start again looking for additional safe ones.
 ;; TODO: Can we work harder to minimize the number of temporaries?
 
-;; Makes a nest if lambda applications, one per binding.
+;; Makes a nest of lambda applications, one per each of the BINDINGS, around BODY.
 (defun make-lambda-nest (bindings body)
   (declare (xargs :guard (symbol-alistp bindings)))
   (if (endp bindings)
@@ -183,6 +183,7 @@
     (make-lambda-nest serialized-bindings lambda-body)))
 
 ;; Returns a new term (a nest of lambda applications)
+;; Only called in the tests?
 (defun serialize-lambda-application (term vars-to-avoid)
   (declare (xargs :guard (and (pseudo-termp term)
                               (consp term)

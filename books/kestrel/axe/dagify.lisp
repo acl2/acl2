@@ -938,7 +938,37 @@
                                    car-becomes-nth-of-0
                                    merge-tree-into-dag-array
                                    merge-trees-into-dag-array)
-                                  (natp)))))
+                           (natp)))))
+
+(defthm merge-trees-into-dag-array-return-type-corollary
+  (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                ;; no error:
+                (not (mv-nth 0 (merge-trees-into-dag-array
+                                trees
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                interpreted-function-alist)))
+                (bounded-axe-tree-listp trees dag-len)
+                (symbol-alistp var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+;                  (interpreted-function-alistp interpreted-function-alist)
+                (<= bound (mv-nth 3
+                                  (merge-trees-into-dag-array
+                                   trees
+                                   var-replacement-alist
+                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                   interpreted-function-alist)))
+                (natp bound)
+                )
+           (pseudo-dag-arrayp dag-array-name
+                              (mv-nth 2 (merge-trees-into-dag-array
+                                         trees
+                                         var-replacement-alist
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                         interpreted-function-alist))
+                              bound))
+  :hints (("Goal" :use (:instance merge-trees-into-dag-array-return-type)
+           :in-theory (e/d (wf-dagp) (merge-trees-into-dag-array-return-type)))))
 
 (defthm merge-tree-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2181,11 +2211,14 @@
   (if (eq nil item) ; we assume nil is the constant nil, not an empty DAG
       *nil*
     (if (weak-dagp item)
-        ;; we embed a DAG in a call to dag-val-with-axe-evaluator, to avoid
-        ;; explosion in the term size:
-        `(dag-val-with-axe-evaluator ',item
-                                     ,(make-acons-nest (dag-vars item))
-                                     ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list (dag-fns item) (w state)) (w state))
-                                     '0 ;array depth (not very important)
-                                     )
+        (let ((dag-fns (dag-fns item)))
+          (if (not (function-symbolsp dag-fns (w state)))
+              (er hard? 'dag-or-term-to-term "Some unknown functions among those in DAG: ~X01." dag-fns)
+            ;; we embed a DAG in a call to dag-val-with-axe-evaluator, to avoid
+            ;; explosion in the term size:
+            `(dag-val-with-axe-evaluator ',item
+                                         ,(make-acons-nest (dag-vars item))
+                                         ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
+                                         '0 ;array depth (not very important)
+                                         )))
       item)))

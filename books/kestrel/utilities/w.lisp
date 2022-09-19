@@ -18,3 +18,29 @@
   (implies (state-p state)
            (plist-worldp (w state)))
   :hints (("Goal" :in-theory (enable w))))
+
+(defthm w-of-update-open-output-channels
+  (equal (w (update-open-output-channels x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable w update-open-output-channels))))
+
+(defthm w-of-update-written-files
+  (equal (w (update-written-files x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable w update-written-files))))
+
+(defthm w-of-update-file-clock
+  (equal (w (update-file-clock x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable w update-file-clock))))
+
+(defthm w-of-update-acl2-oracle
+  (equal (w (update-acl2-oracle x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable w update-acl2-oracle))))
+
+(defthm w-of-put-global
+  (implies (not (equal key 'current-acl2-world))
+           (equal (w (put-global key value state))
+                  (w state)))
+  :hints (("Goal" :in-theory (enable w put-global get-global))))

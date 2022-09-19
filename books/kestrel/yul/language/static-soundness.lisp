@@ -295,11 +295,11 @@
      for more information."))
   (b* (((funinfo funinfo) funinfo)
        (varset (add-vars funinfo.inputs nil))
-       ((when (resulterrp varset)) nil)
+       ((when (reserrp varset)) nil)
        (varset (add-vars funinfo.outputs varset))
-       ((when (resulterrp varset)) nil)
+       ((when (reserrp varset)) nil)
        (modes (check-safe-block funinfo.body varset funtab))
-       ((when (resulterrp modes)) nil)
+       ((when (reserrp modes)) nil)
        ((when (set::in (mode-break) modes)) nil)
        ((when (set::in (mode-continue) modes)) nil))
     t)
@@ -395,9 +395,9 @@
                   (modes (check-safe-block (funinfo->body funinfo)
                                            varset
                                            funtab)))
-               (and (not (resulterrp varset0))
-                    (not (resulterrp varset))
-                    (not (resulterrp modes))
+               (and (not (reserrp varset0))
+                    (not (reserrp varset))
+                    (not (reserrp modes))
                     (not (set::in (mode-break) modes))
                     (not (set::in (mode-continue) modes)))))
     :enable (funscope-safep
@@ -406,7 +406,7 @@
   (defruled check-safe-block-when-funenv-safep
     (b* ((funinfoenv (find-fun fun funenv)))
       (implies (and (funenv-safep funenv)
-                    (not (resulterrp funinfoenv)))
+                    (not (reserrp funinfoenv)))
                (b* ((funinfo (funinfo+funenv->info funinfoenv))
                     (funenv1 (funinfo+funenv->env funinfoenv))
                   (varset0 (add-vars (funinfo->inputs funinfo) nil))
@@ -414,9 +414,9 @@
                     (modes (check-safe-block (funinfo->body funinfo)
                                              varset
                                              (funenv-to-funtable funenv1))))
-                 (and (not (resulterrp varset0))
-                      (not (resulterrp varset))
-                      (not (resulterrp modes))
+                 (and (not (reserrp varset0))
+                      (not (reserrp varset))
+                      (not (reserrp modes))
                       (not (set::in (mode-break) modes))
                       (not (set::in (mode-continue) modes))
                       (funenv-safep funenv1)))))
@@ -437,9 +437,9 @@
   (defrule funinfo-to-funtype-of-find-fun-info
     (b* ((funinfoenv (find-fun fun funenv))
          (funtype (get-funtype fun (funenv-to-funtable funenv))))
-      (implies (not (resulterrp funinfoenv))
+      (implies (not (reserrp funinfoenv))
                (b* ((funinfo (funinfo+funenv->info funinfoenv)))
-                 (and (not (resulterrp funtype))
+                 (and (not (reserrp funtype))
                       (equal (funinfo-to-funtype funinfo)
                              funtype)))))
     :expand (funenv-to-funtable funenv)
@@ -447,22 +447,22 @@
              funenv-to-funtable
              get-funtype
              funinfo-to-funtype-of-cdr-of-in
-             not-resulterrp-when-funtypep
-             funtypep-when-funtype-resultp-and-not-resulterrp)
+             not-reserrp-when-funtypep
+             funtypep-when-funtype-resultp-and-not-reserrp)
     :prep-lemmas
     ((defrule lemma
        (implies (and (funtablep funtab)
                      (consp (omap::in fun funtab)))
                 (funtypep (cdr (omap::in fun funtab)))))))
 
-  (defruled resulterrp-of-find-fun
-    (equal (resulterrp (find-fun fun funenv))
-           (resulterrp (get-funtype fun (funenv-to-funtable funenv))))
+  (defruled reserrp-of-find-fun
+    (equal (reserrp (find-fun fun funenv))
+           (reserrp (get-funtype fun (funenv-to-funtable funenv))))
     :enable (funenv-to-funtable
              find-fun
              get-funtype
-             not-resulterrp-when-funinfo+funenv-p
-             not-resulterrp-when-funtypep)))
+             not-reserrp-when-funinfo+funenv-p
+             not-reserrp-when-funtypep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -496,44 +496,44 @@
              funtype-for-fundef))
 
   (defruled in-funscope-for-fundefs-iff-in-funtable-for-fundefs
-    (implies (and (not (resulterrp (funscope-for-fundefs fundefs)))
-                  (not (resulterrp (funtable-for-fundefs fundefs))))
+    (implies (and (not (reserrp (funscope-for-fundefs fundefs)))
+                  (not (reserrp (funtable-for-fundefs fundefs))))
              (equal (consp (omap::in fun (funscope-for-fundefs fundefs)))
                     (consp (omap::in fun (funtable-for-fundefs fundefs)))))
     :enable (funscope-for-fundefs
              funtable-for-fundefs))
 
   (defruled error-funscope-for-fundefs-iff-error-funtable-for-fundefs
-    (equal (resulterrp (funscope-for-fundefs fundefs))
-           (resulterrp (funtable-for-fundefs fundefs)))
+    (equal (reserrp (funscope-for-fundefs fundefs))
+           (reserrp (funtable-for-fundefs fundefs)))
     :enable (funscope-for-fundefs
              funtable-for-fundefs
-             funtablep-when-funtable-resultp-and-not-resulterrp
-             not-resulterrp-when-funtablep
+             funtablep-when-funtable-resultp-and-not-reserrp
+             not-reserrp-when-funtablep
              in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
 
   (defrule funscope-to-funtable-of-funscope-for-fundefs
-    (implies (not (resulterrp (funscope-for-fundefs fundefs)))
+    (implies (not (reserrp (funscope-for-fundefs fundefs)))
              (equal (funscope-to-funtable (funscope-for-fundefs fundefs))
                     (funtable-for-fundefs fundefs)))
     :enable (funscope-to-funtable
              funscope-for-fundefs
              funtable-for-fundefs
              error-funscope-for-fundefs-iff-error-funtable-for-fundefs
-             funscopep-when-funscope-resultp-and-not-resulterrp
+             funscopep-when-funscope-resultp-and-not-reserrp
              funscope-to-funtable-of-update
              in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
 
   (defruled keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
-    (implies (and (not (resulterrp (funscope-for-fundefs fundefs)))
-                  (not (resulterrp (funtable-for-fundefs fundefs))))
+    (implies (and (not (reserrp (funscope-for-fundefs fundefs)))
+                  (not (reserrp (funtable-for-fundefs fundefs))))
              (equal (omap::keys (funscope-for-fundefs fundefs))
                     (omap::keys (funtable-for-fundefs fundefs))))
     :enable (funscope-for-fundefs
              funtable-for-fundefs))
 
   (defrule funenv-to-funtable-of-add-funs
-    (implies (not (resulterrp (add-funs fundefs funenv)))
+    (implies (not (reserrp (add-funs fundefs funenv)))
              (equal (funenv-to-funtable (add-funs fundefs funenv))
                     (add-funtypes fundefs (funenv-to-funtable funenv))))
     :enable (add-funs
@@ -541,62 +541,62 @@
              funenv-to-funtable
              error-funscope-for-fundefs-iff-error-funtable-for-fundefs
              ensure-funscope-disjoint
-             not-resulterrp-when-funenvp
-             funscopep-when-funscope-resultp-and-not-resulterrp
+             not-reserrp-when-funenvp
+             funscopep-when-funscope-resultp-and-not-reserrp
              keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
              set::intersect-of-union))
 
   (defruled error-add-funs-iff-error-add-funtypes
-    (equal (resulterrp (add-funs fundefs funenv))
-           (resulterrp (add-funtypes fundefs (funenv-to-funtable funenv))))
+    (equal (reserrp (add-funs fundefs funenv))
+           (reserrp (add-funtypes fundefs (funenv-to-funtable funenv))))
     :enable (add-funs
              add-funtypes
              funenv-to-funtable
              error-funscope-for-fundefs-iff-error-funtable-for-fundefs
              ensure-funscope-disjoint
-             not-resulterrp-when-funenvp
-             funscopep-when-funscope-resultp-and-not-resulterrp
+             not-reserrp-when-funenvp
+             funscopep-when-funscope-resultp-and-not-reserrp
              keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
              set::intersect-of-union
-             funtablep-when-funtable-resultp-and-not-resulterrp))
+             funtablep-when-funtable-resultp-and-not-reserrp))
 
   (defrule funinfo-safep-of-funinfo-for-fundef
-    (implies (not (resulterrp (check-safe-fundef fundef funtab)))
+    (implies (not (reserrp (check-safe-fundef fundef funtab)))
              (funinfo-safep (funinfo-for-fundef fundef) funtab))
     :enable (funinfo-safep
              check-safe-fundef
              funinfo-for-fundef))
 
   (defrule funscope-safep-of-funscope-for-fundefs
-    (implies (and (not (resulterrp (check-safe-fundef-list fundefs funtab)))
-                  (not (resulterrp (funscope-for-fundefs fundefs))))
+    (implies (and (not (reserrp (check-safe-fundef-list fundefs funtab)))
+                  (not (reserrp (funscope-for-fundefs fundefs))))
              (funscope-safep (funscope-for-fundefs fundefs) funtab))
     :enable (funscope-safep
              funscope-for-fundefs
              check-safe-fundef-list
-             funscopep-when-funscope-resultp-and-not-resulterrp))
+             funscopep-when-funscope-resultp-and-not-reserrp))
 
   (defruled car-of-add-funs
-    (implies (not (resulterrp (add-funs fundefs funenv)))
+    (implies (not (reserrp (add-funs fundefs funenv)))
              (equal (car (add-funs fundefs funenv))
                     (funscope-for-fundefs fundefs)))
     :enable add-funs)
 
   (defruled cdr-of-add-funs
-    (implies (not (resulterrp (add-funs fundefs funenv)))
+    (implies (not (reserrp (add-funs fundefs funenv)))
              (equal (cdr (add-funs fundefs funenv))
                     (funenv-fix funenv)))
     :enable add-funs)
 
   (defruled not-error-funscope-for-fundefs-when-not-error-add-funs
-    (implies (not (resulterrp (add-funs fundefs funenv)))
-             (not (resulterrp (funscope-for-fundefs fundefs))))
+    (implies (not (reserrp (add-funs fundefs funenv)))
+             (not (reserrp (funscope-for-fundefs fundefs))))
     :enable add-funs)
 
   (defrule funenv-safep-of-add-funs
     (implies (and (funenv-safep funenv)
-                  (not (resulterrp (add-funs fundefs funenv)))
-                  (not (resulterrp
+                  (not (reserrp (add-funs fundefs funenv)))
+                  (not (reserrp
                         (check-safe-fundef-list
                          fundefs
                          (add-funtypes fundefs (funenv-to-funtable funenv))))))
@@ -669,7 +669,7 @@
 
   (defrule cstate-to-vars-of-write-var-value
     (b* ((cstate1 (write-var-value var val cstate)))
-      (implies (not (resulterrp cstate1))
+      (implies (not (reserrp cstate1))
                (equal (cstate-to-vars cstate1)
                       (cstate-to-vars cstate))))
     :enable (write-var-value
@@ -678,7 +678,7 @@
 
   (defrule cstate-to-vars-of-write-vars-values
     (b* ((cstate1 (write-vars-values vars vals cstate)))
-      (implies (not (resulterrp cstate1))
+      (implies (not (reserrp cstate1))
                (equal (cstate-to-vars cstate1)
                       (cstate-to-vars cstate))))
     :enable write-vars-values)
@@ -692,7 +692,7 @@
 
   (defrule cstate-to-vars-of-add-var-value
     (b* ((cstate1 (add-var-value var val cstate)))
-      (implies (not (resulterrp cstate1))
+      (implies (not (reserrp cstate1))
                (equal (cstate-to-vars cstate1)
                       (set::insert (identifier-fix var)
                                    (cstate-to-vars cstate)))))
@@ -701,7 +701,7 @@
 
   (defrule cstate-to-vars-of-add-vars-values
     (b* ((cstate1 (add-vars-values vars vals cstate)))
-      (implies (not (resulterrp cstate1))
+      (implies (not (reserrp cstate1))
                (equal (cstate-to-vars cstate1)
                       (set::list-insert (identifier-list-fix vars)
                                         (cstate-to-vars cstate)))))
@@ -710,14 +710,14 @@
 
   (defrule cstate-to-vars-of-exec-literal
     (b* ((outcome (exec-literal lit cstate)))
-      (implies (not (resulterrp outcome))
+      (implies (not (reserrp outcome))
                (equal (cstate-to-vars (eoutcome->cstate outcome))
                       (cstate-to-vars cstate))))
     :enable exec-literal)
 
   (defrule cstate-to-vars-of-exec-path
     (b* ((outcome (exec-path path cstate)))
-      (implies (not (resulterrp outcome))
+      (implies (not (reserrp outcome))
                (equal (cstate-to-vars (eoutcome->cstate outcome))
                       (cstate-to-vars cstate))))
     :enable exec-path)
@@ -726,35 +726,35 @@
 
     (defthm cstate-to-vars-of-exec-expression
       (b* ((outcome (exec-expression expr cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (equal (cstate-to-vars (eoutcome->cstate outcome))
                         (cstate-to-vars cstate))))
       :flag exec-expression)
 
     (defthm cstate-to-vars-of-exec-expression-list
       (b* ((outcome (exec-expression-list exprs cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (equal (cstate-to-vars (eoutcome->cstate outcome))
                         (cstate-to-vars cstate))))
       :flag exec-expression-list)
 
     (defthm cstate-to-vars-of-exec-funcall
       (b* ((outcome (exec-funcall call cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (equal (cstate-to-vars (eoutcome->cstate outcome))
                         (cstate-to-vars cstate))))
       :flag exec-funcall)
 
     (defthm cstate-to-vars-of-exec-function
       (b* ((outcome (exec-function fun args cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (equal (cstate-to-vars (eoutcome->cstate outcome))
                         (cstate-to-vars cstate))))
       :flag exec-function)
 
     (defthm cstate-to-vars-of-exec-statement
       (b* ((outcome (exec-statement stmt cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (set::subset (cstate-to-vars cstate)
                               (cstate-to-vars
                                (soutcome->cstate outcome)))))
@@ -762,7 +762,7 @@
 
     (defthm cstate-to-vars-of-exec-statement-list
       (b* ((outcome (exec-statement-list stmts cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (set::subset (cstate-to-vars cstate)
                               (cstate-to-vars
                                (soutcome->cstate outcome)))))
@@ -770,21 +770,21 @@
 
     (defthm cstate-to-vars-of-exec-block
       (b* ((outcome (exec-block block cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (equal (cstate-to-vars (soutcome->cstate outcome))
                         (cstate-to-vars cstate))))
       :flag exec-block)
 
     (defthm cstate-to-vars-of-exec-for-iterations
       (b* ((outcome (exec-for-iterations test update body cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (equal (cstate-to-vars (soutcome->cstate outcome))
                         (cstate-to-vars cstate))))
       :flag exec-for-iterations)
 
     (defthm cstate-to-vars-of-exec-switch-rest
       (b* ((outcome (exec-switch-rest cases default target cstate funenv limit)))
-        (implies (not (resulterrp outcome))
+        (implies (not (reserrp outcome))
                  (equal (cstate-to-vars (soutcome->cstate outcome))
                         (cstate-to-vars cstate))))
       :flag exec-switch-rest)
@@ -814,21 +814,21 @@
 
   (defruled read-var-value-when-check-var
     (implies (check-var var (cstate-to-vars cstate))
-             (not (resulterrp (read-var-value var cstate))))
+             (not (reserrp (read-var-value var cstate))))
     :enable (check-var
              read-var-value
-             not-resulterrp-when-valuep
+             not-reserrp-when-valuep
              cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defruled read-vars-values-when-check-var-list
     (implies (check-var-list vars (cstate-to-vars cstate))
-             (not (resulterrp (read-vars-values vars cstate))))
+             (not (reserrp (read-vars-values vars cstate))))
     :enable (check-var-list
              read-vars-values
-             valuep-when-value-resultp-and-not-resulterrp
-             not-resulterrp-when-value-listp
-             value-listp-when-value-list-resultp-and-not-resulterrp)))
+             valuep-when-value-resultp-and-not-reserrp
+             not-reserrp-when-value-listp
+             value-listp-when-value-list-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -845,8 +845,8 @@
   (defrule add-var-value-when-add-var
     (b* ((varset1 (add-var var (cstate-to-vars cstate)))
          (cstate1 (add-var-value var val cstate)))
-      (implies (not (resulterrp varset1))
-               (and (not (resulterrp cstate1))
+      (implies (not (reserrp varset1))
+               (and (not (reserrp cstate1))
                     (equal (cstate-to-vars cstate1)
                            varset1))))
     :enable (add-var
@@ -857,9 +857,9 @@
   (defrule add-vars-values-when-add-vars
     (b* ((varset1 (add-vars vars (cstate-to-vars cstate)))
          (cstate1 (add-vars-values vars vals cstate)))
-      (implies (and (not (resulterrp varset1))
+      (implies (and (not (reserrp varset1))
                     (equal (len vals) (len vars)))
-               (and (not (resulterrp cstate1))
+               (and (not (reserrp cstate1))
                     (equal (cstate-to-vars cstate1)
                            varset1))))
     :induct (add-vars-values vars vals cstate)
@@ -884,28 +884,28 @@
      and finally we put things together."))
 
   (defrule path-to-var-when-check-safe-path
-    (implies (not (resulterrp (check-safe-path path varset)))
-             (not (resulterrp (path-to-var path))))
+    (implies (not (reserrp (check-safe-path path varset)))
+             (not (reserrp (path-to-var path))))
     :enable (check-safe-path
              path-to-var
-             not-resulterrp-when-identifierp))
+             not-reserrp-when-identifierp))
 
   (defrule check-var-when-check-safe-path
-    (implies (not (resulterrp (check-safe-path path varset)))
+    (implies (not (reserrp (check-safe-path path varset)))
              (check-var (path-to-var path) varset))
     :enable (check-safe-path
              path-to-var))
 
   (defrule paths-to-vars-when-check-safe-path-list
-    (implies (not (resulterrp (check-safe-path-list paths varset)))
-             (not (resulterrp (paths-to-vars paths))))
+    (implies (not (reserrp (check-safe-path-list paths varset)))
+             (not (reserrp (paths-to-vars paths))))
     :enable (check-safe-path-list
              paths-to-vars)
-    :expand (resulterrp (cons (path-to-var (car paths))
+    :expand (reserrp (cons (path-to-var (car paths))
                               (paths-to-vars (cdr paths)))))
 
   (defrule check-var-list-when-check-safe-path-list
-    (implies (not (resulterrp (check-safe-path-list paths varset)))
+    (implies (not (reserrp (check-safe-path-list paths varset)))
              (check-var-list (paths-to-vars paths) varset))
     :enable (check-safe-path-list
              check-var-list
@@ -913,31 +913,31 @@
 
   (defrule write-var-value-when-check-var
     (implies (check-var var (cstate-to-vars cstate))
-             (not (resulterrp (write-var-value var val cstate))))
+             (not (reserrp (write-var-value var val cstate))))
     :enable (write-var-value
              check-var
              cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defrule write-var-value-when-check-safe-path
-    (implies (not (resulterrp
+    (implies (not (reserrp
                    (check-safe-path path (cstate-to-vars cstate))))
-             (not (resulterrp
+             (not (reserrp
                    (write-var-value (path-to-var path) val cstate)))))
 
   (defrule write-vars-values-when-check-var-list
     (implies (and (check-var-list vars (cstate-to-vars cstate))
                   (equal (len vals) (len vars)))
-             (not (resulterrp (write-vars-values vars vals cstate))))
+             (not (reserrp (write-vars-values vars vals cstate))))
     :enable (check-var-list
              write-vars-values))
 
   (defrule write-vars-values-when-check-safe-path-list
-    (implies (and (not (resulterrp
+    (implies (and (not (reserrp
                         (check-safe-path-list paths
                                               (cstate-to-vars cstate))))
                   (equal (len vals) (len paths)))
-             (not (resulterrp
+             (not (reserrp
                    (write-vars-values (paths-to-vars paths) vals cstate))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -974,28 +974,28 @@
      or the number of values does not match the number of variables."))
 
   (defruled error-add-var-value-iff-error-add-var
-    (equal (resulterrp (add-var-value var val cstate))
-           (resulterrp (add-var var (cstate-to-vars cstate))))
+    (equal (reserrp (add-var-value var val cstate))
+           (reserrp (add-var var (cstate-to-vars cstate))))
     :enable (add-var
              add-var-value
              cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys
-             not-resulterrp-when-cstatep
-             not-resulterrp-when-identifier-setp))
+             not-reserrp-when-cstatep
+             not-reserrp-when-identifier-setp))
 
   (defruled error-add-vars-values-iff-error-add-vars
     (implies (equal (len vals) (len vars))
-             (equal (resulterrp (add-vars-values vars vals cstate))
-                    (resulterrp (add-vars vars (cstate-to-vars cstate)))))
+             (equal (reserrp (add-vars-values vars vals cstate))
+                    (reserrp (add-vars vars (cstate-to-vars cstate)))))
     :enable (add-vars-values
              add-vars
              error-add-var-value-iff-error-add-var
-             not-resulterrp-when-identifier-setp))
+             not-reserrp-when-identifier-setp))
 
   (defrule cstate-to-vars-of-init-local
     (implies (and (equal (len in-vals)
                          (len in-vars))
-                  (not (resulterrp
+                  (not (reserrp
                         (init-local in-vars in-vals out-vars cstate))))
              (equal (cstate-to-vars
                      (init-local in-vars in-vals out-vars cstate))
@@ -1006,15 +1006,15 @@
   (defruled check-var-list-when-add-vars-not-error
     (implies (and (identifier-listp vars)
                   (identifier-setp varset)
-                  (not (resulterrp (add-vars vars varset))))
+                  (not (reserrp (add-vars vars varset))))
              (check-var-list vars (add-vars vars varset)))
     :enable (add-vars-to-set-list-insert
              check-var-list-to-set-list-in))
 
-  (defruled resulterrp-of-init-local
-    (equal (resulterrp (init-local in-vars in-vals out-vars cstate))
-           (or (resulterrp (add-vars in-vars nil))
-               (resulterrp (add-vars out-vars (add-vars in-vars nil)))
+  (defruled reserrp-of-init-local
+    (equal (reserrp (init-local in-vars in-vals out-vars cstate))
+           (or (reserrp (add-vars in-vars nil))
+               (reserrp (add-vars out-vars (add-vars in-vars nil)))
                (not (equal (len in-vals) (len in-vars)))))
     :cases ((equal (len in-vals) (len in-vars)))
     :enable (init-local
@@ -1022,7 +1022,7 @@
     :prep-lemmas
     ((defrule lemma
        (implies (not (equal (len vals) (len vars)))
-                (resulterrp (add-vars-values vars vals cstate)))
+                (reserrp (add-vars-values vars vals cstate)))
        :enable add-vars-values))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1050,29 +1050,29 @@
      to discharge a hypothesis in the main proof;
      without this, the third theorem rewrites away some relevant term."))
 
-  (defrule resulterrp-of-check-safe-expression-list-of-append
-    (equal (resulterrp (check-safe-expression-list (append es es1)
+  (defrule reserrp-of-check-safe-expression-list-of-append
+    (equal (reserrp (check-safe-expression-list (append es es1)
                                                    varset
                                                    funtab))
-           (or (resulterrp (check-safe-expression-list es varset funtab))
-               (resulterrp (check-safe-expression-list es1 varset funtab))))
+           (or (reserrp (check-safe-expression-list es varset funtab))
+               (reserrp (check-safe-expression-list es1 varset funtab))))
     :enable check-safe-expression-list)
 
-  (defrule resulterrp-of-check-safe-expression-list-of-rev
-    (equal (resulterrp (check-safe-expression-list (rev es) varset funtab))
-           (resulterrp (check-safe-expression-list es varset funtab)))
+  (defrule reserrp-of-check-safe-expression-list-of-rev
+    (equal (reserrp (check-safe-expression-list (rev es) varset funtab))
+           (reserrp (check-safe-expression-list es varset funtab)))
     :enable (check-safe-expression-list rev))
 
   (defruled check-safe-expression-list-to-len
-    (implies (not (resulterrp (check-safe-expression-list es varset funtab)))
+    (implies (not (reserrp (check-safe-expression-list es varset funtab)))
              (equal (check-safe-expression-list es varset funtab) (len es)))
     :enable check-safe-expression-list)
 
   (defruled check-safe-expression-list-not-error-when-rev
-    (implies (not (resulterrp (check-safe-expression-list (rev es)
+    (implies (not (reserrp (check-safe-expression-list (rev es)
                                                           varset
                                                           funtab)))
-             (not (resulterrp (check-safe-expression-list es varset funtab))))))
+             (not (reserrp (check-safe-expression-list es varset funtab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1087,9 +1087,9 @@
     "We also show that it returns one value."))
 
   (defrule exec-literal-when-check-safe-literal
-    (implies (not (resulterrp (check-safe-literal lit)))
+    (implies (not (reserrp (check-safe-literal lit)))
              (b* ((outcome (exec-literal lit cstate)))
-               (and (not (resulterrp outcome))
+               (and (not (reserrp outcome))
                     (equal (eoutcome->cstate outcome)
                            (cstate-fix cstate))
                     (equal (len (eoutcome->values outcome))
@@ -1108,10 +1108,10 @@
      the theorem about @(tsee read-var-value) and @(tsee check-var)."))
 
   (defrule exec-path-when-check-safe-path
-    (implies (not (resulterrp
+    (implies (not (reserrp
                    (check-safe-path path (cstate-to-vars cstate))))
              (b* ((outcome (exec-path path cstate)))
-               (and (not (resulterrp outcome))
+               (and (not (reserrp outcome))
                     (equal (eoutcome->cstate outcome)
                            (cstate-fix cstate))
                     (equal (len (eoutcome->values outcome))
@@ -1119,8 +1119,8 @@
     :enable (check-safe-path
              exec-path
              path-to-var
-             not-resulterrp-when-valuep
-             not-resulterrp-when-identifierp
+             not-reserrp-when-valuep
+             not-reserrp-when-identifierp
              read-var-value-when-check-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1150,7 +1150,7 @@
      We obviously enable the execution and checking functions;
      unfortunately we also need an @(':expand') hint,
      as just enabling the functions is not enough, apparently.
-     We also enable @(tsee resulterr-limitp),
+     We also enable @(tsee reserr-limitp),
      so the cases in which execution returns a limit error
      are quickly resolved away.
      We enable the mode theorems discussed in
@@ -1174,9 +1174,9 @@
      that accompany the static safety checking formalization."))
 
   (defruled exec-statement-list-cstate-to-vars-lemma
-    (implies (and (not (resulterrp (add-funs (statements-to-fundefs stmts)
+    (implies (and (not (reserrp (add-funs (statements-to-fundefs stmts)
                                              funenv)))
-                  (not (resulterrp (exec-statement-list
+                  (not (reserrp (exec-statement-list
                                     stmts
                                     cstate
                                     (add-funs (statements-to-fundefs stmts)
@@ -1205,9 +1205,9 @@
                                            (funenv-to-funtable funenv)))
            (outcome (exec-expression expr cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp results))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp results))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (eoutcome->cstate outcome))
                              (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
@@ -1220,9 +1220,9 @@
                                                 (funenv-to-funtable funenv)))
            (outcome (exec-expression-list exprs cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp results))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp results))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (eoutcome->cstate outcome))
                              (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
@@ -1235,9 +1235,9 @@
                                         (funenv-to-funtable funenv)))
            (outcome (exec-funcall call cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp results))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp results))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (eoutcome->cstate outcome))
                              (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
@@ -1248,11 +1248,11 @@
       (b* ((ftype (get-funtype fun (funenv-to-funtable funenv)))
            (outcome (exec-function fun args cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp ftype))
+                      (not (reserrp ftype))
                       (equal (len args)
                              (funtype->in ftype))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (eoutcome->cstate outcome))
                              (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
@@ -1265,9 +1265,9 @@
                                             (funenv-to-funtable funenv)))
            (outcome (exec-statement stmt cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp varsmodes))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp varsmodes))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (soutcome->cstate outcome))
                              (vars+modes->vars varsmodes))
                       (set::in (soutcome->mode outcome)
@@ -1280,9 +1280,9 @@
                                                  (funenv-to-funtable funenv)))
            (outcome (exec-statement-list stmts cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp varsmodes))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp varsmodes))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (if (equal (soutcome->mode outcome)
                                  (mode-regular))
                           (equal (cstate-to-vars (soutcome->cstate outcome))
@@ -1299,9 +1299,9 @@
                                     (funenv-to-funtable funenv)))
            (outcome (exec-block block cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp modes))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp modes))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (soutcome->cstate outcome))
                              (cstate-to-vars cstate))
                       (set::in (soutcome->mode outcome)
@@ -1320,14 +1320,14 @@
                                          (funenv-to-funtable funenv)))
            (outcome (exec-for-iterations test update body cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp test-results))
+                      (not (reserrp test-results))
                       (equal test-results 1)
-                      (not (resulterrp update-modes))
+                      (not (reserrp update-modes))
                       (not (set::in (mode-break) update-modes))
                       (not (set::in (mode-continue) update-modes))
-                      (not (resulterrp body-modes))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp body-modes))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (soutcome->cstate outcome))
                              (cstate-to-vars cstate))
                       (set::in (soutcome->mode outcome)
@@ -1348,10 +1348,10 @@
                                                    (funenv-to-funtable funenv)))
            (outcome (exec-switch-rest cases default target cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp cases-modes))
-                      (not (resulterrp default-modes))
-                      (not (resulterr-limitp outcome)))
-                 (and (not (resulterrp outcome))
+                      (not (reserrp cases-modes))
+                      (not (reserrp default-modes))
+                      (not (reserr-limitp outcome)))
+                 (and (not (reserrp outcome))
                       (equal (cstate-to-vars (soutcome->cstate outcome))
                              (cstate-to-vars cstate))
                       (set::in (soutcome->mode outcome)
@@ -1384,8 +1384,8 @@
                check-safe-swcase
                check-safe-swcase-list
                check-safe-literal
-               resulterr-limitp
-               resulterr-limitp-aux
+               reserr-limitp
+               reserr-limitp-aux
                equal-of-mode-kind-continue
                equal-of-mode-kind-break
                equal-of-mode-kind-leave
@@ -1404,17 +1404,17 @@
                error-add-funs-iff-error-add-funtypes
                check-safe-fundef-list-of-statements-to-fundefs
                error-add-funs-iff-error-add-funtypes
-               mode-setp-when-mode-set-resultp-and-not-resulterrp
+               mode-setp-when-mode-set-resultp-and-not-reserrp
                mode-leave-if-not-regular/continue/break
-               identifier-setp-when-identifier-set-resultp-and-not-resulterrp
+               identifier-setp-when-identifier-set-resultp-and-not-reserrp
                check-safe-block-when-funenv-safep
                len-of-funinfo->inputs
                len-of-funinfo->outputs
                read-vars-values-when-check-var-list
                check-var-list-when-add-vars-not-error
                cstate-to-vars-of-init-local
-               resulterrp-of-init-local
-               resulterrp-of-find-fun)
+               reserrp-of-init-local
+               reserrp-of-find-fun)
               (equal-of-mode-continue
                equal-of-mode-break
                equal-of-mode-regular
@@ -1434,14 +1434,14 @@
      If the block is safe,
      then its execution can only return either a final state
      or a limit error, never any other kind of error."))
-  (implies (not (resulterrp (check-safe-top-block block)))
+  (implies (not (reserrp (check-safe-top-block block)))
            (b* ((cstate (exec-top-block block limit)))
-             (implies (not (resulterr-limitp cstate))
-                      (not (resulterrp cstate)))))
+             (implies (not (reserr-limitp cstate))
+                      (not (reserrp cstate)))))
   :enable (check-safe-top-block
            exec-top-block
-           resulterr-limitp
-           resulterr-limitp-aux)
+           reserr-limitp
+           reserr-limitp-aux)
   :disable exec-block-static-soundness
   :use (:instance exec-block-static-soundness
         (cstate (cstate nil))

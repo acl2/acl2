@@ -13,6 +13,7 @@
 
 (include-book "pretty-printing-options")
 (include-book "defstruct")
+(include-book "defobject")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
@@ -103,11 +104,6 @@
      @('fn') is already known to be a function name.
      See @(tsee atc-process-target)."))
   (b* ((irrelevant (list nil nil))
-       ((when (member-eq fn previous-fns))
-        (er-soft+ ctx t irrelevant
-                  "The target function ~x0 appears more than once ~
-                   in the list of targets."
-                  fn))
        (previous-fns (cons fn previous-fns))
        (desc (msg "The target function ~x0" fn))
        ((er &) (ensure-function-is-logic-mode$ fn desc t irrelevant))
@@ -168,16 +164,19 @@
 
 (define atc-process-target (target
                             (previous-structs symbol-listp)
+                            (previous-objs symbol-listp)
                             (previous-fns symbol-listp)
                             (uncalled-fns symbol-listp)
                             (ctx ctxp)
                             state)
   :returns (mv erp
                (val (tuple (new-previous-structs symbol-listp)
+                           (new-previous-objs symbol-listp)
                            (new-previous-fns symbol-listp)
                            (new-uncalled-fns symbol-listp)
                            val)
                     :hyp (and (symbol-listp previous-structs)
+                              (symbol-listp previous-objs)
                               (symbol-listp previous-fns)
                               (symbol-listp uncalled-fns)))
                state)
@@ -187,43 +186,143 @@
    (xdoc::p
     "The parameters @('previous-fns') and @('uncalled-fns')
      are explained in @(tsee atc-process-function).
-     The parameter @('previous-structs') is analogous to @('previous-fns'),
-     but for the @(tsee defstruct) targets instead of the function targets:
-     it lists all the @(tsee defstruct) targets that precede @('target')
+     The parameters @('previous-structs') and @('previous-objs')
+     are analogous to @('previous-fns'),
+     but for the @(tsee defstruct) and @(tsee defobject) targets
+     instead of the function targets:
+     it lists all the @(tsee defstruct) and @('defobject') targets
+     that precede @('target')
      in the list of targets @('(t1 ... tp)').
-     This is used to detect duplicate @(tsee defstruct) targets.")
+     This is used to detect duplicate symbol names.")
    (xdoc::p
     "If the target is a function name,
-     its processing is delegated to @(tsee atc-process-function).
-     Otherwise, it must be a @(tsee defstruct) name,
-     and it is processed here.
-     We just check that the it is in the @(tsee defstruct) table."))
-  (b* ((irrelevant (list nil nil nil))
-       ((when (acl2::function-namep target (w state)))
-        (b* (((mv erp (list previous-fns uncalled-fns) state)
-              (atc-process-function target previous-fns uncalled-fns ctx state))
-             ((when erp) (mv erp irrelevant state)))
-          (acl2::value (list previous-structs
-                             previous-fns
-                             uncalled-fns))))
-       ((when (member-eq target previous-structs))
-        (er-soft+ ctx t irrelevant
-                  "The target DEFSTRUCT name ~x0 appears more than once ~
-                   in the list of targets."
-                  target))
+     its processing is delegated to @(tsee atc-process-function),
+     except for ensuring that its symbol name is distinct from
+     the symbol names of the preceding targets.
+     Otherwise, the target must be
+     a @(tsee defstruct) or @(tsee defobject) name,
+     and it is processed here:
+     we check that it is in the @(tsee defstruct) or @(tsee defobject) table;
+     furthermore, if it is a @(tsee defobject) target,
+     we ensure that it differs from the preceding function targets."))
+  (b* ((irrelevant (list nil nil nil nil))
        ((unless (symbolp target))
         (er-soft+ ctx t irrelevant
                   "The target ~x0 is not a symbol."
                   target))
-       ((unless (defstruct-table-lookup (symbol-name target) (w state)))
+       (functionp (function-symbolp target (w state)))
+       (struct-info (defstruct-table-lookup (symbol-name target) (w state)))
+       (obj-info (defobject-table-lookup (symbol-name target) (w state)))
+       ((when (and functionp struct-info obj-info))
         (er-soft+ ctx t irrelevant
-                  "The target ~x0 is neither a function name ~
-                   nor a DEFSTRUCT name."
+                  "The target ~x0 ambiguously denotes ~
+                   a function, a DEFSTRUCT, and a DEFOBJECT."
                   target))
-       (previous-structs (cons target previous-structs)))
-    (acl2::value (list previous-structs
-                       previous-fns
-                       uncalled-fns)))
+       ((when (and functionp struct-info))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 ambiguously denotes ~
+                   a function and a DEFSTRUCT."
+                  target))
+       ((when (and functionp obj-info))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 ambiguously denotes ~
+                   a function and a DEFOBJECT"
+                  target))
+       ((when (and struct-info obj-info))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 ambiguously denotes ~
+                   a DEFSTRUCT and a DEFOBJECT."
+                  target))
+       ((when functionp)
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target function ~x0 has the same name as ~
+                         the target function ~x1 that precedes it."
+                        target (car previous-fns)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target function ~x0 has the same name as ~
+                         the target DEFSTRUCT ~x1 that precedes it."
+                        target (car previous-structs)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target function ~x0 has the same name as ~
+                         the target DEFOBJECT ~x1 that precedes it."
+                        target (car previous-objs)))
+             ((er (list previous-fns uncalled-fns) :iferr irrelevant)
+              (atc-process-function target
+                                    previous-fns
+                                    uncalled-fns
+                                    ctx
+                                    state)))
+          (acl2::value (list previous-structs
+                             previous-objs
+                             previous-fns
+                             uncalled-fns))))
+       ((when struct-info)
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFSTRUCT ~x0 has the same name as ~
+                         the target function ~x1 that precedes it."
+                        target (car previous-fns)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFSTRUCT ~x0 has the same name as ~
+                         the target DEFSTRUCT ~x1 that precedes it."
+                        target (car previous-structs)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFSTRUCT ~x0 has the same name as ~
+                         the target DEFOBJECT ~x1 that precedes it."
+                        target (car previous-objs)))
+             (previous-structs (cons target previous-structs)))
+          (acl2::value (list previous-structs
+                             previous-objs
+                             previous-fns
+                             uncalled-fns))))
+       ((when obj-info)
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFOBJECT ~x0 has the same name as ~
+                         the target function ~x1 that precedes it."
+                        target (car previous-fns)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFOBJECT ~x0 has the same name as ~
+                         the target DEFSTRUCT ~x1 that precedes it."
+                        target (car previous-structs)))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (er-soft+ ctx t irrelevant
+                        "The target DEFOBJECT ~x0 has the same name as ~
+                         the target DEFOBJECT ~x1 that precedes it."
+                        target (car previous-objs)))
+             (previous-objs (cons target previous-objs)))
+          (acl2::value (list previous-structs
+                             previous-objs
+                             previous-fns
+                             uncalled-fns)))))
+    (er-soft+ ctx t irrelevant
+              "The target ~x0 is a symbol that does not identify ~
+               any function or DEFSTRUCT or DEFOBJECT."
+              target))
   ///
 
   (more-returns
@@ -231,22 +330,28 @@
         :rule-classes :type-prescription))
 
   (defret len-of-atc-process-target.val
-    (equal (len val) 3))
+    (equal (len val) 4))
 
   (defret true-listp-of-atc-process-target.new-previous-structs
-    (b* (((list new-previous-structs & &) val))
+    (b* (((list new-previous-structs & & &) val))
       (true-listp new-previous-structs))
     :hyp (true-listp previous-structs)
     :rule-classes :type-prescription)
 
+  (defret true-listp-of-atc-process-target.new-previous-objs
+    (b* (((list & new-previous-objs & &) val))
+      (true-listp new-previous-objs))
+    :hyp (true-listp previous-objs)
+    :rule-classes :type-prescription)
+
   (defret true-listp-of-atc-process-target.new-previous-fns
-    (b* (((list & new-previous-fns &) val))
+    (b* (((list & & new-previous-fns &) val))
       (true-listp new-previous-fns))
     :hyp (true-listp previous-fns)
     :rule-classes :type-prescription)
 
   (defret true-listp-of-atc-process-target.new-uncalled-fns
-    (b* (((list & & new-uncalled-fns) val))
+    (b* (((list & & & new-uncalled-fns) val))
       (true-listp new-uncalled-fns))
     :hyp (true-listp uncalled-fns)
     :rule-classes :type-prescription))
@@ -255,16 +360,19 @@
 
 (define atc-process-target-list ((targets true-listp)
                                  (previous-structs symbol-listp)
+                                 (previous-objs symbol-listp)
                                  (previous-fns symbol-listp)
                                  (uncalled-fns symbol-listp)
                                  (ctx ctxp)
                                  state)
   :returns (mv erp
                (val (tuple (new-previous-structs symbol-listp)
+                           (new-previous-objs symbol-listp)
                            (new-previous-fns symbol-listp)
                            (new-uncalled-fns symbol-listp)
                            val)
                     :hyp (and (symbol-listp previous-structs)
+                              (symbol-listp previous-objs)
                               (symbol-listp previous-fns)
                               (symbol-listp uncalled-fns)))
                state)
@@ -274,17 +382,20 @@
    (xdoc::p
     "We thread the lists through."))
   (b* (((when (endp targets)) (acl2::value (list previous-structs
+                                                 previous-objs
                                                  previous-fns
                                                  uncalled-fns)))
-       ((er (list previous-structs previous-fns uncalled-fns))
+       ((er (list previous-structs previous-objs previous-fns uncalled-fns))
         (atc-process-target (car targets)
                             previous-structs
+                            previous-objs
                             previous-fns
                             uncalled-fns
                             ctx
                             state)))
     (atc-process-target-list (cdr targets)
                              previous-structs
+                             previous-objs
                              previous-fns
                              uncalled-fns
                              ctx
@@ -297,19 +408,25 @@
         :name true-listp-of-atc-process-target-list.val))
 
   (defret true-listp-of-atc-process-target-list.new-previous-structs
-    (b* (((list new-previous-structs & &) val))
+    (b* (((list new-previous-structs & & &) val))
       (true-listp new-previous-structs))
     :hyp (true-listp previous-structs)
     :rule-classes :type-prescription)
 
+  (defret true-listp-of-atc-process-target-list.new-previous-objs
+    (b* (((list & new-previous-objs & & &) val))
+      (true-listp new-previous-objs))
+    :hyp (true-listp previous-objs)
+    :rule-classes :type-prescription)
+
   (defret true-listp-of-atc-process-target-list.new-previous-fns
-    (b* (((list & new-previous-fns &) val))
+    (b* (((list & & new-previous-fns &) val))
       (true-listp new-previous-fns))
     :hyp (true-listp previous-fns)
     :rule-classes :type-prescription)
 
   (defret true-listp-of-atc-process-target-list.new-uncalled-fns
-    (b* (((list & & new-uncalled-fns) val))
+    (b* (((list & & & new-uncalled-fns) val))
       (true-listp new-uncalled-fns))
     :hyp (true-listp uncalled-fns)
     :rule-classes :type-prescription))
@@ -325,8 +442,9 @@
   (xdoc::topstring
    (xdoc::p
     "We initialize the lists of
-     previous @(tsee defstruct) names,
-     previous functions,
+     previous @(tsee defstruct) targets,
+     previous @(tsee defobject) targets,
+     previous function targets,
      and uncalled recursive functions to be empty,
      and we ensure that the latter list is empty
      after processing all the targets.")
@@ -335,9 +453,8 @@
   (b* (((unless (consp targets))
         (er-soft+ ctx t nil
                   "At least one target must be supplied."))
-       ((mv erp (list & previous-fns uncalled-fns) state)
-        (atc-process-target-list targets nil nil nil ctx state))
-       ((when erp) (mv erp nil state))
+       ((er (list & & previous-fns uncalled-fns) :iferr nil)
+        (atc-process-target-list targets nil nil nil nil ctx state))
        ((unless (endp uncalled-fns))
         (er-soft+ ctx t nil
                   "The recursive target functions ~&0 ~

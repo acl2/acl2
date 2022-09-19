@@ -501,6 +501,13 @@ the original namespace.</li>
    :hints(("Goal" :in-theory (enable acl2::hons-remove-assoc)))))
 
 (local
+ (defthm svar-key-alist-p-of-append
+   (implies (and (svar-key-alist-p x)
+                 (svar-key-alist-p y))
+            (svar-key-alist-p (append x y)))
+   :hints(("Goal" :in-theory (enable append)))))
+
+(local
  (defthm svar-key-alist-p-of-fast-alist-clean
    (implies (svar-key-alist-p x)
             (svar-key-alist-p (fast-alist-clean x)))
@@ -517,7 +524,8 @@ the original namespace.</li>
                 (svex-alist-keys x))
          :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-compose*)))))
 
-(define svex-assigns-compose-phase4 ((x svex-alist-p))
+(define svex-assigns-compose-phase4 ((x svex-alist-p)
+                                     (scc-selfcompose-limit maybe-natp))
   :returns (mv err (new-x svex-alist-p))
   (b* ((final-masks (fast-alist-clean (svexlist-mask-alist (svex-alist-vals x))))
        ;; (- (with-fast-alist x
@@ -542,6 +550,7 @@ the original namespace.</li>
                 final-masks 0 nil nil nil
                 (make-svex-scc-consts :final-masks final-masks
                                       :updates x
+                                      :compose-iter-limit scc-selfcompose-limit
                                       :loop-vars loop-var-alist)))))))
        ;; (- (acl2::sneaky-save 'looped-updates looped-updates))
        (- (fast-alist-free loop-var-alist))
@@ -640,7 +649,8 @@ the original namespace.</li>
 
 
 (define svex-assigns-compose1 ((x svex-alist-p)
-                              &key (rewrite 't))
+                               &key (rewrite 't)
+                               ((scc-selfcompose-limit maybe-natp) 'nil))
   :parents (svex-composition)
   :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
   :returns (mv err (xx svex-alist-p))
@@ -651,7 +661,7 @@ the original namespace.</li>
        ((when err) (mv err nil))
        ((unless splittab)
         (mv nil phase2))
-       ((mv err phase4) (svex-assigns-compose-phase4 phase3))
+       ((mv err phase4) (svex-assigns-compose-phase4 phase3 scc-selfcompose-limit))
        ((when err) (mv err nil)))
     (mv nil (svex-assigns-compose-phase5 phase2 phase4 splittab)))
   ///
@@ -681,11 +691,12 @@ the original namespace.</li>
          :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent)))))
 
 (define svex-assigns-compose ((x svex-alist-p)
-                              &key (rewrite 't))
+                              &key (rewrite 't)
+                               ((scc-selfcompose-limit maybe-natp) 'nil))
   :parents (svex-composition)
   :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
   :returns (xx svex-alist-p)
-  (b* (((mv err ans) (svex-assigns-compose1 x :rewrite rewrite))
+  (b* (((mv err ans) (svex-assigns-compose1 x :rewrite rewrite :scc-selfcompose-limit scc-selfcompose-limit))
        ;; hack to get a logically reasonable result when error
        (ans (if err
                 (prog2$ (raise "~@0" err)

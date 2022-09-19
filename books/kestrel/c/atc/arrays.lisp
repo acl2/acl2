@@ -13,7 +13,10 @@
 
 (include-book "integer-operations")
 (include-book "types")
-(include-book "values")
+
+(include-book "../language/array-operations")
+
+(include-book "symbolic-execution-rules/integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-arrays ((type typep))
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate the core model of arrays of an integer type."
   :long
@@ -386,8 +389,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-arrays-indices ((etype typep) (itype typep))
-  :guard (and (type-integerp etype)
-              (type-integerp itype))
+  :guard (and (type-nonchar-integerp etype)
+              (type-nonchar-integerp itype))
   :returns (event pseudo-event-formp)
   :short "Event to generate the part of the model of arrays of an integer type
           that involves indices of an integer type."
@@ -410,7 +413,7 @@
        (<etype>-array-index-okp (pack <etype> '-array-index-okp))
        (<etype>-array-read (pack <etype>-array '-read))
        (<etype>-array-write (pack <etype>-array '-write))
-       (<itype>-integer-value (pack <itype> '-integer-value))
+       (<itype>->get (pack <itype> '->get))
        (<etype>-array-<itype>-index-okp (pack
                                          <etype> '-array- <itype> '-index-okp))
        (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
@@ -439,7 +442,7 @@
                            " is valid for an array of type "
                            etype-string
                            ".")
-         (,<etype>-array-index-okp array (,<itype>-integer-value index))
+         (,<etype>-array-index-okp array (,<itype>->get index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -453,7 +456,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-read array (,<itype>-integer-value index))
+         (,<etype>-array-read array (,<itype>->get index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix))
@@ -470,7 +473,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-write array (,<itype>-integer-value index) element)
+         (,<etype>-array-write array (,<itype>->get index) element)
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix)
@@ -495,8 +498,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-arrays-loop-inner ((etype typep) (itypes type-listp))
-  :guard (and (type-integerp etype)
-              (type-integer-listp itypes))
+  :guard (and (type-nonchar-integerp etype)
+              (type-nonchar-integer-listp itypes))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the array operations that involve indices,
           for a given array element type."
@@ -512,8 +515,8 @@
 
 (define atc-def-integer-arrays-loop-outer ((etypes type-listp)
                                            (itypes type-listp))
-  :guard (and (type-integer-listp etypes)
-              (type-integer-listp itypes))
+  :guard (and (type-nonchar-integer-listp etypes)
+              (type-nonchar-integer-listp itypes))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the model of arrays
           for the given array element types."
@@ -540,33 +543,3 @@
                    (type-sllong)
                    (type-ullong))))
    `(progn ,@(atc-def-integer-arrays-loop-outer types types))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection array-tau-rules
-  :short "Some tau rules about arrays."
-
-  (defrule not-errorp-when-arrayp
-    (implies (or (schar-arrayp x)
-                 (uchar-arrayp x)
-                 (sshort-arrayp x)
-                 (ushort-arrayp x)
-                 (sint-arrayp x)
-                 (uint-arrayp x)
-                 (slong-arrayp x)
-                 (ulong-arrayp x)
-                 (sllong-arrayp x)
-                 (ullong-arrayp x))
-             (not (errorp x)))
-    :rule-classes :tau-system
-    :enable (schar-arrayp
-             uchar-arrayp
-             sshort-arrayp
-             ushort-arrayp
-             sint-arrayp
-             uint-arrayp
-             slong-arrayp
-             ulong-arrayp
-             sllong-arrayp
-             ullong-arrayp
-             errorp)))

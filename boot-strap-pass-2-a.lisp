@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -187,6 +187,16 @@
 (verify-termination-boot-strap print-object$-fn) ; and guards
 (verify-termination-boot-strap print-object$) ; and guards
 (verify-termination-boot-strap print-object$-preserving-case) ; and guards
+
+(verify-termination-boot-strap set-fmt-hard-right-margin) ; and guards
+(verify-termination-boot-strap set-fmt-soft-right-margin) ; and guards
+
+(verify-termination-boot-strap bounded-integer-listp) ; and guards
+
+(verify-termination-boot-strap project-dir-alist) ; and guards
+(verify-termination-boot-strap project-dir-lookup) ; and guards
+(verify-termination-boot-strap project-dir) ; and guards
+(verify-termination-boot-strap system-books-dir) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -1309,6 +1319,20 @@
   (declare (xargs :guard t))
   (ec-call (rewrite-rule-term-exec x)))
 
+(defun linear-lemma-term-exec (x)
+  (declare (xargs :guard (and (weak-linear-lemma-p x)
+                              (true-listp (access linear-lemma x :hyps)))))
+  `(implies ,(conjoin (access linear-lemma x :hyps))
+            ,(access linear-lemma x :concl)))
+
+(defun linear-lemma-term (x)
+
+; This function turns a linear-lemma record into a term.  Consider using
+; linear-lemma-term-exec instead when its guard doesn't cause problems.
+
+  (declare (xargs :guard t))
+  (ec-call (linear-lemma-term-exec x)))
+
 (defmacro meta-extract-global-fact (obj state)
 ; See meta-extract-global-fact+.
    `(meta-extract-global-fact+ ,obj ,state ,state))
@@ -1365,6 +1389,17 @@
           (if (< (nfix n) (len lemmas))
               (rewrite-rule-term rule)
             *t*))) ; Fn doesn't exist or n is too big.
+       ((':linear-lemma fn n)
+        (let* ((lemmas (getpropc fn 'linear-lemmas nil (w st)))
+               (rule (nth n lemmas)))
+
+; The use of linear-lemma-term below relies on the fact that the 'LINEAR-LEMMAS
+; property of a symbol in the ACL2 world is a list of linear-lemma records that
+; reflect known facts.
+
+          (if (< (nfix n) (len lemmas))
+              (linear-lemma-term rule)
+            *t*)))
        ((':fncall fn arglist)
         (non-exec ; avoid guard check
          (fncall-term fn arglist st)))
@@ -1372,3 +1407,62 @@
     (t *t*))))
 
 (add-macro-alias meta-extract-global-fact meta-extract-global-fact+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; {read/write}-user-stobj-alist
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; It would be more natural to define these in axioms.lisp, but the defun-nx
+; calls expand to include calls of push-inhibit-output-lst-stack, which isn't
+; defined until basis-b.lisp.
+
+(defun-nx read-user-stobj-alist (st state)
+
+; Warning: Keep this in sync with the definition of read-user-stobj-alist in
+; (defxdoc with-global-stobj ...) in community book
+; books/system/doc/acl2-doc.lisp.
+
+  (declare (xargs :guard (symbolp st)
+                  :stobjs state))
+  (cdr (assoc-eq st (user-stobj-alist1 state))))
+
+#-acl2-loop-only
+(defun read-user-stobj-alist-raw (st state)
+  (cond ((live-state-p state)
+         (cdr (assoc-eq st *user-stobj-alist*)))
+        (t ; should be impossible coming from ACL2 loop evaluation
+         (error "Illegal call of read-user-stobj-alist: State argument is not ~
+                 the `live' ACL2 state."))))
+
+(defun-nx write-user-stobj-alist (st val state)
+
+; Warning: Keep this in sync with the definition of write-user-stobj-alist in
+; (defxdoc with-global-stobj ...) in community book
+; books/system/doc/acl2-doc.lisp.
+
+; If you give this raw Lisp code, consider removing it from the list in
+; check-invariant-risk.
+
+  (declare (xargs :guard (symbolp st)
+                  :stobjs state))
+  (update-user-stobj-alist1
+   (put-assoc-eq st val (user-stobj-alist1 state))
+   state))
+
+#-acl2-loop-only
+(defun write-user-stobj-alist-raw (st val state)
+  (cond
+   (*wormholep*
+    (wormhole-er 'write-user-stobj-alist (list st val 'state)))
+   ((live-state-p state)
+    (loop for pair of-type cons in *user-stobj-alist*
+          when (eq (car pair) st)
+          do (progn (or (eq (cdr pair) val)
+                        (setf (cdr pair) val))
+                    (return state))
+          finally (error "Unknown stobj, ~s" st)))
+   (t
+    (error "Illegal call of write-user-stobj-alist: State argument is not the ~
+           `live' ACL2 state."))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

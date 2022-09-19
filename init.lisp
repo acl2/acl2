@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -40,10 +40,6 @@
 ;(setq ccl:*trace-print-length* 10)
 ;(setq ccl::*backtrace-print-length* 10)
 ;(setq ccl::*backtrace-print-level* 10)
-
-; The following should be unnecessary, but we leave it for now in case some
-; proprietary books depend on it.
-(push :hons *features*)
 
 (unless (find-package "ACL2")
 

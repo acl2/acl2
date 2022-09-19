@@ -19,7 +19,8 @@
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
-(include-book "std/io/read-file-bytes" :dir :system)
+(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system) ;for logext, todo: reduce
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "kestrel/typed-lists-light/bytes-to-printable-string" :dir :system)
@@ -430,7 +431,7 @@
     (name-to-string name-bytes)))
 
 ;; TODO: Add the special handling for $ in section names in object files.
-(defun parse-section-header (file-type bytes string-table-bytes)
+(defun parse-pe-section-header (file-type bytes string-table-bytes)
   ;;(declare (xargs :guard (member-eq file-type '(:image :object))))
   (b* ((header nil) ;to accumulate results
        ((mv name-bytes bytes) (parse-n-bytes 8 bytes))
@@ -465,12 +466,12 @@
        (header (acons :characteristics characteristics header)))
       (mv (reverse header) bytes)))
 
-(defun parse-section-headers (number-of-sections file-type acc bytes string-table-bytes)
+(defun parse-pe-section-headers (number-of-sections file-type acc bytes string-table-bytes)
   ;(declare (xargs :guard (member-eq file-type '(:image :object))))
   (if (zp number-of-sections)
       (mv (reverse acc) bytes)
-    (b* (((mv section-header bytes) (parse-section-header file-type bytes string-table-bytes)))
-        (parse-section-headers (+ -1 number-of-sections) file-type (cons section-header acc) bytes string-table-bytes))))
+    (b* (((mv section-header bytes) (parse-pe-section-header file-type bytes string-table-bytes)))
+        (parse-pe-section-headers (+ -1 number-of-sections) file-type (cons section-header acc) bytes string-table-bytes))))
 
 (defun parse-section (section-header all-bytes len-all-bytes acc)
   (let* ((name (lookup-eq-safe :name section-header))
@@ -512,7 +513,7 @@
     val))
 
 ;; Returns (mv entry bytes)
-(defund parse-symbol-table-entry (bytes string-table-bytes)
+(defund parse-pe-symbol-table-entry (bytes string-table-bytes)
   (b* ((entry nil) ;empty alist
        ((mv name-bytes bytes) (parse-n-bytes 8 bytes))
        (name (interpret-symbol-name name-bytes string-table-bytes))
@@ -537,22 +538,22 @@
        )
     (mv entry bytes)))
 
-(defthm len-of-mv-nth-1-of-parse-symbol-table-entry
+(defthm len-of-mv-nth-1-of-parse-pe-symbol-table-entry
   (implies (consp bytes)
-           (< (len (mv-nth 1 (parse-symbol-table-entry bytes string-table-bytes)))
+           (< (len (mv-nth 1 (parse-pe-symbol-table-entry bytes string-table-bytes)))
               (len bytes)))
-  :hints (("Goal" :in-theory (e/d (parse-symbol-table-entry) (len)))))
+  :hints (("Goal" :in-theory (e/d (parse-pe-symbol-table-entry) (len)))))
 
 ;the len of bytes should be a multiple of 18
 ;; Returns the list of entries
-(defun parse-symbol-table (bytes string-table-bytes)
+(defun parse-pe-symbol-table (bytes string-table-bytes)
   (declare (xargs :measure (len bytes)))
   (if (endp bytes)
       nil
     (mv-let (entry bytes)
-      (parse-symbol-table-entry bytes string-table-bytes) ;consumes 1 or more symbols
+      (parse-pe-symbol-table-entry bytes string-table-bytes) ;consumes 1 or more symbols
       (cons entry
-            (parse-symbol-table bytes string-table-bytes)))))
+            (parse-pe-symbol-table bytes string-table-bytes)))))
 
 (defun map-code-char-tail (bytes acc)
   (if (endp bytes)
@@ -615,7 +616,7 @@
                        :none))
        (pe (acons :string-table string-table pe))
        (symbol-table-bytes (take symbol-table-size (nthcdr pointer-to-symbol-table all-bytes)))
-       (symbol-table (if symbol-table-existsp (parse-symbol-table symbol-table-bytes string-table-bytes) :none))
+       (symbol-table (if symbol-table-existsp (parse-pe-symbol-table symbol-table-bytes string-table-bytes) :none))
        (pe (acons :symbol-table symbol-table pe))
        ;; Parse the optional-header:
        ((mv optional-header-standard-fields bytes) (parse-optional-header-standard-fields bytes))
@@ -630,7 +631,7 @@
        (number-of-sections (lookup-eq-safe :number-of-sections coff-file-header))
        (- (cw "~x0 section(s).~%" number-of-sections))
        ;; The final bytes are essentially ignored here:
-       ((mv section-headers bytes) (parse-section-headers number-of-sections :image nil bytes string-table-bytes))
+       ((mv section-headers bytes) (parse-pe-section-headers number-of-sections :image nil bytes string-table-bytes))
        (- (cw "~x0 bytes after section headers.~%" (len bytes)))
        ;; (pe (acons :section-headers section-headers pe)) ;; the header is now included in the parsed data for its section
        ;; Here we stop processing the bytes in order, instead looking up each section's start in all-bytes:
@@ -640,27 +641,25 @@
        ) ;todo: Can we somehow check that all bytes are used?
     (reverse pe)))
 
-;; Parse a file that is known to be a PE executable.  Returns (mv
-;; contents state) where contents in an alist representing the
-;; contents of the PE executable.
-(defun parse-pe-file (filename state)
-  (declare (xargs :stobjs state
-                  :verify-guards nil
-                  :guard (stringp filename)))
-  (b* (((mv existsp state)
-        (file-existsp filename state))
-       ((when (not existsp))
-        (progn$ (cw "ERROR in parse-for-pe-file: File does not exist: ~x0." filename)
-                (exit 1) ;return non-zero exit status
-                (mv t state)))
-       ((mv bytes state)
-        (read-file-bytes filename state))
-       ((when (not (consp bytes))) ;I've seen this be a string error message
-        (prog2$ (er hard 'parse-pe-file "Failed to read any bytes from file: ~x0.  Result: ~x1" filename bytes)
-                (mv t state)))
-       ;; Parse the bytes read:
-       (parsed-pe-file (parse-pe-file-bytes bytes)))
-    (mv parsed-pe-file state)))
+;; ;; Parse a file that is known to be a PE executable.  Returns (mv
+;; ;; erp contents state) where contents in an alist representing the
+;; ;; contents of the PE executable.
+;; (defun parse-pe-file (filename state)
+;;   (declare (xargs :stobjs state
+;;                   :verify-guards nil
+;;                   :guard (stringp filename)))
+;;   (b* (((mv existsp state) (file-existsp filename state))
+;;        ((when (not existsp))
+;;         (progn$ (cw "ERROR in parse-for-pe-file: File does not exist: ~x0." filename)
+;;                 (exit 1) ;return non-zero exit status ; todo: do we want this (not that below we don't exist)
+;;                 (mv :file-does-not-exist nil state)))
+;;        ((mv erp bytes state) (read-file-into-byte-list filename state))
+;;        ((when erp)
+;;         (er hard 'parse-pe-file "Failed to read any bytes from file: ~x0." filename)
+;;         (mv erp nil state))
+;;        ;; Parse the bytes read:
+;;        (parsed-pe-file (parse-pe-file-bytes bytes)))
+;;     (mv nil parsed-pe-file state)))
 
 ;dup
 (defund my-all-equal (x lst)

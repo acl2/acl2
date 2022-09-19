@@ -1,7 +1,7 @@
 ; Supporting tools for x86 lifters
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,12 +13,13 @@
 
 (include-book "kestrel/axe/util2" :dir :system) ;for make-cons-nest
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
 
 (mutual-recursion
  (defun normal-output-indicatorp (x)
    (declare (xargs :guard t))
-   (or (and (true-listp x) ;; (:register <N>)
-            (eq (first x) :register)
+   (or (and (true-listp x) ;; (:register <N>) or (:register-bool <N>)
+            (member-eq (first x) '(:register :register-bool))
             (eql 2 (len x))
             (natp (second x)) ;todo: what is the max allowed?
             )
@@ -50,12 +51,16 @@
             (eq :register (first output-indicator)))
        `(xr ':rgf ',(second output-indicator) ,term-to-simulate)
      (if (and (consp output-indicator)
-              (eq :mem32 (first output-indicator)))
-         `(x::read '4 ,(second output-indicator) ,term-to-simulate)
+              (eq :register-bool (first output-indicator)))
+         ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
+         `(acl2::bvchop '8 (xr ':rgf ',(second output-indicator) ,term-to-simulate))
        (if (and (consp output-indicator)
-                (eq :tuple (first output-indicator)))
-           (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term-to-simulate))
-         (er hard 'wrap-in-output-extractor "Invalid output indicator: ~x0" output-indicator)))))
+                (eq :mem32 (first output-indicator)))
+           `(x::read '4 ,(second output-indicator) ,term-to-simulate)
+         (if (and (consp output-indicator)
+                  (eq :tuple (first output-indicator)))
+             (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term-to-simulate))
+           (er hard 'wrap-in-output-extractor "Invalid output indicator: ~x0" output-indicator))))))
 
  (defun wrap-in-normal-output-extractors (output-indicators term-to-simulate)
    (declare (xargs :guard (normal-output-indicatorsp output-indicators)))

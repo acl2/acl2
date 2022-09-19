@@ -152,6 +152,15 @@
 (def-rp-rule m2-is-bitp
   (bitp (m2 x)))
 
+(def-rp-rule m2-is-integerp
+  (integerp (m2 x)))
+
+(def-rp-rule m2-is-natp
+  (natp (m2 x)))
+
+(def-rp-rule f2-is-integerp
+  (integerp (f2 x)))
+
 ;; (def-rp-rule binary-xor-1-of-s
 ;;   (equal (binary-xor 1 (s hash-code pp c/d))
 ;;          (s-spec (list 1 (s hash-code pp c/d))))
@@ -290,10 +299,12 @@
                            rp::--)
                           (+-IS-SUM)))))
 
-(def-rp-rule equal-sides-to-s
+(def-rp-rule :disabled-for-acl2 t
+  equal-sides-to-s
   (implies (and (bitp side1)
                 (bitp side2)
-                (syntaxp (and (or (not (binary-fnc-p (ex-from-rp-loose side2)))
+                (syntaxp (and :rewriting-main-term
+                              (or (not (binary-fnc-p (ex-from-rp-loose side2)))
                                   (and (not (equal side1 1))
                                        (not (equal side1 ''1)))) ;; if a
                               ;; binary-fnc equalized-to 1, don't get in here. 
@@ -303,12 +314,12 @@
                               
                               (or (and (not (equal side1 0))
                                        (not (equal side1 ''0)))
-                                  (and (unpack-booth-later-enabled)
-                                       (include-fnc side2 'binary-or)))
+                                  #|(and (unpack-booth-later-enabled)
+                                       (include-fnc side2 'binary-or))|#)
                               (or (and (not (equal side2 0))
                                        (not (equal side2 ''0)))
-                                  (and (unpack-booth-later-enabled)
-                                       (include-fnc side1 'binary-or)))
+                                  #|(and (unpack-booth-later-enabled)
+                                       (include-fnc side1 'binary-or))|#)
                               
                               (or ;;(pp-has-bitp-rp side1)
                                (single-s-p (ex-from-rp-loose side1))
@@ -331,9 +342,10 @@
            (equal (equal side1 side2)
                   (equal (unpack-booth
                           (s-spec (list 2
-                                       (unpack-booth side1)
-                                       (unpack-booth side2))))
-                         0)))
+                                        (unpack-booth side1)
+                                        (unpack-booth side2))))
+                         0)
+                  #||#))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 

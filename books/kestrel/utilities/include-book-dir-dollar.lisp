@@ -1,6 +1,6 @@
 ; A wrapper for include-book-dir.
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -46,10 +46,13 @@
       (prog2$ (er hard? 'include-book-dir$ "include-book-dir-guard is violated for ~x0." dir)
               "")
     (let ((res (include-book-dir dir state)))
-      (if (not (stringp res))
-          (prog2$ (er hard? 'include-book-dir$ "Include-book-dir returns the non-string ~x0." res)
+      (if (not res)
+          (prog2$ (er hard? 'include-book-dir$ "Unknown include-book-dir: ~x0." dir)
                   "")
-        res))))
+        (if (not (stringp res))
+            (prog2$ (er hard? 'include-book-dir$ "Include-book-dir$ was given ~x0 and returned the non-string ~x1." dir res)
+                    "")
+          res)))))
 
 (defthm stringp-of-include-book-dir$
   (stringp (include-book-dir$ dir state))

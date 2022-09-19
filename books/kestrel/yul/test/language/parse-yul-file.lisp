@@ -36,7 +36,7 @@
         (mv t nil state))
        ;; Parse the bytes read:
        (yul-or-err (parse-yul-bytes bytes)))
-    (if (resulterrp yul-or-err)
+    (if (reserrp yul-or-err)
         (mv `(:parse-error ,filename) yul-or-err state)
       (mv nil yul-or-err state))))
 
@@ -48,18 +48,18 @@
   (b* (((mv existsp state)
         (acl2::file-existsp filename state))
        ((when (not existsp))
-        (mv (err `(:file-does-not-exist ,filename)) state))
+        (mv (reserrf `(:file-does-not-exist ,filename)) state))
        ((mv erp bytes state)
         (acl2::read-file-into-byte-list filename state))
        ((when (or erp (not (consp bytes))))
-        (mv (err `(:failed-to-read-from-file ,filename)) state))
+        (mv (reserrf `(:failed-to-read-from-file ,filename)) state))
        ((unless (acl2::nat-listp bytes))
         ;; can't happen, but helps guard checks
-        (mv (err `(:bytes-in-file-are-not-nats ,filename)) state))
+        (mv (reserrf `(:bytes-in-file-are-not-nats ,filename)) state))
        ;; Parse the bytes read:
        (yul-or-err (parse-yul-bytes bytes)))
-    (if (resulterrp yul-or-err)
-        (mv (err `(:parse-error ,filename yul-or-err)) state)
+    (if (reserrp yul-or-err)
+        (mv (reserrf `(:parse-error ,filename yul-or-err)) state)
       (mv yul-or-err state))))
 
 ;; (parse-yul-fileX "test/yulOptimizerTests/disambiguator/for_statement.yul" state)

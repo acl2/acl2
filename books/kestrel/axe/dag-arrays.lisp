@@ -18,6 +18,8 @@
 (include-book "dags") ;for pseudo-dagp
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/make-into-array" :dir :system)
+(include-book "kestrel/acl2-arrays/array-to-alist" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "rational-lists")
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
@@ -566,15 +568,12 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-
-
+;; todo: Switch to use consp as the normal form?
 (defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
                 (natp n))
            (iff (consp (dargs (aref1 dag-array-name dag-array n)))
                 (dargs (aref1 dag-array-name dag-array n)))))
-
-
 
 (defthm bounded-darg-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -2249,8 +2248,7 @@
                               (<= slack-amount 2147483646))
                   :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp (dag-lst dag))
                                  :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap
-                                                  array-len-with-slack
-                                                  top-nodenum-of-dag-becomes-top-nodenum)
+                                                  array-len-with-slack)
                                                  (bounded-natp-alistp-when-pseudo-dagp))))
                   :split-types t)
            (type (integer 0 2147483646) slack-amount)
@@ -2298,8 +2296,7 @@
                               (natp slack-amount))
                   :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp)
                                  :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap
-                                                  array-len-with-slack
-                                                  top-nodenum-of-dag-becomes-top-nodenum)
+                                                  array-len-with-slack)
                                                  (bounded-natp-alistp-when-pseudo-dagp))))
                   :split-types t)
            (type symbol dag-array-name))
@@ -2315,8 +2312,7 @@
                 (not (mv-nth 0 (make-dag-into-array2 dag-array-name dag slack-amount))))
            (equal (alen1 dag-array-name (mv-nth 1 (make-dag-into-array2 dag-array-name dag slack-amount)))
                   (array-len-with-slack (len dag) slack-amount)))
-  :hints (("Goal" :in-theory (enable top-nodenum-of-dag-when-pseudo-dagp
-                                     ;;array-len-with-slack
+  :hints (("Goal" :in-theory (enable ;;array-len-with-slack
                                      make-dag-into-array2
                                      car-of-car-when-pseudo-dagp-cheap))))
 
@@ -2328,7 +2324,7 @@
            (pseudo-dag-arrayp dag-array-name
                               (mv-nth 1 (make-dag-into-array2 dag-array-name dag slack-amount))
                               (len dag)))
-  :hints (("Goal" :in-theory (enable make-dag-into-array2 array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp))))
+  :hints (("Goal" :in-theory (enable make-dag-into-array2 array-len-with-slack))))
 
 (defthm pseudo-dag-arrayp-of-make-dag-into-array2-gen
   (implies (and (<= n (len dag))

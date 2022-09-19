@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/file-io-light/read-object-from-file" :dir :system)
-(include-book "kestrel/strings-light/string-ends-inp" :dir :system)
+(include-book "kestrel/strings-light/string-ends-withp" :dir :system)
 
 ;move?
 (defund keep-strings-that-end-in (strs str acc)
@@ -21,7 +21,7 @@
   (if (endp strs)
       (reverse acc)
     (let ((first-str (first strs)))
-      (if (string-ends-inp first-str ".cert")
+      (if (string-ends-withp first-str ".cert")
           (keep-strings-that-end-in (rest strs) str (cons first-str acc))
         (keep-strings-that-end-in (rest strs) str acc)))))
 

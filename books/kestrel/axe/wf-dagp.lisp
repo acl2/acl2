@@ -96,10 +96,10 @@
                     (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
                     (LEN DAG)
                     'DAG-PARENT-ARRAY
-                    (MAKE-DAG-PARENT-ARRAY-WITH-NAME (LEN DAG)
-                                                     'DAG-ARRAY
-                                                     (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
-                                                     'DAG-PARENT-ARRAY)
+                    (MAKE-MINIMAL-DAG-PARENT-ARRAY-WITH-NAME (LEN DAG)
+                                                             'DAG-ARRAY
+                                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                                             'DAG-PARENT-ARRAY)
                     (MAKE-DAG-CONSTANT-ALIST 'DAG-ARRAY
                                              (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
                                              (LEN DAG))

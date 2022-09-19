@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -399,3 +399,36 @@
                   (bvplus size (bvchop size k) x)))
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
+
+;rename
+(defthmd bvplus-recollapse
+  (implies (and (integerp x) ;these are new, since bvplus ifixes its args
+                (integerp y))
+           (equal (bvchop size (+ x y))
+                  (bvplus size x y)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(theory-invariant (incompatible (:definition bvplus) (:rewrite bvplus-recollapse)))
+
+;here we drop the bvchop (and thus avoid conflicts with the anti-bvplus rules)
+(defthmd bvplus-opener
+  (implies (and (unsigned-byte-p size (+ x y))
+                (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvplus size x y)
+                  (+ x y)))
+  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
+                                            )))))
+
+;todo: instead, introduce bvminus
+;todo: rename
+(defthm bvplus-minus-cancel
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z)
+                (natp size)
+                )
+           (equal (bvplus size y (bvplus size (- y) x))
+                  (bvchop size x)))
+    :hints (("Goal" :in-theory (enable bvplus))))

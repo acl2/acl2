@@ -99,24 +99,39 @@ Goal
        (DECLARE
             (XARGS :GUARD (AND (ALISTP ALIST)
                                (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-                   :SPLIT-TYPES T))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
        (LET
         ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
          (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+        (DECLARE (IGNORABLE SUM I))
         (IF
          (ZP I)
-         (LIST :RETURN
-               SUM (LIST (CONS 'SUM SUM) (CONS 'I I)))
-         (LET*
-          ((SQ (* I I)) (SUM (+ SQ SUM)))
-          (PROG2$
-             (CHECK-DCL-GUARDIAN (INTEGERP SUM)
-                                 '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
-             (LIST NIL NIL
-                   (LET ((I (+ -1 I)))
-                        (LIST (CONS 'SUM SUM)
-                              (CONS 'I I)))))))))
+         (CONS ':RETURN
+               (CONS SUM
+                     (CONS (CONS (CONS 'SUM SUM)
+                                 (CONS (CONS 'I I) 'NIL))
+                           'NIL)))
+         ((LAMBDA
+           (SQ I SUM)
+           ((LAMBDA
+              (SUM I)
+              (RETURN-LAST
+                   'PROGN
+                   (CHECK-DCL-GUARDIAN
+                        (INTEGERP SUM)
+                        '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
+                   (CONS 'NIL
+                         (CONS 'NIL
+                               (CONS ((LAMBDA (I SUM)
+                                              (CONS (CONS 'SUM SUM)
+                                                    (CONS (CONS 'I I) 'NIL)))
+                                      (BINARY-+ '-1 I)
+                                      SUM)
+                                     'NIL)))))
+            (BINARY-+ SQ SUM)
+            I))
+          (BINARY-* I I)
+          I SUM))))
       (LIST ALIST)))))
   (LET ((EXIT-FLG (CAR TRIPLE))
         (NEW-ALIST (CADDR TRIPLE)))
@@ -135,24 +150,39 @@ Goal
        (DECLARE
             (XARGS :GUARD (AND (ALISTP ALIST)
                                (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-                   :SPLIT-TYPES T))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
        (LET
         ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
          (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+        (DECLARE (IGNORABLE SUM I))
         (IF
          (ZP I)
-         (LIST :RETURN
-               SUM (LIST (CONS 'SUM SUM) (CONS 'I I)))
-         (LET*
-          ((SQ (* I I)) (SUM (+ SQ SUM)))
-          (PROG2$
-             (CHECK-DCL-GUARDIAN (INTEGERP SUM)
-                                 '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
-             (LIST NIL NIL
-                   (LET ((I (+ -1 I)))
-                        (LIST (CONS 'SUM SUM)
-                              (CONS 'I I)))))))))
+         (CONS ':RETURN
+               (CONS SUM
+                     (CONS (CONS (CONS 'SUM SUM)
+                                 (CONS (CONS 'I I) 'NIL))
+                           'NIL)))
+         ((LAMBDA
+           (SQ I SUM)
+           ((LAMBDA
+              (SUM I)
+              (RETURN-LAST
+                   'PROGN
+                   (CHECK-DCL-GUARDIAN
+                        (INTEGERP SUM)
+                        '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
+                   (CONS 'NIL
+                         (CONS 'NIL
+                               (CONS ((LAMBDA (I SUM)
+                                              (CONS (CONS 'SUM SUM)
+                                                    (CONS (CONS 'I I) 'NIL)))
+                                      (BINARY-+ '-1 I)
+                                      SUM)
+                                     'NIL)))))
+            (BINARY-+ SQ SUM)
+            I))
+          (BINARY-* I I)
+          I SUM))))
       (LIST ALIST)))))
   (LET ((EXIT-FLG (CAR TRIPLE))
         (NEW-ALIST (CADDR TRIPLE)))
@@ -172,24 +202,39 @@ Goal
        (DECLARE
             (XARGS :GUARD (AND (ALISTP ALIST)
                                (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-                   :SPLIT-TYPES T))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
        (LET
         ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
          (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+        (DECLARE (IGNORABLE SUM I))
         (IF
          (ZP I)
-         (LIST :RETURN
-               SUM (LIST (CONS 'SUM SUM) (CONS 'I I)))
-         (LET*
-          ((SQ (* I I)) (SUM (+ SQ SUM)))
-          (PROG2$
-             (CHECK-DCL-GUARDIAN (INTEGERP SUM)
-                                 '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
-             (LIST NIL NIL
-                   (LET ((I (+ -1 I)))
-                        (LIST (CONS 'SUM SUM)
-                              (CONS 'I I)))))))))
+         (CONS ':RETURN
+               (CONS SUM
+                     (CONS (CONS (CONS 'SUM SUM)
+                                 (CONS (CONS 'I I) 'NIL))
+                           'NIL)))
+         ((LAMBDA
+           (SQ I SUM)
+           ((LAMBDA
+              (SUM I)
+              (RETURN-LAST
+                   'PROGN
+                   (CHECK-DCL-GUARDIAN
+                        (INTEGERP SUM)
+                        '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
+                   (CONS 'NIL
+                         (CONS 'NIL
+                               (CONS ((LAMBDA (I SUM)
+                                              (CONS (CONS 'SUM SUM)
+                                                    (CONS (CONS 'I I) 'NIL)))
+                                      (BINARY-+ '-1 I)
+                                      SUM)
+                                     'NIL)))))
+            (BINARY-+ SQ SUM)
+            I))
+          (BINARY-* I I)
+          I SUM))))
       (LIST ALIST)))))
   (LET
    ((EXIT-FLG (CAR TRIPLE))
@@ -207,10 +252,10 @@ Goal
           (DECLARE
                (XARGS :GUARD (AND (ALISTP ALIST)
                                   (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-                      :SPLIT-TYPES T))
+                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
           (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
                 (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+               (DECLARE (IGNORABLE SUM I))
                (ACL2-COUNT I)))
        (LIST NEW-ALIST)))
      (LEX-FIX
@@ -220,10 +265,10 @@ Goal
           (DECLARE
                (XARGS :GUARD (AND (ALISTP ALIST)
                                   (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-                      :SPLIT-TYPES T))
+                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
           (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
                 (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+               (DECLARE (IGNORABLE SUM I))
                (ACL2-COUNT I)))
        (LIST ALIST)))))))
  (IMPLIES (NATP N)
@@ -298,7 +343,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION SUITABLY-TAMEP-LISTP)
         (:DEFINITION SYNP)
         (:DEFINITION TAMEP)
-        (:DEFINITION TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART ALISTP)
         (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
@@ -319,7 +363,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART SYMBOL-LISTP)
         (:EXECUTABLE-COUNTERPART SYMBOLP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
-        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
@@ -333,6 +376,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:REWRITE EV$-CDR)
         (:REWRITE EV$-CONS)
         (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
         (:REWRITE ZP-OPEN)
         (:TYPE-PRESCRIPTION ASSOC-EQ-SAFE)
         (:TYPE-PRESCRIPTION NONNEGATIVE-PRODUCT))

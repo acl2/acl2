@@ -1746,9 +1746,9 @@
                        ;; We have been told not to use STP:
                        (mv :not-calling-stp state)
                      ;; Calling STP:
-                     (prove-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
-                                                 nil ;no counterexample (for now)
-                                                 state))
+                     (prove-node-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
+                                                      nil ;no counterexample (for now)
+                                                      state))
                    (if (eq *valid* result)
                        (prog2$ (cw "Proved case ~s0 with STP.~%" case-designator)
                                (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
@@ -1907,7 +1907,7 @@
                                   (myquotep dag))
                               (pseudo-term-listp assumptions)
                               (array1p context-array-name context-array)
-                              (contextp-with-bound context (alen1 context-array-name context-array))
+                              (bounded-contextp context (alen1 context-array-name context-array))
                               ;;todo: add more
                               (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)

@@ -69,6 +69,19 @@
                 (consp items))
            (not (< bound (car items)))))
 
+(defthmd <-of-car-when-all-<
+  (implies (and (all-< items x)
+                (consp items))
+           (< (car items) x))
+  :hints (("Goal" :in-theory (enable all-<))))
+
+(defthm <-of-car-when-all-<-cheap
+  (implies (and (all-< items x)
+                (consp items))
+           (< (car items) x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :in-theory (enable all-<))))
+
 (defthm all-<-transitive-free
   (implies (and (all-< items free)
                 (<= free x)

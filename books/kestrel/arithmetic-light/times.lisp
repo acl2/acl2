@@ -122,14 +122,32 @@
            :use ((:instance positive (x (- x2 x1)))
                  (:instance positive (x (- x1 x2)))))))
 
-
-
 (defthm <-of-*-and-*-cancel-arg1-and-arg1
   (implies (and (< 0 y) ;move to conc
                 (rationalp x1)
                 (rationalp x2)
                 (rationalp y))
            (equal (< (* y x1) (* y x2))
+                  (< x1 x2)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+           :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <-of-*-and-*-cancel-arg1-and-arg2
+  (implies (and (< 0 y) ;move to conc
+                (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* y x1) (* x2 y))
+                  (< x1 x2)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+           :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <-of-*-and-*-cancel-arg2-and-arg1
+  (implies (and (< 0 y) ;move to conc
+                (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* x1 y) (* y x2))
                   (< x1 x2)))
   :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
            :in-theory (disable <-of-*-and-*-cancel))))
@@ -402,7 +420,7 @@
   :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1 (x1 1) (x2 y) (y x))
            :in-theory (disable <-of-*-and-*-same-forward-1))))
 
-(defthm <-of-*-and-*
+(defthm <-of-*-and-*-linear
   (implies (and (< x1 x2)  ; strict
                 (<= y1 y2) ; weak
                 (<= 0 x1)
@@ -411,7 +429,31 @@
                 (rationalp x2)
                 (rationalp y1))
            (< (* x1 y1) (* x2 y2)))
-  :rule-classes (:rewrite :linear)
+  :rule-classes :linear
+  :hints (("Goal"
+           :use ((:instance <-OF-*-AND-*-SAME-LINEAR-1
+                            (y y1))
+                 (:instance <-OF-*-AND-*-SAME-LINEAR-1
+                            (x1 y1)
+                            (x2 y2)
+                            (y x2)))
+           :in-theory (disable <-of-*-and-*-cancel
+                               <-OF-*-AND-*-SAME-HELPER
+                               <-OF-*-AND-*-SAME-FORWARD-1
+                               <-OF-*-AND-*-SAME-FORWARD-2))))
+
+(defthm <-of-*-and-*
+  (implies (and (< x1 x2)  ; strict
+                (<= y1 y2) ; weak
+                (<= 0 x1)
+                (<= 0 y1) ; note this
+                ;; todo: try to drop these hyps?:
+                (rationalp x2)
+                (rationalp y1))
+           (equal (< (* x1 y1) (* x2 y2))
+                  (if (= 0 y1)
+                      (< 0 (* x2 y2))
+                    t)))
   :hints (("Goal"
            :use ((:instance <-OF-*-AND-*-SAME-LINEAR-1
                             (y y1))

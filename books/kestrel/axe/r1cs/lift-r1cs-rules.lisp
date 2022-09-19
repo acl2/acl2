@@ -658,14 +658,13 @@
 ;;              (ACL2::CEILING-OF-LG K1))
 
 ;drop?
+;change var name to x?
 (defthm lg-of-*-of-1/2-and-expt
   (implies (natp n)
            (equal (acl2::lg (* 1/2 (expt 2 n)))
                   (+ -1 n)))
-  :hints (("Goal" :use (:instance acl2::lg-of-expt
-                                  (n (+ -1 n)))
-           :in-theory (e/d (acl2::expt-of-+) (;acl2::lg-of-expt-gen
-                                              acl2::lg-of-expt)))))
+  :hints (("Goal" :cases ((equal n 0))
+           :in-theory (enable acl2::expt-of-+))))
 
 (defthm power-of-2p-of-*-of-/
   (implies (and (< k1 k2)
@@ -834,14 +833,14 @@
                                                (acl2::lg (/ k2 k1))
                                                bv1)
                                p)))
-  :hints (("Goal" :use (:instance ACL2::EXPT-OF-LG
+  :hints (("Goal" :use (:instance ACL2::expt-of-lg-when-power-of-2p
                                   (ACL2::X (* (/ K1) K2)))
            :in-theory (e/d (ACL2::BVCAT acl2::logapp ADD mul)
                            (ACL2::UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT
                             PFIELD::MOD-WHEN-FEP
                             ACL2::<-OF-*-SAME-LINEAR-SPECIAL
                             PFIELD::MOD-WHEN-FEP
-                            ACL2::EXPT-OF-LG)))))
+                            acl2::expt-of-lg-when-power-of-2p)))))
 
 (defthm add-of-mul-and-mul-combine-negated-special-case-for-bitp
   (implies (and (syntaxp (and (quotep k1)

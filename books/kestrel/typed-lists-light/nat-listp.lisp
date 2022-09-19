@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nat-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -86,3 +86,18 @@
            (equal (nat-listp (take n l))
                   (<= (nfix n) (len l))))
   :hints (("Goal" :in-theory (enable take nat-listp))))
+
+;disble?
+(defthm natp-of-car-when-nat-listp-type
+  (implies (and (nat-listp x)
+                (consp x))
+           (natp (car x)))
+  :rule-classes :type-prescription)
+
+;; Seems better than the one in STD (except perhaps for the double-rewrite).
+(defthm nat-listp-of-update-nth-better
+  (implies (nat-listp l)
+           (equal (nat-listp (update-nth n val l))
+                  (and (<= (nfix n) (len l)) ;might be adding to the end
+                       (natp val))))
+  :hints (("Goal" :in-theory (enable nat-listp update-nth))))

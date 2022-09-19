@@ -1186,7 +1186,7 @@ ever to be used.
 
 
 ACL2 Warning [Free] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  A :REWRITE
-rule generated from THIS-IS-NOT-A-THEOREM contains the the free variable
+rule generated from THIS-IS-NOT-A-THEOREM contains the free variable
 XXX on the right-hand side of the rule, which is not bound on the left-
 hand side or in any hypothesis.  This can cause new variables to be
 introduced into the proof, which may surprise you.

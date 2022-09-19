@@ -34,6 +34,7 @@
 (include-book "evaluators/top")
 (include-book "event-macros/top")
 (include-book "hdwallet/top")
+;; (include-book "helpers/top") ;; TODO: Uncomment when stable
 (include-book "ethereum/top")
 (include-book "file-io-light/top")
 (include-book "fty/top")
@@ -41,9 +42,11 @@
 (include-book "java/top")
 ;; (include-book "jvm/top")  ;; TODO: Uncomment when stable
 (include-book "json/top")
+(include-book "htclient/top")
 (include-book "lists-light/top")
 (include-book "number-theory/top")
 (include-book "prime-fields/top")
+(include-book "risc-v/top")
 (include-book "simpl-imp/top")
 (include-book "soft/top")
 (include-book "solidity/top")
@@ -53,6 +56,7 @@
 (include-book "syntheto/top")
 (include-book "unicode-light/top")
 (include-book "utilities/top")
+(include-book "world-light/top")
 (include-book "x86/top")
 (include-book "yul/top")
 (include-book "zcash/top")

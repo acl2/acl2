@@ -64,7 +64,7 @@
                       ;; Try to evaluate the ground term:
                       (mv-let (erp res)
                         (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)
-                        (if erp ;; May be :unknown-function
+                        (if erp ;; May be an :unknown-function form
                             (progn$
                              ;; If this message is printed a lot, we could suppress it:
                              ;; (cw "(Note: In instantiate-hyp: Failed to apply ~x0 to constant args.  Consider adding it to the evaluator, adding it to the interpreted-function-alist, or adding a constant-opener rule.)~%" fn)
@@ -132,7 +132,7 @@
           :flag ,instantiate-hyp-no-free-vars-lst-name)
         :hints (("Goal" :in-theory (enable ,instantiate-hyp-no-free-vars-name
                                            ,instantiate-hyp-no-free-vars-lst-name
-                                           assoc-equal-iff))))
+                                           assoc-equal-iff-member-equal-of-strip-cars))))
 
        (,(pack$ 'defthm-flag- instantiate-hyp-no-free-vars-name)
         (defthm ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)

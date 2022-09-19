@@ -21,15 +21,12 @@
 
 (local (in-theory (disable assoc-equal
                            channel-contents
-                           open-input-channels
                            open-input-channel-p
                            open-input-channel-p1
-                           state-p
                            update-nth
                            nth
                            member-equal
-                           open-input-channel-any-p1
-                           )))
+                           open-input-channel-any-p1)))
 
 ;; A stobj with a single field, which is a byte array.
 (defstobj byte-array-stobj

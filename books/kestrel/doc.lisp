@@ -34,6 +34,7 @@
 (include-book "ethereum/top")
 (include-book "file-io-light/doc")
 (include-book "fty/top")
+(include-book "htclient/top")
 (include-book "isar/top")
 (include-book "java/top")
 (include-book "json/top")

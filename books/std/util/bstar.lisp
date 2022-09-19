@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "ACL2")
 (include-book "xdoc/base" :dir :system)
@@ -1113,16 +1114,60 @@ recursive binder, and @('assocs') may be nested inside other bindings.</p>"
 })
 
 <p>The @('er') binder only makes sense as a top-level binding, but its argument
-may be a recursive binding.</p>"
-  :decls ((declare (xargs :guard (destructure-guard er args forms 1))))
+may be a recursive binding.</p>
+
+<p>To return a different value in case of error,
+the different value can be specified via @(':iferr'):</p>
+
+@({
+    (b* (((er x :iferr eval) (error-triple-form)))
+      (result-form))
+})
+
+<p>which is approximately equivalent to</p>
+
+@({
+    (mv-let (erp val state)
+            (error-triple-form)
+       (if erp
+           (mv erp eval state) ; note eval instead of val
+         (result-form)))
+})"
+
+  :decls ((declare
+           (xargs :guard (and (or (and (true-listp args)
+                                       (or (eql (len args) 1)
+                                           (and (eql (len args) 3)
+                                                (eq (cadr args) :iferr))))
+                                  (cw "~%~%**** ERROR ****~%~
+                                       Pattern constructor ER needs ~
+                                       either a true list of 1 argument ~
+                                       or a true list of 3 arguments ~
+                                       whose second argument is :IFERR,
+                                       but was given ~x0~%~%"
+                                      args))
+                              (or (and (consp forms)
+                                       (eq (cdr forms) nil))
+                                  (cw "~%~%**** ERROR ****~%~
+                                       Pattern constructor ER needs ~
+                                       exactly one binding expression, ~
+                                       but was given ~x0~%~%"
+                                      forms))))))
+
   :body
+  ;; We declare patbind-er-fresh-variable-for-val ignorable
+  ;; to ensure that the pattern (er & :iferr ...) works,
+  ;; because in that case patbind-er-fresh-variable-for-val is not used.
   `(mv-let (patbind-er-fresh-variable-for-erp
             patbind-er-fresh-variable-for-val
             state)
-     ,(car forms)
+       ,(car forms)
+     (declare (ignorable patbind-er-fresh-variable-for-val))
      (if patbind-er-fresh-variable-for-erp
          (mv patbind-er-fresh-variable-for-erp
-             patbind-er-fresh-variable-for-val
+             ,(if (eql (len args) 1)
+                  'patbind-er-fresh-variable-for-val
+                (caddr args))
              state)
        (patbind ,(car args)
                 (patbind-er-fresh-variable-for-val)

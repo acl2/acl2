@@ -80,6 +80,164 @@
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
 
+(defxdoc note-8-6-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in (xdoc::h3 ...)
+; (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  (xdoc::h4 "Your Library Title")
+;  (xdoc::p "Details go here.")
+
+; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; You can also use (xdoc::h5 ...) under each h4, e.g. for sub-libraries:
+; There is no need to order the h5's alphabetically,
+; but please precede each h5 by 20 semicolons.
+; If you are stuck, see the entries about other libraries.
+
+  :parents (note-8-6 release-notes-books)
+
+  :short "Release notes for the ACL2 Community Books for ACL2 8.6"
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "The following is a brief summary of
+     changes made to the @(see community-books)
+     between the releases of ACL2 8.5 and 8.6.")
+
+   (xdoc::p
+    "See also @(see note-8-6) for the changes made to ACL2 itself.
+     For additional details,
+     you may also see the raw "
+    (xdoc::ahref "https://github.com/acl2/acl2/commits/master" "commit log")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "New Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "The parsing generation tools have been slightly improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
+
+   (xdoc::p
+    "The @(tsee apt::simplify) transformation no longer breaks when certain @(see
+     default-hints) or @(see override-hints) are present.")
+
+   (xdoc::p
+    "The @(tsee apt::simplify) transformation uses the new @('heavy-linear-p')
+     capability (see @(see note-8-6) to strengthen the use of @(see
+     linear-arithmetic) during rewriting.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
+
+   (xdoc::p
+    "Support has been added for
+     external object definitions (i.e. global variables) of array types.")
+
+   (xdoc::p
+    "Some parts of the formalization have been simplified
+     and moved out of ATC and into the C formalization proper.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
+
+   (xdoc::p
+    "Support has been added for
+     external object definitions (i.e. global variables) of array types.")
+
+   (xdoc::p
+    "The user documentation of @(tsee c::defstruct)
+     has been extended and improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
+
+   (xdoc::p
+    "In the library of "
+    (xdoc::seetopic "fty::defresult" "result types")
+    ", some names have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Added a theorem.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The "
+    (xdoc::seetopic "patbind-er" "@('er') binder")
+    " of @(tsee b*) has been extended with
+     an option @(':iferr') to return an alternative value
+     in the error triple in case of error.
+     See the latest documentation for details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Tools Library")
+
+   (xdoc::p
+    "The tool, @(see with-supporters), has been substantially enhanced.")
+
+   (xdoc::p
+    "The tool, @(see prove$), now treats hard errors as ordinary failures by
+     default, just as for soft errors.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
+
+   (xdoc::p
+    "There is now XDOC support for Greek letters and more mathematical
+     symbols.  See @(see xdoc::entities).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Licensing Changes")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Build System Updates")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Testing")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Miscellaneous")
+
+   ))
+
 (defxdoc note-8-5-books
 
 ; Please add information about your library in the appropriate
@@ -123,6 +281,55 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Algebra")
+
+   (xdoc::p "A new library for abstract algebra has been started
+    (@('[books]/kestrel/algebra/')).  It contains a formalization of
+    groups, including proofs of a few very simple properties in a
+    calculational style.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Big Data Library")
+
+   (xdoc::p "A preliminary new library (@('[books]/kestrel/big-data/')) has
+been started for analyzing the ACL2 Community Books as an object of scientific
+study.  Currently the focus is just on identifying name clashes, so that
+packages, functions, and theorems can be given unambiguous identifiers.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Clause Processors Library")
+
+   (xdoc::p "A new library (@('[books]/kestrel/clause-processors/')) includes
+several @(tsee clause-processor)s (substitute, flatten literals, perform a
+simple subsumption), many of which are verified.  These are intended as
+building blocks for building more complex @('clause-processors').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Evaluators Library")
+
+   (xdoc::p "A new library (@('[books]/kestrel/evaluators/')) collects some
+   simple evaluators for verifying @(tsee clause-processor)s and @(tsee
+   meta-functions).")
+
+   (xdoc::p "A new tool, @('defevaluator+'), improves open @(tsee
+   defevaluator) (better defaults, more and better theorems, support for
+   lifting results to richer evaluators).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Proof Helpers Library")
+
+   (xdoc::p "A new library (@('[books]/kestrel/helpers/')) had been added for
+   help developing books, including very preliminary tools to find hints, prove
+   return type theorems, and improve existing books.")
+
+   (xdoc::p "A new utility be used to process dependency information.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Syntheto")
 
    (xdoc::p
@@ -144,6 +351,26 @@
 
    (xdoc::p
     "Some preliminary parsing generation tools have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "ACL2 Arrays Library (@('[books]/kestrel/acl2-arrays/'))")
+
+   (xdoc::p
+    "Def-typed-acl2-array now generates additional rules.")
+
+   (xdoc::p "Other rules have been added/improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Alists Light Library (@('[books]/kestrel/alists-light/'))")
+
+   (xdoc::p
+    "Rules have been added and improved.")
+
+   (xdoc::p "A book about rassoc-equal has been started.")
+
+   (xdoc::p "Modularity has been improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,6 +416,34 @@
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
 
    (xdoc::p
+    "A new transformation, @('copy-function'), has been added to serve as a
+    model for creating new transformations (it transforms a function without
+    really changing anything except function names).")
+
+   (xdoc::p
+    "A new transformation, @('drop-irrelevant-params'), has been added for
+    dropping unused parameters from functions.  Parameters can become unused
+    due to the application of other transformations.")
+
+   (xdoc::p
+    "A new transformation, @('finite-difference'), has been added for
+    incrementalization (efficiently maintaining some value that depends on other
+    values as those values change).")
+
+   (xdoc::p
+    "A new transformation, @('rename-calls'), has been added to rename called
+    functions (this is still somewhat in-progress)")
+
+   (xdoc::p
+    "A new transformation, @('rename-params'), has been added for
+    renaming parameters of functions.")
+
+   (xdoc::p
+    "A new transformation, @('wrap-output'), has been added for applying a
+    wrapper computation to every if-branch of a function (e.g., to change its
+    return type).")
+
+   (xdoc::p
     "The @(tsee apt::simplify) transformation now does a better job of
      preserving @(tsee mbt) calls.")
 
@@ -202,6 +457,143 @@
      now generates new-to-old and old-to-new theorems
      of a more general and useful form.")
 
+   (xdoc::p
+    "Small improvements have been made to @('deftransformation'), a tool for
+    generating transformations.")
+
+   (xdoc::p
+    "A new utility, @('def-equality-transformation'), has been added for easily
+    creating simple APT transformations that make equality-preserving changes
+    to functions.")
+
+   (xdoc::p
+    "A new utility, @('verify-guards-for-defun'), has been added that uses a
+    @(tsee clause-processor) to greatly speed up guard proofs (by 50,000x on
+    one example).")
+
+   (xdoc::p
+    "Other improvements have been made to supporting utilities and to make proofs
+    more robust.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Arithmetic Library (@('[books]/arithmetic/'))")
+
+   (xdoc::p
+    "The amount of extra material included along with arithmetic books has been
+    reduced.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Arithmetic-light Library (@('[books]/kestrel/arithmetic-light/'))")
+
+   (xdoc::p
+    "Many new rules have been added, and many rules have been improved.")
+
+   (xdoc::p
+    "A new book on @(tsee evenp) has been added.")
+
+   (xdoc::p
+    "The guard of the function @('lg') has been strengthened to exclude 0.")
+
+   (xdoc::p
+    "A new book, @('log2.lisp'), on base-2 logarithms has been added.  This deals
+    with taking the (floor of) the base 2 logarithm of any positive rational.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "axe" "Axe"))
+
+   (xdoc::p "Many improvements, optimizations, additions, and fixes have been made to Axe.")
+
+   (xdoc::p "In the Tactic Prover, before @(tsee STP) is called, rewriting is
+   done to replace constructs unhandled by either STP or the translation to
+   STP (for example, shift operations).  Also, the tactic
+   @(':rewrite-with-precise-contexts') has been added.")
+
+   (xdoc::p "Various rule lists used by Axe have been improved.")
+
+   (xdoc::p "Handling of assumptions and @('if')s has been optimized.")
+
+   (xdoc::p "New options (controlling XOR handling, memoization, and hit
+   counting) have been added to some tools.")
+
+   (xdoc::p "Boolean reasoning has been improved.")
+
+   (xdoc::p "The generated rewriters have been improved (better handling of
+   @('boolif') and @('bvif'), using @(tsee stobj)s more, optional XOR
+   normalization, more auto-generated functions).")
+
+   (xdoc::p "Rewriting of calls of @('not') has been improved: Now the argument
+   is looked up in the @('node-replacement-array') to see whether it is
+   non-@('nil').  Several additional tests now work.")
+
+   (xdoc::p "A new tool, @('def-simplified-dag'), has been added.")
+
+   (xdoc::p "Debugging of failed proofs has been improved.")
+
+   (xdoc::p "Pruning has been improved.")
+
+   (xdoc::p "Counterexample handling has been improved (check that values have
+   the expected types, allow an error to be returned when fixing up a
+   counterexample, show that the node numbers in a counterexample are
+   bounded).")
+
+   (xdoc::p "Dependence on non-lightweight libraries has been reduced.")
+
+   (xdoc::p "Some runtime checks have been dropped, after proving they never fail.")
+
+   (xdoc::p "More tests have been added.")
+
+   (xdoc::p "Test case creation has been improved.")
+
+   (xdoc::p "The events generated by some tools are now @(tsee local) by
+   default (prevents storing huge DAGs in @('.cert') files).")
+
+   (xdoc::p "Printing, documentation, memoization, and the Axe Evaluators have
+   been improved.")
+
+   (xdoc::p "@('Unroll-spec-basic') can now often automatically determine all
+   functions that need to be opened/unrolled.")
+
+   (xdoc::p "Dependence on @(tsee skip-proofs) has been reduced (more code in
+   @(':logic') mode and guard-verified).")
+
+   (xdoc::p "Some @(tsee invariant-risk) is now avoided.")
+
+   (xdoc::p "Generated Axe provers now support @(':use') hints.")
+
+   (xdoc::p "A new code query tool can determine whether terms (over
+   bit-vectors and arrays) are satisfiable and produce satisfying instances.")
+
+   (xdoc::p "The Axe Equivalence Checker has been added.")
+
+   (xdoc::p "A tool to unroll a function by a constant factor has been added.")
+
+   (xdoc::p "An alternative implementation of the Axe Rewriter has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Axe JVM toolkit @('[books]/kestrel/axe/jvm/')")
+
+   (xdoc::p "The lifters / unrollers have been improved in various ways.
+Method signatures and output types are now inferred.  Results of lifting are
+made @(tsee local) by default, to keep certificates small.  XORs are no longer
+normalized by default.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Axe x86 toolkit @('[books]/kestrel/axe/x86/'))")
+
+   (xdoc::p "A very preliminary lifter for simple x86 code with loops has been
+   added.")
+
+   (xdoc::p "Additional options (e.g., for pruning branches) have been added to
+   the x86 unroller.")
+
+   (xdoc::p "An Axe proof of an x86 binary population-count program has been
+   added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "bitcoin::bitcoin" "Bitcoin Library"))
@@ -209,6 +601,35 @@
    (xdoc::p
     "Executable specifications of Bech32 and Bech32 address encoding
      have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Booleans Library (@('[books]/kestrel/booleans/'))")
+
+   (xdoc::p "Rules have been added and library organization has been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV Library (@('[books]/kestrel/bv/'))")
+
+   (xdoc::p "Definitions have been simplified.")
+
+   (xdoc::p "Many rules have been added, improved, simplified, or renamed.")
+
+   (xdoc::p "Library organization has been improved and dependencies reduced.")
+
+   (xdoc::p "Rules for splitting shifts into cases have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV Lists Library @('[books]/kestrel/bv-lists/')")
+
+   (xdoc::p "New rules have been added, and the library's organization has been
+   improved.")
+
+   (xdoc::p "Material on bit-vector packing has been added.")
+
+   (xdoc::p "New @('bv-array') conversion utilities have been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,11 +645,21 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptography Library"))
+
+   (xdoc::p "A formal specification of the Salsa20 hash function has been
+   added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "ecurve::elliptic-curves"
                              "Elliptic Curve Library"))
 
    (xdoc::p
     "Several theorems have been added.")
+
+   (xdoc::p
+    "A refinement of pfield-squarep has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,6 +668,20 @@
    (xdoc::p
     "The @(tsee make-event-terse) utility has been extended
      to handle the recently added new kind of ACL2 comment output.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "file-io-light" "File-Io-Light Library"))
+
+   (xdoc::p "Various simplifications have been made, including removing checks
+   for bad channels (after proving that they cannot occur).")
+
+   (xdoc::p "Rules have been added or improved dealing with @('read-object'),
+   channels, @('print-object$'), @('read-char$'), etc.")
+
+   (xdoc::p "Utilities have been added to read objects from a file (using
+   guard-verified @(':logic') mode code) and to read a file into a @('stobj')
+   array of characters.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,6 +695,8 @@
 
    (xdoc::p
     "Several fixtypes have been added, under @('[books]/kestrel/fty/').")
+
+   (xdoc::p "Consing has been reduced in recognizers for @('defprod'), etc.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,6 +729,28 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "JVM Model @('[books]/kestrel/jvm/')")
+
+   (xdoc::p "The formalization of class tables has been improved.")
+
+   (xdoc::p "The modify macro has been redone (for clarity and better checking).")
+
+   (xdoc::p "Work has been done to standardize normal forms and enforce abstractions better.")
+
+   (xdoc::p "New rules have been added and duplicate rules removed.")
+
+   (xdoc::p "Organization has been improved.")
+
+   (xdoc::p "More functions are now in the JVM package.")
+
+   (xdoc::p "The computation of default values of floats and doubles has been simplified.")
+
+   (xdoc::p "The handling of LDC and related instructions in .class file has been improved.  Now all of the constants are tagged, so we no longer require floats to be represented differently than ints.")
+
+   (xdoc::p "Work has been started to define an accurate floating point model to support the JVM model (still in progress).  This formalizes notions of representable numbers, floating point data (including encoding and decoding of bit-vectors), normal and subnormal numbers, infinities, NaNs, and floating point comparisons.  Some proofs connect these notions to similar notions in the RTL library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
 
    (xdoc::p
@@ -298,6 +767,102 @@
    (xdoc::p
     "The new utility @(tsee book-runes-alist) returns an alist associating book
      full pathnames with a list of the @(see rune)s introduced .")
+
+   (xdoc::p "New or improved rules deal with @('explode-nonnegative-integer'),
+@('explode-atom'), @('state'), channels, @('world')s,
+@('intern-in-package-of-symbol'), fresh names, supporting functions, constant
+names, @('nat-to-string') and @('binary-pack').")
+
+   (xdoc::p "Printing done by @('submit-event') has been improved.")
+
+   (xdoc::p "A new utility, @('defstobj+'), is a drop-in replacement for
+@('defstobj') that disables the @('stobj')-related functions and proves many
+rules about them, such as read-over-write properties.  Currently only scalar
+and array fields are supported.")
+
+   (xdoc::p "A new tool, @('with-local-stobjs'), extends @(tsee
+with-local-stobj) to support multiple @('stobj')s.")
+
+   (xdoc::p "Utilities for making lists of symbols have been added.")
+
+   (xdoc::p "Organization has been improved and dependencies reduced.")
+
+   (xdoc::p "New books have been added about @('assoc-keyword'),
+@('theory-invariant')s, @('chk-length-and-keys'), @('member-symbol-name'),
+arities, negation, @('logic-termp'), messages, hints, reconstructing macro
+calls, @('defun') and @('mutual-recursion') forms, macro arguments,
+@('explode-nonnegative-integer'), @('intern-in-package-of-symbol'), and
+@('digit-to-char').")
+
+   (xdoc::p "@('Defopeners') has been improved.")
+
+   (xdoc::p "Utilities have been added or improved about @(':program') mode,
+@(tsee prove$), @('declare')s, @('ignore')s, translation (tolerating ignored
+variables), @('table')s, symbol creation, @('disjoin'), @('defmacrodoc'), and
+verifying guards.")
+
+   (xdoc::p "A new tool, @('defcalculation'), has been added to support proofs
+that chain together equalities.")
+
+   (xdoc::p "A draft tool, @('specialize-calls-in-theorems'), to specialize
+theorems has been added.")
+
+   (xdoc::p "The new utility @('book-of-event') has been added, to determine
+which book introduced a name.")
+
+   (xdoc::p "@('My-make-flag') has been improved (use unnormalized bodies,
+speed up some proofs by 100x using a custom @(tsee clause-processor)).")
+
+   (xdoc::p "The utility @('directed-untranslate$') has been added.")
+
+   (xdoc::p "Utilities have been added for manipulating conjuncts and disjuncts.")
+
+   (xdoc::p "The utility @('add-not-normalized-suffixes') has been added.")
+
+   (xdoc::p "The Linter has been improved (to look for contradictory guards, to
+look for hypotheses that are unneeded or stronger than necessary, and to
+suggest generalizations).  Various issues found by the Linter in Community
+Books have been fixed.")
+
+   (xdoc::p "The :@(tsee ubi) tool has been improved.  It now sees through
+@('with-output') wrappers on commands.  It also no longer considers @('xdoc')
+to be a keeper command.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Kestrel x86 Library @('[books]/kestrel/x86/')")
+
+   (xdoc::p "Rules have been added, improved, and given better names.")
+
+   (xdoc::p "Error messages in the Mach-O parser have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Lists Light Library @('[books]/kestrel/lists-light/')")
+
+   (xdoc::p "New books have been added about @('make-list-ac'), @('resize-list'), functions that treat lists like sets, and @('replace-item').")
+
+   (xdoc::p "Many rules have been added and improved.")
+
+   (xdoc::p "Library organization has been improved.")
+
+   (xdoc::p "@('Perm') now has @('true-listp') guards and calls more standard sub-functions.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "number-theory" "Number Theory Library"))
+
+   (xdoc::p "Dependencies have been reduced to avoid name clashes.")
+
+   (xdoc::p "@('Primep') is now disabled.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "pfield::prime-fields" "Prime Fields Library"))
+
+   (xdoc::p "Rules have been added, improved, and renamed.")
+
+   (xdoc::p "The behavior of the inversion function on 0 has been changed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -320,6 +885,37 @@
      future versions of other host Lisps, as they too update their asdf
      versions.  Perhaps this will be fixed by someone in the ACL2 community;
      see GitHub Issue #1332.")
+
+   (xdoc::p
+    "The quicklisp libraries have been updated to recent versions (as of
+     7/7/2022; previous versions were as of 2020).  This fixes library version
+     errors with Mac OS X on M1 machines and with recent versions of
+     Ubuntu (e.g., 22.04).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Random Library @('[books]/kestrel/random/')")
+
+   (xdoc::p "Improvements have been made to @(':forward-chaining') rules.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "r1cs::r1cs" "R1CS Library"))
+
+   (xdoc::p "@('verify-r1cs') and related tools now support :use hints.")
+
+   (xdoc::p "A verified NAND gadget generator has been added.")
+
+   (xdoc::p "A verified range-check gadget generator has been added.")
+
+   (xdoc::p "Documentation has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Sequences Library @('[books]/kestrel/sequences/')")
+
+   (xdoc::p "@('Defforall') has been improved, including reducing the number of
+   included books from 42 to 27.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,9 +973,41 @@
      They are disabled by default.
      See the documentation of @(tsee defmapping) for details.")
 
+   (xdoc::p "@(tsee Defines) has been improved to suppress return-value theorems in @(':program') mode.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Tools")
+   (xdoc::h4 "Strings Light Library @('[books]/kestrel/strings-light/')")
+
+   (xdoc::p "New books have been added about reversing, string length, and
+   checking whether a string ends with some other string.")
+
+   (xdoc::p "New lightweight utilities have been added for parsing characters
+   as digits.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Terms Light Library @('[books]/kestrel/terms-light')")
+
+   (xdoc::p "Utilities have been added to reconstruct @('let')s, serialize
+@('lambda')s, rename variables, find duplicate @('lambda') arguments, add
+parameters to calls, find and count occurrences of subterms, @('lambda')-bind
+arguments of function calls, replace terms, substitute unnecessary @('lambda')
+vars, make @('lambda') applications, reconstruct @('mv-let')s, wrap patterns
+around terms, find @('let') vars, recognize unary @('lambda')s, manipulate
+conjuncts, and create, combine, and count @('if')s.")
+
+   (xdoc::p "Some theorem names have been improved, and new rules have been
+added.")
+
+   (xdoc::p "Some utilities have had their correctness verified.")
+
+   (xdoc::p "A new utility, @('sublis-var-and-magic-eval'), has been added to
+apply a substitution to a term while evaluating ground terms.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Tools @('[books]/tools/')")
 
    (xdoc::p
     "When the tool @(tsee prove$) is interrupted (with @('Control-C')), control
@@ -392,11 +1020,50 @@
      now available for @(tsee prove$).")
 
    (xdoc::p
-    "Evaluation of @('prover-steps-counted state)') returns the prover steps
+    "Evaluation of @('(prover-steps-counted state)') returns the prover steps
      counted for the most recently completed event.")
 
    (xdoc::p
     "Fixed with-supporters to work when including an uncertified book.")
+
+   (xdoc::p "@('Defthm-flag') has been improved.  When @('defthm-flag') is
+   called with no arguments, it creates a template form for the user to fill
+   out.  That form includes placeholder hypotheses for each template theorem.
+   Previously these were always literally (AND HYP1 HYP2), with the user
+   expected to replace the meaningless HYP1 and HYP2 with meaningful hyps (or
+   delete them).  Now, for a function with a non-trivial guard, that guard is
+   used for the hyp instead, since it is fairly likely to be needed in theorems
+   about the function.  The user is still welcome to edit the hyps, of course.
+   Also, computed hints are supported better (a hint can now be simply the name
+   of a computed hint function).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "typed-lists-light" "Typed Lists Light Library"))
+
+   (xdoc::p "Rules have been added and library organization improved.")
+
+   (xdoc::p "Books about @('true-list-listp') and @('pseudo-term-list-listp')
+   have been started.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Untranslated Terms Library @('[books]/kestrel/untranslated-terms')")
+
+   (xdoc::p "@('Rename-functions') has been improved in various ways.")
+
+   (xdoc::p "Utilities for manipulating conjuncts have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "vl::vl" "VL Library"))
+
+   (xdoc::p "The dependencies of @('vl/util/namedb') have been reduced.  This
+change prevents @('vl/util/namedb') from @('including vl/util/defs').  Various
+@('include-book')s had to be added in @('namedb.lisp') and other files to
+compensate, but the net effect is to greatly reduce what is included by
+@('namedb') and tools that include it, including @(tsee rstobj::defrstobj) and the
+@(tsee x86isa::x86isa) model.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,6 +1077,18 @@
    (xdoc::p
     "Support has been added for the MOVD and MOVQ instruction variants
      that move data from/to the XMM registers.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "Xdoc Library"))
+
+   (xdoc::p "Some functions have been put into @(':logic') mode (with verified
+guards).")
+
+   (xdoc::p "@('Defpointer') has been improved to tolerate symbols with unusual
+names.")
+
+   (xdoc::p "Dependencies have been reduced.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -428,6 +1107,15 @@
    (xdoc::p
     "This library has been extended with several theorems
      and with a formalization of several gadgets.")
+
+   (xdoc::p "Proofs of various R1CS gadgets / gadget generators have been
+   added.")
+
+   (xdoc::p "A new tool, @(tsee zcash::verify-zcash-r1cs), has been added (a
+specialization of @(tsee r1cs::verify-r1cs).")
+
+   (xdoc::p "Documentation has been added.")
+
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -496,11 +1184,9 @@
      Now the useless runes feature has been turned off for ACL2(r).")
 
    (xdoc::p
-    "The precomputed @(see useless-runes) files have been successfully used
-     with ACL2(p), so the previous code that ignored the useless runes at the
-     time of @(see books-certification) using @('make') has been removed, and
-     ACL2(p) now works the same way as ACL2 for the @(see useless-runes)
-     feature.")
+    "The precomputed @(see useless-runes) files continue to be ignored by
+     ACL2(p), so the previous code that ignored useless runes when using
+     @('make') has been removed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -535,6 +1221,12 @@
    (xdoc::@{}
     "ACL2_INHIBIT_DEPS_LSP=1 make -j12 regression")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Build colors")
+
+   (xdoc::p "The roles of green and bold green in build output have been swapped.  Now, for books that take 20 seconds or less, the bold green books are the slower books (10-20s) and the regular green books are the faster books (0-10s).  The rationale is that bold is more prominent and we want to draw attention to slower books.  This also matches how bold works for yellow and red.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
@@ -542,6 +1234,23 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
+
+   (xdoc::p
+    "The following warning is now printed when broken @(see xdoc) links are
+     encountered: ``Please note the following broken topic link name[s]: ...''.
+     This warning is printed to the terminal after the topic is printed by
+     @(':')@(tsee doc), unless of course the warning is inhibited (see @(see
+     set-inhibit-warnings) and @(see set-inhibit-output-lst)).")
+
+   (xdoc::p
+    "For the utility @(tsee make-flag), the previous release (see @(see
+     note-8-4-books)) deprecated the use of a list of cons pairs @('(old .
+     new)') for the value of the keyword argument, @(':flag-mapping').  That
+     list must now be a list of doublets, @('(old new)').")
+
+   (xdoc::p "The book @('[books]/doc/top-slow.lisp') is now
+   @('[books]/top.lisp').  It is now only used to detect conflicts between
+   books.")
 
    ))
 

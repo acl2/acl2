@@ -1,6 +1,6 @@
-; Top file Axe
+; Top file for Axe
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -91,6 +91,7 @@
 (include-book "equivs")
 (include-book "evaluator-basic")
 (include-book "extract-dag-array")
+(include-book "find-probable-facts")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
@@ -158,12 +159,16 @@
 (include-book "nodenum-type-alists")
 (include-book "numeric-lists")
 (include-book "packbv-axe")
+(include-book "possibly-negated-nodenums")
 (include-book "print-constant")
 (include-book "print-levels")
 (include-book "print-dag-to-file")
+(include-book "print-dag-array-to-file")
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
+(include-book "prune")
+(include-book "prune-dag")
 (include-book "rational-lists")
 (include-book "rebuild-literals")
 (include-book "rebuild-nodes2")
@@ -221,6 +226,7 @@
 ;; Newest top-level Axe tools ("basic" means that these are for general-purpose
 ;; use, rather than specialized for the JVM, or for x86, etc.):
 (include-book "rewriter-basic")
+;; (include-book "rewriter-basic-code-only") ; not worth including here?
 (include-book "prover-basic")
 (include-book "prover-basic-clause-processor")
 (include-book "def-simplified")
@@ -239,7 +245,6 @@
 (include-book "instantiate-hyp")
 (include-book "dagify")
 (include-book "sublis-var-and-eval")
-(include-book "prune")
 (include-book "result-array-stobj")
 (include-book "defconst-computed2")
 (include-book "strengthen-facts")

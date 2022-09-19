@@ -179,24 +179,29 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (if (not (and (consp quoted-width)          ; test for quotep
+  (and (if (or (equal operators ''all) ;; todo: can we avoid this?  use one as the default?
+               (equal operators ''non-arithmetic))
+           t
+         (progn$
+          ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected operators: ~x0.)~%" operators)
+          nil))
+       (if (and (consp quoted-width)          ; test for quotep
                 (natp (unquote quoted-width)) ;check natp or posp?
-                ;; todo: can we avoid this?  use one as the default?
-                (or (equal operators ''all)
-                    (equal operators ''non-arithmetic))))
-      (prog2$ (cw "Warning: In term-should-be-trimmed-axe: Unexpected arguments (width: ~x0, operators ~x1).~%"
-                  (if (consp quoted-width) ; check for quotep
-                      quoted-width
-                    ;; simplify this?:
-                    (if (and (not (myquotep term))
-                             (natp quoted-width)
-                             (< quoted-width (alen1 'dag-array dag-array)))
-                        (aref1 'dag-array dag-array quoted-width)
-                      :unknown))
-                  operators)
-              nil)
-    (let ((width (unquote quoted-width)))
-      (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
+                )
+           t
+         (progn$ ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
+          ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected width: ~x0.)~%"
+          ;;     (if (consp quoted-width) ; check for quotep
+          ;;         quoted-width
+          ;;       ;; simplify this?:
+          ;;       (if (and (not (myquotep term))
+          ;;                (natp quoted-width)
+          ;;                (< quoted-width (alen1 'dag-array dag-array)))
+          ;;           (aref1 'dag-array dag-array quoted-width)
+          ;;         :unknown)))
+          nil))
+       (let ((width (unquote quoted-width)))
+         (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
 
 ;adds 1 to QUOTED-WIDTH;
 ;for (slice 7 0 x) the relevant width to consider is 8, not 7.  likewise for (getbit 7 x).
@@ -206,22 +211,28 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (if (not (and (myquotep quoted-width)
-                (natp (unquote quoted-width))
-                (or (equal operators ''all)
-                    (equal operators ''non-arithmetic))))
-      (prog2$ (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected arguments (width: ~x0).~%"
-                  (if (quotep quoted-width)
-                      quoted-width
-                    ;; simplify this?:
-                    (if (and (not (myquotep term))
-                             (natp quoted-width)
-                             (< quoted-width (alen1 'dag-array dag-array)))
-                        (aref1 'dag-array dag-array quoted-width)
-                      :unknown)))
-              nil)
-    (let ((width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
-      (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
+  (and (if (or (equal operators ''all) ;; todo: can we avoid this?  use one as the default?
+               (equal operators ''non-arithmetic))
+           t
+         (progn$
+          ;; (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected operators: ~x0.)~%" operators)
+          nil))
+       (if (and (myquotep quoted-width)
+                (natp (unquote quoted-width)))
+           t
+         (progn$ ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
+          ;; (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected width: ~x0.)~%"
+          ;;     (if (quotep quoted-width)
+          ;;         quoted-width
+          ;;       ;; simplify this?:
+          ;;       (if (and (not (myquotep term))
+          ;;                (natp quoted-width)
+          ;;                (< quoted-width (alen1 'dag-array dag-array)))
+          ;;           (aref1 'dag-array dag-array quoted-width)
+          ;;         :unknown)))
+          nil))
+       (let ((width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
+         (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

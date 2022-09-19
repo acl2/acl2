@@ -5,6 +5,9 @@
 
 (set-irrelevant-formals-ok t)
 
+; Matt K. mod: Avoid ACL2(p) error from clause-processor that returns state.
+(set-waterfall-parallelism nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
 ;;                          BINARY SEARCH                           ;;
@@ -14,7 +17,7 @@
 ;; Given a sorted list, return the largest element via binary search.
 
 ;; >>> Note that I needed to change the code here because the step counts
-;;     differ depending on whether I go left or right. 
+;;     differ depending on whether I go left or right.
 
 ; def BinarySearch( lst, key ):
 ;     low = 0
@@ -34,7 +37,7 @@
 
 ;; SORTED
 
-;; >> Unlike linearsearch, we need for the values in the list to be 
+;; >> Unlike linearsearch, we need for the values in the list to be
 ;;    numbers because we're assuming that we can use < to compare them.
 ;;    This only works for numbers.  I could use a different comparator
 ;;    such as lexorder.
@@ -113,7 +116,7 @@
 ;; SLICE
 
 ;; >> I could use a different notion of slice, but this one works and I'm
-;;    too lazy to re-do everything. 
+;;    too lazy to re-do everything.
 
 (defun slice (low high lst)
   (declare (xargs :measure (nfix (1+ (- high low)))))
@@ -216,7 +219,7 @@
   (implies (and (true-listp lst)
 		(member-equal x (slice low high lst)))
 	   (< low (len lst))))
- 
+
 (defthm slice-len-low
   (implies (<= (len lst) low)
 	   (equal (slice low high lst)
@@ -432,7 +435,7 @@
 ; (in-theory (disable slice))
 
 ;; >> I needed to change the order of the tests here.  Otherwise, the step counts
-;;    are different depending on whether I go left or right. 
+;;    are different depending on whether I go left or right.
 
 (defun binarysearch-if-else (key lst)
   ;; This takes 8 steps if key == lst[mid] and 16 otherwise
@@ -447,7 +450,7 @@
   `(seq (assign (var mid) (// (+ (var low) (var high)) (lit . 2)))
 	,(binarysearch-if-else key lst)))
 
-(defun binarysearch-while (key lst) 
+(defun binarysearch-while (key lst)
   ;; If the test succeeds this takes 18 steps, else 26 +
  `(while (<= (var low) (var high))
      ,(binarysearch-while-body key lst)))
@@ -503,7 +506,7 @@
 				       (store 'mid midval vars))
 				(+ 14 steps))
 					; Is key < lst[mid]
-			(if (< keyval (nth midval lstval)) 
+			(if (< keyval (nth midval lstval))
 			    (list 'ok
 				  (store 'high
 					 (+ -1 midval)
@@ -595,12 +598,12 @@
 		    (let ((midval (flr (+ lowval highval) 2)))
 					; Is key == lst[mid]
 		      (if (equal keyval (nth midval lstval))
-			  (mv 'returned 
+			  (mv 'returned
 			       (store 'result midval
 				      (store 'mid midval vars))
 			       (+ 18 steps))
 					; Is key < lst[mid]
-			(if (< keyval (nth midval lstval)) 
+			(if (< keyval (nth midval lstval))
 			    (run (binarysearch-while key lst)
 				 'ok
 				 (store 'high
@@ -931,12 +934,12 @@
   `(mv-nth 4 ,fivetuple))
 
 ;; >>> This is a pretty peculiar function because I needed
-;;     it not to adjust mid in the case where (equal low high). 
+;;     it not to adjust mid in the case where (equal low high).
 
 (in-theory (disable high-low-kludge2))
 
 (defun recursiveBS-helper (key lst low mid high calls)
-  ;; This performs a recursive binary search for key in 
+  ;; This performs a recursive binary search for key in
   ;; lst[low..high].  It returns a 5-tuple (success low mid high calls).
   ;; I need all of those values to do the recursive proof.
   (declare (xargs :measure (nfix (1+ (- high low)))
@@ -965,7 +968,7 @@
 
 ;; >> replace this one with the stronger lemma below:
 (defthm recursiveBS-helper-mid
-  ;; If the item is there, then mid doesn't matter. 
+  ;; If the item is there, then mid doesn't matter.
   (implies (and (syntaxp (not (equal mid ''nil)))
 		(member-equal key (slice low high lst)))
 		;mid)
@@ -1032,7 +1035,7 @@
 (defthmd recursiveBS-helper-calls4
   (equal (mv-nth 4 (recursiveBS-helper key lst low mid high (+ calls1 calls2)))
 	 (+ calls1 (mv-nth 4 (recursiveBS-helper key lst low mid high calls2))))
-  :hints (("Goal" :in-theory (disable FLR-HALF-LEMMA 
+  :hints (("Goal" :in-theory (disable FLR-HALF-LEMMA
                                        SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
 
 (defthmd recursiveBS-helper-calls4-corollary
@@ -1125,7 +1128,7 @@
 		   (1+ calls)))))))
 
 (defthm binarysearch-while-test-inductive-case1
-  ;; This is the case where the key is in the list. 
+  ;; This is the case where the key is in the list.
   (let ((keyval (lookup (param1 key) vars))
 	(lstval (lookup (param1 lst) vars))
 	(lowval (lookup 'low vars))
@@ -1294,7 +1297,7 @@
 		)
 	   (not (equal key (nth midval lst)))))
 
-;; >> Try to eliminate the instructions list from this one. 
+;; >> Try to eliminate the instructions list from this one.
 
 (defthm not-member-not-in-slice-corollary
   (implies (and (not (member-equal key (slice lowval highval lst)))
@@ -1539,9 +1542,9 @@
 ; 		  nil)))
 
 (defthm binarysearch-while-test-induction-corollary1
-  ;; Use the binarysearch-while lemma wrt the state derived 
+  ;; Use the binarysearch-while lemma wrt the state derived
   ;; from the initial two assignments.  This is the case where
-  ;; the key is in the list. 
+  ;; the key is in the list.
   (let ((keyval (lookup (param1 key) vars))
 	(lstval (lookup (param1 lst) vars)))
     (implies (and (varp key)
@@ -1585,7 +1588,7 @@
                         :TOP :S :S :BASH :BASH :BASH :BASH :BASH :BASH :BASH))
 
 (defthm binarysearch-while-test-induction-corollary2
-  ;; Use the binarysearch-while lemma wrt the state derived 
+  ;; Use the binarysearch-while lemma wrt the state derived
   ;; from the initial two assignments.  This is the case where
   ;; the key is not in the list, and the list is empty.
   (let ((keyval (lookup (param1 key) vars))
@@ -1620,7 +1623,7 @@
                           :TOP :S :S :S :S :S :S :S :S :BASH))
 
 (defthm binarysearch-while-test-induction-corollary2-version2
-  ;; Use the binarysearch-while lemma wrt the state derived 
+  ;; Use the binarysearch-while lemma wrt the state derived
   ;; from the initial two assignments.  This is the case where
   ;; the key is not in the list, and the list is empty.
   (let ((keyval (lookup (param1 key) vars))
@@ -1656,7 +1659,7 @@
 			 (:= (LEN (LOOKUP (CADR LST) VARS)) 0) :TOP :S))
 
 (defthm binarysearch-while-test-induction-corollary2-version2-status
-  ;; This just isolates the status; needed for some reason. 
+  ;; This just isolates the status; needed for some reason.
   (let ((keyval (lookup (param1 key) vars))
 	(lstval (lookup (param1 lst) vars)))
     (implies (and (varp key)
@@ -1688,7 +1691,7 @@
 			  :TOP :S))
 
 (defthm binarysearch-while-test-induction-corollary3
-  ;; Use the binarysearch-while lemma wrt the state derived 
+  ;; Use the binarysearch-while lemma wrt the state derived
   ;; from the initial two assignments.  This is the case where
   ;; the key is not in the list, and the list is non-empty.
   (let ((keyval (lookup (param1 key) vars))
@@ -1733,7 +1736,7 @@
 			   :top :s :bash :bash (:rewrite non-empty-len) :bash))
 
 (defthm binarysearch-while-test-induction-corollary3-corollary
-  ;; Use the binarysearch-while lemma wrt the state derived 
+  ;; Use the binarysearch-while lemma wrt the state derived
   ;; from the initial two assignments.  This is the case where
   ;; the key is not in the list, and the list is non-empty.
   (let ((keyval (lookup (param1 key) vars))
@@ -1768,7 +1771,7 @@
 
 (defthm binarysearch-correctness-lemma-setup
   ;; This characterizes the functional behavior of the two initial
-  ;; assignments of binarysearch.  These happen whether key is 
+  ;; assignments of binarysearch.  These happen whether key is
   ;; present or not.
   (let ((keyval (lookup (param1 key) vars))
 	(lstval (lookup (param1 lst) vars)))
@@ -1863,7 +1866,7 @@
 (defthm binarysearch-correctness-lemma-key-not-present
   ;; This characterizes the functional behavior of binarysearch.
   ;; There are three cases: lst is empty, lst contains key, and
-  ;; lst does not contain key. This is the case where key is 
+  ;; lst does not contain key. This is the case where key is
   ;; not present.
   (let ((keyval (lookup (param1 key) vars))
 	(lstval (lookup (param1 lst) vars)))
@@ -1911,7 +1914,7 @@
 (defthm binarysearch-correctness-lemma-key-present
   ;; This characterizes the functional behavior of binarysearch.
   ;; There are three cases: lst is empty, lst contains key, and
-  ;; lst does not contain key. This is the case where key is 
+  ;; lst does not contain key. This is the case where key is
   ;; in list.
   (let ((keyval (lookup (param1 key) vars))
 	(lstval (lookup (param1 lst) vars)))
@@ -1962,7 +1965,7 @@
 (defthm binarysearch-correctness-lemma
   ;; This characterizes the functional behavior of binarysearch.
   ;; There are three cases: lst is empty, lst contains key, and
-  ;; lst does not contain key. 
+  ;; lst does not contain key.
   (let ((keyval (lookup (param1 key) vars))
 	(lstval (lookup (param1 lst) vars)))
     (implies (and (varp key)
@@ -2092,8 +2095,8 @@
 ;----------------------------------------------------------------------
 
 (defun recursiveBS2-helper (key lst low high)
-  ;; This is the recursive version of binary search without the 
-  ;; extraneous parameters that I needed to do the proof of the 
+  ;; This is the recursive version of binary search without the
+  ;; extraneous parameters that I needed to do the proof of the
   ;; procedural version.
   (declare (xargs :measure (nfix (1+ (- high low)))
 		  :hints (("Goal" :in-theory (e/d (flr) (HIGH-LOW-KLUDGE2))))))
@@ -2115,10 +2118,10 @@
   (recursiveBS2-helper key lst 0 (1- (len lst))))
 
 ;; >> Now I need to prove that the more complicated versions are
-;;    the same as these. 
+;;    the same as these.
 
 (defthmd recursiveBS-helper-versions
-  ;; This shows the recursiveBS-helper and 
+  ;; This shows the recursiveBS-helper and
   ;; recursiveBS2-helper are really equivalent.
   (implies (and (natp low)
 		(integerp high)
@@ -2133,7 +2136,7 @@
 			  (if success endmid -1)))))
 
 (defthmd recursiveBS-helper-versions-corollary
-  ;; This shows the recursiveBS-helper and 
+  ;; This shows the recursiveBS-helper and
   ;; recursiveBS2-helper are really equivalent.
   (implies (and (natp low)
 		(integerp high)
@@ -2148,8 +2151,8 @@
 			  (if success endmid -1))))
   :hints (("Goal" :use (:instance recursiveBS-helper-versions (mid nil) (calls 0)))))
 
-;; >> I don't think this is actually used, but it shows that the two versions 
-;;    compute the same function. 
+;; >> I don't think this is actually used, but it shows that the two versions
+;;    compute the same function.
 
 (defthm recursiveBS-versions-equivalent
   (implies (and (number-listp lst)
@@ -2166,9 +2169,9 @@
 ;----------------------------------------------------------------------
 
 ;; Since there's no native log function in ACL2, we just defined the log2
-;; to be the number of times you can cut a list in half. 
+;; to be the number of times you can cut a list in half.
 
-;; >> There's actually a flaw in this.  The base case should include 
+;; >> There's actually a flaw in this.  The base case should include
 ;;    (equal n 1).
 
 (defun log2 (n)
@@ -2379,8 +2382,8 @@
 
 ;; BINARYSEARCH LOGARITHMIC
 
-;; >> Can I redo this so that it's parameterized by the code rather than 
-;;    specific to BS. 
+;; >> Can I redo this so that it's parameterized by the code rather than
+;;    specific to BS.
 
 
 ; (defun binarysearch (key lst)
@@ -2461,7 +2464,7 @@
 (defthm binarysearch-logarithmic2
   ;; This is a version of the asymptotic complexity lemmas that assumes
   ;; that the key and list are passed in specific variables.  That's not
-  ;; necessary, but eliminates a bunch of flaky hyps. 
+  ;; necessary, but eliminates a bunch of flaky hyps.
   (let ((keyval (lookup 'key vars))
 	(lstval (lookup 'lst vars)))
     (implies (and (acl2-numberp keyval)
@@ -2483,7 +2486,7 @@
 
 (defun-sk function-logarithmic1 (program log-of c n0 vars count)
   ;; This says that program (which is just a literal) can be run
-  ;; against the variable-alist vars with count.  It says that 
+  ;; against the variable-alist vars with count.  It says that
   ;; the number of steps taken to run the program are logarithmic
   ;; in the size of parameter log-of.  Params c and n0 are the two
   ;; variables of the definition of asymptotic complexity.

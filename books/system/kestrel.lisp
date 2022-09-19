@@ -1,6 +1,6 @@
 ; Kestrel's Contributions to the ACL2 System Code
 ;
-; Copyright (C) 2016-2019
+; Copyright (C) 2016-2022
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
@@ -158,3 +158,23 @@
 (verify-termination new-namep) ; and guards
 
 (verify-termination chk-all-but-new-name-cmp) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination partition-rest-and-keyword-args1) ; and guards
+
+(verify-termination partition-rest-and-keyword-args2) ; and guards
+
+(verify-termination partition-rest-and-keyword-args) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+  (local (include-book "kestrel/acl2-arrays/aset1" :dir :system))
+  (local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
+  (local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+
+  (local (in-theory (disable array1p)))
+
+  (verify-termination aset1-lst) ; and guards
+  )

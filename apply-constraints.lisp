@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -25,7 +25,7 @@
 
 ; See the Essay on the APPLY$ Integration in apply-prim.lisp for an overview.
 
-; This file builds on top of apply-prim.lisp and introduces the the four apply$
+; This file builds on top of apply-prim.lisp and introduces the four apply$
 ; stubs: BADGE-USERFN, APPLY$-USERFN, UNTAME-APPLY$ and UNTAME-EV$ and
 ; initializes the table in which we record the badges of user-defined
 ; functions.

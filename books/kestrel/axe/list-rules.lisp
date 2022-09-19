@@ -23,7 +23,7 @@
 
 ;; todo: rephrase using take?
 ;; ;could also phrase this using clear-nth
-(defthm equal-of-update-nth
+(defthmd equal-of-update-nth
   (implies (and (natp n)
                 (< n (len x)) ;todo
 ;                (true-listp y)

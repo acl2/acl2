@@ -226,3 +226,4 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
     (equal (character-listp (revappend-chars x y))
            (character-listp y))
     :hints(("Goal" :in-theory (enable revappend-chars)))))
+

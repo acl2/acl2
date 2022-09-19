@@ -13,7 +13,9 @@
 (include-book "cgen-search" :ttags :all)
 (include-book "acl2s-parameter")
 
-
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
 
 ;; The following 2 functions need to be revisited and rewritten if necessary
 (defun let-binding->dep-graph-alst (vt-lst ans)
@@ -237,7 +239,7 @@
 ;; engineering design of ACL2 theorem prover.
 ;; If somebody reads this comment, I would be very interested in any other
 ;; theorem-provers having a call-back mechanism in their implementation.
-(defun acl2::test-checkpoint (id cl cl-list processor pspv hist ctx state)
+(defun acl2::test-checkpoint-h1 (id cl cl-list processor pspv hist ctx state)
   "?: This function is a callback called via an override hint +
 backtrack no-op hint combination.  On SUBGOALS that are not
 checkpoints it is a no-op. On checkpoints it calls the main
@@ -437,8 +439,19 @@ Nested testing not allowed! Skipping testing of new goal...~%"
    ;;  (value nil))
    )
 
-
-
+(defun acl2::test-checkpoint (id cl cl-list processor pspv hist ctx state)
+  (declare (xargs :stobjs (state) :mode :program))
+  (b* ((debug-enable (acl2::f-get-global 'acl2::debugger-enable state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  :never
+                                  state))
+       ((mv & val state)
+        (acl2::test-checkpoint-h1
+         id cl cl-list processor pspv hist ctx state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  debug-enable
+                                  state)))
+    (value val)))
 
 ;;; add no-op override hints that test each checkpoint.  The reason
 ;;; why we need backtrack hint is not that we need clause-list
@@ -740,6 +753,20 @@ Nested testing not allowed! Skipping testing of new goal...~%"
        (gcs% (cget gcs))
 
        (ctx (compute-event-ctx ctx-form))
+
+       ;; PETE: previously, I replaced (cget print-cgen-summary) with
+       ;; t below and the logic for printing was deferred to
+       ;; print-testing-summary-fn so that we would print out
+       ;; counterexamples/ witnesses if the user requested >0
+       ;; counterexamples/ witnesses to be generated and printed, even
+       ;; if they requested that the summary not be printed. To turn
+       ;; off all output, you then had to set the number of
+       ;; counterexamples/ witnesses to be generated and printed to 0.
+       ;; This turned out to not be a good idea because
+       ;; print-cgen-summary was used inside of definec/defunc and
+       ;; that led to a lot of stuff we did not want printed to be
+       ;; printed. So, there is some utility in a flag like this that
+       ;; really turns of any summary information. 
        (print-summary-p (and (cget print-cgen-summary) 
                              ;(> (access gcs% cts) 0) ;commented out to collect vacuous stats
 ; dont print at the end of defun/defuns events (any help to CCG by cgen is invisible) TODO

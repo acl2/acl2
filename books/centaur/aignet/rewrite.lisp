@@ -62,7 +62,7 @@
 
 
 (fty::defprod rewrite-config
-  ((cuts4-config cuts4-config-p :default '(make-cuts4-config))
+  ((cuts4-config cuts4-config-p :default (make-cuts4-config))
    (cut-tries-limit acl2::maybe-natp :rule-classes :type-prescription :default 5)
    (zero-cost-replace booleanp :rule-classes :type-prescription)
    (evaluation-method rewrite-eval-method-p :default :nobuild)

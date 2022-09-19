@@ -689,7 +689,7 @@
 
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
-     bvcat-of-bvchop-high-tighten ;gen the bvchop to any bv term
+     bvcat-of-bvchop-high-tighten-axe ;gen the bvchop to any bv term
 ;            bvcat-of-bvcat-trim-high-arg ;use trim Mon Mar 14 18:54:23 2011
 ;    bvmult-27-bvcat-hack ;;trying without...
 ;            bvmult-8-27-blast-hack
@@ -1483,9 +1483,9 @@
 ;    myif-of-logext-list-arg1
 
     signed-byte-p-of-myif2
-    all-signed-byte-p-of-myif
-    all-signed-byte-p-of-nil
-    all-signed-byte-p-of-cons
+    ;;all-signed-byte-p-of-myif
+    ;;all-signed-byte-p-of-nil
+    ;;all-signed-byte-p-of-cons
 ;    all-signed-byte-p-of-logext-list
 
 ;    logext-list-of-logext-list
@@ -1614,7 +1614,7 @@
     len-of-myif
 
 ;    logext-list-does-nothing
-    all-signed-byte-p-when-all-unsigned-byte-p
+    ;;all-signed-byte-p-when-all-unsigned-byte-p
 ;these help us resolve questions about symbolic indices (e.g., for bvshl and bvshr)
     <-of-sums-cancel
     <-0-minus
@@ -1848,6 +1848,7 @@
     bvlt-trim-arg1-dag-all
     bvlt-trim-arg2-dag-all
     equal-of-bvplus-constant-and-constant
+    equal-of-bvplus-constant-and-constant-alt
     bvlt-of-bvplus-of-bvcat-of-slice-sha1
     bvlt-of-bvif-same-1
     unsigned-byte-p-of-bvplus-of-1-sha1 ;would it fire with a free var for the 31?
@@ -2519,11 +2520,12 @@
     bvcat-of-slice-and-x-adjacent-2
     bvcat-of-getbit-and-x-adjacent-2))
 
-;deprecate?
-(defun anti-blast-rules ()
-  (declare (xargs :guard t))
-  (reassemble-bv-rules))
+;; ;deprecate?
+;; (defun anti-blast-rules ()
+;;   (declare (xargs :guard t))
+;;   (reassemble-bv-rules))
 
+;; Only used in the equivalence checker
 (defun strengthening-rules ()
   (declare (xargs :guard t))
   (append '(bvlt-trim-constant-arg1
@@ -2542,7 +2544,6 @@
             equal-of-bvchop-and-constant-when-bvlt-constant-2
             equal-of-bvchop-and-constant-when-not-bvlt-constant-1
             equal-of-bvchop-and-constant-when-not-bvlt-constant-2
-
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
             bvlt-of-max-arg3
@@ -2587,7 +2588,7 @@
           (base-rules)
           (boolean-rules)))
 
-;outside-in rules
+;outside-in rules.  Only used un rewriter-alt.lisp.
 (defun oi-rules ()
   (declare (xargs :guard t))
   '(if-when-nil

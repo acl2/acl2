@@ -362,6 +362,46 @@
          (read n base-addr x86))
   :hints (("Goal" :in-theory (enable memi))))
 
+(defthm read-byte-in-terms-of-nth-and-pos-eric
+  (implies (and ;; find that a program is loaded in the initial state:
+            (program-at paddr bytes x86-init) ;these are free vars
+            ;; try to prove that the same program is loaded in the current state:
+            (program-at paddr bytes x86)
+            (byte-listp bytes)
+            (<= paddr addr)
+            (integerp addr)
+;           (integerp paddr)
+            (< addr (+ paddr (len bytes)))
+;            (member-p addr addresses)
+            (canonical-address-p paddr)
+            (canonical-address-p (+ -1 (len bytes) paddr))
+            ;;(canonical-address-listp addresses)
+            (app-view x86)
+            (app-view x86-init)
+            (x86p x86) ;too bad
+            )
+           (equal (read-byte addr x86)
+                  (nth (- addr paddr)
+                       bytes)))
+  :hints (("Goal" :use (:instance x86isa::rb-in-terms-of-nth-and-pos-eric
+                                  (x86isa::paddr paddr)
+                                  (x86isa::addr addr)
+                                  (x86isa::bytes bytes)
+                                  (x86isa::x86-init x86-init))
+           :expand (rb-1 1 addr x86isa::r-w-x x86) ;(rb-1 1 addr r-w-x x86)
+           :in-theory (e/d (read-byte
+                            memi ;memi*
+                            xr rb rb-1  n48
+;PROGRAM-AT
+                            app-view ;X86ISA::APP-VIEW*
+                            )
+                           (read
+                            mv-nth-1-of-rb-1-becomes-read
+                            x86isa::rb-in-terms-of-nth-and-pos-eric
+;x86isa::rb-in-terms-of-nth-and-pos-eric-gen
+                            )))))
+
+
 ;todo: compare to read-when-program-at
 (defthm read-in-terms-of-nth-and-pos-eric
   (implies (and ;; find that a program is loaded in the initial state:
@@ -384,21 +424,7 @@
            (equal (read 1 addr x86)
                   (nth (- addr paddr)
                        bytes)))
-  :hints (("Goal" :use (:instance x86isa::rb-in-terms-of-nth-and-pos-eric
-                                  (x86isa::paddr paddr)
-                                  (x86isa::addr addr)
-                                  (x86isa::bytes bytes)
-                                  (x86isa::x86-init x86-init))
-           :expand (rb-1 1 addr r-w-x x86) ;(rb-1 1 addr r-w-x x86)
-           :in-theory (e/d (memi ;memi*
-                                 xr rb rb-1  n48
-;PROGRAM-AT
-                                 app-view ;X86ISA::APP-VIEW*
-                                 )
-                           (read
-                            x86isa::rb-in-terms-of-nth-and-pos-eric
-;x86isa::rb-in-terms-of-nth-and-pos-eric-gen
-                            )))))
+  :hints (("Goal" :in-theory (enable read))))
 
 ;;
 ;; write-byte
@@ -1060,37 +1086,56 @@
 
 ;todo: gen
 ;; this is a 4-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
-(DEFTHM READ-IN-TERMS-OF-NTH-AND-POS-ERIC-4-bytes
-  (IMPLIES (AND (PROGRAM-AT PADDR BYTES X86-INIT)
-                (PROGRAM-AT PADDR BYTES X86)
-                (BYTE-LISTP BYTES)
-                (<= PADDR ADDR)
-                (INTEGERP ADDR)
-                (< (+ 3 ADDR) (+ PADDR (LEN BYTES)))
-                (CANONICAL-ADDRESS-P PADDR)
-                (CANONICAL-ADDRESS-P (+ -1 (LEN BYTES) PADDR))
-                (APP-VIEW X86)
-                (APP-VIEW X86-INIT)
-                (X86P X86))
-           (EQUAL (READ 4 ADDR X86)
-                  (BVCAT 8 (NTH (+ 3 ADDR (- PADDR)) BYTES)
-                         24
-                         (BVCAT 8 (NTH (+ 2 ADDR (- PADDR)) BYTES)
-                                16
-                                (BVCAT 8 (NTH (+ 1 ADDR (- PADDR)) BYTES)
-                                       8 (NTH (+ ADDR (- PADDR)) BYTES))))
-                  ))
-  :hints (("Goal" :expand ((READ 4 ADDR X86)
-                           (READ 3 (+ 1 ADDR) X86)
-                           (READ 2 (+ 2 ADDR) X86))
-           :in-theory (e/d (memi-becomes-read-1
-                            memi-becomes-read-2
-                            ACL2::BVPLUS-RECOLLAPSE
-                            read-byte)
-                           ( ACL2::BVCAT-EQUAL-REWRITE-ALT
-                             ACL2::BVCAT-EQUAL-REWRITE
-                             read
-                             len)))))
+(defthm read-in-terms-of-nth-and-pos-eric-4-bytes
+  (implies (and (program-at paddr bytes x86-init)
+                (program-at paddr bytes x86)
+                (byte-listp bytes)
+                (<= paddr addr)
+                (integerp addr)
+                (< (+ 3 addr) (+ paddr (len bytes)))
+                (canonical-address-p paddr)
+                (canonical-address-p (+ -1 (len bytes) paddr))
+                (app-view x86)
+                (app-view x86-init)
+                (x86p x86))
+           (equal (read 4 addr x86)
+                  (acl2::bvcat2 8 (nth (+ 3 addr (- paddr)) bytes)
+                                8 (nth (+ 2 addr (- paddr)) bytes)
+                                8 (nth (+ 1 addr (- paddr)) bytes)
+                                8 (nth (+ addr (- paddr)) bytes))))
+  :hints (("Goal" :expand ((read 4 addr x86)
+                           (read 3 (+ 1 addr) x86)
+                           (read 2 (+ 2 addr) x86)))))
+
+;; this is a 8-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
+(defthm read-in-terms-of-nth-and-pos-eric-8-bytes
+  (implies (and (program-at paddr bytes x86-init)
+                (program-at paddr bytes x86)
+                (byte-listp bytes)
+                (<= paddr addr)
+                (integerp addr)
+                (< (+ 7 addr) (+ paddr (len bytes)))
+                (canonical-address-p paddr)
+                (canonical-address-p (+ -1 (len bytes) paddr))
+                (app-view x86)
+                (app-view x86-init)
+                (x86p x86))
+           (equal (read 8 addr x86)
+                  (acl2::bvcat2 8 (nth (+ 7 addr (- paddr)) bytes)
+                                8 (nth (+ 6 addr (- paddr)) bytes)
+                                8 (nth (+ 5 addr (- paddr)) bytes)
+                                8 (nth (+ 4 addr (- paddr)) bytes)
+                                8 (nth (+ 3 addr (- paddr)) bytes)
+                                8 (nth (+ 2 addr (- paddr)) bytes)
+                                8 (nth (+ 1 addr (- paddr)) bytes)
+                                8 (nth (+ addr (- paddr)) bytes))))
+  :hints (("Goal" :expand ((read 8 addr x86)
+                           (read 7 (+ 1 addr) x86)
+                           (read 6 (+ 2 addr) x86)
+                           (read 5 (+ 3 addr) x86)
+                           (read 4 (+ 4 addr) x86)
+                           (read 3 (+ 5 addr) x86)
+                           (read 2 (+ 6 addr) x86)))))
 
 (defthmd read-byte-when-bvchops-agree
   (implies (and (integerp addr)

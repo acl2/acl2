@@ -1,6 +1,6 @@
 ; A variant of write-bytes-to-file for use during make-event, etc.
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,15 @@
 (in-package "ACL2")
 
 (include-book "write-bytes-to-channel")
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
+(local (include-book "open-output-channel-bang"))
+(local (include-book "kestrel/utilities/w" :dir :system))
 
+;; Needed because we call open-output-channel! below:
 (defttag file-io!)
+
+(local (in-theory (disable update-written-files
+                           update-open-output-channels
+                           update-file-clock)))
 
 ;; Writes the BYTES to file FILENAME, overwriting its previous contents.
 ;; Returns (mv erp state).  The ttag is needed because this calls

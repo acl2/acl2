@@ -9,8 +9,9 @@
 (include-book "simple-search")
 (include-book "select")
 
-
-
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
 
 ;[2015-08-29 Sat] Extend to support symbolic assignments.  The idea is
 ; to expand recursive types lazily (symbolically) by starting from its

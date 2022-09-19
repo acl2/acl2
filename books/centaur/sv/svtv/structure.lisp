@@ -169,6 +169,9 @@
    (entries svtv-outentrylist))
   :layout :tree)
 
+(defenum svtv-inputtype-p (:input :override-val :override-test))
+(fty::defmap svtv-inputmap :key-type svar :val-type svtv-inputtype-p :true-listp t)
+
 ;; (defthm svtv-line-when-outputline
 ;;   (implies (svtv-outputline-p x)
 ;;            (svtv-line-p x))
@@ -211,13 +214,16 @@
    (states         svex-alistlist-p "NIL if not defined with :keep-all-states t")
    (inmasks        svar-boolmasks-p)
    (outmasks       svar-boolmasks-p)
+   (inmap          svtv-inputmap-p)
    (orig-ins       true-list-listp)
    (orig-overrides true-list-listp)
    (orig-outs      true-list-listp)
    (orig-internals true-list-listp)
    (expanded-ins         svtv-lines-p)
    (expanded-overrides   svtv-lines-p)
-   (nphases        natp)))
+   (nphases        natp)
+   (form           "Original form defining the defsvtv"))
+  :layout :list)
 
 
 

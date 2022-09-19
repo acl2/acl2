@@ -17,7 +17,7 @@
 ; the original goal in the ACL2 gag-state structure, which would require a
 ; change to ACL2.
 
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Return prover key checkpoint clauses programmatically."
    :long "<p>Recall the key checkpoints printed at the end of a failed proof
  attempt.  Some are labeled ``Key checkpoint at the top level''; let us call
@@ -66,11 +66,12 @@
  reassign the name *1 to the original conjecture.
  })
 
- In that case, the unique top-level checkpoint is @('(<GOAL>)').  Moreover, all
- information stored for the proof attempt is based on the part of the attempt
- starting after returning to prove the original goal by induction; all
- checkpoints produced before that happens will be lost.  If that isn't what you
- want, consider using @(':')@(tsee otf-flg).</li>
+ In that case, the unique top-level checkpoint is @('(<GOAL>)'), so the list of
+ top-level checkpoints is @('((<GOAL>))').  Moreover, all information stored
+ for the proof attempt is based on the part of the attempt starting after
+ returning to prove the original goal by induction; all checkpoints produced
+ before that happens will be lost.  If that isn't what you want, consider using
+ @(':')@(tsee otf-flg).</li>
 
  <li>The notion of ``most recent proof attempt'' includes proof attempts made
  during @(tsee make-event) expansion.</li>
@@ -78,7 +79,7 @@
  </ul>")
 
 (defxdoc checkpoint-list-pretty
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Return prover key checkpoint goals programmatically."
    :long "<p>See @(see checkpoint-list) for relevant background and related
  utilities.  Here we explain only how @('checkpoint-list-pretty') differs from
@@ -106,10 +107,16 @@
  are @(see guard)-verified @(see logic)-mode functions,
  @('checkpoint-list-pretty') is a @(see program)-mode function.</li>
 
+ <li>As with @('checkpoint-list'), there is a special case when a proof attempt
+ is aborted in favor of proving the original goal by induction.  With
+ @('checkpoint-list-pretty') you will see @('(<GOAL>)') to represent the list
+ of checkpoints as a list of terms: it shows that there is a single checkpoint
+ that is the original goal.</li>
+
  </ul>")
 
 (defxdoc checkpoint-info-list
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Return prover key checkpoint information programmatically."
    :long "<p>See @(see checkpoint-list) for relevant background and related
  utilities.  Here we explain only how @('checkpoint-info-list') differs from
@@ -128,7 +135,7 @@
  @('gag-info') record).</p>")
 
 (defxdoc show-checkpoint-list
-   :parents (kestrel-utilities prover-output)
+   :parents (kestrel-utilities output-controls)
    :short "Display prover key checkpoint information."
    :long "<p>See @(see checkpoint-list) for relevant background.  Evaluation of
  the macro call @('(show-checkpoint-list)') prints checkpoint clauses (as

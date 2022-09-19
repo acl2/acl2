@@ -91,12 +91,12 @@
 
 (defrule funscope-funp-of-funscope-for-fundefs
   (implies (and (fundef-list-nofunp fundefs)
-                (not (resulterrp (funscope-for-fundefs fundefs))))
+                (not (reserrp (funscope-for-fundefs fundefs))))
            (funscope-nofunp (funscope-for-fundefs fundefs)))
   :enable (funscope-for-fundefs
            funscope-nofunp
            fundef-list-nofunp
-           funscopep-when-funscope-resultp-and-not-resulterrp))
+           funscopep-when-funscope-resultp-and-not-reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,7 +150,7 @@
      on a function environment without function definitions in the bodies,
      the result has no function definitions in the bodies."))
   (implies (and (funenv-nofunp funenv)
-                (not (resulterrp (find-fun fun funenv))))
+                (not (reserrp (find-fun fun funenv))))
            (funinfo+funenv-nofunp (find-fun fun funenv)))
   :enable (find-fun
            funenv-nofunp
@@ -171,6 +171,6 @@
      That is, this property of the function environment is preserved."))
   (implies (and (fundef-list-nofunp fundefs)
                 (funenv-nofunp funenv)
-                (not (resulterrp (add-funs fundefs funenv))))
+                (not (reserrp (add-funs fundefs funenv))))
            (funenv-nofunp (add-funs fundefs funenv)))
   :enable add-funs)

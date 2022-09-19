@@ -23,6 +23,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "These are currently used for both and shallow embedding,
+     but the plan is to keep these just for the shallow embedding,
+     while @(see integer-operations) is meant to contain
+     versions of the integer operations for the deep embedding.")
+   (xdoc::p
     "We define ACL2 functions that model C operations on
      the integer types supported in our model,
      namely the standard unsigned and signed integers, except @('_Bool').")
@@ -44,17 +49,6 @@
      i.e. to test whether the integers are not zero.
      These are used to represent shallowly embedded tests.
      We introduce a function for each integer type.")
-   (xdoc::p
-    "We introduce functions @('<type>-integer-value')
-     to turn C integers into ACL2 integers.
-     These are used as operands of certain C operations
-     whose result does not depend on the C type of the operand,
-     but rather just on its (mathematical) integer value.
-     We define one function for each integer type.
-     Even though these functions are essentially synonyms of
-     the deconstructors of the fixtypes of the integer values,
-     having a separate function provides more abstraction,
-     should the fixtype representation be changed in the future.")
    (xdoc::p
     "We introduce a single function @(tsee sint-from-boolean)
      to turn ACL2 booleans into the @('int') 0 or 1 (for false and true).
@@ -222,7 +216,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-1 ((type1 typep))
-  :guard (type-integerp type1)
+  :guard (type-nonchar-integerp type1)
   :returns (event pseudo-event-formp)
   :short "Event to generate the ACL2 models of
           the C integer operations that involve one integer type."
@@ -259,7 +253,6 @@
        (<type1>-oct-const (pack <type1> '-oct-const))
        (<type1>-hex-const (pack <type1> '-hex-const))
        (boolean-from-<type1> (pack 'boolean-from- <type1>))
-       (<type1>-integer-value (pack <type1> '-integer-value))
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-min (pack <type> '-min))
@@ -340,17 +333,6 @@
         :res-type booleanp
         :short ,(str::cat "Check if a value of " type1-string " is not 0.")
         :body (/= (,<type1>->get x) 0))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (atc-defun-integer
-        ,<type1>-integer-value
-        :arg-type ,<type1>p
-        :res-type integerp
-        :short ,(str::cat "Turn a value of "
-                          type1-string
-                          " into an ACL2 integer value.")
-        :body (,<type1>->get x))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,12 +501,15 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       )))
+       ))
+
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-1-loop ((types type-listp))
-  :guard (type-integer-listp types)
+  :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of the C integer operations
           that involve each one integer type from a list."
@@ -554,7 +539,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-2 ((type1 typep) (type2 typep))
-  :guard (and (type-integerp type1) (type-integerp type2))
+  :guard (and (type-nonchar-integerp type1)
+              (type-nonchar-integerp type2))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp)))
   :returns (event pseudo-event-formp)
   :short "Event to generate the ACL2 models of
@@ -595,7 +581,6 @@
        (<type1>->get (pack <type1> '->get))
        (<type2>->get (pack <type2> '->get))
        (<type>-mod (pack <type> '-mod))
-       (<type2>-integer-value (pack <type2> '-integer-value))
        (<type>-integerp (pack <type> '-integerp))
        (<type>-from-<type1> (pack <type> '-from- <type1>))
        (<type>-from-<type2> (pack <type> '-from- <type2>))
@@ -893,7 +878,7 @@
                           " by a value of "
                           type2-string
                           " is well-defined.")
-        :body (,shl-<type1>-okp x (,<type2>-integer-value y)))
+        :body (,shl-<type1>-okp x (,<type2>->get y)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -908,7 +893,7 @@
                           " and a value of "
                           type2-string
                           " [C:6.5.7].")
-        :body (,shl-<type1> x (,<type2>-integer-value y))
+        :body (,shl-<type1> x (,<type2>->get y))
         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -923,7 +908,7 @@
                           " by a value of "
                           type2-string
                           " is well-defined.")
-        :body (,shr-<type1>-okp x (,<type2>-integer-value y)))
+        :body (,shr-<type1>-okp x (,<type2>->get y)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -938,7 +923,7 @@
                           " and a value of "
                           type2-string
                           " [C:6.5.7].")
-        :body (,shr-<type1> x (,<type2>-integer-value y))
+        :body (,shr-<type1> x (,<type2>->get y))
         :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1161,7 +1146,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-2-loop-same ((types type-listp))
-  :guard (type-integer-listp types)
+  :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of
           the C integer operations that involve
@@ -1174,8 +1159,8 @@
 
 (define atc-def-integer-operations-2-loop-inner ((type typep)
                                                  (types type-listp))
-  :guard (and (type-integerp type)
-              (type-integer-listp types))
+  :guard (and (type-nonchar-integerp type)
+              (type-nonchar-integer-listp types))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of
           the C integer operations that involve
@@ -1200,8 +1185,8 @@
 
 (define atc-def-integer-operations-2-loop-outer ((types type-listp)
                                                  (types1 type-listp))
-  :guard (and (type-integer-listp types)
-              (type-integer-listp types1))
+  :guard (and (type-nonchar-integer-listp types)
+              (type-nonchar-integer-listp types1))
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of
           the C integer operations that involve

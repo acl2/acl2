@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -402,6 +402,52 @@
 
 ; (defrec induction-rule (nume (pattern . condition) scheme . rune) nil)
 
+(defun relieve-induction-condition-terms (rune pattern terms alist type-alist
+                                               ens wrld)
+  (cond
+   ((endp terms) t)
+   ((or (variablep (car terms))
+        (fquotep (car terms))
+        (not (eq (ffn-symb (car terms)) 'synp)))
+    (mv-let (ts ttree1)
+      (type-set (sublis-var alist (car terms))
+                t nil type-alist ens wrld nil nil nil)
+      (declare (ignore ttree1))
+      (cond
+       ((ts-intersectp *ts-nil* ts) nil)
+       (t (relieve-induction-condition-terms rune pattern
+                                             (cdr terms)
+                                             alist type-alist ens wrld)))))
+   (t
+
+; In this case, (car terms) is (SYNP 'NIL '(SYNTAXP ...) 'term), where term
+; is the translated term to be evaluated under alist.
+
+    (mv-let (erp val)
+      (ev-w (get-evg (fargn (car terms) 3) 'relieve-induction-condition-terms)
+            alist
+            wrld
+            nil ; user-stobj-alist
+            t   ; safe-mode
+            nil ; gc-off
+            nil ; hard-error-returns-nilp
+            nil ; aok
+            )
+      (cond
+       (erp (er hard 'relieve-induction-condition-terms
+                "The form ~x0 caused the error, ~@1.  That SYNTAXP form ~
+                 occurs as a :condition governing the :induction rule ~x2, ~
+                 which we tried to fire after matching the :pattern ~x3 using ~
+                 the unifying substitution ~x4."
+                (get-evg (fargn (car terms) 2) 'relieve-induction-condition-terms)
+                val
+                rune
+                pattern
+                alist))
+       (val (relieve-induction-condition-terms rune pattern
+                                               (cdr terms)
+                                               alist type-alist ens wrld)))))))
+
 (mutual-recursion
 
 (defun apply-induction-rule (rule term type-alist xterm ttree seen ens wrld)
@@ -480,39 +526,40 @@
      ((and (not (member nume seen))
            (enabled-numep nume ens))
       (mv-let
-       (ans alist)
-       (one-way-unify (access induction-rule rule :pattern)
-                      term)
-       (cond
-        (ans
-         (with-accumulated-persistence
-          (access induction-rule rule :rune)
-          (suggestions)
-          suggestions
-          (mv-let
-           (ts ttree1)
-           (type-set (sublis-var alist
-                                 (access induction-rule rule :condition))
-                     t nil type-alist ens wrld nil nil nil)
-           (declare (ignore ttree1))
+        (ans alist)
+        (one-way-unify (access induction-rule rule :pattern)
+                       term)
+        (cond
+         (ans
+          (with-accumulated-persistence
+           (access induction-rule rule :rune)
+           (suggestions)
+           suggestions
            (cond
-            ((ts-intersectp *ts-nil* ts) nil)
-            (t (let ((term1 (sublis-var alist
-                                        (access induction-rule rule :scheme))))
-                 (cond ((or (variablep term1)
-                            (fquotep term1))
-                        nil)
-                       (t (suggested-induction-cands term1 type-alist
-                                                     xterm
-                                                     (push-lemma
-                                                      (access induction-rule
-                                                              rule
-                                                              :rune)
-                                                      ttree)
-                                                     nil ; eflg
-                                                     (cons nume seen)
-                                                     ens wrld)))))))))
-        (t nil))))
+            ((relieve-induction-condition-terms (access induction-rule rule
+                                                        :rune)
+                                                (access induction-rule rule
+                                                        :pattern)
+                                                (access induction-rule rule
+                                                        :condition)
+                                                alist type-alist ens wrld)
+             (let ((term1 (sublis-var alist
+                                      (access induction-rule rule :scheme))))
+               (cond ((or (variablep term1)
+                          (fquotep term1))
+                      nil)
+                     (t (suggested-induction-cands term1 type-alist
+                                                   xterm
+                                                   (push-lemma
+                                                    (access induction-rule
+                                                            rule
+                                                            :rune)
+                                                    ttree)
+                                                   nil ; eflg
+                                                   (cons nume seen)
+                                                   ens wrld)))))
+            (t nil))))
+         (t nil))))
      (t nil))))
 
 (defun suggested-induction-cands1

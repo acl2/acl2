@@ -18,6 +18,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 ;; Readd the element at position INDEX of the array DATA, which should be a
 ;; bv-array of length LEN and have elements that are bit-vectors of size
@@ -154,3 +155,11 @@
   (equal (bv-array-read size 0 index data)
          0)
   :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+
+(defthmd bv-array-read-shorten-core
+  (implies (and (unsigned-byte-p isize index)
+                (< (expt 2 isize) len)
+                (equal len (len data)))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (expt 2 isize) index (take (expt 2 isize) data))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))

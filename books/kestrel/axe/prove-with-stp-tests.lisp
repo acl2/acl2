@@ -15,7 +15,7 @@
 ; cert_param: (uses-stp)
 
 (include-book "prove-with-stp" :ttags :all)
-(include-book "kestrel/bv/bv-tests" :dir :system)
+(include-book "kestrel/bv/tests" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 
 ;If Axe ever tries to call STP and you don't have it, you may get an inscrutable error.

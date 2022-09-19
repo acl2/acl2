@@ -2,6 +2,4 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-3/2022 Changed ACL2 source definitions of (defrec defstobj-template
-...) and (defrec stobj-property ...).  It seems safest to force
-recertification of all books.
+Version 8.5 release

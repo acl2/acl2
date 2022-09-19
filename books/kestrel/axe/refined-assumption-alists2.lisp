@@ -44,10 +44,8 @@
 
 ;; Extract suitable function call exprs from the possibly-negated-nodenums
 (defund dag-function-call-exprs-from-possibly-negated-nodenums (possibly-negated-nodenums dag-array dag-len)
-  (declare (xargs :guard (and (possibly-negated-nodenumsp possibly-negated-nodenums)
-                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                                     dag-len))
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len))
                   :guard-hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
                                                            possibly-negated-nodenump)
                                  :expand ((possibly-negated-nodenumsp possibly-negated-nodenums))))))
@@ -70,33 +68,31 @@
                     (dag-function-call-exprs-from-possibly-negated-nodenums (rest possibly-negated-nodenums) dag-array dag-len)))))))))
 
 (defthm all-dag-function-call-exprp-of-dag-function-call-exprs-from-possibly-negated-nodenums
-  (implies (and (possibly-negated-nodenumsp possibly-negated-nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                       dag-len))
+  (implies (and (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (all-dag-function-call-exprp (dag-function-call-exprs-from-possibly-negated-nodenums
                                          possibly-negated-nodenums
                                          dag-array dag-len)))
   :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
-                                     possibly-negated-nodenump
-                                     DAG-FUNCTION-CALL-EXPRS-FROM-POSSIBLY-NEGATED-NODENUMS)
-           :expand ((possibly-negated-nodenumsp possibly-negated-nodenums)))))
+                                     bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump
+                                     DAG-FUNCTION-CALL-EXPRS-FROM-POSSIBLY-NEGATED-NODENUMS))))
 
 (defthm bounded-dag-expr-listp-of-dag-function-call-exprs-from-possibly-negated-nodenums
-  (implies (and (possibly-negated-nodenumsp possibly-negated-nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                       dag-len))
+  (implies (and (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (bounded-dag-expr-listp dag-len
                                   (dag-function-call-exprs-from-possibly-negated-nodenums
                                    possibly-negated-nodenums
                                    dag-array dag-len)))
   :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
-                                     possibly-negated-nodenump
+                                     ;possibly-negated-nodenump
                                      DAG-FUNCTION-CALL-EXPRS-FROM-POSSIBLY-NEGATED-NODENUMS
-                                     STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
+                                     bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump
+                                     ;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
                                      BOUNDED-DAG-EXPRP)
-           :expand ((possibly-negated-nodenumsp possibly-negated-nodenums)
+           :expand (
                     (DARGS (CAR POSSIBLY-NEGATED-NODENUMS))
                     (BOUNDED-DARG-LISTP (CDR (CAR POSSIBLY-NEGATED-NODENUMS))
                                          DAG-LEN)
@@ -107,29 +103,23 @@
 
 ;; TODO: Consider optimizing by doing things more directly
 (defund extend-refined-assumption-alist-with-possibly-negated-nodenums (possibly-negated-nodenums refined-assumption-alist dag-array dag-len)
-  (declare (xargs :guard (and (possibly-negated-nodenumsp possibly-negated-nodenums)
-                              (refined-assumption-alistp refined-assumption-alist)
-                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                                     dag-len))))
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
+                              (refined-assumption-alistp refined-assumption-alist))))
   (let ((exprs (dag-function-call-exprs-from-possibly-negated-nodenums possibly-negated-nodenums dag-array dag-len)))
     (extend-refined-assumption-alist exprs refined-assumption-alist)))
 
 (defthm refined-assumption-alistp-of-extend-refined-assumption-alist-with-possibly-negated-nodenums
-  (implies (and (possibly-negated-nodenumsp possibly-negated-nodenums)
+  (implies (and (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
                 (refined-assumption-alistp refined-assumption-alist)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                       dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (refined-assumption-alistp (extend-refined-assumption-alist-with-possibly-negated-nodenums possibly-negated-nodenums refined-assumption-alist dag-array dag-len)))
   :hints (("Goal" :in-theory (enable extend-refined-assumption-alist-with-possibly-negated-nodenums))))
 
 (defthm bounded-refined-assumption-alistp-of-extend-refined-assumption-alist-with-possibly-negated-nodenums
-  (implies (and (possibly-negated-nodenumsp possibly-negated-nodenums)
+  (implies (and (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                       dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (bounded-refined-assumption-alistp (extend-refined-assumption-alist-with-possibly-negated-nodenums possibly-negated-nodenums refined-assumption-alist dag-array dag-len)
                                               dag-len))
   :hints (("Goal" :in-theory (enable extend-refined-assumption-alist-with-possibly-negated-nodenums))))
@@ -200,7 +190,8 @@
                 (< nodenum dag-len))
            (refined-assumption-alistp (extend-refined-assumption-alist-assuming-negation-of-node refined-assumption-alist nodenum dag-array dag-len)))
   :hints (("Goal" :in-theory (enable extend-refined-assumption-alist-assuming-negation-of-node
-                                     all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-conjunctionp))))
+                                     ;;all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-conjunctionp
+                                     ))))
 
 (defthm bounded-refined-assumption-alistp-of-extend-refined-assumption-alist-assuming-negation-of-node
   (implies (and (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -210,7 +201,8 @@
            (bounded-refined-assumption-alistp (extend-refined-assumption-alist-assuming-negation-of-node refined-assumption-alist nodenum dag-array dag-len)
                                               dag-len))
   :hints (("Goal" :in-theory (enable extend-refined-assumption-alist-assuming-negation-of-node
-                                     all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-conjunctionp))))
+                                     ;;all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-conjunctionp
+                                     ))))
 
 (defthm bounded-refined-assumption-alistp-of-extend-refined-assumption-alist-assuming-negation-of-node-gen
   (implies (and (<= dag-len bound)

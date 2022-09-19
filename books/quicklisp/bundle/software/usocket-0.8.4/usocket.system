@@ -1,0 +1,89 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Time-stamp: <2010-12-20 11:36:14 IST>
+;;;   Touched: Mon Dec 20 11:35:11 2010 +0530 <enometh@meer.net>
+;;;   Bugs-To: enometh@meer.net
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2010 Madhu.  All Rights Reserved.
+;;;
+;;; ;madhu 101220 "Packages/usocket-svn-r569/"
+;;; ;madhu 191210 "usocket-0.8.2"
+(in-package "CL-USER")
+
+(defvar *usocket-source-dir*
+  (merge-pathnames "usocket/" (translate-logical-pathname "EXTERN:")))
+(defvar *usocket-binary-dir* (binary-directory *usocket-source-dir*))
+
+;;; NOTE: the key "art" here is, no need to recompile any file when switching
+;;; between a native backend and IOlib backend. -- Chun Tian (binghe)
+
+#+sample
+(pushnew :usocket-iolib *features*)
+
+
+(mk:defsystem :usocket
+  :source-pathname *usocket-source-dir*
+  :binary-pathname *usocket-binary-dir*
+  :source-extension "lisp"
+    :depends-on (:split-sequence
+		 #+(and (or sbcl ecl)
+			(not usocket-iolib)) :sb-bsd-sockets
+		 #+(and mkcl (not usocket-iolib)) :sockets
+		 #+usocket-iolib :iolib)
+  :components ((:file "package")
+		 (:module "vendor" :depends-on ("package")
+		  :components (#+mcl (:file "kqueue")
+			       #+mcl (:file "OpenTransportUDP")))
+		 (:file "usocket" :depends-on ("vendor"))
+		 (:file "condition" :depends-on ("usocket"))
+		 #-usocket-iolib
+		 (:module "backend" :depends-on ("condition")
+		  :components (#+abcl		(:file "abcl")
+			       #+(or allegro cormanlisp)
+						(:file "allegro")
+			       #+clisp		(:file "clisp")
+			       #+(or openmcl clozure)
+						(:file "openmcl")
+			       #+clozure	(:file "clozure" :depends-on ("openmcl"))
+			       #+cmu		(:file "cmucl")
+			       #+(or sbcl ecl clasp mkcl)
+                                                (:file "sbcl")
+			       #+(or ecl mkcl)	(:file "ecl" :depends-on ("sbcl"))
+			       #+clasp		(:file "clasp" :depends-on ("sbcl"))
+			       #+lispworks	(:file "lispworks")
+			       #+mcl		(:file "mcl")
+			       #+mocl		(:file "mocl")
+			       #+scl		(:file "scl")
+			       #+genera		(:file "genera")
+			       #+mezzano	(:file "mezzano")))
+		 #-usocket-iolib
+		 (:file "option" :depends-on ("backend"))
+		 #+usocket-iolib
+		 (:module "backend" :depends-on ("condition")
+		  :components ((:file "iolib"))))
+  #+nil
+  ((:file "pkg")
+   (:module "vendor" :depends-on ("pkg")
+    :components
+    ((:file "split-sequence")
+     #+mcl (:file "kqueue")
+     #+openmcl (:file "ccl-send")
+     (:file "spawn-thread")))
+   (:file "usocket" :depends-on ("vendor"))
+   (:file "condition" :depends-on ("usocket"))
+   (:module "backend" :depends-on ("condition")
+    :components
+    (#+abcl
+     (:file "abcl")
+     #+clisp		(:file "clisp")
+     #+cmu		(:file "cmucl")
+     #+scl		(:file "scl")
+     #+(or sbcl ecl mkcl)	(:file "sbcl")
+     #+lispworks	(:file "lispworks")
+     #+mcl		(:file "mcl")
+     #+openmcl	(:file "openmcl")
+     #+allegro	(:file "allegro")))
+   (:file "server" :depends-on ("backend"))))
+
+#+nil
+(mk:oos :usocket :load :compile-during-load t)

@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -978,10 +978,10 @@
 ; in the corresponding position of x.
 
            (princ "(")
-           (loop for y in x
+           (loop with col+1 = (1+ col)
+                 for y in x
                  as y-raw in raw-x
                  as i from 1
-                 with col+1 = (1+ col)
                  do
                  (progn (when (not (= i 1))
                           (fms "~t0" (list (cons #\0 col+1))
@@ -1323,61 +1323,75 @@
                               (mv nil nil nil '(verify) state)))
                             (t (ld-read-command state)))))
              (t (ld-read-command state))))
-     (let ((form (if (and (f-get-global 'in-local-flg state)
-                          (or (atom form)
-                              (not (eq (car form) 'local))))
-                     (list 'local form)
-                   form)))
-       (cond
-        (eofp (cond ((ld-prompt state)
-                     (pprogn (princ$ "Bye." (standard-co state) state)
-                             (newline (standard-co state) state)
+     (cond
+      (eofp (cond ((ld-prompt state)
+                   (pprogn (princ$ "Bye." (standard-co state) state)
+                           (newline (standard-co state) state)
 
 ; In versions before v2-8, typing ctrl-d (ctrl-c ctrl-d in Emacs) did not
 ; immediately kill the Lisp if the resulting eof condition was detected by BRR
 ; processing.  The code below fixes that; let's hope it doesn't "fix" anything
 ; else!
 
-                             (prog2$ (and (equal (standard-oi state) *standard-oi*)
-                                          (good-bye))
-                                     state)
-                             (mv :return :eof state)))
-                    (t (mv :return :eof state))))
-        (erp (ld-return-error state))
-        (t (pprogn
-            (ld-print-command keyp form col state)
-            (mv-let
-              (erp ans state)
-              (ld-filter-command form state)
-              (cond
-               (erp (ld-return-error state))
-               ((null ans) (mv :continue nil state))
-               ((eq ans :error) (mv :error nil state))
-               ((eq ans :return) (mv :return :filter state))
-               (t (assert$
-                   (eq ans t)
-                   (pprogn
-                    (cond ((<= (f-get-global 'ld-level state) 1)
-                           (prog2$ (initialize-accumulated-warnings)
-                                   (initialize-timers state)))
-                          (t state))
-                    (f-put-global 'last-make-event-expansion nil state)
-                    (let* ((old-wrld (w state))
-                           (old-default-defun-mode
-                            (default-defun-mode old-wrld)))
-                      (mv-let
-                        (error-flg trans-ans state)
-                        (revert-world-on-error
-                         (mv-let (error-flg trans-ans state)
-                           (if (raw-mode-p state)
-                               (acl2-raw-eval form state)
-                             (trans-eval-default-warning form 'top-level
-                                                         state t))
+                           (prog2$ (and (equal (standard-oi state) *standard-oi*)
+                                        (good-bye))
+                                   state)
+                           (mv :return :eof state)))
+                  (t (mv :return :eof state))))
+      (erp (ld-return-error state))
+      (t (pprogn
+          (ld-print-command keyp form col state)
+          (mv-let
+            (erp ans state)
+            (ld-filter-command form state)
+            (cond
+             (erp (ld-return-error state))
+             ((null ans) (mv :continue nil state))
+             ((eq ans :error) (mv :error nil state))
+             ((eq ans :return) (mv :return :filter state))
+             (t (assert$
+                 (eq ans t)
+                 (pprogn
+                  (cond ((<= (f-get-global 'ld-level state) 1)
+                         (prog2$ (initialize-accumulated-warnings)
+                                 (initialize-timers state)))
+                        (t state))
+                  (f-put-global 'last-make-event-expansion nil state)
+                  (let* ((old-wrld (w state))
+                         (old-default-defun-mode
+                          (default-defun-mode old-wrld))
+                         (in-local-flg ; we save this value before evaluation
+                          (f-get-global 'in-local-flg state)))
+                    (mv-let
+                      (error-flg trans-ans state)
+                      (revert-world-on-error
+                       (mv-let (error-flg trans-ans state)
+                         (if (raw-mode-p state)
+                             (acl2-raw-eval form state)
+                           (trans-eval-default-warning form 'top-level
+                                                       state t))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
+                         (let ((form0
+
+; If we are in the context of LOCAL and form evaluates to an error triple, then
+; we save form as an explicitly local command, in support of local portcullis
+; commands.  Our restriction to error triples avoids storing nonsense forms;
+; for example, we do not want (ld '((local (ld '(3))))) to generate the form
+; (local '(3)), which does not pass translate.  Since every portcullis command
+; is an event form, then our restriction to error triples does not rule out any
+; portcullis commands.
+
+                                (if (and in-local-flg
+                                         (equal (car trans-ans)
+                                                *error-triple-sig*)
+                                         (not (and (consp form)
+                                                   (eq (car form) 'local))))
+                                    (list 'local form)
+                                  form)))
                            (pprogn
-                            (extend-ld-history form error-flg trans-ans
+                            (extend-ld-history form0 error-flg trans-ans
                                                state)
                             (cond
                              (error-flg (mv t nil state))
@@ -1389,9 +1403,9 @@
                                  (maybe-add-command-landmark
                                   old-wrld
                                   old-default-defun-mode
-                                  form
+                                  form0
                                   trans-ans state)
-                                 (mv nil trans-ans state)))))))
+                                 (mv nil trans-ans state))))))))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx) and we know
 ; that valx is not an erroneous error triple if we're paying attention to
@@ -1402,48 +1416,48 @@
 ; error triple and it signals an error.  Error-flg, now, is set to t
 ; iff we reverted.
 
-                        (cond
-                         (error-flg (ld-return-error state))
-                         ((and (equal (car trans-ans) *error-triple-sig*)
-                               (eq (cadr (cdr trans-ans)) :q))
-                          (mv :return :exit state))
-                         (t (pprogn
-                             (ld-print-results trans-ans state)
-                             (cond
-                              ((and (ld-error-triples state)
-                                    (not (eq (ld-error-action state) :continue))
-                                    (equal (car trans-ans) *error-triple-sig*)
-                                    (let ((val (cadr (cdr trans-ans))))
-                                      (and (consp val)
-                                           (eq (car val) :stop-ld))))
-                               (mv :return
-                                   (list* :stop-ld
-                                          (f-get-global 'ld-level state)
-                                          (cdr (cadr (cdr trans-ans))))
-                                   state))
-                              (t
+                      (cond
+                       (error-flg (ld-return-error state))
+                       ((and (equal (car trans-ans) *error-triple-sig*)
+                             (eq (cadr (cdr trans-ans)) :q))
+                        (mv :return :exit state))
+                       (t (pprogn
+                           (ld-print-results trans-ans state)
+                           (cond
+                            ((and (ld-error-triples state)
+                                  (not (eq (ld-error-action state) :continue))
+                                  (equal (car trans-ans) *error-triple-sig*)
+                                  (let ((val (cadr (cdr trans-ans))))
+                                    (and (consp val)
+                                         (eq (car val) :stop-ld))))
+                             (mv :return
+                                 (list* :stop-ld
+                                        (f-get-global 'ld-level state)
+                                        (cdr (cadr (cdr trans-ans))))
+                                 state))
+                            (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                               (let ((filter (ld-pre-eval-filter state)))
-                                 (cond
-                                  ((and (not (eq filter :all))
-                                        (not (eq filter :query))
-                                        (not (eq filter :illegal-state))
-                                        (not (new-namep filter
-                                                        (w state))))
-                                   (er-progn
+                             (let ((filter (ld-pre-eval-filter state)))
+                               (cond
+                                ((and (not (eq filter :all))
+                                      (not (eq filter :query))
+                                      (not (eq filter :illegal-state))
+                                      (not (new-namep filter
+                                                      (w state))))
+                                 (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                                    (set-ld-pre-eval-filter :all state)
-                                    (mv :return :filter state)))
-                                  (t (mv :continue nil state))))))))))))))))))))))))
+                                  (set-ld-pre-eval-filter :all state)
+                                  (mv :return :filter state)))
+                                (t (mv :continue nil state)))))))))))))))))))))))
 
 (defun ld-loop (state)
 
@@ -1612,8 +1626,7 @@
                        (cons #\l (f-get-global 'ld-level state))
                        (cons #\c (f-get-global 'connected-book-directory
                                                state))
-                       (cons #\b (f-get-global 'system-books-dir
-                                               state)))
+                       (cons #\b (project-dir-alist state)))
                  (standard-co state)
                  state
                  (ld-evisc-tuple state))))))
@@ -2285,38 +2298,44 @@
 ; Kwd is :ubt or :ubu.
 
   (let* ((wrld (w state))
-         (command-number-baseline
-          (access command-number-baseline-info
-                  (global-val 'command-number-baseline-info wrld)
-                  :current)))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld kwd state)))
-             (cond ((if (eq kwd :ubt)
-                        (<= (access-command-tuple-number (cddar cmd-wrld))
-                            command-number-baseline)
-                      (< (access-command-tuple-number (cddar cmd-wrld))
-                         command-number-baseline))
-                    (cond
-                     ((let ((command-number-baseline-original
-                             (access command-number-baseline-info
-                                     (global-val 'command-number-baseline-info wrld)
-                                     :original)))
-                        (if (eq kwd :ubt)
-                            (<= (access-command-tuple-number (cddar cmd-wrld))
-                                command-number-baseline-original)
-                          (< (access-command-tuple-number (cddar cmd-wrld))
-                             command-number-baseline-original)))
-                      (er soft kwd "Can't undo into system initialization."))
-                     (t (er soft kwd
-                            "Can't undo into prehistory.  See :DOC ~
-                             reset-prehistory."))))
-                   ((and (eq kwd :ubu) (equal wrld cmd-wrld))
-                    (er soft kwd
-                        "Can't undo back to where we already are!"))
-                   (t
-                    (let ((pred-wrld (if (eq kwd :ubt)
-                                         (scan-to-command (cdr cmd-wrld))
-                                       cmd-wrld)))
-                      (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
+         (info (global-val 'command-number-baseline-info wrld))
+         (permanent-p (access command-number-baseline-info info :permanent-p))
+         (current (access command-number-baseline-info info :current)))
+    (er-let* ((cmd-wrld (er-decode-cd cd wrld kwd state))
+              (command-tuple-number (value (access-command-tuple-number
+                                            (cddar cmd-wrld)))))
+      (cond ((if (eq kwd :ubt)
+                 (<= command-tuple-number current)
+               (< command-tuple-number current))
+             (cond
+              ((let ((original (access command-number-baseline-info info
+                                       :original)))
+                 (if (eq kwd :ubt)
+                     (<= command-tuple-number original)
+                   (< command-tuple-number original)))
+               (er soft kwd "Can't undo into system initialization."))
+              (t (er soft kwd
+                     "Can't undo into prehistory.  See :DOC ~
+                      reset-prehistory."))))
+            ((and (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                  (if (eq kwd :ubt)
+                      (<= command-tuple-number (car permanent-p))
+                    (< command-tuple-number (car permanent-p))))
+             (er soft kwd
+                 "Can't undo a :disable-ubt event (at command ~x0).~@1  See ~
+                  :DOC disable-ubt."
+                 (absolute-to-relative-command-number (car permanent-p) wrld)
+                 (if (cdr permanent-p)
+                     (msg "  ~@0" (cdr permanent-p))
+                   "")))
+            ((and (eq kwd :ubu) (equal wrld cmd-wrld))
+             (er soft kwd
+                 "Can't undo back to where we already are!"))
+            (t
+             (let ((pred-wrld (if (eq kwd :ubt)
+                                  (scan-to-command (cdr cmd-wrld))
+                                cmd-wrld)))
+               (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
 
 (defun ubt-ubu-fn (kwd cd state)
 
@@ -2360,19 +2379,28 @@
          (command-number-baseline
           (access command-number-baseline-info
                   command-number-baseline-info
-                  :current)))
+                  :current))
+         (permanent-p (access command-number-baseline-info
+                              command-number-baseline-info
+                              :permanent-p)))
     (cond ((eql command-number-baseline
                 (access command-number-baseline-info
                         command-number-baseline-info
                         :original))
            (er soft ctx
                "There is no reset-prehistory event to undo."))
-          ((access command-number-baseline-info
-                   command-number-baseline-info
-                   :permanent-p)
+          ((eq permanent-p t)
            (er soft ctx
-               "It is illegal to undo a reset-prehistory event that had its ~
-                permanent-p flag set to t.  See :DOC reset-prehistory."))
+               "It is illegal to undo a (reset-prehistory t) event.  See :DOC ~
+                reset-prehistory."))
+          (permanent-p ; (cons cmd-no msg-or-nil)
+           (er soft ctx
+               "It is illegal to undo a reset-prehistory event with a non-nil ~
+                pflg argument.  See :DOC reset-prehistory.~@0"
+               (if (and (consp permanent-p)
+                        (cdr permanent-p))
+                   (msg "  ~@0" (cdr permanent-p))
+                 "")))
           (t (er-let* ((val (ubt-ubu-fn1
                              :ubt-prehistory
                              wrld
@@ -3659,29 +3687,44 @@
 ; that requires a trust tag, so it's not our problem!
 
       t))
-    (let ((wrld (w state)))
-      (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state)))
-        (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                   (access command-number-baseline-info
-                           (global-val 'command-number-baseline-info wrld)
-                           :current))
-
-; See the similar comment in ubt?-ubu?-fn.
-
+    (let* ((wrld (w state))
+           (info (global-val 'command-number-baseline-info wrld))
+           (permanent-p (access command-number-baseline-info info
+                                :permanent-p))
+           (current (access command-number-baseline-info info :current))
+           (barrier (if (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                        (max (car permanent-p) current)
+                      current)))
+      (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state))
+                (command-tuple-number (value (access-command-tuple-number
+                                              (cddar cmd-wrld)))))
+        (cond ((<= command-tuple-number barrier)
                (cond
-                ((<= (access-command-tuple-number (cddar cmd-wrld))
-                     (access command-number-baseline-info
-                             (global-val 'command-number-baseline-info wrld)
-                             :original))
+                ((<= command-tuple-number
+                     (access command-number-baseline-info info :original))
                  (er soft ctx
                      "Can't puff a command within the system initialization."))
-                (t
+                ((<= command-tuple-number current)
                  (er soft ctx
                      "Can't puff a command within prehistory.  See :DOC ~
-                     reset-prehistory."))))
+                      reset-prehistory."))
+                (t
+
+; Since (<= command-tuple-number barrier) but not (<= command-tuple-number
+; current), then barrier and current are distinct, so we know (consp
+; permanent-p) and current < command-tuple-number <= (car permanent-p).
+
+                 (er soft ctx
+                     "Can't puff a command executed at or before the ~
+                      reset-prehistory event (at command ~x0) that disabled ~
+                      undoing.~@1  See :DOC disable-ubt."
+                     (absolute-to-relative-command-number (car permanent-p)
+                                                          wrld)
+                     (if (cdr permanent-p)
+                         (msg "  ~@0" (cdr permanent-p))
+                       "")))))
               (t
-               (er-let*
-                   ((cmds (puffed-command-sequence cd ctx wrld state)))
+               (er-let* ((cmds (puffed-command-sequence cd ctx wrld state)))
                  (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
                         (i (absolute-to-relative-command-number
                             (max-absolute-command-number cmd-wrld)
@@ -3779,37 +3822,50 @@
               state))
 
 (defun puff*-fn (cd state)
-  (let ((wrld (w state)))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff* state)))
-             (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                        (access command-number-baseline-info
-                                (global-val 'command-number-baseline-info wrld)
-                                :current))
+  (let* ((wrld (w state))
+         (info (global-val 'command-number-baseline-info wrld))
+         (permanent-p (access command-number-baseline-info info :permanent-p))
+         (current (access command-number-baseline-info info :current))
+         (barrier (if (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                      (max (car permanent-p) current)
+                    current)))
+    (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff* state))
+              (command-tuple-number (value (access-command-tuple-number
+                                            (cddar cmd-wrld)))))
+      (cond ((<= command-tuple-number barrier)
+             (cond
+              ((<= command-tuple-number
+                   (access command-number-baseline-info info :original))
+               (er soft :puff*
+                   "Can't puff* a command within the system initialization."))
+              ((<= command-tuple-number current)
+               (er soft :puff*
+                   "Can't puff* a command within prehistory.  See :DOC ~
+                    reset-prehistory."))
+              (t
 
-; See the similar comment in ubt?-ubu?-fn.
+; Since (<= command-tuple-number barrier) but not (<= command-tuple-number
+; current), then barrier and current are distinct, so we know (consp
+; permanent-p) and current < command-tuple-number <= (car permanent-p).
 
-                    (cond
-                     ((<= (access-command-tuple-number (cddar cmd-wrld))
-                          (access command-number-baseline-info
-                                  (global-val 'command-number-baseline-info wrld)
-                                  :original))
-                      (er soft :puff*
-                          "Can't puff* a command within the system ~
-                           initialization."))
-                     (t
-                      (er soft :puff*
-                          "Can't puff* a command within prehistory.  See :DOC ~
-                           reset-prehistory."))))
-                   (t
-                    (let* ((mx (absolute-to-relative-command-number
-                                (max-absolute-command-number wrld)
-                                wrld))
-                           (ptr (absolute-to-relative-command-number
-                                 (max-absolute-command-number cmd-wrld)
-                                 wrld))
-                           (k (- mx ptr)))
-                      (er-let*
-                       ((pair (puff*-fn1 ptr k state)))
+               (er soft :puff*
+                   "Can't puff* a command executed at or before :disable-ubt ~
+                    (at command ~x0).~@1  See :DOC disable-ubt."
+                   (absolute-to-relative-command-number (car permanent-p)
+                                                        wrld)
+                   (if (cdr permanent-p)
+                       (msg "  ~@0" (cdr permanent-p))
+                     "")))))
+            (t
+             (let* ((mx (absolute-to-relative-command-number
+                         (max-absolute-command-number wrld)
+                         wrld))
+                    (ptr (absolute-to-relative-command-number
+                          (max-absolute-command-number cmd-wrld)
+                          wrld))
+                    (k (- mx ptr)))
+               (er-let*
+                   ((pair (puff*-fn1 ptr k state)))
 
 ; The difference between puff and puff* is that puff* iterates puff across the
 ; region generated by the first puff until there are no more commands that are
@@ -3843,8 +3899,8 @@
 ; current maximum relative command number, inclusive.  Initially this region
 ; contains just one command, the one we are to puff first.  ;
 
-                      (puff-report :puff* (car pair) (cdr pair) cd
-                                   state))))))))
+                 (puff-report :puff* (car pair) (cdr pair) cd
+                              state))))))))
 
 (defmacro puff (cd)
   `(puff-fn ,cd state))
@@ -4311,7 +4367,7 @@
 
 
 (defmacro trust-mfc (&whole whole form)
-  #-acl2-loop-only (declare (ignore whole))
+  #-acl2-loop-only (declare (ignorable whole))
   #+acl2-loop-only `(prog2$ (er hard 'trust-mfc
                                 "It is illegal to run ~x0 except in raw Lisp, ~
                                  typically by way of a :program-mode function ~
@@ -5097,3 +5153,79 @@
 
 (defmacro without-evisc (form)
   `(without-evisc-fn ',form state))
+
+; We now introduce some definitions in support of establish-project-dir-alist.
+; Establish-project-dir-alist is called in LP, but the following can be
+; defined in ACL2 (not just raw Lisp).  Unfortunately unix-full-pathname is
+; defined only in raw Lisp at this point, so some of the functions supporting
+; establish-project-dir-alist cannot be defined here naturally.
+
+(defun keyword-value-string-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l) (null l))
+        (t (and (keywordp (car l))
+                (consp (cdr l))
+                (stringp (cadr l))
+                (keyword-value-string-listp (cddr l))))))
+
+(defun project-dir-string-p (s pos bound)
+  (declare (type (unsigned-byte 29) bound)
+           (xargs :measure (nfix (- bound pos))
+                  :guard (and (stringp s)
+                              (natp pos)
+                              (natp bound)
+                              (<= pos bound)
+                              (<= bound (length s)))))
+  (let ((pos (scan-past-whitespace s pos bound)))
+    (cond ((mbe :logic (or (not (natp pos))
+                           (>= pos bound))
+                :exec (= pos bound))
+           t)
+          ((eql (char s pos) #\;)
+           (let ((p0 (search *newline-string* s :start2 (1+ pos) :end2 bound)))
+             (or (null p0)
+                 (project-dir-string-p s p0 bound))))
+          (t (let* ((p0 (search *newline-string* s :start2 pos :end2 bound))
+                    (p (or p0 bound))
+                    (k (search ":" s :start2 pos :end2 p))
+                    (q (search "\"" s :start2 pos :end2 p))
+                    (q2 ; double-quote ending the filename
+                     (and q
+                          (search "\"" s :start2 (1+ q) :end2 p))))
+               (and k q2 (< k q)
+                    (= p (scan-past-whitespace s (1+ q2) p))
+                    (not (search ":" s :start2 (1+ q2) :end2 p))
+                    (not (search "\"" s :start2 (1+ q2) :end2 p))
+                    (project-dir-string-p s p bound)))))))
+
+(defun project-dir-file-p (filename state)
+
+; This function performs only a basic sanity check that the given file has
+; lines consisting of a keyword and a string.
+
+  (declare (xargs :stobjs state
+                  :guard (stringp filename)))
+  (let* ((s (read-file-into-string filename))
+         (len (length s)))
+      (and (stringp s)
+           (unsigned-byte-p 29 len)
+           (project-dir-string-p s 0 len))))
+
+(defun merge-len>=-cdr (l1 l2)
+  (declare (xargs :guard (and (alistp l1)
+                              (alistp l2))
+                  :measure (+ (len l1) (len l2))))
+  (cond ((endp l1) l2)
+        ((endp l2) l1)
+        ((<= (len (cdar l1)) (len (cdar l2)))
+         (cons (car l1) (merge-len>=-cdr (cdr l1) l2)))
+        (t (cons (car l2) (merge-len>=-cdr l1 (cdr l2))))))
+
+(defun merge-sort-len>=-cdr (l)
+  (declare (xargs :guard (alistp l)
+                  :measure (len l)
+                  :verify-guards nil))
+  (cond ((endp (cdr l)) l)
+        (t (merge-len>=-cdr (merge-sort-len>=-cdr (evens l))
+                            (merge-sort-len>=-cdr (odds l))))))
+

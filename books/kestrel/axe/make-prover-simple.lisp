@@ -304,8 +304,12 @@
     ;;(:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
     (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
     (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-TRUE-LISTP)
-    (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
-    (:FORWARD-CHAINING TRIESP-FORWARD)
+; Matt K. mod, 7/15/2022: SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP is being removed,
+; but its effect follows from the three I've added just below the next line.
+;   (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
+    (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-EQLABLE-LISTP)
+    (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
+    (:FORWARD-CHAINING ATOM-LISTP-FORWARD-TO-TRUE-LISTP)
     (:FORWARD-CHAINING WF-DAGP-FORWARD)
     (:FORWARD-CHAINING WF-DAGP-FORWARD-TO-<=-OF-LEN)
     (:LINEAR BOUND-ON-MV-NTH-3-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-3)
@@ -418,7 +422,7 @@
     (:REWRITE USE-ALL-STORED-AXE-RULEP-FOR-CAR)
     (:REWRITE WF-DAGP-AFTER-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
-    (:TYPE-PRESCRIPTION ALEN1-TYPE)
+    (:TYPE-PRESCRIPTION posp-of-alen1)
     (:TYPE-PRESCRIPTION ALISTP)
     (:TYPE-PRESCRIPTION ALL-<)
     (:TYPE-PRESCRIPTION AXE-TREE-LISTP)
@@ -1883,7 +1887,7 @@
                                (b* (((mv erp val)
                                      (,apply-axe-evaluator-to-quoted-args-name fn simplified-args interpreted-function-alist)))
                                  (if erp
-                                     (if (eq :unknown-function erp)
+                                     (if (call-of :unknown-function erp)
                                          (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
                                        ;; anything else non-nil is a true error:
                                        (mv erp nil nil))
@@ -2705,8 +2709,11 @@
                                (:e eqlable-listp)
                                member-eq-exec-is-member-equal ;(:e member-eq-exec)
                                member-eql-exec-is-member-equal
-                               unsigned-byte-p-from-bounds
-                               unsigned-byte-p-forward
+                               zp-compound-recognizer
+                               unsigned-byte-p-forward-to-nonnegative-integerp
+                               ;; unsigned-byte-p-from-bounds
+                               unsigned-byte-p-of-+-of--1
+                               ;; unsigned-byte-p-forward
                                rule-alistp-means-alistp
                                axe-bind-free-function-applicationp
                                natp-of-+-of-1-and-largest-non-quotep
@@ -2949,7 +2956,7 @@
                                          (b* (((mv erp val)
                                                (,apply-axe-evaluator-to-quoted-args-name fn simplified-args interpreted-function-alist)))
                                            (if erp
-                                               (if (eq :unknown-function erp)
+                                               (if (call-of :unknown-function erp)
                                                    (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
                                                  ;; anything else non-nil is a true error:
                                                  (mv erp nil nil))
@@ -5033,7 +5040,7 @@
 ;;                                               (< (len dag) 2147483647)))
 ;;                                      (pseudo-term-listp assumptions)
 ;;                                      (pseudo-dag-arrayp context-array-name context-array context-array-len)
-;;                                      (contextp-with-bound context context-array-len)
+;;                                      (bounded-contextp context context-array-len)
 ;;                                      ;;todo: add more
 ;;                                      (all-rule-alistp rule-alists)
 ;;                                      (true-listp rule-alists)
@@ -5126,7 +5133,7 @@
                                             use
                                             state)
          (declare (xargs :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
-                                        :in-theory (e/d (array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp wf-dagp)
+                                        :in-theory (e/d (array-len-with-slack wf-dagp)
                                                         (symbol-listp top-nodenum myquotep get-global w quotep make-implication-dag-return-type))))
                          :stobjs state))
          (b* ( ;; Check inputs:

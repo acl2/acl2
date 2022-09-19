@@ -487,6 +487,9 @@
        (parameter-assumptions (assumptions-about-parameters-on-stack parameter-types first-param-slot param-slot-to-name-alist array-length-alist th state-var))
        (- (cw "(Parameter assumptions: ~x0)~%" parameter-assumptions))
        (structural-assumptions (append (standard-hyps-basic-before-invoke state-var)
+                                       ;; Needed for lookup-method-for-invokespecial:
+                                       `((jvm::bound-in-class-tablep (car (jvm::method-designator (jvm::thread-top-frame ,th ,state-var))) ; current-class-name
+                                                                     (jvm::class-table ,state-var)))
                                        ;; anything else?
                                        ))
        (poised-assumptions (make-poised-assumptions staticp method-class method-name method-descriptor parameter-types state-var))
@@ -562,20 +565,21 @@
         (er hard? 'unroll-java-code-fn "Error in unrolling.")
         (mv erp nil state))
        (- (cw "  Done simplifying term.)~%"))
+       ;; TODO: Handle a result-dag that is a quotep.
        ;; todo: make optional and avoid this on huge terms by default
        ((mv erp result-dag state)
         (if prune-branches
-            (prune-dag-new result-dag
-                           assumptions
-                           (set-difference-eq
-                            ;; no actual symbolic execution is done here:
-                            (union-eq (unroll-java-code2-rules)
-                                      extra-rules)
-                            remove-rules)
-                           nil ; interpreted-fns
-                           monitor
-                           call-stp
-                           state)
+            (prune-dag-precisely result-dag
+                                 assumptions
+                                 (set-difference-eq
+                                  ;; no actual symbolic execution is done here:
+                                  (union-eq (unroll-java-code2-rules)
+                                            extra-rules)
+                                  remove-rules)
+                                 nil ; interpreted-fns
+                                 monitor
+                                 call-stp
+                                 state)
           (mv nil result-dag state)))
        ((when erp) (mv erp nil state))
        ;; Now simplify the pruned dag (TODO, repeatedly simplifying and pruning might help?)

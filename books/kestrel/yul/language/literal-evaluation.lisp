@@ -204,7 +204,7 @@
   (b* ((content (plain-string->content pstring))
        (bytes (eval-string-element-list content))
        ((unless (<= (len bytes) 32))
-        (err (list :plain-string-too-long bytes)))
+        (reserrf (list :plain-string-too-long bytes)))
        (bytes (append bytes (repeat (- 32 (len bytes)) 0))))
     (value (acl2::bebytes=>nat bytes)))
   :guard-hints
@@ -236,7 +236,7 @@
   ///
 
   (defret error-info-wfp-of-eval-plain-string-literal
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,7 +276,7 @@
   (b* ((content (hex-string->content hstring))
        (bytes (eval-hex-pair-list content))
        ((unless (<= (len bytes) 32))
-        (err (list :hex-string-too-long bytes)))
+        (reserrf (list :hex-string-too-long bytes)))
        (bytes (append bytes (repeat (- 32 (len bytes)) 0))))
     (value (acl2::bebytes=>nat bytes)))
   :guard-hints
@@ -308,7 +308,7 @@
   ///
 
   (defret error-info-wfp-of-eval-hex-string-literal
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -339,17 +339,17 @@
    :boolean (if lit.get (value 1) (value 0))
    :dec-number (if (acl2::ubyte256p lit.get)
                    (value lit.get)
-                 (err (list :dec-number-too-large lit.get)))
+                 (reserrf (list :dec-number-too-large lit.get)))
    :hex-number (b* ((num (str::hex-digit-chars-value
                           (hex-digit-list->chars lit.get))))
                  (if (acl2::ubyte256p num)
                      (value num)
-                   (err (list :hex-number-too-large lit.get))))
+                   (reserrf (list :hex-number-too-large lit.get))))
    :plain-string (eval-plain-string-literal lit.get)
    :hex-string (eval-hex-string-literal lit.get))
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-eval-literal
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))))

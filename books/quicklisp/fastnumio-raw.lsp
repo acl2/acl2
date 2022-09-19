@@ -30,13 +30,4 @@
 
 (in-package "ACL2")
 
-; Matt K.: There are package-lock problems with SBCL 1.4.7 that I have been
-; able to overcome here.  I tried each of the following in raw Lisp.
-; (without-package-locks (load "fastnumio-raw.lsp"))
-; (without-package-lock "SB-BIGNUM" (load "fastnumio-raw.lsp"))
-; (with-unlocked-packages '("SB-BIGNUM") (load "fastnumio-raw.lsp"))
-; (without-package-locks (asdf:load-system "fastnumio"))
-; (without-package-lock "SB-BIGNUM" (asdf:load-system "fastnumio"))
-; (with-unlocked-packages '("SB-BIGNUM") (asdf:load-system "fastnumio"))
-#-sbcl
 (asdf:load-system "fastnumio")

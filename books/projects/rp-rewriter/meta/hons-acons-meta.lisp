@@ -50,6 +50,11 @@
 
 (include-book "../meta-rule-macros")
 
+(include-book "centaur/meta/def-formula-checks" :dir :system)
+
+(local
+ (in-theory (enable falist-consistent)))
+
 (def-formula-checks-default-evl
  rp-evl
  (strip-cars *small-evl-fncs*))

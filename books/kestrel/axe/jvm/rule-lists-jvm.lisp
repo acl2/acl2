@@ -1108,7 +1108,7 @@
 
 ;pretty basic (needed to compare stack heights to decide whether to step?):
             fold-consts-in-+
-            hack-arith-cancel
+            <-of-+-cancel-2-2
 
             nth-append-1
             nth-append-2
@@ -1156,7 +1156,7 @@
 
             ;;    if-of-non-nil ;slow? wed jan 13 21:22:18 2010
 
-            ;;    natp-means-non-neg ;loops with defn natp - limit somehow? ;thu may 17 00:02:17 2012
+            ;;    not-<-of-0-when-natp ;loops with defn natp - limit somehow? ;thu may 17 00:02:17 2012
 
 ;     bvchop-list-of-logext-list
 
@@ -1251,14 +1251,14 @@
 ;    logext-list-equal-nil-rewrite
 
 ;    iushr-constant-opener
-            usbp8-implies-sbp32-2 ;fixme do we still need this?
+;            usbp8-implies-sbp32-2 ;fixme do we still need this?
             integerp-of-nth-when-all-integerp
 ;    logext-identity;;this caused problems.  trying without.
             sbp-32-when-non-neg ;do we need still this?
             nth-of-subrange
             one-plus-len-hack
-            <-of-+-of-1-same
-            <-of-+-of-1-same-alt)))
+            <-of-+-cancel-1-2
+            <-of-+-cancel-2-1)))
 
 ;move?
 ;; TODO: Add more
@@ -2424,7 +2424,7 @@
              bvlt-of-bvplus-1-cancel-alt
              consp-of-nthcdr
              posp
-;             natp ;loops with natp-means-non-neg
+;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
 
              cdr-of-nthcdr

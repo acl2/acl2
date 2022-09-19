@@ -88,12 +88,12 @@
   (b* ((ren (add-vars-to-var-renaming (funinfo->inputs old)
                                       (funinfo->inputs new)
                                       (renaming nil)))
-       ((when (resulterrp ren)) nil)
+       ((when (reserrp ren)) nil)
        (ren (add-vars-to-var-renaming (funinfo->outputs old)
                                       (funinfo->outputs new)
                                       ren))
-       ((when (resulterrp ren)) nil))
-    (not (resulterrp (block-renamevar (funinfo->body old)
+       ((when (reserrp ren)) nil))
+    (not (reserrp (block-renamevar (funinfo->body old)
                                       (funinfo->body new)
                                       ren))))
   :hooks (:fix))
@@ -297,10 +297,10 @@
      or they are related expression outcomes."))
   (b* ((old (eoutcome-result-fix old))
        (new (eoutcome-result-fix new)))
-    (or (and (resulterrp old)
-             (resulterrp new))
-        (and (not (resulterrp old))
-             (not (resulterrp new))
+    (or (and (reserrp old)
+             (reserrp new))
+        (and (not (reserrp old))
+             (not (reserrp new))
              (eoutcome-renamevarp old new ren))))
   :hooks (:fix))
 
@@ -318,10 +318,10 @@
      or they are related statement outcomes."))
   (b* ((old (soutcome-result-fix old))
        (new (soutcome-result-fix new)))
-    (or (and (resulterrp old)
-             (resulterrp new))
-        (and (not (resulterrp old))
-             (not (resulterrp new))
+    (or (and (reserrp old)
+             (reserrp new))
+        (and (not (reserrp old))
+             (not (reserrp new))
              (soutcome-renamevarp old new ren))))
   :hooks (:fix)
   ///
@@ -329,14 +329,14 @@
   (defruled soutcome-result-renamevarp-to-soutcome-renamevarp
     (implies (and (soutcome-resultp x)
                   (soutcome-resultp y)
-                  (not (resulterrp x))
-                  (not (resulterrp y)))
+                  (not (reserrp x))
+                  (not (reserrp y)))
              (equal (soutcome-result-renamevarp x y ren)
                     (soutcome-renamevarp x y ren))))
 
   (defruled soutcome-result-renamevarp-of-errors-not-error
-    (implies (and (resulterrp x)
-                  (resulterrp y))
+    (implies (and (reserrp x)
+                  (reserrp y))
              (soutcome-result-renamevarp x y ren))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -380,7 +380,7 @@
      yields either two errors or no errors."))
 
   (defruled funinfo-renamevarp-of-funinfo-for-fundef
-    (implies (not (resulterrp (fundef-renamevar old new)))
+    (implies (not (reserrp (fundef-renamevar old new)))
              (funinfo-renamevarp (funinfo-for-fundef old)
                                  (funinfo-for-fundef new)))
     :enable (funinfo-for-fundef
@@ -403,26 +403,26 @@
                       (<< fun (mv-nth 0 (omap::head old-scope)))))))
 
   (defruled funscope-renamevarp-of-funscope-for-fundefs
-    (implies (not (resulterrp (fundef-list-renamevar old-funs new-funs)))
+    (implies (not (reserrp (fundef-list-renamevar old-funs new-funs)))
              (b* ((old-scope1 (funscope-for-fundefs old-funs))
                   (new-scope1 (funscope-for-fundefs new-funs)))
-               (implies (and (not (resulterrp old-scope1))
-                             (not (resulterrp new-scope1)))
+               (implies (and (not (reserrp old-scope1))
+                             (not (reserrp new-scope1)))
                         (funscope-renamevarp old-scope1 new-scope1))))
     :enable (funscope-for-fundefs
              fundef-list-renamevar
              funscope-renamevarp-of-update
              funinfo-renamevarp-of-funinfo-for-fundef
-             funscopep-when-funscope-resultp-and-not-resulterrp)
+             funscopep-when-funscope-resultp-and-not-reserrp)
     :expand (fundef-renamevar (car old-funs) (car new-funs)))
 
   (defruled funenv-renamevarp-of-add-funs
     (implies (and (funenv-renamevarp old-env new-env)
-                  (not (resulterrp (fundef-list-renamevar old-funs new-funs))))
+                  (not (reserrp (fundef-list-renamevar old-funs new-funs))))
              (b* ((old-env1 (add-funs old-funs old-env))
                   (new-env1 (add-funs new-funs new-env)))
-               (implies (and (not (resulterrp old-env1))
-                             (not (resulterrp new-env1)))
+               (implies (and (not (reserrp old-env1))
+                             (not (reserrp new-env1)))
                         (funenv-renamevarp old-env1 new-env1))))
     :enable (funenv-renamevarp
              add-funs
@@ -469,8 +469,8 @@
                   (new-info (funinfo+funenv->info new-info+env))
                   (old-env1 (funinfo+funenv->env old-info+env))
                   (new-env1 (funinfo+funenv->env new-info+env)))
-               (implies (and (not (resulterrp old-info+env))
-                             (not (resulterrp new-info+env)))
+               (implies (and (not (reserrp old-info+env))
+                             (not (reserrp new-info+env)))
                         (and (funinfo-renamevarp old-info new-info)
                              (funenv-renamevarp old-env1 new-env1)))))
     :use (:instance lemma
@@ -487,8 +487,8 @@
                      (new-info (funinfo+funenv->info new-info+env))
                      (old-env1 (funinfo+funenv->env old-info+env))
                      (new-env1 (funinfo+funenv->env new-info+env)))
-                  (implies (and (not (resulterrp old-info+env))
-                                (not (resulterrp new-info+env)))
+                  (implies (and (not (reserrp old-info+env))
+                                (not (reserrp new-info+env)))
                            (and (funinfo-renamevarp old-info new-info)
                                 (funenv-renamevarp old-env1 new-env1)))))
        :enable (find-fun
@@ -498,16 +498,16 @@
                 same-in-when-funscope-renamevarp))))
 
   (defruled same-funscope-for-fundefs-error-when-renamevar
-    (implies (not (resulterrp (fundef-list-renamevar old-funs new-funs)))
+    (implies (not (reserrp (fundef-list-renamevar old-funs new-funs)))
              (b* ((old-scope1 (funscope-for-fundefs old-funs))
                   (new-scope1 (funscope-for-fundefs new-funs)))
-               (equal (resulterrp old-scope1)
-                      (resulterrp new-scope1))))
+               (equal (reserrp old-scope1)
+                      (reserrp new-scope1))))
     :enable (funscope-for-fundefs
              fundef-list-renamevar
-             funscopep-when-funscope-resultp-and-not-resulterrp
+             funscopep-when-funscope-resultp-and-not-reserrp
              funscope-renamevarp-of-funscope-for-fundefs
-             not-resulterrp-when-funscopep)
+             not-reserrp-when-funscopep)
     :expand (fundef-renamevar (car old-funs) (car new-funs))
     :hints ('(:use (:instance same-in-when-funscope-renamevarp
                     (old-scope (funscope-for-fundefs (cdr old-funs)))
@@ -540,16 +540,16 @@
 
   (defruled same-add-funs-error-when-renamevar
     (implies (and (funenv-renamevarp old-funenv new-funenv)
-                  (not (resulterrp (fundef-list-renamevar old-funs new-funs))))
+                  (not (reserrp (fundef-list-renamevar old-funs new-funs))))
              (b* ((old-funenv1 (add-funs old-funs old-funenv))
                   (new-funenv1 (add-funs new-funs new-funenv)))
-               (equal (resulterrp old-funenv1)
-                      (resulterrp new-funenv1))))
+               (equal (reserrp old-funenv1)
+                      (reserrp new-funenv1))))
     :enable (add-funs
              same-funscope-for-fundefs-error-when-renamevar
              funscope-renamevarp-of-funscope-for-fundefs
-             not-resulterrp-when-funenvp
-             funscopep-when-funscope-resultp-and-not-resulterrp)
+             not-reserrp-when-funenvp
+             funscopep-when-funscope-resultp-and-not-reserrp)
     :use (:instance same-ensure-funscope-disjoint-when-renamevar
           (old-funscope (funscope-for-fundefs old-funs))
           (new-funscope (funscope-for-fundefs new-funs)))))
@@ -566,11 +566,11 @@
 
   (defruled read-var-value-when-renamevar
     (implies (and (cstate-renamevarp old-cstate new-cstate ren)
-                  (not (resulterrp (var-renamevar old-var new-var ren))))
+                  (not (reserrp (var-renamevar old-var new-var ren))))
              (b* ((old-val (read-var-value old-var old-cstate))
                   (new-val (read-var-value new-var new-cstate)))
-               (implies (and (not (resulterrp old-val))
-                             (not (resulterrp new-val)))
+               (implies (and (not (reserrp old-val))
+                             (not (reserrp new-val)))
                         (equal old-val new-val))))
     :enable (read-var-value
              cstate-renamevarp
@@ -580,11 +580,11 @@
 
   (defruled read-vars-values-when-renamevar
     (implies (and (cstate-renamevarp old-cstate new-cstate ren)
-                  (not (resulterrp (var-list-renamevar old-vars new-vars ren))))
+                  (not (reserrp (var-list-renamevar old-vars new-vars ren))))
              (b* ((old-vals (read-vars-values old-vars old-cstate))
                   (new-vals (read-vars-values new-vars new-cstate)))
-               (implies (and (not (resulterrp old-vals))
-                             (not (resulterrp new-vals)))
+               (implies (and (not (reserrp old-vals))
+                             (not (reserrp new-vals)))
                         (equal old-vals new-vals))))
     :enable (read-vars-values
              var-list-renamevar
@@ -603,13 +603,13 @@
 
   (defruled write-var-value-when-renamevar
     (implies (and (cstate-renamevarp old-cstate new-cstate ren)
-                  (not (resulterrp (var-renamevar old-var new-var ren)))
+                  (not (reserrp (var-renamevar old-var new-var ren)))
                   (identifierp old-var)
                   (identifierp new-var))
              (b* ((old-cstate1 (write-var-value old-var val old-cstate))
                   (new-cstate1 (write-var-value new-var val new-cstate)))
-               (implies (and (not (resulterrp old-cstate1))
-                             (not (resulterrp new-cstate1)))
+               (implies (and (not (reserrp old-cstate1))
+                             (not (reserrp new-cstate1)))
                         (cstate-renamevarp old-cstate1 new-cstate1 ren))))
     :enable (write-var-value
              cstate-renamevarp
@@ -626,7 +626,7 @@
                      (lstate-renamevarp old-lstate new-lstate ren)
                      (identifierp old-var)
                      (identifierp new-var)
-                     (not (resulterrp (var-renamevar old-var new-var ren)))
+                     (not (reserrp (var-renamevar old-var new-var ren)))
                      (valuep val))
                 (b* ((old-lstate1
                       (omap::update old-var val old-lstate))
@@ -651,7 +651,7 @@
                         (lstate-renamevarp old-lstate new-lstate ren)
                         (identifierp old-var)
                         (identifierp new-var)
-                        (not (resulterrp (var-renamevar old-var new-var ren))))
+                        (not (reserrp (var-renamevar old-var new-var ren))))
                    (b* ((old-lstate1 (omap::update old-var val old-lstate))
                         (new-lstate1 (omap::update new-var val new-lstate)))
                      (implies (member-equal (cons old-var1 new-var1)
@@ -667,13 +667,13 @@
 
   (defruled write-vars-values-when-renamevar
     (implies (and (cstate-renamevarp old-cstate new-cstate ren)
-                  (not (resulterrp (var-list-renamevar old-vars new-vars ren)))
+                  (not (reserrp (var-list-renamevar old-vars new-vars ren)))
                   (identifier-listp old-vars)
                   (identifier-listp new-vars))
              (b* ((old-cstate1 (write-vars-values old-vars vals old-cstate))
                   (new-cstate1 (write-vars-values new-vars vals new-cstate)))
-               (implies (and (not (resulterrp old-cstate1))
-                             (not (resulterrp new-cstate1)))
+               (implies (and (not (reserrp old-cstate1))
+                             (not (reserrp new-cstate1)))
                         (cstate-renamevarp old-cstate1 new-cstate1 ren))))
     :enable (write-vars-values
              var-list-renamevar
@@ -696,9 +696,9 @@
              (b* ((ren1 (add-var-to-var-renaming old-var new-var ren))
                   (old-cstate1 (add-var-value old-var val old-cstate))
                   (new-cstate1 (add-var-value new-var val new-cstate)))
-               (implies (and (not (resulterrp ren1))
-                             (not (resulterrp old-cstate1))
-                             (not (resulterrp new-cstate1)))
+               (implies (and (not (reserrp ren1))
+                             (not (reserrp old-cstate1))
+                             (not (reserrp new-cstate1)))
                         (cstate-renamevarp old-cstate1 new-cstate1 ren1))))
     :enable (add-var-value
              cstate-renamevarp
@@ -717,7 +717,7 @@
                 (b* ((ren1 (add-var-to-var-renaming old-var new-var ren))
                      (old-lstate1 (omap::update old-var val old-lstate))
                      (new-lstate1 (omap::update new-var val new-lstate)))
-                  (implies (not (resulterrp ren1))
+                  (implies (not (reserrp ren1))
                            (lstate-match-renamevarp old-lstate1
                                                     new-lstate1
                                                     ren1))))
@@ -744,7 +744,7 @@
                    (b* ((ren1 (add-var-to-var-renaming old-var new-var ren))
                         (old-lstate1 (omap::update old-var val old-lstate))
                         (new-lstate1 (omap::update new-var val new-lstate)))
-                     (implies (and (not (resulterrp ren1))
+                     (implies (and (not (reserrp ren1))
                                    (member-equal (cons old-var1 new-var1)
                                                  (renaming->list ren1)))
                               (equal (cdr (omap::in old-var1 old-lstate1))
@@ -768,9 +768,9 @@
              (b* ((ren1 (add-vars-to-var-renaming old-vars new-vars ren))
                   (old-cstate1 (add-vars-values old-vars vals old-cstate))
                   (new-cstate1 (add-vars-values new-vars vals new-cstate)))
-               (implies (and (not (resulterrp ren1))
-                             (not (resulterrp old-cstate1))
-                             (not (resulterrp new-cstate1)))
+               (implies (and (not (reserrp ren1))
+                             (not (reserrp old-cstate1))
+                             (not (reserrp new-cstate1)))
                         (cstate-renamevarp old-cstate1 new-cstate1 ren1))))
     :enable (add-vars-values
              add-vars-to-var-renaming
@@ -1089,10 +1089,10 @@
                                         ren0))
          (old-cstate1 (init-local old-in-vars vals old-out-vars old-cstate))
          (new-cstate1 (init-local new-in-vars vals new-out-vars new-cstate)))
-      (implies (and (not (resulterrp ren0))
-                    (not (resulterrp ren))
-                    (not (resulterrp old-cstate1))
-                    (not (resulterrp new-cstate1))
+      (implies (and (not (reserrp ren0))
+                    (not (reserrp ren))
+                    (not (reserrp old-cstate1))
+                    (not (reserrp new-cstate1))
                     (identifier-listp old-in-vars)
                     (identifier-listp new-in-vars)
                     (identifier-listp old-out-vars)
@@ -1138,35 +1138,35 @@
      This is what the last two theorems below say."))
 
   (defruled path-to-var-not-error-when-path-renamevar
-    (implies (not (resulterrp (path-renamevar old new ren)))
-             (and (not (resulterrp (path-to-var old)))
-                  (not (resulterrp (path-to-var new)))))
+    (implies (not (reserrp (path-renamevar old new ren)))
+             (and (not (reserrp (path-to-var old)))
+                  (not (reserrp (path-to-var new)))))
     :enable (path-renamevar
              path-to-var
-             not-resulterrp-when-identifierp))
+             not-reserrp-when-identifierp))
 
   (defruled paths-to-vars-not-error-when-path-list-renamevar
-    (implies (not (resulterrp (path-list-renamevar old new ren)))
-             (and (not (resulterrp (paths-to-vars old)))
-                  (not (resulterrp (paths-to-vars new)))))
+    (implies (not (reserrp (path-list-renamevar old new ren)))
+             (and (not (reserrp (paths-to-vars old)))
+                  (not (reserrp (paths-to-vars new)))))
     :enable (path-list-renamevar
              paths-to-vars
-             identifierp-when-identifier-resultp-and-not-resulterrp
-             identifier-listp-when-identifier-list-resultp-and-not-resulterrp
-             not-resulterrp-when-identifier-listp
+             identifierp-when-identifier-resultp-and-not-reserrp
+             identifier-listp-when-identifier-list-resultp-and-not-reserrp
+             not-reserrp-when-identifier-listp
              path-to-var-not-error-when-path-renamevar))
 
   (defruled var-renamevar-not-error-when-path-renamevar
-    (implies (not (resulterrp (path-renamevar old new ren)))
-             (not (resulterrp (var-renamevar (path-to-var old)
+    (implies (not (reserrp (path-renamevar old new ren)))
+             (not (reserrp (var-renamevar (path-to-var old)
                                              (path-to-var new)
                                              ren))))
     :enable (path-renamevar
              path-to-var))
 
   (defruled var-list-renamevar-not-error-when-path-list-renamevar
-    (implies (not (resulterrp (path-list-renamevar old new ren)))
-             (not (resulterrp (var-list-renamevar (paths-to-vars old)
+    (implies (not (reserrp (path-list-renamevar old new ren)))
+             (not (reserrp (var-list-renamevar (paths-to-vars old)
                                                   (paths-to-vars new)
                                                   ren))))
     :enable (path-list-renamevar
@@ -1314,7 +1314,7 @@
 
   (defruled keys-of-cstate->local-of-exec-statement-list
     (b* ((outcome (exec-statement-list stmts cstate funenv limit)))
-      (implies (not (resulterrp outcome))
+      (implies (not (reserrp outcome))
                (set::subset (omap::keys (cstate->local cstate))
                             (omap::keys (cstate->local
                                          (soutcome->cstate outcome))))))
@@ -1323,7 +1323,7 @@
 
   (defruled keys-of-cstate->local-of-exec-for-iterations
     (b* ((outcome (exec-for-iterations test update body cstate funenv limit)))
-      (implies (not (resulterrp outcome))
+      (implies (not (reserrp outcome))
                (equal (omap::keys (cstate->local cstate))
                       (omap::keys (cstate->local (soutcome->cstate outcome))))))
     :use cstate-to-vars-of-exec-for-iterations
@@ -1331,136 +1331,136 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection resulterr-limitp-theorems
-  :short "Theorems about @(tsee resulterr-limitp)."
+(defsection reserr-limitp-theorems
+  :short "Theorems about @(tsee reserr-limitp)."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are mainly about certain dynamic semantic operations
      never returning  limit errors.
-     There is also one theorem to simplify @(tsee resulterr-limitp)
-     when applied to @(tsee resulterr).
+     There is also one theorem to simplify @(tsee reserr-limitp)
+     when applied to @(tsee reserr).
      There is also a theorem to show that an error is not a limit error,
      based on looking at the keyword (assuming it is constant)."))
 
-  (defruled resulterr-limitp-of-resulterr-of-info
-    (implies (and (resulterrp error)
+  (defruled reserr-limitp-of-reserr-of-info
+    (implies (and (reserrp error)
                   (error-info-wfp error))
-             (equal (resulterr-limitp
-                     (resulterr (cons more (fty::resulterr->info error))))
-                    (resulterr-limitp error)))
-    :enable (resulterr-limitp
-             resulterr-limitp-aux
+             (equal (reserr-limitp
+                     (reserr (cons more (fty::reserr->info error))))
+                    (reserr-limitp error)))
+    :enable (reserr-limitp
+             reserr-limitp-aux
              error-info-wfp))
 
-  (defruled not-resulterr-limitp-of-const
+  (defruled not-reserr-limitp-of-const
     (implies (and (syntaxp (quotep kwd))
                   (not (equal kwd :limit)))
-             (not (resulterr-limitp
-                   (resulterr (list (list fn (cons kwd more)))))))
-    :enable (resulterr-limitp
-             resulterr-limitp-aux))
+             (not (reserr-limitp
+                   (reserr (list (list fn (cons kwd more)))))))
+    :enable (reserr-limitp
+             reserr-limitp-aux))
 
-  (defruled not-resulterr-limitp-of-eval-literal
-    (not (resulterr-limitp (eval-literal lit)))
-    :enable (resulterr-limitp
-             resulterr-limitp-aux
+  (defruled not-reserr-limitp-of-eval-literal
+    (not (reserr-limitp (eval-literal lit)))
+    :enable (reserr-limitp
+             reserr-limitp-aux
              eval-literal
              eval-plain-string-literal
              eval-hex-string-literal))
 
-  (defruled not-resulterr-limitp-of-soutcome
-    (not (resulterr-limitp (soutcome cstate mode)))
-    :enable resulterr-limitp)
+  (defruled not-reserr-limitp-of-soutcome
+    (not (reserr-limitp (soutcome cstate mode)))
+    :enable reserr-limitp)
 
-  (defruled not-resulterr-limitp-of-path-to-var
-    (implies (resulterrp (path-to-var path))
-             (not (resulterr-limitp (path-to-var path))))
-    :enable (resulterr-limitp
-             resulterr-limitp-aux
+  (defruled not-reserr-limitp-of-path-to-var
+    (implies (reserrp (path-to-var path))
+             (not (reserr-limitp (path-to-var path))))
+    :enable (reserr-limitp
+             reserr-limitp-aux
              path-to-var
-             not-resulterrp-when-identifierp))
+             not-reserrp-when-identifierp))
 
-  (defruled not-resulterr-limitp-of-paths-to-vars
-    (implies (resulterrp (paths-to-vars paths))
-             (not (resulterr-limitp (paths-to-vars paths))))
+  (defruled not-reserr-limitp-of-paths-to-vars
+    (implies (reserrp (paths-to-vars paths))
+             (not (reserr-limitp (paths-to-vars paths))))
     :enable (paths-to-vars
-             not-resulterr-limitp-of-path-to-var
-             resulterr-limitp-of-resulterr-of-info
-             identifierp-when-identifier-resultp-and-not-resulterrp
-             identifier-listp-when-identifier-list-resultp-and-not-resulterrp
-             not-resulterrp-when-identifier-listp))
+             not-reserr-limitp-of-path-to-var
+             reserr-limitp-of-reserr-of-info
+             identifierp-when-identifier-resultp-and-not-reserrp
+             identifier-listp-when-identifier-list-resultp-and-not-reserrp
+             not-reserrp-when-identifier-listp))
 
-  (defruled not-resulterr-limitp-of-read-var-value
+  (defruled not-reserr-limitp-of-read-var-value
     (b* ((result (read-var-value var cstate)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
     :enable (read-var-value
-             not-resulterr-limitp-of-const
-             resulterr-limitp-of-resulterr-of-info
-             not-resulterrp-when-valuep))
+             not-reserr-limitp-of-const
+             reserr-limitp-of-reserr-of-info
+             not-reserrp-when-valuep))
 
-  (defruled not-resulterr-limitp-of-read-vars-values
+  (defruled not-reserr-limitp-of-read-vars-values
     (b* ((result (read-vars-values vars cstate)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
     :enable (read-vars-values
-             not-resulterr-limitp-of-read-var-value
-             resulterr-limitp-of-resulterr-of-info
-             valuep-when-value-resultp-and-not-resulterrp
-             value-listp-when-value-list-resultp-and-not-resulterrp
-             not-resulterrp-when-value-listp))
+             not-reserr-limitp-of-read-var-value
+             reserr-limitp-of-reserr-of-info
+             valuep-when-value-resultp-and-not-reserrp
+             value-listp-when-value-list-resultp-and-not-reserrp
+             not-reserrp-when-value-listp))
 
-  (defruled not-resulterr-limitp-of-write-var-value
+  (defruled not-reserr-limitp-of-write-var-value
     (b* ((result (write-var-value var val cstate)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
-    :enable (resulterr-limitp
-             resulterr-limitp-aux
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
+    :enable (reserr-limitp
+             reserr-limitp-aux
              write-var-value))
 
-  (defruled not-resulterr-limitp-of-write-vars-values
+  (defruled not-reserr-limitp-of-write-vars-values
     (b* ((result (write-vars-values vars vals cstate)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
     :enable (write-vars-values
-             not-resulterr-limitp-of-write-var-value
-             resulterr-limitp-of-resulterr-of-info
-             not-resulterr-limitp-of-const))
+             not-reserr-limitp-of-write-var-value
+             reserr-limitp-of-reserr-of-info
+             not-reserr-limitp-of-const))
 
-  (defruled not-resulterr-limitp-of-add-var-value
+  (defruled not-reserr-limitp-of-add-var-value
     (b* ((result (add-var-value var val cstate)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
-    :enable (resulterr-limitp
-             resulterr-limitp-aux
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
+    :enable (reserr-limitp
+             reserr-limitp-aux
              add-var-value))
 
-  (defruled not-resulterr-limitp-of-add-vars-values
+  (defruled not-reserr-limitp-of-add-vars-values
     (b* ((result (add-vars-values vars vals cstate)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
     :enable (add-vars-values
-             not-resulterr-limitp-of-add-var-value
-             resulterr-limitp-of-resulterr-of-info
-             not-resulterr-limitp-of-const))
+             not-reserr-limitp-of-add-var-value
+             reserr-limitp-of-reserr-of-info
+             not-reserr-limitp-of-const))
 
-  (defruled not-resulterr-limitp-of-find-fun
+  (defruled not-reserr-limitp-of-find-fun
     (b* ((result (find-fun fun env)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
     :enable (find-fun
-             resulterr-limitp
-             resulterr-limitp-aux))
+             reserr-limitp
+             reserr-limitp-aux))
 
-  (defruled not-resulterr-limitp-of-init-local
+  (defruled not-reserr-limitp-of-init-local
     (b* ((result (init-local in-vars in-vals out-vars cstate)))
-      (implies (resulterrp result)
-               (not (resulterr-limitp result))))
+      (implies (reserrp result)
+               (not (reserr-limitp result))))
     :enable (init-local
-             resulterr-limitp-of-resulterr-of-info
-             not-resulterr-limitp-of-add-var-value
-             not-resulterr-limitp-of-add-vars-values)))
+             reserr-limitp-of-reserr-of-info
+             not-reserr-limitp-of-add-var-value
+             not-reserr-limitp-of-add-vars-values)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1478,15 +1478,15 @@
 
   (defruled exec-when-renamevar-restrict-vars-lemma-1
     (implies
-     (and (not (resulterrp
+     (and (not (reserrp
                 (statement-list-renamevar old-stmts new-stmts ren)))
-          (not (resulterrp
+          (not (reserrp
                 (exec-statement-list old-stmts
                                      old-cstate
                                      (add-funs (statements-to-fundefs old-stmts)
                                                old-funenv)
                                      (+ -1 limit))))
-          (not (resulterrp
+          (not (reserrp
                 (exec-statement-list new-stmts
                                      new-cstate
                                      (add-funs (statements-to-fundefs new-stmts)
@@ -1532,16 +1532,16 @@
   (defruled exec-when-renamevar-restrict-vars-lemma-2
     (implies
      (and
-      (not (resulterrp (statement-list-renamevar old-stmts new-stmts ren)))
+      (not (reserrp (statement-list-renamevar old-stmts new-stmts ren)))
       (not
-       (resulterrp
+       (reserrp
         (exec-statement-list old-stmts
                              old-cstate
                              (add-funs (statements-to-fundefs old-stmts)
                                        old-funenv)
                              (+ -1 limit))))
       (not
-       (resulterrp
+       (reserrp
         (exec-statement-list new-stmts
                              new-cstate
                              (add-funs (statements-to-fundefs new-stmts)
@@ -1563,7 +1563,7 @@
                              (+ -1 limit)))
        (statement-list-renamevar old-stmts new-stmts ren))
       (not
-       (resulterrp
+       (reserrp
         (exec-for-iterations old-test
                              old-update
                              old-body
@@ -1578,7 +1578,7 @@
                                        old-funenv)
                              (+ -1 limit))))
       (not
-       (resulterrp
+       (reserrp
         (exec-for-iterations new-test
                              new-update
                              new-body
@@ -1792,8 +1792,8 @@
                                           new-cstate
                                           new-funenv
                                           (1- limit)))
-            ((when (or (resulterrp old-outcome)
-                       (resulterrp new-outcome)))
+            ((when (or (reserrp old-outcome)
+                       (reserrp new-outcome)))
              (expression-induct (car old-exprs)
                                 (car new-exprs)
                                 old-cstate
@@ -1843,8 +1843,8 @@
                                                new-cstate
                                                new-funenv
                                                (1- limit)))
-            ((when (or (resulterrp old-outcome)
-                       (resulterrp new-outcome)))
+            ((when (or (reserrp old-outcome)
+                       (reserrp new-outcome)))
              (expression-list-induct (rev (funcall->args old-funcall))
                                      (rev (funcall->args new-funcall))
                                      old-cstate
@@ -1894,22 +1894,22 @@
                               (limit natp))
        (declare (ignore ren))
        (b* (((when (zp limit)) nil)
-            ((ok (funinfo+funenv old-info+env)) (find-fun fun old-funenv))
-            ((ok (funinfo+funenv new-info+env)) (find-fun fun new-funenv))
+            ((okf (funinfo+funenv old-info+env)) (find-fun fun old-funenv))
+            ((okf (funinfo+funenv new-info+env)) (find-fun fun new-funenv))
             ((funinfo old-funinfo) old-info+env.info)
             ((funinfo new-funinfo) new-info+env.info)
-            ((ok old-cstate) (init-local old-funinfo.inputs
+            ((okf old-cstate) (init-local old-funinfo.inputs
                                          args
                                          old-funinfo.outputs
                                          old-cstate))
-            ((ok new-cstate) (init-local new-funinfo.inputs
+            ((okf new-cstate) (init-local new-funinfo.inputs
                                          args
                                          new-funinfo.outputs
                                          new-cstate))
-            ((ok ren1) (add-vars-to-var-renaming old-funinfo.inputs
+            ((okf ren1) (add-vars-to-var-renaming old-funinfo.inputs
                                                  new-funinfo.inputs
                                                  (renaming nil)))
-            ((ok ren1) (add-vars-to-var-renaming old-funinfo.outputs
+            ((okf ren1) (add-vars-to-var-renaming old-funinfo.outputs
                                                  new-funinfo.outputs
                                                  ren1)))
          (block-induct old-funinfo.body
@@ -2025,8 +2025,8 @@
                                                  new-cstate
                                                  new-funenv
                                                  (1- limit)))
-                   ((when (or (resulterrp old-outcome)
-                              (resulterrp new-outcome)))
+                   ((when (or (reserrp old-outcome)
+                              (reserrp new-outcome)))
                     (expression-induct old-stmt.test
                                        new-stmt.test
                                        old-cstate
@@ -2060,11 +2060,11 @@
                     (new-stmt.body (statement-for->body new-stmt))
                     (old-stmts (block->statements old-stmt.init))
                     (new-stmts (block->statements new-stmt.init))
-                    ((ok old-funenv1) (add-funs (statements-to-fundefs old-stmts)
+                    ((okf old-funenv1) (add-funs (statements-to-fundefs old-stmts)
                                                 old-funenv))
-                    ((ok new-funenv1) (add-funs (statements-to-fundefs new-stmts)
+                    ((okf new-funenv1) (add-funs (statements-to-fundefs new-stmts)
                                                 new-funenv))
-                    ((ok ren1) (statement-list-renamevar old-stmts new-stmts ren))
+                    ((okf ren1) (statement-list-renamevar old-stmts new-stmts ren))
                     (old-outcome (exec-statement-list old-stmts
                                                       old-cstate
                                                       old-funenv1
@@ -2073,8 +2073,8 @@
                                                       new-cstate
                                                       new-funenv1
                                                       (1- limit)))
-                    ((when (or (resulterrp old-outcome)
-                               (resulterrp new-outcome)))
+                    ((when (or (reserrp old-outcome)
+                               (reserrp new-outcome)))
                      (statement-list-induct old-stmts
                                             new-stmts
                                             old-cstate
@@ -2117,8 +2117,8 @@
                                                      new-cstate
                                                      new-funenv
                                                      (1- limit)))
-                       ((when (or (resulterrp old-outcome)
-                                  (resulterrp new-outcome)))
+                       ((when (or (reserrp old-outcome)
+                                  (reserrp new-outcome)))
                         (expression-induct old-stmt.target
                                            new-stmt.target
                                            old-cstate
@@ -2177,7 +2177,7 @@
        (b* (((when (zp limit)) nil)
             ((when (endp old-stmts)) nil)
             ((when (endp new-stmts)) nil)
-            ((ok ren1) (statement-renamevar (car old-stmts) (car new-stmts) ren))
+            ((okf ren1) (statement-renamevar (car old-stmts) (car new-stmts) ren))
             (old-outcome (exec-statement (car old-stmts)
                                          old-cstate
                                          old-funenv
@@ -2186,8 +2186,8 @@
                                          new-cstate
                                          new-funenv
                                          (1- limit)))
-            ((when (or (resulterrp old-outcome)
-                       (resulterrp new-outcome)))
+            ((when (or (reserrp old-outcome)
+                       (reserrp new-outcome)))
              (statement-induct (car old-stmts)
                                (car new-stmts)
                                old-cstate
@@ -2237,9 +2237,9 @@
        (b* (((when (zp limit)) nil)
             (old-stmts (block->statements old-block))
             (new-stmts (block->statements new-block))
-            ((ok old-funenv) (add-funs (statements-to-fundefs old-stmts)
+            ((okf old-funenv) (add-funs (statements-to-fundefs old-stmts)
                                        old-funenv))
-            ((ok new-funenv) (add-funs (statements-to-fundefs new-stmts)
+            ((okf new-funenv) (add-funs (statements-to-fundefs new-stmts)
                                        new-funenv)))
          (statement-list-induct old-stmts
                                 new-stmts
@@ -2272,8 +2272,8 @@
                                           new-cstate
                                           new-funenv
                                           (1- limit)))
-            ((when (or (resulterrp old-outcome)
-                       (resulterrp new-outcome)))
+            ((when (or (reserrp old-outcome)
+                       (reserrp new-outcome)))
              (expression-induct old-test
                                 new-test
                                 old-cstate
@@ -2292,8 +2292,8 @@
                                       new-outcome.cstate
                                       new-funenv
                                       (1- limit)))
-            ((when (or (resulterrp old-outcome1)
-                       (resulterrp new-outcome1)))
+            ((when (or (reserrp old-outcome1)
+                       (reserrp new-outcome1)))
              (list (expression-induct old-test
                                       new-test
                                       old-cstate
@@ -2320,8 +2320,8 @@
                                       new-outcome1.cstate
                                       new-funenv
                                       (1- limit)))
-            ((when (or (resulterrp old-outcome2)
-                       (resulterrp new-outcome2)))
+            ((when (or (reserrp old-outcome2)
+                       (reserrp new-outcome2)))
              (list (expression-induct old-test
                                       new-test
                                       old-cstate
@@ -2443,7 +2443,7 @@
    (defthm-induction-flag
 
      (defthm theorem-for-expression-induct
-       (implies (and (not (resulterrp
+       (implies (and (not (reserrp
                            (expression-renamevar old-expr new-expr ren)))
                      (cstate-renamevarp old-cstate new-cstate ren)
                      (funenv-renamevarp old-funenv new-funenv))
@@ -2455,15 +2455,15 @@
                                                    new-cstate
                                                    new-funenv
                                                    limit)))
-                  (implies (and (not (resulterr-nonlimitp old-outcome))
-                                (not (resulterr-nonlimitp new-outcome)))
+                  (implies (and (not (reserr-nonlimitp old-outcome))
+                                (not (reserr-nonlimitp new-outcome)))
                            (eoutcome-result-renamevarp old-outcome
                                                        new-outcome
                                                        ren))))
        :flag expression-induct)
 
      (defthm theorem-for-expression-list-induct
-       (implies (and (not (resulterrp
+       (implies (and (not (reserrp
                            (expression-list-renamevar old-exprs new-exprs ren)))
                      (cstate-renamevarp old-cstate new-cstate ren)
                      (funenv-renamevarp old-funenv new-funenv))
@@ -2475,15 +2475,15 @@
                                                         new-cstate
                                                         new-funenv
                                                         limit)))
-                  (implies (and (not (resulterr-nonlimitp old-outcome))
-                                (not (resulterr-nonlimitp new-outcome)))
+                  (implies (and (not (reserr-nonlimitp old-outcome))
+                                (not (reserr-nonlimitp new-outcome)))
                            (eoutcome-result-renamevarp old-outcome
                                                        new-outcome
                                                        ren))))
        :flag expression-list-induct)
 
      (defthm theorem-for-funcall-induct
-       (implies (and (not (resulterrp
+       (implies (and (not (reserrp
                            (funcall-renamevar old-funcall new-funcall ren)))
                      (cstate-renamevarp old-cstate new-cstate ren)
                      (funenv-renamevarp old-funenv new-funenv))
@@ -2495,8 +2495,8 @@
                                                 new-cstate
                                                 new-funenv
                                                 limit)))
-                  (implies (and (not (resulterr-nonlimitp old-outcome))
-                                (not (resulterr-nonlimitp new-outcome)))
+                  (implies (and (not (reserr-nonlimitp old-outcome))
+                                (not (reserr-nonlimitp new-outcome)))
                            (eoutcome-result-renamevarp old-outcome
                                                        new-outcome
                                                        ren))))
@@ -2515,8 +2515,8 @@
                                                  new-cstate
                                                  new-funenv
                                                  limit)))
-                  (implies (and (not (resulterr-nonlimitp old-outcome))
-                                (not (resulterr-nonlimitp new-outcome)))
+                  (implies (and (not (reserr-nonlimitp old-outcome))
+                                (not (reserr-nonlimitp new-outcome)))
                            (eoutcome-result-renamevarp old-outcome
                                                        new-outcome
                                                        ren))))
@@ -2524,7 +2524,7 @@
 
      (defthm theorem-for-statement-induct
        (b* ((ren1 (statement-renamevar old-stmt new-stmt ren)))
-         (implies (and (not (resulterrp ren1))
+         (implies (and (not (reserrp ren1))
                        (cstate-renamevarp old-cstate new-cstate ren)
                        (funenv-renamevarp old-funenv new-funenv))
                   (b* ((old-outcome (exec-statement old-stmt
@@ -2535,8 +2535,8 @@
                                                     new-cstate
                                                     new-funenv
                                                     limit)))
-                    (implies (and (not (resulterr-nonlimitp old-outcome))
-                                  (not (resulterr-nonlimitp new-outcome)))
+                    (implies (and (not (reserr-nonlimitp old-outcome))
+                                  (not (reserr-nonlimitp new-outcome)))
                              (soutcome-result-renamevarp old-outcome
                                                          new-outcome
                                                          ren1)))))
@@ -2544,7 +2544,7 @@
 
      (defthm theorem-for-statement-list-induct
        (b* ((ren1 (statement-list-renamevar old-stmts new-stmts ren)))
-         (implies (and (not (resulterrp ren1))
+         (implies (and (not (reserrp ren1))
                        (cstate-renamevarp old-cstate new-cstate ren)
                        (funenv-renamevarp old-funenv new-funenv))
                   (b* ((old-outcome (exec-statement-list old-stmts
@@ -2555,15 +2555,15 @@
                                                          new-cstate
                                                          new-funenv
                                                          limit)))
-                    (implies (and (not (resulterr-nonlimitp old-outcome))
-                                  (not (resulterr-nonlimitp new-outcome)))
+                    (implies (and (not (reserr-nonlimitp old-outcome))
+                                  (not (reserr-nonlimitp new-outcome)))
                              (soutcome-result-renamevarp old-outcome
                                                          new-outcome
                                                          ren1)))))
        :flag statement-list-induct)
 
      (defthm theorem-for-block-induct
-       (implies (and (not (resulterrp
+       (implies (and (not (reserrp
                            (block-renamevar old-block new-block ren)))
                      (cstate-renamevarp old-cstate new-cstate ren)
                      (funenv-renamevarp old-funenv new-funenv))
@@ -2575,19 +2575,19 @@
                                               new-cstate
                                               new-funenv
                                               limit)))
-                  (implies (and (not (resulterr-nonlimitp old-outcome))
-                                (not (resulterr-nonlimitp new-outcome)))
+                  (implies (and (not (reserr-nonlimitp old-outcome))
+                                (not (reserr-nonlimitp new-outcome)))
                            (soutcome-result-renamevarp old-outcome
                                                        new-outcome
                                                        ren))))
        :flag block-induct)
 
      (defthm theorem-for-for-iterations-induct
-       (implies (and (not (resulterrp
+       (implies (and (not (reserrp
                            (expression-renamevar old-test new-test ren)))
-                     (not (resulterrp
+                     (not (reserrp
                            (block-renamevar old-update new-update ren)))
-                     (not (resulterrp
+                     (not (reserrp
                            (block-renamevar old-body new-body ren)))
                      (cstate-renamevarp old-cstate new-cstate ren)
                      (funenv-renamevarp old-funenv new-funenv))
@@ -2603,17 +2603,17 @@
                                                        new-cstate
                                                        new-funenv
                                                        limit)))
-                  (implies (and (not (resulterr-nonlimitp old-outcome))
-                                (not (resulterr-nonlimitp new-outcome)))
+                  (implies (and (not (reserr-nonlimitp old-outcome))
+                                (not (reserr-nonlimitp new-outcome)))
                            (soutcome-result-renamevarp old-outcome
                                                        new-outcome
                                                        ren))))
        :flag for-iterations-induct)
 
      (defthm theorem-for-switch-rest-induct
-       (implies (and (not (resulterrp
+       (implies (and (not (reserrp
                            (swcase-list-renamevar old-cases new-cases ren)))
-                     (not (resulterrp
+                     (not (reserrp
                            (block-option-renamevar old-default new-default ren)))
                      (cstate-renamevarp old-cstate new-cstate ren)
                      (funenv-renamevarp old-funenv new-funenv))
@@ -2629,8 +2629,8 @@
                                                     new-cstate
                                                     new-funenv
                                                     limit)))
-                  (implies (and (not (resulterr-nonlimitp old-outcome))
-                                (not (resulterr-nonlimitp new-outcome)))
+                  (implies (and (not (reserr-nonlimitp old-outcome))
+                                (not (reserr-nonlimitp new-outcome)))
                            (soutcome-result-renamevarp old-outcome
                                                        new-outcome
                                                        ren))))
@@ -2641,19 +2641,19 @@
               ((acl2::occur-lst '(acl2::flag-is 'switch-rest-induct) clause)
                '(:in-theory (enable
                              exec-switch-rest
-                             resulterr-nonlimitp
+                             reserr-nonlimitp
                              block-option-renamevar-of-nil-1-forward
                              block-option-renamevar-of-nil-2-forward
                              soutcome-result-renamevarp-to-soutcome-renamevarp
                              soutcome-renamevarp
-                             not-resulterr-limitp-of-soutcome
+                             not-reserr-limitp-of-soutcome
                              soutcome-result-renamevarp-of-errors-not-error
                              swcase-list-renamevar
                              block-option-renamevar-when-nonnil
                              block-option-some->val-when-nonnil
-                             resulterrp-of-swcase-renamevar
-                             resulterr-limitp-of-resulterr-of-info
-                             not-resulterr-limitp-of-eval-literal)
+                             reserrp-of-swcase-renamevar
+                             reserr-limitp-of-reserr-of-info
+                             not-reserr-limitp-of-eval-literal)
                  :expand ((exec-switch-rest old-cases old-default
                                             target old-cstate old-funenv limit)
                           (exec-switch-rest new-cases new-default
@@ -2662,8 +2662,8 @@
 
               ((acl2::occur-lst '(acl2::flag-is 'for-iterations-induct) clause)
                '(:in-theory (enable exec-for-iterations
-                                    resulterr-nonlimitp
-                                    resulterr-limitp-of-resulterr-of-info
+                                    reserr-nonlimitp
+                                    reserr-limitp-of-reserr-of-info
                                     eoutcome-renamevarp
                                     soutcome-renamevarp
                                     eoutcome-result-renamevarp
@@ -2672,8 +2672,8 @@
 
               ((acl2::occur-lst '(acl2::flag-is 'block-induct) clause)
                '(:in-theory (enable block-renamevar
-                                    resulterr-nonlimitp
-                                    resulterr-limitp-of-resulterr-of-info
+                                    reserr-nonlimitp
+                                    reserr-limitp-of-reserr-of-info
                                     eoutcome-renamevarp
                                     soutcome-renamevarp
                                     eoutcome-result-renamevarp
@@ -2695,9 +2695,9 @@
                                     exec-statement-list
                                     soutcome-result-renamevarp
                                     soutcome-renamevarp
-                                    resulterr-nonlimitp
+                                    reserr-nonlimitp
                                     cstate-renamevarp-of-larger
-                                    resulterr-limitp-of-resulterr-of-info)
+                                    reserr-limitp-of-reserr-of-info)
                  :expand ((statement-list-renamevar old-stmts new-stmts ren)))
                ) ; statement-list-induct
 
@@ -2709,31 +2709,31 @@
                   soutcome-result-renamevarp
                   soutcome-renamevarp
                   cstate-renamevarp-of-larger
-                  resulterr-nonlimitp
+                  reserr-nonlimitp
                   eoutcome-result-renamevarp
                   eoutcome-renamevarp
-                  resulterr-limitp-of-resulterr-of-info
+                  reserr-limitp-of-reserr-of-info
                   funenv-renamevarp-of-add-funs
                   exec-when-renamevar-restrict-vars-lemma-1
                   exec-when-renamevar-restrict-vars-lemma-2
                   fundef-list-renamevar-of-statement-to-fundefs
-                  not-resulterr-limitp-of-const
-                  not-resulterr-limitp-of-paths-to-vars
-                  not-resulterr-limitp-of-write-vars-values
+                  not-reserr-limitp-of-const
+                  not-reserr-limitp-of-paths-to-vars
+                  not-reserr-limitp-of-write-vars-values
                   write-vars-values-when-renamevar
                   var-list-renamevar-not-error-when-path-list-renamevar
-                  identifier-listp-when-identifier-list-resultp-and-not-resulterrp
-                  not-resulterr-limitp-of-path-to-var
-                  not-resulterr-limitp-of-write-var-value
+                  identifier-listp-when-identifier-list-resultp-and-not-reserrp
+                  not-reserr-limitp-of-path-to-var
+                  not-reserr-limitp-of-write-var-value
                   write-var-value-when-renamevar
                   var-renamevar-not-error-when-path-renamevar
-                  identifierp-when-identifier-resultp-and-not-resulterrp
-                  not-resulterr-limitp-of-add-vars-values
+                  identifierp-when-identifier-resultp-and-not-reserrp
+                  not-reserr-limitp-of-add-vars-values
                   add-vars-values-when-renamevar
                   same-len-when-add-vars-to-var-renaming
                   funcall-option-renamevar
                   funcall-option-some->val
-                  not-resulterr-limitp-of-add-var-value
+                  not-reserr-limitp-of-add-var-value
                   expression-option-renamevar
                   add-var-value-when-renamevar
                   expression-option-some->val)
@@ -2751,18 +2751,18 @@
 
               ((acl2::occur-lst '(acl2::flag-is 'function-induct) clause)
                '(:in-theory
-                 (e/d (resulterr-nonlimitp
-                       resulterr-limitp-of-resulterr-of-info
+                 (e/d (reserr-nonlimitp
+                       reserr-limitp-of-reserr-of-info
                        eoutcome-result-renamevarp
                        eoutcome-renamevarp
-                       not-resulterr-limitp-of-find-fun
-                       not-resulterr-limitp-of-init-local
+                       not-reserr-limitp-of-find-fun
+                       not-reserr-limitp-of-init-local
                        funinfo-renamevarp
                        init-local-when-renamevar
                        soutcome-result-renamevarp
                        soutcome-renamevarp
-                       not-resulterr-limitp-of-read-vars-values
-                       value-listp-when-value-list-resultp-and-not-resulterrp
+                       not-reserr-limitp-of-read-vars-values
+                       value-listp-when-value-list-resultp-and-not-reserrp
                        var-list-renamevar-when-add-vars-to-var-renaming)
                       ((:e renaming)))
                  :use ((:instance funinfo+funenv-renamevarp-of-find-fun
@@ -2823,9 +2823,9 @@
                '(:in-theory (enable funcall-renamevar
                                     eoutcome-result-renamevarp
                                     eoutcome-renamevarp
-                                    resulterr-nonlimitp
+                                    reserr-nonlimitp
                                     expression-list-renamevar-of-rev-not-error
-                                    resulterr-limitp-of-resulterr-of-info)
+                                    reserr-limitp-of-reserr-of-info)
                  :expand
                  ((exec-funcall old-funcall old-cstate old-funenv limit)
                   (exec-funcall new-funcall new-cstate new-funenv limit)))
@@ -2836,23 +2836,23 @@
                                     exec-expression-list
                                     eoutcome-result-renamevarp
                                     eoutcome-renamevarp
-                                    resulterr-nonlimitp
-                                    resulterr-limitp-of-resulterr-of-info))
+                                    reserr-nonlimitp
+                                    reserr-limitp-of-reserr-of-info))
                ) ; expression-list-induct
 
               ((acl2::occur-lst '(acl2::flag-is 'expression-induct) clause)
                '(:in-theory (enable expression-renamevar
                                     exec-expression
                                     exec-literal
-                                    not-resulterr-limitp-of-eval-literal
+                                    not-reserr-limitp-of-eval-literal
                                     eoutcome-result-renamevarp
                                     eoutcome-renamevarp
-                                    resulterr-nonlimitp
-                                    resulterr-limitp-of-resulterr-of-info
+                                    reserr-nonlimitp
+                                    reserr-limitp-of-reserr-of-info
                                     exec-path
-                                    not-resulterr-limitp-of-path-to-var
+                                    not-reserr-limitp-of-path-to-var
                                     var-renamevar-not-error-when-path-renamevar
-                                    not-resulterr-limitp-of-read-var-value)
+                                    not-reserr-limitp-of-read-var-value)
                  :use (:instance read-var-value-when-renamevar
                        (old-var (path-to-var (expression-path->get old-expr)))
                        (new-var (path-to-var (expression-path->get new-expr)))
@@ -2864,7 +2864,7 @@
      ))
 
   (defruled exec-expression-when-renamevar
-    (implies (and (not (resulterrp
+    (implies (and (not (reserrp
                         (expression-renamevar old-expr new-expr ren)))
                   (cstate-renamevarp old-cstate new-cstate ren)
                   (funenv-renamevarp old-funenv new-funenv))
@@ -2876,14 +2876,14 @@
                                                 new-cstate
                                                 new-funenv
                                                 limit)))
-               (implies (and (not (resulterr-nonlimitp old-outcome))
-                             (not (resulterr-nonlimitp new-outcome)))
+               (implies (and (not (reserr-nonlimitp old-outcome))
+                             (not (reserr-nonlimitp new-outcome)))
                         (eoutcome-result-renamevarp old-outcome
                                                     new-outcome
                                                     ren)))))
 
   (defruled exec-expression-list-when-renamevar
-    (implies (and (not (resulterrp
+    (implies (and (not (reserrp
                         (expression-list-renamevar old-exprs new-exprs ren)))
                   (cstate-renamevarp old-cstate new-cstate ren)
                   (funenv-renamevarp old-funenv new-funenv))
@@ -2895,14 +2895,14 @@
                                                      new-cstate
                                                      new-funenv
                                                      limit)))
-               (implies (and (not (resulterr-nonlimitp old-outcome))
-                             (not (resulterr-nonlimitp new-outcome)))
+               (implies (and (not (reserr-nonlimitp old-outcome))
+                             (not (reserr-nonlimitp new-outcome)))
                         (eoutcome-result-renamevarp old-outcome
                                                     new-outcome
                                                     ren)))))
 
   (defruled exec-funcall-when-renamevar
-    (implies (and (not (resulterrp
+    (implies (and (not (reserrp
                         (funcall-renamevar old-funcall new-funcall ren)))
                   (cstate-renamevarp old-cstate new-cstate ren)
                   (funenv-renamevarp old-funenv new-funenv))
@@ -2914,8 +2914,8 @@
                                              new-cstate
                                              new-funenv
                                              limit)))
-               (implies (and (not (resulterr-nonlimitp old-outcome))
-                             (not (resulterr-nonlimitp new-outcome)))
+               (implies (and (not (reserr-nonlimitp old-outcome))
+                             (not (reserr-nonlimitp new-outcome)))
                         (eoutcome-result-renamevarp old-outcome
                                                     new-outcome
                                                     ren)))))
@@ -2933,15 +2933,15 @@
                                               new-cstate
                                               new-funenv
                                               limit)))
-               (implies (and (not (resulterr-nonlimitp old-outcome))
-                             (not (resulterr-nonlimitp new-outcome)))
+               (implies (and (not (reserr-nonlimitp old-outcome))
+                             (not (reserr-nonlimitp new-outcome)))
                         (eoutcome-result-renamevarp old-outcome
                                                     new-outcome
                                                     ren)))))
 
   (defruled exec-statement-when-renamevar
     (b* ((ren1 (statement-renamevar old-stmt new-stmt ren)))
-      (implies (and (not (resulterrp ren1))
+      (implies (and (not (reserrp ren1))
                     (cstate-renamevarp old-cstate new-cstate ren)
                     (funenv-renamevarp old-funenv new-funenv))
                (b* ((old-outcome (exec-statement old-stmt
@@ -2952,15 +2952,15 @@
                                                  new-cstate
                                                  new-funenv
                                                  limit)))
-                 (implies (and (not (resulterr-nonlimitp old-outcome))
-                               (not (resulterr-nonlimitp new-outcome)))
+                 (implies (and (not (reserr-nonlimitp old-outcome))
+                               (not (reserr-nonlimitp new-outcome)))
                           (soutcome-result-renamevarp old-outcome
                                                       new-outcome
                                                       ren1))))))
 
   (defruled exec-statement-list-when-renamevar
     (b* ((ren1 (statement-list-renamevar old-stmts new-stmts ren)))
-      (implies (and (not (resulterrp ren1))
+      (implies (and (not (reserrp ren1))
                     (cstate-renamevarp old-cstate new-cstate ren)
                     (funenv-renamevarp old-funenv new-funenv))
                (b* ((old-outcome (exec-statement-list old-stmts
@@ -2971,14 +2971,14 @@
                                                       new-cstate
                                                       new-funenv
                                                       limit)))
-                 (implies (and (not (resulterr-nonlimitp old-outcome))
-                               (not (resulterr-nonlimitp new-outcome)))
+                 (implies (and (not (reserr-nonlimitp old-outcome))
+                               (not (reserr-nonlimitp new-outcome)))
                           (soutcome-result-renamevarp old-outcome
                                                       new-outcome
                                                       ren1))))))
 
   (defruled exec-block-when-renamevar
-    (implies (and (not (resulterrp
+    (implies (and (not (reserrp
                         (block-renamevar old-block new-block ren)))
                   (cstate-renamevarp old-cstate new-cstate ren)
                   (funenv-renamevarp old-funenv new-funenv))
@@ -2990,18 +2990,18 @@
                                            new-cstate
                                            new-funenv
                                            limit)))
-               (implies (and (not (resulterr-nonlimitp old-outcome))
-                             (not (resulterr-nonlimitp new-outcome)))
+               (implies (and (not (reserr-nonlimitp old-outcome))
+                             (not (reserr-nonlimitp new-outcome)))
                         (soutcome-result-renamevarp old-outcome
                                                     new-outcome
                                                     ren)))))
 
   (defruled exec-for-iterations-when-renamevar
-    (implies (and (not (resulterrp
+    (implies (and (not (reserrp
                         (expression-renamevar old-test new-test ren)))
-                  (not (resulterrp
+                  (not (reserrp
                         (block-renamevar old-update new-update ren)))
-                  (not (resulterrp
+                  (not (reserrp
                         (block-renamevar old-body new-body ren)))
                   (cstate-renamevarp old-cstate new-cstate ren)
                   (funenv-renamevarp old-funenv new-funenv))
@@ -3017,16 +3017,16 @@
                                                     new-cstate
                                                     new-funenv
                                                     limit)))
-               (implies (and (not (resulterr-nonlimitp old-outcome))
-                             (not (resulterr-nonlimitp new-outcome)))
+               (implies (and (not (reserr-nonlimitp old-outcome))
+                             (not (reserr-nonlimitp new-outcome)))
                         (soutcome-result-renamevarp old-outcome
                                                     new-outcome
                                                     ren)))))
 
   (defruled exec-switch-rest-when-renamevar
-    (implies (and (not (resulterrp
+    (implies (and (not (reserrp
                         (swcase-list-renamevar old-cases new-cases ren)))
-                  (not (resulterrp
+                  (not (reserrp
                         (block-option-renamevar old-default new-default ren)))
                   (cstate-renamevarp old-cstate new-cstate ren)
                   (funenv-renamevarp old-funenv new-funenv))
@@ -3042,8 +3042,8 @@
                                                  new-cstate
                                                  new-funenv
                                                  limit)))
-               (implies (and (not (resulterr-nonlimitp old-outcome))
-                             (not (resulterr-nonlimitp new-outcome)))
+               (implies (and (not (reserr-nonlimitp old-outcome))
+                             (not (reserr-nonlimitp new-outcome)))
                         (soutcome-result-renamevarp old-outcome
                                                     new-outcome
                                                     ren))))))

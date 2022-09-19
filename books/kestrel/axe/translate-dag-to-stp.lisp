@@ -81,7 +81,9 @@
 
 (in-theory (disable open-output-channels open-output-channel-p1))
 
-(local (in-theory (enable <-of-+-of-1-when-integers)))
+(local (in-theory (e/d (<-of-+-of-1-when-integers)
+                       ;; Avoid printing during proofs
+                       ((:e fmt-to-comment-window)))))
 
 ;; (defthm equal-of-len-forward-to-cons
 ;;   (implies (and (equal k (len x))
@@ -122,6 +124,30 @@
                 (bv-arrayp width2 0 y))
            (equal x y))
   :rule-classes nil)
+
+(defund print-counterexample (cex dag-array-name dag-array)
+  (declare (xargs :guard (and (counterexamplep cex)
+                              (if (consp cex)
+                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
+                                t))))
+  (if (endp cex)
+      nil
+    (b* ((entry (first cex))
+         (nodenum (car entry))
+         (value (cdr entry))
+         ;(expr (aref1 dag-array-name dag-array nodenum))
+         (expr (dag-to-term-aux-array dag-array-name dag-array nodenum))
+         (- (cw "  Node ~x0: ~x1 is ~x2." nodenum expr value))
+         ;; Print newline unless this is the last line:
+         (- (and (consp (rest cex)) (cw "~%"))))
+      (print-counterexample (rest cex) dag-array-name dag-array))))
+
+(defund maybe-shorten-filename (base-filename)
+  (declare (xargs :guard (stringp base-filename)))
+  (if (< 200 (length base-filename)) ;fixme could increase the 200
+      ;;shorten the filename if it would be too long:
+      (string-append (subseq base-filename 0 199) "SHORTENED")
+    base-filename))
 
 ;drop? ;dup
 (defthm character-listp-of-reverse-list
@@ -432,7 +458,7 @@
   (if (consp arg)
       (if (natp (unquote arg))
           t
-        (prog2$ (cw "Warning: Non-integer constant ~x0 detected in a boolean context.~%" arg)
+        (prog2$ (cw "Warning: Non-integer constant ~x0 detected in BV boolean context.~%" arg)
                 nil))
     ;; it's a nodenum, so no checking is needed here (we will cut at that node if needed):
     t))
@@ -2127,6 +2153,18 @@
       'write-stp-query-to-file
       state))))
 
+(defthm w-of-mv-nth-1-of-write-stp-query-to-file
+  (equal (w (mv-nth 1 (write-stp-query-to-file translated-query-core
+                                               dag-array-name dag-array dag-len
+                                               nodenums-to-translate
+                                               extra-asserts
+                                               filename
+                                               cut-nodenum-type-alist
+                                               constant-array-info
+                                               state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (write-stp-query-to-file) (w)))))
+
 (local (in-theory (disable subseq take)))
 
 ;; We use these constants instead of their corresponding keywords, so that we
@@ -2137,6 +2175,8 @@
 (defconst *timedout* :timedout)
 (defconst *counterexample* :counterexample)
 (defconst *possible-counterexample* :possible-counterexample)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;INPUT-FILENAME is the STP input (.cvc) file name
 ;OUTPUT-FILENAME is the STP output (.out) file name
@@ -2150,13 +2190,13 @@
                           max-conflicts ;a number of conflicts, or nil for no max
                           counterexamplep
                           state)
-  (declare (xargs :stobjs state
-                  :guard (and (stringp input-filename)
+  (declare (xargs :guard (and (stringp input-filename)
                               (stringp output-filename)
                               ;;(booleanp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (booleanp counterexamplep))))
+                              (booleanp counterexamplep))
+                  :stobjs state))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
        ((mv status state) (if max-conflicts
                               (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string max-conflicts) counterexample-arg) state)
@@ -2241,29 +2281,12 @@
   :hints (("Goal" :in-theory (e/d (call-stp-on-file) (;LIST::EQUAL-CONS-CASES
                                                       )))))
 
-(defund print-counterexample (cex dag-array-name dag-array)
-  (declare (xargs :guard (and (counterexamplep cex)
-                              (if (consp cex)
-                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
-                                t))))
-  (if (endp cex)
-      nil
-    (b* ((entry (first cex))
-         (nodenum (car entry))
-         (value (cdr entry))
-         ;(expr (aref1 dag-array-name dag-array nodenum))
-         (expr (dag-to-term-aux-array dag-array-name dag-array nodenum))
-         (- (cw "  Node ~x0: ~x1 is ~x2." nodenum expr value))
-         ;; Print newline unless this is the last line:
-         (- (and (consp (rest cex)) (cw "~%"))))
-      (print-counterexample (rest cex) dag-array-name dag-array))))
-
-(defund maybe-shorten-filename (base-filename)
-  (declare (xargs :guard (stringp base-filename)))
-  (if (< 200 (length base-filename)) ;fixme could increase the 200
-      ;;shorten the filename if it would be too long:
-      (string-append (subseq base-filename 0 199) "SHORTENED")
-    base-filename))
+(defthm w-of-mv-nth-1-of-call-stp-on-file
+  (equal (w (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable call-stp-on-file
+                                     ;;todo:
+                                     call-axe-script))))
 
 ;; TODO: What if we cut out some structure but it is not involved in the counterexample?
 (defun all-cuts-are-at-vars (cut-nodenum-type-alist dag-array-name dag-array)
@@ -2296,11 +2319,7 @@
                               constant-array-info ;may get an entry when we create translated-query-core (e.g., if a term is equated to a constant array)
                               counterexamplep
                               state)
-  (declare (xargs :stobjs state
-                  :guard-hints (("Goal" :do-not-induct t
-                                 :in-theory (enable PSEUDO-DAG-ARRAYP ;todo
-                                                    )))
-                  :guard (and (nat-listp nodenums-to-translate)
+  (declare (xargs :guard (and (nat-listp nodenums-to-translate)
                               (stringp extra-string)
                               (string-treep extra-asserts)
                               (nodenum-type-alistp cut-nodenum-type-alist)
@@ -2317,7 +2336,8 @@
                               (all-< (strip-cars cut-nodenum-type-alist)
                                      dag-len)
                               (string-treep translated-query-core)
-                              (constant-array-infop constant-array-info))))
+                              (constant-array-infop constant-array-info))
+                  :stobjs state))
   (b* (((mv temp-dir-name state)
         (maybe-make-temp-dir state))
        (base-filename (concatenate 'string temp-dir-name "/" base-filename))
@@ -2351,10 +2371,12 @@
         (call-stp-on-file stp-input-filename stp-output-filename print max-conflicts counterexamplep state))
        (counterexamplep (and (consp result)
                              (eq *counterexample* (car result)))) ;todo: maybe this should be labeled as :raw-counterexample?
-       (counterexample
-        (and counterexamplep
-             (let ((raw-counterexample (cadr result)))
-               (fixup-counterexample (sort-nodenum-type-alist cut-nodenum-type-alist) raw-counterexample))))
+       ((mv erp counterexample)
+        (if (not counterexamplep)
+            (mv (erp-nil) nil)
+          (let ((raw-counterexample (cadr result)))
+            (fixup-counterexample (sort-nodenum-type-alist cut-nodenum-type-alist) raw-counterexample nil))))
+       ((when erp) (mv *error* state))
        (counterexample-certainp (and counterexamplep
                                      (all-cuts-are-at-vars cut-nodenum-type-alist dag-array-name dag-array)))
        (- (and counterexamplep
@@ -2421,6 +2443,24 @@
                       (counterexamplep (second res))
                       (equal (len res) 2)))))
   :hints (("Goal" :in-theory (enable prove-query-with-stp))))
+
+(defthm w-of-mv-nth-1-of-prove-query-with-stp
+  (equal (w (mv-nth 1 (prove-query-with-stp translated-query-core
+                                                      extra-string
+                                                      dag-array-name
+                                                      dag-array
+                                                      dag-len
+                                                      nodenums-to-translate
+                                                      extra-asserts
+                                                      base-filename
+                                                      cut-nodenum-type-alist
+                                                      print
+                                                      max-conflicts
+                                                      constant-array-info
+                                                      counterexamplep
+                                                      state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (w)))))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: Unify param order with prove-query-with-stp
@@ -2645,3 +2685,53 @@
 (defthm string-treep-of-translate-disjunction
   (string-treep (translate-disjunction items))
   :hints (("Goal" :in-theory (enable translate-disjunction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;inline?
+;check this - is it anything missing?
+;fixme check in this that the sizes are not 0 -- and print a warning (or even halt?) if they are?
+;does this function handle everything in *bv-and-array-fns-we-can-translate* ?
+;the quotep checks on arguments could be consp checks?
+;fixme compare to can-always-translate-expr-to-stp?
+(defun pure-fn-call-exprp (expr)
+  (declare (xargs :guard (dag-function-call-exprp expr)
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
+  (let ((fn (ffn-symb expr)))
+    ;;(member-eq fn *bv-and-array-fns-we-can-translate*)
+    ;;maybe we should check that operands are of the right type?
+    (case fn
+          ;;((myif) t) ;check more? we no longer translate myif, only bvif?
+          ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
+          ((boolor booland boolif not bitnot bitxor bitor bitand) t)
+          ((bv-array-write bv-array-read bvsx slice)
+           (and (consp (rest (dargs expr)))
+                (quotep (darg1 expr))
+                (quotep (darg2 expr))))
+          ((bvnot bvand bvor bvxor bvmult bvminus bvuminus bvplus bvdiv bvmod sbvdiv sbvrem bvchop ;$inline
+                  getbit sbvlt bvlt bvle bvif leftrotate32)
+           (and (consp (dargs expr))
+                (quotep (darg1 expr)))) ;fixme make sure the value is okay?
+          (bvcat (and (consp (rest (rest (dargs expr))))
+                      (quotep (darg1 expr))
+                      (quotep (darg3 expr))))
+          (otherwise nil))))
+
+(defund expr-is-purep (expr)
+  (declare (xargs :guard (dag-exprp expr)))
+  ;; (declare (xargs :guard t))
+  (or (variablep expr) ;check more?
+      (fquotep expr)   ;check more?
+      (pure-fn-call-exprp expr)))
+
+;; Checks whether everything in the DAG is something we can translate to STP
+(defund dag-is-purep (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (if (endp dag)
+      t
+    (let* ((entry (car dag))
+           (expr (cdr entry)))
+      (if (expr-is-purep expr)
+          (dag-is-purep (rest dag))
+        (prog2$ (cw "Non-pure expression in DAG: ~x0.~%" expr)
+                nil)))))

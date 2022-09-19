@@ -282,11 +282,11 @@
 
 
 (define defsvtv-compute-pipeline-setup ((outs+ true-list-listp)
-                                            (ins true-list-listp)
-                                            (overrides true-list-listp)
-                                            (initial-state-vars)
-                                            (statevars svarlist-p)
-                                            (namemap svtv-name-lhs-map-p))
+                                        (ins true-list-listp)
+                                        (overrides true-list-listp)
+                                        (initial-state-vars)
+                                        (statevars svarlist-p)
+                                        (namemap svtv-name-lhs-map-p))
   :returns (setup pipeline-setup-p)
   (b* ((probes (defsvtv-compute-probes outs+))
        (nphases (svtv-lines-max-length outs+))
@@ -316,23 +316,6 @@
                   (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
   :hints(("Goal" :in-theory (enable svtv-data$ap))))
 
-(define defsvtv-compute-pipeline ((outs+ true-list-listp)
-                                  (ins true-list-listp)
-                                  (overrides true-list-listp)
-                                  (simplify booleanp)
-                                  (pipe-simp svex-simpconfig-p)
-                                  (initial-state-vars)
-                                  svtv-data)
-  :guard (and (svtv-data->phase-fsm-validp svtv-data)
-              (svtv-data->cycle-fsm-validp svtv-data))
-  (b* ((namemap (svtv-data->namemap svtv-data))
-       (fsm (svtv-data->cycle-fsm svtv-data))
-       (statevars (svex-alist-keys (base-fsm->nextstate fsm)))
-       (setup (defsvtv-compute-pipeline-setup
-                outs+ ins overrides initial-state-vars statevars namemap))
-       (svtv-data (svtv-data-maybe-compute-pipeline setup svtv-data :simp pipe-simp))
-       (svtv-data (svtv-data-maybe-rewrite-pipeline simplify svtv-data)))
-    svtv-data))
 
 
 
@@ -347,6 +330,11 @@
    (design design-p)
    (design-const symbolp)
    labels
+   (phase-config phase-fsm-config-p
+                 :default (make-phase-fsm-config
+                           :override-config (make-svtv-assigns-override-config-omit)))
+   (clocks svarlist-p :default nil)
+   (phase-scc-limit maybe-natp :default nil)
    (monotonify booleanp :default t)
    (simplify booleanp :default t)
    (pre-simplify booleanp :default t)
@@ -359,10 +347,11 @@
    ;; keep-final-state
    ;; keep-all-states
    (define-macros :default t)
-   (define-mod :default t)
+   (define-mod)
    parents
    short
-   long)
+   long
+   form)
   :layout :list)
 
 (define keyword-value-list-add-quotes ((quoted-keys symbol-listp)
@@ -414,13 +403,17 @@
                :outmasks 
                (fast-alist-free (fast-alist-clean (svtv-collect-masks
                                                    expanded-outs)))
+               :inmap
+               (svtv-collect-inmap t expanded-overrides
+                                   (svtv-collect-inmap nil expanded-ins nil))
                :orig-ins x.inputs
                :orig-overrides x.overrides
                :orig-outs x.outputs
                :orig-internals x.internals
                :expanded-ins expanded-ins
                :expanded-overrides expanded-overrides
-               :nphases nphases)))
+               :nphases nphases
+               :form x.form)))
 
 ;; Does everything EXCEPT compute the pipeline.
 (define defsvtv-stobj-pipeline-setup ((x defsvtv-args-p)
@@ -443,6 +436,9 @@
 
        ((mv err svtv-data)
         (svtv-data-defcycle-core x.design phases svtv-data
+                                 :phase-config x.phase-config
+                                 :phase-scc-limit x.phase-scc-limit
+                                 :clocks-avoid-overrides x.clocks
                                  :rewrite-assigns x.pre-simplify
                                  :rewrite-phases x.pre-simplify
                                  :rewrite-cycle x.pre-simplify
@@ -486,6 +482,10 @@
                   (implies (not skip-cycle)
                            (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t))))))
 
+(local (defthm intersection-equal-under-iff
+         (iff (intersection-equal x y)
+              (intersectp-equal x y))))
+
 
 (define defsvtv-stobj-main ((x defsvtv-args-p)
                             ;; (keep-final-state)
@@ -502,8 +502,16 @@
        ((when err)
         (mv err nil svtv-data))
        ((defsvtv-args x))
-       (svtv-data (svtv-data-maybe-compute-pipeline pipeline-setup svtv-data :simp x.pipe-simp))
-       (svtv-data (svtv-data-maybe-rewrite-pipeline x.simplify svtv-data))
+       (bad-clocks (intersection-equal x.clocks (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+       ((when bad-clocks)
+        (mv (msg "Clocks cannot include previous-state variables -- ~x0~%" bad-clocks)
+            nil svtv-data))
+       ((mv updatedp svtv-data)
+        (svtv-data-maybe-compute-pipeline
+         pipeline-setup svtv-data
+         :simp x.pipe-simp
+         :precomp-inputs x.clocks))
+       (svtv-data (svtv-data-maybe-rewrite-pipeline (and updatedp x.simplify) svtv-data))
        (svtv (svtv-data-to-svtv x svtv-data)))
     (mv nil svtv svtv-data)))
 
@@ -565,47 +573,36 @@
        (stobj-look (assoc-keyword :stobj args))
        (stobj (if stobj-look (cadr stobj-look) 'svtv-data))
        (cycle-phases-p (consp (assoc-keyword :cycle-phases args)))
+       (phases-look (assoc-keyword :phases args))
+       (in/out/overrides-look (or (assoc-keyword :inputs args)
+                                  (assoc-keyword :outputs args)
+                                  (assoc-keyword :overrides args)))
+       ((when (and phases-look in/out/overrides-look))
+        (raise "Must provide either :phases or :inputs/:outputs/:overrides, not both.~%")
+        (mv nil nil))
+       (io-args (and phases-look
+                     (defsvtv*-phases-to-defsvtv-args (svtv*-parse-phases (cadr phases-look)))))
        (norm-args (list* :name (list 'quote name)
                          :design design
                          :design-const (list 'quote design)
                          :cycle-phases-p cycle-phases-p
-                         (remove-keywords '(:mod :design :stobj) args))))
+                         (append io-args
+                                 (remove-keywords '(:mod :design :stobj :phases) args)))))
     (mv stobj norm-args)))
 
 
 
 ;; Documented in new-svtv-doc.lisp
-(defmacro defsvtv$ (name &rest args)
+(defmacro defsvtv$ (&whole form name &rest args)
   (b* (((mv stobj norm-args)
-        (process-defsvtv$-user-args name args)))
+        (process-defsvtv$-user-args name (list* :form (kwote form) args))))
     `(make-event (defsvtv$-fn (make-defsvtv-args! . ,norm-args)
                    ,stobj state))))
 
+(defmacro defsvtv$-phasewise (&rest args)
+  (cons 'defsvtv$ args))
 
 
-(define process-defsvtv$-phasewise-user-args (name args)
-  :mode :program
-  :returns (mv stobj norm-args)
-  (b* (((unless (keyword-value-listp args))
-        (raise "Arguments must be a keyword/value list.~%")
-        (mv nil nil))
-       (phases-look (assoc-keyword :phases args))
-       ((unless phases-look)
-        (raise "Needs a :phases argument.~%")
-        (mv nil nil))
-       (rest-args (remove-keywords '(:phases) args))
-       (phases (svtv*-parse-phases (cadr phases-look)))
-       (main-args (defsvtv*-phases-to-defsvtv-args phases)))
-    (process-defsvtv$-user-args name (append main-args rest-args))))
-
-
-
-
-(defmacro defsvtv$-phasewise (name &rest args)
-  (b* (((mv stobj norm-args)
-        (process-defsvtv$-phasewise-user-args name args)))
-    `(make-event (defsvtv$-fn (make-defsvtv-args! . ,norm-args)
-                   ,stobj state))))
 
 ;; Doc in new-svtv-doc.lisp
 
@@ -634,7 +631,7 @@
                                        :value (svcall bitnot
                                                       (svcall zerox 5 "in")))))))))))
 (local
- (defsvtv$-phasewise my-svtv
+ (defsvtv$ my-svtv
    :design *my-design*
    :phases
    ((:label the-phase

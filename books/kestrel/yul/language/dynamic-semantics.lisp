@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -81,10 +81,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funinfop
+(defruled not-reserrp-when-funinfop
   (implies (funinfop x)
-           (not (resulterrp x)))
-  :enable (resulterrp funinfop))
+           (not (reserrp x)))
+  :enable (reserrp funinfop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,10 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funscopep
+(defruled not-reserrp-when-funscopep
   (implies (funscopep x)
-           (not (resulterrp x)))
-  :enable resulterrp)
+           (not (reserrp x)))
+  :enable reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,17 +140,17 @@
     "We go through the list and form a function scope for the functions.
      It is an error if there are two functions with the same name."))
   (b* (((when (endp fundefs)) nil)
-       ((ok scope) (funscope-for-fundefs (cdr fundefs)))
+       ((okf scope) (funscope-for-fundefs (cdr fundefs)))
        (fundef (car fundefs))
        (fun (fundef->name fundef))
        (fun+info (omap::in fun scope))
-       ((when (consp fun+info)) (err (list :duplicate-function fun))))
+       ((when (consp fun+info)) (reserrf (list :duplicate-function fun))))
     (omap::update fun (funinfo-for-fundef fundef) scope))
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-funscope-for-fundefs
-    (implies (resulterrp funscope)
+    (implies (reserrp funscope)
              (error-info-wfp funscope))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,10 +190,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funenvp
+(defruled not-reserrp-when-funenvp
   (implies (funenvp x)
-           (not (resulterrp x)))
-  :enable (resulterrp funenvp))
+           (not (reserrp x)))
+  :enable (reserrp funenvp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,10 +219,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-funinfo+funenv-p
+(defruled not-reserrp-when-funinfo+funenv-p
   (implies (funinfo+funenv-p x)
-           (not (resulterrp x)))
-  :enable (resulterrp funinfo+funenv-p))
+           (not (reserrp x)))
+  :enable (reserrp funinfo+funenv-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,7 +258,7 @@
    (xdoc::p
     "It is an error if @('fun') is not found in the environment."))
   (b* (((when (endp funenv))
-        (err (list :function-not-found (identifier-fix fun))))
+        (reserrf (list :function-not-found (identifier-fix fun))))
        (funscope (funscope-fix (car funenv)))
        (fun+info (omap::in (identifier-fix fun) funscope))
        ((when (consp fun+info))
@@ -268,13 +268,13 @@
   ///
 
   (defret error-info-wfp-of-find-fun
-    (implies (resulterrp info)
+    (implies (reserrp info)
              (error-info-wfp info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ensure-funscope-disjoint ((funscope funscopep) (funenv funenvp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Ensure that a function scope is disjoint from a function environment."
   :long
   (xdoc::topstring
@@ -287,16 +287,16 @@
        (overlap (set::intersect (omap::keys (funscope-fix funscope))
                                 (omap::keys (funscope-fix (car funenv)))))
        ((unless (set::empty overlap))
-        (err (list :duplicate-functions overlap))))
+        (reserrf (list :duplicate-functions overlap))))
     (ensure-funscope-disjoint funscope (cdr funenv)))
   :hooks (:fix)
   ///
 
   (defrule ensure-funscope-disjoint-of-empty-funscope-not-error
-    (not (resulterrp (ensure-funscope-disjoint nil funenv))))
+    (not (reserrp (ensure-funscope-disjoint nil funenv))))
 
   (defret error-info-wfp-of-ensure-funscope-disjoint
-    (implies (resulterrp _)
+    (implies (reserrp _)
              (error-info-wfp _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -313,14 +313,14 @@
      the functions already in the environment.
      This ACL2 function is used for all the function definitions in a block;
      see @(tsee exec-block)."))
-  (b* (((ok funscope) (funscope-for-fundefs fundefs))
-       ((ok &) (ensure-funscope-disjoint funscope funenv)))
+  (b* (((okf funscope) (funscope-for-fundefs fundefs))
+       ((okf &) (ensure-funscope-disjoint funscope funenv)))
     (cons funscope (funenv-fix funenv)))
   :hooks (:fix)
   :prepwork
   ((local
     (in-theory
-     (enable funscopep-when-funscope-resultp-and-not-resulterrp))))
+     (enable funscopep-when-funscope-resultp-and-not-reserrp))))
   ///
 
   (defrule add-funs-of-no-fundefs
@@ -328,15 +328,15 @@
            (cons nil (funenv-fix funenv))))
 
   (defret error-info-wfp-of-add-funs
-    (implies (resulterrp new-funenv)
+    (implies (reserrp new-funenv)
              (error-info-wfp new-funenv))
     :hints
     (("Goal"
       :in-theory
       (enable
-       not-resulterrp-when-funenvp
-       funscopep-when-funscope-resultp-and-not-resulterrp
-       funenvp-when-funenv-resultp-and-not-resulterrp)))))
+       not-reserrp-when-funenvp
+       funscopep-when-funscope-resultp-and-not-reserrp
+       funenvp-when-funenv-resultp-and-not-reserrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,10 +391,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-cstatep
+(defruled not-reserrp-when-cstatep
   (implies (cstatep x)
-           (not (resulterrp x)))
-  :enable (resulterrp cstatep))
+           (not (reserrp x)))
+  :enable (reserrp cstatep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,15 +408,15 @@
   (b* ((lstate (cstate->local cstate))
        (var-val (omap::in (identifier-fix var) lstate))
        ((unless (consp var-val))
-        (err (list :variable-not-found (identifier-fix var)))))
+        (reserrf (list :variable-not-found (identifier-fix var)))))
     (value-fix (cdr var-val)))
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-read-var-value
-    (implies (resulterrp val)
+    (implies (reserrp val)
              (error-info-wfp val))
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-valuep)))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-valuep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -427,29 +427,29 @@
             (("Goal"
               :in-theory
               (enable
-               valuep-when-value-resultp-and-not-resulterrp
-               value-listp-when-value-list-resultp-and-not-resulterrp))))
+               valuep-when-value-resultp-and-not-reserrp
+               value-listp-when-value-list-resultp-and-not-reserrp))))
   :short "Lift @(tsee read-var-value) to lists."
   (b* (((when (endp vars)) nil)
-       ((ok val) (read-var-value (car vars) cstate))
-       ((ok vals) (read-vars-values (cdr vars) cstate)))
+       ((okf val) (read-var-value (car vars) cstate))
+       ((okf vals) (read-vars-values (cdr vars) cstate)))
     (cons val vals))
   :hooks (:fix)
   ///
 
   (defret len-of-read-vars-values
-    (implies (not (resulterrp vals))
+    (implies (not (reserrp vals))
              (equal (len vals)
                     (len vars))))
 
   (defret error-info-wfp-of-read-vars-values
-    (implies (resulterrp vals)
+    (implies (reserrp vals)
              (error-info-wfp vals))
     :hints (("Goal"
              :in-theory
-             (enable not-resulterrp-when-value-listp
-                     valuep-when-value-resultp-and-not-resulterrp
-                     value-listp-when-value-list-resultp-and-not-resulterrp)))))
+             (enable not-reserrp-when-value-listp
+                     valuep-when-value-resultp-and-not-reserrp
+                     value-listp-when-value-list-resultp-and-not-reserrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -463,7 +463,7 @@
   (b* ((lstate (cstate->local cstate))
        (var-val (omap::in (identifier-fix var) lstate))
        ((unless (consp var-val))
-        (err (list :variable-not-found (identifier-fix var))))
+        (reserrf (list :variable-not-found (identifier-fix var))))
        (new-lstate (omap::update (identifier-fix var)
                                  (value-fix val)
                                  lstate))
@@ -473,7 +473,7 @@
   ///
 
   (defret error-info-wfp-of-write-var-value
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -494,16 +494,16 @@
   (b* (((when (endp vars))
         (if (endp vals)
             (cstate-fix cstate)
-          (err (list :extra-values (value-list-fix vals)))))
+          (reserrf (list :extra-values (value-list-fix vals)))))
        ((when (endp vals))
-        (err (list :extra-variables (identifier-list-fix vars))))
-       ((ok cstate) (write-var-value (car vars) (car vals) cstate)))
+        (reserrf (list :extra-variables (identifier-list-fix vars))))
+       ((okf cstate) (write-var-value (car vars) (car vals) cstate)))
     (write-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-write-vars-values
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -518,7 +518,7 @@
   (b* ((lstate (cstate->local cstate))
        (var-val (omap::in (identifier-fix var) lstate))
        ((when (consp var-val))
-        (err (list :variable-already-exists (identifier-fix var))))
+        (reserrf (list :variable-already-exists (identifier-fix var))))
        (new-lstate (omap::update (identifier-fix var)
                                  (value-fix val)
                                  lstate))
@@ -528,7 +528,7 @@
   ///
 
   (defret error-info-wfp-of-add-var-value
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -549,16 +549,16 @@
   (b* (((when (endp vars))
         (if (endp vals)
             (cstate-fix cstate)
-          (err (list :extra-values (value-list-fix vals)))))
+          (reserrf (list :extra-values (value-list-fix vals)))))
        ((when (endp vals))
-        (err (list :extra-variables (identifier-list-fix vars))))
-       ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
+        (reserrf (list :extra-variables (identifier-list-fix vars))))
+       ((okf cstate) (add-var-value (car vars) (car vals) cstate)))
     (add-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-add-vars-values
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -582,7 +582,7 @@
   ///
 
   (defret error-info-wfp-of-restrict-vars
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,7 +598,7 @@
    (xdoc::p
     "This is used at the beginning of the execution of a function call.
      The local state is set to consist of
-     the input and output variables of the fucntion,
+     the input and output variables of the function,
      which are passed as the @('in-vars') and @('out-vars') parameters.
      The input variables are initialized with the input values,
      passed as the @('in-vals') parameters;
@@ -607,8 +607,8 @@
      The output variables are initialized to 0."))
   (declare (ignore cstate))
   (b* ((cstate (change-cstate cstate :local nil))
-       ((ok cstate) (add-vars-values in-vars in-vals cstate))
-       ((ok cstate) (add-vars-values out-vars
+       ((okf cstate) (add-vars-values in-vars in-vals cstate))
+       ((okf cstate) (add-vars-values out-vars
                                      (repeat (len out-vars) (value 0))
                                      cstate)))
     cstate)
@@ -616,7 +616,7 @@
   ///
 
   (defret error-info-wfp-of-init-local
-    (implies (resulterrp new-cstate)
+    (implies (reserrp new-cstate)
              (error-info-wfp new-cstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -649,10 +649,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-eoutcomep
+(defruled not-reserrp-when-eoutcomep
   (implies (eoutcomep x)
-           (not (resulterrp x)))
-  :enable (resulterrp eoutcomep))
+           (not (reserrp x)))
+  :enable (reserrp eoutcomep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -684,10 +684,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-soutcomep
+(defruled not-reserrp-when-soutcomep
   (implies (soutcomep x)
-           (not (resulterrp x)))
-  :enable (resulterrp soutcomep))
+           (not (reserrp x)))
+  :enable (reserrp soutcomep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -703,18 +703,18 @@
      This is the variable denoted by the path."))
   (b* ((idens (path->get path))
        ((unless (consp idens))
-        (err (list :empty-path (path-fix path))))
+        (reserrf (list :empty-path (path-fix path))))
        ((unless (endp (cdr idens)))
-        (err (list :non-singleton-path (path-fix path))))
+        (reserrf (list :non-singleton-path (path-fix path))))
        (var (car idens)))
     var)
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-path-to-var
-    (implies (resulterrp var)
+    (implies (reserrp var)
              (error-info-wfp var))
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-identifierp)))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-identifierp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,35 +726,35 @@
    (("Goal"
      :in-theory
      (enable
-      identifierp-when-identifier-resultp-and-not-resulterrp
-      identifier-listp-when-identifier-list-resultp-and-not-resulterrp))))
+      identifierp-when-identifier-resultp-and-not-reserrp
+      identifier-listp-when-identifier-list-resultp-and-not-reserrp))))
   :short "Extract variables from paths."
   :long
   (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee path-to-var) to lists."))
   (b* (((when (endp paths)) nil)
-       ((ok var) (path-to-var (car paths)))
-       ((ok vars) (paths-to-vars (cdr paths))))
+       ((okf var) (path-to-var (car paths)))
+       ((okf vars) (paths-to-vars (cdr paths))))
     (cons var vars))
   :hooks (:fix)
   ///
 
   (defret len-of-paths-to-vars
-    (implies (not (resulterrp vars))
+    (implies (not (reserrp vars))
              (equal (len vars)
                     (len paths))))
 
   (defret error-info-wfp-of-paths-to-vars
-    (implies (resulterrp vars)
+    (implies (reserrp vars)
              (error-info-wfp vars))
     :hints
     (("Goal"
       :in-theory
       (enable
-       not-resulterrp-when-identifier-listp
-       identifierp-when-identifier-resultp-and-not-resulterrp
-       identifier-listp-when-identifier-list-resultp-and-not-resulterrp)))))
+       not-reserrp-when-identifier-listp
+       identifierp-when-identifier-resultp-and-not-reserrp
+       identifier-listp-when-identifier-list-resultp-and-not-reserrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -767,14 +767,14 @@
     "We look up the variable in the computation state.
      This always returns a single value,
      and does not change the computation state."))
-  (b* (((ok var) (path-to-var path))
-       ((ok val) (read-var-value var cstate)))
+  (b* (((okf var) (path-to-var path))
+       ((okf val) (read-var-value var cstate)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-exec-path
-    (implies (resulterrp outcome)
+    (implies (reserrp outcome)
              (error-info-wfp outcome))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -788,13 +788,13 @@
     "Executing a literal
      returns a single value
      and does not change the computation state."))
-  (b* (((ok val) (eval-literal lit)))
+  (b* (((okf val) (eval-literal lit)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-exec-literal
-    (implies (resulterrp outcome)
+    (implies (reserrp outcome)
              (error-info-wfp outcome))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -814,7 +814,7 @@
                            (limit natp))
     :returns (outcome eoutcome-resultp)
     :short "Execute an expression."
-    (b* (((when (zp limit)) (err (list :limit (expression-fix expr)))))
+    (b* (((when (zp limit)) (reserrf (list :limit (expression-fix expr)))))
       (expression-case
        expr
        :path (exec-path expr.get cstate)
@@ -837,15 +837,15 @@
        The returned expression outcome,
        if all the expressions are successfuly evaluated,
        includes a list of values, one for each expression, in the same order."))
-    (b* (((when (zp limit)) (err (list :limit (expression-list-fix exprs))))
+    (b* (((when (zp limit)) (reserrf (list :limit (expression-list-fix exprs))))
          ((when (endp exprs)) (make-eoutcome :cstate (cstate-fix cstate)
                                              :values nil))
-         ((ok (eoutcome outcome))
+         ((okf (eoutcome outcome))
           (exec-expression (car exprs) cstate funenv (1- limit)))
          ((unless (equal (len outcome.values) 1))
-          (err (list :not-single-value outcome.values)))
+          (reserrf (list :not-single-value outcome.values)))
          (val (car outcome.values))
-         ((ok (eoutcome outcome))
+         ((okf (eoutcome outcome))
           (exec-expression-list (cdr exprs) outcome.cstate funenv (1- limit))))
       (make-eoutcome :cstate outcome.cstate :values (cons val outcome.values)))
     :measure (nfix limit))
@@ -864,9 +864,9 @@
        The expressions are evaluated in reverse,
        consistently with the formal interpreter
        in [Yul: Specification of Yul: Formal Specification]."))
-    (b* (((when (zp limit)) (err (list :limit (funcall-fix call))))
+    (b* (((when (zp limit)) (reserrf (list :limit (funcall-fix call))))
          ((funcall call) call)
-         ((ok (eoutcome outcome))
+         ((okf (eoutcome outcome))
           (exec-expression-list (rev call.args) cstate funenv (1- limit))))
       (exec-function call.name outcome.values outcome.cstate funenv (1- limit)))
     :measure (nfix limit))
@@ -900,20 +900,20 @@
       "As a defensive check, we ensure that the function's body
        terminates regularly or via @('leave'),
        not via @('break') or @('continue')."))
-    (b* (((when (zp limit)) (err (list :limit
-                                   (identifier-fix fun)
-                                   (value-list-fix args))))
-         ((ok (funinfo+funenv info+env)) (find-fun fun funenv))
+    (b* (((when (zp limit)) (reserrf (list :limit
+                                           (identifier-fix fun)
+                                           (value-list-fix args))))
+         ((okf (funinfo+funenv info+env)) (find-fun fun funenv))
          ((funinfo info) info+env.info)
          (lstate-before (cstate->local cstate))
-         ((ok cstate) (init-local info.inputs args info.outputs cstate))
-         ((ok (soutcome outcome))
+         ((okf cstate) (init-local info.inputs args info.outputs cstate))
+         ((okf (soutcome outcome))
           (exec-block info.body cstate info+env.env (1- limit)))
          ((when (mode-case outcome.mode :break))
-          (err (list :break-from-function (identifier-fix fun))))
+          (reserrf (list :break-from-function (identifier-fix fun))))
          ((when (mode-case outcome.mode :continue))
-          (err (list :continue-from-function (identifier-fix fun))))
-         ((ok vals) (read-vars-values info.outputs outcome.cstate))
+          (reserrf (list :continue-from-function (identifier-fix fun))))
+         ((okf vals) (read-vars-values info.outputs outcome.cstate))
          (cstate (change-cstate outcome.cstate
                                 :local lstate-before)))
       (make-eoutcome :cstate cstate :values vals))
@@ -1003,7 +1003,7 @@
        The function definitions in a block
        are incorporated into the function environment of the computation state
        prior to starting to execute the statements in the block."))
-    (b* (((when (zp limit)) (err (list :limit (statement-fix stmt)))))
+    (b* (((when (zp limit)) (reserrf (list :limit (statement-fix stmt)))))
       (statement-case
        stmt
        :block (exec-block stmt.get cstate funenv (1- limit))
@@ -1011,62 +1011,62 @@
        (expression-option-case
         stmt.init
         :some
-        (b* (((ok (eoutcome outcome))
+        (b* (((okf (eoutcome outcome))
               (exec-expression stmt.init.val cstate funenv (1- limit)))
              ((unless (equal (len outcome.values) 1))
-              (err (list :not-single-value outcome.values)))
-             ((ok cstate)
+              (reserrf (list :not-single-value outcome.values)))
+             ((okf cstate)
               (add-var-value stmt.name (car outcome.values) outcome.cstate)))
           (make-soutcome :cstate cstate :mode (mode-regular)))
         :none
-        (b* (((ok cstate) (add-var-value stmt.name (value 0) cstate)))
+        (b* (((okf cstate) (add-var-value stmt.name (value 0) cstate)))
           (make-soutcome :cstate cstate :mode (mode-regular))))
        :variable-multi
        (if (>= (len stmt.names) 2)
            (funcall-option-case
             stmt.init
             :some
-            (b* (((ok (eoutcome outcome))
+            (b* (((okf (eoutcome outcome))
                   (exec-funcall stmt.init.val cstate funenv (1- limit)))
-                 ((ok cstate)
+                 ((okf cstate)
                   (add-vars-values stmt.names outcome.values outcome.cstate)))
               (make-soutcome :cstate cstate :mode (mode-regular)))
             :none
-            (b* (((ok cstate) (add-vars-values stmt.names
+            (b* (((okf cstate) (add-vars-values stmt.names
                                                (repeat (len stmt.names)
                                                        (value 0))
                                                cstate)))
               (make-soutcome :cstate cstate :mode (mode-regular))))
-         (err (list :non-multiple-variables stmt.names)))
+         (reserrf (list :non-multiple-variables stmt.names)))
        :assign-single
-       (b* (((ok var) (path-to-var stmt.target))
-            ((ok (eoutcome outcome))
+       (b* (((okf var) (path-to-var stmt.target))
+            ((okf (eoutcome outcome))
              (exec-expression stmt.value cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
-             (err (list :not-single-value outcome.values)))
-            ((ok cstate)
+             (reserrf (list :not-single-value outcome.values)))
+            ((okf cstate)
              (write-var-value var (car outcome.values) outcome.cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
        :assign-multi
        (b* (((unless (>= (len stmt.targets) 2))
-             (err (list :non-multiple-variables stmt.targets)))
-            ((ok vars) (paths-to-vars stmt.targets))
-            ((ok (eoutcome outcome))
+             (reserrf (list :non-multiple-variables stmt.targets)))
+            ((okf vars) (paths-to-vars stmt.targets))
+            ((okf (eoutcome outcome))
              (exec-funcall stmt.value cstate funenv (1- limit)))
-            ((ok cstate)
+            ((okf cstate)
              (write-vars-values vars outcome.values outcome.cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
        :funcall
-       (b* (((ok (eoutcome outcome))
+       (b* (((okf (eoutcome outcome))
              (exec-funcall stmt.get cstate funenv (1- limit)))
             ((when (consp outcome.values))
-             (err (list :funcall-statement-returns outcome.values))))
+             (reserrf (list :funcall-statement-returns outcome.values))))
          (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
        :if
-       (b* (((ok (eoutcome outcome))
+       (b* (((okf (eoutcome outcome))
              (exec-expression stmt.test cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
-             (err (list :if-test-not-single-value outcome.values)))
+             (reserrf (list :if-test-not-single-value outcome.values)))
             (val (car outcome.values)))
          (if (equal val (value 0))
              (make-soutcome :cstate outcome.cstate :mode (mode-regular))
@@ -1074,17 +1074,17 @@
        :for
        (b* ((vars-before (omap::keys (cstate->local cstate)))
             (stmts (block->statements stmt.init))
-            ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
-            ((ok (soutcome outcome))
+            ((okf funenv) (add-funs (statements-to-fundefs stmts) funenv))
+            ((okf (soutcome outcome))
              (exec-statement-list stmts cstate funenv (1- limit)))
             ((when (mode-case outcome.mode :break))
-             (err (list :break-from-for-init (statement-fix stmt))))
+             (reserrf (list :break-from-for-init (statement-fix stmt))))
             ((when (mode-case outcome.mode :continue))
-             (err (list :continue-from-for-init (statement-fix stmt))))
+             (reserrf (list :continue-from-for-init (statement-fix stmt))))
             ((when (mode-case outcome.mode :leave))
              (b* ((cstate (restrict-vars vars-before outcome.cstate)))
                (make-soutcome :cstate cstate :mode (mode-leave))))
-            ((ok (soutcome outcome))
+            ((okf (soutcome outcome))
              (exec-for-iterations stmt.test
                                   stmt.update
                                   stmt.body
@@ -1092,16 +1092,16 @@
                                   funenv
                                   (1- limit)))
             ((when (mode-case outcome.mode :break))
-             (err (list :break-from-for (statement-fix stmt))))
+             (reserrf (list :break-from-for (statement-fix stmt))))
             ((when (mode-case outcome.mode :continue))
-             (err (list :continue-from-for (statement-fix stmt))))
+             (reserrf (list :continue-from-for (statement-fix stmt))))
             (cstate (restrict-vars vars-before outcome.cstate)))
          (make-soutcome :cstate cstate :mode outcome.mode))
        :switch
-       (b* (((ok (eoutcome outcome))
+       (b* (((okf (eoutcome outcome))
              (exec-expression stmt.target cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
-             (err (list :not-single-value outcome.values))))
+             (reserrf (list :not-single-value outcome.values))))
          (exec-switch-rest stmt.cases
                            stmt.default
                            (car outcome.values)
@@ -1132,10 +1132,10 @@
        As soon as a statement terminates non-regularly,
        we stop executing the statements and return that non-regular mode.
        Otherwise, the statement list is executed to completion regularly."))
-    (b* (((when (zp limit)) (err (list :limit (statement-list-fix stmts))))
+    (b* (((when (zp limit)) (reserrf (list :limit (statement-list-fix stmts))))
          ((when (endp stmts)) (make-soutcome :cstate (cstate-fix cstate)
                                              :mode (mode-regular)))
-         ((ok (soutcome outcome))
+         ((okf (soutcome outcome))
           (exec-statement (car stmts) cstate funenv (1- limit)))
          ((unless (mode-case outcome.mode :regular)) outcome))
       (exec-statement-list (cdr stmts) outcome.cstate funenv (1- limit)))
@@ -1157,11 +1157,11 @@
        We execute the block's statements.
        We return the resulting outcome,
        but we remove all the variables added by the block."))
-    (b* (((when (zp limit)) (err (list :limit (block-fix block))))
+    (b* (((when (zp limit)) (reserrf (list :limit (block-fix block))))
          (vars-before (omap::keys (cstate->local cstate)))
          (stmts (block->statements block))
-         ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
-         ((ok (soutcome outcome))
+         ((okf funenv) (add-funs (statements-to-fundefs stmts) funenv))
+         ((okf (soutcome outcome))
           (exec-statement-list stmts cstate funenv (1- limit)))
          (cstate (restrict-vars vars-before outcome.cstate)))
       (make-soutcome :cstate cstate :mode outcome.mode))
@@ -1200,28 +1200,28 @@
        If the update block terminates regularly,
        we recursively call this ACL2 function,
        to continue iterating."))
-    (b* (((when (zp limit)) (err (list :limit
-                                   (expression-fix test)
-                                   (block-fix update)
-                                   (block-fix body))))
-         ((ok (eoutcome outcome))
+    (b* (((when (zp limit)) (reserrf (list :limit
+                                           (expression-fix test)
+                                           (block-fix update)
+                                           (block-fix body))))
+         ((okf (eoutcome outcome))
           (exec-expression test cstate funenv (1- limit)))
          ((unless (equal (len outcome.values) 1))
-          (err (list :for-test-not-single-value outcome.values)))
+          (reserrf (list :for-test-not-single-value outcome.values)))
          ((when (equal (car outcome.values) (value 0)))
           (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
-         ((ok (soutcome outcome))
+         ((okf (soutcome outcome))
           (exec-block body outcome.cstate funenv (1- limit)))
          ((when (mode-case outcome.mode :break))
           (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
          ((when (mode-case outcome.mode :leave))
           (make-soutcome :cstate outcome.cstate :mode outcome.mode))
-         ((ok (soutcome outcome))
+         ((okf (soutcome outcome))
           (exec-block update outcome.cstate funenv (1- limit)))
          ((when (mode-case outcome.mode :break))
-          (err (list :break-from-for-update (block-fix update))))
+          (reserrf (list :break-from-for-update (block-fix update))))
          ((when (mode-case outcome.mode :continue))
-          (err (list :continue-from-for-update (block-fix update))))
+          (reserrf (list :continue-from-for-update (block-fix update))))
          ((when (mode-case outcome.mode :leave))
           (make-soutcome :cstate outcome.cstate :mode outcome.mode)))
       (exec-for-iterations test update body outcome.cstate funenv (1- limit)))
@@ -1244,9 +1244,9 @@
        If we reach the end of the list,
        we execute the default block, if present.
        If the default block is absent, we terminate regularly."))
-    (b* (((when (zp limit)) (err (list :limit
-                                   (swcase-list-fix cases)
-                                   (block-option-fix default))))
+    (b* (((when (zp limit)) (reserrf (list :limit
+                                           (swcase-list-fix cases)
+                                           (block-option-fix default))))
          ((when (endp cases))
           (block-option-case
            default
@@ -1254,7 +1254,7 @@
            :none (make-soutcome :cstate (cstate-fix cstate)
                                 :mode (mode-regular))))
          ((swcase case) (car cases))
-         ((ok caseval) (eval-literal case.value))
+         ((okf caseval) (eval-literal case.value))
          ((when (value-equiv target caseval))
           (exec-block case.body cstate funenv (1- limit))))
       (exec-switch-rest (cdr cases) default target cstate funenv (1- limit)))
@@ -1270,43 +1270,43 @@
 
   (std::defret-mutual error-info-wfp-of-exec
     (defret error-info-wfp-of-exec-expression
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-expression)
     (defret error-info-wfp-of-exec-expression-list
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-expression-list)
     (defret error-info-wfp-of-exec-funcall
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-funcall)
     (defret error-info-wfp-of-exec-function
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-function)
     (defret error-info-wfp-of-exec-statement
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-statement)
     (defret error-info-wfp-of-exec-statement-list
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-statement-list)
     (defret error-info-wfp-of-exec-block
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-block)
     (defret error-info-wfp-of-exec-for-iterations
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-for-iterations)
     (defret error-info-wfp-of-exec-switch-rest
-      (implies (resulterrp outcome)
+      (implies (reserrp outcome)
                (error-info-wfp outcome))
       :fn exec-switch-rest)
-    :hints (("Goal" :in-theory (enable not-resulterrp-when-soutcomep
-                                       not-resulterrp-when-eoutcomep
+    :hints (("Goal" :in-theory (enable not-reserrp-when-soutcomep
+                                       not-reserrp-when-eoutcomep
                                        exec-expression
                                        exec-expression-list
                                        exec-funcall
@@ -1344,13 +1344,13 @@
      In case of success, we return the final computation state."))
   (b* ((cstate (make-cstate :local nil))
        (funenv nil)
-       ((ok (soutcome outcome)) (exec-block block cstate funenv limit))
+       ((okf (soutcome outcome)) (exec-block block cstate funenv limit))
        ((unless (equal outcome.mode (mode-regular)))
-        (err (list :top-block-move outcome.mode))))
+        (reserrf (list :top-block-move outcome.mode))))
     outcome.cstate)
   :hooks (:fix)
   ///
 
   (defret error-info-wfp-of-exec-top-block
-    (implies (resulterrp cstate)
+    (implies (reserrp cstate)
              (error-info-wfp cstate))))

@@ -145,7 +145,7 @@
                             solve
                             tailrec
                             utilities
-                            wrap-output))
+                            acl2::wrap-output))
 
 (xdoc::add-resource-directory "kestrel-apt-images" "images")
 (xdoc::add-resource-directory "kestrel-apt-design-notes" "design-notes")

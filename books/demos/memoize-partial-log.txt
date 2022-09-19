@@ -22,19 +22,11 @@ ACL2 !>>(DEFMACRO
           'MUST-FAIL
           (CONS
            FORM
-           (CONS
-            ':EXPECTED
-            (CONS
-             EXPECTED
-             (CONS
-                ':WITH-OUTPUT-OFF
-                (CONS (CONS 'PROOF-TREE
-                            (CONS 'PROVE
-                                  (CONS 'EVENT
-                                        (CONS 'SUMMARY
-                                              (CONS 'PROOF-BUILDER
-                                                    (CONS 'HISTORY 'NIL))))))
-                      'NIL)))))))
+           (CONS ':EXPECTED
+                 (CONS EXPECTED
+                       '(:WITH-OUTPUT-OFF
+                             (PROOF-TREE PROVE EVENT
+                                         SUMMARY PROOF-BUILDER HISTORY)))))))
 
 Summary
 Form:  ( DEFMACRO MF ...)
@@ -819,23 +811,19 @@ ACL2 !>>(DEFMACRO
            (CONS (CONS 'BASIC-XX-WORSE-THAN
                        (CONS 'TERM1
                              (CONS 'TERM2 (CONS CLK 'NIL))))
-                 (CONS 'T 'NIL))
+                 '(T))
            (CONS
-            (CONS (CONS 'PSEUDO-VARIANTP
-                        (CONS 'TERM1 (CONS 'TERM2 'NIL)))
-                  (CONS 'NIL 'NIL))
+            '((PSEUDO-VARIANTP TERM1 TERM2) NIL)
             (CONS
-             (CONS (CONS 'VARIABLEP (CONS 'TERM1 'NIL))
-                   (CONS 'NIL 'NIL))
+             '((VARIABLEP TERM1) NIL)
              (CONS
-               (CONS (CONS 'FQUOTEP (CONS 'TERM1 'NIL))
-                     (CONS 'NIL 'NIL))
-               (CONS (CONS 'T
-                           (CONS (CONS 'XX-WORSE-THAN-LST
-                                       (CONS (CONS 'FARGS (CONS 'TERM1 'NIL))
-                                             (CONS 'TERM2 (CONS CLK 'NIL))))
-                                 'NIL))
-                     'NIL)))))))
+                '((FQUOTEP TERM1) NIL)
+                (CONS (CONS 'T
+                            (CONS (CONS 'XX-WORSE-THAN-LST
+                                        (CONS '(FARGS TERM1)
+                                              (CONS 'TERM2 (CONS CLK 'NIL))))
+                                  'NIL))
+                      'NIL)))))))
 
 Summary
 Form:  ( DEFMACRO XX-WORSE-THAN-BUILTIN-CLOCKED-BODY ...)
@@ -1402,8 +1390,9 @@ ACL2 !>>(MF (ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
                                  NIL)))
 
 
-ACL2 Error in ASSERT-EVENT:  ACL2 cannot ev the call of non-executable
-function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument list:
+ACL2 Error [Evaluation] in ASSERT-EVENT:  ACL2 cannot ev the call of
+non-executable function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument
+list:
 
 ((MEM (CAR (DEL A X)) X) (MEM (CAR (DEL A X)) Y))
 

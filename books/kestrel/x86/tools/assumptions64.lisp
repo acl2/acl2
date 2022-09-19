@@ -14,11 +14,12 @@
 (include-book "assumptions")
 (include-book "read-and-write")
 (include-book "../parsers/parsed-executable-tools")
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defun bytes-loaded-in-text-section-64 (text-section-bytes text-offset x86)
-  (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 text-section-bytes)
-                              (true-listp text-section-bytes)
-                              (consp text-section-bytes))
+(defun bytes-loaded-at-address-64 (bytes addr x86)
+  (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 bytes)
+                              (true-listp bytes)
+                              (consp bytes))
                   :stobjs x86))
   (and ;; We'll base all addresses on the address of the text section
    ;; (we can calculate the relative offset of other things by
@@ -27,29 +28,43 @@
    ;; text section (also a number stored in the executable).
    ;; The addresses where the program is located are canonical:
    ;; TODO: Or should these be guards (then we could just use program-at)?
-   (canonical-address-p text-offset)
-   (canonical-address-p (+ text-offset
-                           (- (len text-section-bytes) 1)))
+   (canonical-address-p addr)
+   (canonical-address-p (+ addr
+                           (- (len bytes) 1)))
    ;; We assume the program (and eventually all data from the
    ;; executable) is loaded into memory.
    ;; (TODO: What about more than 1 section?):
-   (program-at text-offset
-               text-section-bytes
+   ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
+   (program-at addr
+               bytes
                x86)))
 
-(defun addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
+(defund addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
   (if (zp num-stack-slots)
       nil
     (cons address
           (addresses-of-subsequent-stack-slots-aux (+ -1 num-stack-slots) (+ -8 address)))))
 
-(defthm addresses-of-subsequent-stack-slots-aux-opener
+(defthmd addresses-of-subsequent-stack-slots-aux-opener
   (implies (and (syntaxp (quotep num-stack-slots))
                 (< num-stack-slots 1000) ;prevent huge expansions
                 (not (zp num-stack-slots)))
            (equal (addresses-of-subsequent-stack-slots-aux num-stack-slots address)
                   (cons address
-                        (addresses-of-subsequent-stack-slots-aux (+ -1 num-stack-slots) (+ -8 address))))))
+                        (addresses-of-subsequent-stack-slots-aux (+ -1 num-stack-slots) (+ -8 address)))))
+  :hints (("Goal" :in-theory (enable addresses-of-subsequent-stack-slots-aux))))
+
+(defthm canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux
+  (implies (and (posp num-stack-slots)
+                (integerp address))
+           (equal (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots-aux num-stack-slots address))
+                  (and (x86isa::canonical-address-p address)
+                       (x86isa::canonical-address-p (+ (* -8 (- num-stack-slots 1)) address)))))
+  :hints (("Subgoal *1/2" :cases ((equal 1 num-stack-slots)))
+          ("Goal" :expand (addresses-of-subsequent-stack-slots-aux 1 address)
+           :in-theory (enable addresses-of-subsequent-stack-slots-aux
+                              x86isa::canonical-address-p signed-byte-p integer-range-p))))
+
 
 ;; recall that the stack grows downward
 ;; These are just the starting addresses of the slots (1 address per 8-byte slot)
@@ -57,8 +72,8 @@
   (let ((first-slot-address (+ -8 rsp)))
     (addresses-of-subsequent-stack-slots-aux num-stack-slots first-slot-address)))
 
-(defun all-addreses-of-stack-slots (num-slots rsp)
-  (x86isa::create-canonical-address-list (* 8 num-slots) (+ (* -8 num-slots) rsp)))
+;; (defun all-addreses-of-stack-slots (num-slots rsp)
+;;   (x86isa::create-canonical-address-list (* 8 num-slots) (+ (* -8 num-slots) rsp)))
 
 ;; This is separate so we can easily create a list of terms to pass to symsim.
 ;; NOTE: Some of these (e.g., stack pointer alignment) are conventions that may not be respected by malware!
@@ -108,7 +123,7 @@
                   :verify-guards nil ;todo
                   ))
   (and (standard-state-assumption-64 x86)
-       (bytes-loaded-in-text-section-64 text-section-bytes text-offset x86)
+       (bytes-loaded-at-address-64 text-section-bytes text-offset x86)
        ;; The program counter is at the start of the routine to lift:
        (equal (rip x86) (+ text-offset offset-to-subroutine))
 
@@ -153,3 +168,20 @@
                                 (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
                                 stack-slots-needed
                                 x86))
+
+(defun standard-assumptions-elf-64 (subroutine-name
+                                    parsed-elf
+                                    stack-slots-needed
+                                    text-offset
+                                    x86)
+  (declare (xargs :stobjs x86
+                  :verify-guards nil ;todo
+                  ))
+  (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
+        (text-section-address (acl2::get-elf-code-address parsed-elf))
+        (subroutine-address (acl2::subroutine-address-elf subroutine-name parsed-elf)))
+    (standard-assumptions-core-64 text-section-bytes
+                                  text-offset
+                                  (- subroutine-address text-section-address)
+                                  stack-slots-needed
+                                  x86)))

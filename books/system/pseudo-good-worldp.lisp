@@ -35,6 +35,12 @@
 (include-book "pseudo-command-landmarkp")
 (include-book "pseudo-tests-and-calls-listp")
 
+; The following was added to support the devel-check target (see comments
+; the system definition of constant *system-verify-guards-alist*).
+; Specifically, the definition of stobj-listp below requires stobjp to be in
+; logic mode, which is taken care of by this book.
+(include-book "verified-termination-and-guards")
+
 ; -----------------------------------------------------------------
 
 ; This book is used by the book worldp-check.lisp to check the concept of a
@@ -1774,6 +1780,25 @@
   (pseudo-forward-chaining-rule-listp val))
 
 ;-----------------------------------------------------------------
+; GLOBAL-STOBJS
+
+(defun stobj-listp (x known-stobjs w)
+  (declare (xargs :guard (and (plist-worldp w)
+                              (or (eq known-stobjs t)
+                                  (true-listp known-stobjs)))))
+  (cond ((atom x) (null x))
+        (t (and (stobjp (car x) known-stobjs w)
+                (stobj-listp (cdr x) known-stobjs w)))))
+
+(defun global-stobjs-p (val w)
+  (declare (xargs :guard (plist-worldp w)))
+  (or (null val)
+      (and (consp val)
+           (stobj-listp (car val) t w)
+           (stobj-listp (cdr val) t w)
+           (not (intersectp-eq (car val) (cdr val))))))
+
+;-----------------------------------------------------------------
 ; GLOBAL-VALUE
 
 (defun pseudo-global-valuep (sym val w)
@@ -2544,22 +2569,11 @@
 ; STOBJ
 
 (defun pseudo-stobjp (sym val)
-  (declare (ignore sym))
+  (if (eq sym 'state)
+      (equal val '(*the-live-state*))
+    (or (null val)
+        (weak-stobj-property-p val))))
 
-; The other-names below contains the names of the field recognizers, accessors,
-; updaters, various names associated with array-type fields (like the resizer),
-; and the the names of the defconsts associating field names with position,
-; e.g., a stobj whose 3rd component is MEM causes (defconst *MEM* 3) to be
-; executed and for *MEM* to be among the other names.  For that reason, we do
-; not here insist that other-names be (pseudo) function symbols.
-
-  (case-match val
-    (('*the-live-state*) t)
-    ((live-var recog-name . other-names)
-     (and (symbolp live-var)
-          (pseudo-function-symbolp recog-name 1)
-          (symbol-listp other-names)))
-    (& nil)))
 ;-----------------------------------------------------------------
 ; STOBJ-CONSTANT
 
@@ -2895,6 +2909,8 @@
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))
           (FORWARD-CHAINING-RULES (pseudo-forward-chaining-rulesp sym val))
+          (GLOBAL-STOBJS (or (eq val *acl2-property-unbound*)
+                             (global-stobjs-p val w)))
           (GLOBAL-VALUE
            (and (not (eq val *acl2-property-unbound*))
                 (pseudo-global-valuep sym val w)))

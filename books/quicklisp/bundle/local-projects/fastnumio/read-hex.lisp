@@ -308,7 +308,7 @@
   (assert (equal (u32-from-nibarr 1 nibarr)  #xF))
   )
 
-#+(and sbcl x86-64)
+#+(and sbcl 64-bit)
 (progn
   ;; Basic sanity checking to see if we still understand the internal API.
   (assert (equal sb-bignum::digit-size 64))
@@ -318,7 +318,7 @@
   (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
          (digit  (sb-bignum::%bignum-ref x 0))
          (high32 (sb-bignum::%digit-logical-shift-right digit 32))
-         (low32  (sb-bignum::%logand digit #xFFFFFFFF)))
+         (low32  (logand digit #xFFFFFFFF)))
     (assert (typep high32 'fixnum))
     (assert (typep low32 'fixnum))
     (assert (typep high32 '(unsigned-byte 32)))
@@ -331,19 +331,19 @@
 ;; This is just scratchwork that may be useful when trying to understand SBCL's
 ;; bignum representation.
 
-#+(and sbcl x86-64)
+#+(and sbcl 64-bit)
 (defun construct-u64-from-u32s (high low)
   (declare (type (unsigned-byte 32) high low))
   (if (logbitp 31 high)
       ;; Top bit is 1, so we need an extra digit to avoid treating this as unsigned.
       (let ((ans   (sb-bignum:%allocate-bignum 2))
-            (digit (sb-bignum::%logior (sb-bignum::%ashl high 32) low)))
+            (digit (sb-bignum::bignum-logical-ior (sb-bignum::bignum-ashift-left high 32) low)))
         (setf (sb-bignum::%bignum-ref ans 0) digit)
         (setf (sb-bignum::%bignum-ref ans 1) 0)
         ans)
     ;; The top bit is 0, so we don't need an extra digit.
     (let ((ans   (sb-bignum:%allocate-bignum 1))
-          (digit (sb-bignum::%logior (sb-bignum::%ashl high 32) low)))
+          (digit (sb-bignum::bignum-logical-ior (sb-bignum::bignum-ashift-left high 32) low)))
       (setf (sb-bignum::%bignum-ref ans 0) digit))))
 
 (defun my-test (n)
@@ -368,7 +368,7 @@
 
 ||#
 
-#+(and sbcl x86-64)
+#+(and sbcl 64-bit)
 (defun bignum-from-nibarr (end nibarr)
   (declare (type (array (unsigned-byte 4) *) nibarr)
            (type fixnum end))
@@ -418,8 +418,8 @@
 ;          (format t "got high = #x~x, end is now ~d~%" high32 end)
 ;          (format t "Installing chunk ~d <-- #x~x,#x~x~%" u64pos high32 low32)
           (setf (sb-bignum::%bignum-ref ans u64pos)
-                (sb-bignum::%logior (sb-bignum::%ashl high32 32)
-                                    low32))
+                (logior (sb-bignum::%ashl high32 32)
+                        low32))
           (incf u64pos))
 
     ;; This normalization apparently handles the case where the bignum we are
@@ -448,9 +448,9 @@
                         0
                       ;; Failed to read any hex digits.  Just fail.
                       nil)))
-     #+(not (and sbcl x86-64))
+     #+(not (and sbcl 64-bit))
      (assemble-nibbles-60 end nibarr)
-     #+(and sbcl x86-64)
+     #+(and sbcl 64-bit)
      (if (< end 16)
          ;; Don't bother with any bignum nonsense
          (assemble-nibbles-60 end nibarr)

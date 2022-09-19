@@ -76,6 +76,11 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+(defthmd quotep-compound-recognizer
+  (implies (quotep x)
+           (consp x))
+  :rule-classes :compound-recognizer)
+
 (defthm trees-to-memoizep-of-cons-if-not-equal-car
   (equal (trees-to-memoizep (cons-if-not-equal-car tree trees))
          (and (tree-to-memoizep tree)
@@ -1616,7 +1621,7 @@
                                      (b* (((mv erp val)
                                            (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
                                        (if erp
-                                           (if (eq :unknown-function erp)
+                                           (if (call-of :unknown-function erp)
                                                (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
                                              ;; anything else non-nil is a true error:
                                              (mv erp nil nil))
@@ -1648,7 +1653,7 @@
                                                                          print interpreted-function-alist rewrite-stobj (+ -1 count)))))))))))))))
 
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
-        ;; No special handling if FN is an if (of any type).  No evaluation of ground terms.
+        ;; No special handling if FN is an IF (of any type).  No evaluation of ground terms.
         (defund ,simplify-fun-call-and-add-to-dag-name (fn ;;a function symbol
                                                         args ;these are simplified (so these are nodenums or quoteps)
                                                         trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to FN applied to ARGS (to be added to the memoization) ;todo: rename
@@ -4385,11 +4390,13 @@
     ;; TODO: Add support for assumptions that come in array form?
     ;; TODO: Add support for rewriting nodes in (an approximation of) their contexts -- but disallow memoization in that case!
     (defund ,simplify-dag-aux-name (rev-dag ;low nodes come first
-                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                   print interpreted-function-alist rewrite-stobj
-                                   renumbering-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
-                                   )
+                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                    memoization ; this is over the NEW nodenums (the ones in dag-array)
+                                    info tries limits
+                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                    print interpreted-function-alist rewrite-stobj
+                                    renumbering-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
+                                    )
       (declare (xargs :guard (and (weak-dagp-aux rev-dag)
                                   (cars-increasing-by-1 rev-dag)
                                   (if (consp rev-dag)
@@ -4470,10 +4477,10 @@
                 ;; (bvif ..)
                 ;; (not ..)
                 (t ;; EXPR is some other (non-lambda) function call:
-                 ;; TODO: Consider consulting the memoization here
                  (b* (;; Renumber the args:
                       (new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
-                      ;; Handle possible ground term by evaluating:
+                      ;; TODO: Consider consulting the memoization here, now that the nodenums have been renumbered
+                      ;; Handle possible ground term by evaluating (since ,simplify-fun-call-and-add-to-dag-name doesn't handle ground terms):
                       ((mv erp evaluatedp val)
                        (if (not (all-consp new-dargs)) ;; test for args being quoted constants
                            ;; not a ground term:
@@ -4482,7 +4489,7 @@
                          (b* (((mv erp val)
                                (,apply-axe-evaluator-to-quoted-args-name fn new-dargs interpreted-function-alist)))
                            (if erp
-                               (if (eq :unknown-function erp)
+                               (if (call-of :unknown-function erp)
                                    (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
                                  ;; anything else non-nil is a true error:
                                  (mv erp nil nil))
@@ -4493,7 +4500,7 @@
                        (let* ((quoted-val (enquote val))
                               ;; Record the fact that NODENUM rewrote to QUOTED-VAL:
                               (renumbering-stobj (update-renumberingi nodenum quoted-val renumbering-stobj)))
-                         ;; I suppose we could update the memoization here if we wanted to.
+                         ;; I suppose we could update the memoization here if we wanted to (but remember that it deals in the new nodenums).
                          (,simplify-dag-aux-name (rest rev-dag)
                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                  node-replacement-array node-replacement-count rule-alist refined-assumption-alist
@@ -4536,7 +4543,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4607,7 +4613,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4626,7 +4631,9 @@
                  (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj))
                  (implies (not erp)
                           (and (natp new-dag-len)
-                               (integerp new-dag-len)))))
+                               (integerp new-dag-len)
+                               ;; (not (< 2147483646 new-dag-len)) ; todo
+                               ))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
 
@@ -4649,7 +4656,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4693,7 +4699,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4738,7 +4743,6 @@
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (axe-print-levelp print)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
                         (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
@@ -4771,18 +4775,18 @@
 
     ;; Returns (mv erp dag-or-quotep).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
-    ;; TODO: Prove some properties
-    (defun ,simplify-dag-name (dag
-                               assumptions
-                               interpreted-function-alist
-                               limits
-                               rule-alist
-                               count-hits
-                               print
-                               known-booleans
-                               monitored-symbols
-                               normalize-xors
-                               memoize)
+    ;; TODO: Add support for rewriting nodes in their (approximate) contexts.
+    (defund ,simplify-dag-name (dag
+                                assumptions
+                                interpreted-function-alist
+                                limits
+                                rule-alist
+                                count-hits
+                                print
+                                known-booleans
+                                monitored-symbols
+                                normalize-xors
+                                memoize)
       (declare (xargs :guard (and (pseudo-dagp dag)
                                   (< (top-nodenum dag) 2147483646)
                                   (pseudo-term-listp assumptions)
@@ -4862,6 +4866,94 @@
                    (mv (erp-nil) new-top-nodenum-or-quotep)
                  (mv (erp-nil)
                      (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+
+    (defthm ,(pack$ simplify-dag-name '-return-type)
+      (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))))
+                    (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+                    (pseudo-dagp dag)
+                    (< (top-nodenum dag) 2147483646)
+                    (pseudo-term-listp assumptions)
+                    (rule-limitsp limits)
+                    (rule-alistp rule-alist)
+                    (booleanp count-hits)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (booleanp normalize-xors)
+                    (booleanp memoize))
+               (and (pseudo-dagp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+                    ;; (< (len (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+                    ;;    2147483647) ;; todo
+                    ))
+      :hints (("Goal" :do-not '(generalize eliminate-destructors)
+               :in-theory (e/d (,simplify-dag-name
+                                       natp-of-renumberingi
+                                       integerp-of-renumberingi
+                                       <-of-+-of-1-when-integers)
+                                      (myquotep
+                                       mv-nth ; why?
+                                       natp)))))
+
+    ;; ;; It's a consp either way
+    ;; (defthm ,(pack$ simplify-dag-name '-return-type-corollary-1)
+    ;;   (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+    ;;                 (pseudo-dagp dag)
+    ;;                 (< (top-nodenum dag) 2147483646)
+    ;;                 (pseudo-term-listp assumptions)
+    ;;                 (rule-limitsp limits)
+    ;;                 (rule-alistp rule-alist)
+    ;;                 (booleanp count-hits)
+    ;;                 (axe-print-levelp print)
+    ;;                 (interpreted-function-alistp interpreted-function-alist)
+    ;;                 (symbol-listp known-booleans)
+    ;;                 (symbol-listp monitored-symbols)
+    ;;                 (booleanp normalize-xors)
+    ;;                 (booleanp memoize))
+    ;;            (consp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+    ;;                   )
+    ;;   :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
+    ;;            :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
+
+    ;; Uses myquotep as the normal form.
+    (defthm ,(pack$ simplify-dag-name '-return-type-corollary-2)
+      (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+                    (pseudo-dagp dag)
+                    (< (top-nodenum dag) 2147483646)
+                    (pseudo-term-listp assumptions)
+                    (rule-limitsp limits)
+                    (rule-alistp rule-alist)
+                    (booleanp count-hits)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (booleanp normalize-xors)
+                    (booleanp memoize))
+               (equal (quotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+                      (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
+
+    ;; Uses myquotep as the normal form.
+    (defthm ,(pack$ simplify-dag-name '-return-type-corollary-3)
+      (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+                    (pseudo-dagp dag)
+                    (< (top-nodenum dag) 2147483646)
+                    (pseudo-term-listp assumptions)
+                    (rule-limitsp limits)
+                    (rule-alistp rule-alist)
+                    (booleanp count-hits)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (booleanp normalize-xors)
+                    (booleanp memoize))
+               (equal (pseudo-dagp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+                      (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

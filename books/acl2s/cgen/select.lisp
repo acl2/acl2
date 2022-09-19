@@ -12,6 +12,10 @@
 (include-book "cgen-state")
 (include-book "type")
 
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
+
 (def separate-const/simple-hyps. (ts wrld Hc. Hs. Ho.)
   (decl :sig ((pseudo-term-list plist-world 
                pseudo-term-list pseudo-term-list pseudo-term-list) 

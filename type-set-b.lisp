@@ -1,4 +1,4 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1537,6 +1537,11 @@
 ; the github repository (even though the code in useless-runes-value should
 ; prevent their creation), since files in ignored directories can't be
 ; committed in git.
+
+; We use a different mechanism for avoiding useless-runes in ACL2(p) than in
+; ACL2(r); see with-useless-runes-aux.  It's not clear which is better, but
+; it's also not clear that there's much reason to change either one at this
+; point.
 
                           #-non-standard-analysis "/.sys"
                           #+non-standard-analysis "/.sysr"
@@ -4546,7 +4551,7 @@
 ;;; CCL
 
 ; original
-; Unmodified from the the worse-than implementation in Version_7.0:
+; Unmodified from the worse-than implementation in Version_7.0:
 ; 52692.173u 1924.728s 2:26:28.33 621.4%	0+0k 1209904+5209720io 862pf+0w
 
 ; run-1
@@ -4582,7 +4587,7 @@
 ;;; GCL
 
 ; original
-; Unmodified from the the worse-than implementation in Version_7.0:
+; Unmodified from the worse-than implementation in Version_7.0:
 ; 63181.644u 1732.384s 2:39:00.22 680.4%	0+0k 7886424+10142248io 6495pf+0w
 
 ; run-2

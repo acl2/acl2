@@ -41,10 +41,13 @@
 (in-package "RP")
 
 (include-Book "proof-functions")
-
 (include-Book "eval-functions-lemmas")
 
 (local (include-book "aux-function-lemmas"))
+
+(local
+ (in-theory (enable falist-consistent)))
+
 
 (defthm eval-and-all-append
   (equal (eval-and-all (append x y) a)
@@ -54,14 +57,7 @@
            :in-theory (e/d (eval-and-all
                             append) ()))))
 
-(defthm eval-sc-append
-  (equal (eval-sc (append x y) a)
-         (and (eval-sc x a)
-              (eval-sc y a)))
-  :hints (("Goal"
-           :in-theory (e/d (eval-sc
-                            append
-                            eval-and-all) ()))))
+
 
 #|(encapsulate
   nil
