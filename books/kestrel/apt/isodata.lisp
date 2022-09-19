@@ -312,7 +312,7 @@
     "If @('m') is 1, we also accept the keyword @(':result'),
      treating it the same as @(':result1')."))
   (b* ((err-msg (msg "~@0 But ~x1 is none of those." err-msg-preamble res))
-       ((unless (keywordp res)) (er-soft+ ctx t 1 err-msg-preamble res))
+       ((unless (keywordp res)) (er-soft+ ctx t 1 "~@0" err-msg))
        ((when (and (= m 1) (eq res :result))) (value 1))
        (name (symbol-name res))
        ((unless (and (> (length name) 6)
@@ -350,7 +350,7 @@
        (m (number-of-results old$ wrld))
        (err-msg-part (if (= m 1)
                          (msg "must be either a formal argument of ~x0, ~
-                               or the keyword :RESULT,
+                               or the keyword :RESULT, ~
                                or the keyword :RESULT1."
                               old$)
                        (msg "must be either a formal argument of ~x0, ~
