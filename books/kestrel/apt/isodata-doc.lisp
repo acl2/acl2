@@ -218,9 +218,11 @@
         "It must be one of the following:")
        (xdoc::ul
         (xdoc::li
-         "A non-empty list without duplicates of elements among
+         "A list without duplicates of elements among
           @('x1'), ... @('xn'), @(':result1'), ..., @(':resultm'),
-          in any order.")
+          in any order.
+          The list is allowed to be empty (to facilitate iterative development),
+          in which case the doublet does not induce any transformation.")
         (xdoc::li
          "A single element among
           @('x1'), ... @('xn'), @(':result1'), ..., @(':resultm'),

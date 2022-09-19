@@ -358,12 +358,13 @@
                              a positive integer not exceeding ~
                              the number of results ~x1 of ~x0."
                             old$ m))))
-    (if (atom arg/res-list)
+    (if (and (atom arg/res-list)
+             (not (null arg/res-list)))
         (if (member-eq arg/res-list x1...xn)
             (value (list (list arg/res-list) nil))
           (b* ((err-msg-preamble (msg "Since the ~n0 ARG/RES-LIST component ~
                                        of the second input ~
-                                       is not a list, it ~@1"
+                                       is a non-NIL atom, it ~@1"
                                       (list k) err-msg-part))
                ((er j) (isodata-process-res arg/res-list m
                                             err-msg-preamble ctx state)))
