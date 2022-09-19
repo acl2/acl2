@@ -36,6 +36,194 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+(defxdoc least-fixpoint
+  :parents (svex)
+  :short "Discussion of the least-fixpoint theory used in SV"
+  :long "
+
+
+<h3>Background: Network composition problem</h3>
+<p>One of the important steps in our method for interpreting the semantics of a
+hardware design is transforming (composing) a network of local variable
+assignments into a set of full 0-delay update functions comprising a finite
+state machine.  The practical method of doing this is discussed in @(see
+svex-composition). The input to this step is a set of assignments each giving
+the value of a variable in terms of inputs, previous states, and other internal
+variables, and the output of the step is a new set of assignments that
+eliminates the dependencies on other internal variables.  As a simple example,
+suppose @('c') is an input signal and we have as the input to the composition
+step (in Verilog syntax)
+
+@({
+  assign a = f(b);
+  assign b = g(c);
+ })
+
+Then the output of the composition step should be a new set of assignments of the same variables:
+
+@({
+ assign a = f(g(c));
+ assign b = g(c);
+ })</p>
+
+<p>This is straightforward if the dependency graph formed by all the
+assignments is acyclic.  However, this is not always the case, even in
+relatively conventional hardware designs. Latch-based logic tends to create
+loops that will be broken under each setting of the clock and enable signals.
+Even flipflop-based designs can have similar apparent self-loops if clock gate
+signals are derived from the outputs of flops that they gate.</p>
+
+<p>The general practical approach to such situations (as used in @(see
+svex-composition)) is to substitute an X (signifying an unknown value) for each
+variable involved in the loop and then unroll the loop a few times. E.g.,
+supposing we have
+@({
+ assign a = f(b, c);
+ assign b = g(a, d);
+ })
+we can unroll this to:
+@({
+ assign a = f(g(f(g('X, d), c), d), c);
+ assign b = g(f(g(f('X, c), d), c), d);
+ })
+</p>
+
+<p>To formalize the relationship between the outputs and inputs of this
+process, we define the relation @('netevalcomp-p') in the book
+\"centaur/sv/svex/compose-theory-base\" and prove that our composition routine
+@(see svex-assigns-compose) results in a new network that satisfies this
+relation.  This relation says that the resulting network can be derived by
+composing together the assignments given in the original network, or bitslices
+of them, and finally replacing all remaining dependencies on internal signals
+with Xes.</p>
+
+<p>But this leads to the question of whether this is correct or enough.  It
+would be more satisfying to have a stronger connection between the network of
+assignments parsed from the hardware design and the FSM produced by composing
+them together.  This weak connection also makes it difficult to support
+hierarchical and temporal decomposition -- e.g., with only this connection we
+can't argue that a network composed from a submodule has anything to do with a
+network composed from its parent module, because we might have chosen different
+ways to do the composition and there's no a priori connection between these.</p>
+
+<h3>Least Fixpoint</p>
+
+<p>Fortunately, there is a stronger theoretical basis that this
+@('netevalcomp-p') notion is compatible with.  Basically, if all the assignment
+expressions in the original network treat Xes as proper unknowns, then by
+repeatedly composing all the expressions together we will eventually reach a
+fixed point; i.e., for a given setting of the input/previous-state variables,
+we end up with values for all the internal signals that are unchanged by again
+applying their assignment expressions.  We don't compute this fixpoint, but we
+show that the compositions we produce, satisfying @('netevalcomp-p'), are
+conservative approximations (with respect to X being unknown) of this fixpoint.
+This means that when we prove theorems about the compositions we have computed,
+then provided these theorems also treat X as properly unknown, they also hold
+of the fixpoint.</p>
+
+<p>The fixpoint also has good decomposition properties. We show that if we take
+the fixpoint of a network with certain internal signals replaced by artificial
+values, then we get the same result as the fixpoint of the original network if
+those artificial values match the values of the respective signals in the
+original fixpoint.  This lets us take theorems proved about a @('netevalcomp')
+FSM with overrides and use them to prove similar theorems about the idealized,
+fixpoint FSM with no overrides.</p>
+
+<p>Finally, this fixpoint should allow hierarchical decomposition, i.e. we
+should be able to use theorems proved about the fixpoint FSM of a submodule to
+prove similar facts about the fixpoint FSM of a larger scope.</p>
+
+<h3>Theory Background</h3>
+
+<h4>Information ordering</h4>
+<p>The least fixpoint depends conceptually on the view of svex expressions and
+4vec values as partially ordered according to how much information they
+contain.  Svex expressions take values that are called 4vecs, which
+are (conceptually) vectors of 4-valued 'bits' that are either X, Z, 1, or 0.
+Here 1 and 0 signify good Boolean values, Z means the wire is undriven, and X
+means unknown.  In the information ordering, X is the bottom, and the other
+three values are above it but unrelated to each other.  This ordering is
+recognized by the function @('(4vec-<<= a b)') which means the same as saying
+@('a') is a conservative approximation of @('b').  Specifically, this means
+that for any bit in the 4valued vector @('a'), either that bit is X or the
+corresponding bit in @('b') has the same value.  See @(see 4vec-<<=).  Other
+relations straightforwardly extend this to lists of 4vecs (@(see
+4veclist-<<=)), environments mapping variables to 4vecs, @(see svex-env-<<=),
+SVEX expressions @(see svex-<<=), lists of SVEX expressions @(see
+svexlist-<<=), and alists mapping variables to SVEX expressions @(see
+svex-alist-<<=).</p>
+
+<h4>Monotonicity</h4>
+
+<p>An important property of some SVEX expressions is monotonicity with respect
+to this information ordering.  That is, an expression is monotonic if its
+evaluation on two environments related by @('svex-env-<<=') always yields
+results that satisfy @('4vec-<<=').  This property is recognized by @(see
+svex-monotonic-p). Not all SystemVerilog constructs produce SVEX expressions
+that are monotonic -- for example, the @('===') SystemVerilog operator is not
+monotonic because treats Xes as just another value rather than as an unknown.
+But we have a transformation @(see svex-monotonify) that changes such
+non-monotonic operators to monotonic ones and in practice seems to work well
+enough.  Despite the risk that this might cause a hardware model not to
+function as intended (note it could cause an expression that originally
+produced a 1, 0, or Z to instead produce an X, but not vice versa), we use this
+transformation to enforce monotonicity because it is so important for any form
+of decomposition.  It is very common and efficient to set variables to Xes in
+order to signify that they are don't-cares.  With monotonicity, this is just as
+good as setting them to free variables.  Without monotonicity, all we've proved
+is that the property holds when those variables are set to Xes.</p>
+
+<p>We also sometimes use weaker forms of monotonicity which say that an
+expression is monotonic on certain variables, or monotonic on all variables
+except a certain set.  This is true if, for any evaluation on two environments
+that (1) satisfy @('svex-env-<<=') and (2) only differ on the variables in
+which the expression is supposed to be monotonic, the results satsify
+@('4vec-<<').  See @(see svex-monotonic-on-vars) and @(see
+svex-partial-monotonic).</p>
+
+<h4>Fixpoint algorithm</h4>
+
+<p>If we have a set of assignments of expressions to variables, and those
+expressions are monotonic on all the variables assigned, and each expression has a maximum bit width, then we show how to
+create a least fixpoint.</p>
+
+<p>Essentially, we just compose the entire list of expressions with itself
+repeatedly @('n') times, starting with all assigned variables set to X, where
+@('n') is big enough that we know we've reached a fixpoint.  Note that it
+doesn't hurt anything if @('n') is too big, because once we've reached a
+fixpoint, composing further doesn't change anything.</p>
+
+<p>How can we know we've reached a fixpoint?</p>
+
+<p>First note that subsequent iterations only increase in the information
+ordering. By monotonicity of the expressions, if iteration @('k-1') is @('<<=')
+iteration @('k'), then iteration @('k') is @('<<=') iteration @('k+1'). The
+initial valuation for the variables is all Xes, which is @('<<=') any other
+valuation, so we have iteration 0 @('<<=') iteration 1, so by induction this
+holds for all iterations.</p>
+
+<p>Next note that @('a <<= b') requires that @('a') is the same as @('b')
+except for 0 or more bits that were X in @('a') and are 1, 0, or Z in @('b').
+So at iteration @('k+1'), either our valuation is the same as at iteration
+@('k') and we have therefore reached a fixpoint, or one or more bits have
+switched from X in iteration @('k') to other values in iteration @('k+1').
+This means that the number of X bits in our valuations -- finite, since each
+expression has a maximum bit width -- decreases until we reach a fixpoint.</p>
+
+<p>Therefore, it suffices to set @('n') to the total of all the expressions'
+maximum bit widths, i.e. the number of X bits in the initial valuation.  By the
+time we have done that many iterations, we are guaranteed to have reached a
+fixpoint.</p>
+
+<p>In fact, the fixpoint we arrive at this way is the unique least fixpoint of
+the network.  To see this, suppose that we have our fixpoint valuation @('v')
+and another fixpoint valuation @('w').  If the valuation at iteration @('k') is
+@('<<= w'), then by monotonicity and the fact that @('w') is a fixpoint, the
+valuation at iteration @('k+1') is @('<<= w').  The valuation at iteration 0 is
+all Xes, therefore @('<<= w').  So by induction, the valuation at all
+iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
+")
+
 
 (define 4vec-bit-index-is-x ((n natp) (x 4vec-p))
   (b* (((4vec x)))

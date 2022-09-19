@@ -42,10 +42,10 @@
 ;; the override network, it is always <<= the final fixpoint of the original
 ;; network, but it is always >>= the corresponding fixpoint iteration of the
 ;; original network.  Conveniently for this proof, the bit width of each
-;; expression (measured somewhat heuristically by svex-width) is preserved by
-;; applying the overrides, so that means the iteration takes the same number of
-;; steps.  This shows that the fixpoint evaluation with overrides is bounded
-;; above and below by the original fixpoint evaluation, so they are equivalent.
+;; expression is preserved by applying the overrides, so that means the
+;; iteration takes the same number of steps.  This shows that the fixpoint
+;; evaluation with overrides is bounded above and below by the original
+;; fixpoint evaluation, so they are equivalent.
 
 
 (defthm svex-env-removekeys-nil

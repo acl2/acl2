@@ -76,6 +76,7 @@
                           (var ,wit) (x env1) (y env2))))))))
 
 (defsection svex-monotonic-on-vars
+  :parents (4vec-<<=)
   (defun-sk svex-monotonic-on-vars (vars x)
     (forall (env1 env2)
             (implies (and (svex-env-<<= env1 env2)
@@ -126,6 +127,7 @@
 
 
 (defsection svexlist-monotonic-on-vars
+  :parents (4vec-<<=)
   (defun-sk svexlist-monotonic-on-vars (vars x)
     (forall (env1 env2)
             (implies (and (svex-env-<<= env1 env2)
@@ -177,6 +179,7 @@
 
 
 (defsection svex-alist-monotonic-on-vars
+  :parents (4vec-<<=)
   (defun-sk svex-alist-monotonic-on-vars (vars x)
     (forall (env1 env2)
             (implies (and (svex-env-<<= env1 env2)

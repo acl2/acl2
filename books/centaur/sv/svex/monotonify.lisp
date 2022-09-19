@@ -115,6 +115,7 @@
 
 (defconst *svex-monotonify-event*
   '(defines svex-monotonify
+     :parents (4vec-<<=)
      (define svex-monotonify ((x svex-p))
        :measure (acl2::two-nats-measure (svex-count x) 1)
        :returns (new-x svex-p)

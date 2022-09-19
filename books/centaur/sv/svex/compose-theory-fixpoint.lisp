@@ -33,6 +33,15 @@
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (in-theory (disable hons-dups-p)))
 
+;; This book proves the theorem netevalcomp-p-implies-<<=-fixpoint, which says
+;; that a composition (netevalcomp) of a network is a conservative
+;; approximation of the network's least fixpoint.  This is important because
+;; we've previously shown that the composition routine we use produces a
+;; composition satisfying netevalcomp-p of the original network; this allows us
+;; to apply our override theory based on the least fixpoint to the actual FSMs
+;; we create when producing SVTVs.
+
+
 
 (encapsulate nil
   (local (defthm svex-alist-eval-when-equiv-compose

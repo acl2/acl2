@@ -181,6 +181,7 @@
          :hints(("Goal" :in-theory (enable svex-env-fix alist-keys)))))
 
 (defsection svex-partial-monotonic
+  :parents (4vec-<<=)
   (defun-sk svex-partial-monotonic (param-keys x)
     (forall setting
             (implies (and (svex-alist-constantp setting)
@@ -279,6 +280,7 @@
 
 
 (defsection svexlist-partial-monotonic
+  :parents (4vec-<<=)
   (defun-sk svexlist-partial-monotonic (param-keys x)
     (forall setting
             (implies (and (svex-alist-constantp setting)
@@ -442,6 +444,7 @@
     :hints(("Goal" :in-theory (enable svex-compose-alist-const/selfbound-keys-p)))))
 
 (defsection svex-alist-partial-monotonic
+  :parents (4vec-<<=)
   (defun-sk svex-alist-partial-monotonic (param-keys x)
     (forall setting
             (implies (and (svex-alist-constantp setting)
