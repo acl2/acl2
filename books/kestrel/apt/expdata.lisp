@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -3693,7 +3693,9 @@
                                                       old-fn-unnorm-name
                                                       newp-of-new$
                                                       wrld))
-       (event `(local (verify-guards ,new$ :hints ,hints))))
+       (event `(local (verify-guards ,new$
+                        :hints ,hints
+                        :guard-simplify :limited))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

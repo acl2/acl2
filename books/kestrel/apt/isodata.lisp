@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,6 +19,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -58,6 +60,7 @@
   "@('old'),
    @('isomaps'),
    @('predicate'),
+   @('undefined'),
    @('new-name'),
    @('new-enable'),
    @('old-to-new-name'),
@@ -77,6 +80,7 @@
 
   "@('old$'),
    @('predicate$'),
+   @('undefined$'),
    @('new-enable$'),
    @('old-to-new-enable$'),
    @('new-to-old-enable$'),
@@ -1101,9 +1105,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-process-undefined (undefined
+                                   (old$ symbolp)
+                                   ctx
+                                   state)
+  :returns (mv erp
+               (undefined$ "A @(tsee pseudo-termp).")
+               state)
+  :mode :program
+  :short "Process the @(':undefined') input."
+  (b* ((wrld (w state))
+       (m (number-of-results old$ wrld))
+       ((when (eq :auto undefined))
+        (value (if (< 1 m)
+                   (fcons-term 'mv (repeat m nil))
+                 nil)))
+       ((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ undefined
+                                            "The :UNDEFINED input" t nil))
+       (description (msg "The term ~x0 that denotes the undefined value"
+                         undefined))
+       ((er &) (ensure-term-free-vars-subset$ term
+                                              (formals old$ wrld)
+                                              description t nil))
+       ((er &) (ensure-term-logic-mode$ term description t nil))
+       ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out m
+                                                               description
+                                                               t nil))
+       ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
+       ((er &) (ensure-term-does-not-call$ term old$
+                                           description t nil)))
+    (value term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-process-inputs (old
                                 isomaps
                                 predicate
+                                undefined
                                 new-name
                                 new-enable
                                 old-to-new-name
@@ -1129,6 +1168,7 @@
                (result "A tuple @('(old$
                                     arg-isomaps
                                     res-isomaps
+                                    undefined$
                                     new$
                                     new-enable$
                                     old-to-new$
@@ -1144,6 +1184,7 @@
                         @('(typed-tuplep symbolp
                                          isodata-symbol-isomap-alistp
                                          isodata-pos-isomap-alistp
+                                         pseudo-termp
                                          symbolp
                                          booleanp
                                          symbolp
@@ -1160,6 +1201,7 @@
   :mode :program
   :short "Process all the inputs."
   (b* (((er old$) (isodata-process-old old predicate verify-guards ctx state))
+       ((er undefined$) (isodata-process-undefined undefined old$ ctx state))
        ((er (list new$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
@@ -1246,6 +1288,7 @@
     (value (list old$
                  arg-isomaps
                  res-isomaps
+                 undefined$
                  new$
                  new-enable$
                  old-to-new$
@@ -2313,6 +2356,7 @@
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
+   (undefined$ pseudo-termp)
    (new$ symbolp)
    compatibility
    (wrld plist-worldp))
@@ -2334,8 +2378,7 @@
      the resulting term is the code of the new function's body (see below).
      Then we construct an @(tsee if) as follows.
      The test is the conjunction of @('(newp1 x1)'), ..., @('(newpn xn)').
-     The `else' branch is @('nil') or @('(mv nil ... nil')),
-     depending on whether @('old') returns single or multiple results.
+     The `else' branch is @('undefined$').
      For the `then' branch, there are three cases:
      (i) if no results are transformed, we use the core term above;
      (ii) if @('old') is single-valued and its (only) result is transformed,
@@ -2348,13 +2391,7 @@
      in which case we omit test and `else' branch.
      If the compatibility flag is set and @('old') is non-recursive,
      we omit test and `else' branch as well;
-     this is temporary.")
-   (xdoc::p
-    "The `else' branch should use quoted @('nil')s,
-     but we use unquoted ones just so that the untranslation
-     does not turn the @(tsee if) into an @(tsee and).
-     Technically, the unquoted @('nil')s are ``variable'' (symbols),
-     and thus untranslation leaves them alone."))
+     this is temporary."))
   (b* ((x1...xn (formals old$ wrld))
        (m (number-of-results old$ wrld))
        (old-body (if (non-executablep old$ wrld)
@@ -2381,16 +2418,13 @@
                                          y1...ym res-isomaps)))
                    (make-mv-let-call 'mv y1...ym :all
                                      old-body-with-back-of-x1...xn
-                                     (fcons-term 'mv forth-of-y1...ym))))))
-       (else-branch (if (> m 1)
-                        (fcons-term 'mv (repeat m nil))
-                      nil)))
+                                     (fcons-term 'mv forth-of-y1...ym)))))))
     (cond ((and compatibility
                 (not (recursivep old$ nil wrld)) then-branch))
           ((equal newp-of-x1...xn-conj *t*) then-branch)
           (t `(if (mbt$ ,newp-of-x1...xn-conj)
                   ,then-branch
-                ,else-branch)))))
+                ,undefined$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2398,6 +2432,7 @@
                                  (arg-isomaps isodata-symbol-isomap-alistp)
                                  (res-isomaps isodata-pos-isomap-alistp)
                                  (predicate$ booleanp)
+                                 (undefined$ pseudo-termp)
                                  (new$ symbolp)
                                  compatibility
                                  (wrld plist-worldp))
@@ -2407,7 +2442,7 @@
   (if predicate$
       (isodata-gen-new-fn-body-pred old$ arg-isomaps res-isomaps new$ wrld)
     (isodata-gen-new-fn-body-nonpred
-     old$ arg-isomaps res-isomaps new$ compatibility wrld)))
+     old$ arg-isomaps res-isomaps undefined$ new$ compatibility wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2463,6 +2498,7 @@
                             (arg-isomaps isodata-symbol-isomap-alistp)
                             (res-isomaps isodata-pos-isomap-alistp)
                             (predicate$ booleanp)
+                            (undefined$ pseudo-termp)
                             (new$ symbolp)
                             (new-enable$ booleanp)
                             (verify-guards$ booleanp)
@@ -2497,7 +2533,7 @@
   (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
        (formals (formals old$ wrld))
        (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomaps
-                                      predicate$ new$ compatibility wrld))
+                                      predicate$ undefined$ new$ compatibility wrld))
        (body (if (> (number-of-results old$ wrld) 1)
                  (mvify body)
                body))
@@ -4007,7 +4043,9 @@
                                                       old-fn-unnorm-name
                                                       newp-of-new$
                                                       wrld))
-       (event `(local (verify-guards ,new$ :hints ,hints))))
+       (event `(local (verify-guards ,new$
+                        :hints ,hints
+                        :guard-simplify :limited))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4017,6 +4055,7 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (predicate$ booleanp)
+   (undefined$ pseudo-termp)
    (new$ symbolp)
    (new-enable$ booleanp)
    (old-to-new$ symbolp)
@@ -4118,6 +4157,7 @@
                             arg-isomaps
                             res-isomaps
                             predicate$
+                            undefined$
                             new$
                             new-enable$
                             verify-guards$
@@ -4299,6 +4339,7 @@
 (define isodata-fn (old
                     isomaps
                     predicate
+                    undefined
                     new-name
                     new-enable
                     old-to-new-name
@@ -4345,6 +4386,7 @@
        ((er (list old$
                   arg-isomaps
                   res-isomaps
+                  undefined$
                   new$
                   new-enable$
                   old-to-new$
@@ -4359,6 +4401,7 @@
         (isodata-process-inputs old
                                 isomaps
                                 predicate
+                                undefined
                                 new-name
                                 new-enable
                                 old-to-new-name
@@ -4384,6 +4427,7 @@
                                            arg-isomaps
                                            res-isomaps
                                            predicate
+                                           undefined$
                                            new$
                                            new-enable$
                                            old-to-new$
@@ -4422,6 +4466,7 @@
                      ;; optional inputs:
                      &key
                      (predicate 'nil)
+                     (undefined ':auto)
                      (new-name ':auto)
                      (new-enable ':auto)
                      (old-to-new-name 'nil old-to-new-name-suppliedp)
@@ -4439,6 +4484,7 @@
     `(make-event-terse (isodata-fn ',old
                                    ',isomaps
                                    ',predicate
+                                   ',undefined
                                    ',new-name
                                    ',new-enable
                                    ',old-to-new-name

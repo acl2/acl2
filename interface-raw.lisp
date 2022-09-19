@@ -62,9 +62,9 @@
       (sharp-atsign-read-er
        "Non-digit character ~s following #@~s"
        bad-ch index))
-     ((symbol-value (f-get-global 'certify-book-info state))
+     ((f-get-global 'certify-book-info state)
       (sharp-atsign-read-er
-       "Illegal reader macro during certify-book, #@~s#"
+       "Illegal use of #@ reader macro during certify-book, #@~s#"
        index))
      ((iprint-ar-illegal-index index state)
       (sharp-atsign-read-er
