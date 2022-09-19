@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -398,7 +399,21 @@
        "Any other term. It must be a term that only references logic-mode
         functions and that includes no free variables other than
         @('x1'), ..., @('xn'). This term must have no output
-        @(see acl2::stobj)s. This term must not reference @('old').")))
+        @(see acl2::stobj)s. This term must return the same number of results
+        as @('old'). This term must not reference @('old')."))
+     (xdoc::p
+      "If one wishes to use the term @(':auto') as the undefined result, this
+       may be accomplished by providing the quoted constant @('\':auto').")
+     (xdoc::p
+      "Even if the generated function is guard-verified
+       (which is determined by the @(':verify-guards') input; see below),
+       the undefined term need not be guard-verified.
+       Since the term is governed by the negation of the guard
+       (see the generated new function, below),
+       the verification of its guards always succeeds trivially.")
+     (xdoc::p
+      "In the rest of this documentation page, let @('undefined') be this term
+       specified by @(':undefined')."))
 
     (xdoc::desc-apt-input-new-name)
 
@@ -609,7 +624,7 @@
       "                 ..."
       "                 (newpn xn)))"
       "      old-body<(back1 x1),...,(backn xn)>"
-      "    nil)) ; or (mv nil ... nil)"
+      "    undefined))"
       ""
       ";; when old is not recursive,"
       ";; :predicate is nil,"
@@ -620,7 +635,7 @@
       "                 ..."
       "                 (newpn xn)))"
       "      (forth_r1 old-body<(back1 x1),...,(backn xn)>)"
-      "    nil))"
+      "    undefined))"
       ";; where forth_r1 is actually pushed into"
       ";; the 'if' branches of old-body if it starts with 'if',"
       ";; and recursively into their 'if' branches (if any)"
@@ -636,7 +651,7 @@
       "      (mv-let (y1 ... ym)"
       "        old-body<(back1 x1),...,(backn xn)>"
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
-      "    (mv nil ... nil)))"
+      "    undefined))"
       ""
       ";; when old is recursive"
       ";; and :predicate is t:"
@@ -684,7 +699,7 @@
       "                    (forthn updater-xn<(back1 x1),"
       "                                       ...,"
       "                                       (backn xn)>))>"
-      "    nil)) ; or (mv nil ... nil)"
+      "    undefined))"
       ""
       ";; when old is recursive,"
       ";; :predicate is nil,"
@@ -712,7 +727,7 @@
       "                               (forthn updater-xn<(back1 x1),"
       "                                                  ...,"
       "                                                  (backn xn)>)))>)"
-      "    nil))"
+      "    undefined))"
       ";; where forth_r1 is actually pushed into"
       ";; the 'if' branches of old-body if it starts with 'if',"
       ";; and recursively into their 'if' branches (if any)"
@@ -747,7 +762,7 @@
       "                                           (backn xn)>))"
       "                   (mv (back_r1 y1) ... (back_rm ym)))>"
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
-      "    (mv nil ... nil)))")
+      "    undefined))")
      (xdoc::p
       "If @('old') is recursive,
        the measure term of @('new') is

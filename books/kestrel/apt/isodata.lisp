@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,6 +60,7 @@
   "@('old'),
    @('isomaps'),
    @('predicate'),
+   @('undefined'),
    @('new-name'),
    @('new-enable'),
    @('old-to-new-name'),
@@ -78,6 +80,7 @@
 
   "@('old$'),
    @('predicate$'),
+   @('undefined$'),
    @('new-enable$'),
    @('old-to-new-enable$'),
    @('new-to-old-enable$'),
@@ -1107,8 +1110,7 @@
                                    ctx
                                    state)
   :returns (mv erp
-               (undefined "A @(tsee pseudo-termp) that is
-                           the translation of @('undefined').")
+               (undefined$ "A @(tsee pseudo-termp).")
                state)
   :mode :program
   :short "Process the @(':undefined') input."
@@ -2376,7 +2378,7 @@
      the resulting term is the code of the new function's body (see below).
      Then we construct an @(tsee if) as follows.
      The test is the conjunction of @('(newp1 x1)'), ..., @('(newpn xn)').
-     The `else' branch is @('undefined').
+     The `else' branch is @('undefined$').
      For the `then' branch, there are three cases:
      (i) if no results are transformed, we use the core term above;
      (ii) if @('old') is single-valued and its (only) result is transformed,
