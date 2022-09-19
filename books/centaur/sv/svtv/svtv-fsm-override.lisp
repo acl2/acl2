@@ -1132,74 +1132,6 @@ properties of the SVTV and its conditional overrides.</li>
 
 
 
-(define svar-override-triplelist-map-refs-to-values ((triples svar-override-triplelist-p)
-                                                (ref-values svex-env-p))
-  :returns (values svex-env-p)
-  (if (atom triples)
-      nil
-    (b* (((svar-override-triple trip) (car triples))
-         ((unless (svex-env-boundp trip.refvar ref-values))
-          (svar-override-triplelist-map-refs-to-values (cdr triples) ref-values)))
-      (cons (cons trip.valvar (svex-env-lookup trip.refvar ref-values))
-            (svar-override-triplelist-map-refs-to-values (cdr triples) ref-values))))
-  ///
-  (local (defthm svex-env-boundp-of-cons-2
-           (equal (svex-env-boundp key (cons pair rest))
-                  (if (and (consp pair) (equal (svar-fix key) (car pair)))
-                      t
-                    (svex-env-boundp key rest)))
-           :hints(("Goal" :in-theory (enable svex-env-boundp)))))
-  (local (defthm svex-env-lookup-of-cons2
-           (equal (svex-env-lookup v (cons x y))
-                  (if (and (consp x)
-                           (svar-p (car x))
-                           (equal (car x) (svar-fix v)))
-                      (4vec-fix (cdr x))
-                    (svex-env-lookup v y)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
-
-  (defcong svex-envs-equivalent svex-envs-equivalent (svar-override-triplelist-map-refs-to-values triples ref-values) 2
-    :hints (("goal" :induct (svar-override-triplelist-map-refs-to-values triples ref-values))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))
-                   :in-theory (enable svex-env-boundp-of-cons-2
-                                      svex-env-lookup-of-cons2))))
-    :package :function)
-
-  (defret keys-of-<fn>-strict
-    (implies (subsetp-equal (svar-override-triplelist->refvars triples)
-                            (alist-keys (svex-env-fix ref-values)))
-             (equal (alist-keys values) (svar-override-triplelist->valvars triples)))
-    :hints(("Goal" :in-theory (enable alist-keys
-                                      svar-override-triplelist->valvars
-                                      svar-override-triplelist->refvars
-                                      svex-env-boundp))))
-
-  (defret boundp-of-<fn>
-    (implies (subsetp-equal (svar-override-triplelist->refvars triples)
-                            (alist-keys (svex-env-fix ref-values)))
-             (iff (svex-env-boundp var values)
-                  (svar-override-triplelist-lookup-valvar var triples)))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
-                                      svar-override-triplelist->refvars)
-            :induct <call>)
-           (and stable-under-simplificationp
-                '(:in-theory (enable svex-env-boundp)))))
-
-  (defret lookup-of-<fn>
-    (implies (subsetp-equal (svar-override-triplelist->refvars triples)
-                            (alist-keys (svex-env-fix ref-values)))
-             (equal (svex-env-lookup var values)
-                    (b* ((look (svar-override-triplelist-lookup-valvar var triples)))
-                      (if look
-                          (svex-env-lookup (svar-override-triple->refvar look) ref-values)
-                        (4vec-x)))))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
-                                      svar-override-triplelist->refvars)
-            :induct <call>)
-           (and stable-under-simplificationp
-                '(:in-theory (enable svex-env-boundp))))))
-
 
 (define svtv-name-lhs-map-eval-list ((namemap svtv-name-lhs-map-p)
                                      (envs svex-envlist-p))
@@ -1236,7 +1168,8 @@ properties of the SVTV and its conditional overrides.</li>
        ((svar-override-triple trip) (car triples))
        (probe-look (hons-get trip.refvar (svtv-probealist-fix probes)))
        ((unless probe-look)
-        (svtv-pipeline-override-triples-extract-values (cdr triples) probes namemap evals))
+        (cons (cons trip.valvar (4vec-x))
+              (svtv-pipeline-override-triples-extract-values (cdr triples) probes namemap evals)))
        ((svtv-probe probe) (cdr probe-look))
        (lhs-look (hons-get probe.signal (svtv-name-lhs-map-fix namemap)))
        ;; ((unless lhs-look)
@@ -1296,9 +1229,9 @@ properties of the SVTV and its conditional overrides.</li>
            :hints(("Goal" :in-theory (enable alist-keys)))))
 
   (defret keys-of-<fn>-strict
-    (implies (subsetp-equal (svar-override-triplelist->refvars triples)
-                            (alist-keys (svtv-probealist-fix probes)))
-             (equal (alist-keys values) (svar-override-triplelist->valvars triples)))
+    ;; (implies (subsetp-equal (svar-override-triplelist->refvars triples)
+    ;;                         (alist-keys (svtv-probealist-fix probes)))
+             (equal (alist-keys values) (svar-override-triplelist->valvars triples))
     :hints(("Goal" :in-theory (enable alist-keys
                                       svar-override-triplelist->valvars
                                       svar-override-triplelist->refvars

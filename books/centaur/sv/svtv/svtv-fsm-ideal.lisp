@@ -700,8 +700,7 @@
                 (phase-fsm-composition-p approx-fsm x config)
 
                 ;; override env well formed
-                (svex-env-<<= (svex-env-extract (svar-override-triplelist->valvars triples) override-env)
-                              (svar-override-triplelist-map-refs-to-values triples spec-values))
+                (svar-override-triplelist-env-ok-<<= triples override-env spec-values)
                 (svex-env-<<= (svex-env-removekeys
                                (svar-override-triplelist-override-vars triples) override-env)
                               ref-env)
@@ -720,7 +719,7 @@
                                     svex-alist-partial-monotonic-when-netevalcomp-p))
             :use ((:instance phase-fsm-composition-p-implies-<<=-ideal-fsm
                    (override-env (b* (((flatnorm-res x)))
-                                   (intermediate-override-env
+                                   (intermediate-override-env2
                                     (svarlist-to-override-triples
                                      (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
                                     (svar-override-triplelist->testvars
@@ -816,8 +815,7 @@
                 (phase-fsm-composition-p approx-fsm x config)
 
                 ;; override env well formed
-                (svex-env-<<= (svex-env-extract (svar-override-triplelist->valvars triples) override-env)
-                              (svar-override-triplelist-map-refs-to-values triples spec-values))
+                (svar-override-triplelist-env-ok-<<= triples override-env spec-values)
                 (svex-env-<<= (svex-env-removekeys
                                (svar-override-triplelist-override-vars triples) override-env)
                               ref-env))
