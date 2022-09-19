@@ -4007,7 +4007,9 @@
                                                       old-fn-unnorm-name
                                                       newp-of-new$
                                                       wrld))
-       (event `(local (verify-guards ,new$ :hints ,hints))))
+       (event `(local (verify-guards ,new$
+                        :hints ,hints
+                        :guard-simplify :limited))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
