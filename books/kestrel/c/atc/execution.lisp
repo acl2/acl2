@@ -146,45 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-add ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute addition [C:6.5.6/2] [C:6.5.6/4] [C:6.5.6/5]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support additions involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-add
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-add
-                     :required :arithmetic
-                     :supplied arg2)))
-       (err (error (list :undefined-add arg1 arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (add-uint-uint val1 val2))
-     ((sintp val1) (if (add-sint-sint-okp val1 val2)
-                       (add-sint-sint val1 val2)
-                     err))
-     ((ulongp val1) (add-ulong-ulong val1 val2))
-     ((slongp val1) (if (add-slong-slong-okp val1 val2)
-                        (add-slong-slong val1 val2)
-                      err))
-     ((ullongp val1) (add-ullong-ullong val1 val2))
-     ((sllongp val1) (if (add-sllong-sllong-okp val1 val2)
-                         (add-sllong-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-sub ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute subtraction [C:6.5.6/3] [C:6.5.6/4] [C:6.5.6/6]."
@@ -619,7 +580,7 @@
       (:mul (mul-values arg1 arg2))
       (:div (div-values arg1 arg2))
       (:rem (rem-values arg1 arg2))
-      (:add (exec-add arg1 arg2))
+      (:add (add-values arg1 arg2))
       (:sub (exec-sub arg1 arg2))
       (:shl (exec-shl arg1 arg2))
       (:shr (exec-shr arg1 arg2))

@@ -159,3 +159,20 @@
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply binary @('+') to values [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only support arithmetic values for now (no pointer arithmetic)."))
+  (if (and (value-arithmeticp val1)
+           (value-arithmeticp val2))
+      (add-arithmetic-values val1 val2)
+    (error (list :add-mistype
+                 :required :arithmetic :arithmetic
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
