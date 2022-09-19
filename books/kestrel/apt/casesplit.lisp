@@ -550,7 +550,9 @@
        (antecedent-conjuncts (cons old-guard
                                    (negate-terms (take (1- k) conditions$))))
        (antecedent (conjoin antecedent-conjuncts))
-       (consequent (term-guard-obligation (nth (1- k) conditions$) t state))
+       (consequent (term-guard-obligation (nth (1- k) conditions$)
+                                          :limited
+                                          state))
        (formula (implicate antecedent consequent)))
     (make-evmac-appcond :name name :formula formula)))
 
@@ -583,7 +585,9 @@
        (new (if (= k 0)
                 (car (last news))
               (nth (1- k) news)))
-       (consequent (term-guard-obligation new t state))
+       (consequent (term-guard-obligation new
+                                          :limited
+                                          state))
        (formula (implicate antecedent consequent)))
     (make-evmac-appcond :name name :formula formula)))
 
@@ -782,6 +786,7 @@
                      :in-theory nil
                      :use (,@(strip-cdrs guard-appcond-thm-names)
                            (:guard-theorem ,old$)))))
+   :guard-simplify :limited
    :verify-guards verify-guards$
    :enable new-enable$)
 
