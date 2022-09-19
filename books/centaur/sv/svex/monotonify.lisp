@@ -30,6 +30,8 @@
 
 (in-package "SV")
 (include-book "lattice")
+(include-book "vars")
+(local (include-book "std/osets/under-set-equiv" :dir :system))
 
 (local (defthm svex-count-gt-1
          (implies (svex-case x :call)
@@ -264,7 +266,32 @@
          (svexlist-check-monotonic new-x)
          :hints ('(:expand (<call>
                             (:free (a b) (svexlist-check-monotonic (cons a b))))))
-         :fn svexlist-monotonify))))
+         :fn svexlist-monotonify))
+
+     (std::defret-mutual vars-of-svex-monotonify
+       (defret vars-of-<fn>
+         (implies (not (member-equal v (svex-vars x)))
+                  (not (member-equal v (svex-vars new-x))))
+         :hints ('(:expand <call>))
+         :fn svex-monotonify)
+       (defret vars-of-<fn>
+         (implies (not (member-equal v (svex-vars x)))
+                  (not (member-equal v (svex-vars new-x))))
+         :hints ('(:expand (<call>)))
+         :fn svex-call-monotonify)
+       (defret vars-of-<fn>
+         (implies (not (member-equal v (svexlist-vars args)))
+                  (not (member-equal v (svex-vars new-x))))
+         :hints ('(:expand ((:free (fn) <call>))))
+         :fn svex-fn/args-monotonify)
+       (defret vars-of-<fn>
+         (implies (not (member-equal v (svexlist-vars x)))
+                  (not (member-equal v (svexlist-vars new-x))))
+         :hints ('(:expand (<call>)
+                   :in-theory (enable svexlist-vars)))
+         :fn svexlist-monotonify))
+
+     (fty::deffixequiv-mutual svex-monotonify)))
 
 #||
 (defines svex-monotonify
@@ -276,3 +303,45 @@
 ||#
 (make-event
  (subst *svex-fn/args-monotonify-body* '<body> *svex-monotonify-event*))
+
+
+(define svex-alist-monotonify ((x svex-alist-p))
+  :Returns (new-x svex-alist-p)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (cons (cons (caar x) (svex-monotonify (cdar x)))
+              (svex-alist-monotonify (cdr x)))
+      (svex-alist-monotonify (cdr x))))
+  ///
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys new-x)
+           (svex-alist-keys x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
+  (defret svex-alist-vals-of-<fn>
+    (equal (svex-alist-vals new-x)
+           (svexlist-monotonify (svex-alist-vals x)))
+    :hints(("Goal" :in-theory (enable svexlist-monotonify
+                                      svex-alist-vals))))
+
+  (defret <fn>-correct
+    (equal (svex-alist-eval new-x env)
+           (svex-alist-mono-eval x env))
+    :hints(("Goal" :in-theory (enable svex-alist-mono-eval
+                                      svex-alist-eval))))
+
+  (defret svex-lookup-of-<fn>
+    (equal (svex-lookup k new-x)
+           (let ((orig (svex-lookup k x)))
+             (and orig (svex-monotonify orig))))
+    :hints(("Goal" :in-theory (enable svex-lookup))))
+
+  (deffixequiv svex-alist-monotonify
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
+
+  (defret vars-of-<fn>
+    (implies (not (member-equal v (svex-alist-vars x)))
+             (not (member-equal v (svex-alist-vars new-x))))
+    :hints(("Goal" :in-theory (enable svex-alist-vars)))))

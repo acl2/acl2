@@ -343,6 +343,35 @@
   :hints(("Goal" :expand ((svex-env-<<= (svex-env-extract vars env1)
                                         (svex-env-extract vars env2))))))
 
+(defsection svex-envs-agree-except-by-removekeys
+  
+  (defthmd svex-envs-agree-except-when-removekeys-similar
+    (implies (svex-envs-similar (svex-env-removekeys vars x)
+                                (svex-env-removekeys vars y))
+             (svex-envs-agree-except vars x y))
+    :hints(("Goal" :in-theory (e/d (svex-envs-agree-except-by-witness)
+                                   (svex-envs-similar-necc
+                                    svex-envs-similar-implies-equal-svex-env-lookup-2))
+            :use ((:instance svex-envs-similar-necc
+                   (k (svex-envs-agree-except-witness vars x y))
+                   (x (svex-env-removekeys vars x))
+                   (y (svex-env-removekeys vars y)))))))
+
+  (defthmd svex-envs-agree-except-implies-removekeys-similar
+    (implies (svex-envs-agree-except vars x y)
+             (svex-envs-similar (svex-env-removekeys vars x)
+                                (svex-env-removekeys vars y)))
+    :hints(("Goal" :in-theory (e/d (svex-envs-similar
+                                    svex-envs-agree-except-implies)))))
+
+  (defthmd svex-envs-agree-except-by-removekeys
+    (equal (svex-envs-agree-except vars x y)
+           (svex-envs-similar (svex-env-removekeys vars x)
+                              (svex-env-removekeys vars y)))
+    :hints (("goal" :in-theory (enable svex-envs-agree-except-implies-removekeys-similar
+                                       svex-envs-agree-except-when-removekeys-similar)
+             :cases ((svex-envs-agree-except vars x y))))))
+
 (define svex-alist-eval-fixpoint-step ((x svex-alist-p)
                                   (env svex-env-p)
                                   (in-env svex-env-p))
@@ -368,7 +397,8 @@
                   (svex-env-<<= env1 env2))
              (svex-env-<<= (svex-alist-eval-fixpoint-step x env1 in-env)
                            (svex-alist-eval-fixpoint-step x env2 in-env)))
-    :hints(("Goal" :in-theory (enable svex-alist-monotonic-on-vars-necc))))
+    :hints(("Goal" :in-theory (enable svex-alist-monotonic-on-vars-necc
+                                      svex-envs-agree-except-by-removekeys))))
 
   (defret svex-alist-env-widths-match-p-of-<fn>
     (implies (no-duplicatesp-equal (svex-alist-keys x))
@@ -694,7 +724,8 @@
                           (vars vars)
                           (env1 (append (svex-alist-eval a (mv-nth 1 ,witness)) (mv-nth 0 ,witness)))
                           (env2 (append (svex-alist-eval a (mv-nth 1 ,witness)) (mv-nth 1 ,witness)))))
-                   :in-theory (e/d (svex-env-<<=-transitive-1)
+                   :in-theory (e/d (svex-env-<<=-transitive-1
+                                    svex-envs-agree-except-by-removekeys)
                                    (svex-alist-monotonic-on-vars-necc)))))))
 
 (defthm svex-alist-monotonic-on-vars-of-svex-alist-extract
@@ -704,6 +735,14 @@
               (b* ((lit (car (last clause))))
                 `(:expand (,lit)
                   :in-theory (enable svex-alist-monotonic-on-vars-necc))))))
+
+(defthm svex-alist-monotonic-p-of-svex-alist-extract
+  (implies (svex-alist-monotonic-p x)
+           (svex-alist-monotonic-p (svex-alist-extract keys x)))
+  :hints((and stable-under-simplificationp
+              (b* ((lit (car (last clause))))
+                `(:expand (,lit)
+                  :in-theory (enable svex-alist-monotonic-p-necc))))))
 
 (define svex-alist-fixpoint-iterate ((n natp)
                                      (x svex-alist-p)
@@ -734,15 +773,24 @@
     :hints(("Goal" :in-theory (enable svex-alist-eval-fixpoint-iterate
                                       svex-alist-eval-fixpoint-step))))
 
-  (defret <fn>-monotonic
+  (defret <fn>-monotonic-on-vars
     (implies (and (svex-alist-monotonic-on-vars vars x)
                   (svex-alist-monotonic-on-vars vars start-subst)
                   (svex-alist-monotonic-on-vars (svex-alist-keys x) x))
-             (svex-alist-monotonic-on-vars vars iter-subst))))
+             (svex-alist-monotonic-on-vars vars iter-subst)))
+
+  (defret <fn>-monotonic
+    (implies (and (svex-alist-monotonic-p x)
+                  (svex-alist-monotonic-p start-subst))
+             (svex-alist-monotonic-p iter-subst))))
 
 (defthm svex-alist-monotonic-on-vars-of-svarlist-x-subst
   (svex-alist-monotonic-on-vars vars (svarlist-x-subst keys))
   :hints(("Goal" :in-theory (enable svex-alist-monotonic-on-vars))))
+
+(defthm svex-alist-monotonic-p-of-svarlist-x-subst
+  (svex-alist-monotonic-p (svarlist-x-subst vars))
+  :hints(("Goal" :in-theory (enable svex-alist-monotonic-p))))
 
 (define svex-alist-least-fixpoint ((x svex-alist-p))
   :guard (and (not (acl2::hons-dups-p (svex-alist-keys x)))
@@ -803,7 +851,12 @@
                    (fixpoint-env (svex-alist-eval other-fixpoint (svex-alist-<<=-witness (svex-alist-least-fixpoint x) other-fixpoint)))
                    (in-env (svex-alist-<<=-witness (svex-alist-least-fixpoint x) other-fixpoint)))))))
 
-  (defret <fn>-monotonic
+  (defret <fn>-monotonic-on-vars
     (implies (and (svex-alist-monotonic-on-vars vars x)
                   (svex-alist-monotonic-on-vars (svex-alist-keys x) x))
-             (svex-alist-monotonic-on-vars vars least-fixpoint))))
+             (svex-alist-monotonic-on-vars vars least-fixpoint)))
+
+  (defret <fn>-monotonic
+    (implies (svex-alist-monotonic-p x)
+             (svex-alist-monotonic-p least-fixpoint))))
+

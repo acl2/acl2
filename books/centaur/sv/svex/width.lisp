@@ -311,3 +311,47 @@
     :hints(("Goal" :in-theory (enable svex-alist-width-limited-p svex-width-sum))))
 
   (local (in-theory (enable svex-alist-fix))))
+
+
+(define svex-alist-svar-width-map ((x svex-alist-p))
+  :returns (map svar-width-map-p)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (b* ((rest (svex-alist-svar-width-map (cdr x)))
+             (width-look (hons-get (caar x) rest))
+             (width (svex-width (cdar x))))
+          (if width
+              (cons (cons (caar x)
+                          (if width-look
+                              (max (cdr width-look) width)
+                            width))
+                    rest)
+            rest))
+      (svex-alist-svar-width-map (cdr x))))
+  ///
+  (local (defthm svex-alist-width-limited-p-when-cons-wider
+           (implies (and (svex-alist-width-limited-p map x)
+                         (or (not (hons-assoc-equal v (svar-width-map-fix map)))
+                             (<= (cdr (hons-assoc-equal v (svar-width-map-fix map))) (pos-fix width))))
+                    (svex-alist-width-limited-p
+                     (cons (cons v width) map) x))
+           :hints(("Goal" :in-theory (enable svex-alist-width-limited-p)))))
+
+  (local (defthm svex-width-limited-p-implies-greater-corr
+           (implies (and (< width width2)
+                         (posp width) (posp width2)
+                         (svex-width-limited-p width x))
+                    (svex-width-limited-p width2 x))))
+  
+  (defthm svex-alist-width-limited-p-when-svex-alist-width
+    (implies (svex-alist-width x)
+             (svex-alist-width-limited-p (svex-alist-svar-width-map x) x))
+    :hints(("Goal" :in-theory (e/d (svex-alist-width svex-alist-width-limited-p
+                                                     svex-width-sum))
+            :induct t :do-not-induct t)))
+
+  (local (in-theory (enable svex-alist-fix))))
+
+

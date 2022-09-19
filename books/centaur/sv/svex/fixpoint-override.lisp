@@ -59,7 +59,8 @@
   (and (svex-alist-monotonic-on-vars nil x)
        (svex-alist-monotonic-on-vars vars nil))
   :hints(("Goal" :in-theory (enable svex-alist-monotonic-on-vars
-                                    svex-alist-eval))))
+                                    svex-alist-eval
+                                    svex-envs-agree-except-by-removekeys))))
 
 (defthm svex-alist-monotonic-on-vars-cons
   (implies (and (svex-alist-monotonic-on-vars vars rest)
@@ -147,7 +148,8 @@
                                                   (svex-var valvar)
                                                   (svex-var refvar))))
     :hints(("Goal" :in-theory (enable svex-eval
-                                      svex-apply))
+                                      svex-apply
+                                      svex-envs-agree-except-by-removekeys))
            (and stable-under-simplificationp
                 (b* ((lit (car (last clause)))
                      (witness `(svex-monotonic-on-vars-witness . ,(cdr lit))))
@@ -199,12 +201,12 @@
     (implies (and (svar-override-triplelist-env-ok x env ref-env)
                   (svex-env-<<= prev ref-env)
                   (subsetp-equal (svar-override-triplelist->refvars x) (alist-keys (svex-env-fix prev)))
-                  (not (intersectp-equal (svar-override-triplelist->testvars x) (alist-keys (svex-env-fix prev))))
-                  (not (intersectp-equal (svar-override-triplelist->valvars x) (alist-keys (svex-env-fix prev)))))
+                  (not (intersectp-equal (svar-override-triplelist-override-vars x) (alist-keys (svex-env-fix prev)))))
              (svex-env-<<= (svex-alist-eval override-alist (append prev env))
                            ref-env))
     :hints(("Goal" :in-theory (enable svex-alist-eval
                                       svar-override-triplelist->refvars
+                                      svar-override-triplelist-override-vars
                                       svar-override-triplelist-env-ok
                                       svex-env-extract
                                       svex-envs-agree
@@ -293,8 +295,7 @@
                    (equal (alist-keys (svex-env-fix prev)) (alist-keys (svex-env-fix fixpoint)))
                    (svar-override-triplelist-env-ok triples override-env fixpoint)
                    (subsetp-equal (svar-override-triplelist->refvars triples) (alist-keys (svex-env-fix prev)))
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (alist-keys (svex-env-fix prev))))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (alist-keys (svex-env-fix prev)))))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (alist-keys (svex-env-fix prev)))))
               (svex-env-<<= (append (svex-alist-eval (svar-override-triplelist->override-alist triples)
                                                      (append prev override-env))
                                     prev)
@@ -313,13 +314,10 @@
                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
                    (no-duplicatesp-equal (svex-alist-keys network))
                    (svar-override-triplelist-env-ok triples override-env fixpoint)
-                   (svex-envs-agree-except (append (svar-override-triplelist->testvars triples)
-                                                   (svar-override-triplelist->valvars triples))
+                   (svex-envs-agree-except (svar-override-triplelist-override-vars triples)
                                            override-env ref-env)
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-vars network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-vars network)))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network)))
                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network)))
               (svex-env-<<= override-fixpoint fixpoint)))
    :hints (("goal" :induct (count-down n)
@@ -472,6 +470,16 @@
                   (not (intersectp-equal refvars testvars)))
          :hints(("Goal" :in-theory (enable intersectp-equal subsetp-equal)))))
 
+(defthm svar-override-triplelist->testvars-subset-of-override-vars
+  (subsetp-equal (svar-override-triplelist->testvars x) (svar-override-triplelist-override-vars x))
+  :hints(("Goal" :in-theory (enable svar-override-triplelist-override-vars svar-override-triplelist->testvars))))
+
+(local (defthm not-intersectp-testvars-when-not-intersectp-override-vars
+         (implies (not (intersectp-equal (svar-override-triplelist-override-vars x) y))
+                  (not (intersectp-equal (svar-override-triplelist->testvars x) y)))
+         :hints (("goal" :use svar-override-triplelist->testvars-subset-of-override-vars
+                  :in-theory (disable svar-override-triplelist->testvars-subset-of-override-vars)))))
+
 (local
  (defthm svex-alist-eval-least-fixpoint-of-overrides
    (b* ((fixpoint (svex-alist-eval-least-fixpoint network ref-env))
@@ -481,13 +489,10 @@
                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
                    (no-duplicatesp-equal (svex-alist-keys network))
                    (svar-override-triplelist-env-ok triples override-env fixpoint)
-                   (svex-envs-agree-except (append (svar-override-triplelist->testvars triples)
-                                                   (svar-override-triplelist->valvars triples))
+                   (svex-envs-agree-except (svar-override-triplelist-override-vars triples)
                                            override-env ref-env)
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-vars network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-vars network)))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network)))
                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network)))
               (svex-env-<<= override-fixpoint fixpoint)))
    :hints (("goal" :use ((:instance svex-alist-eval-fixpoint-of-overrides
@@ -544,8 +549,7 @@
                           (svex-env-<<= prev-ref fixpoint)
                           (svex-env-<<= prev-ref prev-ovr)
                           (equal (alist-keys (svex-env-fix prev-ref)) (alist-keys (svex-env-fix prev-ovr)))
-                          (not (intersectp-equal (append (svar-override-triplelist->testvars triples)
-                                                         (svar-override-triplelist->valvars triples))
+                          (not (intersectp-equal (svar-override-triplelist-override-vars triples)
                                                  (alist-keys (svex-env-fix prev-ref))))
                           (subsetp-equal (svar-override-triplelist->refvars triples) (alist-keys (svex-env-fix prev-ref)))
                           (member-equal (svar-fix v) (svar-override-triplelist->refvars triples)))
@@ -555,6 +559,7 @@
             :hints (("goal" :in-theory (e/d (svar-override-triplelist->override-alist
                                              svar-override-triplelist-env-ok
                                              svar-override-triplelist->refvars
+                                             svar-override-triplelist-override-vars
                                              svex-eval svex-apply svex-lookup-redef
                                              svex-env-boundp-iff-member-alist-keys)
                                             (lookup-of-svar-override-triplelist->override-alist))))))
@@ -570,8 +575,7 @@
                           (svex-env-<<= prev-ref prev-ovr)
                           (svex-env-<<= prev-ref fixpoint)
                           (equal (alist-keys (svex-env-fix prev-ref)) (alist-keys (svex-env-fix prev-ovr)))
-                          (not (intersectp-equal (append (svar-override-triplelist->testvars triples)
-                                                         (svar-override-triplelist->valvars triples))
+                          (not (intersectp-equal (svar-override-triplelist-override-vars triples)
                                                  (alist-keys (svex-env-fix prev-ref))))
                           (subsetp-equal (svar-override-triplelist->refvars triples) (alist-keys (svex-env-fix prev-ref))))
                      (svex-env-<<= (svex-env-extract (svar-override-triplelist->refvars triples) prev-ref)
@@ -593,8 +597,7 @@
                    (svex-env-<<= prev-ref prev-ovr)
                    (svex-env-<<= prev-ref fixpoint)
                    (equal (alist-keys (svex-env-fix prev-ref)) (alist-keys (svex-env-fix prev-ovr)))
-                   (not (intersectp-equal (append (svar-override-triplelist->testvars triples)
-                                                  (svar-override-triplelist->valvars triples))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples)
                                           (alist-keys (svex-env-fix prev-ovr))))
                    (subsetp-equal (svar-override-triplelist->refvars triples) (alist-keys (svex-env-fix prev-ovr))))
               (svex-env-<<= prev-ref
@@ -628,18 +631,15 @@
                                                          (svarlist-x-env (svex-alist-keys network))
                                                          ref-env))
         (fixpoint (svex-alist-eval-least-fixpoint network ref-env)))
-     (implies (and (svex-envs-agree-except (append (svar-override-triplelist->testvars triples)
-                                                   (svar-override-triplelist->valvars triples))
+     (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples)
                                            override-env ref-env)
                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
                    (no-duplicatesp-equal (svex-alist-keys network))
                    (svex-alist-width network)
                    (svar-override-triplelist-env-ok triples override-env fixpoint)
                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-vars network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-vars network))))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network))))
               (svex-env-<<= fixpoint-iter override-fixpoint)))
    :hints (("goal" :induct (count-down n)
             :expand ((:free (network env in-env) (svex-alist-eval-fixpoint-iterate n network env in-env))
@@ -651,18 +651,15 @@
    (b* ((override-network (svex-alist-compose network (svar-override-triplelist->override-alist triples)))
         (override-fixpoint (svex-alist-eval-least-fixpoint override-network override-env))
         (fixpoint (svex-alist-eval-least-fixpoint network ref-env)))
-     (implies (and (svex-envs-agree-except (append (svar-override-triplelist->testvars triples)
-                                                   (svar-override-triplelist->valvars triples))
+     (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples)
                                            override-env ref-env)
                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
                    (no-duplicatesp-equal (svex-alist-keys network))
                    (svex-alist-width network)
                    (svar-override-triplelist-env-ok triples override-env fixpoint)
                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-keys network)))
-                   (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-vars network)))
-                   (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-vars network))))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network))))
               (svex-env-<<= fixpoint override-fixpoint)))
    :hints (("goal" :use ((:instance svex-alist-eval-override-fixpoint-iterate->>=
                           (n (svex-alist-width network))))
@@ -694,18 +691,15 @@
     (b* ((override-network (svex-alist-compose network (svar-override-triplelist->override-alist triples)))
          (override-fixpoint (svex-alist-eval-least-fixpoint override-network override-env))
          (fixpoint (svex-alist-eval-least-fixpoint network ref-env)))
-      (implies (and (svex-envs-agree-except (append (svar-override-triplelist->testvars triples)
-                                                    (svar-override-triplelist->valvars triples))
+      (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples)
                                             override-env ref-env)
                     (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
                     (no-duplicatesp-equal (svex-alist-keys network))
                     (svex-alist-width network)
                     (svar-override-triplelist-env-ok triples override-env fixpoint)
                     (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
-                    (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-keys network)))
-                    (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-keys network)))
-                    (not (intersectp-equal (svar-override-triplelist->testvars triples) (svex-alist-vars network)))
-                    (not (intersectp-equal (svar-override-triplelist->valvars triples) (svex-alist-vars network))))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network))))
                (svex-envs-equivalent override-fixpoint fixpoint)))))
 
 

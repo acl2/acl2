@@ -52,23 +52,34 @@
    :hints(("Goal" :in-theory (enable svex-env-boundp
                                      member-alist-keys)))))
 
-(local
- (defthm intersectp-of-svex-env-removekeys
-   (not (intersectp-equal (svarlist-fix vars) (alist-keys (svex-env-removekeys vars env))))
-   :hints(("Goal" :in-theory (enable acl2::intersectp-witness-rw)))))
+;; (local
+;;  (defthm intersectp-of-svex-env-removekeys
+;;    (not (intersectp-equal (svarlist-fix vars) (alist-keys (svex-env-removekeys vars env))))
+;;    :hints(("Goal" :in-theory (enable acl2::intersectp-witness-rw)))))
 
-(local
- (defthm append-removekeys-under-svex-envs-similar
-   (svex-envs-similar (append (svex-env-removekeys vars env) env)
-                      env)
-   :hints(("Goal" :in-theory (enable svex-envs-similar)))))
+;; (local
+;;  (defthm append-removekeys-under-svex-envs-similar
+;;    (svex-envs-similar (append (svex-env-removekeys vars env) env)
+;;                       env)
+;;    :hints(("Goal" :in-theory (enable svex-envs-similar)))))
+
+
+(defcong set-equiv equal (svex-envs-agree-except vars env1 env2) 1
+  :hints (("goal" :cases ((svex-envs-agree-except vars env1 env2)))
+          (and stable-under-simplificationp
+               (b* ((lit (assoc 'svex-envs-agree-except clause))
+                    (?wit `(svex-envs-agree-except-witness . ,(cdr lit)))
+                    (?other (if (eq (cadr lit) 'vars) 'vars-equiv 'vars)))
+                 `(:expand ((:with svex-envs-agree-except-by-witness ,lit))
+                   :use ((:instance svex-envs-agree-except-implies
+                          (vars ,other)
+                          (var ,wit) (x env1) (y env2))))))))
 
 (defsection svex-monotonic-on-vars
   (defun-sk svex-monotonic-on-vars (vars x)
     (forall (env1 env2)
             (implies (and (svex-env-<<= env1 env2)
-                          (svex-envs-similar (svex-env-removekeys vars env1)
-                                             (svex-env-removekeys vars env2)))
+                          (svex-envs-agree-except vars env1 env2))
                      (4vec-<<= (svex-eval x env1) (svex-eval x env2))))
     :rewrite :direct)
 
@@ -118,8 +129,7 @@
   (defun-sk svexlist-monotonic-on-vars (vars x)
     (forall (env1 env2)
             (implies (and (svex-env-<<= env1 env2)
-                          (svex-envs-similar (svex-env-removekeys vars env1)
-                                             (svex-env-removekeys vars env2)))
+                          (svex-envs-agree-except vars env1 env2))
                      (4veclist-<<= (svexlist-eval x env1) (svexlist-eval x env2))))
     :rewrite :direct)
 
@@ -170,8 +180,7 @@
   (defun-sk svex-alist-monotonic-on-vars (vars x)
     (forall (env1 env2)
             (implies (and (svex-env-<<= env1 env2)
-                          (svex-envs-similar (svex-env-removekeys vars env1)
-                                             (svex-env-removekeys vars env2)))
+                          (svex-envs-agree-except vars env1 env2))
                      (svex-env-<<= (svex-alist-eval x env1) (svex-alist-eval x env2))))
     :rewrite :direct)
 
@@ -237,12 +246,32 @@
             :expand ((svex-monotonic-on-vars vars (svex-var k))
                      (:free (env) (svex-eval (svex-var k) env))))))
 
-  (local (defthm svex-env-removekeys-when-alist-keys-subset
+  (local (defthm append-extract-superset-under-svex-envs-similar
            (implies (subsetp-equal (alist-keys (svex-env-fix x)) (svarlist-fix vars))
-                    (equal (svex-env-removekeys vars x) nil))
-           :hints(("Goal" :in-theory (enable svex-env-removekeys
-                                             svex-env-fix
-                                             alist-keys)))))
+                    (svex-envs-similar (append (svex-env-extract vars z) x y)
+                                       (append (svex-env-extract vars z) y)))
+           :hints(("Goal" :in-theory (enable svex-envs-similar)))))
+  
+  (local (defthm svex-envs-agree-except-append-subset-1
+           (implies (subsetp-equal (alist-keys (svex-env-fix x)) (svarlist-fix vars))
+                    (equal (svex-envs-agree-except vars (append x y) z)
+                           (svex-envs-agree-except vars y z)))
+           :hints(("Goal" :in-theory (enable svex-envs-agree-except)))))
+
+
+  (local (defthm svex-envs-agree-except-append-subset-2
+           (implies (subsetp-equal (alist-keys (svex-env-fix x)) (svarlist-fix vars))
+                    (equal (svex-envs-agree-except vars z (append x y))
+                           (svex-envs-agree-except vars z y)))
+           :hints(("Goal" 
+                   :use ((:instance svex-envs-agree-except-commutative
+                          (x z) (y (append x y)))
+                         (:instance svex-envs-agree-except-commutative
+                          (x (append x y)) (y z))
+                         (:instance svex-envs-agree-except-commutative
+                          (x z) (y y))
+                         (:instance svex-envs-agree-except-commutative
+                          (x y) (y z)))))))
 
   (defthm svex-compose-preserves-svex-monotonic-on-vars
     (implies (and (svex-monotonic-on-vars vars x)

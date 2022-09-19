@@ -29,6 +29,7 @@
 (include-book "eval")
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "alist-equiv")
+(include-book "lattice")
 (include-book "std/util/defprojection" :dir :system)
 (local (include-book "std/alists/hons-remove-assoc" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -1545,95 +1546,6 @@
 
 
 
-(define svex-envs-agree-except-witness ((vars svarlist-p)
-                                        (x svex-env-p)
-                                        (y svex-env-p))
-  :returns (witness svar-p)
-  (ec-call
-   (svar-fix (ec-call (svex-envs-similar-witness (svex-env-fix (append (svex-env-extract vars y) x))
-                                                 (svex-env-fix y))))))
-
-
-(define svex-envs-agree-except ((vars svarlist-p)
-                                (x svex-env-p)
-                                (y svex-env-p))
-  (ec-call (svex-envs-similar (append (svex-env-extract vars y) x) y))
-  ///
-  (defthmd svex-envs-agree-except-implies
-    (implies (and (svex-envs-agree-except vars x y)
-                  (not (member-equal (svar-fix var) (svarlist-fix vars))))
-             (equal (svex-env-lookup var x) (svex-env-lookup var y)))
-    :hints (("goal" :use ((:instance svex-envs-similar-necc
-                           (x (append (svex-env-extract vars y) x))
-                           (k var)))
-             :in-theory (disable svex-envs-similar-implies-equal-svex-env-lookup-2))))
-
-  (defthmd svex-envs-agree-except-by-witness
-    (equal (svex-envs-agree-except vars x y)
-           (let ((var (svex-envs-agree-except-witness vars x y)))
-             (implies (not (member-equal (svar-fix var) (svarlist-fix vars)))
-                      (equal (svex-env-lookup var x) (svex-env-lookup var y)))))
-    :hints (("goal" :in-theory (e/d (svex-envs-agree-except-implies)
-                                    (svex-envs-agree-except)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable svex-envs-agree-except)))
-            (and stable-under-simplificationp
-                 (let ((lit (car (last clause))))
-                   (and (eq (car lit) 'svex-envs-similar)
-                        `(:use ((:instance svex-envs-similar
-                                 (x (svex-env-fix ,(cadr lit)))
-                                 (y (svex-env-fix ,(caddr lit)))))
-                          :in-theory (enable svex-envs-agree-except-witness))))))
-    :rule-classes :definition)
-
-  (local (in-theory (disable svex-envs-agree-except)))
-  
-  (defthmd svex-envs-agree-except-commutative
-    (implies (svex-envs-agree-except vars x y)
-             (svex-envs-agree-except vars y x))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))
-                   :in-theory (enable svex-envs-agree-except-implies)))))
-
-  (defthm svex-envs-agree-except-refl
-    (svex-envs-agree-except vars x x)
-    :hints (("goal" :expand ((svex-envs-agree-except vars x x)))))
-
-  (defthmd svex-envs-agree-except-transitive
-    (implies (and (svex-envs-agree-except vars x y)
-                  (svex-envs-agree-except vars y z))
-             (svex-envs-agree-except vars x z))
-    :hints (("goal" :expand ((svex-envs-agree-except vars x z))
-             :in-theory (enable svex-envs-agree-except-implies))))
-
-
-  (defthm-svex-eval-flag
-    (defthmd svex-eval-when-agree-except-non-intersecting
-      (implies (and (svex-envs-agree-except vars env1 env2)
-                    (not (intersectp-equal (svarlist-fix vars) (svex-vars x))))
-               (equal (svex-eval x env1)
-                      (svex-eval x env2)))
-      :hints ('(:expand ((svex-vars x)
-                         (:free (env) (svex-eval x env)))
-                :in-theory (enable svex-envs-agree-except-implies)))
-      :flag expr)
-    (defthmd svexlist-eval-when-agree-except-non-intersecting
-      (implies (and (svex-envs-agree-except vars env1 env2)
-                    (not (intersectp-equal (svarlist-fix vars) (svexlist-vars x))))
-               (equal (svexlist-eval x env1)
-                      (svexlist-eval x env2)))
-      :hints ('(:expand ((svexlist-vars x)
-                         (:free (env) (svexlist-eval x env1)))))
-      :flag list))
-
-  (defthmd svex-alist-eval-when-agree-except-non-intersecting
-    (implies (and (svex-envs-agree-except vars env1 env2)
-                  (not (intersectp-equal (svarlist-fix vars) (svex-alist-vars x))))
-             (equal (svex-alist-eval x env1)
-                    (svex-alist-eval x env2)))
-    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vars
-                                      svex-eval-when-agree-except-non-intersecting)))))
-
 
 
 (defretd <fn>-when-svex-envs-agree-except-overrides
@@ -1875,6 +1787,13 @@
 
 
 
+(local (defthmd svex-env-boundp-iff-member-alist-keys
+         (iff (svex-env-boundp v x)
+              (member-equal (svar-fix v) (alist-keys (svex-env-fix x))))
+         :hints(("Goal" :in-theory (enable svex-env-boundp
+                                           svex-env-fix
+                                           alist-keys)))))
+
 (define svar-override-triplelist-env-ok ((x svar-override-triplelist-p)
                                          (override-env svex-env-p)
                                          (ref-env svex-env-p))
@@ -1897,12 +1816,7 @@
     :hints(("Goal" :in-theory (enable svex-override-triplelist-env-ok
                                       svar->svex-override-triplelist))))
 
-  (local (defthm svex-env-boundp-iff-member-alist-keys
-           (iff (svex-env-boundp v x)
-                (member-equal (svar-fix v) (alist-keys (svex-env-fix x))))
-           :hints(("Goal" :in-theory (enable svex-env-boundp
-                                             svex-env-fix
-                                             alist-keys)))))
+  (local (in-theory (enable svex-env-boundp-iff-member-alist-keys)))
   
   (defthm svar-override-triplelist-env-ok-of-append-ref-envs-when-subsetp-first
     (implies (subsetp-equal (svar-override-triplelist->refvars x)
@@ -1910,3 +1824,237 @@
              (equal (svar-override-triplelist-env-ok x override-env (append ref-env ref-env2))
                     (svar-override-triplelist-env-ok x override-env ref-env)))
     :hints(("Goal" :in-theory (enable svar-override-triplelist->refvars)))))
+
+
+
+
+(define svar-override-triplelist-map-refs-to-values ((triples svar-override-triplelist-p)
+                                                (ref-values svex-env-p))
+  :returns (values svex-env-p)
+  (if (atom triples)
+      nil
+    (b* (((svar-override-triple trip) (car triples))
+         ((unless (svex-env-boundp trip.refvar ref-values))
+          (svar-override-triplelist-map-refs-to-values (cdr triples) ref-values)))
+      (cons (cons trip.valvar (svex-env-lookup trip.refvar ref-values))
+            (svar-override-triplelist-map-refs-to-values (cdr triples) ref-values))))
+  ///
+  (local (defthm svex-env-boundp-of-cons-2
+           (equal (svex-env-boundp key (cons pair rest))
+                  (if (and (consp pair) (equal (svar-fix key) (car pair)))
+                      t
+                    (svex-env-boundp key rest)))
+           :hints(("Goal" :in-theory (enable svex-env-boundp)))))
+  (local (defthm svex-env-lookup-of-cons2
+           (equal (svex-env-lookup v (cons x y))
+                  (if (and (consp x)
+                           (svar-p (car x))
+                           (equal (car x) (svar-fix v)))
+                      (4vec-fix (cdr x))
+                    (svex-env-lookup v y)))
+           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+
+  (defcong svex-envs-equivalent svex-envs-equivalent (svar-override-triplelist-map-refs-to-values triples ref-values) 2
+    :hints (("goal" :induct (svar-override-triplelist-map-refs-to-values triples ref-values))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (enable svex-env-boundp-of-cons-2
+                                      svex-env-lookup-of-cons2))))
+    :package :function)
+
+  (defret keys-of-<fn>-strict
+    (implies (subsetp-equal (svar-override-triplelist->refvars triples)
+                            (alist-keys (svex-env-fix ref-values)))
+             (equal (alist-keys values) (svar-override-triplelist->valvars triples)))
+    :hints(("Goal" :in-theory (enable alist-keys
+                                      svar-override-triplelist->valvars
+                                      svar-override-triplelist->refvars
+                                      svex-env-boundp-iff-member-alist-keys))))
+
+  (defret boundp-of-<fn>
+    (implies (subsetp-equal (svar-override-triplelist->refvars triples)
+                            (alist-keys (svex-env-fix ref-values)))
+             (iff (svex-env-boundp var values)
+                  (svar-override-triplelist-lookup-valvar var triples)))
+    :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
+                                      svar-override-triplelist->refvars
+                                      svex-env-boundp-iff-member-alist-keys
+                                      alist-keys)
+            :induct <call>)
+           (and stable-under-simplificationp
+                '(:in-theory (enable svex-env-boundp)))))
+
+  (defret lookup-of-<fn>
+    (implies (subsetp-equal (svar-override-triplelist->refvars triples)
+                            (alist-keys (svex-env-fix ref-values)))
+             (equal (svex-env-lookup var values)
+                    (b* ((look (svar-override-triplelist-lookup-valvar var triples)))
+                      (if look
+                          (svex-env-lookup (svar-override-triple->refvar look) ref-values)
+                        (4vec-x)))))
+    :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
+                                      svar-override-triplelist->refvars
+                                      svex-env-boundp-iff-member-alist-keys)
+            :induct <call>)
+           (and stable-under-simplificationp
+                '(:in-theory (enable svex-env-boundp))))))
+
+
+(define svar-override-triplelist-override-vars ((x svar-override-triplelist-p))
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (b* (((svar-override-triple x1) (car x)))
+      (cons x1.testvar (cons x1.valvar (svar-override-triplelist-override-vars (cdr x))))))
+  ///
+  (defthm svex-override-triplelist-vars-of-svar->svex-override-triplelist
+    (equal (svex-override-triplelist-vars (svar->svex-override-triplelist x values))
+           (svar-override-triplelist-override-vars x))
+    :hints(("Goal" :in-theory (enable svex-override-triplelist-vars svar->svex-override-triplelist)))))
+
+
+
+
+(define intermediate-override-env ((triples svar-override-triplelist-p)
+                                   (all-test-vars svarlist-p)
+                                   (lemma-env svex-env-p)
+                                   (spec-env svex-env-p)
+                                   (spec-run svex-env-p))
+  :returns (override-env svex-env-p)
+  (append (svex-env-extract all-test-vars lemma-env)
+          (svar-override-triplelist-map-refs-to-values triples spec-run)
+          (svex-env-fix spec-env))
+  ///
+  (defret intermediate-override-env-agrees-with-lemma-env-on-test-vars
+    (svex-envs-agree all-test-vars lemma-env override-env)
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable svex-envs-agree-by-witness)))))
+
+  (local (defthm override-vars-under-set-equiv
+           (acl2::set-equiv (svar-override-triplelist-override-vars x)
+                            (append (svar-override-triplelist->valvars x)
+                                    (svar-override-triplelist->testvars x)))
+           :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
+                                             svar-override-triplelist->testvars
+                                             svar-override-triplelist-override-vars)
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable acl2::set-unequal-witness-rw))))))
+
+  (local (defthm valvar-member-when-triple-member
+           (implies (member-equal (svar-override-triple-fix trip)
+                                  (svar-override-triplelist-fix triples))
+                    (member-equal (svar-override-triple->valvar trip)
+                                  (svar-override-triplelist->valvars triples)))
+           :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
+                                             svar-override-triplelist-fix)))))
+  
+  (local (defthm lookup-valvar-of-valvar-when-member
+           (implies (and (member-equal (svar-override-triple-fix trip)
+                                       (svar-override-triplelist-fix triples))
+                         (no-duplicatesp-equal (svar-override-triplelist->valvars triples)))
+                    (equal (svar-override-triplelist-lookup-valvar
+                            (svar-override-triple->valvar trip)
+                            triples)
+                           (svar-override-triple-fix trip)))
+           :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
+                                             svar-override-triplelist->valvars
+                                             svar-override-triplelist-fix)))))
+
+
+  (local (defthm testvar-member-when-triple-member
+           (implies (member-equal (svar-override-triple-fix trip)
+                                  (svar-override-triplelist-fix triples))
+                    (member-equal (svar-override-triple->testvar trip)
+                                  (svar-override-triplelist->testvars triples)))
+           :hints(("Goal" :in-theory (enable svar-override-triplelist->testvars
+                                             svar-override-triplelist-fix)))))
+
+  
+  (defret svar-override-triplelist-env-ok-of-<fn>
+    (implies (and (subsetp-equal (svar-override-triplelist->refvars triples)
+                                 (alist-keys (svex-env-fix spec-run)))
+                  (subsetp-equal (svar-override-triplelist->testvars triples)
+                                 (svarlist-fix all-test-vars))
+                  (subsetp-equal (svar-override-triplelist-fix trips)
+                                 (svar-override-triplelist-fix triples))
+                  (no-duplicatesp-equal (svar-override-triplelist->valvars triples))
+                  (not (intersectp-equal (svar-override-triplelist->valvars triples)
+                                         (svarlist-fix all-test-vars))))
+             (svar-override-triplelist-env-ok
+              trips override-env spec-run))
+    :hints(("Goal" :in-theory (enable svar-override-triplelist-env-ok
+                                      svar-override-triplelist-fix)
+            :induct (len trips))))
+  
+  (defret intermediate-override-env-=>>-lemma-env
+    (implies (and (svex-env-<<= (svex-env-removekeys
+                                 (svar-override-triplelist-override-vars triples)
+                                 lemma-env)
+                                spec-env)
+                  (subsetp-equal (svar-override-triplelist->refvars triples)
+                                 (alist-keys (svex-env-fix spec-run)))
+                  (svex-env-<<=
+                   (svex-env-extract (svar-override-triplelist->valvars triples) lemma-env)
+                   (svar-override-triplelist-map-refs-to-values triples spec-run))
+                  (subsetp-equal (svar-override-triplelist->testvars triples)
+                                 (svarlist-fix all-test-vars)))
+             (svex-env-<<= lemma-env override-env))
+    :hints ((and stable-under-simplificationp
+                 (let* ((lit (car (last clause)))
+                        (witness `(svex-env-<<=-witness . ,(cdr lit))))
+                   `(:expand (,lit)
+                     :use ((:instance svex-env-<<=-necc
+                            (x (svex-env-removekeys
+                                 (svar-override-triplelist-override-vars triples)
+                                 lemma-env))
+                            (y spec-env)
+                            (var ,witness))
+                           (:instance svex-env-<<=-necc
+                            (x (svex-env-extract (svar-override-triplelist->valvars triples) lemma-env))
+                            (y (svar-override-triplelist-map-refs-to-values triples spec-run))
+                            (var ,witness))))))))
+
+  (defret intermediate-override-env-agrees-with-spec-env-except-override-vars
+    (implies (and (svex-envs-agree (set-difference-equal
+                                    (svarlist-fix all-test-vars)
+                                    (svar-override-triplelist->testvars triples))
+                                   lemma-env spec-env)
+                  (subsetp-equal (svar-override-triplelist->testvars triples)
+                                 (svarlist-fix all-test-vars))
+                  (subsetp-equal (svar-override-triplelist->refvars triples)
+                                 (alist-keys (svex-env-fix spec-run))))
+             (svex-envs-agree-except (svar-override-triplelist-override-vars triples)
+                                     override-env spec-env))
+    :hints ((and stable-under-simplificationp
+                 (let* ((lit (car (last clause)))
+                        (witness `(svex-envs-agree-except-witness . ,(cdr lit))))
+                   `(:expand ((:with svex-envs-agree-except-by-witness ,lit))
+                     :use ((:instance lookup-when-svex-envs-agree
+                            (vars (set-difference-equal
+                                    (svarlist-fix all-test-vars)
+                                    (svar-override-triplelist->testvars triples)))
+                            (x lemma-env) (y spec-env)
+                            (v ,witness))))))))
+
+
+  (defret intermediate-override-env-agrees-with-reference-vars
+    (implies (and (not (intersectp-equal (svarlist-fix all-test-vars)
+                                         (svar-override-triplelist->valvars triples)))
+                  (subsetp-equal (svar-override-triplelist->refvars triples)
+                                 (alist-keys (svex-env-fix spec-run))))
+             (svex-envs-agree (svar-override-triplelist->valvars triples)
+                              (svar-override-triplelist-map-refs-to-values triples spec-run)
+                              override-env))
+    :hints ((and stable-under-simplificationp
+                 (b* ((lit (car (last clause)))
+                      (?witness `(svex-envs-disagree-witness . ,(cdr lit))))
+                   `(:expand ((:with svex-envs-agree-by-witness ,lit)))))))
+
+
+  (defret extract-test-vars-of-<fn>
+    (implies (subsetp-equal (svarlist-fix vars) (svarlist-fix all-test-vars))
+             (equal (svex-env-extract vars override-env)
+                    (svex-env-extract vars lemma-env)))
+    :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix)))))
+

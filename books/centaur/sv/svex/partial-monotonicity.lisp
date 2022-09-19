@@ -193,6 +193,7 @@
 
   (defthm eval-when-svex-partial-monotonic
     (implies (and (svex-partial-monotonic param-keys x)
+                  ;; same as (svex-envs-agree param-keys env1 env2)
                   (equal (svex-env-extract param-keys env1)
                          (svex-env-extract param-keys env2))
                   (svex-env-<<= env1 env2))

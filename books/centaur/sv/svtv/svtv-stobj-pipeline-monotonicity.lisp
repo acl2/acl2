@@ -166,6 +166,10 @@
   (svexlist-monotonic-p (Svexlist-monotonify x))
   :hints(("Goal" :in-theory (enable svexlist-monotonic-p))))
 
+(defthm svex-alist-monotonic-p-of-svex-alist-monotonify
+  (svex-alist-monotonic-p (svex-alist-monotonify x))
+  :hints(("Goal" :in-theory (enable svex-alist-monotonic-p))))
+
 (defthm svtv-data-obj-ok-implies-flatnorm-assigns-monotonic
   (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
                 (svtv-data-obj->flatnorm-validp obj)
@@ -288,20 +292,6 @@
                               svtv-design-flatten))))
 
 
-(defthm svex-partial-monotonic-when-monotonic
-  (implies (svex-monotonic-p x)
-           (svex-partial-monotonic params x))
-  :hints(("Goal" :in-theory (enable svex-partial-monotonic))))
-
-(defthm svexlist-partial-monotonic-when-monotonic
-  (implies (svexlist-monotonic-p x)
-           (svexlist-partial-monotonic params x))
-  :hints(("Goal" :in-theory (enable svexlist-partial-monotonic))))
-
-(defthm svex-alist-partial-monotonic-when-monotonic
-  (implies (svex-alist-monotonic-p x)
-           (svex-alist-partial-monotonic params x))
-  :hints(("Goal" :in-theory (enable svex-alist-partial-monotonic))))
 
 
 (defthm svex-alist-compose-preserves-partial-monotonic-when-monotonic
@@ -313,10 +303,7 @@
                          (params2 params) (params nil)))
            :expand ((svex-compose-alist-selfbound-keys-p nil a)))))
 
-(defthm svex-compose-alist-selfbound-keys-p-when-not-intersectp
-  (implies (not (intersectp-equal (svarlist-fix keys) (svex-alist-keys a)))
-           (svex-compose-alist-selfbound-keys-p keys a))
-  :hints(("Goal" :in-theory (enable svex-compose-alist-selfbound-keys-p intersectp-equal))))
+
 
 (defthmd svarlist-non-override-test-p-when-subsetp
   (implies (and (subsetp-equal x y)
@@ -365,43 +352,12 @@
             (mv-nth 0 (svtv-flatnorm-apply-overrides flatnorm config))))
   :hints(("Goal" :in-theory (enable svtv-flatnorm-apply-overrides))))
 
-(defthm svex-alist-compose-preserves-partial-monotonic-when-monotonic-2
-  (implies (and (svex-alist-monotonic-p a)
-                (svex-alist-partial-monotonic params x)
-                (svex-compose-alist-selfbound-keys-p params a))
-           (svex-alist-partial-monotonic params (svex-alist-compose x a)))
-  :hints (("goal" :use ((:instance svex-alist-compose-preserves-svex-alist-partial-monotonic
-                         (params2 nil) (params params))))))
-
-(defthm svex-alist-monotonic-p-of-svarlist-x-subst
-  (svex-alist-monotonic-p (svarlist-x-subst vars))
-  :hints(("Goal" :in-theory (enable svex-alist-monotonic-p))))
 
 
-(local
- (defthm svex-alist-compose-preserves-partial-monotonic-when-monotonic-2-equiv
-   (implies (and (svex-alist-eval-equiv y (svex-alist-compose x a))
-                 (svex-alist-monotonic-p a)
-                 (svex-alist-partial-monotonic params x)
-                 (svex-compose-alist-selfbound-keys-p params a))
-            (svex-alist-partial-monotonic params y))))
 
-(defthmd svex-alist-partial-monotonic-when-netevalcomp-p
-  (implies (and (netevalcomp-p comp network)
-                (svex-alist-partial-monotonic params network)
-                (not (intersectp-equal (svarlist-fix params) (svex-alist-keys network))))
-           (svex-alist-partial-monotonic params comp))
-  :hints(("Goal" :in-theory (enable netevalcomp-p))))
 
-(defthmd phase-fsm-composition-p-implies-netevalcomp-p
-  (implies (phase-fsm-composition-p phase-fsm flatnorm config)
-           (b* (((phase-fsm-config config))
-                ((mv overridden-assigns ?overridden-delays)
-                 (svtv-flatnorm-apply-overrides
-                  flatnorm config.override-config))
-                ((base-fsm phase-fsm)))
-             (netevalcomp-p phase-fsm.values overridden-assigns)))
-  :hints(("Goal" :in-theory (enable phase-fsm-composition-p))))
+
+
 
 (defthmd phase-fsm-composition-p-implies-values-keys
   (implies (phase-fsm-composition-p phase-fsm flatnorm config)
@@ -427,7 +383,14 @@
   :hints(("Goal" :in-theory (enable phase-fsm-composition-p))))
 
 
-
+(defthmd phase-fsm-composition-p-implies-netevalcomp-p
+  (implies (phase-fsm-composition-p phase-fsm flatnorm config)
+           (b* (((phase-fsm-config config))
+                ((mv overridden-assigns ?overridden-delays)
+                 (svtv-flatnorm-apply-overrides flatnorm config.override-config))
+                ((base-fsm phase-fsm)))
+             (netevalcomp-p phase-fsm.values overridden-assigns)))
+  :hints (("goal" :in-theory (enable phase-fsm-composition-p))))
 
 
 (defthm svtv-data-obj-ok-implies-svex-alist-partial-monotonic-of-phase-fsm-values

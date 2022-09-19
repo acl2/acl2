@@ -768,6 +768,13 @@ any environment."
       :hints ('(:expand ((:free (env) (svexlist-mono-eval x env)))))
       :flag svexlist-mono-eval))
 
+  (defthm svex-alist-mono-eval-monotonic
+    (implies (svex-env-<<= env1 env2)
+             (svex-env-<<= (svex-alist-mono-eval x env1)
+                           (svex-alist-mono-eval x env2)))
+    :hints(("Goal" :expand ((svex-env-<<= (svex-alist-mono-eval x env1)
+                                          (svex-alist-mono-eval x env2))))))
+  
   (defthm-svex-eval-flag
     (defthm svex-eval-gte-mono-eval
       (4vec-<<= (svex-mono-eval x env)
@@ -835,6 +842,11 @@ any environment."
                          (svexlist-mono-eval x env))))
       :flag list))
 
+  (defthm svex-alist-eval-gte-mono-eval
+    (svex-env-<<= (svex-alist-mono-eval x env)
+                  (svex-alist-eval x env))
+    :hints (("goal" :in-theory (enable svex-env-<<=))))
+
   (defthm svex-eval-gte-xeval
     (4vec-<<= (svex-xeval x) (svex-eval x env))
     :hints (("goal" :in-theory (e/d (svex-xeval-is-mono-eval
@@ -848,6 +860,11 @@ any environment."
                                      4veclist-<<=-transitive-2)
                                     (svexlist-eval-gte-mono-eval))
              :use svexlist-eval-gte-mono-eval)))
+
+  (defthm svex-alist-eval-gte-xeval
+    (svex-env-<<= (svex-alist-xeval x)
+                  (svex-alist-eval x env))
+    :hints (("goal" :in-theory (enable svex-env-<<=))))
 
   "<p>Accordingly, we can often use @(see svex-mono-eval) in place of @(see
   svex-eval).</p>"

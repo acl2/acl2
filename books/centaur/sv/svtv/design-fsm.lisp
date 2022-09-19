@@ -163,33 +163,38 @@
         (svex-normalize-assigns flatten.assigns flatten.fixups flatten.constraints flatten.var-decl-map aliases))
        ((flatnorm-setup setup))
        (assigns (if setup.monotonify
-                    (pairlis$ (svex-alist-keys assigns)
-                              (time$ (svexlist-monotonify (svex-alist-vals assigns))
-                                     :msg "; svexlist-monotonify: ~st sec (~sa bytes)~%"))
+                    (svex-alist-monotonify assigns)
                   assigns)))
     (make-flatnorm-res :assigns assigns :delays delays :constraints constraints)))
 
-(local
- (defsection no-duplicate-svex-alist-keys-of-fast-alist-clean
-   (local (include-book "std/alists/fast-alist-clean" :dir :system))
-   (defthm svex-alist-p-of-fast-alist-fork
-     (implies (and (svex-alist-p x)
-                   (svex-alist-p y))
-              (svex-alist-p (fast-alist-fork x y))))
-   (defthm cdr-last-of-svex-alist-p
-     (implies (svex-alist-p x)
-              (equal (cdr (last x)) nil)))
-   (defthm svex-alist-p-of-fast-alist-clean
+
+(defsection no-duplicate-svex-alist-keys-of-fast-alist-clean
+  (local (include-book "std/alists/fast-alist-clean" :dir :system))
+  (local (in-theory (enable fast-alist-clean)))
+  (defthm svex-alist-p-of-fast-alist-fork
+    (implies (and (svex-alist-p x)
+                  (svex-alist-p y))
+             (svex-alist-p (fast-alist-fork x y))))
+  (local
+   (progn
+     (defthm cdr-last-of-svex-alist-p
+       (implies (svex-alist-p x)
+                (equal (cdr (last x)) nil)))))
+
+  (defthm svex-alist-p-of-fast-alist-clean
      (implies (svex-alist-p x)
               (svex-alist-p (fast-alist-clean x))))
 
-   (defthm no-duplicate-svex-alist-keys-of-fast-alist-fork
-     (implies  (no-duplicatesp-equal (svex-alist-keys y))
-               (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x y))))
-     :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup))))
-   (defthm svex-alist-keys-of-cdr-last
-     (equal (svex-alist-keys (cdr (last x))) nil)
-     :hints(("Goal" :in-theory (enable svex-alist-keys))))
+   (local
+    (progn
+      (defthm no-duplicate-svex-alist-keys-of-fast-alist-fork
+        (implies  (no-duplicatesp-equal (svex-alist-keys y))
+                  (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x y))))
+        :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup))))
+      (defthm svex-alist-keys-of-cdr-last
+        (equal (svex-alist-keys (cdr (last x))) nil)
+        :hints(("Goal" :in-theory (enable svex-alist-keys))))))
+
    (defthm no-duplicate-svex-alist-keys-of-fast-alist-clean
      (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
      :hints(("Goal" :in-theory (enable svex-alist-keys))))
@@ -210,7 +215,7 @@
    (defthm no-duplicate-keys-of-fast-alist-clean
      (no-duplicatesp-equal (alist-keys (fast-alist-clean x))))
 
-   (in-theory (disable fast-alist-clean))))
+   (in-theory (disable fast-alist-clean)))
 
 (deftagsum svtv-assigns-override-config
   (:omit ((vars svarlist-p)))
