@@ -109,7 +109,7 @@
                             (equal
                              (,exec-binary-strict-pure-of-op-and-ltype x y)
                              (,op-ltype-rtype x y))))
-         (enables (if (member-eq (binop-kind op) '(:mul :div :rem :add))
+         (enables (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub))
                       `(,exec-binary-strict-pure-of-op-and-ltype
                         ,op-values
                         ,op-arithmetic-values
@@ -205,7 +205,7 @@
          (lpred (pack lfixtype 'p))
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
-         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add))
+         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -249,7 +249,7 @@
     (b* (((when (endp ops)) (mv nil nil))
          (op (car ops))
          (op-kind (binop-kind op))
-         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add))
+         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op

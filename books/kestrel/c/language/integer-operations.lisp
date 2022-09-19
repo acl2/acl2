@@ -983,3 +983,35 @@
                                             (value-fix val2)))))
     resval)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sub-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval value-resultp)
+  :short "Apply binary @('-') to integer values [C:6.5.6/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the operands [C:6.3.1.8/1].
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2))
+       (result (- mathint1 mathint2))
+       (resval (result-integer-value result (type-of-value val1)))
+       ((when (errorp resval)) (error (list :undefined-sub
+                                            (value-fix val1)
+                                            (value-fix val2)))))
+    resval)
+  :hooks (:fix))
