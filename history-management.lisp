@@ -6639,7 +6639,7 @@
                    (not (stringp action)) ; optimization
                    (project-dir-prefix-entry filename
                                              project-dir-alist))))
-                      
+
     (cond ((stringp action) ; hence not :make-cons
            (concatenate 'string action ".lisp"))
           (pair ; (:kwd . "absolute-pathname/")
@@ -6649,7 +6649,14 @@
               ((eq action :make-cons)
                (cons (car pair) relative-pathname))
               (t
-               (concatenate 'string "[books]/" relative-pathname)))))
+               (concatenate 'string
+                            (if (eq (car pair) :system)
+                                "[books]/"
+                              (concatenate 'string
+                                           "[:"
+                                           (symbol-name (car pair))
+                                           "]/"))
+                            relative-pathname)))))
           (t filename))))
 
 (defun relativize-book-path-lst (lst project-dir-alist action)
