@@ -146,52 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-shl ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute left shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/4]."
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-integerp arg1))
-        (error (list :mistype-shl
-                     :required :integer
-                     :supplied arg1)))
-       (val1 (promote-value arg1))
-       ((unless (value-integerp arg2))
-        (error (list :mistype-shl
-                     :required :integer
-                     :supplied arg2)))
-       (val2 (promote-value arg2))
-       (val2 (value-integer->get val2))
-       (err (error (list :undefined-shl arg1 arg2))))
-    (cond
-     ((uintp val1) (if (shl-uint-okp val1 val2)
-                       (shl-uint val1 val2)
-                     err))
-     ((sintp val1) (if (shl-sint-okp val1 val2)
-                       (shl-sint val1 val2)
-                     err))
-     ((ulongp val1) (if (shl-ulong-okp val1 val2)
-                        (shl-ulong val1 val2)
-                      err))
-     ((slongp val1) (if (shl-slong-okp val1 val2)
-                        (shl-slong val1 val2)
-                      err))
-     ((ullongp val1) (if (shl-ullong-okp val1 val2)
-                         (shl-ullong val1 val2)
-                       err))
-     ((sllongp val1) (if (shl-sllong-okp val1 val2)
-                         (shl-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use ((:instance values-of-promote-value (val arg1))
-                       (:instance values-of-promote-value (val arg2)))
-                 :in-theory (enable value-arithmeticp
-                                    value-realp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-shr ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute right shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/5]."
@@ -543,7 +497,7 @@
       (:rem (rem-values arg1 arg2))
       (:add (add-values arg1 arg2))
       (:sub (sub-values arg1 arg2))
-      (:shl (exec-shl arg1 arg2))
+      (:shl (shl-values arg1 arg2))
       (:shr (exec-shr arg1 arg2))
       (:lt (exec-lt arg1 arg2))
       (:gt (exec-gt arg1 arg2))
