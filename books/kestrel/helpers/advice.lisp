@@ -72,6 +72,7 @@
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
+(include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
 (include-book "kestrel/htclient/post" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
@@ -709,26 +710,6 @@
       (second formula)
     *t*))
 
-(mutual-recursion
- (defun get-conjuncts-of-uterm (uterm ;; untranslated
-                                )
-   (if (not (consp uterm))
-       (list uterm)
-     (if (eq 'and (ffn-symb uterm))
-         (get-conjuncts-of-uterms (fargs uterm))
-       (if (and (eq 'if (ffn-symb uterm)) ; (if <x> <y> nil) is (and <x> <y>)
-                (or (equal nil (farg3 uterm))
-                    (equal *nil* (farg3 uterm))))
-           (union-equal (get-conjuncts-of-uterm (farg1 uterm))
-                        (get-conjuncts-of-uterm (farg2 uterm)))
-         (list uterm)))))
- (defun get-conjuncts-of-uterms (uterms ;; untranslated
-                                 )
-   (if (endp uterms)
-       nil
-     (union-eq (get-conjuncts-of-uterm (first uterms))
-               (get-conjuncts-of-uterms (rest uterms))))))
-
 ;; Returns (mv contradictp state).
 (defund provably-contradictoryp (ctx formula state)
   (declare (xargs :mode :program
@@ -761,7 +742,7 @@
         (cw "fail (hyp not translatable: ~x0)~%" hyp) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        (existing-hyp (formula-hyp-simple theorem-body))
-       (existing-hyp-conjunts (get-conjuncts-of-uterm existing-hyp))
+       (existing-hyp-conjunts (conjuncts-of-uterm existing-hyp))
        ((when (member-equal hyp existing-hyp-conjunts))
         (cw "skip (hyp ~x0 is already present)~%" hyp)
         (mv nil nil state))
