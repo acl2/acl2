@@ -1213,7 +1213,12 @@
         either a variable,
         or an array subscripting expression
         where the array is a variable,
+        or a structure member expression
+        where the target is a variable,
         or a structure pointer member expression
+        where the target is a variable,
+        or an array subscripting expression
+        where the array is a structure member expression
         where the target is a variable,
         or an array subscripting expression
         where the array is a structure pointer member expression
@@ -1234,7 +1239,7 @@
        if it is an array value, we return a pointer to it instead;
        otherwise, we return the value unchanged.
        The motivation for this is explained in @(tsee exec-ident);
-       it is due to our curently simplified (but correct, in our C subset)
+       it is due to our currently simplified (but correct, in our C subset)
        treatment of arrays and pointer in our C dynamic semantics.")
      (xdoc::p
       "We ensure that if the right-hand side expression is a function call,
@@ -1388,6 +1393,21 @@
                        ((when (errorp new-struct)) new-struct))
                     (write-object objdes new-struct compst)))
                  (t (error (list :expr-asg-arrsub-not-supported arr))))))
+        (:member
+         (b* ((str (expr-member->target left))
+              (mem (expr-member->name left))
+              ((unless (expr-case str :ident))
+               (error (list :expr-asg-member-not-var left)))
+              (var (expr-ident->get str))
+              (struct (read-var var compst))
+              ((when (errorp struct)) struct)
+              ((unless (value-case struct :struct))
+               (error (list :not-struct struct (compustate-fix compst))))
+              (val (exec-expr-pure right compst))
+              ((when (errorp val)) val)
+              (new-struct (value-struct-write mem val struct))
+              ((when (errorp new-struct)) new-struct))
+           (write-var var new-struct compst)))
         (:memberp
          (b* ((str (expr-memberp->target left))
               (mem (expr-memberp->name left))
@@ -1406,7 +1426,7 @@
               (struct (read-object objdes compst))
               ((when (errorp struct)) struct)
               ((unless (value-case struct :struct))
-               (error (list :not-struct str (compustate-fix compst))))
+               (error (list :not-struct struct (compustate-fix compst))))
               ((unless (equal reftype
                               (type-of-value struct)))
                (error (list :mistype-struct-read
