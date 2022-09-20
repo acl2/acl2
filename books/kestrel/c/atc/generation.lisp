@@ -5340,35 +5340,26 @@
                                              (ident ,(ident->name memname))
                                              compst)
                                (,reader struct))))
-             (hints-member `(("Goal"
-                              :in-theory
-                              '(exec-member
-                                not-errorp-when-valuep
-                                value-resultp-when-valuep
-                                value-result-fix-when-value-resultp
-                                ,recognizer
-                                ,reader
-                                ,not-error-thm
-                                ,fixer-recognizer-thm))))
-             (hints-memberp `(("Goal"
-                               :in-theory
-                               '(exec-memberp
-                                 not-errorp-when-valuep
-                                 value-resultp-when-valuep
-                                 value-result-fix-when-value-resultp
-                                 ,recognizer
-                                 ,reader
-                                 ,not-error-thm
-                                 ,fixer-recognizer-thm))))
+             (hints `(("Goal"
+                       :in-theory
+                       '(exec-member
+                         exec-memberp
+                         not-errorp-when-valuep
+                         value-resultp-when-valuep
+                         value-result-fix-when-value-resultp
+                         ,recognizer
+                         ,reader
+                         ,not-error-thm
+                         ,fixer-recognizer-thm))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
-                                     :hints hints-member
+                                     :hints hints
                                      :enable nil))
              ((mv event-memberp &)
               (evmac-generate-defthm thm-memberp-name
                                      :formula formula-memberp
-                                     :hints hints-memberp
+                                     :hints hints
                                      :enable nil)))
           (mv (list event-member event-memberp)
               (list thm-member-name thm-memberp-name)

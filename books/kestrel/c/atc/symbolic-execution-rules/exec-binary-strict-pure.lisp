@@ -35,30 +35,26 @@
      they are used to prove rules used during the symbolic execution."))
 
   (defruled sint->get-of-sint-from-schar
-    (implies (scharp x)
-             (equal (sint->get (sint-from-schar x))
-                    (schar->get x)))
+    (equal (sint->get (sint-from-schar x))
+           (schar->get x))
     :enable (sint-from-schar
              sint-integerp-alt-def))
 
   (defruled sint->get-of-sint-from-uchar
-    (implies (ucharp x)
-             (equal (sint->get (sint-from-uchar x))
-                    (uchar->get x)))
+    (equal (sint->get (sint-from-uchar x))
+           (uchar->get x))
     :enable (sint-from-uchar
              sint-integerp-alt-def))
 
   (defruled sint->get-of-sint-from-sshort
-    (implies (sshortp x)
-             (equal (sint->get (sint-from-sshort x))
-                    (sshort->get x)))
+    (equal (sint->get (sint-from-sshort x))
+           (sshort->get x))
     :enable (sint-from-sshort
              sint-integerp-alt-def))
 
   (defruled sint->get-of-sint-from-ushort
-    (implies (ushortp x)
-             (equal (sint->get (sint-from-ushort x))
-                    (ushort->get x)))
+    (equal (sint->get (sint-from-ushort x))
+           (ushort->get x))
     :enable (sint-from-ushort
              sint-integerp-alt-def))
 
