@@ -13,6 +13,7 @@
 
 (include-book "abstract-syntax")
 (include-book "errors")
+(include-book "integer-formats")
 
 (include-book "../pack")
 
@@ -586,6 +587,24 @@
     (pack char/short/int/long/llong '-bits))
   :prepwork
   ((local (include-book "std/typed-lists/character-listp" :dir :system)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-bits ((type typep))
+  :guard (type-integerp type)
+  :returns (bits posp :rule-classes :type-prescription)
+  :short "Number of bits that forms a value of a C integer type."
+  (case (type-kind type)
+    ((:char :schar :uchar) (char-bits))
+    ((:sshort :ushort) (short-bits))
+    ((:sint :uint) (int-bits))
+    ((:slong :ulong) (long-bits))
+    ((:sllong :ullong) (llong-bits))
+    (t (prog2$ (impossible) 1)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
