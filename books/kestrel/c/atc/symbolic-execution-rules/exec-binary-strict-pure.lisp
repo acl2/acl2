@@ -219,7 +219,29 @@
                              rem
                              floor
                              mod
-                             ifix))))
+                             ifix
+                             ;; the following are disabled for speed:
+                             equal-of-error
+                             equal-of-schar
+                             equal-of-uchar
+                             equal-of-sshort
+                             equal-of-ushort
+                             equal-of-sint
+                             equal-of-uint
+                             equal-of-slong
+                             equal-of-ulong
+                             equal-of-sllong
+                             equal-of-ullong
+                             equal-of-value-schar
+                             equal-of-value-uchar
+                             equal-of-value-sshort
+                             equal-of-value-ushort
+                             equal-of-value-sint
+                             equal-of-value-uint
+                             equal-of-value-slong
+                             equal-of-value-ulong
+                             equal-of-value-sllong
+                             equal-of-value-ullong))))
       (mv name event))
     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
