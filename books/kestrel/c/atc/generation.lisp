@@ -661,7 +661,7 @@
       (er-soft+ ctx t (irr-expr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
-                 a boolean ACL2 term is expected, ~
+                 an expression term returning boolean is expected, ~
                  the term ~x1 is encountered instead."
                 fn term))
     :measure (pseudo-term-count term))
