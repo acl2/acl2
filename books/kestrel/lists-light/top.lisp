@@ -103,3 +103,6 @@
 (include-book "replace-item")
 
 (include-book "index-of-subseq")
+
+(include-book "filter-non-members")
+(include-book "union-equal-alt")
