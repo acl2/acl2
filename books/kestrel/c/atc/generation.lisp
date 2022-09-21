@@ -1610,6 +1610,14 @@
                                   prec-tags
                                   ctx
                                   state))
+                   ((when (type-case init-type :pointer))
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               the term ~x1 of pointer type ~x2 ~
+                               is being assigned to a new variable ~x3. ~
+                               This is currently disallowed, ~
+                               because it would create an alias."
+                              fn val init-type var))
                    ((unless (equal init-affect vars))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -2071,6 +2079,14 @@
                                   prec-tags
                                   ctx
                                   state))
+                   ((when (type-case init-type :pointer))
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               the term ~x1 of pointer type ~x2 ~
+                               is being assigned to a new variable ~x3. ~
+                               This is currently disallowed, ~
+                               because it would create an alias."
+                              fn val init-type var))
                    ((when (consp init-affect))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
