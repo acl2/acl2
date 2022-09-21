@@ -356,8 +356,8 @@
                                                              state))
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr)
-                          "The unary operator ~x0 ~
-                           is applied to a term ~x1 returning ~x2, ~
+                          "The unary operator ~x0 is applied ~
+                           to an expression term ~x1 returning ~x2, ~
                            but a ~x3 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
@@ -383,9 +383,9 @@
                ((unless (and (equal type1 in-type1)
                              (equal type2 in-type2)))
                 (er-soft+ ctx t (irr)
-                          "The binary operator ~x0 ~
-                           is applied to a term ~x1 returning ~x2
-                           and to a term ~x3 returning ~x4,
+                          "The binary operator ~x0 is applied ~
+                           to an expression term ~x1 returning ~x2 ~
+                           and to an expression term ~x3 returning ~x4, ~
                            but a ~x5 and a ~x6 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
@@ -404,8 +404,8 @@
                                                              state))
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr)
-                          "The conversion from ~x0 to ~x1 ~
-                           is applied to a term ~x2 returning ~x3, ~
+                          "The conversion from ~x0 to ~x1 is applied ~
+                           to an expression term ~x2 returning ~x3, ~
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
@@ -432,8 +432,9 @@
                              (equal type2 in-type2)))
                 (er-soft+ ctx t (irr)
                           "The reading of a ~x0 array with a ~x1 index ~
-                           is applied to a term ~x2 returning ~x3 ~
-                           and to a term ~x4 returning ~x5, ~
+                           is applied to ~
+                           an expression term ~x2 returning ~x3 ~
+                           and to an expression term ~x4 returning ~x5, ~
                            but a ~x0 and a ~x1 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
@@ -460,7 +461,8 @@
                                       mem-type)))
                   (t (er-soft+ ctx t (irr)
                                "The reading of a ~x0 structure with member ~x1 ~
-                                is applied to a term ~x2 returning ~x3, ~
+                                is applied to ~
+                                an expression term ~x2 returning ~x3, ~
                                 but a an operand of type ~x4 or ~x5 ~
                                 is expected. ~
                                 This is indicative of provably dead code, ~
@@ -479,7 +481,8 @@
                ((unless (equal index-type1 index-type))
                 (er-soft+ ctx t (irr)
                           "The reading of ~x0 structure with member ~x1 ~
-                           is applied to a term ~x2 returning ~x3, ~
+                           is applied to ~
+                           an expression term ~x2 returning ~x3, ~
                            but a ~x4 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
@@ -506,7 +509,8 @@
                                       elem-type)))
                   (t (er-soft+ ctx t (irr)
                                "The reading of ~x0 structure with member ~x1 ~
-                                is applied to a term ~x2 returning ~x3, ~
+                                is applied to ~
+                                an expression term ~x2 returning ~x3, ~
                                 but an operand of type ~x4 or ~x5 ~
                                 is expected. ~
                                 This is indicative of provably dead code, ~
@@ -559,7 +563,7 @@
       (er-soft+ ctx t (list (irr-expr) (irr-type))
                 "When generating C code for the function ~x0, ~
                  at a point where ~
-                 an expression term returning a C value is expected, ~
+                 a pure expression term returning a C type is expected, ~
                  the term ~x1 is encountered instead."
                 fn term))
     :measure (pseudo-term-count term))
@@ -651,8 +655,8 @@
                 (atc-gen-expr-pure arg inscope prec-tags fn ctx state))
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr-expr)
-                          "The conversion from ~x0 to boolean ~
-                           is applied to a term ~x1 returning ~x2, ~
+                          "The conversion from ~x0 to boolean is applied to ~
+                           an expression term ~x1 returning ~x2, ~
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
@@ -661,7 +665,7 @@
       (er-soft+ ctx t (irr-expr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
-                 a boolean ACL2 term is expected, ~
+                 an expression term returning boolean is expected, ~
                  the term ~x1 is encountered instead."
                 fn term))
     :measure (pseudo-term-count term))
@@ -793,7 +797,8 @@
               (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
                         "A call ~x0 of the function ~x1, which returns void, ~
                          is being used where ~
-                         an ACL2 term is expected to return a C value."
+                         an expression term returning a a non-void C type ~
+                         is expected."
                         term called-fn))
              ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
                                                 in-types
@@ -813,7 +818,7 @@
              ((unless (equal types in-types))
               (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
                         "The function ~x0 with input types ~x1 ~
-                         is applied to terms ~x2 returning ~x3. ~
+                         is applied to expression terms ~x2 returning ~x3. ~
                          This is indicative of provably dead code, ~
                          given that the code is guard-verified."
                         called-fn in-types args types)))
@@ -2378,8 +2383,8 @@
                                       state))
              ((unless (equal types in-types))
               (er-soft+ ctx t irr
-                        "The function ~x0 with input types ~x1 ~
-                         is applied to terms ~x2 returning ~x3. ~
+                        "The function ~x0 with input types ~x1 is applied to ~
+                         expression terms ~x2 returning ~x3. ~
                          This is indicative of provably dead code, ~
                          given that the code is guard-verified."
                         called-fn in-types args types))
@@ -5340,35 +5345,26 @@
                                              (ident ,(ident->name memname))
                                              compst)
                                (,reader struct))))
-             (hints-member `(("Goal"
-                              :in-theory
-                              '(exec-member
-                                not-errorp-when-valuep
-                                value-resultp-when-valuep
-                                value-result-fix-when-value-resultp
-                                ,recognizer
-                                ,reader
-                                ,not-error-thm
-                                ,fixer-recognizer-thm))))
-             (hints-memberp `(("Goal"
-                               :in-theory
-                               '(exec-memberp
-                                 not-errorp-when-valuep
-                                 value-resultp-when-valuep
-                                 value-result-fix-when-value-resultp
-                                 ,recognizer
-                                 ,reader
-                                 ,not-error-thm
-                                 ,fixer-recognizer-thm))))
+             (hints `(("Goal"
+                       :in-theory
+                       '(exec-member
+                         exec-memberp
+                         not-errorp-when-valuep
+                         value-resultp-when-valuep
+                         value-result-fix-when-value-resultp
+                         ,recognizer
+                         ,reader
+                         ,not-error-thm
+                         ,fixer-recognizer-thm))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
-                                     :hints hints-member
+                                     :hints hints
                                      :enable nil))
              ((mv event-memberp &)
               (evmac-generate-defthm thm-memberp-name
                                      :formula formula-memberp
-                                     :hints hints-memberp
+                                     :hints hints
                                      :enable nil)))
           (mv (list event-member event-memberp)
               (list thm-member-name thm-memberp-name)

@@ -9210,7 +9210,7 @@
         when (and (eq (car trip) 'project-dir-alist)
                   (eq (cadr trip) 'global-value))
         do (progn (setf (cddr trip)
-                        (merge-sort-len>=-cdr project-dir-alist))
+                        (merge-sort-length>=-cdr project-dir-alist))
                   (return t))
         finally (error "Implementation error: Failure in ~
                         replace-project-dir-alist!")))

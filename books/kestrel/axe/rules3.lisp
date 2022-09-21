@@ -54,7 +54,7 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system)) ; for INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR, etc.
+;(local (include-book "kestrel/bv/arith" :dir :system)) ; for INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR, etc.
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/bv/trim-rules" :dir :system))
@@ -63,6 +63,8 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
@@ -254,7 +256,7 @@
                   (bvcat 2 x n y)))
   :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0))))
 
-(local (in-theory (disable COLLECT-CONSTANTS-<-/))) ;investigate this
+;(local (in-theory (disable COLLECT-CONSTANTS-<-/))) ;investigate this
 
 (include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop?
 
@@ -8141,7 +8143,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   COLLECT-CONSTANTS-OVER-<
+                                   ;COLLECT-CONSTANTS-OVER-<
                                    <-becomes-bvlt-alt)))))
 
 (defthm bvlt-of-bvuminus-and-bvuminus
@@ -8170,7 +8172,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   COLLECT-CONSTANTS-OVER-<
+                                   ;COLLECT-CONSTANTS-OVER-<
                                    <-becomes-bvlt-alt)))))
 
 (defthm bvplus-of-bvuminus-tighten-hack
@@ -8197,7 +8199,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   collect-constants-over-<
+                                   ;collect-constants-over-<
                                    <-becomes-bvlt-alt)))))
 
 (defthm equal-of-bool-to-bit-split
@@ -8275,7 +8277,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   collect-constants-over-<
+                                   ;collect-constants-over-<
                                    <-becomes-bvlt-alt)))))
 
 (defthm bvlt-of-0-polarity
@@ -8316,7 +8318,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   collect-constants-over-<
+                                   ;collect-constants-over-<
                                    <-becomes-bvlt-alt)))))
 
 (defthm sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger
@@ -8344,7 +8346,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   collect-constants-over-<
+                                   ;collect-constants-over-<
                                    <-becomes-bvlt-alt)))))
 
 (defthm sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
@@ -8382,7 +8384,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   collect-constants-over-<
+                                   ;collect-constants-over-<
                                    <-becomes-bvlt-alt)))))
 
 (defthm getbit-of-bvplus-of-bvuminus-one-bigger
@@ -8657,7 +8659,7 @@
                                    bvlt)
                                   (MOD-BOUNDED-BY-MODULUS ;expensive!
                                    MOD-TYPE ;expensive!
-                                   COLLECT-CONSTANTS-OVER-<
+                                   ;COLLECT-CONSTANTS-OVER-<
                                    BVLT-OF-MAX
                                    anti-bvplus GETBIT-OF-+
                                    bvlt-of-plus-arg1
@@ -8862,7 +8864,7 @@
                             <-becomes-bvlt-free
                             PLUS-BECOMES-BVPLUS-FREE
 ;                            *-OF-2-BECOMES-BVMULT
-                            COLLECT-CONSTANTS-OVER-<
+                            ;COLLECT-CONSTANTS-OVER-<
                             +-OF-MINUS-1-AND-BV2
                             )))))
 
@@ -8939,7 +8941,7 @@
            (< x y))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-(defthm <-when-unsigned-byte-p
+(defthmd <-when-unsigned-byte-p
   (implies (and (unsigned-byte-p free x)
                 (natp y)
                 )
@@ -8949,7 +8951,9 @@
                     t)))
   :hints (("Goal" :in-theory (enable <-when-unsigned-byte-p-and-not-unsigned-byte-p bvlt))))
 
-(defthm <-when-unsigned-byte-p-alt
+(theory-invariant (incompatible (:definition bvlt) (:rewrite <-when-unsigned-byte-p)))
+
+(defthmd <-when-unsigned-byte-p-alt
   (implies (and (unsigned-byte-p free y)
                 (natp free)
                 (natp x))
@@ -8957,7 +8961,10 @@
                   (if (unsigned-byte-p free x)
                       (bvlt free x y)
                     nil)))
-  :hints (("Goal" :in-theory (e/d (bvlt) (COLLECT-CONSTANTS-OVER-<)))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (;COLLECT-CONSTANTS-OVER-<
+                                          )))))
+
+(theory-invariant (incompatible (:definition bvlt) (:rewrite <-when-unsigned-byte-p-alt)))
 
 ;gen
 (defthm unsigned-byte-p-of-plus-31-4
@@ -9115,7 +9122,7 @@
   :rule-classes nil
   :hints (("Goal"
            :use (:instance same-remainder-when-close-lemma)
-           :in-theory (e/d (bvmod bvmult bvdiv BVLT-OF-BVPLUS-OF-BVUMINUS-OTHER-ALT
+           :in-theory (e/d (bvmod bvmult bvdiv bvlt BVLT-OF-BVPLUS-OF-BVUMINUS-OTHER-ALT
                                   BVPLUS-OF-UNARY-MINUS BVPLUS-OF-UNARY-MINUS-arg2)
                            (same-remainder-when-close-lemma
                             ;;SLICE-OF-+ BVLT-OF-PLUS-ARG2 ;can almost loop
@@ -9174,7 +9181,8 @@
   (implies (and (unsigned-byte-p size free)
                 (<= x free)
                 (natp x))
-           (unsigned-byte-p size x)))
+           (unsigned-byte-p size x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 
 ;i am using this instead of deftheory so that the runes don't have to exist yet (either when this form is submitted to define the list of runes or when it is used in a hint!)
@@ -9797,7 +9805,7 @@
                                    <-becomes-bvlt
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
-                                   collect-constants-over-<
+                                   ;collect-constants-over-<
                                    <-becomes-bvlt-alt)))))
 
 
@@ -12242,7 +12250,7 @@
   :hints
   (("Goal"
     :in-theory (e/d (bvmult bvplus bvchop-of-sum-cases) (BVPLUS-OF-PLUS2 BVPLUS-OF-PLUS BVCHOP-OF-* EXPONENTS-ADD
-                                                                         MOVE-NEGATIVE-ADDEND-2
+                                                                         ;MOVE-NEGATIVE-ADDEND-2
                                                                          EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
 
 (defthm bvmult-of-bvplus-hack-gen-constant-version
@@ -14735,6 +14743,12 @@
            (equal (bvif size (equal k (bvchop size x)) x y)
                   (bvif size (equal k (bvchop size x)) k y))))
 
+(local ; todo: move?
+ (defthm integerp-of-+-type
+   (implies (and (integerp x) (integerp y))
+            (integerp (+ x y)))
+   :rule-classes :type-prescription))
+
 ;gen
 (defthm bvlt-of-constant-and-slice
   (implies (and (syntaxp (quotep k))
@@ -14743,7 +14757,8 @@
                   (bvlt 6
                         (+ -1 (* 4 (+ 1 k))) ;gets computed
                         x)))
-  :hints (("Goal" :in-theory (enable bvlt slice-bound-lemma-gen2))))
+  :hints (("Goal"
+           :in-theory (enable bvlt slice-bound-lemma-gen2))))
 
 (defthm unsigned-byte-p-of-bvchop-bigger
   (equal (unsigned-byte-p '31 (bvchop '32 x))

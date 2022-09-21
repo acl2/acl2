@@ -4,7 +4,7 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
 ; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -312,7 +312,7 @@
     "If @('m') is 1, we also accept the keyword @(':result'),
      treating it the same as @(':result1')."))
   (b* ((err-msg (msg "~@0 But ~x1 is none of those." err-msg-preamble res))
-       ((unless (keywordp res)) (er-soft+ ctx t 1 err-msg-preamble res))
+       ((unless (keywordp res)) (er-soft+ ctx t 1 "~@0" err-msg))
        ((when (and (= m 1) (eq res :result))) (value 1))
        (name (symbol-name res))
        ((unless (and (> (length name) 6)
@@ -350,7 +350,7 @@
        (m (number-of-results old$ wrld))
        (err-msg-part (if (= m 1)
                          (msg "must be either a formal argument of ~x0, ~
-                               or the keyword :RESULT,
+                               or the keyword :RESULT, ~
                                or the keyword :RESULT1."
                               old$)
                        (msg "must be either a formal argument of ~x0, ~
@@ -358,12 +358,13 @@
                              a positive integer not exceeding ~
                              the number of results ~x1 of ~x0."
                             old$ m))))
-    (if (atom arg/res-list)
+    (if (and (atom arg/res-list)
+             (not (null arg/res-list)))
         (if (member-eq arg/res-list x1...xn)
             (value (list (list arg/res-list) nil))
           (b* ((err-msg-preamble (msg "Since the ~n0 ARG/RES-LIST component ~
                                        of the second input ~
-                                       is not a list, it ~@1"
+                                       is a non-NIL atom, it ~@1"
                                       (list k) err-msg-part))
                ((er j) (isodata-process-res arg/res-list m
                                             err-msg-preamble ctx state)))
