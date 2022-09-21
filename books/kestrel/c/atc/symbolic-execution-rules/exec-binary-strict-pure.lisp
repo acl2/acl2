@@ -19,7 +19,9 @@
 (include-book "integer-conversions")
 (include-book "value-integer-get")
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
@@ -30,6 +32,15 @@
   (implies (integerp x)
            (equal (ifix x)
                   x)))
+
+(defrulel truncate-lemma
+  (implies (and (natp a)
+                (natp b))
+           (and (<= 0
+                    (truncate a (expt 2 b)))
+                (<= (truncate a (expt 2 b))
+                    a)))
+  :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,30 +54,26 @@
      they are used to prove rules used during the symbolic execution."))
 
   (defruled sint->get-of-sint-from-schar
-    (implies (scharp x)
-             (equal (sint->get (sint-from-schar x))
-                    (schar->get x)))
+    (equal (sint->get (sint-from-schar x))
+           (schar->get x))
     :enable (sint-from-schar
              sint-integerp-alt-def))
 
   (defruled sint->get-of-sint-from-uchar
-    (implies (ucharp x)
-             (equal (sint->get (sint-from-uchar x))
-                    (uchar->get x)))
+    (equal (sint->get (sint-from-uchar x))
+           (uchar->get x))
     :enable (sint-from-uchar
              sint-integerp-alt-def))
 
   (defruled sint->get-of-sint-from-sshort
-    (implies (sshortp x)
-             (equal (sint->get (sint-from-sshort x))
-                    (sshort->get x)))
+    (equal (sint->get (sint-from-sshort x))
+           (sshort->get x))
     :enable (sint-from-sshort
              sint-integerp-alt-def))
 
   (defruled sint->get-of-sint-from-ushort
-    (implies (ushortp x)
-             (equal (sint->get (sint-from-ushort x))
-                    (ushort->get x)))
+    (equal (sint->get (sint-from-ushort x))
+           (ushort->get x))
     :enable (sint-from-ushort
              sint-integerp-alt-def))
 
@@ -130,7 +137,7 @@
                              (,exec-binary-strict-pure-of-op-and-ltype x y)
                              (,op-ltype-rtype x y))))
          (enables (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
-                                                   :shl))
+                                                   :shl :shr))
                       `(,exec-binary-strict-pure-of-op-and-ltype
                         ,op-values
                         ,@(and op-arithmetic-values
@@ -246,7 +253,7 @@
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
          (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
-                                                   :shl))
+                                                   :shl :shr))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -291,7 +298,7 @@
          (op (car ops))
          (op-kind (binop-kind op))
          (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
-                                                   :shl))
+                                                   :shl :shr))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -408,3 +415,226 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event (atc-exec-binary-rules-gen-all))
+
+
+
+(atc-exec-binary-rules-gen (list (binop-shl))
+                           (list (type-uchar))
+                           (list (type-uchar)))
+
+
+
+(progn
+  (DEFUND EXEC-BINARY-STRICT-PURE-OF-SHL (X Y)
+    (B* ((X (VALUE-RESULT-FIX X))
+         (Y (VALUE-RESULT-FIX Y))
+         ((WHEN (ERRORP X)) X)
+         ((WHEN (ERRORP Y)) Y))
+      (SHL-VALUES X Y)))
+  (DEFRULED EXEC-BINARY-STRICT-PURE-WHEN-SHL
+    (IMPLIES (AND (EQUAL OP (BINOP-SHL)))
+             (EQUAL (EXEC-BINARY-STRICT-PURE OP X Y)
+                    (EXEC-BINARY-STRICT-PURE-OF-SHL X Y)))
+    :ENABLE (EXEC-BINARY-STRICT-PURE EXEC-BINARY-STRICT-PURE-OF-SHL))
+  (DEFUND EXEC-BINARY-STRICT-PURE-OF-SHL-AND-UCHAR
+    (X Y)
+    (B* ((Y (VALUE-RESULT-FIX Y))
+         ((WHEN (ERRORP Y)) Y))
+      (SHL-VALUES (UCHAR-FIX X) Y)))
+  (DEFRULED
+    EXEC-BINARY-STRICT-PURE-OF-SHL-WHEN-UCHAR
+    (IMPLIES
+     (AND
+      (SYNTAXP
+       (OR (ATOM X)
+           (NOT (MEMBER-EQ X
+                           '(EXEC-IDENT EXEC-CONST
+                                        EXEC-ICONST EXEC-ARRSUB EXEC-MEMBER
+                                        EXEC-MEMBERP EXEC-ARRSUB-OF-MEMBER
+                                        EXEC-ARRSUB-OF-MEMBERP EXEC-UNARY
+                                        EXEC-CAST EXEC-BINARY-STRICT-PURE
+                                        EXEC-EXPR-PURE TEST-VALUE)))))
+      (UCHARP X))
+     (EQUAL (EXEC-BINARY-STRICT-PURE-OF-SHL X Y)
+            (EXEC-BINARY-STRICT-PURE-OF-SHL-AND-UCHAR X Y)))
+    :ENABLE
+    (EXEC-BINARY-STRICT-PURE-OF-SHL EXEC-BINARY-STRICT-PURE-OF-SHL-AND-UCHAR)))
+
+
+(DEFRULED
+  EXEC-BINARY-STRICT-PURE-OF-SHL-AND-UCHAR-WHEN-UCHAR
+  (IMPLIES
+   (AND
+    (SYNTAXP
+     (OR (ATOM Y)
+         (NOT (MEMBER-EQ Y
+                         '(EXEC-IDENT EXEC-CONST
+                                      EXEC-ICONST EXEC-ARRSUB EXEC-MEMBER
+                                      EXEC-MEMBERP EXEC-ARRSUB-OF-MEMBER
+                                      EXEC-ARRSUB-OF-MEMBERP EXEC-UNARY
+                                      EXEC-CAST EXEC-BINARY-STRICT-PURE
+                                      EXEC-EXPR-PURE TEST-VALUE)))))
+    (UCHARP Y)
+    (SHL-UCHAR-UCHAR-OKP X Y))
+   (EQUAL (EXEC-BINARY-STRICT-PURE-OF-SHL-AND-UCHAR X Y)
+          (SHL-UCHAR-UCHAR X Y)))
+  :ENABLE (EXEC-BINARY-STRICT-PURE-OF-SHL-AND-UCHAR
+           SHL-VALUES
+           SHL-INTEGER-VALUES SHL-UCHAR-UCHAR
+           SHL-UCHAR SHL-SINT SHL-UCHAR-UCHAR-OKP
+           SHL-UCHAR-OKP SHL-SINT-OKP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-SINTP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-UINTP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-SCHARP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-SINTP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-UINTP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-UCHARP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-SINTP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-UINTP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-SSHORTP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-SINTP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-UINTP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-USHORTP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-SINTP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-SINTP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-SINTP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-SINTP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-SINTP-AND-SINTP
+           UACONVERT-VALUES-WHEN-SINTP-AND-UINTP
+           UACONVERT-VALUES-WHEN-SINTP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-SINTP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-SINTP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-SINTP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-UINTP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-UINTP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-UINTP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-UINTP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-UINTP-AND-SINTP
+           UACONVERT-VALUES-WHEN-UINTP-AND-UINTP
+           UACONVERT-VALUES-WHEN-UINTP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-UINTP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-UINTP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-UINTP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-SINTP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-UINTP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-SLONGP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-SINTP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-UINTP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-ULONGP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-SINTP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-UINTP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-SLLONGP-AND-ULLONGP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-SCHARP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-UCHARP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-SSHORTP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-USHORTP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-SINTP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-UINTP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-SLONGP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-ULONGP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-SLLONGP
+           UACONVERT-VALUES-WHEN-ULLONGP-AND-ULLONGP
+           PROMOTE-VALUE-WHEN-SCHARP
+           PROMOTE-VALUE-WHEN-UCHARP
+           PROMOTE-VALUE-WHEN-SSHORTP
+           PROMOTE-VALUE-WHEN-USHORTP
+           PROMOTE-VALUE-WHEN-SINTP
+           PROMOTE-VALUE-WHEN-UINTP
+           PROMOTE-VALUE-WHEN-SLONGP
+           PROMOTE-VALUE-WHEN-ULONGP
+           PROMOTE-VALUE-WHEN-SLLONGP
+           PROMOTE-VALUE-WHEN-ULLONGP
+           RESULT-INTEGER-VALUE
+           VALUE-INTEGER->GET-WHEN-SCHARP
+           VALUE-INTEGER->GET-WHEN-UCHARP
+           VALUE-INTEGER->GET-WHEN-SSHORTP
+           VALUE-INTEGER->GET-WHEN-USHORTP
+           VALUE-INTEGER->GET-WHEN-SINTP
+           VALUE-INTEGER->GET-WHEN-UINTP
+           VALUE-INTEGER->GET-WHEN-SLONGP
+           VALUE-INTEGER->GET-WHEN-ULONGP
+           VALUE-INTEGER->GET-WHEN-SLLONGP
+           VALUE-INTEGER->GET-WHEN-ULLONGP
+           SINT->GET-OF-SINT-FROM-SCHAR
+           SINT->GET-OF-SINT-FROM-UCHAR
+           SINT->GET-OF-SINT-FROM-SSHORT
+           SINT->GET-OF-SINT-FROM-USHORT
+           INTEGER-TYPE-BITS
+           VALUE-INTEGER VALUE-SINT-TO-SINT
+           VALUE-UINT-TO-UINT VALUE-SLONG-TO-SLONG
+           VALUE-ULONG-TO-ULONG
+           VALUE-SLLONG-TO-SLLONG
+           VALUE-ULLONG-TO-ULLONG
+           SINT-INTEGERP-ALT-DEF
+           UINT-INTEGERP-ALT-DEF
+           SLONG-INTEGERP-ALT-DEF
+           ULONG-INTEGERP-ALT-DEF
+           SLLONG-INTEGERP-ALT-DEF
+           ULLONG-INTEGERP-ALT-DEF
+           UINT-MOD ULONG-MOD ULLONG-MOD
+           VALUE-UNSIGNED-INTEGERP-ALT-DEF
+           INTEGER-TYPE-RANGEP
+           INTEGER-TYPE-MIN INTEGER-TYPE-MAX)
+  :DISABLE (TRUNCATE REM FLOOR MOD IFIX
+                     equal-of-sint
+                     equal-of-error
+                     equal-of-uint
+                     equal-of-sllong
+                     equal-of-slong
+                     equal-of-ullong
+                     equal-of-ulong
+                     equal-of-value-schar
+                     equal-of-value-sshort
+                     equal-of-value-uchar
+                     equal-of-value-ushort
+
+                     ))
