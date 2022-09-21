@@ -29,6 +29,7 @@
 (include-book "eval")
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "alist-equiv")
+(include-book "lists")
 (include-book "svex-lattice")
 (include-book "std/util/defprojection" :dir :system)
 (local (include-book "std/alists/hons-remove-assoc" :dir :system))
@@ -2103,8 +2104,38 @@
                   (refval (svex-env-lookup trip.refvar ref-env)))
                (4vec-<<= (4vec-bit?! testval valval 0)
                          (4vec-bit?! testval refval 0))))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist-fix)))))
+    :hints(("Goal" :in-theory (enable svar-override-triplelist-fix))))
 
+  (defthmd svar-override-triplelist-env-ok-<<=-of-empty-override-env
+    (svar-override-triplelist-env-ok-<<= x nil ref-envs)))
+
+
+
+(define svar-override-triplelist-envlists-ok-<<= ((x svar-override-triplelist-p)
+                                                  (override-envs svex-envlist-p)
+                                                  (ref-envs svex-envlist-p))
+  (if (atom override-envs)
+      t
+    (and (svar-override-triplelist-env-ok-<<= x (car override-envs) (car ref-envs))
+         (svar-override-triplelist-envlists-ok-<<= x (cdr override-envs) (cdr ref-envs)))))
+
+
+(define svex-envlist-removekeys ((vars svarlist-p)
+                                 (envs svex-envlist-p))
+  (if (atom envs)
+      nil
+    (cons (svex-env-removekeys vars (car envs))
+          (svex-envlist-removekeys vars (cdr envs))))
+  ///
+  (defthm svex-envlist-removekeys-of-cons
+    (Equal (svex-envlist-removekeys vars (cons env envs))
+           (cons (svex-env-removekeys vars env)
+                 (svex-envlist-removekeys vars envs))))
+
+  (defthm svex-envlist-removekeys-of-append
+    (Equal (svex-envlist-removekeys vars (append envs envs2))
+           (append (svex-envlist-removekeys vars envs)
+                   (svex-envlist-removekeys vars envs2)))))
 
 
 (define intermediate-override-env ((triples svar-override-triplelist-p)

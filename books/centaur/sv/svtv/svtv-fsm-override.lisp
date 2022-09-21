@@ -498,22 +498,6 @@ properties of the SVTV and its conditional overrides.</li>
 
 
 
-(define svex-envlist-removekeys ((vars svarlist-p)
-                                 (envs svex-envlist-p))
-  (if (atom envs)
-      nil
-    (cons (svex-env-removekeys vars (car envs))
-          (svex-envlist-removekeys vars (cdr envs))))
-  ///
-  (defthm svex-envlist-removekeys-of-cons
-    (Equal (svex-envlist-removekeys vars (cons env envs))
-           (cons (svex-env-removekeys vars env)
-                 (svex-envlist-removekeys vars envs))))
-
-  (defthm svex-envlist-removekeys-of-append
-    (Equal (svex-envlist-removekeys vars (append envs envs2))
-           (append (svex-envlist-removekeys vars envs)
-                   (svex-envlist-removekeys vars envs2)))))
 
 
 (define svex-override-triplelist-fsm-inputs-ok ((triples svex-override-triplelist-p)

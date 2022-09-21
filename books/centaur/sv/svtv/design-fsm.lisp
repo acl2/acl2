@@ -147,7 +147,11 @@
              (<= (moddb-mod-totalwires
                   (moddb-modname-get-index (design->top x) new-moddb) new-moddb)
                  (len new-aliases)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret svarlist-addr-p-aliases-vars-of-<fn>
+    (implies (not err)
+             (svarlist-addr-p (aliases-vars new-aliases)))))
 
 
 (defprod flatnorm-setup
@@ -165,7 +169,40 @@
        (assigns (if setup.monotonify
                     (svex-alist-monotonify assigns)
                   assigns)))
-    (make-flatnorm-res :assigns assigns :delays delays :constraints constraints)))
+    (make-flatnorm-res :assigns assigns :delays delays :constraints constraints))
+  ///
+  (defret svarlist-addr-p-assigns-vars-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-vars res.assigns)))))
+
+  (defret svarlist-addr-p-assigns-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-keys res.assigns)))))
+
+  (defret svarlist-addr-p-delay-vars-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-vars res.delays)))))
+
+  (defret svarlist-addr-p-delay-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-keys res.delays)))))
+
+  (defret svarlist-addr-p-constraint-vars-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (constraintlist-vars res.constraints)))))
+
+  (defret no-duplicate-assigns-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (no-duplicatesp-equal (svex-alist-keys res.assigns))))
+
+  (defret no-duplicate-delay-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (no-duplicatesp-equal (svex-alist-keys res.delays)))))
 
 
 (defsection no-duplicate-svex-alist-keys-of-fast-alist-clean

@@ -1068,6 +1068,13 @@ svex-assigns-compose)).</li>
              (not (svex-lookup v new-x)))
     :hints(("Goal" :in-theory (enable svex-lookup))))
 
+  (defret no-duplicate-keys-of-<fn>
+    (implies (and (no-duplicatesp-equal (svex-alist-keys acc))
+                  (no-duplicatesp-equal (svex-alist-keys x))
+                  (not (intersectp-equal (svex-alist-keys x) (svex-alist-keys acc))))
+             (no-duplicatesp-equal (svex-alist-keys new-x)))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
   (local (in-theory (enable svex-alist-fix))))
 
 
@@ -1132,7 +1139,7 @@ svex-assigns-compose)).</li>
        ;; Collect all variables referenced and add delays as needed.
        (delayvars (svarlist-collect-delays (svexlist-collect-vars (svex-alist-vals res-assigns))))
        (res-delays (delay-svarlist->delays delayvars))
-       (trunc-delays (svar-map-truncate-by-var-decls res-delays var-decls nil)))
+       (trunc-delays (fast-alist-clean (svar-map-truncate-by-var-decls res-delays var-decls nil))))
     (mv final-assigns trunc-delays norm-constraints svexarr))
   ///
   (deffixequiv svex-normalize-assigns)
@@ -1174,6 +1181,30 @@ svex-assigns-compose)).</li>
                 (svex-lookup k x))
          :hints(("Goal" :in-theory (e/d (svex-lookup)
                                         (fast-alist-clean))))))
+
+  (local (defthm svex-lookup-badguy-when-svarlist-addr-p-keys
+           (implies (svarlist-addr-p (svex-alist-keys x))
+                    (not (svex-lookup (svarlist-addr-p-badguy y) x)))
+           :hints(("Goal" :in-theory (enable svex-lookup svex-alist-keys svarlist-addr-p)))))
+  
+  (local (defthm svarlist-addr-p-keys-of-fast-alist-clean
+           (implies (svarlist-addr-p (svex-alist-keys x))
+                    (svarlist-addr-p (svex-alist-keys (fast-alist-clean x))))))
+
+  (local (defthm no-duplicate-keys-of-fast-alist-fork
+           (implies (no-duplicatesp-equal (svex-alist-keys acc))
+                    (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x acc))))
+           :hints(("Goal" :in-theory (enable svex-alist-keys
+                                             svex-lookup)))))
+  
+  (local (defthm no-duplicate-keys-of-fast-alist-clean
+           (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
+           :hints(("Goal" :in-theory (enable svex-alist-keys
+                                             fast-alist-clean)))))
+  
+  (local (defthm no-duplicate-keys-of-fast-alist-clean
+           (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
+           :hints(("Goal" :in-theory (enable svex-alist-keys)))))
   
   (defret keys-of-svex-normalize-assigns
     (implies (svarlist-addr-p (aliases-vars aliases))
@@ -1191,7 +1222,13 @@ svex-assigns-compose)).</li>
 
   (defret vars-of-svex-normalize-assigns-constraints
     (implies (svarlist-addr-p (aliases-vars aliases))
-             (svarlist-addr-p (constraintlist-vars res-constraints)))))
+             (svarlist-addr-p (constraintlist-vars res-constraints))))
+
+  (defret no-duplicate-keys-of-<fn>-assigns
+    (no-duplicatesp-equal (svex-alist-keys res-assigns)))
+
+  (defret no-duplicate-keys-of-<fn>-delays
+    (no-duplicatesp-equal (svex-alist-keys res-delays))))
 
 
 ;; (define svar-map-compose ((x svar-map-p) (al svex-alist-p))

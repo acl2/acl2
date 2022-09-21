@@ -179,6 +179,24 @@
                                       svex-apply
                                       svex-eval))))
 
+  (defret eval-<fn>-when-svar-override-triplelist-env-ok-append-envs
+    (implies (and (svar-override-triplelist-env-ok x env ref-env)
+                  ;; (svex-envs-agree (svar-override-triplelist->refvars x) env ref-env)
+                  (subsetp-equal (svar-override-triplelist->refvars x)
+                                 (alist-keys (svex-env-fix ref-env)))
+                  (not (intersectp-equal (alist-keys (svex-env-fix ref-env))
+                                         (svar-override-triplelist-override-vars x))))
+             (equal (svex-alist-eval override-alist (append ref-env env))
+                    (svex-env-extract (svar-override-triplelist->refvars x) ref-env)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval
+                                      svar-override-triplelist->refvars
+                                      svar-override-triplelist-override-vars
+                                      svar-override-triplelist-env-ok
+                                      svex-env-extract
+                                      svex-envs-agree
+                                      svex-apply
+                                      svex-eval))))
+
   (local (defthm equal-of-4vec-bit?!-implies-<<=
          (implies (and (equal (4vec-bit?! test then1 else1) (4vec-bit?! test then2 else1))
                        (4vec-<<= then3 then2))

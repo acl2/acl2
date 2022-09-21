@@ -307,6 +307,7 @@
                               x)
          :hints ((witness) (witness))))
 
+(local (include-book "std/lists/sets" :dir :system))
 
 (define svtv-data-rewrite-flatnorm (svtv-data &key ((count natp) '4) (verbosep 'nil))
   :guard ;; (or (svtv-data->flatnorm-validp svtv-data)
@@ -314,7 +315,8 @@
   (not (svtv-data->phase-fsm-validp svtv-data))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
+                     '(:in-theory (enable svtv-data$ap
+                                          acl2::subsetp-witness-rw)))
                 )
   :returns new-svtv-data
   (time$
@@ -339,7 +341,8 @@
   (not (svtv-data->phase-fsm-validp svtv-data))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
+                     '(:in-theory (enable svtv-data$ap
+                                          acl2::subsetp-witness-rw)))
                 )
   :returns new-svtv-data
   (time$

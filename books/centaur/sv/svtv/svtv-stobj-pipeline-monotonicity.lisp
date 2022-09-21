@@ -170,6 +170,11 @@
   (svex-alist-monotonic-p (svex-alist-monotonify x))
   :hints(("Goal" :in-theory (enable svex-alist-monotonic-p))))
 
+(local
+ (defthm svex-alist-monotonic-p-of-svex-alist-monotonify-equiv
+   (implies (svex-alist-eval-equiv y (svex-alist-monotonify x))
+            (svex-alist-monotonic-p y))))
+
 (defthm svtv-data-obj-ok-implies-flatnorm-assigns-monotonic
   (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
                 (svtv-data-obj->flatnorm-validp obj)

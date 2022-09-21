@@ -355,7 +355,10 @@
 
   (defthm keys-of-svex-alist-normalize-concats
     (iff (svex-lookup v (svex-alist-normalize-concats x :verbosep verbosep))
-         (svex-lookup v x))))
+         (svex-lookup v x)))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys new-x) (svex-alist-keys x))))
 
 
 

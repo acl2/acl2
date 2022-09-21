@@ -238,6 +238,8 @@
                    spec))
        ((flatnorm-res flatnorm)))
     (and (ec-call (svex-alist-eval-equiv flatnorm.assigns spec.assigns))
+         (subsetp-equal (svex-alist-vars flatnorm.assigns) (svex-alist-vars spec.assigns))
+         (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
          (equal flatnorm.delays spec.delays)
          (equal flatnorm.constraints spec.constraints)))
   ///
@@ -1324,6 +1326,8 @@
                 (svtv-normalize-assigns flatten aliases flatnorm-setup)
                 assigns))
    :msg "; Svtv-data flatnorm: ~st seconds, ~sa bytes.~%"))
+
+(local (include-book "std/lists/sets" :dir :system))
 
 (define svtv-data-compute-flatnorm (svtv-data)
   :guard (and (svtv-data->flatten-validp svtv-data)
