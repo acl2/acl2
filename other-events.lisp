@@ -12948,7 +12948,7 @@
           :guard-hints (("Goal" :in-theory (enable state-p1)))))
   (cond
    ((and (keywordp dir)
-         (project-dir-lookup dir (project-dir-alist (w state)) nil))) 
+         (project-dir-lookup dir (project-dir-alist (w state)) nil)))
    ((raw-include-book-dir-p state)
     (or (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir!-alist state)))
         (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir-alist state)))))
@@ -23893,7 +23893,10 @@
             (t (princ (format nil "                  <~s " trace-level)
                       *trace-output*))))))
       (cond ((eq evisc-tuple :print)
-             (format *trace-output* "~s~%" x))
+; We avoid using pprint since it is preceded by a newline.
+             (let ((*print-pretty* t))
+               (prin1 x *trace-output*))
+             (terpri *trace-output*))
             (t (trace-ppr x evisc-tuple msgp *the-live-state*)))
       (when (not (eq direction :in))
         (decf *trace-level*))
@@ -24351,7 +24354,9 @@
                 (declare (ignorable traced-fn trace-level arglist))
                 (custom-trace-ppr :in
                                   ,(if hide
-                                       `(trace-hide-world-and-state ,entry)
+                                       `(trace-hide-world-and-state
+                                         ,entry
+                                         ,(eq evisc-tuple :print))
                                      entry)
                                   ,(or gevisc-tuple evisc-tuple)
                                   ,entry-msgp)))
@@ -24385,7 +24390,9 @@
                gcond
                `(custom-trace-ppr :out
                                   ,(if hide
-                                       `(trace-hide-world-and-state ,exit)
+                                       `(trace-hide-world-and-state
+                                         ,exit
+                                         ,(eq evisc-tuple :print))
                                      exit)
                                   ,(or gevisc-tuple evisc-tuple)
                                   ,exit-msgp))

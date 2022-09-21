@@ -10354,7 +10354,7 @@
                            (find-package-fast
                             (current-package *the-live-state*))))))))
 
-(defun-one-output trace-hide-world-and-state (l)
+(defun trace-hide-world-and-state (l &optional no-stobj-hiding)
 
 ; This function intuitively belongs over in init.lisp but it is here so
 ; that it will get compiled so we won't get stack overflow when
@@ -10367,16 +10367,18 @@
 ; If that changes then we should use protect-mv there as we do in some other
 ; places.
 
-  (let* ((stobj-pair (rassoc l *user-stobj-alist*))
-         (l (cond
-             (stobj-pair
-              (intern-in-package-of-symbol
-               (stobj-print-name (car stobj-pair))
-               (car stobj-pair)))
-             (t ; consider local stobjs
-              (or (and (arrayp l)
-                       (stobj-print-symbol l *user-stobj-alist*))
-                  l))))
+  (let* ((l (if no-stobj-hiding
+                l
+              (let ((stobj-pair (rassoc l *user-stobj-alist*)))
+                (cond
+                 (stobj-pair
+                  (intern-in-package-of-symbol
+                   (stobj-print-name (car stobj-pair))
+                   (car stobj-pair)))
+                 (t ; consider local stobjs
+                  (or (and (arrayp l)
+                           (stobj-print-symbol l *user-stobj-alist*))
+                      l))))))
          (pair (assoc-eq-trace-alist l *trace-alist*)))
     (cond (pair (cdr pair))
           ((atom l) l)
@@ -10400,8 +10402,8 @@
 ;                 (eq (car (cdr (car l))) 'global-value))
 ;            '|some-other-world-perhaps|)
 
-          (t (cons (trace-hide-world-and-state (car l))
-                   (trace-hide-world-and-state (cdr l)))))))
+          (t (cons (trace-hide-world-and-state (car l) no-stobj-hiding)
+                   (trace-hide-world-and-state (cdr l) no-stobj-hiding))))))
 
 (defun-one-output get-stobjs-out-for-declare-form (fn)
 
