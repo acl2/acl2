@@ -160,6 +160,7 @@
 
 (in-theory (disable integer-length)) ; todo
 
+;todo: just use a trim rule?
 (defthm getbit-of-bvmult-tighten
   (implies (and (< (+ 1 SIZE1) SIZE2)
                 (< 0 size2)
