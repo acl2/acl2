@@ -526,23 +526,6 @@
                  :in-theory (disable svtv-data$c-pipeline-okp-necc)))))))
   
 
-;; (define svtv-data$c-pipeline-okp (svtv-data$c (results svex-alist-p))
-;;   :enabled t
-;;   (non-exec
-;;    (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
-;;         (probes (svtv-data$c->pipeline-probes svtv-data$c))
-;;         (result
-;;          (svtv-probealist-extract-alist
-;;           probes
-;;           (svtv-fsm-run-compile
-;;            (svtv-data$c->pipeline-inputs svtv-data$c)
-;;            (svtv-data$c->pipeline-overrides svtv-data$c)
-;;            (svtv-data$c->pipeline-initst svtv-data$c)
-;;            fsm
-;;            (svtv-probealist-outvars probes) nil))))
-;;      (ec-call (svex-alist-eval-equiv results result)))))
-
-
 (define svtv-data$a-pipeline-okp (x (results svex-alist-p))
   :enabled t :hooks nil
   (non-exec (svtv-data$c-pipeline-okp x results)))

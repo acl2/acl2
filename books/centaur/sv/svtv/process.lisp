@@ -37,10 +37,12 @@
 (include-book "../mods/compile")
 (include-book "../svex/4vmask")
 (include-book "../svex/assigns-compose")
+(include-book "../svex/unroll")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/auto-bindings" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
 (include-book "std/util/defredundant" :dir :system)
+(include-book "centaur/misc/hons-remove-dups" :dir :System)
 (local (include-book "../svex/alist-thms"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/alists/fal-extract" :dir :system))
@@ -313,7 +315,7 @@
                    :exec (eql nphases phase)))
         (mv nil (and state-machine
                      (svex-alist-compose-svtv-phases
-                      (svtv-composedata->nextstates data)
+                      (nth phase (svtv-composedata->nextstates data))
                       (1- (lposfix nphases)) data))))
        (phase-outalist (svex-alist-compose (svtv-outputs->outalist outs phase) updates))
        (composed-outalist (svex-alist-compose-svtv-phases
@@ -328,6 +330,7 @@
     (prog2$ (fast-alist-free (car x))
             (fast-alist-free-list (cdr x)))))
 
+(local (in-theory (disable hons-dups-p)))
 
 (define svtv-compile-lazy ((nphases posp)
                             (ins svtv-lines-p)
@@ -339,11 +342,23 @@
                             (state-machine))
   :returns (mv (outalist svex-alist-p)
                (final-state svex-alist-p))
+  :prepwork ((local (defthm svarlist-p-of-remove-duplicates
+                      (implies (svarlist-p x)
+                               (svarlist-p (remove-duplicates-equal x))))))
   (b* (((with-fast prev-state updates state-updates))
        (in-alists (svtv-allphases-inputs 0 nphases ins overrides in-vars))
-       (data (make-svtv-composedata :nextstates state-updates :input-substs in-alists :initst prev-state))
+       (state-vars (acl2::hons-remove-dups (svex-alist-keys state-updates)))
+       (state-updates (with-fast-alist state-updates
+                        (svex-alist-extract state-vars state-updates)))
+       (prev-state    (with-fast-alist prev-state
+                        (svex-alist-extract state-vars prev-state)))
+       (composedata (svtv-precompose-phases (lposfix nphases)
+                                            (make-svtv-precompose-data
+                                             :nextstate state-updates
+                                             :input-substs (make-fast-alists in-alists)
+                                             :initst prev-state)))
        ((mv outalist final-state)
-        (svtv-compile-phases-lazy 0 nphases outs updates data state-machine)))
+        (svtv-compile-phases-lazy 0 nphases outs updates composedata state-machine)))
     (fast-alist-free-list in-alists)
     (clear-memoize-table 'svex-compose)
     (clear-memoize-table 'svex-compose-svtv-phases-call)

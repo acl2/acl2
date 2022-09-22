@@ -282,11 +282,11 @@
 
 
 (define defsvtv-compute-pipeline-setup ((outs+ true-list-listp)
-                                            (ins true-list-listp)
-                                            (overrides true-list-listp)
-                                            (initial-state-vars)
-                                            (statevars svarlist-p)
-                                            (namemap svtv-name-lhs-map-p))
+                                        (ins true-list-listp)
+                                        (overrides true-list-listp)
+                                        (initial-state-vars)
+                                        (statevars svarlist-p)
+                                        (namemap svtv-name-lhs-map-p))
   :returns (setup pipeline-setup-p)
   (b* ((probes (defsvtv-compute-probes outs+))
        (nphases (svtv-lines-max-length outs+))
@@ -316,23 +316,6 @@
                   (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
   :hints(("Goal" :in-theory (enable svtv-data$ap))))
 
-(define defsvtv-compute-pipeline ((outs+ true-list-listp)
-                                  (ins true-list-listp)
-                                  (overrides true-list-listp)
-                                  (simplify booleanp)
-                                  (pipe-simp svex-simpconfig-p)
-                                  (initial-state-vars)
-                                  svtv-data)
-  :guard (and (svtv-data->phase-fsm-validp svtv-data)
-              (svtv-data->cycle-fsm-validp svtv-data))
-  (b* ((namemap (svtv-data->namemap svtv-data))
-       (fsm (svtv-data->cycle-fsm svtv-data))
-       (statevars (svex-alist-keys (base-fsm->nextstate fsm)))
-       (setup (defsvtv-compute-pipeline-setup
-                outs+ ins overrides initial-state-vars statevars namemap))
-       ((mv updatedp svtv-data) (svtv-data-maybe-compute-pipeline setup svtv-data :simp pipe-simp))
-       (svtv-data (svtv-data-maybe-rewrite-pipeline (and updatedp simplify) svtv-data)))
-    svtv-data))
 
 
 
@@ -499,6 +482,10 @@
                   (implies (not skip-cycle)
                            (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t))))))
 
+(local (defthm intersection-equal-under-iff
+         (iff (intersection-equal x y)
+              (intersectp-equal x y))))
+
 
 (define defsvtv-stobj-main ((x defsvtv-args-p)
                             ;; (keep-final-state)
@@ -515,7 +502,15 @@
        ((when err)
         (mv err nil svtv-data))
        ((defsvtv-args x))
-       ((mv updatedp svtv-data) (svtv-data-maybe-compute-pipeline pipeline-setup svtv-data :simp x.pipe-simp))
+       (bad-clocks (intersection-equal x.clocks (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+       ((when bad-clocks)
+        (mv (msg "Clocks cannot include previous-state variables -- ~x0~%" bad-clocks)
+            nil svtv-data))
+       ((mv updatedp svtv-data)
+        (svtv-data-maybe-compute-pipeline
+         pipeline-setup svtv-data
+         :simp x.pipe-simp
+         :precomp-inputs x.clocks))
        (svtv-data (svtv-data-maybe-rewrite-pipeline (and updatedp x.simplify) svtv-data))
        (svtv (svtv-data-to-svtv x svtv-data)))
     (mv nil svtv svtv-data)))
