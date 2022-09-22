@@ -38,6 +38,19 @@
                   (bvmult (+ xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED bvmult))))
 
+(defthm bvmult-tighten-when-power-of-2p
+  (implies (and (syntaxp (quotep x))
+                (power-of-2p x)
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
+                (< (+ (lg x) ysize) size)
+                (natp size)
+                ;; (force (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced ysize y))
+                )
+           (equal (bvmult size x y)
+                  (bvmult (+ (lg x) ysize) x y)))
+  :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED bvmult power-of-2p))))
+
 (defthmd floor-when-usb-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (natp n)
@@ -659,5 +672,3 @@
   :hints (("Goal" :use (:instance plus-becomes-bvplus-arg1-free)
            :in-theory (e/d (<-of-constant-when-unsigned-byte-p-size-param)
                            ( plus-becomes-bvplus-arg1-free)))))
-
-

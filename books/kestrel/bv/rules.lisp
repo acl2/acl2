@@ -7065,3 +7065,79 @@
                 (unsigned-byte-p-forced xsize x))
            (not (equal x k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+;loops with times-of-2-and-bvchop-of-sub-1
+(defthmd bvchop-of-*-when-power-of-2p
+  (implies (and (power-of-2p shift)
+                (integerp x)
+                (natp size)
+                (natp shift))
+           (equal (bvchop size (* shift x))
+                  (* shift (bvchop (- size (lg shift)) x))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthmd <-of-*-when-power-of-2p
+  (implies (and (power-of-2p x)
+                (unsigned-byte-p size y)
+                (integerp x)
+                (natp size))
+           (<= (* x y)
+               (- (expt 2 (+ size (lg x)))
+                  (expt 2 (lg x)))))
+  :hints (("Goal" :cases ((< y (expt 2 size)))
+           :nonlinearp t
+           :in-theory (enable power-of-2p unsigned-byte-p expt-of-+))))
+
+(defthm <-of-lg-when-power-of-2p
+  (implies (and (power-of-2p pow) ; needed?
+                (integerp x)
+                (<= 0 x)
+                (<= 0 pow))
+           (equal (< x (lg pow))
+                  (< (expt 2 x) pow))))
+
+(defthm <=-of-bvchop-of-*-when-power-of-2p-linear
+  (implies (and (power-of-2p pow)
+                (< pow (expt 2 size))
+                (integerp x)
+                (natp size)
+                (natp pow))
+           (<= (bvchop size (* pow x))
+               (- (expt 2 size)
+                  pow)))
+  :rule-classes ((:linear :trigger-terms ((bvchop size (* pow x)))))
+  :hints (("Goal" :in-theory (enable  bvchop-of-*-when-power-of-2p)
+           :use (:instance <-of-*-when-power-of-2p
+                           (x pow)
+                           (y (bvchop (+ size (- (lg pow))) x))
+                           (size (+ size (- (lg pow))))))))
+
+(defthm unsigned-byte-p-of-bvplus-and-bvmult-of-power-of-2
+  (implies (and (< smallsize size)
+                (power-of-2p pow)
+                (< pow (expt 2 smallsize)) ; drop?
+                (< x pow)
+                (natp x)
+                (integerp y)
+                (natp size)
+                (natp smallsize)
+                (natp pow))
+           (unsigned-byte-p smallsize (bvplus size x (bvmult smallsize pow y))))
+  :hints (("Goal"
+           :in-theory (e/d (bvplus bvmult bvchop-of-sum-cases unsigned-byte-p)
+                                  (bvchop-of-*-when-power-of-2p)))))
+
+;useful for indexing
+(defthm bvplus-of-bvmult-when-power-of-2p-tighten
+  (implies (and (< smallsize size) ; prevents loops
+                (syntaxp (quotep pow))
+                (power-of-2p pow)
+                (< pow (expt 2 smallsize)) ; drop?
+                (< x pow) ; the value being added in fits in the 0s created by the shift
+                (natp size)
+                (natp x)
+                (integerp y)
+                (natp smallsize)
+                (natp pow))
+           (equal (bvplus size x (bvmult smallsize pow y))
+                  (bvplus smallsize x (bvmult smallsize pow y)))))
