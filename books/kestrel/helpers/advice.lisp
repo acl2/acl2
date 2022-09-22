@@ -235,6 +235,10 @@
               ;; book-map
               (true-listp pre-commands)))))
 
+(defun make-rec (name type object confidence-percent book-map pre-commands)
+  (declare (xargs :guard t)) ; todo: strengthen
+  (list name type object confidence-percent book-map pre-commands))
+
 (defund update-pre-commands (pre-commands rec)
   (declare (xargs :guard (recommendationp rec)))
   (append (take 5 rec)
@@ -366,7 +370,9 @@
                         (:add-use-hint (fms-to-string-one-line ":use ~x0" (acons #\0 object nil)))
                         (:exact-hints (fms-to-string-one-line ":hints ~x0" (acons #\0 object nil)))
                         (t (er hard? 'show-successful-recommendation "Unknown rec type: ~x0." type)))))
-    (if pre-commands
+    (if (and pre-commands
+             (not (eq :unknown pre-commands)) ; todo: eventually eliminate this
+             )
         (if (consp (cdr pre-commands))
             ;; More than one pre-command:
             (cw "~s0, after doing ~&1~%" english-rec pre-commands)
@@ -531,7 +537,7 @@
          (name (concatenate 'string "ML" (nat-to-string rec-num)))
          )
       (mv nil ; no error
-          (list name type-keyword parsed-object confidence-percent book-map)
+          (make-rec name type-keyword parsed-object confidence-percent book-map :unknown)
           state))))
 
 ;; Returns (mv erp parsed-recommendations state).
@@ -787,6 +793,7 @@
                                          theorem-otf-flg
                                          step-limit
                                          state))
+       (rec (update-pre-commands nil rec)) ; update once we use the book map
        (- (if provedp
               (cw-success-message rec)
             (let ((translated-hyp (translate-term hyp 'try-add-hyp (w state))))
@@ -1280,12 +1287,12 @@
                          (and (not (rec-presentp :exact-hints hints seen-recs))
                               ;; make a new rec:
                               (list
-                               (list (concatenate 'string "H" (nat-to-string num))
-                                     :exact-hints ; new kind of rec, to replace all hints
-                                     (cadr res)
-                                     0
-                                     nil
-                                     nil))))))))))))
+                               (make-rec (concatenate 'string "H" (nat-to-string num))
+                                         :exact-hints ; new kind of rec, to replace all hints
+                                         (cadr res)
+                                         0
+                                         nil
+                                         nil))))))))))))
 
  (defun make-recs-from-events (events num acc)
    (if (endp events)
