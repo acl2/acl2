@@ -187,6 +187,7 @@ T(x), thus establishing the invariant.</li>
 (defun finite-difference-event (fn
                                 term-to-replace ; gets translated
                                 rules
+                                extra-guard
                                 extra-rules
                                 skip-terminationp
                                 verify-guards
@@ -330,7 +331,9 @@ T(x), thus establishing the invariant.</li>
                                                                     ))
                                                                guard-hints)))))))
        ;; must submit the defun now, so that it is there for simplify-defun to see:
-       (state (submit-events-quiet new-fn-pre-events state))
+       (state (if verbose
+                  (submit-events-aux new-fn-pre-events :verbose state)
+                (submit-events-quiet new-fn-pre-events state)))
        ;;step 2:
 
        ;; Now use simplify-defun to simplify the update of v in the rec. call, yielding the new-fn-pre2 and pre-becomes-pre2-theorem:
@@ -371,9 +374,15 @@ T(x), thus establishing the invariant.</li>
        (new-fn-body (replace-in-untranslated-term new-fn-pre2-body (acons untranslated-term-to-replace v nil))) ;untranslated! ;;TODO: Think about how this might work with lets now...
        (new-fn-body (replace-in-untranslated-term new-fn-body (acons term-to-replace v nil)))
        (new-fn-body (rename-fns-in-untranslated-term new-fn-body (acons new-fn-pre2-name new-fn nil))) ;untranslated!
-       (guard `(equal ,v ,term-to-replace))
+       (equality-guard `(equal ,v ,term-to-replace))
+       ;; todo: call this new-guard?:
+       (guard (if (eq :none extra-guard)
+                  equality-guard
+                ;; todo: maybe clean this up:
+                `(and ,extra-guard
+                      ,equality-guard)))
        (new-fn-body (if check-guard
-                        `(if (not (mbt ,guard))
+                        `(if (not (mbt ,equality-guard)) ; todo: do we want the extra-guard to be checked here?
                              ,error-value ;;todo: support :auto, which means try to find a good base case (by looking at ifs and mbts) -- maybe even combine this test into an existing test
                            ,new-fn-body)
                       new-fn-body))
@@ -386,10 +395,10 @@ T(x), thus establishing the invariant.</li>
        ;;                        body ;not sure which body to use here, so let's try the original function's body
        ;;                        (w state))
 
-       (guard (reconstruct-macros-in-term guard)) ;(untranslate-term guard (w state))
+       (guard (reconstruct-macros-in-term guard)) ;(untranslate-term guard (w state)) ; why?
        (declares (add-guard-conjunct guard declares)) ;;TODO: The guard hints should be exactly the RULES, plus the old guard hints?
 ;         (declares (if guard-verifiedp declares (add-verify-guards-nil declares)))  ;keeps the guard about v from triggering guard verification
-       (wrapper-guard (fn-guard fn (w state))) ;TODO: what about other declares?
+       (wrapper-guard (fn-guard fn (w state))) ;TODO: what about other declares? ;; TODO: Get the untranslated guard (but what about declares, stobjs, etc.)?
        (new-fn-declares (fixup-ignores declares (cons v formals) new-fn-body))
        (new-fn-declares (replace-xarg-in-declares
                          :hints
@@ -480,12 +489,14 @@ T(x), thus establishing the invariant.</li>
                                           ;; hints (guard of new fun
                                           ;; is the same as for the
                                           ;; wrapper [and the old
-                                          ;; fn] except it required
-                                          ;; that v = its expression, which the wrapper establishes:
+                                          ;; fn] except it requires
+                                          ;; that v = its expression, which the wrapper establishes.
+                                          ;; BUT: the establishing expression itself may have a guard (TODO: Split out an applicability condition).
                                           :guard-hints ,(if (eq :auto guard-hints)
                                                             `(("Goal" :do-not '(generalize eliminate-destructors)
                                                                :do-not-induct t
-                                                               :in-theory nil))
+                                                               ;; :in-theory nil
+                                                               ))
                                                           guard-hints))))
                       nil)
                   (declare (xargs :normalize nil)) ;new (todo: drop)
@@ -537,7 +548,8 @@ T(x), thus establishing the invariant.</li>
    term-to-replace
    rules  ;TODO: Make this a keyword argument (defailt nil?)? or allow :enable, etc and pass through to simplify-defun
    )
-  ((extra-rules 'nil)
+  ((extra-guard ':none) ; can be used to ensure the defining expression can be guard-verified; can also simply provide a type for the new param
+   (extra-rules 'nil)
    (skip-termination 'nil)
    (verify-guards ':auto)
    (guard-hints ':auto)
