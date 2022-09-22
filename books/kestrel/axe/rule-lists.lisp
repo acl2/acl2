@@ -770,6 +770,8 @@
      bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
      bvshr-rewrite-for-constant-shift-amount ; introduces slice
      bvashr-rewrite-for-constant-shift-amount ;new, introduces bvsx
+     getbit-of-bvashr-becomes-getbit-of-bvshr
+     acl2::<-of-constant-and-minus ; helps with getbit-of-bvashr-becomes-getbit-of-bvshr
 
      bvplus-of-bvuminus-same
      bvplus-of-bvuminus-same-alt
