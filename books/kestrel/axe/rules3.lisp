@@ -6308,7 +6308,7 @@
                                                    )))))
 
 ;yuck?
-(defthm bv-array-read-of-bvcat
+(defthmd bv-array-read-of-bvcat
   (implies (and (natp lowsize)
                 (natp lowval)
                 (natp highsize)
