@@ -133,11 +133,12 @@
          ((when (quotep dag-or-quote))
           (mv (erp-nil) dag-or-quote state))
          (dag dag-or-quote)
-         ;; Prune the DAG (TODO: think about these steps):
+         ;; Prune the DAG quickly but possibly imprecisely:
          ((mv erp dag-or-quotep state) (acl2::prune-dag-with-contexts dag state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
-         (dag dag-or-quotep)
+         (dag dag-or-quotep) ; it wasn't a quotep
+         ;; Prune precisely if feasible:
          ((mv erp dag state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
                                            dag
@@ -152,12 +153,12 @@
                                            print
                                            state))
          ((when erp) (mv erp nil state))
+         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
-        (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
-            ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
+        (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
           (if (acl2::equivalent-dags dag old-dag)
