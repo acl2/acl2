@@ -1632,7 +1632,9 @@
     array-reduction-when-top-bit-is-irrelevant  ;; at least one of these seems needed for aes-128-decrypt
     array-reduction-0-1
     array-reduction-1-0
-    array-reduction-when-all-same-improved2))
+    array-reduction-when-all-same-improved2
+    bv-array-read-of-bvmult-discard-vals
+    bv-array-read-of-bvplus-of-bvmult-discard-vals))
 
 ; despite the name, this also includes bv-array-rules and list rules!
 ;; TODO: Remove non-bv stuff from this:
@@ -1692,9 +1694,6 @@
             ;; bvif-with-small-arg2
             bvor-with-small-arg1
             bvor-with-small-arg2
-
-            ;; ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED ;trying without
-            array-reduction-when-all-same-improved2 ;move
 
             getbit-of-bvxor ; perhaps move to bv-rules-core
 

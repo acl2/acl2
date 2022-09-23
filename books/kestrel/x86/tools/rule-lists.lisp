@@ -597,6 +597,7 @@
           (decoding-and-dispatch-rules)
           (x86-type-rules)
           (x86-bv-rules)
+          (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
