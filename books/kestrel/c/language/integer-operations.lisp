@@ -1102,3 +1102,29 @@
                                             (value-fix val2)))))
     resval)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lt-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2))
+  :returns (resval valuep)
+  :short "Apply @('<') to integer values [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the arithmetic promotions.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is always @('int').
+     This operation is always well-defined,
+     so it always returns a value (never an error)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (if (< mathint1 mathint2)
+        (value-sint 1)
+      (value-sint 0)))
+  :hooks (:fix))

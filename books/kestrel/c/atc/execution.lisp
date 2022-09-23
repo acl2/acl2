@@ -146,40 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-lt ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute less-than [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-realp arg1))
-        (error (list :mistype-lt
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-realp arg2))
-        (error (list :mistype-lt
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (lt-uint-uint val1 val2))
-     ((sintp val1) (lt-sint-sint val1 val2))
-     ((ulongp val1) (lt-ulong-ulong val1 val2))
-     ((slongp val1) (lt-slong-slong val1 val2))
-     ((ullongp val1) (lt-ullong-ullong val1 val2))
-     ((sllongp val1) (lt-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-gt ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute greater-than [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
@@ -464,7 +430,7 @@
       (:sub (sub-values arg1 arg2))
       (:shl (shl-values arg1 arg2))
       (:shr (shr-values arg1 arg2))
-      (:lt (exec-lt arg1 arg2))
+      (:lt (lt-values arg1 arg2))
       (:gt (exec-gt arg1 arg2))
       (:le (exec-le arg1 arg2))
       (:ge (exec-ge arg1 arg2))

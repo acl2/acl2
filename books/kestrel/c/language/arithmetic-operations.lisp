@@ -35,7 +35,7 @@
      In our current formalization,
      integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
-     if/when we extend out model with non-integer arithmetic values."))
+     if/when we extend our model with non-integer arithmetic values."))
   (b* ((val (promote-value val)))
     (plus-integer-value val))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -56,7 +56,7 @@
      In our current formalization,
      integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
-     if/when we extend out model with non-integer arithmetic value."))
+     if/when we extend our model with non-integer arithmetic value."))
   (b* ((val (promote-value val)))
     (minus-integer-value val))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -78,7 +78,7 @@
      In our current formalization,
      integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
-     if/when we extend out model with non-integer arithmetic values."))
+     if/when we extend our model with non-integer arithmetic values."))
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (mul-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -102,7 +102,7 @@
      In our current formalization,
      integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
-     if/when we extend out model with non-integer arithmetic values."))
+     if/when we extend our model with non-integer arithmetic values."))
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (div-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -126,7 +126,7 @@
      In our current formalization,
      integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
-     if/when we extend out model with non-integer arithmetic values."))
+     if/when we extend our model with non-integer arithmetic values."))
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (rem-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -149,7 +149,7 @@
      In our current formalization,
      integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
-     if/when we extend out model with non-integer arithmetic values."))
+     if/when we extend our model with non-integer arithmetic values."))
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (add-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -172,7 +172,7 @@
      In our current formalization,
      integers are the only arithmetic values.
      This ACL2 function will be extended with more cases
-     if/when we extend out model with non-integer arithmetic values."))
+     if/when we extend our model with non-integer arithmetic values."))
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (sub-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
