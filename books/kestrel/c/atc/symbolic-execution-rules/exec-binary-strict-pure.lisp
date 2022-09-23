@@ -11,43 +11,22 @@
 
 (in-package "C")
 
-(include-book "exec-binary-strict-pure-gen")
-
-(local (include-book "exec-binary-strict-pure-local"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-mul)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-div)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-rem)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-add)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-sub)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-shl)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-shr)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-lt)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-gt)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-le)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-ge)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-eq)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-ne)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-bitand)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-bitxor)))
-
-(make-event (atc-exec-binary-rules-for-op-gen (binop-bitior)))
+(include-book "exec-binary-strict-pure-mul")
+(include-book "exec-binary-strict-pure-div")
+(include-book "exec-binary-strict-pure-rem")
+(include-book "exec-binary-strict-pure-add")
+(include-book "exec-binary-strict-pure-sub")
+(include-book "exec-binary-strict-pure-shl")
+(include-book "exec-binary-strict-pure-shr")
+(include-book "exec-binary-strict-pure-lt")
+(include-book "exec-binary-strict-pure-gt")
+(include-book "exec-binary-strict-pure-le")
+(include-book "exec-binary-strict-pure-ge")
+(include-book "exec-binary-strict-pure-eq")
+(include-book "exec-binary-strict-pure-ne")
+(include-book "exec-binary-strict-pure-bitand")
+(include-book "exec-binary-strict-pure-bitxor")
+(include-book "exec-binary-strict-pure-bitior")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
