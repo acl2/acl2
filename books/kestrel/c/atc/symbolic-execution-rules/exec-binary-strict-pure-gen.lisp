@@ -112,7 +112,8 @@
                                         (binop-case op :add)
                                         (binop-case op :sub))
                                     (pack op-kind '-arithmetic-values)))
-         (op-real-values (and (binop-case op :lt)
+         (op-real-values (and (or (binop-case op :lt)
+                                  (binop-case op :gt))
                               (pack op-kind '-real-values)))
          (op-integer-values (pack op-kind '-integer-values))
          (exec-binary-strict-pure-of-op-and-ltype
@@ -144,7 +145,7 @@
                              (,op-ltype-rtype x y))))
          (enables (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
                                                    :shl :shr
-                                                   :lt))
+                                                   :lt :gt))
                       `(,exec-binary-strict-pure-of-op-and-ltype
                         ,op-values
                         ,@(and op-arithmetic-values
@@ -156,7 +157,7 @@
                         ,@(and op-ltype
                                (list op-ltype))
                         ,@(and (member-eq op-kind '(:mul :div :rem :add :sub
-                                                    :lt))
+                                                    :lt :gt))
                                (or (not (equal type ltype))
                                    (not (equal type rtype)))
                                (list op-type-type))
@@ -286,7 +287,7 @@
          (op-kind (binop-kind op))
          (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
                                                    :shl :shr
-                                                   :lt))
+                                                   :lt :gt))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -332,7 +333,7 @@
          (op-kind (binop-kind op))
          (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
                                                    :shl :shr
-                                                   :lt))
+                                                   :lt :gt))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
