@@ -16,6 +16,15 @@ struct scalar_and_array { // copied from structs.c
   unsigned char aggreg[10];
 };
 
+// without these, we get a type error
+// because the compiler thinks that these two functions return int
+// (eventually ATC should also generate a .h file,
+// which then this test file can include):
+struct point2D write_x_to_point2D_by_value(struct point2D point);
+struct point2D write_y_to_point2D_by_value(struct point2D point);
+struct scalar_and_array write_scalar_by_value(int v, struct scalar_and_array a);
+struct scalar_and_array write_aggreg_by_value(int i, unsigned char v, struct scalar_and_array a);
+
 void test_read_from_point2D_by_value() {
   struct point2D point = {.x = 11, .y = 22};
   int x = read_x_from_point2D_by_value(point);
@@ -30,10 +39,17 @@ void test_read_from_point2D_by_pointer() {
   printf("point = (%d, %d)\n", x, y);
 }
 
-void test_write_to_point2D() {
+void test_write_to_point2D_by_value() {
   struct point2D point = {.x = 11, .y = 22};
-  write_x_to_point2D(&point);
-  write_y_to_point2D(&point);
+  point = write_x_to_point2D_by_value(point);
+  point = write_y_to_point2D_by_value(point);
+  printf("point = (%d, %d)\n", point.x, point.y);
+}
+
+void test_write_to_point2D_by_pointer() {
+  struct point2D point = {.x = 11, .y = 22};
+  write_x_to_point2D_by_pointer(&point);
+  write_y_to_point2D_by_pointer(&point);
   printf("point = (%d, %d)\n", point.x, point.y);
 }
 
@@ -63,11 +79,21 @@ void test_read_from_scalar_and_array() {
   printf("a = %d\nb = %d\nc = %d\nd = %d\n", a, b, c, d);
 }
 
-void test_write_to_scalar_and_array() {
+void test_write_to_scalar_and_array_by_value() {
   struct scalar_and_array sar =
     {.scalar = 8, .aggreg = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
-  write_scalar(80, &sar);
-  write_aggreg(5, 50, &sar);
+  sar = write_scalar_by_value(80, sar);
+  sar = write_aggreg_by_value(5, 50, sar);
+  int a = read_scalar_by_value(sar);
+  int b = read_aggreg_by_value(5, sar);
+  printf("a = %d\nb = %d\n", a, b);
+}
+
+void test_write_to_scalar_and_array_by_pointer() {
+  struct scalar_and_array sar =
+    {.scalar = 8, .aggreg = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
+  write_scalar_by_pointer(80, &sar);
+  write_aggreg_by_pointer(5, 50, &sar);
   int a = read_scalar_by_pointer(&sar);
   int b = read_aggreg_by_pointer(5, &sar);
   printf("a = %d\nb = %d\n", a, b);
@@ -76,10 +102,12 @@ void test_write_to_scalar_and_array() {
 int main(void) {
   test_read_from_point2D_by_value();
   test_read_from_point2D_by_pointer();
-  test_write_to_point2D();
+  test_write_to_point2D_by_value();
+  test_write_to_point2D_by_pointer();
   test_allpos_by_value();
   test_allpos_by_pointer();
   test_read_from_scalar_and_array();
-  test_write_to_scalar_and_array();
+  test_write_to_scalar_and_array_by_value();
+  test_write_to_scalar_and_array_by_pointer();
   return 0;
 }
