@@ -40,7 +40,8 @@
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (lt-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
-                                           value-realp)))
+                                           value-realp
+                                           type-of-value-of-uaconvert-values)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -62,7 +63,8 @@
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (gt-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
-                                           value-realp)))
+                                           value-realp
+                                           type-of-value-of-uaconvert-values)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,7 +86,8 @@
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (le-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
-                                           value-realp)))
+                                           value-realp
+                                           type-of-value-of-uaconvert-values)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,5 +109,6 @@
   (b* (((mv val1 val2) (uaconvert-values val1 val2)))
     (ge-integer-values val1 val2))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
-                                           value-realp)))
+                                           value-realp
+                                           type-of-value-of-uaconvert-values)))
   :hooks (:fix))
