@@ -13,27 +13,7 @@
 
 (include-book "exec-binary-strict-pure-gen")
 
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-
-(local (xdoc::set-default-parents atc-symbolic-execution-rules))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel ifix-when-integerp
-  (implies (integerp x)
-           (equal (ifix x)
-                  x)))
-
-(defrulel truncate-lemma
-  (implies (and (natp a)
-                (natp b))
-           (and (<= 0
-                    (truncate a (expt 2 b)))
-                (<= (truncate a (expt 2 b))
-                    a)))
-  :rule-classes :linear)
+(local (include-book "exec-binary-strict-pure-local"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
