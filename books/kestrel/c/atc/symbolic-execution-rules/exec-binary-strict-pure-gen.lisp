@@ -69,6 +69,29 @@
 (defsection atc-exec-binary-strict-pure-rules-generation
   :short "Code to generate the rules for executing
           strict pure binary operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since there are 16 binary operations and 10 integer types,
+     there are 1600 instances of these rules.
+     Generating all of them in the same file takes a bit of time;
+     for example, a machine takes about 300 seconds to process all of them,
+     which is actually less than 0.2 seconds for each instance,
+     which is not particularly slow, but things add up.")
+   (xdoc::p
+    "So we split the generation across 16 files, one per operation,
+     to take advantage of parallel certification.
+     Each file contains a @(tsee make-event) form that generates
+     (i) the rules for the operation,
+     (ii) a named constant with the rules of the operation, and
+     (iii) a named constant with the rule events.
+     The argument of the @(tsee make-event) is
+     a call of @('atc-exec-binary-rules-for-op-gen') defined in this file.
+     Then the top-level file @('exec-binary-strict-pure-rules.lisp')
+     puts together all the rule names,
+     and generates a @(tsee defsection) with all the rule events,
+     which are redundant and so are processed quickly,
+     but in that way all the rules appear in XDOC."))
 
   (define atc-exec-binary-rules-gen-op-ltype-rtype ((op binopp)
                                                     (ltype typep)
@@ -339,4 +362,111 @@
                   more-names)
           (append (list fun-event thm-event)
                   events
-                  more-events)))))
+                  more-events))))
+
+  (define atc-exec-binary-rules-for-op-gen ((op binopp))
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-binary-rules-gen (list op)
+                                     *nonchar-integer-types**
+                                     *nonchar-integer-types**))
+         (atc-exec-op-rules (pack '*atc-exec- (binop-kind op) '-rules*))
+         (defconst-names `(defconst ,atc-exec-op-rules ',names))
+         (atc-exec-op-events (pack '*atc-exec- (binop-kind op) '-events*))
+         (defconst-events `(defconst ,atc-exec-op-events ',events)))
+      `(progn
+         ,@events
+         ,defconst-names
+         ,defconst-events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following commented-out code generates all 1600 instances in this file.
+; It could be brought back if/when the events are made to certify much faster,
+; as it is more convenient to have everything about binary operators in one file
+; rather than splitting it across multiple files.
+
+;;   (define atc-exec-binary-rules-gen-all ()
+;;     :returns (event pseudo-event-formp)
+;;     :parents nil
+;;     (b* ((ops (list (binop-mul)
+;;                     (binop-div)
+;;                     (binop-rem)
+;;                     (binop-add)
+;;                     (binop-sub)
+;;                     (binop-shl)
+;;                     (binop-shr)
+;;                     (binop-lt)
+;;                     (binop-gt)
+;;                     (binop-le)
+;;                     (binop-ge)
+;;                     (binop-eq)
+;;                     (binop-ne)
+;;                     (binop-bitand)
+;;                     (binop-bitxor)
+;;                     (binop-bitior)))
+;;          ((mv names events)
+;;           (atc-exec-binary-rules-gen ops
+;;                                      *nonchar-integer-types**
+;;                                      *nonchar-integer-types**)))
+;;       `(progn
+;;          (defsection atc-exec-binary-strict-pure-rules
+;;            :short "Rules for executing strict pure binary operations."
+;;            :long
+;;            (xdoc::topstring
+;;             (xdoc::p
+;;              "The goal of these rules is to
+;;               rewrite @('(exec-binary-strict-pure op x y)')
+;;               to @('(op-type1-type2 x y)')
+;;               when @('x') has type @('type1'),
+;;               and @('y') has type @('type2').
+;;               We could have a rule for each combination of
+;;               @('op'), @('type1'), and @('type2'),
+;;               but that would lead to 1,600 rules being applicable to
+;;               @('(exec-binary-strict-pure op x y)').
+;;               So we stage the rewriting as follows:")
+;;             (xdoc::ul
+;;              (xdoc::li
+;;               "First, we rewrite @('(exec-binary-strict-pure op x y)')
+;;                to a call @('(exec-binary-strict-pure-of-op x y)'),
+;;                under the hypothesis that @('op') is a specific operator,
+;;                where @('exec-binary-strict-pure-of-op') is one of 16 functions,
+;;                one per binary strict operator.")
+;;              (xdoc::li
+;;               "Next, we rewrite @('(exec-binary-strict-pure-of-op x y)')
+;;                to a call @('(exec-binary-strict-pure-of-op-and-type1 x y)'),
+;;                under the hypothesis that @('x') has type @('type1'),
+;;                where @('exec-binary-strict-pure-of-op-and-type1')
+;;                is one of 10 functions,
+;;                one per supported integer type.")
+;;              (xdoc::li
+;;               "Finally, we rewrite
+;;                @('(exec-binary-strict-pure-of-op-and-type1 x y)')
+;;                to the call @('(op-type1-type2 x y)'),
+;;                under the hypothesis the @('y') has type @('type2'),
+;;                for each of the 10 supported integer types."))
+;;             (xdoc::p
+;;              "Note that the intermediate functions used here
+;;               do not need guard verification."))
+;;            ,@events
+;;            (defval *atc-exec-binary-strict-pure-rules*
+;;              '(,@names
+;;                (:e binop-mul)
+;;                (:e binop-div)
+;;                (:e binop-rem)
+;;                (:e binop-add)
+;;                (:e binop-sub)
+;;                (:e binop-shl)
+;;                (:e binop-shr)
+;;                (:e binop-lt)
+;;                (:e binop-gt)
+;;                (:e binop-le)
+;;                (:e binop-ge)
+;;                (:e binop-eq)
+;;                (:e binop-ne)
+;;                (:e binop-bitand)
+;;                (:e binop-bitxor)
+;;                (:e binop-bitior)))))))
+
+;; (make-event (atc-exec-binary-rules-gen-all))
