@@ -552,6 +552,24 @@
        @('<member>') is the name of
        one of the members of that @(tsee defstruct),
        @('<member>') has an integer type in the @(tsee defstruct),
+       @('var') is assignable,
+       @('var') has the C structure type represented by @('<tag>'),
+       @('term') is a pure expression term for @('fn')
+       returning the C integer type of @('<member>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       a member of the structure represented by @('var')
+       by value (i.e. using @('.'))
+       with the new value expression represented by @('term'),
+       followed by the C code represented by @('body').")
+     (xdoc::li
+      "A term
+       @('(let ((var (struct-<tag>-write-<member> term var))) body)'),
+       when @('<tag>') is a @(tsee defstruct) name,
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<member>') has an integer type in the @(tsee defstruct),
        @('var') is in scope,
        @('var') has a pointer type whose referenced type is
        the C structure type represented by @('<tag>'),
@@ -561,8 +579,44 @@
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents a C assignment to
-       a member of the structure represented by @('var') via its pointer
+       a member of the structure represented by @('var')
+       by pointer (i.e. using @('->'))
        with the new value expression represented by @('term'),
+       followed by the C code represented by @('body').")
+     (xdoc::li
+      "A term
+       @('(let
+           ((var (struct-<tag>-write-<member>-<type> term1 term2 var))) body)'),
+       when @('<tag>') is a @(tsee defstruct) name,
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<member>') has an integer array type in the @(tsee defstruct)
+       with element type @('<type2>'),
+       @('<type>') and @('<type2>') are among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('var') is assignable,
+       @('var') has the C structure type represented by @('<tag>'),
+       @('term1') is a pure expression term for @('fn')
+       returning the C type corresponding to @('<type2>'),
+       @('term2') is a pure expression term for @('fn')
+       returning the C type corresponding to @('<type>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       an element of a member of the structure represented by @('var')
+       by value (i.e. using @('.'))
+       using @('term1') as the index
+       with the new value expression represented by @('term2'),
        followed by the C code represented by @('body').")
      (xdoc::li
       "A term
@@ -597,7 +651,8 @@
        returning @('T') and affecting @('vars').
        This represents a C assignment to
        an element of a member of the structure represented by @('var')
-       via its pointer, using @('term1') as the index,
+       by pointer (i.e. using @('->'))
+       using @('term1') as the index
        with the new value expression represented by @('term2'),
        followed by the C code represented by @('body').")
      (xdoc::li
@@ -935,7 +990,9 @@
        or the pointer type to that C structure type.
        This represents an access to a structure member,
        by value if @('U') is the C structure type
-       or by pointer if @('U') is the pointer type to the C structure type.")
+       (i.e. using @('.'))
+       or by pointer if @('U') is the pointer type to the C structure type
+       (i.e. using @('->')).")
      (xdoc::li
       "A call of @('struct-<tag>-read-<member>-<type>')
        on pure expression terms for @('fn') returning @('U') and @('V')
@@ -960,7 +1017,9 @@
        or the pointer type to that C structure type.
        This represents an access to an element of a structure member,
        by value if @('V') is the C structure type
-       or by pointer if @('V') is the pointer type to the C structure type.")
+       (i.e. using @('.'))
+       or by pointer if @('V') is the pointer type to the C structure type
+       (i.e. using @('->')).")
      (xdoc::li
       "A call of @(tsee sint-from-boolean) on
        an expression term for @('fn') returning boolean,
