@@ -795,15 +795,17 @@
                nil
              (or (lhrange-collides-with-lhs-p (car y) x)
                  (lhses-collide-p x (cdr y)))))
-    :rule-classes ((:definition :controller-alist ((lhses-collide-p nil t)))))
+    :rule-classes ((:definition
+                    :install-body nil
+                    :controller-alist ((lhses-collide-p nil t)))))
 
   
   (defthm lhses-collide-p-symm
     (implies (lhses-collide-p y x)
              (lhses-collide-p x y))
     :hints (("goal" 
-             :expand ((lhses-collide-p x y)
-                      (:with lhses-collide-p-open-right (lhses-collide-p y x))))))
+             :expand ((:with lhses-collide-p-open-right (lhses-collide-p x y))
+                      (:with lhses-collide-p (lhses-collide-p y x))))))
 
   (defthm lhses-collide-p-symm-not
     (implies (not (lhses-collide-p y x))
@@ -1130,7 +1132,8 @@
              (equal (lhs-eval-x lhs2 (svtv-name-lhs-map-eval-x new-inverse env))
                     (lhs-eval-x lhs2 (svtv-name-lhs-map-eval-x inverse-acc env))))
     :hints(("Goal" :induct (lhses-collide-p lhs2 lhs)
-            :expand ((:Free (env) (lhs-eval-x lhs2 env)))
+            :expand ((:Free (env) (lhs-eval-x lhs2 env))
+                     (lhses-collide-p lhs2 lhs))
             :in-theory (enable (:i lhses-collide-p) lhatom-eval-x))))
 
   (defret eval-map-preserved-of-<fn>
