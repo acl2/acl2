@@ -37,7 +37,8 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
-(include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
+(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
+(include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for every-nth
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
 (include-book "kestrel/lists-light/group" :dir :system) ;drop?
 (include-book "kestrel/lists-light/group2" :dir :system) ;drop?
@@ -93,17 +94,17 @@
       (reverse-fast acc)
     (equal-lst-exec val (cdr lst) (cons (equal val (car lst)) acc))))
 
-;without the max call this loops when n=0
-(defund take-every-nth-aux (n lst acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp acc))))
-   (if (endp lst)
-       (reverse-fast acc) ;BOZO or is the built in reverse faster
-     (take-every-nth-aux n (nthcdr (max 1 (nfix n)) lst) (cons (car lst) acc))))
+;; ;without the max call this loops when n=0
+;; (defund take-every-nth-aux (n lst acc)
+;;   (declare (xargs :guard (and (true-listp lst)
+;;                               (true-listp acc))))
+;;    (if (endp lst)
+;;        (reverse-fast acc) ;BOZO or is the built in reverse faster
+;;      (take-every-nth-aux n (nthcdr (max 1 (nfix n)) lst) (cons (car lst) acc))))
 
-(defund take-every-nth (n lst)
-  (declare (xargs :guard (true-listp lst)))
-  (take-every-nth-aux n lst nil))
+;; (defund take-every-nth (n lst)
+;;   (declare (xargs :guard (true-listp lst)))
+;;   (take-every-nth-aux n lst nil))
 
 (defund bvplus-lst (size val lst)
   (declare (type (integer 0 *) size))
@@ -428,7 +429,7 @@
                   (binary-+ binary-+-unguarded arg1 arg2) ;see binary-+-unguarded-correct
 
                   (all-items-less-than all-items-less-than arg1 arg2)
-                  (take-every-nth take-every-nth arg1 arg2)
+                  (every-nth every-nth arg1 arg2)
                   (intersection-equal intersection-equal arg1 arg2)
 ;                  (push-bvchop-list push-bvchop-list arg1 arg2) ;do we need this?
                   (all-equal$ all-equal$ arg1 arg2) ;unguarded
