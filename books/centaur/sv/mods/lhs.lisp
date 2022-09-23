@@ -345,13 +345,21 @@ the order given (LSBs-first).</p>")
   ///
   (deffixequiv lhs-eval))
 
+
+(define lhatom-eval-zero ((x lhatom-p)
+                       (env svex-env-p))
+  :returns (val 4vec-p)
+  (lhatom-case x
+    :z 0
+    :var (4vec-rsh (2vec x.rsh) (svex-env-fastlookup x.name env))))
+
 (define lhs-eval-zero ((x lhs-p) (env svex-env-p))
   :parents (lhs)
   :returns (val 4vec-p)
   (if (atom x)
       0
     (4vec-concat (2vec (lhrange->w (car x)))
-                 (lhrange-eval (car x) env)
+                 (lhatom-eval-zero(lhrange->atom (car x)) env)
                  (lhs-eval-zero (cdr x) env)))
   ///
   (deffixequiv lhs-eval-zero)
@@ -359,7 +367,7 @@ the order given (LSBs-first).</p>")
   (defthm lhs-eval-zero-of-cons
     (equal (lhs-eval-zero (cons a x) env)
            (4vec-concat (2vec (lhrange->w a))
-                        (lhrange-eval a env)
+                        (lhatom-eval-zero (lhrange->atom a) env)
                         (lhs-eval-zero x env))))
 
   (defthm lhs-eval-zero-of-nil
@@ -549,21 +557,31 @@ the order given (LSBs-first).</p>")
                     (logapp w2 x (logapp (- (nfix w1) (nfix w2)) y z))))
            :hints ((bitops::logbitp-reasoning))))
 
+  (local (defthm logapp-of-logtails
+           (implies (equal (+ (nfix sh) (nfix w)) (nfix sh2))
+                    (equal (logapp w (logtail sh x) (logtail sh2 x))
+                           (logtail sh x)))
+           :hints ((bitops::logbitp-reasoning
+                    :restrict (not (and (consp x)
+                                        (or (eq (car x) 'binary-+)
+                                            (eq (car x) 'nfix))))))))
+  
   (defthm lhrange-combine-correct-zero
     (implies (lhrange-combine x y)
-             (equal (lhrange-eval (lhrange-combine x y) env)
-                    (4vec-concat (2vec (+ (lhrange->w x) (lhrange->w y)))
-                                 (lhs-eval-zero (list x y) env)
-                                 (4vec-z))))
-    :hints(("Goal" :in-theory (e/d (lhrange-eval
-                                    lhs-eval-zero lhatom-eval
+             (equal (lhatom-eval-zero (lhrange->atom (lhrange-combine x y)) env)
+                    (4vec-concat (2vec (lhrange->w x))
+                                 (lhatom-eval-zero (lhrange->atom x) env)
+                                 (lhatom-eval-zero (lhrange->atom y) env))))
+    :hints(("Goal" :in-theory (e/d (lhatom-eval-zero
+                                    lhatom-eval
                                       4vec-concat 4vec-rsh 4vec-shift-core)
-                                   (bitops::logapp-of-j-0))))))
+                                   (bitops::logapp-of-j-0)))))
 
-  ;; (defthm lhrange-combine-width
-  ;;   (implies (lhrange-combine x y)
-  ;;            (equal (lhrange->w (lhrange-combine x y))
-  ;;                   (+ (lhrange->w x) (lhrange->w y)))))
+  (defthm lhrange-combine-width
+    (implies (lhrange-combine x y)
+             (equal (lhrange->w (lhrange-combine x y))
+                    (+ (lhrange->w x) (lhrange->w y))))
+    :hints(("Goal" :in-theory (enable lhrange-nextbit)))))
 
   ;; (defthm lhrange-combine-associative
   ;;   (implies (lhrange-combine a b)
@@ -841,12 +859,12 @@ the order given (LSBs-first).</p>")
   (defthm lhs-concat-correct-zero
     (equal (lhs-eval-zero (lhs-concat w x y) env)
            (4vec-concat (2vec (nfix w))
-                        (lhs-eval x env)
+                        (lhs-eval-zero x env)
                         (lhs-eval-zero y env)))
     :hints (("Goal" :induct (lhs-concat w x y)
              :expand ((lhs-concat w x y)
                       (lhs-concat 0 x y))
-             :in-theory (e/d (lhs-eval-zero lhs-eval lhrange-eval lhatom-eval)
+             :in-theory (e/d (lhs-eval-zero lhs-eval lhatom-eval-zero)
                              ((:d lhs-concat))))))
 
   (defthm lhs-width-of-lhs-concat
@@ -887,7 +905,7 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :induct (lhs-rsh sh x)
             :expand ((lhs-rsh sh x)
                      (lhs-rsh 0 x))
-            :in-theory (e/d (lhs-eval-zero lhrange-eval lhatom-eval)
+            :in-theory (e/d (lhs-eval-zero lhatom-eval-zero)
                             ((:d lhs-rsh))))
            (and stable-under-simplificationp
                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core)
@@ -1073,26 +1091,6 @@ the order given (LSBs-first).</p>")
                               lhrange-eval lhatom-eval
                               4vec-index-p)))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core))))))
-
-  (defret svex->lhs-range-correct-zero
-    (implies (lhssvex-range-p rsh w x)
-             (equal (lhs-eval-zero lhs env)
-                    (4vec-concat (2vec (nfix w))
-                                 (4vec-rsh (2vec (nfix rsh)) (svex-eval x env))
-                                 0)))
-    :hints (("goal" :induct <call>
-             :expand (<call>
-                      (lhssvex-range-p rsh w x)
-                      (lhs-eval-zero nil env)
-                      (svex->lhs-range rsh 0 x)
-                      (svex-eval x env)
-                      (:free (a b) (lhs-eval-zero (cons a b) env)))
-             :in-theory (e/d ( ;; svex-eval
-                              svex-apply svexlist-eval 4veclist-nth-safe
-                                         lhrange-eval lhatom-eval
-                                         4vec-index-p)))
-            (and stable-under-simplificationp
                  '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core)))))))
 
 (define svex->lhs-bound ((w natp) (x svex-p))
@@ -1118,14 +1116,6 @@ the order given (LSBs-first).</p>")
                     (4vec-concat (2vec (nfix w))
                                  (svex-eval x env)
                                  (4vec-z))))
-    :hints (("goal" :in-theory (enable lhssvex-bounded-p))))
-
-  (defthm svex->lhs-bound-correct-zero
-    (implies (lhssvex-bounded-p w x)
-             (equal (lhs-eval-zero (svex->lhs-bound w x) env)
-                    (4vec-concat (2vec (nfix w))
-                                 (svex-eval x env)
-                                 0)))
     :hints (("goal" :in-theory (enable lhssvex-bounded-p)))))
 
 ;; ;; Problematic wrt lhs-eval-zero.  We have changed everything to use  svex->lhs-bound.
@@ -2597,6 +2587,22 @@ bits of @('foo'):</p>
 
 
 
+
+(define lhatom->svex-zero ((x lhatom-p))
+  :parents (lhatom)
+  :returns (xx svex-p)
+  (lhatom-case x
+    :z (svex-quote 0)
+    :var (svex-rsh x.rsh (svex-var x.name)))
+  ///
+  (deffixequiv lhatom->svex-zero)
+
+  (defthm lhatom->svex-zero-correct
+    (equal (svex-eval (lhatom->svex-zero x) env)
+           (lhatom-eval-zero x env))
+    :hints(("Goal" :in-theory (enable lhatom-eval-zero svex-eval svex-apply
+                                      4veclist-nth-safe svexlist-eval)))))
+
 (define lhs->svex-zero ((x lhs-p))
   :returns (xx svex-p)
   :prepwork ((local (in-theory (enable lhs-fix))))
@@ -2604,7 +2610,7 @@ bits of @('foo'):</p>
       (svex-quote 0)
     (b* (((lhrange xf) (car x)))
       (svex-concat xf.w
-                   (lhatom->svex xf.atom)
+                   (lhatom->svex-zero xf.atom)
                    (lhs->svex-zero (cdr x)))))
   ///
   (deffixequiv lhs->svex-zero)
@@ -2618,7 +2624,7 @@ bits of @('foo'):</p>
   (defthm vars-of-lhs->svex-zero
     (implies (not (member v (lhs-vars x)))
              (not (member v (svex-vars (lhs->svex-zero x)))))
-    :hints(("Goal" :in-theory (enable lhatom-vars lhatom->svex)))))
+    :hints(("Goal" :in-theory (enable lhatom-vars lhatom->svex-zero)))))
 
 
 (define lhsarr-to-svexarr ((n natp) lhsarr svexarr)

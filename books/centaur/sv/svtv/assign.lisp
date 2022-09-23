@@ -1435,23 +1435,23 @@
                   (cons var (lhs-eval-zero (cdr pair) env))))))
 
   (defcong svex-envs-similar equal (lhs-eval-zero x env) 2
-    :hints(("Goal" :in-theory (enable lhs-eval-zero lhrange-eval lhatom-eval))))
+    :hints(("Goal" :in-theory (enable lhs-eval-zero lhatom-eval-zero))))
 
   (defcong svex-envs-similar equal (svtv-name-lhs-map-eval x env) 2)
 
   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
-(define lhatom-subst ((x lhatom-p) (subst svex-alist-p))
+(define lhatom-subst-zero ((x lhatom-p) (subst svex-alist-p))
   :returns (val svex-p)
   (lhatom-case x
-    :z (svex-z)
+    :z (svex-quote 0)
     :var (svex-rsh x.rsh
                    (or (svex-lookup x.name subst) (svex-x))))
   ///
   (defret eval-of-<fn>
     (equal (svex-eval val env)
-           (lhatom-eval x (svex-alist-eval subst env)))
-    :hints(("Goal" :in-theory (enable svex-apply lhatom-eval)))))
+           (lhatom-eval-zero x (svex-alist-eval subst env)))
+    :hints(("Goal" :in-theory (enable svex-apply lhatom-eval-zero)))))
                       
 (define lhs-subst-zero ((x lhs-p) (subst svex-alist-p))
   :returns (val svex-p)
@@ -1459,7 +1459,7 @@
       (svex-quote 0)
     (b* (((lhrange x1) (car x)))
       (svex-concat x1.w
-                   (lhatom-subst x1.atom subst)
+                   (lhatom-subst-zero x1.atom subst)
                    (lhs-subst-zero (cdr x) subst))))
   ///
   (defret eval-of-<fn>
@@ -1492,10 +1492,10 @@
 
 
 
-(define lhatom-compose ((x lhatom-p) (compose svex-alist-p))
+(define lhatom-compose-zero ((x lhatom-p) (compose svex-alist-p))
   :returns (val svex-p)
   (lhatom-case x
-    :z (svex-z)
+    :z (svex-quote 0)
     :var (svex-rsh x.rsh
                    (or (svex-fastlookup x.name compose)
                        (svex-var x.name))))
@@ -1507,8 +1507,8 @@
 
   (defret eval-of-<fn>
     (equal (svex-eval val env)
-           (lhatom-eval x (append (svex-alist-eval compose env) env)))
-    :hints(("Goal" :in-theory (enable svex-apply lhatom-eval)))))
+           (lhatom-eval-zero x (append (svex-alist-eval compose env) env)))
+    :hints(("Goal" :in-theory (enable svex-apply lhatom-eval-zero)))))
                       
 (define lhs-compose-zero ((x lhs-p) (compose svex-alist-p))
   :returns (val svex-p)
@@ -1516,7 +1516,7 @@
       (svex-quote 0)
     (b* (((lhrange x1) (car x)))
       (svex-concat x1.w
-                   (lhatom-compose x1.atom compose)
+                   (lhatom-compose-zero x1.atom compose)
                    (lhs-compose-zero (cdr x) compose))))
   ///
   (defret eval-of-<fn>

@@ -3009,8 +3009,7 @@ proved.</p>")
                     (lhs-eval-zero x env1)))
     :hints(("Goal" :in-theory (enable lhs-eval-zero
                                       lhs-vars
-                                      lhrange-eval
-                                      lhatom-eval
+                                      lhatom-eval-zero
                                       lhatom-vars
                                       svex-env-boundp))))
   (defthm svtv-name-lhs-map-eval-of-append-envs-when-vars-subset-of-first-keys

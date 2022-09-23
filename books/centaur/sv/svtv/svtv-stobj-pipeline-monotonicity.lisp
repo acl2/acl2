@@ -1047,10 +1047,10 @@
   :hints(("Goal" :in-theory (enable svex-monotonic-p))))
 
 
-(defthm lhatom-compose-partial-monotonic
+(defthm lhatom-compose-zero-partial-monotonic
   (implies (svex-alist-partial-monotonic params compose)
-           (svex-partial-monotonic params (lhatom-compose x compose)))
-  :hints(("Goal" :in-theory (e/d (lhatom-compose
+           (svex-partial-monotonic params (lhatom-compose-zero x compose)))
+  :hints(("Goal" :in-theory (e/d (lhatom-compose-zero
                                   svex-apply)
                                  (LOOKUP-WHEN-SVEX-ALIST-PARTIAL-MONOTONIC))
           :use ((:instance LOOKUP-WHEN-SVEX-ALIST-PARTIAL-MONOTONIC
@@ -1068,11 +1068,11 @@
          (and stable-under-simplificationp
               `(:expand ((:with svex-partial-monotonic-by-eval
                           ,(car (last clause))))
-                :use ((:instance lhatom-compose-partial-monotonic
+                :use ((:instance lhatom-compose-zero-partial-monotonic
                        (x (lhrange->atom (car x)))))
                 :in-theory (e/d (svex-apply)
-                                (lhatom-compose-partial-monotonic
-                                 eval-of-lhatom-compose
+                                (lhatom-compose-zero-partial-monotonic
+                                 eval-of-lhatom-compose-zero
                                  eval-of-lhs-compose-zero))))))
 
 
