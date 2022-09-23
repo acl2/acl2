@@ -287,7 +287,25 @@
   (if (and (value-realp val1)
            (value-realp val2))
       (le-real-values val1 val2)
-    (error (list :lt-mistype
+    (error (list :le-mistype
+                 :required :real :real
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ge-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('>=') to values [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not real;
+     we do not support comparison of pointers yet."))
+  (if (and (value-realp val1)
+           (value-realp val2))
+      (ge-real-values val1 val2)
+    (error (list :ge-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
   :hooks (:fix))
