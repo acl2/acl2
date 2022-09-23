@@ -241,7 +241,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |write_aggreg| (|i| |v| |a|)
+(defun |write_aggreg_by_value| (|i| |v| |a|)
+  (declare
+   (xargs
+    :guard
+    (and
+     (c::sintp |i|)
+     (c::ucharp |v|)
+     (struct-|scalar_and_array|-p |a|)
+     (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
+  (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-sint |i| |v| |a|)))
+    |a|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_aggreg_by_pointer| (|i| |v| |a|)
   (declare
    (xargs
     :guard
@@ -285,5 +299,6 @@
         |write_y_to_point2D_by_pointer|
         |write_scalar_by_value|
         |write_scalar_by_pointer|
-        |write_aggreg|
+        |write_aggreg_by_value|
+        |write_aggreg_by_pointer|
         :output-file "structs.c")
