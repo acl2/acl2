@@ -1364,10 +1364,12 @@
      we generate an array assignment.
      If the binding has the form of a structure scalar member write,
      we generate an assignment to
-     the member of the pointed structure.
+     the member of the structure,
+     by value or by pointer
      If the binding has the form of a structure array member write,
      we generate an assignment to
-     the element of the member of the pointed structure.
+     the element of the member of the structure,
+     by value or by pointer.
      The other three cases are similar to
      the three @(tsee mv-let) cases above.
      The limit is calculated as follows.
@@ -1912,25 +1914,35 @@
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
                               val var wrapper?))
-                   ((unless (member-eq var affect))
+                   ((er (list struct-expr type1) :iferr irr)
+                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
+                   ((er pointerp)
+                    (cond
+                     ((equal type1 (type-struct tag))
+                      (acl2::value nil))
+                     ((equal type1 (type-pointer (type-struct tag)))
+                      (acl2::value t))
+                     (t (er-soft+ ctx t irr
+                                  "The structure ~x0 of type ~x1 ~
+                                   does not have the expected type ~x2 or ~x3. ~
+                                   This is indicative of ~
+                                   unreachable code under the guards, ~
+                                   given that the code is guard-verified."
+                                  var
+                                  type1
+                                  (type-struct tag)
+                                  (type-pointer (type-struct tag))))))
+                   ((when (and pointerp
+                               (not (member-eq var affect))))
                     (er-soft+ ctx t irr
-                              "The structure ~x0 is being written to, ~
+                              "The structure ~x0 ~
+                               is being written to by pointer, ~
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((er (list struct-expr type1) :iferr irr)
-                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
                    ((er (list member-expr type2) :iferr irr)
                     (atc-gen-expr-pure
                      member-value inscope prec-tags fn ctx state))
-                   ((unless (equal type1 (type-pointer (type-struct tag))))
-                    (er-soft+ ctx t irr
-                              "The structure ~x0 of type ~x1 ~
-                               does not have the expected type ~x2. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var type1 (type-pointer (type-struct tag))))
                    ((unless (equal type2 member-type))
                     (er-soft+ ctx t irr
                               "The structure ~x0 of type ~x1 ~
@@ -1941,11 +1953,14 @@
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
                               var type1 member-value type2 member-type))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-memberp :target struct-expr
-                                                  :name member-name)
-                         :arg2 member-expr))
+                   (asg-mem (if pointerp
+                                (make-expr-memberp :target struct-expr
+                                                   :name member-name)
+                              (make-expr-member :target struct-expr
+                                                :name member-name)))
+                   (asg (make-expr-binary :op (binop-asg)
+                                          :arg1 asg-mem
+                                          :arg2 member-expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
@@ -1976,23 +1991,32 @@
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
                               val var wrapper?))
-                   ((unless (member-eq var affect))
+                   ((er (list struct-expr struct-type) :iferr irr)
+                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
+                   ((er pointerp)
+                    (cond
+                     ((equal struct-type (type-struct tag))
+                      (acl2::value nil))
+                     ((equal struct-type (type-pointer (type-struct tag)))
+                      (acl2::value t))
+                     (t (er-soft+ ctx t irr
+                                  "The structure ~x0 of type ~x1 ~
+                                   does not have the expected type ~x2 or ~x3. ~
+                                   This is indicative of ~
+                                   unreachable code under the guards, ~
+                                   given that the code is guard-verified."
+                                  var
+                                  struct-type
+                                  (type-struct tag)
+                                  (type-pointer (type-struct tag))))))
+                   ((when (and pointerp
+                               (not (member-eq var affect))))
                     (er-soft+ ctx t irr
-                              "The structure ~x0 is being written to, ~
+                              "The structure ~x0 ~
+                               is being written to by pointer, ~
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var affect))
-                   ((er (list struct-expr struct-type) :iferr irr)
-                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((unless (equal struct-type
-                                   (type-pointer (type-struct tag))))
-                    (er-soft+ ctx t irr
-                              "The structure ~x0 of type ~x1 ~
-                               does not have the expected type ~x2. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var struct-type (type-pointer (type-struct tag))))
                    ((er (list index-expr index-type1) :iferr irr)
                     (atc-gen-expr-pure index inscope prec-tags fn ctx state))
                    ((unless (equal index-type1 index-type))
@@ -2017,13 +2041,15 @@
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
                               var struct-type elem elem-type1 elem-type))
+                   (asg-mem (if pointerp
+                                (make-expr-memberp :target struct-expr
+                                                   :name member)
+                              (make-expr-member :target struct-expr
+                                                :name member)))
                    (asg (make-expr-binary
                          :op (binop-asg)
-                         :arg1 (make-expr-arrsub
-                                :arr (make-expr-memberp
-                                      :target struct-expr
-                                      :name member)
-                                :sub index-expr)
+                         :arg1 (make-expr-arrsub :arr asg-mem
+                                                 :sub index-expr)
                          :arg2 elem-expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
@@ -5643,8 +5669,9 @@
      in @(see atc-exec-expr-asg-arrsub-rules-generation).")
    (xdoc::p
     "For a scalar member (which must have integer type),
-     we generate a single theorem that
-     rewrites certain calls of @(tsee exec-expr-asg)
+     we generate two theorems that
+     rewrite calls of @(tsee exec-expr-asg),
+     where the assignee is a @(':member') or @(':memberp') expression,
      to calls of the writer.")
    (xdoc::p
     "For an array member (which must have integer element type),
@@ -5674,12 +5701,21 @@
                (raise "Internal error: not one writer ~x0." writers)
                (mv nil nil nil)))
              (writer (car writers))
-             (thm-name (pack 'exec-member-write-when-
-                             recognizer
-                             '-and-
-                             (ident->name memname)))
-             ((mv thm-name names-to-avoid)
-              (fresh-logical-name-with-$s-suffix thm-name
+             (thm-member-name (pack 'exec-member-write-when-
+                                    recognizer
+                                    '-and-
+                                    (ident->name memname)))
+             ((mv thm-member-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix thm-member-name
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+             (thm-memberp-name (pack 'exec-memberp-write-when-
+                                     recognizer
+                                     '-and-
+                                     (ident->name memname)))
+             ((mv thm-memberp-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix thm-memberp-name
                                                  nil
                                                  names-to-avoid
                                                  wrld))
@@ -5687,7 +5723,28 @@
              ((unless typep)
               (raise "Internal error: unsupported member type ~x0." type)
               (mv nil nil nil))
-             (formula
+             (formula-member
+              `(implies (and (syntaxp (quotep e))
+                             (equal (expr-kind e) :binary)
+                             (equal (binop-kind (expr-binary->op e)) :asg)
+                             (equal left (expr-binary->arg1 e))
+                             (equal right (expr-binary->arg2 e))
+                             (equal (expr-kind left) :member)
+                             (equal target (expr-member->target left))
+                             (equal member (expr-member->name left))
+                             (equal (expr-kind target) :ident)
+                             (equal member (ident ,(ident->name memname)))
+                             (not (zp limit))
+                             (equal var (expr-ident->get target))
+                             (equal struct (read-var var compst))
+                             (,recognizer struct)
+                             (equal val (exec-expr-pure right compst))
+                             (,typep val))
+                        (equal (exec-expr-asg e compst fenv limit)
+                               (write-var var
+                                          (,writer val struct)
+                                          compst))))
+             (formula-memberp
               `(implies (and (syntaxp (quotep e))
                              (equal (expr-kind e) :binary)
                              (equal (binop-kind (expr-binary->op e)) :asg)
@@ -5716,63 +5773,122 @@
                                (write-object (value-pointer->designator ptr)
                                              (,writer val struct)
                                              compst))))
-             (hints `(("Goal"
-                       :in-theory
-                       '(exec-expr-asg
-                         not-errorp-when-valuep
-                         valuep-when-ucharp
-                         valuep-when-scharp
-                         valuep-when-ushortp
-                         valuep-when-sshortp
-                         valuep-when-uintp
-                         valuep-when-sintp
-                         valuep-when-ulongp
-                         valuep-when-slongp
-                         valuep-when-ullongp
-                         valuep-when-sllongp
-                         consp-when-ucharp
-                         consp-when-scharp
-                         consp-when-ushortp
-                         consp-when-sshortp
-                         consp-when-uintp
-                         consp-when-sintp
-                         consp-when-ulongp
-                         consp-when-slongp
-                         consp-when-ullongp
-                         consp-when-sllongp
-                         uchar-fix-when-ucharp
-                         schar-fix-when-scharp
-                         ushort-fix-when-ushortp
-                         sshort-fix-when-sshortp
-                         uint-fix-when-uintp
-                         sint-fix-when-sintp
-                         ulong-fix-when-ulongp
-                         slong-fix-when-slongp
-                         ullong-fix-when-ullongp
-                         sllong-fix-when-sllongp
-                         ,writer
-                         ,not-error-thm
-                         ,recognizer
-                         ,fixer-recognizer-thm
-                         ,type-of-value-thm)
-                       :use
-                       (:instance
-                        ,writer-return-thm
-                        (val (b* ((left (expr-binary->arg1 e)))
-                               (exec-expr-pure (expr-binary->arg2 e) compst)))
-                        (struct (b* ((left (expr-binary->arg1 e))
-                                     (target (expr-memberp->target left))
-                                     (ptr (read-var (c::expr-ident->get target)
-                                                    compst))
-                                     (struct (read-object
-                                              (value-pointer->designator ptr)
-                                              compst)))
-                                  struct))))))
-             ((mv event &) (evmac-generate-defthm thm-name
-                                                  :formula formula
-                                                  :hints hints
-                                                  :enable nil)))
-          (mv (list event) (list thm-name) names-to-avoid)))
+             (hints-member
+              `(("Goal"
+                 :in-theory
+                 '(exec-expr-asg
+                   not-errorp-when-valuep
+                   valuep-when-ucharp
+                   valuep-when-scharp
+                   valuep-when-ushortp
+                   valuep-when-sshortp
+                   valuep-when-uintp
+                   valuep-when-sintp
+                   valuep-when-ulongp
+                   valuep-when-slongp
+                   valuep-when-ullongp
+                   valuep-when-sllongp
+                   consp-when-ucharp
+                   consp-when-scharp
+                   consp-when-ushortp
+                   consp-when-sshortp
+                   consp-when-uintp
+                   consp-when-sintp
+                   consp-when-ulongp
+                   consp-when-slongp
+                   consp-when-ullongp
+                   consp-when-sllongp
+                   uchar-fix-when-ucharp
+                   schar-fix-when-scharp
+                   ushort-fix-when-ushortp
+                   sshort-fix-when-sshortp
+                   uint-fix-when-uintp
+                   sint-fix-when-sintp
+                   ulong-fix-when-ulongp
+                   slong-fix-when-slongp
+                   ullong-fix-when-ullongp
+                   sllong-fix-when-sllongp
+                   ,writer
+                   ,not-error-thm
+                   ,recognizer
+                   ,fixer-recognizer-thm
+                   ,type-of-value-thm)
+                 :use
+                 (:instance
+                  ,writer-return-thm
+                  (val (b* ((left (expr-binary->arg1 e)))
+                         (exec-expr-pure (expr-binary->arg2 e) compst)))
+                  (struct (b* ((left (expr-binary->arg1 e))
+                               (target (expr-member->target left))
+                               (var (expr-ident->get target))
+                               (struct (read-var var compst)))
+                            struct))))))
+             (hints-memberp
+              `(("Goal"
+                 :in-theory
+                 '(exec-expr-asg
+                   not-errorp-when-valuep
+                   valuep-when-ucharp
+                   valuep-when-scharp
+                   valuep-when-ushortp
+                   valuep-when-sshortp
+                   valuep-when-uintp
+                   valuep-when-sintp
+                   valuep-when-ulongp
+                   valuep-when-slongp
+                   valuep-when-ullongp
+                   valuep-when-sllongp
+                   consp-when-ucharp
+                   consp-when-scharp
+                   consp-when-ushortp
+                   consp-when-sshortp
+                   consp-when-uintp
+                   consp-when-sintp
+                   consp-when-ulongp
+                   consp-when-slongp
+                   consp-when-ullongp
+                   consp-when-sllongp
+                   uchar-fix-when-ucharp
+                   schar-fix-when-scharp
+                   ushort-fix-when-ushortp
+                   sshort-fix-when-sshortp
+                   uint-fix-when-uintp
+                   sint-fix-when-sintp
+                   ulong-fix-when-ulongp
+                   slong-fix-when-slongp
+                   ullong-fix-when-ullongp
+                   sllong-fix-when-sllongp
+                   ,writer
+                   ,not-error-thm
+                   ,recognizer
+                   ,fixer-recognizer-thm
+                   ,type-of-value-thm)
+                 :use
+                 (:instance
+                  ,writer-return-thm
+                  (val (b* ((left (expr-binary->arg1 e)))
+                         (exec-expr-pure (expr-binary->arg2 e) compst)))
+                  (struct (b* ((left (expr-binary->arg1 e))
+                               (target (expr-memberp->target left))
+                               (ptr (read-var (expr-ident->get target)
+                                              compst))
+                               (struct (read-object
+                                        (value-pointer->designator ptr)
+                                        compst)))
+                            struct))))))
+             ((mv event-member &)
+              (evmac-generate-defthm thm-member-name
+                                     :formula formula-member
+                                     :hints hints-member
+                                     :enable nil))
+             ((mv event-memberp &)
+              (evmac-generate-defthm thm-memberp-name
+                                     :formula formula-memberp
+                                     :hints hints-memberp
+                                     :enable nil)))
+          (mv (list event-member event-memberp)
+              (list thm-member-name thm-memberp-name)
+              names-to-avoid)))
        ((unless (type-case type :array))
         (prog2$
          (raise "Internal error: member type ~x0." type)
@@ -5837,20 +5953,58 @@
           (valuep-when-indextype (pack 'valuep-when- indextypep))
           (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
           (type-thm (pack indexfixtype '->get$inline))
-          (thm-name (pack 'exec-member-write-when-
-                          recognizer
-                          '-and-
-                          (ident->name memname)
-                          '-
-                          indexfixtype))
-          (arrayp-of-arrary-write
-           (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
-          ((mv thm-name names-to-avoid)
-           (fresh-logical-name-with-$s-suffix thm-name
+          (thm-member-name (pack 'exec-member-write-when-
+                                 recognizer
+                                 '-and-
+                                 (ident->name memname)
+                                 '-
+                                 indexfixtype))
+          ((mv thm-member-name names-to-avoid)
+           (fresh-logical-name-with-$s-suffix thm-member-name
                                               nil
                                               names-to-avoid
                                               wrld))
-          (formula
+          (thm-memberp-name (pack 'exec-memberp-write-when-
+                                  recognizer
+                                  '-and-
+                                  (ident->name memname)
+                                  '-
+                                  indexfixtype))
+          ((mv thm-memberp-name names-to-avoid)
+           (fresh-logical-name-with-$s-suffix thm-memberp-name
+                                              nil
+                                              names-to-avoid
+                                              wrld))
+          (arrayp-of-arrary-write
+           (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
+          (formula-member
+           `(implies (and (syntaxp (quotep e))
+                          (equal (expr-kind e) :binary)
+                          (equal (binop-kind (expr-binary->op e)) :asg)
+                          (equal left (expr-binary->arg1 e))
+                          (equal right (expr-binary->arg2 e))
+                          (equal (expr-kind left) :arrsub)
+                          (equal array (expr-arrsub->arr left))
+                          (equal index (expr-arrsub->sub left))
+                          (equal (expr-kind array) :member)
+                          (equal target (expr-member->target array))
+                          (equal member (expr-member->name array))
+                          (equal (expr-kind target) :ident)
+                          (equal member (ident ,(ident->name memname)))
+                          (not (zp limit))
+                          (equal var (expr-ident->get target))
+                          (equal struct (read-var var compst))
+                          (,recognizer struct)
+                          (equal idx (exec-expr-pure index compst))
+                          (,indextypep idx)
+                          (,checker idx)
+                          (equal val (exec-expr-pure right compst))
+                          (,elemtypep val))
+                     (equal (exec-expr-asg e compst fenv limit)
+                            (write-var var
+                                       (,writer idx val struct)
+                                       compst))))
+          (formula-memberp
            `(implies (and (syntaxp (quotep e))
                           (equal (expr-kind e) :binary)
                           (equal (binop-kind (expr-binary->op e)) :asg)
@@ -5885,100 +6039,192 @@
                             (write-object (value-pointer->designator ptr)
                                           (,writer idx val struct)
                                           compst))))
-          (hints `(("Goal"
-                    :in-theory
-                    '(exec-expr-asg
-                      value-integer->get
-                      value-schar->get-to-schar->get
-                      value-uchar->get-to-uchar->get
-                      value-sshort->get-to-sshort->get
-                      value-ushort->get-to-ushort->get
-                      value-sint->get-to-sint->get
-                      value-uint->get-to-uint->get
-                      value-slong->get-to-slong->get
-                      value-ulong->get-to-ulong->get
-                      value-sllong->get-to-sllong->get
-                      value-ullong->get-to-ullong->get
-                      value-kind-when-scharp
-                      value-kind-when-ucharp
-                      value-kind-when-sshortp
-                      value-kind-when-ushortp
-                      value-kind-when-sintp
-                      value-kind-when-uintp
-                      value-kind-when-slongp
-                      value-kind-when-ulongp
-                      value-kind-when-sllongp
-                      value-kind-when-ullongp
-                      value-struct-read
-                      value-struct-write
-                      not-errorp-when-valuep
-                      value-integerp
-                      value-unsigned-integerp-alt-def
-                      value-signed-integerp-alt-def
-                      value-fix-when-valuep
-                      ifix
-                      integer-range-p
-                      (:e ident)
-                      (:compound-recognizer consp-when-ucharp)
-                      ,recognizer
-                      ,fixer-recognizer-thm
-                      ,not-error-thm
-                      ,type-of-value-thm
-                      ,kind-array-thm
-                      ,checker
-                      ,checker-acl2int
-                      ,writer
-                      ,writer-acl2int
-                      ,not-error-array-thm
-                      ,array-writer
-                      ,array-checker
-                      ,valuep-when-elemtypep
-                      ,valuep-when-indextype
-                      ,@*integer-value-disjoint-rules*
-                      (:t ,type-thm))
-                    :use
-                    ((:instance
-                      ,writer-return-thm
-                      (index
-                       (,indextype->get
-                        (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                        compst)))
-                      (val
-                       (exec-expr-pure (expr-binary->arg2 e) compst))
-                      (struct
-                       (read-object
-                        (value-pointer->designator
-                         (read-var
-                          (expr-ident->get
-                           (expr-memberp->target
-                            (expr-arrsub->arr (expr-binary->arg1 e))))
-                          compst))
-                        compst)))
-                     (:instance
-                      ,arrayp-of-arrary-write
-                      (array
-                       (value-struct-read-aux
-                        (ident ,(ident->name memname))
-                        (value-struct->members
-                         (read-object
-                          (value-pointer->designator
-                           (read-var
-                            (expr-ident->get
-                             (expr-memberp->target
-                              (expr-arrsub->arr (expr-binary->arg1 e))))
-                            compst))
-                          compst))))
-                      (index
-                       (,indextype->get
-                        (exec-expr-pure
-                         (expr-arrsub->sub (expr-binary->arg1 e))
-                         compst)))
-                      (element
-                       (exec-expr-pure (expr-binary->arg2 e) compst)))))))
-          ((mv event &) (evmac-generate-defthm thm-name
-                                               :formula formula
-                                               :hints hints
-                                               :enable nil))
+          (hints-member
+           `(("Goal"
+              :in-theory
+              '(exec-expr-asg
+                value-integer->get
+                value-schar->get-to-schar->get
+                value-uchar->get-to-uchar->get
+                value-sshort->get-to-sshort->get
+                value-ushort->get-to-ushort->get
+                value-sint->get-to-sint->get
+                value-uint->get-to-uint->get
+                value-slong->get-to-slong->get
+                value-ulong->get-to-ulong->get
+                value-sllong->get-to-sllong->get
+                value-ullong->get-to-ullong->get
+                value-kind-when-scharp
+                value-kind-when-ucharp
+                value-kind-when-sshortp
+                value-kind-when-ushortp
+                value-kind-when-sintp
+                value-kind-when-uintp
+                value-kind-when-slongp
+                value-kind-when-ulongp
+                value-kind-when-sllongp
+                value-kind-when-ullongp
+                value-struct-read
+                value-struct-write
+                not-errorp-when-valuep
+                value-integerp
+                value-unsigned-integerp-alt-def
+                value-signed-integerp-alt-def
+                value-fix-when-valuep
+                ifix
+                integer-range-p
+                (:e ident)
+                (:compound-recognizer consp-when-ucharp)
+                ,recognizer
+                ,fixer-recognizer-thm
+                ,not-error-thm
+                ,type-of-value-thm
+                ,kind-array-thm
+                ,checker
+                ,checker-acl2int
+                ,writer
+                ,writer-acl2int
+                ,not-error-array-thm
+                ,array-writer
+                ,array-checker
+                ,valuep-when-elemtypep
+                ,valuep-when-indextype
+                ,@*integer-value-disjoint-rules*
+                (:t ,type-thm))
+              :use
+              ((:instance
+                ,writer-return-thm
+                (index
+                 (,indextype->get
+                  (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                  compst)))
+                (val
+                 (exec-expr-pure (expr-binary->arg2 e) compst))
+                (struct
+                 (read-var
+                  (expr-ident->get
+                   (expr-member->target
+                    (expr-arrsub->arr (expr-binary->arg1 e))))
+                  compst)))
+               (:instance
+                ,arrayp-of-arrary-write
+                (array
+                 (value-struct-read-aux
+                  (ident ,(ident->name memname))
+                  (value-struct->members
+                   (read-var
+                    (expr-ident->get
+                     (expr-member->target
+                      (expr-arrsub->arr (expr-binary->arg1 e))))
+                    compst))))
+                (index
+                 (,indextype->get
+                  (exec-expr-pure
+                   (expr-arrsub->sub (expr-binary->arg1 e))
+                   compst)))
+                (element
+                 (exec-expr-pure (expr-binary->arg2 e) compst)))))))
+          (hints-memberp
+           `(("Goal"
+              :in-theory
+              '(exec-expr-asg
+                value-integer->get
+                value-schar->get-to-schar->get
+                value-uchar->get-to-uchar->get
+                value-sshort->get-to-sshort->get
+                value-ushort->get-to-ushort->get
+                value-sint->get-to-sint->get
+                value-uint->get-to-uint->get
+                value-slong->get-to-slong->get
+                value-ulong->get-to-ulong->get
+                value-sllong->get-to-sllong->get
+                value-ullong->get-to-ullong->get
+                value-kind-when-scharp
+                value-kind-when-ucharp
+                value-kind-when-sshortp
+                value-kind-when-ushortp
+                value-kind-when-sintp
+                value-kind-when-uintp
+                value-kind-when-slongp
+                value-kind-when-ulongp
+                value-kind-when-sllongp
+                value-kind-when-ullongp
+                value-struct-read
+                value-struct-write
+                not-errorp-when-valuep
+                value-integerp
+                value-unsigned-integerp-alt-def
+                value-signed-integerp-alt-def
+                value-fix-when-valuep
+                ifix
+                integer-range-p
+                (:e ident)
+                (:compound-recognizer consp-when-ucharp)
+                ,recognizer
+                ,fixer-recognizer-thm
+                ,not-error-thm
+                ,type-of-value-thm
+                ,kind-array-thm
+                ,checker
+                ,checker-acl2int
+                ,writer
+                ,writer-acl2int
+                ,not-error-array-thm
+                ,array-writer
+                ,array-checker
+                ,valuep-when-elemtypep
+                ,valuep-when-indextype
+                ,@*integer-value-disjoint-rules*
+                (:t ,type-thm))
+              :use
+              ((:instance
+                ,writer-return-thm
+                (index
+                 (,indextype->get
+                  (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                  compst)))
+                (val
+                 (exec-expr-pure (expr-binary->arg2 e) compst))
+                (struct
+                 (read-object
+                  (value-pointer->designator
+                   (read-var
+                    (expr-ident->get
+                     (expr-memberp->target
+                      (expr-arrsub->arr (expr-binary->arg1 e))))
+                    compst))
+                  compst)))
+               (:instance
+                ,arrayp-of-arrary-write
+                (array
+                 (value-struct-read-aux
+                  (ident ,(ident->name memname))
+                  (value-struct->members
+                   (read-object
+                    (value-pointer->designator
+                     (read-var
+                      (expr-ident->get
+                       (expr-memberp->target
+                        (expr-arrsub->arr (expr-binary->arg1 e))))
+                      compst))
+                    compst))))
+                (index
+                 (,indextype->get
+                  (exec-expr-pure
+                   (expr-arrsub->sub (expr-binary->arg1 e))
+                   compst)))
+                (element
+                 (exec-expr-pure (expr-binary->arg2 e) compst)))))))
+          ((mv event-member &)
+           (evmac-generate-defthm thm-member-name
+                                  :formula formula-member
+                                  :hints hints-member
+                                  :enable nil))
+          ((mv event-memberp &)
+           (evmac-generate-defthm thm-memberp-name
+                                  :formula formula-memberp
+                                  :hints hints-memberp
+                                  :enable nil))
           ((mv events thm-names names-to-avoid)
            (atc-gen-tag-member-write-thms-aux tag
                                               recognizer
@@ -5995,8 +6241,8 @@
                                               type-of-value-thm
                                               names-to-avoid
                                               wrld)))
-       (mv (cons event events)
-           (cons thm-name thm-names)
+       (mv (list* event-member event-memberp events)
+           (list* thm-member-name thm-memberp-name thm-names)
            names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -197,21 +197,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |write_x_to_point2D| (|point|)
+(defun |write_x_to_point2D_by_value| (|point|)
+  (declare (xargs :guard (struct-|point2D|-p |point|)))
+  (let ((|point| (struct-|point2D|-write-|x| (c::sint-dec-const 99) |point|)))
+    |point|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_x_to_point2D_by_pointer| (|point|)
   (declare (xargs :guard (c::pointer (struct-|point2D|-p |point|))))
   (let ((|point| (struct-|point2D|-write-|x| (c::sint-dec-const 99) |point|)))
     |point|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |write_y_to_point2D| (|point|)
+(defun |write_y_to_point2D_by_value| (|point|)
+  (declare (xargs :guard (struct-|point2D|-p |point|)))
+  (let ((|point| (struct-|point2D|-write-|y| (c::sint-dec-const 99) |point|)))
+    |point|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_y_to_point2D_by_pointer| (|point|)
   (declare (xargs :guard (c::pointer (struct-|point2D|-p |point|))))
   (let ((|point| (struct-|point2D|-write-|y| (c::sint-dec-const 99) |point|)))
     |point|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |write_scalar| (|v| |a|)
+(defun |write_scalar_by_value| (|v| |a|)
+  (declare (xargs :guard (and (c::sintp |v|)
+                              (struct-|scalar_and_array|-p |a|))))
+  (let ((|a| (struct-|scalar_and_array|-write-|scalar| |v| |a|)))
+    |a|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_scalar_by_pointer| (|v| |a|)
   (declare (xargs :guard (and (c::sintp |v|)
                               (c::pointer (struct-|scalar_and_array|-p |a|)))))
   (let ((|a| (struct-|scalar_and_array|-write-|scalar| |v| |a|)))
@@ -219,7 +241,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |write_aggreg| (|i| |v| |a|)
+(defun |write_aggreg_by_value| (|i| |v| |a|)
+  (declare
+   (xargs
+    :guard
+    (and
+     (c::sintp |i|)
+     (c::ucharp |v|)
+     (struct-|scalar_and_array|-p |a|)
+     (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
+  (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-sint |i| |v| |a|)))
+    |a|))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_aggreg_by_pointer| (|i| |v| |a|)
   (declare
    (xargs
     :guard
@@ -257,8 +293,12 @@
         |return8|
         |return9|
         |return10|
-        |write_x_to_point2D|
-        |write_y_to_point2D|
-        |write_scalar|
-        |write_aggreg|
+        |write_x_to_point2D_by_value|
+        |write_x_to_point2D_by_pointer|
+        |write_y_to_point2D_by_value|
+        |write_y_to_point2D_by_pointer|
+        |write_scalar_by_value|
+        |write_scalar_by_pointer|
+        |write_aggreg_by_value|
+        |write_aggreg_by_pointer|
         :output-file "structs.c")
