@@ -146,38 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-eq ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-eq
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-eq
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (eq-uint-uint val1 val2))
-     ((sintp val1) (eq-sint-sint val1 val2))
-     ((ulongp val1) (eq-ulong-ulong val1 val2))
-     ((slongp val1) (eq-slong-slong val1 val2))
-     ((ullongp val1) (eq-ullong-ullong val1 val2))
-     ((sllongp val1) (eq-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-ne ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute non-equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
@@ -332,7 +300,7 @@
       (:gt (gt-values arg1 arg2))
       (:le (le-values arg1 arg2))
       (:ge (ge-values arg1 arg2))
-      (:eq (exec-eq arg1 arg2))
+      (:eq (eq-values arg1 arg2))
       (:ne (exec-ne arg1 arg2))
       (:bitand (exec-bitand arg1 arg2))
       (:bitxor (exec-bitxor arg1 arg2))
