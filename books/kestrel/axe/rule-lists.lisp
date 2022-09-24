@@ -92,7 +92,7 @@
     boolor-of-not-same-alt
     boolor-of-not-same-three-terms-alt ; todo: make name more similar to the booland rule
     boolor-of-not-same-three-terms ; todo: make name more similar to the booland rule
-    ;; Rules to drop bool-fix in argument positions:
+    ;; Rules to drop bool-fix when applied to arguments:
     booland-of-bool-fix-arg1
     booland-of-bool-fix-arg2
     boolor-of-bool-fix-arg1
@@ -102,14 +102,14 @@
     boolif-of-bool-fix-arg1
     boolif-of-bool-fix-arg2
     boolif-of-bool-fix-arg3
+    not-of-bool-fix
     if-of-bool-fix-arg1 ; add a rule for myif too?
     bool-fix-of-bool-fix
     ;; Rules about boolif:
     boolif-same-branches
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
-    boolif-of-not-same-arg3-alt
-    ))
+    boolif-of-not-same-arg3-alt))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
@@ -147,11 +147,11 @@
             force-of-non-nil ;do we still need this?
             equal-nil-of-not
             not-of-not ;BOZO what do we do with the resulting bool-fix?
-            bool-fix-when-booleanp
+            bool-fix-when-booleanp ; drop from here?
             equal-same
             not-<-same
             turn-equal-around-axe ; may be dangerous?
-            not-of-bool-fix
+            not-of-bool-fix ; drop from here?
 
             ifix-does-nothing
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
@@ -2407,8 +2407,8 @@
      <-of-bv-and-non-positive-constant
      not-of-not
      equal-nil-of-not
-     not-of-bool-fix
-     bool-fix-when-booleanp
+     not-of-bool-fix ; just include boolean-rules-safe?
+     bool-fix-when-booleanp ; just include boolean-rules-safe?
      equal-same
      not-<-same
      if-of-t
