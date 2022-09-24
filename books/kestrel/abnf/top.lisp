@@ -80,7 +80,7 @@
 
    (xdoc::p
     "Besides the aforementioned examples,
-     the parser and some grammar operations have been used on "
+     the parser, abstractor, and some grammar operations have been used on "
     (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
     " and on "
     (xdoc::seetopic "yul::concrete-syntax" "an ABNF grammar of Yul")
