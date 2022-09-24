@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -96,9 +96,13 @@
      "https://www.kestrel.edu/home/people/coglio/vstte18.pdf"
      "VSTTE 2018 paper")
     " provides an overview
-     of the formalization of the ABNF notation
-     and of the verified parser
-     (but not of the operations on ABNF grammars).
+     of the ABNF notation formalization,
+     of the verified parser,
+     and of the syntax abstractor
+     (but not of the operations on ABNF grammars,
+     of the parsing primitives,
+     of the parsing generation tools,
+     or of the real-world examples).
      The differences between the paper and the ABNF library
      are described "
     (xdoc::seetopic "differences-with-paper" "here")
