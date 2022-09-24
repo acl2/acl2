@@ -146,138 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-le ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute less-than-or-equal-to [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-realp arg1))
-        (error (list :mistype-le
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-realp arg2))
-        (error (list :mistype-le
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (le-uint-uint val1 val2))
-     ((sintp val1) (le-sint-sint val1 val2))
-     ((ulongp val1) (le-ulong-ulong val1 val2))
-     ((slongp val1) (le-slong-slong val1 val2))
-     ((ullongp val1) (le-ullong-ullong val1 val2))
-     ((sllongp val1) (le-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-ge ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute greater-than-or-equal-to [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-realp arg1))
-        (error (list :mistype-ge
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-realp arg2))
-        (error (list :mistype-ge
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (ge-uint-uint val1 val2))
-     ((sintp val1) (ge-sint-sint val1 val2))
-     ((ulongp val1) (ge-ulong-ulong val1 val2))
-     ((slongp val1) (ge-slong-slong val1 val2))
-     ((ullongp val1) (ge-ullong-ullong val1 val2))
-     ((sllongp val1) (ge-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-eq ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-eq
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-eq
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (eq-uint-uint val1 val2))
-     ((sintp val1) (eq-sint-sint val1 val2))
-     ((ulongp val1) (eq-ulong-ulong val1 val2))
-     ((slongp val1) (eq-slong-slong val1 val2))
-     ((ullongp val1) (eq-ullong-ullong val1 val2))
-     ((sllongp val1) (eq-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-ne ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute non-equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-ne
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-ne
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (ne-uint-uint val1 val2))
-     ((sintp val1) (ne-sint-sint val1 val2))
-     ((ulongp val1) (ne-ulong-ulong val1 val2))
-     ((slongp val1) (ne-slong-slong val1 val2))
-     ((ullongp val1) (ne-ullong-ullong val1 val2))
-     ((sllongp val1) (ne-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-bitand ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute bitwise cojunction [C:6.5.10]."
@@ -398,10 +266,10 @@
       (:shr (shr-values arg1 arg2))
       (:lt (lt-values arg1 arg2))
       (:gt (gt-values arg1 arg2))
-      (:le (exec-le arg1 arg2))
-      (:ge (exec-ge arg1 arg2))
-      (:eq (exec-eq arg1 arg2))
-      (:ne (exec-ne arg1 arg2))
+      (:le (le-values arg1 arg2))
+      (:ge (ge-values arg1 arg2))
+      (:eq (eq-values arg1 arg2))
+      (:ne (ne-values arg1 arg2))
       (:bitand (exec-bitand arg1 arg2))
       (:bitxor (exec-bitxor arg1 arg2))
       (:bitior (exec-bitior arg1 arg2))

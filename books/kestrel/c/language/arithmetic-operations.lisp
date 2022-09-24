@@ -179,3 +179,49 @@
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eq-arithmetic-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+  :returns (resval value-resultp)
+  :short "Apply @('==') to arithmetic values [C:6.5.9/3] [C:6.5.9/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We perform the usual arithmetic conversions
+     and then we apply the operation on the integers.
+     In our current formalization,
+     integers are the only arithmetic values.
+     This ACL2 function will be extended with more cases
+     if/when we extend our model with non-integer arithmetic values."))
+  (b* (((mv val1 val2) (uaconvert-values val1 val2)))
+    (eq-integer-values val1 val2))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp
+                                           type-of-value-of-uaconvert-values)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ne-arithmetic-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+  :returns (resval value-resultp)
+  :short "Apply @('!=') to arithmetic values [C:6.5.9/3] [C:6.5.9/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We perform the usual arithmetic conversions
+     and then we apply the operation on the integers.
+     In our current formalization,
+     integers are the only arithmetic values.
+     This ACL2 function will be extended with more cases
+     if/when we extend our model with non-integer arithmetic values."))
+  (b* (((mv val1 val2) (uaconvert-values val1 val2)))
+    (ne-integer-values val1 val2))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp
+                                           type-of-value-of-uaconvert-values)))
+  :hooks (:fix))
