@@ -66,66 +66,74 @@
             booleanp-of-items-have-len ;new
             )))
 
-;some of these may be necessary for case-splitting in the dag prover to work right
-(defun boolean-rules ()
+(defun boolean-rules-safe ()
   (declare (xargs :guard t))
-  `(;; Rules about bool-fix:
+  '(;; Rules handling constant args:
+    booland-of-constant-arg1
+    booland-of-constant-arg2
+    ;; booland-commute-constant ; trying without since we know how to handle any particular constant
+    boolor-of-constant-arg1
+    boolor-of-constant-arg2
+    boolxor-of-constant-arg1
+    boolxor-of-constant-arg2
+    ;; Rules about repeated arguments in nests:
+    booland-same
+    booland-same-2
+    boolor-same
+    boolor-same-2
+    boolxor-same-1
+    boolxor-same-2
+    ;; Rules about contradicting arguments in nests:
+    booland-of-not-same
+    booland-of-not-same-alt ;drop?
+    booland-of-not-and-booland-same
+    booland-of-not-and-booland-same-alt ;drop?
+    boolor-of-not-same
+    boolor-of-not-same-alt
+    boolor-of-not-same-three-terms-alt ; todo: make name more similar to the booland rule
+    boolor-of-not-same-three-terms ; todo: make name more similar to the booland rule
+    ;; Rules to drop bool-fix in argument positions:
     booland-of-bool-fix-arg1
     booland-of-bool-fix-arg2
     boolor-of-bool-fix-arg1
     boolor-of-bool-fix-arg2
     boolxor-of-bool-fix-arg1
     boolxor-of-bool-fix-arg2
-    bool-fix-of-bool-fix
-    if-of-bool-fix-arg1 ; add a rule for myif too?
     boolif-of-bool-fix-arg1
     boolif-of-bool-fix-arg2
     boolif-of-bool-fix-arg3
-
-    ;; Rules about booland:
-    booland-of-constant-arg1
-    booland-of-constant-arg2
-    booland-same
-    booland-same-2
-    ;; booland-commute-constant ; trying without since we know how to handle any particular constant
-    booland-of-not-and-booland-same
-    booland-of-not-and-booland-same-alt ;drop?
-    booland-of-not-same
-    booland-of-not-same-alt ;drop?
-
-    ;; Rules about boolor:
-    boolor-of-constant-arg1
-    boolor-of-constant-arg2
-    boolor-same
-    boolor-same-2
-    boolor-of-not-same-three-terms-alt
-    boolor-of-not-same-three-terms
-    boolor-of-not-same-alt
-    boolor-of-not-same
-    boolor-of-not-of-boolor-of-not-same
-
-    ;; Rules about boolxor:
-    boolxor-of-constant-arg1
-    boolxor-of-constant-arg2
-    boolxor-same-1
-    boolxor-same-2
-
+    if-of-bool-fix-arg1 ; add a rule for myif too?
+    bool-fix-of-bool-fix
     ;; Rules about boolif:
-    boolif-when-quotep-arg1
-    boolif-when-quotep-arg2 ; introduces boolor, or booland of not
-    boolif-when-quotep-arg3 ; introduces boolor of not, or booland
+    boolif-same-branches
+    boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
     boolif-of-not-same-arg3-alt
-    boolif-x-x-y
-    boolif-x-y-x
-    boolif-same-branches
+    ))
 
-    ;; Rules about iff:
-    ;or should we open iff?
-    iff-of-t-arg1 ; gen?
-    iff-of-t-arg2 ; gen?
-    iff-of-nil-arg1
-    iff-of-nil-arg2))
+;some of these may be necessary for case-splitting in the dag prover to work right
+(defun boolean-rules ()
+  (declare (xargs :guard t))
+  (append
+   (boolean-rules-safe)
+   `(;; Rules about boolor:
+     boolor-of-not-of-boolor-of-not-same ; do we need this?
+
+     ;; Rules about boolif:
+     ;; todo: think about these: sometimes we prefer boolif:
+     boolif-when-quotep-arg2 ; introduces boolor, or booland of not
+     boolif-when-quotep-arg3 ; introduces boolor of not, or booland
+     boolif-x-x-y ; introduces boolor
+     boolif-x-y-x ; introduces booland
+
+     ;; Rules about iff:
+;or should we open iff?
+     ;; todo: make these like booland-of-constant-arg1:
+     ;; todo: move these to boolean-rules-safe
+     iff-of-t-arg1 ; gen?
+     iff-of-t-arg2 ; gen?
+     iff-of-nil-arg1
+     iff-of-nil-arg2)))
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
