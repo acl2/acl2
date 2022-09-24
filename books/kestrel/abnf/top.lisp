@@ -79,6 +79,16 @@
       on a few real-world ABNF grammars (e.g. for HTTP)."))
 
    (xdoc::p
+    "Besides the aforementioned examples,
+     the parser and some grammar operations have been used on "
+    (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
+    " and on "
+    (xdoc::seetopic "yul::concrete-syntax" "an ABNF grammar of Yul")
+    ". The parsing generation tools have been used to generate part of "
+    (xdoc::seetopic "yul::lexer" "a Yul lexer")
+    ".")
+
+   (xdoc::p
     "In the documentation of this library,
      `[RFC]' refers to the result of updating RFC 5234 as specified by RFC 7405.
      Sections and subsections of [RFC] are referenced
