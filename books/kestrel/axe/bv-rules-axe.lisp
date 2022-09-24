@@ -2197,3 +2197,19 @@
            (not (equal x k)))
   :rule-classes nil ; since in ACL2, xsize not is bound when used
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvmult-tighten-when-power-of-2p-axe
+  (implies (and (syntaxp (quotep x))
+                (power-of-2p x)
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< (+ (lg x) ysize) size)
+                (natp size)
+                ;; (force (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced ysize y))
+                )
+           (equal (bvmult size x y)
+                  (bvmult (+ (lg x) ysize) x y)))
+  :hints (("Goal" :use (bvmult-tighten-when-power-of-2p)
+           :in-theory (disable bvmult-tighten-when-power-of-2p))))
