@@ -1,4 +1,4 @@
-; A book about the built-in function IFF
+; A lightweight book about the built-in function IFF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2022 Kestrel Institute
@@ -13,24 +13,33 @@
 
 (include-book "bool-fix")
 
-;we may often open up iff, but here are some theorems about it anyway:
+;; IFF should probably be enabled for most ACL2 proofs, but we include here
+;; some theorems that could be useful if it is disabled.  These theorems are
+;; also used by Axe.  We don't disable IFF in this book -- a deparature from
+;; our usual convention of disabling a function in the book about it.
 
-(defthm iff-of-t-arg1
-  (equal (iff t x)
-         (bool-fix x)))
+(defthm iff-of-constant-arg1
+  (implies (quotep x)
+           (equal (iff x y)
+                  (if x ; gets resovled
+                      (bool-fix y)
+                    (not y)))))
 
-(defthm iff-of-t-arg2
-  (equal (iff x t)
-         (bool-fix x)))
-
-(defthm iff-of-nil-arg1
-  (equal (iff nil x)
-         (not x)))
-
-(defthm iff-of-nil-arg2
-  (equal (iff x nil)
-         (not x)))
+(defthm iff-of-constant-arg2
+  (implies (quotep y)
+           (equal (iff x y)
+                  (if y ; gets resovled
+                      (bool-fix x)
+                    (not x)))))
 
 (defthm iff-same
   (equal (iff x x)
          t))
+
+(defthm iff-bool-fix-arg1
+  (equal (iff (bool-fix x) y)
+         (iff x y)))
+
+(defthm iff-bool-fix-arg2
+  (equal (iff x (bool-fix y))
+         (iff x y)))

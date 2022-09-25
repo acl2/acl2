@@ -126,14 +126,10 @@
      boolif-x-x-y ; introduces boolor
      boolif-x-y-x ; introduces booland
 
-     ;; Rules about iff:
-;or should we open iff?
-     ;; todo: make these like booland-of-constant-arg1:
+     ;; Rules about iff (or should we open iff)?
      ;; todo: move these to boolean-rules-safe
-     iff-of-t-arg1 ; gen?
-     iff-of-t-arg2 ; gen?
-     iff-of-nil-arg1
-     iff-of-nil-arg2)))
+     iff-of-constant-arg1
+     iff-of-constant-arg2)))
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
