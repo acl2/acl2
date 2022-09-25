@@ -19,14 +19,14 @@
 ;; our usual convention of disabling a function in the book about it.
 
 (defthm iff-of-constant-arg1
-  (implies (quotep x)
+  (implies (syntaxp (quotep x))
            (equal (iff x y)
                   (if x ; gets resovled
                       (bool-fix y)
                     (not y)))))
 
 (defthm iff-of-constant-arg2
-  (implies (quotep y)
+  (implies (syntaxp (quotep y))
            (equal (iff x y)
                   (if y ; gets resovled
                       (bool-fix x)
