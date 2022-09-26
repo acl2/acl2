@@ -1,7 +1,7 @@
 ; Checking whether a function is called in a term
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,3 +36,21 @@
        nil
      (or (expr-calls-fn fn (car exprs))
          (some-expr-calls-fn fn (cdr exprs))))))
+
+;; TODO: Optimize
+(defun some-expr-calls-some-fn (fns exprs)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (pseudo-term-listp exprs))))
+  (if (atom fns)
+      nil
+    (or (some-expr-calls-fn (first fns) exprs)
+        (some-expr-calls-some-fn (rest fns) exprs))))
+
+;; TODO: Optimize
+(defun expr-calls-some-fn (fns expr)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (pseudo-termp expr))))
+  (if (atom fns)
+      nil
+    (or (expr-calls-fn (first fns) expr)
+        (expr-calls-some-fn (rest fns) expr))))
