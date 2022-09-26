@@ -562,8 +562,7 @@
   ///
 
   (defrule 0-when-match-repeat-range-0
-    (implies (and (equal range (repeat-range 0 (nati-finite 0)))
-                  (acl2-numberp n)) ; added by Matt K after tau bug fix 8/16/18
+    (implies (equal range (repeat-range 0 (nati-finite 0)))
              (equal (numrep-match-repeat-range-p n range)
                     (equal (nfix n) 0)))
     :enable numrep-match-repeat-range-p))
