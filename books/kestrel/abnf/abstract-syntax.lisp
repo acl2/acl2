@@ -149,7 +149,7 @@
    "In the abstract syntax,
     for the repetition notation described in [RFC:3.6] and [RFC:3.7]
     and by rule @('repeat') in [RFC:4],
-    we use pairs of natural numbers and natural numbers plus infinity.
+    we use pairs of (i) natural numbers and (ii) natural numbers plus infinity.
     A specific repetition [RFC:3.7] is abstracted
     to a variable repetition [RFC:3.6] with the same minimum and maximum.
     A repetition with a missing lower bound is abstracted
