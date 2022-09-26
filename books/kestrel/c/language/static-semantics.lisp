@@ -2158,7 +2158,17 @@
      We ensure that there is at least one member [C:6.2.5/20].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
-     since these share one name space [C:6.2.3]."))
+     since these share one name space [C:6.2.3].")
+   (xdoc::p
+    "C allows a form of recursion in structure type declarations,
+     namely that a member can be a pointer to the structure:
+     [C:6.2.1/7] says that the scope of the tag starts where it appears,
+     so it includes the members;
+     and [C:6.7.2.1/9] says that a member type must be complete,
+     which pointer types are [C:6:2.5/20].
+     However, we implicitly disallow even this form of recursion for now,
+     because we check the member types against the current tag environment,
+     which does not include the structure type yet."))
   (tag-declon-case
    declon
    :struct
