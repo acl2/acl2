@@ -109,8 +109,7 @@
     so the rule @('char-val') in [RFC:4] also allows empty strings.
     An empty character value notation
     may play the role of the empty sequence of symbols
-    (often denoted by @($\\epsilon$) in textbooks)
-    even though ABNF includes constructs like @('[...]').")
+    (often denoted by @($\\epsilon$) in textbooks).")
   (b* ((allowed-chars (nats=>chars (append (integers-from-to #x20 #x21)
                                            (integers-from-to #x23 #x7e)))))
     (char-val-case char-val
