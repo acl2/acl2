@@ -417,10 +417,10 @@
                   ((flatnorm-res spec) (svtv-normalize-assigns res aliases
                                                                (svtv-data-obj->flatnorm-setup
                                                                 x))))
-               (and (svex-alist-eval-equiv flatnorm.assigns spec.assigns)
+               (and (svex-alist-eval-equiv! flatnorm.assigns spec.assigns)
                     (subsetp-equal (svex-alist-vars flatnorm.assigns)
                                    (svex-alist-vars spec.assigns))
-                    (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
+                    ;; (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
                     (equal flatnorm.delays spec.delays)
                     (equal flatnorm.constraints spec.constraints))))
     :Hints(("Goal" :in-theory (enable svtv-data$ap

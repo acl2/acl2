@@ -28,6 +28,7 @@
 (include-book "fixpoint-eval")
 (include-book "override")
 (local (include-book "alist-thms"))
+(local (include-book "std/alists/fast-alist-clean" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -364,6 +365,44 @@
                                            svar-override-triplelist->refvars)))))
 
 
+(defsection svex-alist-vars-of-fast-alist-clean
+  (defthm member-svex-alist-vars-of-fast-alist-fork
+    (implies (and (not (member-equal v (svex-alist-vars y)))
+                  (not (member-equal v (svex-alist-vars x))))
+             (not (member-equal v (svex-alist-vars (fast-alist-fork x y)))))
+    :hints(("Goal" :in-theory (enable svex-alist-vars))))
+
+  (defthm member-svex-alist-vars-of-fast-alist-clean
+    (implies (not (member-equal v (svex-alist-vars x)))
+             (not (member-equal v (svex-alist-vars (fast-alist-clean x)))))
+    :hints(("Goal" :in-theory (enable svex-alist-vars fast-alist-clean))))
+
+  (defthm subsetp-svex-alist-vars-of-fast-alist-clean
+    (subsetp (svex-alist-vars (fast-alist-clean x))
+             (svex-alist-vars x))
+    :hints(("Goal" :in-theory (e/d (acl2::subsetp-witness-rw) (fast-alist-clean))))))
+
+(defsection fast-alist-clean-of-svex-alist-fix
+  (defthm fast-alist-fork-of-svex-alist-fix
+    (equal (fast-alist-fork (svex-alist-fix x) (svex-alist-fix y))
+           (svex-alist-fix (fast-alist-fork x y)))
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
+
+  (local (defthm cdr-last-of-svex-alist-fix
+           (equal (cdr (last (svex-alist-fix x))) nil)
+           :hints(("Goal" :in-theory (enable svex-alist-fix)))))
+  
+  (defthm fast-alist-clean-of-svex-alist-fix
+    (equal (fast-alist-clean (svex-alist-fix x))
+           (svex-alist-fix (fast-alist-clean x)))
+    :hints (("goal" :use ((:instance fast-alist-fork-of-svex-alist-fix
+                           (y (cdr (last x))))
+                          (:instance fast-alist-fork-of-svex-alist-fix
+                           (y nil)))
+             :in-theory (e/d (svex-alist-fix)
+                             (fast-alist-fork-of-svex-alist-fix))
+             :do-not-induct t))))
+
 (defsection svex-width-of-svex-compose-override-alist
 
   ;; (local (defthm eval-override-alist-of-cons-irrel
@@ -471,15 +510,72 @@
                              (svex-width-when-limited
                               not-limited-p-when-not-svex-width)))))
 
+  (local (in-theory (disable fast-alist-clean)))
+  
+  (defthm svex-alist-width-aux-of-svex-alist-compose-override-alist
+    (implies (and (not (intersectp-equal (svex-alist-vars x) (svar-override-triplelist->testvars triples)))
+                  (not (intersectp-equal (svar-override-triplelist->refvars triples)
+                                         (svar-override-triplelist->testvars triples))))
+             (equal (svex-alist-width-aux (svex-alist-compose x (svar-override-triplelist->override-alist triples)))
+                    (svex-alist-width-aux x)))
+    :hints(("Goal" :in-theory (enable svex-alist-width-aux
+                                      svex-alist-vars
+                                      svex-alist-compose svex-acons))))
+
+  (local (defun fast-alist-fork-of-svex-alist-compose-ind (x y)
+           (if (atom x)
+               y
+             (if (and (consp (car x))
+                      (not (hons-assoc-equal (caar x) y)))
+                 (fast-alist-fork-of-svex-alist-compose-ind (cdr x) (cons (car x) y))
+               (fast-alist-fork-of-svex-alist-compose-ind (cdr x) y)))))
+
+  (local (defthm hons-assoc-equal-of-svex-alist-compose
+           (iff (hons-assoc-equal k (svex-alist-compose x y))
+                (and (svar-p k)
+                     (hons-assoc-equal k x)))
+           :hints(("Goal" :in-theory (enable svex-alist-compose svex-acons)))))
+  
+  (local (defthm fast-alist-fork-of-svex-alist-compose
+           (equal (fast-alist-fork (svex-alist-compose x z) (svex-alist-compose y z))
+                  (svex-alist-compose (fast-alist-fork x y) z))
+           :hints(("Goal" :in-theory (enable svex-alist-compose svex-acons)
+                   :induct (fast-alist-fork-of-svex-alist-compose-ind x y)
+                   :expand ((fast-alist-fork x y))))))
+
+  (local (defthm cdr-last-of-svex-alist-compose
+           (equal (cdr (last (svex-alist-compose x y))) nil)
+           :hints(("Goal" :in-theory (enable svex-alist-compose svex-acons)))))
+
+  (local (defthm svex-alist-compose-of-cdr-last
+           (equal (svex-alist-compose (cdr (last x)) y) nil)
+           :hints(("Goal" :in-theory (enable svex-alist-compose svex-acons)))))
+  
+  (local (defthm fast-alist-clean-of-svex-alist-compose
+           (equal (fast-alist-clean (svex-alist-compose x y))
+                  (svex-alist-compose (fast-alist-clean x) y))
+           :hints (("Goal" :in-theory (e/d (fast-alist-clean)
+                                           (fast-alist-fork-of-svex-alist-compose))
+                    :use ((:instance fast-alist-fork-of-svex-alist-compose
+                           (y (cdr (last x))) (z y))))
+                   (and stable-under-simplificationp
+                        '(:expand ((svex-alist-compose nil y)
+                                   (svex-alist-compose x y)))))))
+
+  (local (defthm intersectp-when-subsetp
+           (implies (and (not (intersectp-equal x y))
+                         (subsetp-equal z x))
+                    (not (intersectp-equal z y)))
+           :hints(("Goal" :in-theory (enable subsetp-equal intersectp-equal)))))
+  
   (defthm svex-alist-width-of-svex-alist-compose-override-alist
     (implies (and (not (intersectp-equal (svex-alist-vars x) (svar-override-triplelist->testvars triples)))
                   (not (intersectp-equal (svar-override-triplelist->refvars triples)
                                          (svar-override-triplelist->testvars triples))))
              (equal (svex-alist-width (svex-alist-compose x (svar-override-triplelist->override-alist triples)))
                     (svex-alist-width x)))
-    :hints(("Goal" :in-theory (enable svex-alist-width
-                                      svex-alist-vars
-                                      svex-alist-compose svex-acons)))))
+    :hints(("Goal" :in-theory (e/d (svex-alist-width)
+                                   (acl2::intersectp-equal-commute))))))
 
 
 (local (defthm not-intersectp-testvars/refvars-when-not-intersectp-and-subsetp

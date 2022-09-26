@@ -237,9 +237,9 @@
                    (svtv-normalize-assigns flatten aliases setup)
                    spec))
        ((flatnorm-res flatnorm)))
-    (and (ec-call (svex-alist-eval-equiv flatnorm.assigns spec.assigns))
+    (and (ec-call (svex-alist-eval-equiv! flatnorm.assigns spec.assigns))
          (subsetp-equal (svex-alist-vars flatnorm.assigns) (svex-alist-vars spec.assigns))
-         (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
+         ;; (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
          (equal flatnorm.delays spec.delays)
          (equal flatnorm.constraints spec.constraints)))
   ///

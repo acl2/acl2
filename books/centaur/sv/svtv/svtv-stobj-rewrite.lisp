@@ -309,6 +309,11 @@
 
 (local (include-book "std/lists/sets" :dir :system))
 
+(local (defthmd svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite
+         (implies (and (double-rewrite (svex-alist-eval-equiv x y))
+                       (equal (svex-alist-keys x) (svex-alist-keys y)))
+                  (equal (svex-alist-eval-equiv! x y) t))))
+
 (define svtv-data-rewrite-flatnorm (svtv-data &key ((count natp) '4) (verbosep 'nil))
   :guard ;; (or (svtv-data->flatnorm-validp svtv-data)
   ;; FIXME: should be able to show that this preserves validity of the phase-fsm when flatnorm-validp.
@@ -316,7 +321,8 @@
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap
-                                          acl2::subsetp-witness-rw)))
+                                          acl2::subsetp-witness-rw
+                                          svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite)))
                 )
   :returns new-svtv-data
   (time$
@@ -342,7 +348,8 @@
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap
-                                          acl2::subsetp-witness-rw)))
+                                          acl2::subsetp-witness-rw
+                                          svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite)))
                 )
   :returns new-svtv-data
   (time$

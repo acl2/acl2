@@ -171,37 +171,49 @@
                                       svex-apply
                                       4vec-width-p
                                       4vec-concat))))
-             
+  
   (defret svex-alist-width-limited-p-of-svex-alist-truncate-by-var-decls
-    (implies (svex-alist-width-limited-p map acc)
+    (implies (and (svex-alist-width-limited-p map acc)
+                  (no-duplicatesp-equal (svex-alist-keys alist))
+                  (no-duplicatesp-equal (svex-alist-keys acc))
+                  (not (intersectp-equal (svex-alist-keys alist)
+                                         (svex-alist-keys acc))))
              (svex-alist-width-limited-p map
                                          (svex-alist-truncate-by-var-decls alist x acc)))
-    :hints(("Goal" :in-theory (enable svex-alist-width-limited-p
-                                      svex-alist-truncate-by-var-decls)
+    :hints(("Goal" :in-theory (enable svex-alist-truncate-by-var-decls
+                                      svex-alist-width-limited-p-rec-when-no-duplicate-keys
+                                      svex-alist-keys)
             :induct (svex-alist-truncate-by-var-decls alist x acc))))
 
   (defret svex-alist-width-limited-p-of-svex-alist-truncate-by-var-decls-monotonify
-    (implies (svex-alist-width-limited-p map (svex-alist-monotonify acc))
+    (implies (and (svex-alist-width-limited-p map (svex-alist-monotonify acc))
+                  (no-duplicatesp-equal (svex-alist-keys alist))
+                  (no-duplicatesp-equal (svex-alist-keys acc))
+                  (not (intersectp-equal (svex-alist-keys alist)
+                                         (svex-alist-keys acc))))
              (svex-alist-width-limited-p map
                                          (svex-alist-monotonify
                                           (svex-alist-truncate-by-var-decls alist x acc))))
-    :hints(("Goal" :in-theory (enable svex-alist-width-limited-p
-                                      svex-alist-monotonify
-                                      svex-alist-truncate-by-var-decls)
+    :hints(("Goal" :in-theory (e/d (svex-alist-monotonify
+                                      svex-alist-truncate-by-var-decls
+                                      svex-alist-width-limited-p-rec-when-no-duplicate-keys
+                                      svex-alist-keys))
             :induct (svex-alist-truncate-by-var-decls alist x acc))))
 
   (defthm svex-alist-width-of-svex-alist-truncate-by-var-decls
-    (svex-alist-width (svex-alist-truncate-by-var-decls x var-map nil))
+    (implies (no-duplicatesp-equal (svex-alist-keys x))
+             (svex-alist-width (svex-alist-truncate-by-var-decls x var-map nil)))
     :hints (("goal" :use ((:instance svex-alist-width-limited-p-of-svex-alist-truncate-by-var-decls
                            (acc nil) (alist x) (x var-map)))
-             :in-theory (e/d (svex-alist-width-limited-p)
+             :in-theory (e/d (svex-alist-width-limited-p-rec-when-no-duplicate-keys)
                              (svex-alist-width-limited-p-of-svex-alist-truncate-by-var-decls)))))
 
   (defthm svex-alist-width-of-svex-alist-truncate-by-var-decls-monotonify
-    (svex-alist-width (svex-alist-monotonify (svex-alist-truncate-by-var-decls x var-map nil)))
+    (implies (no-duplicatesp-equal (svex-alist-keys x))
+             (svex-alist-width (svex-alist-monotonify (svex-alist-truncate-by-var-decls x var-map nil))))
     :hints (("goal" :use ((:instance svex-alist-width-limited-p-of-svex-alist-truncate-by-var-decls-monotonify
                            (acc nil) (alist x) (x var-map)))
-             :in-theory (e/d (svex-alist-width-limited-p)
+             :in-theory (e/d (svex-alist-width-limited-p-rec-when-no-duplicate-keys)
                              (svex-alist-width-limited-p-of-svex-alist-truncate-by-var-decls-monotonify)))))
   
   (local (in-theory (enable var-decl-map-fix))))
@@ -561,96 +573,104 @@
 
 
 
-(defsection svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys
+;; (defsection svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys
 
 
-  (local (defthm cdr-under-svex-alist-eval-equiv-when-not-consp-car
-           (implies (not (consp (car y)))
-                    (svex-alist-eval-equiv (cdr y) y))
-           :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
-                                             svex-lookup
-                                             svex-alist-fix)))))
+;;   (local (defthm cdr-under-svex-alist-eval-equiv-when-not-consp-car
+;;            (implies (not (consp (car y)))
+;;                     (svex-alist-eval-equiv (cdr y) y))
+;;            :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
+;;                                              svex-lookup
+;;                                              svex-alist-fix)))))
 
-  (local (defthm cdr-under-svex-alist-eval-equiv-when-not-svar-p-caar
-           (implies (not (svar-p (caar y)))
-                    (svex-alist-eval-equiv (cdr y) y))
-           :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
-                                             svex-lookup
-                                             svex-alist-fix)))))
+;;   (local (defthm cdr-under-svex-alist-eval-equiv-when-not-svar-p-caar
+;;            (implies (not (svar-p (caar y)))
+;;                     (svex-alist-eval-equiv (cdr y) y))
+;;            :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
+;;                                              svex-lookup
+;;                                              svex-alist-fix)))))
 
 
-  (local (defthm svex-alist-eval-equiv-expand-when-same-keys
-           (implies (and (consp y)
-                         (consp (car y))
-                         (svar-p v)
-                         (equal (caar y) v)
-                         (not (svex-lookup v (cdr y)))
-                         (not (svex-lookup v x)))
-                    (equal (svex-alist-eval-equiv (cons (cons v val) x) y)
-                           (and (svex-eval-equiv val (cdar y))
-                                (svex-alist-eval-equiv x (cdr y)))))
-           :hints (("goal" :cases ((svex-alist-eval-equiv (cons (cons v val) x) y))
-                    :in-theory (e/d (svex-lookup-redef))
-                    :do-not-induct t)
-                   (and stable-under-simplificationp
-                        (b* ((lit (assoc 'svex-alist-eval-equiv clause))
-                             (?wit `(svex-alist-eval-equiv-witness . ,(cdr lit))))
-                          (if lit
-                              `(:expand (,lit)
-                                :use ((:instance svex-alist-eval-equiv-necc
-                                       (var ,wit) (x (cons (cons (caar y) val) x)) (y y)))
-                                :in-theory (e/d (svex-lookup-redef)
+;;   (local (defthm svex-alist-eval-equiv-expand-when-same-keys
+;;            (implies (and (consp y)
+;;                          (consp (car y))
+;;                          (svar-p v)
+;;                          (equal (caar y) v)
+;;                          (not (svex-lookup v (cdr y)))
+;;                          (not (svex-lookup v x)))
+;;                     (equal (svex-alist-eval-equiv (cons (cons v val) x) y)
+;;                            (and (svex-eval-equiv val (cdar y))
+;;                                 (svex-alist-eval-equiv x (cdr y)))))
+;;            :hints (("goal" :cases ((svex-alist-eval-equiv (cons (cons v val) x) y))
+;;                     :in-theory (e/d (svex-lookup-redef))
+;;                     :do-not-induct t)
+;;                    (and stable-under-simplificationp
+;;                         (b* ((lit (assoc 'svex-alist-eval-equiv clause))
+;;                              (?wit `(svex-alist-eval-equiv-witness . ,(cdr lit))))
+;;                           (if lit
+;;                               `(:expand (,lit)
+;;                                 :use ((:instance svex-alist-eval-equiv-necc
+;;                                        (var ,wit) (x (cons (cons (caar y) val) x)) (y y)))
+;;                                 :in-theory (e/d (svex-lookup-redef)
                                                 
-                                                (SVEX-ALIST-EVAL-EQUIV-IMPLIES-IFF-SVEX-LOOKUP-2
-                                                 SVEX-ALIST-SAME-KEYS-IMPLIES-IFF-SVEX-LOOKUP-2
-                                                 svex-alist-eval-equiv-necc
-                                                 svex-alist-eval-equiv-implies-svex-eval-equiv-svex-lookup-2))
-                                )
-                            `(:use ((:instance svex-alist-eval-equiv-necc
-                                     (var (caar y)) (x (cons (cons (caar y) val) x)) (y y)))
-                              :in-theory (e/d (svex-lookup-redef)
-                                              (SVEX-ALIST-EVAL-EQUIV-IMPLIES-IFF-SVEX-LOOKUP-2
-                                               SVEX-ALIST-SAME-KEYS-IMPLIES-IFF-SVEX-LOOKUP-2
-                                               svex-alist-eval-equiv-necc
-                                               svex-alist-eval-equiv-implies-svex-eval-equiv-svex-lookup-2)))))))
-           :otf-flg t))
+;;                                                 (SVEX-ALIST-EVAL-EQUIV-IMPLIES-IFF-SVEX-LOOKUP-2
+;;                                                  SVEX-ALIST-SAME-KEYS-IMPLIES-IFF-SVEX-LOOKUP-2
+;;                                                  svex-alist-eval-equiv-necc
+;;                                                  svex-alist-eval-equiv-implies-svex-eval-equiv-svex-lookup-2))
+;;                                 )
+;;                             `(:use ((:instance svex-alist-eval-equiv-necc
+;;                                      (var (caar y)) (x (cons (cons (caar y) val) x)) (y y)))
+;;                               :in-theory (e/d (svex-lookup-redef)
+;;                                               (SVEX-ALIST-EVAL-EQUIV-IMPLIES-IFF-SVEX-LOOKUP-2
+;;                                                SVEX-ALIST-SAME-KEYS-IMPLIES-IFF-SVEX-LOOKUP-2
+;;                                                svex-alist-eval-equiv-necc
+;;                                                svex-alist-eval-equiv-implies-svex-eval-equiv-svex-lookup-2)))))))
+;;            :otf-flg t))
 
-  (local (defthm svex-width-of-lookup-when-svex-alist-width
-           (implies (and (svex-alist-width x)
-                         (svex-lookup k x))
-                    (svex-width (svex-lookup k x)))
-           :hints(("Goal" :in-theory (enable svex-lookup-redef
-                                             svex-alist-width
-                                             svex-width-sum)))))
+;;   (local (defthm svex-width-of-lookup-when-svex-alist-width-aux
+;;            (implies (and (svex-alist-width-aux x)
+;;                          (svex-lookup k x))
+;;                     (svex-width (svex-lookup k x)))
+;;            :hints(("Goal" :in-theory (enable svex-lookup-redef
+;;                                              svex-alist-width-aux
+;;                                              svex-width-sum)))))
+  
+;;   (local (defthm svex-width-of-lookup-when-svex-alist-width
+;;            (implies (and (svex-alist-width x)
+;;                          (svex-lookup k x))
+;;                     (svex-width (svex-lookup k x)))
+;;            :hints(("Goal" :use ((:instance svex-width-of-lookup-when-svex-alist-width-aux
+;;                                  (x (fast-alist-clean (svex-alist-fix x)))))
+;;                    :in-theory (e/d (svex-alist-width) (svex-width-of-lookup-when-svex-alist-width-aux))))))
 
-  (local (defthm svex-width-of-x
-           (equal (svex-width (svex-x)) 1)
-           :hints (("goal" :use ((:instance svex-width-limited-p (width 1) (x (svex-x))))
-                    :in-theory (enable svex-width-unique)))))
+;;   (local (defthm svex-width-of-x
+;;            (equal (svex-width (svex-x)) 1)
+;;            :hints (("goal" :use ((:instance svex-width-limited-p (width 1) (x (svex-x))))
+;;                     :in-theory (enable svex-width-unique)))))
                          
   
-  (local
-   (defthmd svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys-lemma
-     (implies (and (svex-alist-width x)
-                   (svex-alist-eval-equiv (svex-alist-extract (svex-alist-keys y) x) y)
-                   (no-duplicatesp-equal (svex-alist-keys y)))
-              (svex-alist-width y))
-     :hints (("goal" :induct (svex-alist-keys y)
-              :in-theory (enable svex-alist-keys svex-alist-extract
-                                 svex-alist-width
-                                 svex-width-sum)))))
+;;   ;; (local
+;;   ;;  (defthmd svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys-lemma
+;;   ;;    (implies (and (svex-alist-width x)
+;;   ;;                  (svex-alist-eval-equiv (svex-alist-extract (svex-alist-keys y) x) y)
+;;   ;;                  (no-duplicatesp-equal (svex-alist-keys y)))
+;;   ;;             (svex-alist-width y))
+;;   ;;    :hints (("goal" :induct (svex-alist-keys y)
+;;   ;;             :in-theory (enable svex-alist-keys svex-alist-extract
+;;   ;;                                svex-alist-width
+;;   ;;                                svex-width-sum)))))
 
-  (local (defthm svex-alist-eval-equiv-of-extract-when-svex-alist-eval-equiv
-           (implies (svex-alist-eval-equiv x y)
-                    (svex-alist-eval-equiv (svex-alist-extract (svex-alist-keys y) x) y))
-           :hints (("Goal" :expand ((svex-alist-eval-equiv (svex-alist-extract (svex-alist-keys x) x) x))))))
+;;   (local (defthm svex-alist-eval-equiv-of-extract-when-svex-alist-eval-equiv
+;;            (implies (svex-alist-eval-equiv x y)
+;;                     (svex-alist-eval-equiv (svex-alist-extract (svex-alist-keys y) x) y))
+;;            :hints (("Goal" :expand ((svex-alist-eval-equiv (svex-alist-extract (svex-alist-keys x) x) x))))))
   
-  (defthmd svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys
-    (implies (and (no-duplicatesp-equal (svex-alist-keys y))
-                  (svex-alist-eval-equiv x y)
-                  (svex-alist-width x))
-             (svex-alist-width y))
-    :hints (("goal" :use svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys-lemma))))
+;;   (defthmd svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys
+;;     (implies (and (no-duplicatesp-equal (svex-alist-keys y))
+;;                   (svex-alist-eval-equiv x y)
+;;                   (svex-alist-width x))
+;;              (svex-alist-width y))
+;;     :hints (("goal" :use svex-alist-width-when-svex-alist-eval-equiv-and-no-duplicate-keys-lemma))))
 
 
 (encapsulate nil
@@ -1229,4 +1249,117 @@
                      (:free (fsm) (base-fsm-final-state override-inputs override-initst fsm)))))))
 
 
+(define design-flatten-okp ((x design-p))
+  :guard (modalist-addr-p (design->modalist x))
+  :non-executable t
+  (b* (((mv err & & &)
+        (ec-call (svtv-design-flatten-fn x nil nil))))
+    (not err))
+  ///
+  (defthm not-err-when-design-flatten-okp
+    (implies (design-flatten-okp x)
+             (not (mv-nth 0 (svtv-design-flatten x))))
+    :hints(("Goal" :in-theory (enable normalize-stobjs-of-svtv-design-flatten)))))
 
+
+(define design->ideal-fsm ((x design-p))
+  :guard (and (modalist-addr-p (design->modalist x))
+              (design-flatten-okp x))
+  :verify-guards nil
+  :returns (ideal-fsm base-fsm-p)
+  :non-executable t
+  (b* (((mv & flatten ?moddb aliases)
+        (ec-call (svtv-design-flatten-fn x nil nil)))
+       (flatnorm (svtv-normalize-assigns flatten aliases
+                                         (make-flatnorm-setup :monotonify t))))
+    (flatnorm->ideal-fsm flatnorm))
+  ///
+  (local (in-theory (enable design-flatten-okp)))
+
+  (local (defthm svtv-normalize-assigns-setup-cases
+           (implies (and (syntaxp (not (quotep setup)))
+                         (equal new-setup (flatnorm-setup (flatnorm-setup->monotonify setup)))
+                         (syntaxp (quotep new-setup)))
+                    (equal (svtv-normalize-assigns flatten aliases setup)
+                           (svtv-normalize-assigns flatten aliases new-setup)))))
+
+  (local (defcong svex-alist-eval-equiv! equal (svtv-assigns-override-vars assigns config) 1
+           :hints(("Goal" :in-theory (enable svtv-assigns-override-vars)))))
+  
+  (defthm base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation
+    (b* ((ideal-fsm (design->ideal-fsm x))
+         ((svtv-data-obj data))
+         (triples
+          (svarlist-to-override-triples
+           (svtv-assigns-override-vars (flatnorm-res->assigns data.flatnorm)
+                                       (phase-fsm-config->override-config data.phase-fsm-setup))))
+         (override-vars (svar-override-triplelist-override-vars triples))
+         (spec-values (base-fsm-eval ref-inputs ref-initst ideal-fsm))
+         (impl-values (base-fsm-eval override-inputs override-initst data.phase-fsm)))
+      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
+                    data.flatten-validp
+                    data.flatnorm-validp
+                    data.phase-fsm-validp
+                    (flatnorm-setup->monotonify data.flatnorm-setup)
+                    (equal data.design x)
+
+                    (equal (len override-inputs) (len ref-inputs))
+                    (svex-envlist-<<= (svex-envlist-removekeys override-vars override-inputs) ref-inputs)
+                    (svar-override-triplelist-envlists-ok-<<= triples override-inputs spec-values)
+                    (svex-env-<<= override-initst ref-initst))
+               (svex-envlist-<<= impl-values spec-values)))
+    :hints (("Goal" :do-not-induct t
+             :use ((:instance base-fsm-eval-of-flatnorm->ideal-fsm-refines-overridden-approximation
+                    (x (b* (((mv & flatten ?moddb aliases)
+                             (ec-call (svtv-design-flatten-fn x nil nil))))
+                         (svtv-normalize-assigns flatten aliases
+                                                 (make-flatnorm-setup :monotonify t))))
+                    (approx-fsm (svtv-data-obj->phase-fsm data))
+                    (config (svtv-data-obj->phase-fsm-setup data)))
+                   (:instance phase-fsm-validp-of-svtv-data-obj
+                    (x data)))
+             :in-theory (e/d (phase-fsm-composition-p
+                              svtv-flatnorm-apply-overrides)
+                             (base-fsm-eval-of-flatnorm->ideal-fsm-refines-overridden-approximation
+                              phase-fsm-validp-of-svtv-data-obj))))
+    :otf-flg t)
+
+
+  (defthm base-fsm-final-state-of-design->ideal-fsm-refines-overridden-approximation
+    (b* ((ideal-fsm (design->ideal-fsm x))
+         ((svtv-data-obj data))
+         (triples
+          (svarlist-to-override-triples
+           (svtv-assigns-override-vars (flatnorm-res->assigns data.flatnorm)
+                                       (phase-fsm-config->override-config data.phase-fsm-setup))))
+         (override-vars (svar-override-triplelist-override-vars triples))
+         (spec-values (base-fsm-eval ref-inputs ref-initst ideal-fsm))
+         (spec-finalstate (base-fsm-final-state ref-inputs ref-initst (base-fsm->nextstate ideal-fsm)))
+         (impl-finalstate (base-fsm-final-state override-inputs override-initst (base-fsm->nextstate data.phase-fsm))))
+      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
+                    data.flatten-validp
+                    data.flatnorm-validp
+                    data.phase-fsm-validp
+                    (flatnorm-setup->monotonify data.flatnorm-setup)
+                    (equal data.design x)
+
+                    (equal (len override-inputs) (len ref-inputs))
+                    (svex-envlist-<<= (svex-envlist-removekeys override-vars override-inputs) ref-inputs)
+                    (svar-override-triplelist-envlists-ok-<<= triples override-inputs spec-values)
+                    (svex-env-<<= override-initst ref-initst))
+               (svex-env-<<= impl-finalstate spec-finalstate)))
+    :hints (("Goal" :do-not-induct t
+             :use ((:instance base-fsm-final-state-of-flatnorm->ideal-fsm-refines-overridden-approximation
+                    (x (b* (((mv & flatten ?moddb aliases)
+                             (ec-call (svtv-design-flatten-fn x nil nil))))
+                         (svtv-normalize-assigns flatten aliases
+                                                 (make-flatnorm-setup :monotonify t))))
+                    (approx-fsm (svtv-data-obj->phase-fsm data))
+                    (config (svtv-data-obj->phase-fsm-setup data)))
+                   (:instance phase-fsm-validp-of-svtv-data-obj
+                    (x data)))
+             :in-theory (e/d (phase-fsm-composition-p
+                              svtv-flatnorm-apply-overrides)
+                             (base-fsm-eval-of-flatnorm->ideal-fsm-refines-overridden-approximation
+                              phase-fsm-validp-of-svtv-data-obj))))
+    :otf-flg t))

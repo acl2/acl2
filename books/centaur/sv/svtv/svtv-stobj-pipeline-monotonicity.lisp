@@ -172,7 +172,7 @@
 
 (local
  (defthm svex-alist-monotonic-p-of-svex-alist-monotonify-equiv
-   (implies (svex-alist-eval-equiv y (svex-alist-monotonify x))
+   (implies (svex-alist-eval-equiv! y (svex-alist-monotonify x))
             (svex-alist-monotonic-p y))))
 
 (defthm svtv-data-obj-ok-implies-flatnorm-assigns-monotonic

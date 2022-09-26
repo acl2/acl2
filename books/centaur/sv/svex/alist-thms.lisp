@@ -34,6 +34,7 @@
 (include-book "rewrite-base")
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
+(local (include-book "std/alists/fast-alist-clean" :dir :System))
 
 (defthmd svex-lookup-of-cons
   (equal (svex-lookup k (cons pair rest))
@@ -740,4 +741,50 @@
            (svarlist-p (alist-keys x)))
   :hints(("Goal" :in-theory (enable alist-keys))))
 
+
+
+
+(defsection svex-env-fast-alist-clean
+
+  (local (in-theory (disable fast-alist-clean)))
+  
+  (defthm svex-env-lookup-of-fast-alist-clean
+    (Equal (svex-env-lookup k (fast-alist-clean x))
+           (svex-env-lookup k x))
+    :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
+  (defthm svex-env-boundp-of-fast-alist-clean
+    (Equal (svex-env-boundp k (fast-alist-clean x))
+           (svex-env-boundp k x))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
+  (defthm svex-lookup-of-fast-alist-clean
+    (equal (svex-lookup k (fast-alist-clean x))
+           (svex-lookup k x))
+    :hints(("Goal" :in-theory (enable svex-lookup))))
+
+
+  (local (defthm hons-assoc-equal-of-svex-alist-eval-when-svar-p
+           (implies (svar-p k)
+                    (iff (hons-assoc-equal k (svex-alist-eval x env))
+                         (hons-assoc-equal k x)))
+           :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+
+  (defthm svex-alist-eval-of-fast-alist-fork
+    (equal (svex-alist-eval (fast-alist-fork x y) env)
+           (fast-alist-fork (svex-alist-eval x env)
+                            (svex-alist-eval y env)))
+    :hints(("Goal" :in-theory (enable fast-alist-fork svex-alist-eval)
+            :expand (svex-alist-eval x env)
+            :induct (fast-alist-fork x y))))
+
+  (local (Defthm cdr-last-of-svex-alist-eval
+           (equal (cdr (last (svex-alist-eval x env))) nil)
+           :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+  
+  (defthm svex-alist-eval-of-fast-alist-clean
+    (equal (svex-alist-eval (fast-alist-clean x) env)
+           (fast-alist-clean (svex-alist-eval x env)))
+    :hints(("Goal" :in-theory (enable fast-alist-clean
+                                      svex-alist-eval)))))
 

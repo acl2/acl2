@@ -451,6 +451,7 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
     (implies (and (svex-alist-width x)
                   (svex-alist-env-widths-match-p x env1)
                   (svex-alist-env-widths-match-p x env2)
+                  (no-duplicatesp-equal (svex-alist-keys x))
                   (svex-env-<<= env1 env2))
              (and (<= (svex-alist-env-x-count x env2)
                       (svex-alist-env-x-count x env1))
@@ -460,7 +461,7 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
                                    (svex-env-extract (svex-alist-keys x) env2))))))
     :hints(("Goal" :in-theory (enable svex-alist-env-widths-match-p
                                       svex-alist-keys
-                                      svex-alist-width
+                                      svex-alist-width-rec-when-no-duplicate-keys
                                       svex-env-extract))
            (and stable-under-simplificationp
                 '(:use ((:instance 4vec-x-count-less-when-4vec-<<=
@@ -475,6 +476,7 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
       (implies (and (svex-alist-width x)
                     (svex-alist-env-widths-match-p x env1)
                     (svex-alist-env-widths-match-p x env2)
+                    (no-duplicatesp-equal (svex-alist-keys x))
                     (svex-env-<<= env1 env2))
                (<= (svex-alist-env-x-count x env2)
                    (svex-alist-env-x-count x env1))))
@@ -482,6 +484,7 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
       (implies (and (svex-alist-width x)
                     (svex-alist-env-widths-match-p x env1)
                     (svex-alist-env-widths-match-p x env2)
+                    (no-duplicatesp-equal (svex-alist-keys x))
                     (svex-env-<<= env1 env2)
                     (not (equal (svex-env-extract (svex-alist-keys x) env1)
                                 (svex-env-extract (svex-alist-keys x) env2))))
@@ -490,18 +493,22 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
 
 
   (defthm svex-alist-env-x-count-of-svarlist-x-env
-    (implies (svex-alist-width x)
+    (implies (and (svex-alist-width x)
+                  (no-duplicatesp-equal (svex-alist-keys x)))
              (equal (svex-alist-env-x-count x (svarlist-x-env v))
                     (svex-alist-width x)))
-    :hints(("Goal" :in-theory (enable svex-alist-width
-                                      svex-width-sum))))
+    :hints(("Goal" :in-theory (enable svex-alist-width-rec-when-no-duplicate-keys
+                                      svex-width-sum
+                                      svex-alist-keys))))
 
 
   (defthm svex-alist-env-x-count-max
-    (implies (svex-alist-width x)
+    (implies (and (svex-alist-width x)
+                  (no-duplicatesp-equal (svex-alist-keys x)))
              (<= (svex-alist-env-x-count x env) (svex-alist-width x)))
-    :hints(("Goal" :in-theory (enable svex-alist-width
-                                      svex-width-sum)))
+    :hints(("Goal" :in-theory (enable svex-alist-width-rec-when-no-duplicate-keys
+                                      svex-width-sum
+                                      svex-alist-keys)))
     :rule-classes :linear))
 
 
@@ -590,7 +597,11 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
 
   (defret svex-alist-env-widths-match-p-of-<fn>
     (implies (no-duplicatesp-equal (svex-alist-keys x))
-             (svex-alist-env-widths-match-p x next-env))))
+             (svex-alist-env-widths-match-p x next-env)))
+  
+  (defcong svex-alist-eval-equiv svex-envs-equivalent (svex-alist-eval-fixpoint-step x env in-env) 1)
+  (defcong svex-envs-similar equal (svex-alist-eval-fixpoint-step x env in-env) 2)
+  (defcong svex-envs-similar equal (svex-alist-eval-fixpoint-step x env in-env) 3))
 
 
 (define svex-alist-eval-fixpoint-iterate-aux ((n natp)
@@ -809,15 +820,22 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
                           (env1 (svex-alist-eval-fixpoint-iterate (1- n) x (svarlist-x-env (svex-alist-keys x)) in-env))
                           (env2 fixpoint-env)))
                    :in-theory (e/d (svex-env-<<=-transitive-1)
-                                   (svex-alist-eval-fixpoint-step-monotonic)))))))
+                                   (svex-alist-eval-fixpoint-step-monotonic))))))
 
+  (defcong svex-alist-eval-equiv svex-envs-equivalent (svex-alist-eval-fixpoint-iterate n x start-env in-env) 2)
+  (defcong svex-envs-similar equal (svex-alist-eval-fixpoint-iterate n x start-env in-env) 3)
+  (defcong svex-envs-similar equal (svex-alist-eval-fixpoint-iterate n x start-env in-env) 4))
+
+
+(local (in-theory (disable fast-alist-clean)))
 
 (define svex-alist-eval-least-fixpoint ((x svex-alist-p)
                                         (in-env svex-env-p))
   :guard (and (not (acl2::hons-dups-p (svex-alist-keys x)))
               (svex-alist-width x))
   :returns (least-fixpoint svex-env-p)
-  (svex-alist-eval-fixpoint-iterate (svex-alist-width x) x
+  (svex-alist-eval-fixpoint-iterate (svex-alist-width x)
+                                    x
                                     (svarlist-x-env (svex-alist-keys x))
                                     in-env)
   ///
@@ -857,7 +875,14 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
     (implies (and (svex-envs-similar (svex-alist-eval-fixpoint-step x fixpoint-env in-env)
                                      (svex-env-extract (svex-alist-keys x) fixpoint-env))
                   (svex-alist-monotonic-on-vars (svex-alist-keys x) x))
-             (svex-env-<<= least-fixpoint fixpoint-env))))
+             (svex-env-<<= least-fixpoint fixpoint-env)))
+
+  (local (defthm svarlist-x-env-under-svex-envs-similar
+           (svex-envs-similar (svarlist-x-env vars) nil)
+           :hints(("Goal" :in-theory (enable svex-envs-similar)))))
+  
+  (defcong svex-alist-eval-equiv svex-envs-equivalent (svex-alist-eval-least-fixpoint x in-env) 1)
+  (defcong svex-envs-similar equal (svex-alist-eval-least-fixpoint x in-env) 2))
 
 (defthm svex-env-extract-keys-under-svex-envs-equivalent
   (implies (set-equiv (double-rewrite keys) (alist-keys (svex-env-fix x)))
@@ -970,7 +995,13 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
   (defret <fn>-monotonic
     (implies (and (svex-alist-monotonic-p x)
                   (svex-alist-monotonic-p start-subst))
-             (svex-alist-monotonic-p iter-subst))))
+             (svex-alist-monotonic-p iter-subst)))
+
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv
+    (svex-alist-fixpoint-iterate n x start-subst) 2)
+
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv
+    (svex-alist-fixpoint-iterate n x start-subst) 3))
 
 (defthm svex-alist-monotonic-on-vars-of-svarlist-x-subst
   (svex-alist-monotonic-on-vars vars (svarlist-x-subst keys))
@@ -1046,5 +1077,8 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
 
   (defret <fn>-monotonic
     (implies (svex-alist-monotonic-p x)
-             (svex-alist-monotonic-p least-fixpoint))))
+             (svex-alist-monotonic-p least-fixpoint)))
+
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-least-fixpoint x) 1))
+
 

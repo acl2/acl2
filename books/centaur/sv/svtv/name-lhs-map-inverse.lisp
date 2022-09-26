@@ -174,6 +174,19 @@
              (and pair
                   (cons var (lhs-eval-x (cdr pair) env))))))
 
+  (defret svex-env-boundp-of-<fn>
+    (iff (svex-env-boundp var res)
+         (hons-assoc-equal (svar-fix var) (svtv-name-lhs-map-fix x)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
+  (defret svex-env-lookupp-of-<fn>
+    (equal (svex-env-lookup var res)
+           (let ((pair (hons-assoc-equal (svar-fix var) (svtv-name-lhs-map-fix x))))
+             (if pair
+                 (lhs-eval-x (cdr pair) env)
+               (4vec-x))))
+    :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
   (defcong svex-envs-similar equal (lhs-eval-x x env) 2
     :hints(("Goal" :in-theory (enable lhs-eval-x lhatom-eval-x))))
 

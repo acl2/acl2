@@ -25,7 +25,11 @@
 
 (in-package "SV")
 
-(include-book "svex-equivs")
+(include-book "alist-equiv")
+(include-book "std/util/define-sk" :dir :system)
+(local (include-book "alist-thms"))
+(local (include-book "std/alists/fast-alist-clean" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable signed-byte-p)))
 (local (std::add-default-post-define-hook :fix))
@@ -59,7 +63,6 @@
              (4vec-width-p m x))))
 
 
-(include-book "std/util/define-sk" :dir :system)
 
 
 (std::define-sk svex-width-limited-p ((width posp)
@@ -231,8 +234,11 @@
 
 (fty::defmap svar-width-map :key-type svar :val-type posp :true-listp t)
 
-(define svex-env-width-limited-p ((widths svar-width-map-p)
-                                  (x svex-env-p))
+
+
+
+(define svex-env-width-limited-p-aux ((widths svar-width-map-p)
+                                      (x svex-env-p))
   :returns (limitedp)
   (if (atom x)
       t
@@ -242,18 +248,263 @@
                (and width
                     (4vec-width-p width (cdar x))))
            t)
-         (svex-env-width-limited-p widths (cdr x))))
+         (svex-env-width-limited-p-aux widths (cdr x))))
   ///
   (defret 4vec-width-p-lookup-when-<fn>
     (implies limitedp
              (b* ((width (cdr (hons-assoc-equal (svar-fix var) (svar-width-map-fix widths)))))
                (4vec-width-p width (svex-env-lookup var x))))
     :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
+  (defret keys-subset-of-widths-when-<fn>
+    (implies limitedp
+             (subsetp-equal (alist-keys (svex-env-fix x))
+                            (alist-keys (svar-width-map-fix widths))))
+    :hints(("Goal" :in-theory (enable alist-keys svex-env-fix))))
   
   (local (in-theory (enable svex-env-fix))))
 
-(define svex-alist-width-limited-p ((widths svar-width-map-p)
-                                    (x svex-alist-p))
+(define svex-env-width-limited-p-aux-badguy ((widths svar-width-map-p)
+                                             (x svex-env-p))
+  :returns (badguy (iff (svar-p badguy) badguy))
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (b* ((width (cdr (hons-get (caar x) (svar-width-map-fix widths)))))
+          (if (and width
+                   (4vec-width-p width (cdar x)))
+              (svex-env-width-limited-p-aux-badguy widths (cdr x))
+            (caar x)))
+      (svex-env-width-limited-p-aux-badguy widths (cdr x))))
+  ///
+  (defret boundp-when-<fn>
+    (implies badguy
+             (svex-env-boundp badguy x))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+  
+  (defret 4vec-width-p-when-<fn>
+    (implies (and badguy
+                  (no-duplicatesp-equal (alist-keys (svex-env-fix x))))
+             (b* ((width (cdr (hons-assoc-equal badguy (svar-width-map-fix widths)))))
+               (implies width
+                        (not (4vec-width-p width (svex-env-lookup badguy x))))))
+    :hints(("Goal" :in-theory (enable svex-env-lookup alist-keys svex-env-fix)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:use boundp-when-<fn>
+                  :in-theory (e/d (svex-env-boundp)
+                                  (boundp-when-<fn>))))))
+
+  (defret svex-env-width-limited-p-aux-when-not-badguy
+    (implies (not badguy)
+             (svex-env-width-limited-p-aux widths x))
+    :hints(("Goal" :in-theory (enable svex-env-width-limited-p-aux))))
+
+  (defret svex-env-width-limited-p-aux-when-badguy
+    (implies badguy
+             (not (svex-env-width-limited-p-aux widths x)))
+    :hints(("Goal" :in-theory (enable svex-env-width-limited-p-aux))))
+
+  (local (in-theory (enable svex-env-fix))))
+  
+(local (in-theory (disable fast-alist-clean)))
+
+(local (defthm no-duplicate-keys-of-fast-alist-fork
+         (implies (no-duplicatesp-equal (alist-keys y))
+                  (no-duplicatesp-equal (alist-keys (fast-alist-fork x y))))
+         :hints(("Goal" :in-theory (enable fast-alist-fork alist-keys)))))
+
+(local (defthm no-duplicate-keys-of-fast-alist-clean
+         (no-duplicatesp-equal (alist-keys (fast-alist-clean x)))
+         :hints(("Goal" :in-theory (enable fast-alist-clean alist-keys)))))
+
+(define svex-env-width-limited-p-badguy ((widths svar-width-map-p)
+                                         (x svex-env-p))
+  :returns (badguy (iff (svar-p badguy) badguy))
+  (svex-env-width-limited-p-aux-badguy widths (fast-alist-clean (svex-env-fix x)))
+  ///
+  (defret 4vec-width-p-when-<fn>
+    (implies (and badguy)
+             (b* ((width (cdr (hons-assoc-equal badguy (svar-width-map-fix widths)))))
+               (implies width
+                        (not (4vec-width-p width (svex-env-lookup badguy x))))))
+    :hints(("Goal" :use ((:instance 4vec-width-p-when-svex-env-width-limited-p-aux-badguy
+                          (x (fast-alist-clean (svex-env-fix x)))))
+            :in-theory (disable 4vec-width-p-when-svex-env-width-limited-p-aux-badguy))))
+
+  (defret boundp-when-<fn>
+    (implies badguy
+             (svex-env-boundp badguy x))
+    :hints(("Goal" :use ((:instance boundp-when-svex-env-width-limited-p-aux-badguy
+                          (x (fast-alist-clean (svex-env-fix x)))))
+            :in-theory (disable boundp-when-svex-env-width-limited-p-aux-badguy)))))
+
+(local (defthm alist-keys-fast-alist-clean-under-set-equiv
+         (set-equiv (alist-keys (fast-alist-clean x))
+                    (alist-keys x))
+         :hints(("Goal" :in-theory (enable acl2::set-unequal-witness-correct)))))
+
+
+(define svex-env-width-limited-p ((widths svar-width-map-p)
+                                  (x svex-env-p))
+  :returns (limitedp)
+  (svex-env-width-limited-p-aux widths (fast-alist-clean (svex-env-fix x)))
+  ///
+  (defret 4vec-width-p-lookup-when-<fn>
+    (implies limitedp
+             (b* ((width (cdr (hons-assoc-equal (svar-fix var) (svar-width-map-fix widths)))))
+               (4vec-width-p width (svex-env-lookup var x))))
+    :hints (("Goal" :use ((:instance 4vec-width-p-lookup-when-svex-env-width-limited-p-aux
+                           (x (fast-alist-clean (svex-env-fix x)))))
+             :in-theory (disable 4vec-width-p-lookup-when-svex-env-width-limited-p-aux))))
+
+
+  
+  (defret keys-subset-of-widths-when-<fn>
+    (implies limitedp
+             (subsetp-equal (alist-keys (svex-env-fix x))
+                            (alist-keys (svar-width-map-fix widths))))
+    :hints (("goal" :use ((:instance keys-subset-of-widths-when-svex-env-width-limited-p-aux
+                           (x (fast-alist-clean (svex-env-fix x))))))))
+
+  (local (defretd lookup-in-x-implies-lookup-in-widths-when-<fn>
+           (implies (and limitedp
+                         (svex-env-boundp k x)
+                         (svar-p k))
+                    (hons-assoc-equal k widths))
+           :hints (("Goal" :in-theory (e/d (svex-env-boundp)
+                                           (acl2::subsetp-member
+                                            svex-env-width-limited-p))
+                    :use ((:instance acl2::subsetp-member
+                           (a k)
+                           (x (alist-keys (svex-env-fix x)))
+                           (y (alist-keys (svar-width-map-fix widths)))))))))
+  
+  (local (in-theory (enable svex-env-width-limited-p-badguy)))
+  
+  (defret <fn>-by-badguy
+    (implies (not (svex-env-width-limited-p-badguy widths x))
+             (svex-env-width-limited-p widths x)))
+
+  (defret badguy-when-not-<fn>
+    (implies (not (svex-env-width-limited-p widths x))
+             (svex-env-width-limited-p-badguy widths x)))
+
+  (defret <fn>-when-badguy
+    (implies (svex-env-width-limited-p-badguy widths x)
+             (not (svex-env-width-limited-p widths x)))
+    :hints (("goal" :use 4vec-width-p-when-svex-env-width-limited-p-badguy
+             :in-theory (disable 4vec-width-p-when-svex-env-width-limited-p-badguy))))
+
+  
+
+  (defcong svex-envs-equivalent equal (svex-env-width-limited-p widths x) 2
+    :hints(("Goal" :in-theory (e/d () (svex-env-width-limited-p))
+            :cases ((svex-env-width-limited-p widths x)))
+           (and stable-under-simplificationp
+                (b* ((lit (assoc 'svex-env-width-limited-p clause))
+                     (?lit-x (caddr lit))
+                     (?other-x (if (eq lit-x 'x) 'x-equiv 'x))
+                     (?wit `(svex-env-width-limited-p-badguy . ,(cdr lit))))
+                  `(:use ((:instance 4vec-width-p-when-svex-env-width-limited-p-badguy
+                           (x ,lit-x))
+                          (:instance lookup-in-x-implies-lookup-in-widths-when-svex-env-width-limited-p
+                           (x ,other-x) (k ,wit))
+                          (:instance boundp-when-svex-env-width-limited-p-badguy
+                           (x ,lit-x))
+                          (:instance 4vec-width-p-lookup-when-svex-env-width-limited-p
+                           (x ,other-x) (var ,wit)))
+                    :in-theory (disable svex-env-width-limited-p
+                                        svex-env-width-limited-p-badguy
+                                        4vec-width-p-lookup-when-svex-env-width-limited-p
+                                        4vec-width-p-when-svex-env-width-limited-p-badguy
+                                        boundp-when-svex-env-width-limited-p-badguy
+                                        )))))))
+
+
+
+;; (std::define-sk svex-alist-width-limited-p ((widths svar-width-map-p)
+;;                                             (x svex-alist-p))
+;;   :Returns (limitedp)
+;;   (forall key
+;;           (b* ((width (cdr (hons-assoc-equal (ec-call (svar-fix key)) (svar-width-map-fix widths))))
+;;                (expr (ec-call (svex-lookup key x))))
+;;             (implies expr
+;;                      (and width
+;;                           (svex-width-limited-p width expr)))))
+;;   ///
+
+;;   (local (in-theory (disable svex-alist-width-limited-p
+;;                              svex-alist-width-limited-p-necc)))
+  
+;;   (defthm svex-env-width-limited-p-of-eval-when-svex-alist-width-limted-p
+;;     (implies (svex-alist-width-limited-p widths x)
+;;              (svex-env-width-limited-p widths (svex-alist-eval x env)))
+;;     :hints (("Goal" :use ((:instance svex-alist-width-limited-p-necc
+;;                            (key (svex-env-width-limited-p-badguy widths (svex-alist-eval x env))))
+;;                           (:instance 4vec-width-p-when-svex-env-width-limited-p-badguy
+;;                            (x (svex-alist-eval x env)))
+;;                           (:instance boundp-when-svex-env-width-limited-p-badguy
+;;                            (x (svex-alist-eval x env))))
+;;              :in-theory (e/d (svex-width-limited-p-necc)
+;;                              (4vec-width-p-when-svex-env-width-limited-p-badguy
+;;                               boundp-when-svex-env-width-limited-p-badguy)))))
+
+;;   (defcong svex-alist-eval-equiv equal (svex-alist-width-limited-p widths x) 2
+;;     :hints (("goal" :cases ((svex-alist-width-limited-p widths x)))
+;;             (and stable-under-simplificationp
+;;                  (b* ((lit (assoc 'svex-alist-width-limited-p clause))
+;;                       (wit `(svex-alist-width-limited-p-witness . ,(cdr lit)))
+;;                       (lit-x (caddr lit))
+;;                       (other-x (if (Eq lit-x 'x) 'x-equiv 'x)))
+;;                    `(:expand (,lit)
+;;                      :use ((:instance svex-alist-width-limited-p-necc
+;;                             (x ,other-x) (key ,wit)))))))))
+
+
+
+
+(local (defthm svex-alist-removekey-when-eval-equiv
+         (implies (and (svex-alist-eval-equiv x y)
+                       (svex-alist-p x)
+                       (consp x)
+                       (no-duplicatesp-equal (svex-alist-keys x)))
+                  (svex-alist-eval-equiv
+                   (svex-alist-removekeys (list (caar x)) y)
+                   (cdr x)))
+         :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
+                                           svex-lookup-redef
+                                           svex-alist-keys)))))
+
+(local (defun svex-alist-removekeys-equiv-ind (x y)
+         (declare (Xargs :measure (len x)))
+         (if (atom x)
+             y
+           (svex-alist-removekeys-equiv-ind
+            (cdr x)
+            (if (and (consp (car x))
+                     (svar-p (caar x)))
+                (svex-alist-removekeys (list (caar x)) y)
+              y)))))
+
+(local (defthm svex-alist-eval-equiv-of-cdr-when-bad-car
+         (implies (or (not (consp (car x)))
+                      (not (svar-p (caar x))))
+                  (svex-alist-eval-equiv (cdr x) x))
+         :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
+                                           svex-lookup-redef)))))
+  
+
+(local (defthm no-duplicatesp-set-diff
+         (implies (no-duplicatesp-equal x)
+                  (no-duplicatesp-equal (set-difference-equal x y)))
+         :hints(("Goal" :in-theory (enable set-difference-equal)))))
+
+
+
+(define svex-alist-width-limited-p-aux ((widths svar-width-map-p)
+                                        (x svex-alist-p))
   :returns (limitedp)
   (if (atom x)
       t
@@ -262,16 +513,129 @@
              (b* ((width (cdr (hons-get (caar x) (svar-width-map-fix widths)))))
                (and width (svex-width-limited-p width (cdar x))))
            t)
-         (svex-alist-width-limited-p widths (cdr x))))
+         (svex-alist-width-limited-p-aux widths (cdr x))))
   ///
 
+  (defret svex-env-width-limited-p-aux-of-eval-when-<fn>
+    (implies limitedp
+             (svex-env-width-limited-p-aux widths (svex-alist-eval x env)))
+    :hints(("Goal" :in-theory (enable svex-env-width-limited-p-aux svex-alist-eval
+                                      svex-width-limited-p-necc))))
+
+  (deffixequiv svex-alist-width-limited-p-aux
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
+
+  (local
+   (defthmd svex-alist-width-limited-p-aux-of-removekey
+     (implies (and (no-duplicatesp-equal (svex-alist-keys x))
+                   (svex-lookup k x))
+              (equal (svex-alist-width-limited-p-aux widths x)
+                     (and (svex-alist-width-limited-p-aux widths (svex-alist-removekeys (list k) x))
+                          (hons-get (svar-fix k) (svar-width-map-fix widths))
+                          (svex-width-limited-p
+                           (cdr (hons-get (svar-fix k) (svar-width-map-fix widths)))
+                           (svex-lookup k x)))))
+     :hints(("Goal" :in-theory (enable svex-alist-removekeys
+                                       svex-alist-keys
+                                       svex-lookup-redef)))))
+
+
+  (local (defthm equal-x-svar-fix-x
+           (equal (equal x (svar-fix x))
+                  (svar-p x))))
+
+  (local (defthm svex-alist-width-limited-p-aux-when-equiv-atom
+           (implies (and (svex-alist-eval-equiv x y)
+                         (not (consp x)))
+                    (svex-alist-width-limited-p-aux widths y))
+           :hints (("goal" :induct (svex-alist-width-limited-p-aux widths y))
+                   '(:use ((:instance svex-alist-eval-equiv-necc
+                            (var (caar y))))
+                     :in-theory (e/d (svex-lookup-redef)
+                                     (svex-alist-eval-equiv-necc
+                                      svex-alist-same-keys-implies-iff-svex-lookup-2
+                                      svex-alist-eval-equiv-implies-iff-svex-lookup-2))))))
+  
+  (defthmd svex-alist-width-limited-p-aux-eval-equiv-congruence-when-no-duplicate-keys
+    (implies (and (svex-alist-eval-equiv x y)
+                  (no-duplicatesp-equal (svex-alist-keys x))
+                  (no-duplicatesp-equal (svex-alist-keys y)))
+             (equal (svex-alist-width-limited-p-aux widths x)
+                    (svex-alist-width-limited-p-aux widths y)))
+    :hints (("goal" :induct (svex-alist-removekeys-equiv-ind x y)
+             :in-theory (enable svex-alist-keys
+                                svex-alist-removekeys
+                                svex-lookup-redef))
+            '(:use ((:instance svex-alist-width-limited-p-aux-of-removekey (x y)
+                     (k (caar x)))))))
+             
+  (local (in-theory (enable svex-alist-fix))))
+
+(defthm fast-alist-clean-under-svex-alist-eval-equiv
+  (svex-alist-eval-equiv (fast-alist-clean x) x)
+  :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
+
+(defthm no-duplicate-svex-alist-keys-of-fast-alist-fork
+  (implies (and (no-duplicatesp-equal (svex-alist-keys y)))
+           (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x y))))
+  :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup))))
+
+(defthm svex-alist-keys-of-cdr-last
+  (equal (svex-alist-keys (cdr (last x))) nil)
+  :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
+(defthm no-duplicate-svex-alist-keys-of-fast-alist-clean
+  (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
+  :hints(("Goal" :in-theory (enable fast-alist-clean
+                                    svex-alist-keys))))
+  
+
+
+
+(define svex-alist-width-limited-p ((widths svar-width-map-p)
+                                    (x svex-alist-p))
+  :returns (limitedp)
+  (svex-alist-width-limited-p-aux widths (fast-alist-clean (svex-alist-fix x)))
+  ///
   (defret svex-env-width-limited-p-of-eval-when-<fn>
     (implies limitedp
              (svex-env-width-limited-p widths (svex-alist-eval x env)))
-    :hints(("Goal" :in-theory (enable svex-env-width-limited-p svex-alist-eval
-                                      svex-width-limited-p-necc))))
+    :hints(("Goal" :use ((:instance svex-env-width-limited-p-aux-of-eval-when-svex-alist-width-limited-p-aux
+                          (x (fast-alist-clean (svex-alist-fix x)))))
+            :in-theory (e/d (svex-env-width-limited-p)
+                            (svex-env-width-limited-p-aux-of-eval-when-svex-alist-width-limited-p-aux)))))
 
-  (local (in-theory (enable svex-alist-fix))))
+  (defcong svex-alist-eval-equiv equal (svex-alist-width-limited-p widths x) 2
+    :hints (("goal" :use ((:instance svex-alist-width-limited-p-aux-eval-equiv-congruence-when-no-duplicate-keys
+                           (x (fast-alist-clean (svex-alist-fix x)))
+                           (y (fast-alist-clean (svex-alist-fix x-equiv))))))))
+
+  
+  (local (defthmd svex-alist-width-limited-p-is-aux-when-no-duplicate-keys
+           (implies (no-duplicatesp-equal (svex-alist-keys x))
+                    (equal (svex-alist-width-limited-p widths x)
+                           (svex-alist-width-limited-p-aux widths x)))
+           :hints (("goal" :use ((:instance
+                                  svex-alist-width-limited-p-aux-eval-equiv-congruence-when-no-duplicate-keys
+                                  (y (fast-alist-clean (svex-alist-fix x)))))))))
+
+  (defthmd svex-alist-width-limited-p-rec-when-no-duplicate-keys
+    (implies (no-duplicatesp-equal (svex-alist-keys x))
+             (equal (svex-alist-width-limited-p widths x)
+                    (if (atom x)
+                        t
+                      (and (if (mbt (and (consp (car x))
+                                         (svar-p (caar x))))
+                               (b* ((width (cdr (hons-get (caar x) (svar-width-map-fix widths)))))
+                                 (and width (svex-width-limited-p width (cdar x))))
+                             t)
+                           (svex-alist-width-limited-p widths (cdr x))))))
+    :hints(("Goal" :in-theory (e/d (svex-alist-width-limited-p-is-aux-when-no-duplicate-keys
+                                    svex-alist-width-limited-p-aux
+                                    svex-alist-keys)
+                                   (svex-alist-width-limited-p))))
+    :rule-classes ((:definition :controller-alist ((svex-alist-width-limited-p nil t))
+                    :install-body nil))))
 
 
 (local (defthm maybe-posp-fix-when-nonnil
@@ -295,63 +659,169 @@
     (and (equal (svex-width-sum nil y) nil)
          (equal (svex-width-sum x nil) nil))))
 
-(define svex-alist-width ((x svex-alist-p))
+
+            
+
+
+
+(define svex-alist-width-aux ((x svex-alist-p))
   :returns (width maybe-natp :rule-classes :type-prescription)
   (if (atom x)
       0
     (if (mbt (and (consp (car x))
                   (svar-p (caar x))))
         (svex-width-sum (svex-width (cdar x))
-                        (svex-alist-width (cdr x)))
-      (svex-alist-width (cdr x))))
+                        (svex-alist-width-aux (cdr x)))
+      (svex-alist-width-aux (cdr x))))
   ///
-  (defthm svex-alist-width-when-width-limited-p
-    (implies (svex-alist-width-limited-p widths x)
-             (svex-alist-width x))
-    :hints(("Goal" :in-theory (enable svex-alist-width-limited-p svex-width-sum))))
+  (defthm svex-alist-width-aux-when-width-limited-p
+    (implies (and (svex-alist-width-limited-p-aux widths x)
+                  (no-duplicatesp-equal (svex-alist-keys x)))
+             (svex-alist-width-aux x))
+    :hints(("Goal" :in-theory (enable svex-width-sum
+                                      svex-alist-keys
+                                      svex-alist-width-limited-p-aux)
+            :induct t)))
 
-  (local (in-theory (enable svex-alist-fix))))
 
-
-(define svex-alist-svar-width-map ((x svex-alist-p))
-  :returns (map svar-width-map-p)
-  (if (atom x)
-      nil
-    (if (mbt (and (consp (car x))
-                  (svar-p (caar x))))
-        (b* ((rest (svex-alist-svar-width-map (cdr x)))
-             (width-look (hons-get (caar x) rest))
-             (width (svex-width (cdar x))))
-          (if width
-              (cons (cons (caar x)
-                          (if width-look
-                              (max (cdr width-look) width)
-                            width))
-                    rest)
-            rest))
-      (svex-alist-svar-width-map (cdr x))))
-  ///
-  (local (defthm svex-alist-width-limited-p-when-cons-wider
-           (implies (and (svex-alist-width-limited-p map x)
-                         (or (not (hons-assoc-equal v (svar-width-map-fix map)))
-                             (<= (cdr (hons-assoc-equal v (svar-width-map-fix map))) (pos-fix width))))
-                    (svex-alist-width-limited-p
-                     (cons (cons v width) map) x))
-           :hints(("Goal" :in-theory (enable svex-alist-width-limited-p)))))
-
-  (local (defthm svex-width-limited-p-implies-greater-corr
-           (implies (and (< width width2)
-                         (posp width) (posp width2)
-                         (svex-width-limited-p width x))
-                    (svex-width-limited-p width2 x))))
+  (deffixequiv svex-alist-width-aux
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
   
-  (defthm svex-alist-width-limited-p-when-svex-alist-width
-    (implies (svex-alist-width x)
-             (svex-alist-width-limited-p (svex-alist-svar-width-map x) x))
-    :hints(("Goal" :in-theory (e/d (svex-alist-width svex-alist-width-limited-p
-                                                     svex-width-sum))
-            :induct t :do-not-induct t)))
+  (local (defthm equal-x-svar-fix-x
+           (equal (equal x (svar-fix x))
+                  (svar-p x))))
 
+
+  (local
+   (defthmd svex-alist-width-aux-of-removekey
+     (implies (and (no-duplicatesp-equal (svex-alist-keys x))
+                   (svex-lookup k x))
+              (equal (svex-alist-width-aux x)
+                     (and (svex-width (svex-lookup k x))
+                          (svex-alist-width-aux (svex-alist-removekeys (list k) x))
+                          (+ (svex-alist-width-aux (svex-alist-removekeys (list k) x))
+                             (svex-width (svex-lookup k x))))))
+     :hints(("Goal" :in-theory (enable svex-alist-removekeys
+                                       svex-alist-keys
+                                       svex-width-sum
+                                       svex-lookup-redef)))))
+
+  (local (defthm svex-alist-width-aux-when-equiv-atom
+           (implies (and (svex-alist-eval-equiv x y)
+                         (not (consp x)))
+                    (equal (svex-alist-width-aux y) 0))
+           :hints (("goal" :induct (svex-alist-width-aux y))
+                   '(:use ((:instance svex-alist-eval-equiv-necc
+                            (var (caar y))))
+                     :in-theory (e/d (svex-lookup-redef)
+                                     (svex-alist-eval-equiv-necc
+                                      svex-alist-same-keys-implies-iff-svex-lookup-2
+                                      svex-alist-eval-equiv-implies-iff-svex-lookup-2))))))
+  
+  (defthmd svex-alist-width-aux-eval-equiv-congruence-when-no-duplicate-keys
+    (implies (and (svex-alist-eval-equiv x y)
+                  (no-duplicatesp-equal (svex-alist-keys x))
+                  (no-duplicatesp-equal (svex-alist-keys y)))
+             (equal (svex-alist-width-aux x)
+                    (svex-alist-width-aux y)))
+    :hints (("goal" :induct (svex-alist-removekeys-equiv-ind x y)
+             :in-theory (enable svex-alist-keys
+                                svex-alist-removekeys
+                                svex-lookup-redef
+                                svex-width-sum))
+            '(:use ((:instance svex-alist-width-aux-of-removekey (x y)
+                     (k (caar x)))))))
+                       
+                        
   (local (in-theory (enable svex-alist-fix))))
+
+(define svex-alist-width ((x svex-alist-p))
+  :returns (width maybe-natp :rule-classes :type-prescription)
+  (svex-alist-width-aux (fast-alist-clean (svex-alist-fix x)))
+  ///
+  (local (defthmd svex-alist-width-is-aux-when-no-duplicate-keys
+           (implies (no-duplicatesp-equal (svex-alist-keys x))
+                    (equal (svex-alist-width x)
+                           (svex-alist-width-aux x)))
+           :hints (("goal" :use ((:instance
+                                  svex-alist-width-aux-eval-equiv-congruence-when-no-duplicate-keys
+                                  (y (fast-alist-clean (svex-alist-fix x)))))))))
+
+  (defthmd svex-alist-width-rec-when-no-duplicate-keys
+    (implies (no-duplicatesp-equal (svex-alist-keys x))
+             (equal (svex-alist-width x)
+                    (if (atom x)
+                        0
+                      (if (mbt (and (consp (car x))
+                                    (svar-p (caar x))))
+                          (svex-width-sum (svex-width (cdar x))
+                                          (svex-alist-width (cdr x)))
+                        (svex-alist-width (cdr x))))))
+    :hints(("Goal" :in-theory (e/d (svex-alist-width-is-aux-when-no-duplicate-keys
+                                    svex-alist-width-aux
+                                    svex-alist-keys)
+                                   (svex-alist-width))))
+    :rule-classes ((:definition :controller-alist ((svex-alist-width t))
+                    :install-body nil)))
+  
+  (defthm svex-alist-width-when-width-limited-p
+    (implies (and (svex-alist-width-limited-p widths x))
+             (svex-alist-width x))
+    :hints(("Goal" :in-theory (enable svex-alist-width-limited-p))))
+
+  (defcong svex-alist-eval-equiv equal (svex-alist-width x) 1
+    :hints (("Goal" :use ((:instance svex-alist-width-aux-eval-equiv-congruence-when-no-duplicate-keys
+                           (x (fast-alist-clean (svex-alist-fix x)))
+                           (y (fast-alist-clean (svex-alist-fix x-equiv)))))))))
+
+
+;; (define svex-alist-svar-width-map ((x svex-alist-p))
+;;   :returns (map svar-width-map-p)
+;;   (if (atom x)
+;;       nil
+;;     (if (mbt (and (consp (car x))
+;;                   (svar-p (caar x))))
+;;         (b* ((rest (svex-alist-svar-width-map (cdr x)))
+;;              (width-look (hons-get (caar x) rest))
+;;              (width (svex-width (cdar x))))
+;;           (if width
+;;               (cons (cons (caar x)
+;;                           (if width-look
+;;                               (max (cdr width-look) width)
+;;                             width))
+;;                     rest)
+;;             rest))
+;;       (svex-alist-svar-width-map (cdr x))))
+;;   ///
+;;   (local (defthm svex-alist-width-limited-p-when-cons-wider
+;;            (implies (and (svex-alist-width-limited-p map x)
+;;                          (or (not (hons-assoc-equal v (svar-width-map-fix map)))
+;;                              (<= (cdr (hons-assoc-equal v (svar-width-map-fix map))) (pos-fix width))))
+;;                     (svex-alist-width-limited-p
+;;                      (cons (cons v width) map) x))
+;;            :hints(("Goal" :in-theory (enable svex-alist-width-limited-p)))))
+  
+;;   (local (defthm svex-alist-width-limited-p-when-cons-wider
+;;            (implies (and (svex-alist-width-limited-p map x)
+;;                          (or (not (hons-assoc-equal v (svar-width-map-fix map)))
+;;                              (<= (cdr (hons-assoc-equal v (svar-width-map-fix map))) (pos-fix width))))
+;;                     (svex-alist-width-limited-p
+;;                      (cons (cons v width) map) x))
+;;            :hints(("Goal" :in-theory (enable svex-alist-width-limited-p)))))
+
+;;   (local (defthm svex-width-limited-p-implies-greater-corr
+;;            (implies (and (< width width2)
+;;                          (posp width) (posp width2)
+;;                          (svex-width-limited-p width x))
+;;                     (svex-width-limited-p width2 x))))
+  
+;;   (defthm svex-alist-width-limited-p-when-svex-alist-width
+;;     (implies (svex-alist-width x)
+;;              (svex-alist-width-limited-p (svex-alist-svar-width-map x) x))
+;;     :hints(("Goal" :in-theory (e/d (svex-alist-width svex-alist-width-limited-p
+;;                                                      svex-width-sum))
+;;             :induct t :do-not-induct t)))
+
+;;   (local (in-theory (enable svex-alist-fix))))
 
 
