@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -68,10 +68,10 @@
   :layout :list
   :pred rulenamep)
 
-(fty::defoption maybe-rulename
+(fty::defoption rulename-option
   rulename
   :short "Fixtype of rule names and @('nil')."
-  :pred maybe-rulenamep)
+  :pred rulename-optionp)
 
 (fty::defset rulename-set
   :elt-type rulename
