@@ -465,7 +465,7 @@
      it is promoted first to a rule element
      and then to a repetition of one instance of that element.
      If a character string is supplied,
-     it is promoted first to an insensitive character value notation element
+     it is promoted first to a case-insensitive character value notation element
      and then to a repetition of one instance of that element.")
    (xdoc::p
     "The name of this macro is inspired by the fact that
