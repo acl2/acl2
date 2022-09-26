@@ -394,6 +394,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-completep ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is complete [C:6.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A type is complete when its size is determined,
+     otherwise it is incomplete.
+     While [C:6.2.5] cautions that the same type
+     may be complete or incomplete in different parts of a program,
+     for now we capture the completeness of a type
+     independently from where it occurs:
+     this is adequate for our C subset and for our use of this predicate.")
+   (xdoc::p
+    "The @('void') type is never complete [C:6.2.5/19].
+     The basic types, which are the integer types in our subset of C,
+     are always complete [C:6.2.5/14].
+     A structure type is complete as soon as its declaration ends [C:6.7.2.1/8];
+     it is incomplete inside the structure type,
+     but we do not use this predicate for the member types.
+     A pointer type is always complete [C:6.2.5/20]
+     (regardless of the pointed-to type).
+     An array type needs its element type to be complete [C:6.2.5/20],
+     which we plan to formalize soon;
+     the array type itself is complete if the size is specified,
+     otherwise it is incomplete [C:6.2.5/22]."))
+  (cond ((type-case type :void) nil)
+        ((type-integerp type) t)
+        ((type-case type :struct) t)
+        ((type-case type :pointer) t)
+        ((type-case type :array) (not (eq (type-array->size type) nil)))
+        (t (impossible)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tyspecseq-to-type ((tyspec tyspecseqp))
   :returns (type typep)
   :short "Turn a type specifier sequence into a type."
