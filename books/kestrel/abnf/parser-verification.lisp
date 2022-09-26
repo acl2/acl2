@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -9,11 +9,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ABNF")
-
-; Matt K. mod for July 2021 modification to remove-guard-holders, which was
-; causing parse-exact-when-tree-match to fail.
-#!acl2
-(defattach-system remove-guard-holders-lamp constant-nil-function-arity-0)
 
 (include-book "parser")
 
