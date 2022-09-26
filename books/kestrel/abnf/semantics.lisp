@@ -538,7 +538,7 @@
    "Formally speaking, any tree matches prose,
     because prose has no formal semantics.
     When a rule includes prose,
-    its meaning can be formalized via external predicates on trees.=")
+    its meaning can be formalized via external predicates on trees.")
   t
   :ignore-ok t
   :no-function t
