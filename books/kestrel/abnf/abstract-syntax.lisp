@@ -112,7 +112,10 @@
     for the literal text strings described in [RFC:2.3]
     and by the rule @('char-val') (and sub-rules) in [RFC:4].
     We tag strings with an indication of their case sensitivity,
-    corresponding to the @('%s') and @('%i') notations.
+    corresponding to the @('%s') and @('%i') notations;
+    the latter also abstract plain strings,
+    i.e. strings without the @('%s') and @('%i') notations,
+    which are equivalent to case-insensitive strings with the @('%i') notation.
     We abstract away the restriction
     that quoted strings include only certain characters
     (which all are ACL2 characters).
