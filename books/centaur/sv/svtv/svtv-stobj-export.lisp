@@ -486,10 +486,11 @@
                   ((pipeline-setup x.pipeline-setup))
                   (run (svtv-fsm-run
                         (svex-alistlist-eval x.pipeline-setup.inputs env)
-                        (svex-alistlist-eval x.pipeline-setup.overrides env)
                         (svex-alist-eval x.pipeline-setup.initst env)
                         rename-fsm
-                        (svtv-probealist-outvars x.pipeline-setup.probes))))
+                        (svtv-probealist-outvars x.pipeline-setup.probes)
+                        :override-vals (svex-alistlist-eval x.pipeline-setup.override-vals env)
+                        :override-tests (svex-alistlist-eval x.pipeline-setup.override-tests env))))
                (and (equal (svex-alist-keys x.pipeline-setup.initst)
                            (svex-alist-keys (base-fsm->nextstate x.cycle-fsm)))
                     (svex-envs-equivalent

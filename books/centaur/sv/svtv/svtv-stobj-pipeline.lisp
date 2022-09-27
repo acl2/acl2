@@ -51,7 +51,7 @@
   (b* ((fsm (svtv-data$c->cycle-fsm svtv-data))
        ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
        (outvars (svtv-probealist-outvars setup.probes))
-       (outs (svtv-fsm-run-compile setup.inputs setup.overrides setup.initst
+       (outs (svtv-fsm-run-compile setup.inputs setup.override-vals setup.override-tests setup.initst
                                    (make-svtv-fsm :base-fsm fsm
                                                   :namemap (svtv-data$c->namemap svtv-data))
                                    outvars precomp-inputs simp))
@@ -66,7 +66,7 @@
   (b* ((fsm (svtv-data$c->cycle-fsm svtv-data))
        ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
        (outvars (svtv-probealist-outvars setup.probes))
-       (outs (svtv-fsm-run-compile setup.inputs setup.overrides setup.initst
+       (outs (svtv-fsm-run-compile setup.inputs setup.override-vals setup.override-tests setup.initst
                                    (make-svtv-fsm :base-fsm fsm
                                                   :namemap (svtv-data$c->namemap svtv-data))
                                    outvars precomp-inputs simp))
@@ -98,7 +98,7 @@
         ((pipeline-setup setup) (svtv-data->pipeline-setup svtv-data))
         (outvars (svtv-probealist-outvars setup.probes))
         (outs (make-fast-alists (svtv-fsm-run-compile
-                                    setup.inputs setup.overrides setup.initst
+                                    setup.inputs setup.override-vals setup.override-tests setup.initst
                                     (make-svtv-fsm :base-fsm fsm
                                                    :namemap (svtv-data->namemap svtv-data))
                                     outvars precomp-inputs simp)))

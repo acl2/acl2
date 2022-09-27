@@ -73,7 +73,8 @@
 (defprod pipeline-setup
   ((probes svtv-probealist)
    (inputs svex-alistlist)
-   (overrides svex-alistlist)
+   (override-vals svex-alistlist)
+   (override-tests svex-alistlist)
    (initst svex-alist)))
 
 (defconst *svtv-data-nonstobj-fields*
@@ -477,9 +478,10 @@
                   ((pipeline-setup pipe) (svtv-data$c->pipeline-setup svtv-data$c))
                   (run (svtv-fsm-run
                         (svex-alistlist-eval pipe.inputs env)
-                        (svex-alistlist-eval pipe.overrides env)
                         (svex-alist-eval pipe.initst env)
-                        rename-fsm (svtv-probealist-outvars pipe.probes))))
+                        rename-fsm (svtv-probealist-outvars pipe.probes)
+                        :override-vals (svex-alistlist-eval pipe.override-vals env)
+                        :override-tests (svex-alistlist-eval pipe.override-tests env))))
                (and (equal (svex-alist-keys pipe.initst)
                            (svex-alist-keys (base-fsm->nextstate fsm)))
                     (ec-call

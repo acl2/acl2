@@ -157,21 +157,31 @@
           (phase-compute-override-test-alist phase (cdr overrides)))))
     
 (define svtv-compute-input-phases ((phase natp) (nphases natp)
-                                   (ins true-list-listp)
-                                   (overrides true-list-listp))
+                                   (ins true-list-listp))
   :guard (<= phase nphases)
   :measure (nfix (- (nfix nphases) (nfix phase)))
   :returns (inputs svex-alistlist-p)
   (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
                    :exec (eql phase nphases)))
         nil)
-       (inputs (phase-compute-input-alist phase ins))
+       (inputs (phase-compute-input-alist phase ins)))
+    (cons inputs
+          (svtv-compute-input-phases (1+ (lnfix phase)) nphases ins))))
+
+(define svtv-compute-override-val-phases ((phase natp) (nphases natp)
+                                          (overrides true-list-listp))
+  :guard (<= phase nphases)
+  :measure (nfix (- (nfix nphases) (nfix phase)))
+  :returns (override-vals svex-alistlist-p)
+  (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
+                   :exec (eql phase nphases)))
+        nil)
        (override-vals (phase-compute-override-val-alist phase overrides)))
-    (cons (append inputs override-vals)
-          (svtv-compute-input-phases (1+ (lnfix phase)) nphases ins overrides))))
+    (cons override-vals
+          (svtv-compute-override-val-phases (1+ (lnfix phase)) nphases overrides))))
 
 (define svtv-compute-override-test-phases ((phase natp) (nphases natp)
-                                   (overrides true-list-listp))
+                                           (overrides true-list-listp))
   :guard (<= phase nphases)
   :measure (nfix (- (nfix nphases) (nfix phase)))
   :returns (override-tests svex-alistlist-p)
@@ -196,10 +206,12 @@
                                 (overrides true-list-listp))
   :returns (mv (nphases natp :rule-classes :type-prescription)
                (inputs svex-alistlist-p)
+               (override-vals svex-alistlist-p)
                (override-tests svex-alistlist-p))
   (b* ((nphases (max (svtv-lines-max-length ins) (svtv-lines-max-length overrides))))
     (mv nphases
-        (svtv-compute-input-phases 0 nphases ins overrideS)
+        (svtv-compute-input-phases 0 nphases ins)
+        (svtv-compute-override-val-phases 0 nphases overrides)
         (svtv-compute-override-test-phases 0 nphases overrides))))
        
 
@@ -292,7 +304,7 @@
        (nphases (svtv-lines-max-length outs+))
        (ins (svtv-lines-expand ins nphases namemap))
        (overrides (svtv-lines-expand overrides nphases namemap))
-       ((mv ?in-nphases inputs override-tests) (defsvtv-compute-inputs ins overrides))
+       ((mv ?in-nphases inputs override-vals override-tests) (defsvtv-compute-inputs ins overrides))
        (initst
         (make-fast-alist
          (if initial-state-vars
@@ -300,7 +312,8 @@
            (svex-x-subst statevars)))))
     (make-pipeline-setup :probes probes
                          :inputs (make-fast-alists inputs)
-                         :overrides (make-fast-alists override-tests)
+                         :override-vals (make-fast-alists override-vals)
+                         :override-tests (make-fast-alists override-tests)
                          :initst initst))
   ///
   (defret initst-keys-of-<fn>

@@ -30,6 +30,7 @@
 
 (include-book "../svex/override")
 (include-book "svtv-stobj-export")
+(include-book "cycle-probe")
 (include-book "centaur/fgl/def-fgl-thm" :dir :system)
 (include-book "centaur/misc/starlogic" :dir :system)
 (include-book "centaur/meta/variable-free" :dir :system)
@@ -86,12 +87,12 @@ properties of the SVTV and its conditional overrides.</li>
      setup.probes
      (BASE-FSM-RUN
       (SVEX-ALISTLIST-EVAL
-       (SVTV-FSM-RUN-INPUT-SUBSTS
+       (SVTV-FSM-TO-BASE-FSM-INPUTSUBSTS
         (TAKE
          (LEN outvars)
          setup.inputs)
-        setup.overrides
-        fsm)
+        setup.override-vals setup.override-tests
+        namemap)
        ENV)
       (SVEX-ALIST-EVAL setup.initst ENV)
       (SVTV-FSM->RENAMED-FSM fsm)
@@ -1053,8 +1054,8 @@ properties of the SVTV and its conditional overrides.</li>
 
 
 (define svtv-pipeline-cycle-extract-override-triples ((namemap svtv-name-lhs-map-p)
-                                                      (inputs svex-alist-p)
-                                                      (overrides svex-alist-p)
+                                                      (override-vals svex-alist-p)
+                                                      (override-tests svex-alist-p)
                                                       (rev-probes svtv-rev-probealist-p)
                                                       (cycle natp))
   :returns (mv (triples svar-override-triplelist-p
@@ -1064,21 +1065,21 @@ properties of the SVTV and its conditional overrides.</li>
   (b* (((when (atom namemap)) (mv nil nil))
        ((unless (mbt (and (consp (car namemap))
                           (svar-p (caar namemap)))))
-        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) inputs overrides rev-probes cycle))
+        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) override-vals override-tests rev-probes cycle))
        ((cons signame lhs) (car namemap))
-       (input-look (svex-fastlookup signame inputs))
-       ((unless (and input-look (svex-case input-look :var)))
-        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) inputs overrides rev-probes cycle))
-       (override-look (svex-fastlookup signame overrides))
-       ((unless (and override-look (svex-case override-look :var)))
-        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) inputs overrides rev-probes cycle))
+       (val-look (svex-fastlookup signame override-vals))
+       ((unless (and val-look (svex-case val-look :var)))
+        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) override-vals override-tests rev-probes cycle))
+       (test-look (svex-fastlookup signame override-tests))
+       ((unless (and test-look (svex-case test-look :var)))
+        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) override-vals override-tests rev-probes cycle))
        (probe-look (hons-get (make-svtv-probe :signal signame :time cycle) rev-probes))
        ((unless probe-look)
-        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) inputs overrides rev-probes cycle))
+        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) override-vals override-tests rev-probes cycle))
        ((mv rest-triples rest-vars)
-        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) inputs overrides rev-probes cycle)))
-    (mv (cons (make-svar-override-triple :testvar (svex-var->name override-look)
-                                         :valvar (svex-var->name input-look)
+        (svtv-pipeline-cycle-extract-override-triples (cdr namemap) override-vals override-tests rev-probes cycle)))
+    (mv (cons (make-svar-override-triple :testvar (svex-var->name test-look)
+                                         :valvar (svex-var->name val-look)
                                          :refvar (cdr probe-look))
               rest-triples)
         (append (lhs-vars lhs) rest-vars)))
@@ -1086,11 +1087,11 @@ properties of the SVTV and its conditional overrides.</li>
   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 (define svtv-pipeline-extract-override-triples ((namemap svtv-name-lhs-map-p)
-                                                (inputs svex-alistlist-p)
-                                                (overrides svex-alistlist-p)
+                                                (override-vals svex-alistlist-p)
+                                                (override-tests svex-alistlist-p)
                                                 (rev-probes svtv-rev-probealist-p)
                                                 (cycle natp))
-  :measure (+ (len inputs) (len overrides))
+  :measure (+ (len override-vals) (len override-tests))
   :returns (mv (triples svar-override-triplelist-p
                         "In the pipeline namespace -- NOT the namemap or FSM namespaces.")
                (vars svarlist-list-p
@@ -1098,16 +1099,16 @@ properties of the SVTV and its conditional overrides.</li>
   :prepwork ((local (defthm svar-override-triplelist-p-implies-true-listp
                       (implies (svar-override-triplelist-p x)
                                (true-listp x)))))
-  (b* (((when (and (atom inputs) (atom overrides))) (mv nil nil))
+  (b* (((when (and (atom override-vals) (atom override-tests))) (mv nil nil))
        ((mv rest-triples rest-vars)
         (svtv-pipeline-extract-override-triples
-         namemap (cdr inputs) (cdr overrides) rev-probes (1+ (lnfix cycle))))
-       (in (car inputs))
-       (ov (car overrides))
-       ((acl2::with-fast in ov))
+         namemap (cdr override-vals) (cdr override-tests) rev-probes (1+ (lnfix cycle))))
+       (vals (car override-vals))
+       (tests (car override-tests))
+       ((acl2::with-fast vals tests))
        ((mv first-triples first-vars)
         (svtv-pipeline-cycle-extract-override-triples
-         namemap in ov rev-probes cycle)))
+         namemap vals tests rev-probes cycle)))
     (mv (append first-triples rest-triples)
         (cons (mergesort first-vars) rest-vars))))
 
@@ -1117,23 +1118,7 @@ properties of the SVTV and its conditional overrides.</li>
 
 
 
-(define svtv-name-lhs-map-eval-list ((namemap svtv-name-lhs-map-p)
-                                     (envs svex-envlist-p))
-  :returns (new-envs svex-envlist-p)
-  (if (atom envs)
-      nil
-    (cons (svtv-name-lhs-map-eval namemap (car envs))
-          (svtv-name-lhs-map-eval-list namemap (cdr envs))))
-  ///
-  (defret nth-of-<fn>
-    (equal (nth n new-envs)
-           (and (< (lnfix n) (len envs))
-                (svtv-name-lhs-map-eval namemap (nth n envs))))
-    :hints(("Goal" :in-theory (enable nth)
-            :induct (nth n envs))))
 
-  (defret len-of-<fn>
-    (Equal (len new-envs) (len envs))))
 
 
 (local (Defthm svex-env-lookup-of-svtv-name-lhs-map-eval
@@ -1254,7 +1239,7 @@ properties of the SVTV and its conditional overrides.</li>
              (rev-probes (make-fast-alist (pairlis$ (alist-vals pipe.probes) (alist-keys pipe.probes))))
              ((mv triples signals)
               (svtv-pipeline-extract-override-triples
-               namemap pipe.inputs  pipe.overrides rev-probes 0)))
+               namemap pipe.override-vals pipe.override-tests rev-probes 0)))
           (fast-alist-free rev-probes)
           (mv triples signals))))
 
@@ -1276,12 +1261,11 @@ properties of the SVTV and its conditional overrides.</li>
                ((pipeline-setup pipe) (svtv-data-obj->pipeline-setup (<export>)))
                (fsm-triples (svar-override-triplelists-from-signal-names
                              (<name>-fsm-cycle-override-signals)))
-               (fsm (svtv-data-obj->cycle-fsm (<export>)))
-               (rename-fsm (make-svtv-fsm :base-fsm fsm :namemap namemap))
                (outvars (svtv-probealist-outvars pipe.probes))
-               (substs (svtv-fsm-run-input-substs
+               (substs (svtv-fsm-to-base-fsm-inputsubsts
                         (take (len outvars) pipe.inputs)
-                        pipe.overrides rename-fsm)))
+                        pipe.override-vals pipe.override-tests
+                        namemap)))
             (implies (equal (len spec-eval) (len outvars))
                      (b* ((spec-result (make-fast-alist
                                         (svtv-pipeline-override-triples-extract-values
@@ -1299,12 +1283,11 @@ properties of the SVTV and its conditional overrides.</li>
                ((pipeline-setup pipe) (svtv-data-obj->pipeline-setup (<export>)))
                (fsm-triples (svar-override-triplelists-from-signal-names
                              (<name>-fsm-cycle-override-signals)))
-               (fsm (svtv-data-obj->cycle-fsm (<export>)))
-               (rename-fsm (make-svtv-fsm :base-fsm fsm :namemap namemap))
                (outvars (svtv-probealist-outvars pipe.probes))
-               (substs (svtv-fsm-run-input-substs
+               (substs (svtv-fsm-to-base-fsm-inputsubsts
                         (take (len outvars) pipe.inputs)
-                        pipe.overrides rename-fsm)))
+                        pipe.override-vals pipe.override-tests
+                        namemap)))
             (implies (and (equal (len spec-eval) (len outvars))
                           (svex-envs-agree
                                 (svar-override-triplelist->valvars
@@ -1324,7 +1307,7 @@ properties of the SVTV and its conditional overrides.</li>
                      (:DEFINITION MAKE-FAST-ALIST)
                      (:DEFINITION NOT)
                      (:EXECUTABLE-COUNTERPART SVAR-OVERRIDE-TRIPLELISTS-FROM-SIGNAL-NAMES)
-                     (:REWRITE EVAL-OF-SVTV-FSM-RUN-INPUT-SUBSTS)
+                     (:REWRITE EVAL-OF-SVTV-FSM-TO-BASE-FSM-INPUTSUBSTS)
                      (:REWRITE svex-envs-similar-of-append-when-agree-on-keys-superset)
                      (:TYPE-PRESCRIPTION SVAR-OVERRIDE-TRIPLELIST-FSM-INPUTS-OK*-OF-FSM-EVAL)
                      (:REWRITE KEYS-OF-SVTV-PIPELINE-OVERRIDE-TRIPLES-EXTRACT-VALUES)
@@ -1588,13 +1571,11 @@ properties of the SVTV and its conditional overrides.</li>
                  (FSM-TRIPLES
                   (SVAR-OVERRIDE-TRIPLELISTS-FROM-SIGNAL-NAMES
                    (<NAME>-FSM-CYCLE-OVERRIDE-SIGNALS)))
-                 (FSM (SVTV-DATA-OBJ->CYCLE-FSM (<EXPORT>)))
-                 (RENAME-FSM (MAKE-SVTV-FSM :BASE-FSM FSM
-                                            :NAMEMAP NAMEMAP))
                  (OUTVARS (SVTV-PROBEALIST-OUTVARS PIPE.PROBES))
-                 (SUBSTS (SVTV-FSM-RUN-INPUT-SUBSTS
+                 (SUBSTS (SVTV-FSM-TO-BASE-FSM-INPUTSUBSTS
                           (TAKE (LEN OUTVARS) PIPE.INPUTS)
-                          PIPE.OVERRIDES RENAME-FSM))
+                          PIPE.OVERRIDE-VALS PIPE.OVERRIDE-TESTS
+                          namemap))
                  (triples (<NAME>-PIPELINE-OVERRIDE-TRIPLES)))
               (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples)
                                                     env prev-env)
@@ -1805,7 +1786,7 @@ properties of the SVTV and its conditional overrides.</li>
                  BASE-FSM-EVAL-OF-OVERRIDES-FOR-<name>
                  BASE-FSM-EVAL-OF-SVTV-FSM->RENAMED-FSM
                  BASE-FSM-FIX-UNDER-BASE-FSM-EQUIV
-                 EVAL-OF-SVTV-FSM-RUN-INPUT-SUBSTS
+                 EVAL-OF-SVTV-FSM-TO-BASE-FSM-INPUTSUBSTS
                  <EXPORT>-CORRECT
                  <NAME>-FSM-OVERRIDE-REFVARS-SUBSETP-VALUES
                  <NAME>-FSM-OVERRIDE-VARS-DONT-INTERSECT-STATES
@@ -1818,7 +1799,7 @@ properties of the SVTV and its conditional overrides.</li>
                  LEN-OF-SVAR-OVERRIDE-TRIPLELISTS-FROM-SIGNAL-NAMES
                  LEN-OF-SVEX-ALISTLIST-EVAL
                  LEN-OF-SVEX-ENVLISTS-APPEND-CORRESP
-                 LEN-OF-SVTV-FSM-RUN-INPUT-ENVS
+                 LEN-OF-SVTV-FSM-TO-BASE-FSM-INPUTS
                  ACL2::LEN-OF-TAKE
                  ACL2::LIST-FIX-UNDER-LIST-EQUIV
                  MAKE-FAST-ALISTS-IS-IDENTITY
@@ -1867,18 +1848,17 @@ properties of the SVTV and its conditional overrides.</li>
                                        (SVTV-DATA-OBJ->PIPELINE-SETUP
                                         (<EXPORT>)))
                                       (cycle-fsm (SVTV-DATA-OBJ->CYCLE-FSM (<EXPORT>)))
-                                      (svtv-fsm (SVTV-FSM
-                                                 cycle-fsm
-                                                 (SVTV-DATA-OBJ->NAMEMAP (<EXPORT>))))
-                                      (ins (SVTV-FSM-RUN-INPUT-ENVS
+                                      (ins (SVTV-FSM-TO-BASE-FSM-INPUTS
                                             (TAKE
                                              (LEN
                                               (SVTV-PROBEALIST-OUTVARS pipe.probes))
                                              (SVEX-ALISTLIST-EVAL pipe.inputs
                                                                       SPEC-ENV))
-                                            (SVEX-ALISTLIST-EVAL pipe.overrides
+                                            (SVEX-ALISTLIST-EVAL pipe.override-vals
+                                                                 SPEC-ENV)
+                                            (SVEX-ALISTLIST-EVAL pipe.override-tests
                                                                      SPEC-ENV)
-                                            svtv-fsm))
+                                            (SVTV-DATA-OBJ->NAMEMAP (<EXPORT>))))
                                       (initst (SVEX-ALIST-EVAL pipe.initst SPEC-ENV)))
                                    (svex-envlists-append-corresp
                                     (BASE-FSM-EVAL ins initst cycle-fsm)

@@ -1033,12 +1033,11 @@
 
 (define svtv-data-obj-pipeline-substs ((obj svtv-data-obj-p))
   :returns (substs svex-alistlist-p)
-  (b* ((fsm (svtv-data-obj->cycle-fsm obj))
-       ((pipeline-setup setup) (svtv-data-obj->pipeline-setup obj))
+  (b* (((pipeline-setup setup) (svtv-data-obj->pipeline-setup obj))
        (outvars (svtv-probealist-outvars setup.probes)))
-    (svtv-fsm-run-input-substs (take (len outvars) setup.inputs)
-                               setup.overrides
-                               (make-svtv-fsm :base-fsm fsm :namemap (svtv-data-obj->namemap obj)))))
+    (svtv-fsm-to-base-fsm-inputsubsts (take (len outvars) setup.inputs)
+                                      setup.override-vals setup.override-tests
+                                      (svtv-data-obj->namemap obj))))
 
 
 (defthm svex-monotonic-p-when-svex-check-monotonic
@@ -1147,10 +1146,14 @@
   
   (local (defthm my-svtv-fsm-run-is-base-fsm-run
            (equal (svtv-fsm-run (svex-alistlist-eval ins env)
-                                (svex-alistlist-eval override-tests env)
-                                prev-st x outvars)
+                                prev-st x outvars
+                                :override-vals (svex-alistlist-eval override-vals env)
+                                :override-tests (svex-alistlist-eval override-tests env))
                   (base-fsm-run
-                   (svex-alistlist-eval (svtv-fsm-run-input-substs (take (len outvars) ins) override-tests x)
+                   (svex-alistlist-eval (svtv-fsm-to-base-fsm-inputsubsts
+                                         (take (len outvars) ins)
+                                         override-vals override-tests
+                                         (svtv-fsm->namemap x))
                                         env)
                    prev-st
                    (svtv-fsm->renamed-fsm x)
@@ -1202,7 +1205,7 @@
                          (base-fsm-run
                           svtv-data-obj-pipeline-substs
                           svtv-fsm->renamed-fsm)
-                         (eval-of-svtv-fsm-run-input-substs)))
+                         (eval-of-svtv-fsm-to-base-fsm-inputsubsts)))
             (and stable-under-simplificationp
                  `(:expand ((:with svex-alist-partial-monotonic-by-eval
                              ,(car (last clause)))))))))
