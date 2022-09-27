@@ -6650,7 +6650,9 @@
            treep
            tree-fix
            tree-kind
-           tree-leafterm->get))
+           tree-leafterm->get
+           parse-any
+           nat-list-fix))
 
 (defrule parse-in-range-when-tree-match
   :parents (grammar-parser-completeness)
