@@ -2148,18 +2148,24 @@
      We go through the declarations
      and turn each of them into member types (see @(tsee member-type)).
      We ensure that each member name is well-formed.
-     We check that each type is well-formed,
-     and complete [C:6.7.2.1/9];
-     we will add support for flexible array members [C:6.7.2.1/18] later.
+     We check that each type is well-formed.
+     We also check that each type either is complete [C:6.7.2.1/9],
+     or is an array type of unspecified size in the last member;
+     the latter is a flexible array member [C:6.7.2.1/18].
      By using @(tsee member-type-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
+       (lastp (endp (cdr declons)))
        (members (check-struct-declon-list (cdr declons) tagenv))
        ((when (errorp members)) members)
        ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
        (type (check-tyname tyname tagenv))
        ((when (errorp type)) (error (list :bad-member-type type)))
-       ((unless (type-completep type))
+       (completep (type-completep type))
+       (flexiblep (and lastp
+                       (type-case type :array)
+                       (not (type-array->size type))))
+       ((unless (or completep flexiblep))
         (error (list :incomplete-member-type type)))
        (wf (check-ident name))
        ((when (errorp wf)) (error (list :bad-member-name wf)))
@@ -2167,7 +2173,21 @@
     (member-type-list-option-case members-opt
                                   :some members-opt.val
                                   :none (error (list :duplicate-member name))))
-  :hooks (:fix))
+  ///
+
+  (fty::deffixequiv check-struct-declon-list
+    :args ((declons struct-declon-listp)
+           (tagenv tag-envp))
+    ;; for speed:
+    :hints (("Goal" :in-theory (disable equal-of-error))))
+
+  (defret consp-of-check-struct-declon-list
+    (equal (consp (check-struct-declon-list declons tagenv))
+           (consp declons))
+    :fn check-struct-declon-list
+    :hints (("Goal" :in-theory (enable member-type-list-option-some->val
+                                       member-type-add-first
+                                       member-type-list-option-some)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2181,7 +2201,9 @@
      not union or enumeration type declarations.
      For a structure type declaration, we first check the members,
      obtaining a list of member types if successful.
-     We ensure that there is at least one member [C:6.2.5/20].
+     We ensure that there is at least one member [C:6.2.5/20],
+     or at least two members if the last member is a flexible array member
+     [C:6.2.5/18].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
      since these share one name space [C:6.2.3].")
@@ -2202,6 +2224,12 @@
         ((when (errorp members)) members)
         ((unless (consp members))
          (error (list :empty-struct (tag-declon-fix declon))))
+        ((when (b* ((member (car (last members)))
+                    (type (member-type->type member)))
+                 (and (type-case type :array)
+                      (not (type-array->size type))
+                      (endp (cdr members)))))
+         (error (list :struct-with-just-flexible-array-member members)))
         (info (tag-info-struct members))
         (tagenv-opt (tag-env-add declon.tag info tagenv)))
      (tag-env-option-case tagenv-opt
@@ -2209,6 +2237,10 @@
                           :none (error (list :duplicate-tag declon.tag))))
    :union (error (list :union-not-supported (tag-declon-fix declon)))
    :enum (error (list :enum-not-supported (tag-declon-fix declon))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable member-type-listp-when-member-type-list-resultp-and-not-errorp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

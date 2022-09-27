@@ -153,7 +153,12 @@
   :elt-type member-type
   :true-listp t
   :elementp-of-nil nil
-  :pred member-type-listp)
+  :pred member-type-listp
+  ///
+  (defrule member-typep-of-car-of-last
+    (implies (and (consp members)
+                  (member-type-listp members))
+             (member-typep (car (last members))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
