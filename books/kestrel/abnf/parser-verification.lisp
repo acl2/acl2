@@ -2923,7 +2923,7 @@
     "A few tree matching constraint theorems do not need these hypotheses
      because the corresponding syntactic entities can only be matched
      by trees whose (starting) leaves are natural numbers.
-     For instance, in @(tsee constraints-from-tree-match-dot-etc.),
+     For instance, in @(tsee constraints-from-tree-match-dot-etc),
      the group @('(\".\" ...)') can only be matched
      by a tree whose first leaf is a natural number,
      upon which the theorem states the constraint.")
@@ -2967,15 +2967,15 @@
 
    (xdoc::p
     "Except for
-     @(tsee constraints-from-tree-match-dot-etc.) and
-     @(tsee constraints-from-tree-match-dash-etc.),
+     @(tsee constraints-from-tree-match-dot-etc) and
+     @(tsee constraints-from-tree-match-dash-etc),
      the alternations and concatenations of the syntactic entities being matched
      have an explicit list structure,
      and so the proof automatically uses rewrite rules like
      @(tsee tree-list-list-match-alternation-p-of-cons-alternation).
      In contrast,
-     for @(tsee constraints-from-tree-match-dot-etc.) and
-     for @(tsee constraints-from-tree-match-dash-etc.),
+     for @(tsee constraints-from-tree-match-dot-etc) and
+     for @(tsee constraints-from-tree-match-dash-etc),
      we expand
      @(tsee tree-list-list-match-alternation-p) and
      @(tsee tree-list-list-match-concatenation-p)
@@ -3282,7 +3282,7 @@
   :use (:instance constraints-from-tree-match-digit
                   (tree (car trees))))
 
-(defrule constraints-from-tree-match-dot-etc.
+(defrule constraints-from-tree-match-dot-etc
   :parents (grammar-parser-constraints-from-tree-matching)
   :short "Constraints induced by a tree that matches a group @('(\".\" ...)')."
   (implies (and (tree-match-element-p tree
@@ -3310,7 +3310,7 @@
                   (tree (car (car (tree-nonleaf->branches tree))))
                   (charstring ".")))
 
-(defrule constraints-from-tree-match-dash-etc.
+(defrule constraints-from-tree-match-dash-etc
   :parents (grammar-parser-constraints-from-tree-matching)
   :short "Constraints induced by a tree that matches a group @('(\"-\" ...)')."
   (implies (and (tree-match-element-p tree
@@ -3354,11 +3354,11 @@
   :rule-classes nil
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :enable tree-list-match-repetition-p-of-1+-repetitions
-  :use ((:instance constraints-from-tree-match-dot-etc.
+  :use ((:instance constraints-from-tree-match-dot-etc
                    (tree (car (car (tree-nonleaf->branches tree))))
                    (element (!_ (/_ "."
                                     (1*_ *bit*)))))
-        (:instance constraints-from-tree-match-dash-etc.
+        (:instance constraints-from-tree-match-dash-etc
                    (tree (car (car (tree-nonleaf->branches tree))))
                    (element (!_ (/_ "-"
                                     (1*_ *bit*)))))))
@@ -3380,11 +3380,11 @@
   :rule-classes nil
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :enable tree-list-match-repetition-p-of-1+-repetitions
-  :use ((:instance constraints-from-tree-match-dot-etc.
+  :use ((:instance constraints-from-tree-match-dot-etc
                    (tree (car (car (tree-nonleaf->branches tree))))
                    (element (!_ (/_ "."
                                     (1*_ *digit*)))))
-        (:instance constraints-from-tree-match-dash-etc.
+        (:instance constraints-from-tree-match-dash-etc
                    (tree (car (car (tree-nonleaf->branches tree))))
                    (element (!_ (/_ "-"
                                     (1*_ *digit*)))))))
@@ -3406,11 +3406,11 @@
   :rule-classes nil
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :enable tree-list-match-repetition-p-of-1+-repetitions
-  :use ((:instance constraints-from-tree-match-dot-etc.
+  :use ((:instance constraints-from-tree-match-dot-etc
                    (tree (car (car (tree-nonleaf->branches tree))))
                    (element (!_ (/_ "."
                                     (1*_ *hexdig*)))))
-        (:instance constraints-from-tree-match-dash-etc.
+        (:instance constraints-from-tree-match-dash-etc
                    (tree (car (car (tree-nonleaf->branches tree))))
                    (element (!_ (/_ "-"
                                     (1*_ *hexdig*)))))))
@@ -4265,7 +4265,7 @@
      Some disambiguation theorems do not need these hypotheses
      because the syntactic entities can only be matched
      by trees whose (starting) leaves are natural numbers.
-     For instance, in @(tsee fail-dot-when-match-dash-etc.),
+     For instance, in @(tsee fail-dot-when-match-dash-etc),
      the group @('(\"-\" ...)') can only be matched by a tree
      whose first leaf is a natural number,
      upon which the incompatibility with the parsing function applies.")
@@ -4563,7 +4563,7 @@
                 (mv-nth 0 (parse-bit rest-input)))
            (mv-nth 0 (parse-bit (append (tree-list->string trees)
                                         rest-input))))
-  :use ((:instance constraints-from-tree-match-dot-etc.
+  :use ((:instance constraints-from-tree-match-dot-etc
                    (tree (car trees))
                    (element (!_ (/_ "."
                                     (1*_ *bit*)))))
@@ -4582,7 +4582,7 @@
                 (mv-nth 0 (parse-digit rest-input)))
            (mv-nth 0 (parse-digit (append (tree-list->string trees)
                                           rest-input))))
-  :use ((:instance constraints-from-tree-match-dot-etc.
+  :use ((:instance constraints-from-tree-match-dot-etc
                    (tree (car trees))
                    (element (!_ (/_ "."
                                     (1*_ *digit*)))))
@@ -4601,7 +4601,7 @@
                 (mv-nth 0 (parse-hexdig rest-input)))
            (mv-nth 0 (parse-hexdig (append (tree-list->string trees)
                                            rest-input))))
-  :use ((:instance constraints-from-tree-match-dot-etc.
+  :use ((:instance constraints-from-tree-match-dot-etc
                    (tree (car trees))
                    (element (!_ (/_ "."
                                     (1*_ *hexdig*)))))
@@ -4609,7 +4609,7 @@
                    (input (append (tree-list->string trees) rest-input))))
   :enable tree-list-match-repetition-p-of-0+-reps-when-consp)
 
-(defruled fail-dot-when-match-dash-etc.
+(defruled fail-dot-when-match-dash-etc
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('\".\"') and @('(\"-\" ...)')."
   (implies (and (tree-match-element-p tree
@@ -4624,7 +4624,7 @@
                                    (element-char-val
                                     (char-val-insensitive "-")))))
            (mv-nth 0 (parse-ichar #\. (append (tree->string tree) rest-input))))
-  :use (constraints-from-tree-match-dash-etc.
+  :use (constraints-from-tree-match-dash-etc
         (:instance constraints-from-parse-ichar
                    (char #\.)
                    (input (append (tree->string tree) rest-input)))))
@@ -7223,7 +7223,7 @@
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :enable (parse-bin-val-rest
-           fail-dot-when-match-dash-etc.
+           fail-dot-when-match-dash-etc
            fail-dash-1*bit-when-fail-dash
            fail-dot-1*bit-when-fail-dot
            fail-1*-dot-1*bit-when-fail-dot-1*bit))
@@ -7245,7 +7245,7 @@
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :enable (parse-dec-val-rest
-           fail-dot-when-match-dash-etc.
+           fail-dot-when-match-dash-etc
            fail-dash-1*digit-when-fail-dash
            fail-dot-1*digit-when-fail-dot
            fail-1*-dot-1*digit-when-fail-dot-1*digit))
@@ -7267,7 +7267,7 @@
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :enable (parse-hex-val-rest
-           fail-dot-when-match-dash-etc.
+           fail-dot-when-match-dash-etc
            fail-dash-1*hexdig-when-fail-dash
            fail-dot-1*hexdig-when-fail-dot
            fail-1*-dot-1*hexdig-when-fail-dot-1*hexdig))
