@@ -246,7 +246,7 @@
   (b* ((fun (ident-fix fun))
        (type (fun-type-fix type))
        (funtab (fun-table-fix funtab))
-       ((when (set::in fun funtab)) (error (list :duplicate-fun fun))))
+       ((when (omap::in fun funtab)) (error (list :duplicate-fun fun))))
     (omap::update fun type funtab))
   :hooks (:fix))
 
