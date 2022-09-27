@@ -2071,8 +2071,8 @@
      unlike a function definition, does not have a body to check
      (for which we need the variable table that contains the parameters)."))
   (b* (((fun-declon declon) declon)
-       (wf (check-tyspecseq declon.tyspec tagenv))
-       ((when (errorp wf)) wf)
+       (type (check-tyspecseq declon.tyspec tagenv))
+       ((when (errorp type)) type)
        (vartab (check-fun-declor declon.declor vartab tagenv))
        ((when (errorp vartab)) vartab))
     :wellformed)
