@@ -1313,7 +1313,8 @@
                  (error (list :cast-mistype-operand e
                               :required :scalar
                               :supplied arg-type)))
-                (type (tyname-to-type e.type))
+                (type (check-tyname e.type tagenv))
+                ((when (errorp type)) type)
                 ((unless (type-scalarp type))
                  (error (list :cast-mistype-type e
                               :required :scalar
