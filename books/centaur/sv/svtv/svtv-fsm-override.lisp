@@ -1130,7 +1130,10 @@ properties of the SVTV and its conditional overrides.</li>
            (and (< (lnfix n) (len envs))
                 (svtv-name-lhs-map-eval namemap (nth n envs))))
     :hints(("Goal" :in-theory (enable nth)
-            :induct (nth n envs)))))
+            :induct (nth n envs))))
+
+  (defret len-of-<fn>
+    (Equal (len new-envs) (len envs))))
 
 
 (local (Defthm svex-env-lookup-of-svtv-name-lhs-map-eval

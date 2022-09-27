@@ -917,7 +917,22 @@
 
 
 
+(define svtv-fsm-phase-inputlist ((inputs svex-envlist-p)
+                                  (override-tests svex-envlist-p)
+                                  (map svtv-name-lhs-map-p)
+                                  (updates svex-alist-p))
+  :returns (phase-envs svex-envlist-p)
+  (if (atom inputs)
+      nil
+    (cons (svtv-fsm-phase-inputs (car inputs) (car override-tests) map updates)
+          (svtv-fsm-phase-inputlist (cdr inputs) (cdr override-tests) map updates)))
+  ///
+  (defcong svex-alist-same-keys equal (svtv-fsm-phase-inputlist inputs override-tests map updates) 4)
 
+  (defret len-of-<fn>
+    (equal (len phase-envs) (len inputs))))
+  
+  
 (define svtv-fsm-run-input-envs ((inputs svex-envlist-p)
                                          (override-tests svex-envlist-p)
                                          (x svtv-fsm-p))
@@ -928,7 +943,15 @@
           (svtv-fsm-run-input-envs (cdr inputs) (cdr override-tests) x)))
   ///
   (defret len-of-<fn>
-    (equal (len ins) (len inputs))))
+    (equal (len ins) (len inputs)))
+
+  (defretd <fn>-in-terms-of-svtv-fsm-phase-inputlist
+    (equal ins
+           (svtv-fsm-phase-inputlist inputs override-tests
+                                     (svtv-fsm->namemap x)
+                                     (svtv-fsm->values x)))
+    :hints(("Goal" :in-theory (enable svtv-fsm-phase-inputlist
+                                      svtv-fsm-env)))))
 
 
 (define svtv-fsm-run-input-substs ((inputs svex-alistlist-p)

@@ -731,6 +731,7 @@
                                     svex-env-fix))))
 
 
+
 (define flatnorm->ideal-fsm ((x flatnorm-res-p))
   :returns (fsm base-fsm-p)
   :non-executable t
@@ -1261,18 +1262,25 @@
              (not (mv-nth 0 (svtv-design-flatten x))))
     :hints(("Goal" :in-theory (enable normalize-stobjs-of-svtv-design-flatten)))))
 
+(define design->flatnorm ((x design-p))
+  ;; :guard (modalist-addr-p (design->modalist x))
+  :returns (flatnorm flatnorm-res-p)
+  (b* (((mv & flatten ?moddb aliases)
+        (non-exec (svtv-design-flatten x :moddb nil :aliases nil))))
+    (non-exec
+     (svtv-normalize-assigns flatten aliases
+                             (make-flatnorm-setup :monotonify t))))
+  ///
+  (defret no-duplicate-keys-of-<fn>-assigns
+    (no-duplicatesp-equal (svex-alist-keys (flatnorm-res->assigns flatnorm))))
+
+  (defret svex-alist-width-of-<fn>-assigns
+    (svex-alist-width (flatnorm-res->assigns flatnorm))))
 
 (define design->ideal-fsm ((x design-p))
-  :guard (and (modalist-addr-p (design->modalist x))
-              (design-flatten-okp x))
-  :verify-guards nil
+  :guard (modalist-addr-p (design->modalist x))
   :returns (ideal-fsm base-fsm-p)
-  :non-executable t
-  (b* (((mv & flatten ?moddb aliases)
-        (ec-call (svtv-design-flatten-fn x nil nil)))
-       (flatnorm (svtv-normalize-assigns flatten aliases
-                                         (make-flatnorm-setup :monotonify t))))
-    (flatnorm->ideal-fsm flatnorm))
+  (flatnorm->ideal-fsm (design->flatnorm x))
   ///
   (local (in-theory (enable design-flatten-okp)))
 
@@ -1319,7 +1327,8 @@
                    (:instance phase-fsm-validp-of-svtv-data-obj
                     (x data)))
              :in-theory (e/d (phase-fsm-composition-p
-                              svtv-flatnorm-apply-overrides)
+                              svtv-flatnorm-apply-overrides
+                              design->flatnorm)
                              (base-fsm-eval-of-flatnorm->ideal-fsm-refines-overridden-approximation
                               phase-fsm-validp-of-svtv-data-obj))))
     :otf-flg t)
@@ -1359,7 +1368,8 @@
                    (:instance phase-fsm-validp-of-svtv-data-obj
                     (x data)))
              :in-theory (e/d (phase-fsm-composition-p
-                              svtv-flatnorm-apply-overrides)
+                              svtv-flatnorm-apply-overrides
+                              design->flatnorm)
                              (base-fsm-eval-of-flatnorm->ideal-fsm-refines-overridden-approximation
                               phase-fsm-validp-of-svtv-data-obj))))
     :otf-flg t))
