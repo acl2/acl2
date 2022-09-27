@@ -102,7 +102,10 @@
        (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
        (nextstate-keys (svex-alist-keys fsm.nextstate))
        (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
-    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+    (fast-alist-free fsm.values)
+    (fast-alist-free fsm.nextstate)
+    (make-base-fsm :values (make-fast-alist values-rw)
+                   :nextstate (make-fast-alist nextstate-rw)))
   ///
   (defret base-fsm-eval-equiv-of-<fn>
     (base-fsm-eval-equiv new-fsm fsm)
@@ -130,7 +133,10 @@
        (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
        (nextstate-keys (svex-alist-keys fsm.nextstate))
        (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
-    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+    (fast-alist-free fsm.values)
+    (fast-alist-free fsm.nextstate)
+    (make-base-fsm :values (make-fast-alist values-rw)
+                   :nextstate (make-fast-alist nextstate-rw)))
   ///
   (defret base-fsm-eval-equiv-of-<fn>
     (base-fsm-eval-equiv new-fsm fsm)

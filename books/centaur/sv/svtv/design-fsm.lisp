@@ -379,7 +379,7 @@ to a small number is usually practical if there is such a problem.")
                                           :rewrite params.rewrite
                                           :scc-selfcompose-limit params.scc-selfcompose-limit))))
        (updates2 (fast-alist-fork updates1 (make-fast-alist (svex-alist-compose override-alist updates1))))
-       (nextstates (svex-alist-compose (fast-alist-clean flatnorm.delays) updates2)))
+       (nextstates (make-fast-alist (svex-alist-compose (fast-alist-clean flatnorm.delays) updates2))))
     (fast-alist-free updates2)
     (make-base-fsm :values updates1 :nextstate nextstates))
   ///

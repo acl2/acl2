@@ -270,11 +270,11 @@
   (b* (((when (atom phases))
         (mv nil
             (mbe :logic (svex-alist-extract (svex-alist-keys (base-fsm->nextstate x)) prev-st)
-                 :exec prev-st)))
+                 :exec (make-fast-alist prev-st))))
        ((mv outs1 nextst) (svtv-cycle-step-phase-exprs prev-st (car phases) x simp))
        ((mv rest-outs final-st) (svtv-cycle-compile nextst (cdr phases) x simp)))
     (mv (if (svtv-cyclephase->outputs-captured (car phases))
-            outs1
+            (make-fast-alist outs1)
           rest-outs)
         final-st))
   ///
