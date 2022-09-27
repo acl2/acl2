@@ -4426,7 +4426,7 @@
      and some expand many definitions.
      It may be possible to make these proofs more systematic,
      by introducing and using
-     some additional ``intermediate '' disambiguation theorems
+     some additional ``intermediate'' disambiguation theorems
      and some additional rules about the ABNF semantics."))
 
   :order-subtopics t)
