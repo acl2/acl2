@@ -4156,7 +4156,7 @@
      only if the string at the leaves of the tree(s) is in fact empty;
      however, the stronger hypotheses keep the theorems simpler
      without precluding the eventual proof of
-    the top-level completeness theorem.
+     the top-level completeness theorem.
      Another possibility is to have, instead, hypotheses stating that
      the string at the leaves of the tree(s) are not empty;
      however, the current formulation seems more readily usable
