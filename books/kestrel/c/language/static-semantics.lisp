@@ -2148,6 +2148,9 @@
      We go through the declarations
      and turn each of them into member types (see @(tsee member-type)).
      We ensure that each member name is well-formed.
+     We check that each type is well-formed,
+     and complete [C:6.7.2.1/9];
+     we will add support for flexible array members [C:6.7.2.1/18] later.
      By using @(tsee member-type-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
@@ -2156,6 +2159,8 @@
        ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
        (type (check-tyname tyname tagenv))
        ((when (errorp type)) (error (list :bad-member-type type)))
+       ((unless (type-completep type))
+        (error (list :incomplete-member-type type)))
        (wf (check-ident name))
        ((when (errorp wf)) (error (list :bad-member-name wf)))
        (members-opt (member-type-add-first name type members)))
