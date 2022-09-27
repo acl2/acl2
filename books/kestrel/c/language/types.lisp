@@ -417,7 +417,7 @@
      A pointer type is always complete [C:6.2.5/20]
      (regardless of the pointed-to type).
      An array type needs its element type to be complete [C:6.2.5/20],
-     which we plan to formalize soon;
+     as formalized in @(tsee check-tyname);
      the array type itself is complete if the size is specified,
      otherwise it is incomplete [C:6.2.5/22]."))
   (cond ((type-case type :void) nil)
