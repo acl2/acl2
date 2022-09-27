@@ -1005,6 +1005,7 @@
             x86isa::select-address-size$inline
             x86isa::mv-nth-of-if
             x86isa::canonical-address-p-of-if
+            read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
             read-in-terms-of-nth-and-pos-eric-8-bytes
 
