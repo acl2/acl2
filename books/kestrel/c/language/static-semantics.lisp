@@ -790,40 +790,42 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-tyspecseq ((tyspec tyspecseqp) (tagenv tag-envp))
-  :returns (wf? wellformed-resultp)
+  :returns (type type-resultp)
   :short "Check a type specifier sequence."
   :long
   (xdoc::topstring
    (xdoc::p
+    "If successful, return the type denoted by the type specifier sequence.")
+   (xdoc::p
     "We only accept certain type specifier sequences for now,
-     namely the ones that have corresponding types (see @(tsee type)).
+     namely the ones that have corresponding types in our model.
      The tag of a structure type specifier sequence
      must be in the tag environment.
      All the other (supported) type specifier sequences
      are always well-formed."))
   (tyspecseq-case
    tyspec
-   :void :wellformed
-   :char :wellformed
-   :schar :wellformed
-   :uchar :wellformed
-   :sshort :wellformed
-   :ushort :wellformed
-   :sint :wellformed
-   :uint :wellformed
-   :slong :wellformed
-   :ulong :wellformed
-   :sllong :wellformed
-   :ullong :wellformed
-   :bool :wellformed
-   :float :wellformed
-   :double :wellformed
-   :ldouble :wellformed
+   :void (type-void)
+   :char (type-char)
+   :schar (type-schar)
+   :uchar (type-uchar)
+   :sshort (type-sshort)
+   :ushort (type-ushort)
+   :sint (type-sint)
+   :uint (type-uint)
+   :slong (type-slong)
+   :ulong (type-ulong)
+   :sllong (type-sllong)
+   :ullong (type-ullong)
+   :bool (error (list :not-supported-bool))
+   :float (error (list :not-supported-float))
+   :double (error (list :not-supported-double))
+   :ldouble (error (list :not-supported-ldouble))
    :struct (b* ((info (tag-env-lookup tyspec.tag tagenv)))
              (tag-info-option-case
               info
               :some (if (tag-info-case info.val :struct)
-                        :wellformed
+                        (type-struct tyspec.tag)
                       (error (list :struct-tag-mismatch tyspec.tag info.val)))
               :none (error (list :no-tag-found tyspec.tag))))
    :union (error (list :not-supported-union tyspec.tag))
@@ -833,41 +835,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-obj-adeclor ((declor obj-adeclorp))
-  :returns (wf? wellformed-resultp)
+(define check-obj-adeclor ((declor obj-adeclorp) (type typep))
+  :returns (type type-resultp)
   :short "Check an abstract object declarator."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This boils down to checking array sizes, if present."))
+    "This is checked with respect to a type,
+     which initially is the type denoted by the type specifier sequence
+     that precedes the abstract object declarator,
+     and then is the type obtained by augmenting that initial type
+     with the layers that form the abstract object declarator.")
+   (xdoc::p
+    "When we reach the end of the abstract object declarator,
+     we just return the type.
+     If we find a pointer layer,
+     we wrap the type into a pointer type
+     and we continue through the subsequent layers recursively.
+     If we find an array layer,
+     we ensure that the current type, which is the element type,
+     is complete [C:6.2.5/20].
+     If the array size is present,
+     we check that it is well-formed and non-zero,
+     and we use its value as the array size.
+     Whether the size is present or not,
+     we wrap the type into an array type
+     and we continue through the subsequent layers recursively."))
   (obj-adeclor-case
    declor
-   :none :wellformed
-   :pointer (check-obj-adeclor declor.decl)
-   :array (b* ((wf? (check-obj-adeclor declor.decl))
-               ((when (errorp wf?)) wf?)
-               ((unless declor.size) :wellformed)
+   :none (type-fix type)
+   :pointer (check-obj-adeclor declor.decl (type-pointer type))
+   :array (b* (((unless (type-completep type))
+                (error (list :incomplete-array-type-element
+                             (type-fix type)
+                             (obj-adeclor-fix declor))))
+               ((unless declor.size)
+                (check-obj-adeclor declor.decl
+                                   (make-type-array :of type :size nil)))
                (type? (check-iconst declor.size))
-               ((when (errorp type?)) type?))
-            :wellformed))
+               ((when (errorp type?)) type?)
+               (size (iconst->value declor.size))
+               ((when (equal size 0))
+                (error (list :zero-size-array-type
+                             (type-fix type)
+                             (obj-adeclor-fix declor)))))
+            (check-obj-adeclor declor.decl
+                               (make-type-array :of type :size size))))
   :measure (obj-adeclor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-tyname ((tyname tynamep) (tagenv tag-envp))
-  :returns (wf? wellformed-resultp)
+  :returns (type type-resultp)
   :short "Check a type name."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The underlying type specifier sequence and declarator
-     must be well-formed."))
-  (b* ((wf? (check-tyspecseq (tyname->tyspec tyname) tagenv))
-       ((when (errorp wf?)) wf?)
-       (wf? (check-obj-adeclor (tyname->declor tyname)))
-       ((when (errorp wf?)) wf?))
-    :wellformed)
+    "Return the denoted type if successful.
+     We first check the type specifier sequence,
+     then the abstracto object declarator."))
+  (b* ((type (check-tyspecseq (tyname->tyspec tyname) tagenv))
+       ((when (errorp type)) type))
+    (check-obj-adeclor (tyname->declor tyname) type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
