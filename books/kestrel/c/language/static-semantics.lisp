@@ -790,40 +790,42 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-tyspecseq ((tyspec tyspecseqp) (tagenv tag-envp))
-  :returns (wf? wellformed-resultp)
+  :returns (type type-resultp)
   :short "Check a type specifier sequence."
   :long
   (xdoc::topstring
    (xdoc::p
+    "If successful, return the type denoted by the type specifier sequence.")
+   (xdoc::p
     "We only accept certain type specifier sequences for now,
-     namely the ones that have corresponding types (see @(tsee type)).
+     namely the ones that have corresponding types in our model.
      The tag of a structure type specifier sequence
      must be in the tag environment.
      All the other (supported) type specifier sequences
      are always well-formed."))
   (tyspecseq-case
    tyspec
-   :void :wellformed
-   :char :wellformed
-   :schar :wellformed
-   :uchar :wellformed
-   :sshort :wellformed
-   :ushort :wellformed
-   :sint :wellformed
-   :uint :wellformed
-   :slong :wellformed
-   :ulong :wellformed
-   :sllong :wellformed
-   :ullong :wellformed
-   :bool :wellformed
-   :float :wellformed
-   :double :wellformed
-   :ldouble :wellformed
+   :void (type-void)
+   :char (type-char)
+   :schar (type-schar)
+   :uchar (type-uchar)
+   :sshort (type-sshort)
+   :ushort (type-ushort)
+   :sint (type-sint)
+   :uint (type-uint)
+   :slong (type-slong)
+   :ulong (type-ulong)
+   :sllong (type-sllong)
+   :ullong (type-ullong)
+   :bool (error (list :not-supported-bool))
+   :float (error (list :not-supported-float))
+   :double (error (list :not-supported-double))
+   :ldouble (error (list :not-supported-ldouble))
    :struct (b* ((info (tag-env-lookup tyspec.tag tagenv)))
              (tag-info-option-case
               info
               :some (if (tag-info-case info.val :struct)
-                        :wellformed
+                        (type-struct tyspec.tag)
                       (error (list :struct-tag-mismatch tyspec.tag info.val)))
               :none (error (list :no-tag-found tyspec.tag))))
    :union (error (list :not-supported-union tyspec.tag))
@@ -833,41 +835,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-obj-adeclor ((declor obj-adeclorp))
-  :returns (wf? wellformed-resultp)
+(define check-obj-adeclor ((declor obj-adeclorp) (type typep))
+  :returns (type type-resultp)
   :short "Check an abstract object declarator."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This boils down to checking array sizes, if present."))
+    "This is checked with respect to a type,
+     which initially is the type denoted by the type specifier sequence
+     that precedes the abstract object declarator,
+     and then is the type obtained by augmenting that initial type
+     with the layers that form the abstract object declarator.")
+   (xdoc::p
+    "When we reach the end of the abstract object declarator,
+     we just return the type.
+     If we find a pointer layer,
+     we wrap the type into a pointer type
+     and we continue through the subsequent layers recursively.
+     If we find an array layer,
+     we ensure that the current type, which is the element type,
+     is complete [C:6.2.5/20].
+     If the array size is present,
+     we check that it is well-formed and non-zero,
+     and we use its value as the array size.
+     Whether the size is present or not,
+     we wrap the type into an array type
+     and we continue through the subsequent layers recursively."))
   (obj-adeclor-case
    declor
-   :none :wellformed
-   :pointer (check-obj-adeclor declor.decl)
-   :array (b* ((wf? (check-obj-adeclor declor.decl))
-               ((when (errorp wf?)) wf?)
-               ((unless declor.size) :wellformed)
+   :none (type-fix type)
+   :pointer (check-obj-adeclor declor.decl (type-pointer type))
+   :array (b* (((unless (type-completep type))
+                (error (list :incomplete-array-type-element
+                             (type-fix type)
+                             (obj-adeclor-fix declor))))
+               ((unless declor.size)
+                (check-obj-adeclor declor.decl
+                                   (make-type-array :of type :size nil)))
                (type? (check-iconst declor.size))
-               ((when (errorp type?)) type?))
-            :wellformed))
+               ((when (errorp type?)) type?)
+               (size (iconst->value declor.size))
+               ((when (equal size 0))
+                (error (list :zero-size-array-type
+                             (type-fix type)
+                             (obj-adeclor-fix declor)))))
+            (check-obj-adeclor declor.decl
+                               (make-type-array :of type :size size))))
   :measure (obj-adeclor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-tyname ((tyname tynamep) (tagenv tag-envp))
-  :returns (wf? wellformed-resultp)
+  :returns (type type-resultp)
   :short "Check a type name."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The underlying type specifier sequence and declarator
-     must be well-formed."))
-  (b* ((wf? (check-tyspecseq (tyname->tyspec tyname) tagenv))
-       ((when (errorp wf?)) wf?)
-       (wf? (check-obj-adeclor (tyname->declor tyname)))
-       ((when (errorp wf?)) wf?))
-    :wellformed)
+    "Return the denoted type if successful.
+     We first check the type specifier sequence,
+     then the abstracto object declarator."))
+  (b* ((type (check-tyspecseq (tyname->tyspec tyname) tagenv))
+       ((when (errorp type)) type))
+    (check-obj-adeclor (tyname->declor tyname) type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1283,7 +1313,8 @@
                  (error (list :cast-mistype-operand e
                               :required :scalar
                               :supplied arg-type)))
-                (type (tyname-to-type e.type))
+                (type (check-tyname e.type tagenv))
+                ((when (errorp type)) type)
                 ((unless (type-scalarp type))
                  (error (list :cast-mistype-type e
                               :required :scalar
@@ -1659,9 +1690,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We ensure that the type is not @('void'),
-     because the type must be complete [C:6.7/7],
-     and @('void') is incomplete [C:6.2.5/19].
+    "We ensure that the type is complete [C:6.7/7].
      We also ensure that the initializer type matches the declared type,
      if the initializer is present.")
    (xdoc::p
@@ -1674,13 +1703,12 @@
    (xdoc::p
     "We return the updated variable table."))
   (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init declon))
-       (wf (check-tyname tyname tagenv))
-       ((when (errorp wf)) (error (list :declon-error-type wf)))
+       (type (check-tyname tyname tagenv))
+       ((when (errorp type)) (error (list :declon-error-type type)))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :declon-error-var wf)))
-       (type (tyname-to-type tyname))
-       ((when (type-case type :void))
-        (error (list :declon-error-type-void (obj-declon-fix declon))))
+       ((unless (type-completep type))
+        (error (list :declon-error-type-incomplete (obj-declon-fix declon))))
        ((when (not init?))
         (if initp
             (error (list :declon-initializer-required (obj-declon-fix declon)))
@@ -1958,20 +1986,16 @@
      We check the components of the parameter declaration
      and we check that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
+     We also ensure that the type is complete [C:6.7.6.3/4].
      If all checks succeed, we return the variable table
-     updated with the parameter.")
-   (xdoc::p
-    "We disallow @('void') as type of a parameter,
-     because parameters must have complete types [C:6.7.6.3/4],
-     but @('void') is incomplete [C:6.2.5/19]."))
+     updated with the parameter."))
   (b* (((mv var tyname) (param-declon-to-ident+tyname param))
-       (wf (check-tyname tyname tagenv))
-       ((when (errorp wf)) (error (list :param-type-error wf)))
+       (type (check-tyname tyname tagenv))
+       ((when (errorp type)) (error (list :param-type-error type)))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf)))
-       (type (tyname-to-type tyname))
-       ((when (type-case type :void))
-        (error (list :param-error-void (param-declon-fix param)))))
+       ((unless (type-completep type))
+        (error (list :param-type-incomplete (param-declon-fix param)))))
     (var-table-add-var var type vartab))
   :hooks (:fix))
 
@@ -2041,8 +2065,8 @@
      unlike a function definition, does not have a body to check
      (for which we need the variable table that contains the parameters)."))
   (b* (((fun-declon declon) declon)
-       (wf (check-tyspecseq declon.tyspec tagenv))
-       ((when (errorp wf)) wf)
+       (type (check-tyspecseq declon.tyspec tagenv))
+       ((when (errorp type)) type)
        (vartab (check-fun-declor declon.declor vartab tagenv))
        ((when (errorp vartab)) vartab))
     :wellformed)
@@ -2091,10 +2115,8 @@
   (b* (((fundef fundef) fundef)
        ((mv name params out-tyname)
         (tyspec+declor-to-ident+params+tyname fundef.tyspec fundef.declor))
-       (wf (check-tyname out-tyname tagenv))
-       ((when (errorp wf))
-        (error (list :bad-fun-out-type name wf)))
-       (out-type (tyname-to-type out-tyname))
+       (out-type (check-tyname out-tyname tagenv))
+       ((when (errorp out-type)) (error (list :bad-fun-out-type name out-type)))
        (vartab (check-fun-declor fundef.declor vartab tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
        ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
@@ -2126,22 +2148,46 @@
      We go through the declarations
      and turn each of them into member types (see @(tsee member-type)).
      We ensure that each member name is well-formed.
+     We check that each type is well-formed.
+     We also check that each type either is complete [C:6.7.2.1/9],
+     or is an array type of unspecified size in the last member;
+     the latter is a flexible array member [C:6.7.2.1/18].
      By using @(tsee member-type-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
+       (lastp (endp (cdr declons)))
        (members (check-struct-declon-list (cdr declons) tagenv))
        ((when (errorp members)) members)
        ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
-       (wf (check-tyname tyname tagenv))
-       ((when (errorp wf)) (error (list :bad-member-type wf)))
+       (type (check-tyname tyname tagenv))
+       ((when (errorp type)) (error (list :bad-member-type type)))
+       (completep (type-completep type))
+       (flexiblep (and lastp
+                       (type-case type :array)
+                       (not (type-array->size type))))
+       ((unless (or completep flexiblep))
+        (error (list :incomplete-member-type type)))
        (wf (check-ident name))
        ((when (errorp wf)) (error (list :bad-member-name wf)))
-       (type (tyname-to-type tyname))
        (members-opt (member-type-add-first name type members)))
     (member-type-list-option-case members-opt
                                   :some members-opt.val
                                   :none (error (list :duplicate-member name))))
-  :hooks (:fix))
+  ///
+
+  (fty::deffixequiv check-struct-declon-list
+    :args ((declons struct-declon-listp)
+           (tagenv tag-envp))
+    ;; for speed:
+    :hints (("Goal" :in-theory (disable equal-of-error))))
+
+  (defret consp-of-check-struct-declon-list
+    (equal (consp (check-struct-declon-list declons tagenv))
+           (consp declons))
+    :fn check-struct-declon-list
+    :hints (("Goal" :in-theory (enable member-type-list-option-some->val
+                                       member-type-add-first
+                                       member-type-list-option-some)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2155,10 +2201,22 @@
      not union or enumeration type declarations.
      For a structure type declaration, we first check the members,
      obtaining a list of member types if successful.
-     We ensure that there is at least one member [C:6.2.5/20].
+     We ensure that there is at least one member [C:6.2.5/20],
+     or at least two members if the last member is a flexible array member
+     [C:6.2.5/18].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
-     since these share one name space [C:6.2.3]."))
+     since these share one name space [C:6.2.3].")
+   (xdoc::p
+    "C allows a form of recursion in structure type declarations,
+     namely that a member can be a pointer to the structure:
+     [C:6.2.1/7] says that the scope of the tag starts where it appears,
+     so it includes the members;
+     and [C:6.7.2.1/9] says that a member type must be complete,
+     which pointer types are [C:6:2.5/20].
+     However, we implicitly disallow even this form of recursion for now,
+     because we check the member types against the current tag environment,
+     which does not include the structure type yet."))
   (tag-declon-case
    declon
    :struct
@@ -2166,6 +2224,12 @@
         ((when (errorp members)) members)
         ((unless (consp members))
          (error (list :empty-struct (tag-declon-fix declon))))
+        ((when (b* ((member (car (last members)))
+                    (type (member-type->type member)))
+                 (and (type-case type :array)
+                      (not (type-array->size type))
+                      (endp (cdr members)))))
+         (error (list :struct-with-just-flexible-array-member members)))
         (info (tag-info-struct members))
         (tagenv-opt (tag-env-add declon.tag info tagenv)))
      (tag-env-option-case tagenv-opt
@@ -2173,6 +2237,10 @@
                           :none (error (list :duplicate-tag declon.tag))))
    :union (error (list :union-not-supported (tag-declon-fix declon)))
    :enum (error (list :enum-not-supported (tag-declon-fix declon))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable member-type-listp-when-member-type-list-resultp-and-not-errorp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

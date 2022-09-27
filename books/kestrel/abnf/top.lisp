@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -79,6 +79,16 @@
       on a few real-world ABNF grammars (e.g. for HTTP)."))
 
    (xdoc::p
+    "Besides the aforementioned examples,
+     the parser, abstractor, and some grammar operations have been used on "
+    (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
+    " and on "
+    (xdoc::seetopic "yul::concrete-syntax" "an ABNF grammar of Yul")
+    ". The parsing generation tools have been used to generate part of "
+    (xdoc::seetopic "yul::lexer" "a Yul lexer")
+    ".")
+
+   (xdoc::p
     "In the documentation of this library,
      `[RFC]' refers to the result of updating RFC 5234 as specified by RFC 7405.
      Sections and subsections of [RFC] are referenced
@@ -96,9 +106,13 @@
      "https://www.kestrel.edu/home/people/coglio/vstte18.pdf"
      "VSTTE 2018 paper")
     " provides an overview
-     of the formalization of the ABNF notation
-     and of the verified parser
-     (but not of the operations on ABNF grammars).
+     of the ABNF notation formalization,
+     of the verified parser,
+     and of the syntax abstractor
+     (but not of the operations on ABNF grammars,
+     of the parsing primitives,
+     of the parsing generation tools,
+     or of the real-world examples).
      The differences between the paper and the ABNF library
      are described "
     (xdoc::seetopic "differences-with-paper" "here")

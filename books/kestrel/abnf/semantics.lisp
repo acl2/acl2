@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -156,7 +156,7 @@
        at that place in the tree."))
     (:leafterm ((get nat-list)))
     (:leafrule ((get rulename)))
-    (:nonleaf ((rulename? maybe-rulename)
+    (:nonleaf ((rulename? rulename-option)
                (branches tree-list-list)))
     :pred treep
     ///
@@ -538,7 +538,7 @@
    "Formally speaking, any tree matches prose,
     because prose has no formal semantics.
     When a rule includes prose,
-    its meaning can be formalized via external predicates on trees.=")
+    its meaning can be formalized via external predicates on trees.")
   t
   :ignore-ok t
   :no-function t
@@ -562,8 +562,7 @@
   ///
 
   (defrule 0-when-match-repeat-range-0
-    (implies (and (equal range (repeat-range 0 (nati-finite 0)))
-                  (acl2-numberp n)) ; added by Matt K after tau bug fix 8/16/18
+    (implies (equal range (repeat-range 0 (nati-finite 0)))
              (equal (numrep-match-repeat-range-p n range)
                     (equal (nfix n) 0)))
     :enable numrep-match-repeat-range-p))

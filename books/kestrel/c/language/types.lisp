@@ -153,7 +153,12 @@
   :elt-type member-type
   :true-listp t
   :elementp-of-nil nil
-  :pred member-type-listp)
+  :pred member-type-listp
+  ///
+  (defrule member-typep-of-car-of-last
+    (implies (and (consp members)
+                  (member-type-listp members))
+             (member-typep (car (last members))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -394,6 +399,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-completep ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is complete [C:6.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A type is complete when its size is determined,
+     otherwise it is incomplete.
+     While [C:6.2.5] cautions that the same type
+     may be complete or incomplete in different parts of a program,
+     for now we capture the completeness of a type
+     independently from where it occurs:
+     this is adequate for our C subset and for our use of this predicate.")
+   (xdoc::p
+    "The @('void') type is never complete [C:6.2.5/19].
+     The basic types, which are the integer types in our subset of C,
+     are always complete [C:6.2.5/14].
+     A structure type is complete as soon as its declaration ends [C:6.7.2.1/8];
+     it is incomplete inside the structure type,
+     but we do not use this predicate for the member types.
+     A pointer type is always complete [C:6.2.5/20]
+     (regardless of the pointed-to type).
+     An array type needs its element type to be complete [C:6.2.5/20],
+     as formalized in @(tsee check-tyname);
+     the array type itself is complete if the size is specified,
+     otherwise it is incomplete [C:6.2.5/22]."))
+  (cond ((type-case type :void) nil)
+        ((type-integerp type) t)
+        ((type-case type :struct) t)
+        ((type-case type :pointer) t)
+        ((type-case type :array) (not (eq (type-array->size type) nil)))
+        (t (impossible)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tyspecseq-to-type ((tyspec tyspecseqp))
   :returns (type typep)
   :short "Turn a type specifier sequence into a type."
@@ -418,34 +462,34 @@
                   :ullong (type-ullong)
                   :bool (prog2$
                          (raise "Internal error: ~
-                                            _Bool not supported yet.")
+                                 _Bool not supported yet.")
                          (ec-call (type-fix :irrelevant)))
                   :float (prog2$
                           (raise "Internal error: ~
-                                             float not supported yet.")
+                                  float not supported yet.")
                           (ec-call (type-fix :irrelevant)))
                   :double (prog2$
                            (raise "Internal error: ~
-                                              double not supported yet.")
+                                   double not supported yet.")
                            (ec-call (type-fix :irrelevant)))
                   :ldouble (prog2$
                             (raise "Internal error: ~
-                                               long double not supported yet.")
+                                    long double not supported yet.")
                             (ec-call (type-fix :irrelevant)))
                   :struct (type-struct tyspec.tag)
                   :union (prog2$
                           (raise "Internal error: ~
-                                             union ~x0 not supported yet."
+                                  union ~x0 not supported yet."
                                  tyspec.tag)
                           (ec-call (type-fix :irrelevant)))
                   :enum (prog2$
                          (raise "Internal error: ~
-                                            enum ~x0 not supported yet."
+                                 enum ~x0 not supported yet."
                                 tyspec.tag)
                          (ec-call (type-fix :irrelevant)))
                   :typedef (prog2$
                             (raise "Internal error: ~
-                                               typedef ~x0 not supported yet."
+                                    typedef ~x0 not supported yet."
                                    tyspec.name)
                             (ec-call (type-fix :irrelevant))))
   :hooks (:fix))

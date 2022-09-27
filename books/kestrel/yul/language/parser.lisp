@@ -707,10 +707,10 @@
   (b* (;; probably should be moved to the guard
        ((unless (abnf::tree-case tree :nonleaf))
         nil)
-       (maybe-rulename (abnf::tree-nonleaf->rulename? tree))
-       ((unless (abnf::rulenamep maybe-rulename))
+       (rulename-option (abnf::tree-nonleaf->rulename? tree))
+       ((unless (abnf::rulenamep rulename-option))
         nil)
-       (rulestring (abnf::rulename->get maybe-rulename)))
+       (rulestring (abnf::rulename->get rulename-option)))
     (cond ((equal rulestring "decimal-number")
            (cst2ast-decimal-number tree))
           ((equal rulestring "hex-number")
