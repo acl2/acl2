@@ -457,34 +457,34 @@
                   :ullong (type-ullong)
                   :bool (prog2$
                          (raise "Internal error: ~
-                                            _Bool not supported yet.")
+                                 _Bool not supported yet.")
                          (ec-call (type-fix :irrelevant)))
                   :float (prog2$
                           (raise "Internal error: ~
-                                             float not supported yet.")
+                                  float not supported yet.")
                           (ec-call (type-fix :irrelevant)))
                   :double (prog2$
                            (raise "Internal error: ~
-                                              double not supported yet.")
+                                   double not supported yet.")
                            (ec-call (type-fix :irrelevant)))
                   :ldouble (prog2$
                             (raise "Internal error: ~
-                                               long double not supported yet.")
+                                    long double not supported yet.")
                             (ec-call (type-fix :irrelevant)))
                   :struct (type-struct tyspec.tag)
                   :union (prog2$
                           (raise "Internal error: ~
-                                             union ~x0 not supported yet."
+                                  union ~x0 not supported yet."
                                  tyspec.tag)
                           (ec-call (type-fix :irrelevant)))
                   :enum (prog2$
                          (raise "Internal error: ~
-                                            enum ~x0 not supported yet."
+                                 enum ~x0 not supported yet."
                                 tyspec.tag)
                          (ec-call (type-fix :irrelevant)))
                   :typedef (prog2$
                             (raise "Internal error: ~
-                                               typedef ~x0 not supported yet."
+                                    typedef ~x0 not supported yet."
                                    tyspec.name)
                             (ec-call (type-fix :irrelevant))))
   :hooks (:fix))
