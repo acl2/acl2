@@ -25,11 +25,11 @@
        (if (eq 'quote fn)
            nil
          ;; function call:
-         (or (some-expr-calls-some-fn fns (fargs term))
-             (if (flambdap fn)
+         (or (if (flambdap fn)
                  (expr-calls-some-fn fns (lambda-body fn))
                ;; non-lambda:
-               (if (member-eq fn fns) t nil)))))))
+               (if (member-eq fn fns) t nil))
+             (some-expr-calls-some-fn fns (fargs term)))))))
 
  (defund some-expr-calls-some-fn (fns terms)
    (declare (xargs :guard (and (symbol-listp fns)
