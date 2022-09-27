@@ -45,7 +45,11 @@
       whose trees satisfy the "
      (xdoc::seetopic "grammar-parser-disambiguating-restrictions"
                      "disambiguating restrictions")
-     ".")))
+     "."))
+   (xdoc::p
+    "Some of these proofs apply to the "
+    (xdoc::seetopic "parsing-primitives-seq" "<i>Seq</i> parsing primitives")
+    ". Those proofs should be eventually moved with the parsing primitives."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
