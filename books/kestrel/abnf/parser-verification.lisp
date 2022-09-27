@@ -1014,7 +1014,7 @@
      if that were the conclusion of @(tsee tree-match-of-parse-alpha).
      We could substitute the fully evaluated quoted constants
      into the conclusions of the tree matching theorems
-     (e.g. @(''(:rulename (:rulename \"alpha\"))')
+     (e.g. @('\'(:rulename (:rulename \"alpha\"))')
      in @(tsee tree-match-of-parse-alpha)),
      but this would be slightly more inconvenient and less readable,
      especially when the elements are not simple rule elements.")
