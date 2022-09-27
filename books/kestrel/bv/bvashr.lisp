@@ -116,3 +116,13 @@
            (equal (bvashr 64 x shift-amount)
                   (bvashr-cases-term 64)))
   :hints (("Goal" :in-theory (enable bvashr))))
+
+;; bvshr seems simpler
+(defthm getbit-of-bvashr-becomes-getbit-of-bvshr
+  (implies (and (< n (- width amt))
+                (natp n)
+                (natp width)
+                (natp amt))
+           (equal (getbit n (bvashr width x amt))
+                  (getbit n (bvshr width x amt))))
+  :hints (("Goal" :in-theory (enable bvashr bvshr))))

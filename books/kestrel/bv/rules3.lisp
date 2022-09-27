@@ -2462,8 +2462,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable sbvlt UNSIGNED-BYTE-P-FORCED))))
 
-
-
 (defthm bvplus-of-bvmult-tighten-6-5-4
   (implies (and (integerp x)
                 (< y 4)
