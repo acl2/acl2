@@ -117,6 +117,9 @@
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
+         ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
          ((mv erp dag-or-quote state)
           (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
                           :rules rules ; todo: don't make the rule-alist each time
@@ -132,12 +135,18 @@
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quote))
           (mv (erp-nil) dag-or-quote state))
+         ;; (- (and print (progn$ (cw "(DAG after stepping:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
          (dag dag-or-quote)
          ;; Prune the DAG quickly but possibly imprecisely:
          ((mv erp dag-or-quotep state) (acl2::prune-dag-with-contexts dag state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
+         ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
          ((mv erp dag state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
@@ -153,6 +162,9 @@
                                            print
                                            state))
          ((when erp) (mv erp nil state))
+         ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
@@ -161,7 +173,7 @@
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
-          (if (acl2::equivalent-dags dag old-dag)
+          (if (acl2::equivalent-dags dag old-dag) ; todo: can we test equivalence up to xor nest normalization?
               (prog2$ (cw "Note: Stopping the run because nothing changed.~%")
                       (mv (erp-nil) dag state))
             (let* ((total-steps (+ steps-for-this-iteration total-steps))

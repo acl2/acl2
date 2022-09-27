@@ -1087,6 +1087,25 @@
 
 ;todo: gen
 ;; this is a 4-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
+(defthm read-in-terms-of-nth-and-pos-eric-2-bytes
+  (implies (and (program-at paddr bytes x86-init)
+                (program-at paddr bytes x86)
+                (byte-listp bytes)
+                (<= paddr addr)
+                (integerp addr)
+                (< (+ 1 addr) (+ paddr (len bytes)))
+                (canonical-address-p paddr)
+                (canonical-address-p (+ -1 (len bytes) paddr))
+                (app-view x86)
+                (app-view x86-init)
+                (x86p x86))
+           (equal (read 2 addr x86)
+                  (acl2::bvcat2 8 (nth (+ 1 addr (- paddr)) bytes)
+                                8 (nth (+ addr (- paddr)) bytes))))
+  :hints (("Goal" :expand ((read 2 (+ 2 addr) x86)))))
+
+;todo: gen
+;; this is a 4-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
 (defthm read-in-terms-of-nth-and-pos-eric-4-bytes
   (implies (and (program-at paddr bytes x86-init)
                 (program-at paddr bytes x86)
