@@ -1689,9 +1689,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We ensure that the type is not @('void'),
-     because the type must be complete [C:6.7/7],
-     and @('void') is incomplete [C:6.2.5/19].
+    "We ensure that the type is complete [C:6.7/7].
      We also ensure that the initializer type matches the declared type,
      if the initializer is present.")
    (xdoc::p
@@ -1704,13 +1702,12 @@
    (xdoc::p
     "We return the updated variable table."))
   (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init declon))
-       (wf (check-tyname tyname tagenv))
-       ((when (errorp wf)) (error (list :declon-error-type wf)))
+       (type (check-tyname tyname tagenv))
+       ((when (errorp type)) (error (list :declon-error-type type)))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :declon-error-var wf)))
-       (type (tyname-to-type tyname))
-       ((when (type-case type :void))
-        (error (list :declon-error-type-void (obj-declon-fix declon))))
+       ((unless (type-completep type))
+        (error (list :declon-error-type-incomplete (obj-declon-fix declon))))
        ((when (not init?))
         (if initp
             (error (list :declon-initializer-required (obj-declon-fix declon)))
@@ -1988,20 +1985,16 @@
      We check the components of the parameter declaration
      and we check that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
+     We also ensure that the type is complete [C:6.7.6.3/4].
      If all checks succeed, we return the variable table
-     updated with the parameter.")
-   (xdoc::p
-    "We disallow @('void') as type of a parameter,
-     because parameters must have complete types [C:6.7.6.3/4],
-     but @('void') is incomplete [C:6.2.5/19]."))
+     updated with the parameter."))
   (b* (((mv var tyname) (param-declon-to-ident+tyname param))
-       (wf (check-tyname tyname tagenv))
-       ((when (errorp wf)) (error (list :param-type-error wf)))
+       (type (check-tyname tyname tagenv))
+       ((when (errorp type)) (error (list :param-type-error type)))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf)))
-       (type (tyname-to-type tyname))
-       ((when (type-case type :void))
-        (error (list :param-error-void (param-declon-fix param)))))
+       ((unless (type-completep type))
+        (error (list :param-type-incomplete (param-declon-fix param)))))
     (var-table-add-var var type vartab))
   :hooks (:fix))
 
@@ -2121,10 +2114,8 @@
   (b* (((fundef fundef) fundef)
        ((mv name params out-tyname)
         (tyspec+declor-to-ident+params+tyname fundef.tyspec fundef.declor))
-       (wf (check-tyname out-tyname tagenv))
-       ((when (errorp wf))
-        (error (list :bad-fun-out-type name wf)))
-       (out-type (tyname-to-type out-tyname))
+       (out-type (check-tyname out-tyname tagenv))
+       ((when (errorp out-type)) (error (list :bad-fun-out-type name out-type)))
        (vartab (check-fun-declor fundef.declor vartab tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
        ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
@@ -2162,11 +2153,10 @@
        (members (check-struct-declon-list (cdr declons) tagenv))
        ((when (errorp members)) members)
        ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
-       (wf (check-tyname tyname tagenv))
-       ((when (errorp wf)) (error (list :bad-member-type wf)))
+       (type (check-tyname tyname tagenv))
+       ((when (errorp type)) (error (list :bad-member-type type)))
        (wf (check-ident name))
        ((when (errorp wf)) (error (list :bad-member-name wf)))
-       (type (tyname-to-type tyname))
        (members-opt (member-type-add-first name type members)))
     (member-type-list-option-case members-opt
                                   :some members-opt.val
