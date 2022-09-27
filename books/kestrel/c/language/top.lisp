@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "grammar")
 (include-book "keywords")
 (include-book "character-sets")
 (include-book "bytes")

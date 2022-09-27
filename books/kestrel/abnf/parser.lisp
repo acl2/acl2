@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -61,6 +61,13 @@
      There are also parameterized parsing functions for
      terminals (natural numbers) matching
      exact values, ranges, and (case-insensitively) characters.")
+
+   (xdoc::h3 "Parsing Primitive")
+
+   (xdoc::p
+    "Some of the parsing functions that make up the parser are "
+    (xdoc::seetopic "parsing-primitives-seq" "<i>Seq</i> parsing primitives")
+    ". The remarks below apply to those functions as well.")
 
    (xdoc::h3 "Inputs and Outputs")
 

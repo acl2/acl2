@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -68,10 +68,10 @@
   :layout :list
   :pred rulenamep)
 
-(fty::defoption maybe-rulename
+(fty::defoption rulename-option
   rulename
   :short "Fixtype of rule names and @('nil')."
-  :pred maybe-rulenamep)
+  :pred rulename-optionp)
 
 (fty::defset rulename-set
   :elt-type rulename
@@ -112,7 +112,10 @@
     for the literal text strings described in [RFC:2.3]
     and by the rule @('char-val') (and sub-rules) in [RFC:4].
     We tag strings with an indication of their case sensitivity,
-    corresponding to the @('%s') and @('%i') notations.
+    corresponding to the @('%s') and @('%i') notations;
+    the latter also abstract plain strings,
+    i.e. strings without the @('%s') and @('%i') notations,
+    which are equivalent to case-insensitive strings with the @('%i') notation.
     We abstract away the restriction
     that quoted strings include only certain characters
     (which all are ACL2 characters).
@@ -146,7 +149,7 @@
    "In the abstract syntax,
     for the repetition notation described in [RFC:3.6] and [RFC:3.7]
     and by rule @('repeat') in [RFC:4],
-    we use pairs of natural numbers and natural numbers plus infinity.
+    we use pairs of (i) natural numbers and (ii) natural numbers plus infinity.
     A specific repetition [RFC:3.7] is abstracted
     to a variable repetition [RFC:3.6] with the same minimum and maximum.
     A repetition with a missing lower bound is abstracted
@@ -462,7 +465,7 @@
      it is promoted first to a rule element
      and then to a repetition of one instance of that element.
      If a character string is supplied,
-     it is promoted first to an insensitive character value notation element
+     it is promoted first to a case-insensitive character value notation element
      and then to a repetition of one instance of that element.")
    (xdoc::p
     "The name of this macro is inspired by the fact that
