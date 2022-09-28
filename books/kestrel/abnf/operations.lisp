@@ -1039,7 +1039,19 @@
                         (tree-match-element-p tree2 element rules))
                    (equal (equal (tree->string tree1)
                                  (tree->string tree2))
-                          (equal tree1 tree2)))))
+                          (equal tree1 tree2))))
+  ///
+
+  (defruled element-ambiguousp-rewrite
+    (implies (and (element-unambiguousp element rules)
+                  (tree-match-element-p tree1 element rules)
+                  (tree-match-element-p tree2 element rules))
+             (equal (equal (tree->string tree1)
+                           (tree->string tree2))
+                    (tree-equiv tree1 tree2)))
+    :use (:instance element-unambiguousp-necc
+                    (tree1 (tree-fix tree1))
+                    (tree2 (tree-fix tree2)))))
 
 (defrule element-num-val-unambiguous
   :parents (ambiguity)
@@ -1102,6 +1114,17 @@
                           (equal trees1 trees2))))
   ///
 
+  (defruled repetition-unambiguousp-rewrite
+    (implies (and (repetition-unambiguousp repetition rules)
+                  (tree-list-match-repetition-p trees1 repetition rules)
+                  (tree-list-match-repetition-p trees2 repetition rules))
+             (equal (equal (tree-list->string trees1)
+                           (tree-list->string trees2))
+                    (tree-list-equiv trees1 trees2)))
+    :use (:instance repetition-unambiguousp-necc
+                    (trees1 (tree-list-fix trees1))
+                    (trees2 (tree-list-fix trees2))))
+
   (defrule empty-repetition-umabiguous
     (implies (equal (repetition->range repetition)
                     (repeat-range 0 (nati-finite 0)))
@@ -1134,6 +1157,21 @@
                           (equal treess1 treess2))))
   ///
 
+  (defruled concatenation-unambiguousp-rewrite
+    (implies (and (concatenation-unambiguousp concatenation rules)
+                  (tree-list-list-match-concatenation-p treess1
+                                                        concatenation
+                                                        rules)
+                  (tree-list-list-match-concatenation-p treess2
+                                                        concatenation
+                                                        rules))
+             (equal (equal (tree-list-list->string treess1)
+                           (tree-list-list->string treess2))
+                    (tree-list-list-equiv treess1 treess2)))
+    :use (:instance concatenation-unambiguousp-necc
+                    (treess1 (tree-list-list-fix treess1))
+                    (treess2 (tree-list-list-fix treess2))))
+
   (defrule empty-concatenation-unambiguous
     (concatenation-unambiguousp nil rules)
     :enable tree-list-list-match-concatenation-p))
@@ -1163,6 +1201,21 @@
                                  (tree-list-list->string treess2))
                           (equal treess1 treess2))))
   ///
+
+  (defruled alternation-unambiguousp-rewrite
+    (implies (and (alternation-unambiguousp alternation rules)
+                  (tree-list-list-match-alternation-p treess1
+                                                      alternation
+                                                      rules)
+                  (tree-list-list-match-alternation-p treess2
+                                                      alternation
+                                                      rules))
+             (equal (equal (tree-list-list->string treess1)
+                           (tree-list-list->string treess2))
+                    (tree-list-list-equiv treess1 treess2)))
+    :use (:instance alternation-unambiguousp-necc
+                    (treess1 (tree-list-list-fix treess1))
+                    (treess2 (tree-list-list-fix treess2))))
 
   (defrule alternation-unambiguousp-of-nil
     (alternation-unambiguousp nil rules)
