@@ -82,8 +82,10 @@
     "Besides the aforementioned examples,
      the parser, abstractor, and some grammar operations have been used on "
     (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
-    " and on "
+    ", "
     (xdoc::seetopic "yul::concrete-syntax" "an ABNF grammar of Yul")
+    ", and "
+    (xdoc::seetopic "c::grammar" "an ABNF grammar of a subset of C")
     ". The parsing generation tools have been used to generate part of "
     (xdoc::seetopic "yul::lexer" "a Yul lexer")
     ".")
