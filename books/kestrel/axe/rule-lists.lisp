@@ -105,6 +105,10 @@
     not-of-bool-fix
     if-of-bool-fix-arg1 ; add a rule for myif too?
     bool-fix-of-bool-fix
+    ;; Rules about not:
+    not-of-not
+    ;; Rules about bool-fix:
+    bool-fix-when-booleanp
     ;; Rules about boolif:
     boolif-same-branches
     boolif-when-quotep-arg1 ; for when the test can be resolved
@@ -143,11 +147,9 @@
             force-of-non-nil ;do we still need this?
             equal-nil-of-not
             not-of-not ;BOZO what do we do with the resulting bool-fix?
-            bool-fix-when-booleanp ; drop from here?
             equal-same
             not-<-same
             turn-equal-around-axe ; may be dangerous?
-            not-of-bool-fix ; drop from here?
 
             ifix-does-nothing
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
@@ -176,6 +178,7 @@
             eql ; introduces EQUAL ; EQL can arise from CASE
             double-rewrite)
           (mv-nth-rules)
+          (boolean-rules-safe)
           (booleanp-rules)))
 
 ;todo: do we have the complete set of these?
