@@ -17,6 +17,16 @@
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
+; (depends-on "../../../abnf/uri-grammar.abnf")
+; (depends-on "../../../abnf/http-grammar.abnf")
+; (depends-on "../../../abnf/imf-grammar.abnf")
+; (depends-on "../../../abnf/smtp-grammar.abnf")
+; (depends-on "../../../abnf/imap-grammar.abnf")
+; (depends-on "../../../abnf/json-grammar.abnf")
+; (depends-on "../../../java/language/lexical-grammar.abnf")
+; (depends-on "../../../java/language/syntactic-grammar.abnf")
+; (depends-on "../../../yul/language/grammar-new.abnf")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file collects some of the ATJ tests in this directory
@@ -274,47 +284,47 @@
 (progn
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/core-rules.txt" state)
+     (get-input-from-file "../../../abnf/core-rules.abnf" state)
      (value `(defconst *abnf-core* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/concrete-syntax-rules.txt" state)
+     (get-input-from-file "../../../abnf/concrete-syntax-rules.abnf" state)
      (value `(defconst *abnf-syntax* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/json-grammar.txt" state)
+     (get-input-from-file "../../../abnf/json-grammar.abnf" state)
      (value `(defconst *json* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/uri-grammar.txt" state)
+     (get-input-from-file "../../../abnf/uri-grammar.abnf" state)
      (value `(defconst *uri* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/http-grammar.txt" state)
+     (get-input-from-file "../../../abnf/http-grammar.abnf" state)
      (value `(defconst *http* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/imf-grammar.txt" state)
+     (get-input-from-file "../../../abnf/imf-grammar.abnf" state)
      (value `(defconst *imf* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/smtp-grammar.txt" state)
+     (get-input-from-file "../../../abnf/smtp-grammar.abnf" state)
      (value `(defconst *smtp* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/imap-grammar.txt" state)
+     (get-input-from-file "../../../abnf/imap-grammar.abnf" state)
      (value `(defconst *imap* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../java/language/lexical-grammar.txt" state)
+     (get-input-from-file "../../../java/language/lexical-grammar.abnf" state)
      (value `(defconst *java-lexical* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../java/language/syntactic-grammar.txt" state)
+     (get-input-from-file "../../../java/language/syntactic-grammar.abnf" state)
      (value `(defconst *java-syntactic* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../yul/language/abnf-grammar-new.txt" state)
+     (get-input-from-file "../../../yul/language/grammar-new.abnf" state)
      (value `(defconst *yul* ',nats)))))
 
 ; Making a call like the following in the ACL2 shell
