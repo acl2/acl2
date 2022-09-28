@@ -1,8 +1,8 @@
-core-rules.txt text eol=crlf
-concrete-syntax-rules.txt text eol=crlf
-uri-grammar.txt text eol=crlf
-http-grammar.txt text eol=crlf
-imf-grammar.txt text eol=crlf
-smtp-grammar.txt text eol=crlf
-imap-grammar.txt text eol=crlf
-json-grammar.txt text eol=crlf
+core-rules.abnf text eol=crlf
+concrete-syntax-rules.abnf text eol=crlf
+uri-grammar.abnf text eol=crlf
+http-grammar.abnf text eol=crlf
+imf-grammar.abnf text eol=crlf
+smtp-grammar.abnf text eol=crlf
+imap-grammar.abnf text eol=crlf
+json-grammar.abnf text eol=crlf
