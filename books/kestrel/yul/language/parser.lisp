@@ -93,7 +93,7 @@
    (xdoc::p
     "In this context, @('symbol') is a nonterminal in the ABNF grammar for Yul,
      and its alternatives are terminal symbols.
-     See @('abnf-grammar-new.txt').")
+     See @('grammar-new.abnf').")
    (xdoc::p
     "Parsing a symbol as a concrete syntax tree means we look for a nonleaf tree
       where the rulename is @('\"symbol\"')
@@ -190,7 +190,7 @@
    (xdoc::p
     "In this context, @('keyword') is a nonterminal in the ABNF grammar for Yul,
      and its alternatives are terminals (aka terminal symbols) that are the actual keywords.
-     See @('abnf-grammar-new.txt').")
+     See @('grammar-new.abnf').")
    (xdoc::p
     "Parsing a keyword as a concrete syntax tree means we look for a nonleaf tree
       where the rulename is @('\"keyword\"')
@@ -1248,7 +1248,7 @@
 ;;   We do not support yul objects at this time. ]
 
 ;; The following hand-written recursive-descent parser is intended
-;; to follow the syntactic grammar described in abnf-grammar-new.txt.
+;; to follow the syntactic grammar described in grammar-new.abnf.
 
 ;; The top-level ast node is assumed to be a block, so that is what parse-yul will call.
 ;; But conceptually, a block is just one sort of statement, so we define that first.

@@ -1,2 +1,2 @@
-abnf-grammar-old.abnf text eol=crlf
-abnf-grammar-new.abnf text eol=crlf
+grammar-old.abnf text eol=crlf
+grammar-new.abnf text eol=crlf
