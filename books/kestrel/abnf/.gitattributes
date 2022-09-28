@@ -1,8 +1,8 @@
-core-rules.txt binary
-concrete-syntax-rules.txt binary
-uri-grammar.txt binary
-http-grammar.txt binary
-imf-grammar.txt binary
-smtp-grammar.txt binary
-imap-grammar.txt binary
-json-grammar.txt binary
+core-rules.txt text eol=crlf
+concrete-syntax-rules.txt text eol=crlf
+uri-grammar.txt text eol=crlf
+http-grammar.txt text eol=crlf
+imf-grammar.txt text eol=crlf
+smtp-grammar.txt text eol=crlf
+imap-grammar.txt text eol=crlf
+json-grammar.txt text eol=crlf
