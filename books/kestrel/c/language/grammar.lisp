@@ -14,7 +14,7 @@
 (include-book "kestrel/abnf/parser" :dir :system)
 (include-book "kestrel/abnf/abstractor" :dir :system)
 
-; (depends-on "grammar.txt")
+; (depends-on "grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,7 +24,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "See the documentation comments in @('grammar.txt')."))
+    "See the documentation comments in @('grammar.abnf')."))
   :order-subtopics t
   :default-parent t)
 
@@ -36,14 +36,14 @@
   (xdoc::topstring
    (xdoc::p
     "We use our verified grammar parser and our abstractor
-     to turn the grammar in the @('grammar.txt') file
+     to turn the grammar in the @('grammar.abnf') file
      into an ACL2 representation.")
    (xdoc::p
     "We show that the grammar is well-formed, closed, and ASCII."))
 
   (make-event
    (mv-let (tree state)
-       (abnf::parse-grammar-from-file (str::cat (cbd) "grammar.txt") state)
+       (abnf::parse-grammar-from-file (str::cat (cbd) "grammar.abnf") state)
      (acl2::value `(defconst *grammar*
                      (abnf::abstract-rulelist ',tree)))))
 

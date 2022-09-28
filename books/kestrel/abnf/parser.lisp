@@ -2672,7 +2672,8 @@
      by calling @('set-buffer-file-coding-system') with @('dos'),
      and saving the file.
      If the file is put under a version control system,
-     it should be forced to be treated as a binary file,
+     it should be forced to be treated as a text file with CRLF end-of-line
+     (e.g. see the @('.gitattributes') file in this directory)
      to avoid turning carriage returns and line feeds into just line feeds
      across Windows and Unix platforms.")
    (xdoc::p

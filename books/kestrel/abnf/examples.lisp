@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,12 +18,12 @@
 (include-book "parser")
 (include-book "abstractor")
 
-; (depends-on "uri-grammar.txt")
-; (depends-on "http-grammar.txt")
-; (depends-on "imf-grammar.txt")
-; (depends-on "smtp-grammar.txt")
-; (depends-on "imap-grammar.txt")
-; (depends-on "json-grammar.txt")
+; (depends-on "uri-grammar.abnf")
+; (depends-on "http-grammar.abnf")
+; (depends-on "imf-grammar.abnf")
+; (depends-on "smtp-grammar.abnf")
+; (depends-on "imap-grammar.abnf")
+; (depends-on "json-grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,7 +60,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('uri-grammar.txt') contains the URI grammar rules,
+    "The file @('uri-grammar.abnf') contains the URI grammar rules,
      copied and pasted from RFC 3986.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the URI grammar rules,
@@ -73,7 +73,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "uri-grammar.txt") state)
+     (parse-grammar-from-file (string-append (cbd) "uri-grammar.abnf") state)
      (value `(defconst *uri-grammar-rules*
                (abstract-rulelist ',tree)))))
 
@@ -151,7 +151,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('http-grammar.txt') contains the HTTP grammar rules,
+    "The file @('http-grammar.abnf') contains the HTTP grammar rules,
      copied and pasted from RFC 7230.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the HTTP grammar rules,
@@ -164,7 +164,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "http-grammar.txt") state)
+     (parse-grammar-from-file (string-append (cbd) "http-grammar.abnf") state)
      (value `(defconst *http-grammar-rules*
                (abstract-rulelist ',tree)))))
 
@@ -291,7 +291,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('imf-grammar.txt') contains the IMF grammar rules,
+    "The file @('imf-grammar.abnf') contains the IMF grammar rules,
      copied and pasted from RFC 5322.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the IMF grammar rules,
@@ -304,7 +304,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "imf-grammar.txt") state)
+     (parse-grammar-from-file (string-append (cbd) "imf-grammar.abnf") state)
      (value `(defconst *imf-grammar-rules*
                (abstract-rulelist ',tree)))))
 
@@ -331,7 +331,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('smtp-grammar.txt') contains the grammar rules,
+    "The file @('smtp-grammar.abnf') contains the grammar rules,
      copied and pasted from RFC 5321.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the SMTP grammar rules,
@@ -344,7 +344,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "smtp-grammar.txt") state)
+     (parse-grammar-from-file (string-append (cbd) "smtp-grammar.abnf") state)
      (value `(defconst *smtp-grammar-rules*
                (abstract-rulelist ',tree)))))
 
@@ -372,7 +372,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('imap-grammar.txt') contains the grammar rules,
+    "The file @('imap-grammar.abnf') contains the grammar rules,
      copied and pasted from RFC 3501.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the IMAP grammar rules,
@@ -385,7 +385,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "imap-grammar.txt") state)
+     (parse-grammar-from-file (string-append (cbd) "imap-grammar.abnf") state)
      (value `(defconst *imap-grammar-rules*
                (abstract-rulelist ',tree)))))
 
@@ -412,7 +412,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('json-grammar.txt') contains the grammar rules,
+    "The file @('json-grammar.abnf') contains the grammar rules,
      copied and pasted from RFC 7159.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the JSON grammar rules,
@@ -425,7 +425,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "json-grammar.txt") state)
+     (parse-grammar-from-file (string-append (cbd) "json-grammar.abnf") state)
      (value `(defconst *json-grammar-rules*
                (abstract-rulelist ',tree)))))
 

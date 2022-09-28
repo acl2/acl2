@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,8 +15,8 @@
 (include-book "kestrel/abnf/parser" :dir :system)
 (include-book "kestrel/abnf/abstractor" :dir :system)
 
-; (depends-on "lexical-grammar.txt")
-; (depends-on "syntactic-grammar.txt")
+; (depends-on "lexical-grammar.abnf")
+; (depends-on "syntactic-grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,7 +33,7 @@
     ", we use ABNF (Augmented Backus-Naur Form) to formalize the Java grammar.")
    (xdoc::p
     "The ABNF grammar of Java is in the files
-     @('lexical-grammar.txt') and @('syntactic-grammar.txt')
+     @('lexical-grammar.abnf') and @('syntactic-grammar.abnf')
      in this directory;
      this splitting corresponds to [JLS:2.2] and [JLS:2.3].
      Note that these files, according to ABNF,
@@ -120,7 +120,7 @@
    "We parse the grammar file to obtain an ABNF grammar value.")
   (make-event
    (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "lexical-grammar.txt")
+     (abnf::parse-grammar-from-file (str::cat (cbd) "lexical-grammar.abnf")
                                     state)
      (value `(defconst *lexical-grammar*
                (abnf::abstract-rulelist ',tree))))))
@@ -134,7 +134,7 @@
    "We parse the grammar file to obtain an ABNF grammar value.")
   (make-event
    (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "syntactic-grammar.txt")
+     (abnf::parse-grammar-from-file (str::cat (cbd) "syntactic-grammar.abnf")
                                     state)
      (value `(defconst *syntactic-grammar*
                (abnf::abstract-rulelist ',tree))))))
