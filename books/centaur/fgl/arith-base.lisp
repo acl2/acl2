@@ -334,6 +334,23 @@ counterexample info for the stack frame from which it is called.</p>"
   (if x t nil))
 
 
+(define fgl-vacuity-check ((params "Parameters for the SAT check -- depending on the
+                                attachment for the pluggable checker.")
+                           (x "Object to check for vacuity"))
+  :parents (fgl-solving)
+  :short "Check that the given object is satisfiable and report an error if not."
+  :long "
+
+<p>Logically, @('(fgl-vacuity-check params x)') just returns @('x') fixed to a
+Boolean value.  But when FGL symbolic execution encounters an
+@('fgl-vacuity-check') term, it checks Boolean satisfiability of @('x') and if
+it is able to prove that all evaluations of @('x') are NIL, then it produces an
+error; otherwise, it returns @('x') unchanged. This is useful for checking that
+the hypotheses of a conjecture aren't contradictory.</p></p>"
+  (declare (ignore params))
+  (if x t nil))
+
+
 (defun show-counterexample (params msg)
   (declare (ignore params msg))
   nil)

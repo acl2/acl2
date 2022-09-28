@@ -30,7 +30,7 @@
 
 (in-package "FGL")
 
-(include-book "arith-base")
+(include-book "config")
 (include-book "syntax-bind")
 (include-book "centaur/meta/term-vars" :dir :system)
 (include-book "clause-processors/generalize" :dir :system) ;; for make-n-vars
@@ -49,6 +49,7 @@
    (equal a b)
    (if* a b c)
    (fgl-sat-check params x)
+   (fgl-vacuity-check params x)
    (fgl-pathcond-fix x)
    (show-counterexample params msg)
    (cons x y)
@@ -372,7 +373,34 @@
                                    (eval-alists-agree-of-fcs-ev-bindinglist-of-bind-vars-to-list-elems))
             :use ((:instance eval-alists-agree-of-fcs-ev-bindinglist-of-bind-vars-to-list-elems
                    (vars (term-vars x)) (tmp (acl2::new-symbol 'tmp (term-vars x)))))))))
+
+
+(define wrap-vacuity-check ((x pseudo-termp) (config fgl-config-p))
+  :returns (new-x pseudo-termp)
+  (b* (((fgl-config config))
+       (check-vacuity (not config.skip-vacuity-check))
+       (sat-config (and check-vacuity (fgl-toplevel-sat-check-config-wrapper config.sat-config-vacuity))))
+    (if check-vacuity
+        (pseudo-term-fncall 'fgl-vacuity-check
+                            (list (pseudo-term-quote sat-config)
+                                  (pseudo-term-fncall 'if (list x ''t ''nil))))
+      (pseudo-term-fix x)))
+  ///
+  (defret fcs-ev-of-<fn>
+    (iff (fcs-ev (wrap-vacuity-check x config) a)
+         (fcs-ev x a))
+    :hints(("Goal" :in-theory (enable fgl-vacuity-check)))))
        
+
+
+
+(defprod fgl-casesplit-config
+  ((split-params)
+   (solve-params)
+   (split-concl-p)
+   (repeat-concl-p)
+   (cases casesplit-alist-p)
+   (fgl-config fgl-config-p)))
 
 ;; (define wrap-fgl-pathcond-fix-vars ((vars pseudo-var-list-p)
 ;;                                     (x pseudo-termp))
@@ -395,9 +423,7 @@
 
 (define fgl-casesplit-core ((hyp pseudo-termp)
                             (concl pseudo-termp)
-                            (split-params)
-                            (solve-params)
-                            (cases casesplit-alist-p))
+                            (config fgl-casesplit-config-p))
   :prepwork ((local (defthm pseudo-term-listp-when-symbol-listp
                       (implies (symbol-listp x)
                                (pseudo-term-listp x))))
@@ -406,31 +432,30 @@
                                (pseudo-term-listp (alist-vals x)))
                       :hints(("Goal" :in-theory (enable alist-vals))))))
   :returns (thm pseudo-termp)
-  (b* ((cases (casesplit-alist-fix cases))
+  (b* (((fgl-casesplit-config config))
+       (cases config.cases)
        (case-msgs (alist-keys cases))
        (cases (alist-vals cases))
        (cases-vars (acl2::make-n-vars (len cases) 'fgl-case 0 '(result))))
-    `(if ,(pseudo-term-fix hyp)
+    `(if ,(wrap-vacuity-check hyp config.fgl-config)
          ((lambda (result solve-params . ,cases-vars)
-            (if* ,(fgl-casesplit-solve (list 'quote split-params) "Case split completeness" (disjoin* cases-vars))
+            (if* ,(fgl-casesplit-solve (kwote config.split-params) "Case split completeness" (disjoin* cases-vars))
                  ,(fgl-casesplit-solve-cases 'solve-params case-msgs cases-vars 'result)
                  'nil))
           ,(wrap-fgl-pathcond-fix concl)
-          ',solve-params
+          ',config.solve-params
           . ,cases)
        't))
   ///
   (defthm fcs-ev-of-fgl-casesplit-core
     (implies (and (fcs-ev hyp a)
                   (not (fcs-ev concl a)))
-             (not (fcs-ev (fgl-casesplit-core hyp concl split-params solve-params cases) a)))))
+             (not (fcs-ev (fgl-casesplit-core hyp concl config) a)))))
 
 
 (define fgl-casesplit-before-core ((hyp pseudo-termp)
                                    (concl pseudo-termp)
-                                   (split-params)
-                                   (solve-params)
-                                   (cases casesplit-alist-p))
+                                   (config fgl-casesplit-config-p))
   :prepwork ((local (defthm pseudo-term-listp-when-symbol-listp
                       (implies (symbol-listp x)
                                (pseudo-term-listp x))))
@@ -439,19 +464,21 @@
                                (pseudo-term-listp (alist-vals x)))
                       :hints(("Goal" :in-theory (enable alist-vals))))))
   :returns (thm pseudo-termp)
-  (b* ((cases (casesplit-alist-fix cases))
+  (b* (((fgl-casesplit-config config))
+       (cases config.cases)
        (case-msgs (alist-keys cases))
        (cases (alist-vals cases)))
-    `(if ,(pseudo-term-fix hyp)
-         (if* ,(fgl-casesplit-solve (list 'quote split-params) "Case split completeness" (disjoin* cases))
-              ,(fgl-casesplit-solve-cases (kwote solve-params) case-msgs cases (wrap-fgl-pathcond-fix concl))
+                 
+    `(if ,(wrap-vacuity-check hyp config.fgl-config)
+         (if* ,(fgl-casesplit-solve (list 'quote config.split-params) "Case split completeness" (disjoin* cases))
+              ,(fgl-casesplit-solve-cases (kwote config.solve-params) case-msgs cases (wrap-fgl-pathcond-fix concl))
               'nil)
        't))
   ///
   (defthm fcs-ev-of-fgl-casesplit-before-core
     (implies (and (fcs-ev hyp a)
                   (not (fcs-ev concl a)))
-             (not (fcs-ev (fgl-casesplit-before-core hyp concl split-params solve-params cases) a)))))
+             (not (fcs-ev (fgl-casesplit-before-core hyp concl config) a)))))
 
 (local (in-theory (disable pseudo-termp
                            acl2::pseudo-termp-opener)))
@@ -519,12 +546,6 @@
                               fcs-ev-pseudo-term-equiv-congruence-on-x
                               fcs-ev-of-pseudo-term-fix-x))))))
 
-(defprod fgl-casesplit-config
-  ((split-params)
-   (solve-params)
-   (split-concl-p)
-   (repeat-concl-p)
-   (cases casesplit-alist-p)))
 
 (define fgl-casesplit-clause-proc ((clause pseudo-term-listp) config)
   :returns (res pseudo-term-list-listp)
@@ -535,8 +556,8 @@
        ((fgl-casesplit-config config))
        ((mv hyp concl) (fgl-casesplit-hyp/concl config.split-concl-p clause)))
     (list (list (if config.repeat-concl-p
-                    (fgl-casesplit-before-core hyp concl config.split-params config.solve-params config.cases)
-                  (fgl-casesplit-core hyp concl config.split-params config.solve-params config.cases)))))
+                    (fgl-casesplit-before-core hyp concl config)
+                  (fgl-casesplit-core hyp concl config)))))
   ///
   (defthm fgl-casesplit-clause-proc-correct
     (implies (and (pseudo-term-listp clause)
@@ -565,7 +586,9 @@
     
        
   
-(define fgl-casesplit-hint-fn (cases split-params solve-params split-concl-p repeat-concl-p state)
+(define fgl-casesplit-hint-fn (cases split-params solve-params split-concl-p repeat-concl-p
+                                (fgl-config fgl-config-p)
+                                state)
   :mode :program
   (b* (((er cases-trans) (fgl-casesplit-translate-cases cases state))
        (config (make-fgl-casesplit-config :split-params (or split-params
@@ -574,16 +597,17 @@
                                                             (fgl-toplevel-sat-check-config))
                                           :split-concl-p split-concl-p
                                           :repeat-concl-p repeat-concl-p
-                                          :cases cases-trans)))
+                                          :cases cases-trans
+                                          :fgl-config fgl-config)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 
-(defmacro fgl-casesplit (&key cases split-params solve-params split-concl-p repeat-concl-p)
-  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl-p ,repeat-concl-p state))
+(defmacro fgl-casesplit (&key cases split-params solve-params split-concl-p repeat-concl-p fgl-config)
+  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl-p ,repeat-concl-p ,fgl-config state))
 
 
 
 
-(define expand-an-implies ((x pseudo-termp))
+(define expand-an-implies ((x pseudo-termp) (config fgl-config-p))
   :returns (new-x pseudo-termp)
   :measure (pseudo-term-count x)
   :verify-guards nil
@@ -593,44 +617,45 @@
     :fncall (if (and (eq x.fn 'implies)
                      (eql (len x.args) 2))
                 (pseudo-term-fncall 'if
-                                    (list (car x.args)
+                                    (list (wrap-vacuity-check (car x.args) config)
                                           (wrap-fgl-pathcond-fix
                                            (cadr x.args))
                                           ''t))
               (pseudo-term-fix x))
     :lambda (pseudo-term-lambda
              x.formals
-             (expand-an-implies x.body)
+             (expand-an-implies x.body config)
              x.args))
   ///
   (verify-guards expand-an-implies)
 
-  (local (defun-sk fcs-ev-of-expand-an-implies-cond (x)
+  (local (defun-sk fcs-ev-of-expand-an-implies-cond (x config)
            (forall a
-                   (iff (fcs-ev (expand-an-implies x) a)
+                   (iff (fcs-ev (expand-an-implies x config) a)
                         (fcs-ev x a)))
            :rewrite :direct))
   (local (in-theory (disable fcs-ev-of-expand-an-implies-cond)))
 
   (local (defthm fcs-ev-of-expand-an-implies-lemma
-           (fcs-ev-of-expand-an-implies-cond x)
-           :hints (("goal" :induct (expand-an-implies x))
+           (fcs-ev-of-expand-an-implies-cond x config)
+           :hints (("goal" :induct (expand-an-implies x config))
                    (and stable-under-simplificationp
                         `(:expand (,(car (last clause))))))))
 
   (defret fcs-ev-of-expand-an-implies
-    (iff (fcs-ev (expand-an-implies x) a)
+    (iff (fcs-ev (expand-an-implies x config) a)
          (fcs-ev x a))))
 
-(define expand-an-implies-cp ((x pseudo-term-listp))
-  (if (and (consp x)
-           (not (cdr x)))
-      (list (list (expand-an-implies (car x))))
-    (list x))
+(define expand-an-implies-cp ((x pseudo-term-listp) config)
+  (b* (((unless (and (consp x) (not (cdr x)))) (list x))
+       ((unless (fgl-config-p config))
+        (cw "Expand-an-implies: bad config object: ~x0~%" config)
+        (list x)))
+    (list (list (expand-an-implies (car x) config))))
   ///
   (defthm expand-an-implies-cp-correct
     (implies (and (pseudo-term-listp x)
                   (alistp a)
-                  (fcs-ev (conjoin-clauses (expand-an-implies-cp x)) a))
+                  (fcs-ev (conjoin-clauses (expand-an-implies-cp x config)) a))
              (fcs-ev (disjoin x) a))
     :rule-classes :clause-processor))
