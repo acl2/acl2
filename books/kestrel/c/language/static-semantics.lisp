@@ -246,7 +246,7 @@
   (b* ((fun (ident-fix fun))
        (type (fun-type-fix type))
        (funtab (fun-table-fix funtab))
-       ((when (set::in fun funtab)) (error (list :duplicate-fun fun))))
+       ((when (omap::in fun funtab)) (error (list :duplicate-fun fun))))
     (omap::update fun type funtab))
   :hooks (:fix))
 
@@ -692,6 +692,35 @@
   (apconvert-type x)
   ///
   (fty::deffixequiv apconvert-type-list
+    :args ((x type-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define adjust-type ((type typep))
+  :returns (type1 typep)
+  :short "Adjust a parameter type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Function parameter types are subject to an adjustment [C:6.7.6.3/7]:
+     an array type is converted to a pointer type to the element type.
+     Since we currently do not model type qualifiers,
+     we do not need to take those into account here.
+     Note that the size, if present, is lost."))
+  (if (type-case type :array)
+      (make-type-pointer :to (type-array->of type))
+    (type-fix type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection adjust-type-list (x)
+  :guard (type-listp x)
+  :returns (types1 type-listp)
+  :short "Lift @(tsee adjust-type) to lists."
+  (adjust-type x)
+  ///
+  (fty::deffixequiv adjust-type-list
     :args ((x type-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2121,6 +2150,7 @@
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
        ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
        (in-types (type-name-list-to-type-list in-tynames))
+       (in-types (adjust-type-list in-types))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
