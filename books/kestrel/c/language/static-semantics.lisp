@@ -2174,8 +2174,11 @@
   (xdoc::topstring
    (xdoc::p
     "These specify the members of a structure or union type
-     (see @(tsee struct-declon)).
-     We go through the declarations
+     (see @(tsee struct-declon));
+     for now we only use this for the members of a structure type,
+     since we do not model union types.")
+   (xdoc::p
+    "We go through the declarations
      and turn each of them into member types (see @(tsee member-type)).
      We ensure that each member name is well-formed.
      We check that each type is well-formed.

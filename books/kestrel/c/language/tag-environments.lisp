@@ -48,7 +48,8 @@
      This mirrors (the @(':struct') case of) @(tsee tag-declon).")
    (xdoc::p
     "The members must have unique names [C:6.2.3].
-     There must be at least one member [C:6.2.5/20].
+     There must be at least one member [C:6.2.5/20],
+     or two if the last one is a flexible array member [C:6.7.2.1/18].
      Currently we do not capture these requirements in this fixtype."))
   (:struct ((members member-type-list)))
   (:union ())
