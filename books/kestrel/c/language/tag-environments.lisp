@@ -65,6 +65,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tag-info-struct-flexiblep ((info tag-infop))
+  :guard (tag-info-case info :struct)
+  :returns (yes/no booleanp)
+  :short "Check if (the information for) a structure type
+          has a flexible array member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee tag-info) for a description and a reference
+     to flexible array members.
+     If there are no member,
+     which cannot happen in well-formed structure types
+     (although we do not capture this invariant in @(tsee tag-info)),
+     we return @('nil')."))
+  (b* ((members (tag-info-struct->members info))
+       ((unless (consp members)) nil)
+       (member (car (last members)))
+       (type (member-type->type member)))
+    (and (type-case type :array)
+         (not (type-array->size type))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap tag-env
   :short "Fixtype of tag environments."
   :long
