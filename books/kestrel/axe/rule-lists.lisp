@@ -113,7 +113,10 @@
     boolif-same-branches
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
-    boolif-of-not-same-arg3-alt))
+    boolif-of-not-same-arg3-alt
+    ;; Rules about equal:
+    equal-of-t-when-booleanp-arg1
+    equal-of-t-when-booleanp-arg2))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
@@ -1828,7 +1831,6 @@
 ;    bvplus-when-bvchop-known-subst
 ;   bvplus-when-bvchop-known-subst-alt
 
-    equal-of-t-when-booleanp
     bvchop-impossible-value ;gen to any bv?
     <-becomes-bvlt-dag-GEN-BETTER
 ;    <-becomes-bvlt-dag-alt-gen ;Wed Feb 24 15:00:14 2010
@@ -1941,7 +1943,7 @@
      null
      true-listp-of-myif-strong
      unsigned-byte-p-of-myif
-     equal-of-t-when-booleanp-arg2
+     equal-of-t-when-booleanp-arg2 ; todo: drop
 
      booland-of-myif-arg1
 ;nth-of-myif ;ffixme this may be slowing down the prover since it fires repeatedly (on a context node) but is not used in the rewriter
@@ -2492,15 +2494,15 @@
      lookup-equal-of-acons          ;new
      ;;we may not want these because making a rule requires (equal (pred x) t) instead of (pred x)
      ;;EQUAL-OF-T-WHEN-BOOLEANP-ARG2 ;newer
-     ;;EQUAL-OF-T-WHEN-BOOLEANP ;newer
+     ;;EQUAL-OF-T-WHEN-BOOLEANP-ARG1 ;newer
      )))
 
 ;; Only used in the equivalence checker
 ;we do seem to sometimes need these when verifying that the simplified exit tests are the same as the original exit tests
 (defun exit-test-simplification-proof-rules ()
   (declare (xargs :guard t))
-  (append '(equal-of-t-when-booleanp-arg2 ;new
-            equal-of-t-when-booleanp      ;new
+  (append '(equal-of-t-when-booleanp-arg2 ;new ; todo: instead of these, include boolean-rules-safe?
+            equal-of-t-when-booleanp-arg1 ;new
             turn-equal-around-axe ;Fri Apr  9 22:30:45 2010 hope this is okay
             )
           (boolean-rules)
@@ -2590,8 +2592,8 @@
             not-equal-of-max-when-huge
             bvlt-when-equal-of-constant
             ;; turn-equal-around-axe ;hope this doesn't mess up the assumptions..
-            equal-of-t-when-booleanp      ;new..
-            equal-of-t-when-booleanp-arg2 ;new require it to be a *known-predicates-except-not*, so make-equality-pairs can handle it?
+            ;; equal-of-t-when-booleanp-arg1 ;new..
+            ;; equal-of-t-when-booleanp-arg2 ;new require it to be a *known-predicates-except-not*, so make-equality-pairs can handle it?
             equal-of-nil-when-booleanp    ;new
             )
           (base-rules)

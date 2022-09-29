@@ -55,7 +55,7 @@
          (boolif (booland test1 test2) x y))
   :hints (("Goal" :in-theory (enable boolif booland))))
 
-(defthm equal-of-t-when-booleanp
+(defthm equal-of-t-when-booleanp-arg1
   (implies (booleanp x)
            (equal (equal t x)
                   x)))
