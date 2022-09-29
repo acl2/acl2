@@ -155,7 +155,7 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-when-program-at
+    read-in-terms-of-nth-and-pos-eric ; read-when-program-at
     read-of-logext-48
     read-when-equal-of-read
     read-when-equal-of-read-alt
