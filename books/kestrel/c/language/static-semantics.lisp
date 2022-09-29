@@ -20,6 +20,8 @@
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
 
+(local (include-book "std/lists/last" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ static-semantics
