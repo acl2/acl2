@@ -161,3 +161,6 @@
 
 (define fgl-toplevel-sat-check-config-wrapper (override)
   (or override (fgl-toplevel-sat-check-config)))
+
+(define fgl-toplevel-vacuity-check-config-wrapper (override)
+  (or override (fgl-toplevel-vacuity-check-config)))

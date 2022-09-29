@@ -379,7 +379,7 @@
   :returns (new-x pseudo-termp)
   (b* (((fgl-config config))
        (check-vacuity (not config.skip-vacuity-check))
-       (sat-config (and check-vacuity (fgl-toplevel-sat-check-config-wrapper config.sat-config-vacuity))))
+       (sat-config (and check-vacuity (fgl-toplevel-vacuity-check-config-wrapper config.sat-config-vacuity))))
     (if check-vacuity
         (pseudo-term-fncall 'fgl-vacuity-check
                             (list (pseudo-term-quote sat-config)
