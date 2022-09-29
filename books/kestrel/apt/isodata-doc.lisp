@@ -398,6 +398,15 @@
        "@(':auto'), to use @('nil') or @('(mv nil ... nil)') for single-value
         and multi-value functions respectively.")
       (xdoc::li
+       "@(':base-case'), to search for a base-case within the domain of the new
+        function. A base-case of a term may be be the whole term when the term
+        does not include any recursive calls, or it may be a base-case of the
+        `then' or `else' branch when the translated term is an `if'. This
+        search for a base-case is biased toward `else' branches.")
+      (xdoc::li
+       "@(':base-case-then'), to search for a base-case with a bias toward
+        `then' branches.")
+      (xdoc::li
        "Any other term. It must be a term that only references logic-mode
         functions and that includes no free variables other than
         @('x1'), ..., @('xn'). This term must have no output
@@ -405,7 +414,8 @@
         as @('old'). This term must not reference @('old')."))
      (xdoc::p
       "If one wishes to use the term @(':auto') as the undefined result, this
-       may be accomplished by providing the quoted constant @('\':auto').")
+       may be accomplished by providing the quoted constant @('\':auto'). The
+       same applies for @(':base-case') and @(':base-case-then').")
      (xdoc::p
       "Even if the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
