@@ -1970,7 +1970,7 @@
      sbvdivdown-rewrite-gen
 
 ;    unsigned-byte-p-tighten ;;removed tue jan 12 06:27:23 2010
-     bvif-1-1-0
+     bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
      equal-of-bool-to-bit-and-0
      equal-of-bool-to-bit-and-1
      ;;fixme what about backchain-limit? <- for which rule??

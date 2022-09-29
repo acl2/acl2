@@ -3053,9 +3053,8 @@
   (equal (+ y (* 1/2 x) (* 1/2 x))
          (+ y x)))
 
-;rename
 ;also a 0-1 rule?
-(defthm bvif-1-1-0
+(defthm bvif-of-1-and-0-becomes-bool-to-bit
   (implies (posp size)
            (equal (bvif size test 1 0)
                   (bool-to-bit test)))
