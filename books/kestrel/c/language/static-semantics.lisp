@@ -264,7 +264,7 @@
      We propagate errors.")
    (xdoc::p
     "This is used to check member expressions,
-     both the @('.') and the @('->') kind."))
+     both the @('.') kind and the @('->') kind."))
   (b* ((info (tag-env-lookup tag tagenv))
        ((when (tag-info-option-case info :none))
         (error (list :struct-not-found
