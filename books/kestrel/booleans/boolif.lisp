@@ -32,6 +32,11 @@
                     (bool-fix y))))
   :hints (("Goal" :in-theory (enable boolif))))
 
+(defthm boolif-of-t-and-nil
+  (equal (boolif x t nil)
+         (bool-fix x))
+  :hints (("Goal" :in-theory (enable boolif))))
+
 (defthm boolif-of-nil-and-t
   (equal (boolif x nil t)
          (not x))

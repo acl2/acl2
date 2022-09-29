@@ -111,6 +111,7 @@
     bool-fix-when-booleanp
     ;; Rules about boolif:
     boolif-same-branches
+    boolif-of-t-and-nil
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
     boolif-of-not-same-arg3-alt
