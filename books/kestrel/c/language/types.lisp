@@ -212,7 +212,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the a member with the same name is not already in the list,
+    "We check that a member with the same name is not already in the list,
      to maintain the well-formedness of the list."))
   (b* ((found (member-type-lookup name members))
        ((when found) (member-type-list-option-none)))
@@ -231,7 +231,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the a member with the same name is not already in the list,
+    "We check that a member with the same name is not already in the list,
      to maintain the well-formedness of the list."))
   (b* ((found (member-type-lookup name members))
        ((when found) (member-type-list-option-none)))
