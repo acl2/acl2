@@ -103,7 +103,6 @@
             ;; target is a string (subroutine name):
             (b* (((mv offset-to-subroutine section-number)
                   (acl2::subroutine-offset-and-section-number-pe-32 target parsed-pe))
-                 (sections (acl2::get-pe-sections parsed-pe))
                  ;; (symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
                  ;; ((when (eq :none symbol-table))
                  ;;  (er hard 'gen-standard-assumption-pe-32 "No symbol table present."))
