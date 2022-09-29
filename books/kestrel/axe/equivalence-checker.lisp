@@ -11482,7 +11482,7 @@
                                           ;;                     (axe-prover-hints
                                           ;;                      ;;these we want for the prover but not when rewriting the facts above?:
                                           ;;                      '(EQUAL-OF-T-WHEN-BOOLEANP-ARG2
-                                          ;;                        EQUAL-OF-T-WHEN-BOOLEANP)
+                                          ;;                        EQUAL-OF-T-WHEN-BOOLEANP-ARG1)
                                           ;;                      (make-rule-alist-simple ...rules t (table-alist 'axe-rule-priorities-table (w state)))
                                           ;;                      nil ;interpreted-function-alist
                                           ;;                      nil ;test cases
