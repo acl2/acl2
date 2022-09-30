@@ -10,20 +10,23 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
-(defthm pseudo-termp-of-if-condition
-  (implies (and (pseudo-termp term)
-                (eq 'if (ffn-symb term)))
-           (pseudo-termp (farg1 term))))
+(local
+ (defthm pseudo-termp-of-if-condition
+   (implies (and (pseudo-termp term)
+                 (eq 'if (ffn-symb term)))
+            (pseudo-termp (farg1 term)))))
 
-(defthm pseudo-termp-of-if-then-branch
-  (implies (and (pseudo-termp term)
-                (eq 'if (ffn-symb term)))
-           (pseudo-termp (farg2 term))))
+(local
+ (defthm pseudo-termp-of-if-then-branch
+   (implies (and (pseudo-termp term)
+                 (eq 'if (ffn-symb term)))
+            (pseudo-termp (farg2 term)))))
 
-(defthm pseudo-termp-of-if-else-branch
-  (implies (and (pseudo-termp term)
-                (eq 'if (ffn-symb term)))
-           (pseudo-termp (farg3 term))))
+(local
+ (defthm pseudo-termp-of-if-else-branch
+   (implies (and (pseudo-termp term)
+                 (eq 'if (ffn-symb term)))
+            (pseudo-termp (farg3 term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
