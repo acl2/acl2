@@ -21,6 +21,9 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
+(local (include-book "std/lists/butlast" :dir :system))
+(local (include-book "std/lists/last" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types
@@ -153,12 +156,7 @@
   :elt-type member-type
   :true-listp t
   :elementp-of-nil nil
-  :pred member-type-listp
-  ///
-  (defrule member-typep-of-car-of-last
-    (implies (and (consp members)
-                  (member-type-listp members))
-             (member-typep (car (last members))))))
+  :pred member-type-listp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -212,7 +210,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the a member with the same name is not already in the list,
+    "We check that a member with the same name is not already in the list,
      to maintain the well-formedness of the list."))
   (b* ((found (member-type-lookup name members))
        ((when found) (member-type-list-option-none)))
@@ -231,7 +229,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the a member with the same name is not already in the list,
+    "We check that a member with the same name is not already in the list,
      to maintain the well-formedness of the list."))
   (b* ((found (member-type-lookup name members))
        ((when found) (member-type-list-option-none)))

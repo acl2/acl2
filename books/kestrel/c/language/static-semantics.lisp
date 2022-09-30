@@ -20,6 +20,8 @@
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
 
+(local (include-book "std/lists/last" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ static-semantics
@@ -264,7 +266,7 @@
      We propagate errors.")
    (xdoc::p
     "This is used to check member expressions,
-     both the @('.') and the @('->') kind."))
+     both the @('.') kind and the @('->') kind."))
   (b* ((info (tag-env-lookup tag tagenv))
        ((when (tag-info-option-case info :none))
         (error (list :struct-not-found
@@ -2174,8 +2176,11 @@
   (xdoc::topstring
    (xdoc::p
     "These specify the members of a structure or union type
-     (see @(tsee struct-declon)).
-     We go through the declarations
+     (see @(tsee struct-declon));
+     for now we only use this for the members of a structure type,
+     since we do not model union types.")
+   (xdoc::p
+    "We go through the declarations
      and turn each of them into member types (see @(tsee member-type)).
      We ensure that each member name is well-formed.
      We check that each type is well-formed.

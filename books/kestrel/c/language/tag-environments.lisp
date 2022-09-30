@@ -48,7 +48,8 @@
      This mirrors (the @(':struct') case of) @(tsee tag-declon).")
    (xdoc::p
     "The members must have unique names [C:6.2.3].
-     There must be at least one member [C:6.2.5/20].
+     There must be at least one member [C:6.2.5/20],
+     or two if the last one is a flexible array member [C:6.7.2.1/18].
      Currently we do not capture these requirements in this fixtype."))
   (:struct ((members member-type-list)))
   (:union ())
@@ -61,6 +62,30 @@
   tag-info
   :short "Fixtype of optional tag information."
   :pred tag-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tag-info-struct-flexiblep ((info tag-infop))
+  :guard (tag-info-case info :struct)
+  :returns (yes/no booleanp)
+  :short "Check if (the information for) a structure type
+          has a flexible array member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee tag-info) for a description and a reference
+     to flexible array members.
+     If there are no member,
+     which cannot happen in well-formed structure types
+     (although we do not capture this invariant in @(tsee tag-info)),
+     we return @('nil')."))
+  (b* ((members (tag-info-struct->members info))
+       ((unless (consp members)) nil)
+       (member (car (last members)))
+       (type (member-type->type member)))
+    (and (type-case type :array)
+         (not (type-array->size type))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
