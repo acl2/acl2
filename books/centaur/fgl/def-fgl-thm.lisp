@@ -55,7 +55,7 @@
     `(thm
       ,body
       :hints (,@hints
-              '(:clause-processor expand-an-implies-cp)
+              '(:clause-processor (expand-an-implies-cp clause (default-fgl-config . ,args)))
               '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
       ,@rule-classes)))
 
@@ -171,7 +171,8 @@ This probably will someday need to change.</p>
                              :split-params ,(cadr (assoc-keyword :split-params args))
                              :solve-params ,(cadr (assoc-keyword :solve-params args))
                              :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
-                             :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args)))
+                             :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args))
+                             :fgl-config (default-fgl-config . ,args))
               '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
       ,@rule-classes)))
 
