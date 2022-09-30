@@ -306,36 +306,6 @@
 ) ;; end progn so we can see total include-book time
 
 
-#||
-
-;; This is a nice place to put include-book scanner hacks that trick cert.pl
-;; into certifying unit-testing books that don't actually need to be included
-;; anywhere.  This just tricks the dependency scanner into building
-;; these books.
-
-(include-book "xdoc/all" :dir :system)
-
-(include-book "xdoc/tests/preprocessor-tests" :dir :system)
-(include-book "xdoc/tests/unsound-eval-tests" :dir :system)
-(include-book "xdoc/tests/defsection-tests" :dir :system)
-(include-book "centaur/defrstobj/basic-tests" :dir :system)
-(include-book "std/util/tests/top" :dir :system)
-(include-book "std/util/extensions/assert-return-thms" :dir :system)
-(include-book "centaur/misc/tshell-tests" :dir :system)
-(include-book "centaur/misc/stobj-swap-test" :dir :system)
-(include-book "oslib/tests/top" :dir :system)
-
-(include-book "centaur/ubdds/sanity-check-macros" :dir :system)
-
-(include-book "centaur/memoize/old/case" :dir :system)
-(include-book "centaur/memoize/old/profile" :dir :system)
-(include-book "centaur/memoize/old/watch" :dir :system)
-(include-book "centaur/memoize/portcullis" :dir :system)
-(include-book "centaur/memoize/tests" :dir :system)
-(include-book "centaur/memoize/top" :dir :system)
-
-||#
-
 (defpointer assocs patbind-assocs)
 
 ; Historically we had a completely ad-hoc organization that grew organically as
