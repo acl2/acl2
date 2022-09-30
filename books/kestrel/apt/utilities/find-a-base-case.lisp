@@ -7,6 +7,7 @@
 (include-book "kestrel/terms-light/expr-calls-fn" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/magic-macroexpand" :dir :system)
+(include-book "kestrel/utilities/fake-worlds" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
@@ -82,15 +83,13 @@
                               (booleanp prefer-then))))
   (mv-let (erp all-base largest)
           (find-a-base-case-translated-aux term fns prefer-then)
-          (cond (erp (hard-error 'find-a-base-case "Cannot find a base case!" nil))
+          (cond (erp (hard-error 'find-a-base-case-translated "Cannot find a base case!" nil))
                 (all-base term)
                 (t largest))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Variant on untranslated terms
-
-(include-book "kestrel/utilities/fake-worlds" :dir :system)
 
 (defun untranslated-expr-calls-some-fn (fns term wrld)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -105,7 +104,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((unless (consp term)) (mv nil t nil))
-       ((mv erp term) (magic-macroexpand term 'magic wrld state))
+       ((mv erp term) (magic-macroexpand term 'find-a-base-case wrld state))
        ((when erp) (mv erp nil nil))
        ((unless (consp term)) (mv nil t nil))
        ((unless (eq 'if (ffn-symb term)))

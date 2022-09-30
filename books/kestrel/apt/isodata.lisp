@@ -1123,8 +1123,7 @@
         (value (if (< 1 m)
                    (fcons-term 'mv (repeat m nil))
                  nil)))
-       ((when (or (eq :base-case-then undefined)
-                  (eq :base-case-else undefined)))
+       ((when (member-eq undefined '(:base-case-then :base-case-else)))
         (value undefined))
        ((er (list term stobjs-out))
         (ensure-value-is-untranslated-term$ undefined
