@@ -1112,7 +1112,7 @@
                                    ctx
                                    state)
   :returns (mv erp
-               (undefined$ "Either @(':base-case'), @(':base-case-then'), or
+               (undefined$ "Either @(':base-case-then'), @(':base-case-else'), or
                             a @(tsee pseudo-termp).")
                state)
   :mode :program
@@ -1123,8 +1123,8 @@
         (value (if (< 1 m)
                    (fcons-term 'mv (repeat m nil))
                  nil)))
-       ((when (or (eq :base-case undefined)
-                  (eq :base-case-then undefined)))
+       ((when (or (eq :base-case-then undefined)
+                  (eq :base-case-else undefined)))
         (value undefined))
        ((er (list term stobjs-out))
         (ensure-value-is-untranslated-term$ undefined
@@ -2362,7 +2362,7 @@
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
-   (undefined$ "Either @(':base-case'), @(':base-case-then'), or a
+   (undefined$ "Either @(':base-case-then'), @(':base-case-else'), or a
                 @(tsee pseudo-termp).")
    (new$ symbolp)
    compatibility
@@ -2385,9 +2385,9 @@
      the resulting term is the code of the new function's body (see below).
      Then we construct an @(tsee if) as follows.
      The test is the conjunction of @('(newp1 x1)'), ..., @('(newpn xn)').
-     If @('undefined$') is @(':base-case'), then the `else' branch is the
-     `else'-biased base-case search result of the `then' branch. If
-     @('undefined$') is @(':base-case-then'), then it is the `then'-biased
+     If @('undefined$') is @(':base-case-then'), then the `else' branch is the
+     `then'-biased base-case search result of the `then' branch. If
+     @('undefined$') is @(':base-case-else'), then it is the `else'-biased
      result. Otherwise, it is @('undefined$').
      For the `then' branch, there are three cases:
      (i) if no results are transformed, we use the core term above;
@@ -2430,10 +2430,10 @@
                                      old-body-with-back-of-x1...xn
                                      (fcons-term 'mv forth-of-y1...ym))))))
        (else-branch
-        (cond ((eq :base-case undefined$)
-               (acl2::find-a-base-case-translated then-branch (list new$) nil))
-              ((eq :base-case-then undefined$)
+        (cond ((eq :base-case-then undefined$)
                (acl2::find-a-base-case-translated then-branch (list new$) t))
+              ((eq :base-case-else undefined$)
+               (acl2::find-a-base-case-translated then-branch (list new$) nil))
               (t undefined$))))
     (cond ((and compatibility
                 (not (recursivep old$ nil wrld)) then-branch))
@@ -2448,8 +2448,8 @@
                                  (arg-isomaps isodata-symbol-isomap-alistp)
                                  (res-isomaps isodata-pos-isomap-alistp)
                                  (predicate$ booleanp)
-                                 (undefined$ "Either @(':base-case'),
-                                              @(':base-case-then'), or a
+                                 (undefined$ "Either @(':base-case-then'),
+                                              @(':base-case-else'), or a
                                               @(tsee pseudo-termp).")
                                  (new$ symbolp)
                                  compatibility
@@ -2516,8 +2516,8 @@
                             (arg-isomaps isodata-symbol-isomap-alistp)
                             (res-isomaps isodata-pos-isomap-alistp)
                             (predicate$ booleanp)
-                            (undefined$ "Either @(':base-case'),
-                                              @(':base-case-then'), or a
+                            (undefined$ "Either @(':base-case-then'),
+                                              @(':base-case-else'), or a
                                               @(tsee pseudo-termp).")
                             (new$ symbolp)
                             (new-enable$ booleanp)
@@ -4075,7 +4075,7 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (predicate$ booleanp)
-   (undefined$ "Either @(':base-case'), @(':base-case-then'), or a
+   (undefined$ "Either @(':base-case-then'), @(':base-case-else'), or a
                 @(tsee pseudo-termp).")
    (new$ symbolp)
    (new-enable$ booleanp)
