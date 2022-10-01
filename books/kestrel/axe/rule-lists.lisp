@@ -2402,6 +2402,7 @@
   (append ;(base-rules) ;new! was bad in that it turned around equalities
    (unsigned-byte-p-forced-rules)                  ;new
    (booleanp-rules) ;new!
+   (boolean-rules-safe) ;new!
    (type-rules)     ;very new (seems safe)
    '(integerp-when-unsigned-byte-p-free ;tue jan 11 16:53:16 2011
      equal-of-not-and-nil               ;tue jan 11 16:52:09 2011
@@ -2411,8 +2412,8 @@
      <-of-bv-and-non-positive-constant
      not-of-not
      equal-nil-of-not
-     not-of-bool-fix ; just include boolean-rules-safe?
-     bool-fix-when-booleanp ; just include boolean-rules-safe?
+     ;;not-of-bool-fix ; just include boolean-rules-safe?
+     ;;bool-fix-when-booleanp ; just include boolean-rules-safe?
      equal-same
      not-<-same
      if-of-t
