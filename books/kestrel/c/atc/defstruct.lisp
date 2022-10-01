@@ -142,10 +142,14 @@
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies that @(tsee type-of-value)
-      returns the struct type."))
-   (xdoc::p
-    "The call of @(tsee defstruct).
-     This supports redundancy checking."))
+      returns the struct type.")
+    (xdoc::li
+     "The name of the theorem asserting that
+      the recognizer implies that the flexible array member flag
+      is @('nil').")
+    (xdoc::li
+     "The call of @(tsee defstruct).
+      This supports redundancy checking.")))
   ((tag ident)
    (members defstruct-member-info-list)
    (recognizer symbolp)
@@ -155,6 +159,7 @@
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
    (type-of-value-thm symbolp)
+   (flexiblep-thm symbolp)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -689,6 +694,8 @@
        (type-of-value-when-struct-tag-p
         (packn-pos (list 'type-of-value-when- struct-tag-p)
                    struct-tag-p))
+       (flexiblep-when-struct-tag-p
+        (packn-pos (list 'flexiblep-when- struct-tag-p) struct-tag-p))
        (event
         `(define ,struct-tag-p (x)
            :returns (yes/no booleanp)
@@ -719,7 +726,11 @@
                       (equal (type-of-value x)
                              (type-struct (ident ,(symbol-name tag)))))
              :in-theory '(,struct-tag-p
-                          type-of-value)))))
+                          type-of-value))
+           (defruled ,flexiblep-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (equal (value-struct->flexiblep x)
+                             nil))))))
     (mv event
         not-errorp-when-struct-tag-p
         valuep-when-struct-tag-p
