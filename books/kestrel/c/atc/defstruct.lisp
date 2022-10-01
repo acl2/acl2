@@ -671,7 +671,9 @@
   (xdoc::topstring
    (xdoc::p
     "This recognizes structures
-     with the appropriate types, member names, and member types.")
+     with the appropriate types, member names, and member types.
+     For now the flexible array member flag (see @(tsee value))
+     is unset, because @(tsee defstruct) does not support that.")
    (xdoc::p
     "We also generate several theorems;
      see @(tsee defstruct-info)."))
@@ -696,7 +698,8 @@
                        (ident ,(symbol-name tag)))
                 (equal (member-value-list->name-list (value-struct->members x))
                        ',(member-type-list->name-list memtypes))
-                ,@(defstruct-gen-recognizer-all-conjuncts memtypes))
+                ,@(defstruct-gen-recognizer-all-conjuncts memtypes)
+                (not (value-struct->flexiblep x)))
            :hooks (:fix)
            ///
            (defruled ,not-errorp-when-struct-tag-p
@@ -818,7 +821,8 @@
            :param x
            :body-fix (make-value-struct
                       :tag (ident ,(symbol-name tag))
-                      :members (list ,@(defstruct-gen-fixer-aux memtypes)))))
+                      :members (list ,@(defstruct-gen-fixer-aux memtypes))
+                      :flexiblep nil)))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
