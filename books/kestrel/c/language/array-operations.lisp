@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "values")
+(include-book "flexible-array-member-removal")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

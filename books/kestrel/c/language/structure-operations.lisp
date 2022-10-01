@@ -12,8 +12,7 @@
 (in-package "C")
 
 (include-book "values")
-
-(local (include-book "std/lists/len" :dir :system))
+(include-book "flexible-array-member-removal")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,46 +212,3 @@
                         (value-struct-read name1 struct)))))
     :enable (value-struct-read
              value-struct-read-aux-of-value-struct-write-aux)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-struct-remove-flexible ((struct valuep))
-  :guard (value-case struct :struct)
-  :returns (new-struct value-resultp)
-  :short "Remove the flexible array member from a structure value, if present."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used when a structure with a flexible array member is copied.
-     [C:6.7.2.1/18] says that, in this case (as in most other cases),
-     the flexible array member is ignored.
-     This implies that, when the structure is copied
-     (in a declaration, assignment, or function call),
-     the flexible array member is dropped.")
-   (xdoc::p
-    "Our model of structure values includes a flag
-     indicating whether a structure has a flexible array member or not,
-     which we consult to determine whether the last member should be removed
-     (in fact, the flag is part of the model of structure values
-     exactly to support this operation in a simple and clear way).
-     If the member is removed,
-     we ensure that there is at least another member
-     in order to maintain the invariant in @(tsee value);
-     this should be always the case,
-     but currently @(tsee value) does not capture the invariant that
-     there are at least two members if the flag is set.
-     If the member is removed, we unset the flag,
-     because the structure no longer has the flexible array member.")
-   (xdoc::p
-    "The fact that this operation leaves the structure unchanged
-     when the flag is unset
-     means that we can uniformaly use this function on structure values,
-     prior to copying them."))
-  (b* (((when (not (value-struct->flexiblep struct))) (value-fix struct))
-       (members (value-struct->members struct))
-       ((unless (consp (cdr members))) (error :impossible))
-       (new-members (butlast members 1)))
-    (change-value-struct struct
-                         :members new-members
-                         :flexiblep nil))
-  :hooks (:fix))

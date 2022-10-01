@@ -343,21 +343,3 @@
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-remove-flexible ((val valuep))
-  :returns (new-val value-resultp)
-  :short "If the value is a structure with a flexible array member,
-          remove that member."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This generalizes @(tsee value-struct-remove-flexible) to all values;
-     see that function for details.
-     If the value is not a structure, we leave it unchanged.
-     Thus, this ACL2 function can be uniformly used when copying values."))
-  (if (value-case val :struct)
-      (value-struct-remove-flexible val)
-    (value-fix val))
-  :hooks (:fix))
