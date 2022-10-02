@@ -41,6 +41,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define flexible-array-member-p ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is a structure with a flexible array member."
+  (and (value-case val :struct)
+       (value-struct->flexiblep val))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define remove-flexible-array-member ((val valuep))
   :returns (new-val value-resultp)
   :short "Remove the flexible array member,
@@ -61,13 +70,19 @@
      there are at least two members if the flag is set.
      If the member is removed, we unset the flag,
      because the structure no longer has the flexible array member."))
-  (b* (((unless (and (value-case val :struct)
-                     (value-struct->flexiblep val)))
-        (value-fix val))
-       (members (value-struct->members val))
-       ((unless (consp (cdr members))) (error :impossible))
-       (new-members (butlast members 1)))
-    (change-value-struct val
-                         :members new-members
-                         :flexiblep nil))
-  :hooks (:fix))
+  (if (flexible-array-member-p val)
+      (b* ((members (value-struct->members val))
+           ((unless (consp (cdr members))) (error :impossible))
+           (new-members (butlast members 1)))
+        (change-value-struct val
+                             :members new-members
+                             :flexiblep nil))
+    (value-fix val))
+  :guard-hints (("Goal" :in-theory (enable flexible-array-member-p)))
+  :hooks (:fix)
+  ///
+
+  (defrule remove-flexible-array-member-when-absent
+    (implies (not (flexible-array-member-p val))
+             (equal (remove-flexible-array-member val)
+                    (value-fix val)))))
