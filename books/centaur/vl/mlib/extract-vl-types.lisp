@@ -29,6 +29,7 @@
 (include-book "../expr")
 
 (include-book "centaur/bitops/part-select" :dir :system)
+(include-book "centaur/bitops/part-install" :dir :system)
 
 (progn
   (local
@@ -89,60 +90,60 @@
                          (>= msb lsb))
                     (vl-coretype-collected-dims-p rest))
                (vl-coretype-collected-dims-p (cons (list* rest-size msb lsb) rest)))))
+  
+  
+  (define get-extracted-vl-type-array-ranges ((start natp)
+                                              (width natp)
+                                              (dims vl-coretype-collected-dims-p)
+                                              (args true-listp)
+                                              &optional
+                                              (vec-name "")
+                                              (allow-redundant-args 'nil)
+                                              )
 
-  (define extracted-vl-type-array-accessor ((value integerp)
-                                (dims vl-coretype-collected-dims-p)
-                                (args)
-                                &optional
-                                (vec-name "")
-                                (allow-redundant-args 'nil)
-                                )
+    :returns (mv res-start res-width) 
 
-    :returns (res integerp)
-
-    (cond ((and (atom dims)
-                (consp args))
+    (cond ((or (atom dims)
+               (atom args))
            (progn$
-            (or allow-redundant-args
-                (raise "Too many arguments are passed to access a vl-coretype (~s0)~%" vec-name))
-            (ifix value)))
-          ((atom dims)
-           (ifix value))
-          ((and (atom args)
-                (not (natp args)))
-           (b* (((unless (equal args nil))
-                 (progn$ (raise "Args should be a true-listp of natural numbers or a natural number but given ~p0 instead (~s0)~%" args vec-name)
-                         0))
-                ;;((list* slice-size msb lsb) (car dims))
-                ;;(size (* slice-size (+ msb 1 (- lsb))))
-                )
-             ;;(acl2::loghead size value)
-             (ifix value)
-             ))
-          (t (b* ((cur-arg (if (natp args) args (car args)))
+            (and (consp args)
+                 (or allow-redundant-args
+                     (raise "Too many arguments are passed to access a vl-coretype (~s0)~%" vec-name)))
+            (mv start width)))
+          (t (b* ((cur-arg (car args))
                   ((unless (natp cur-arg))
                    (progn$ (raise "A a non-natp value is given for an index argument: ~p0 (~s1) ~%"
                                   cur-arg vec-name)
-                           0))
+                           (mv start width)))
                   ((list* slice-size msb lsb) (car dims))
                   ((unless (and (<= cur-arg msb)
                                 (>= cur-arg lsb)))
                    (progn$ (raise "Given argument '~p0' is out of bounds for the given vector (~s1). MSB (upperbound) is ~p2 and LSB (lowerbound) is ~p3 ~%"
                                   cur-arg vec-name msb lsb)
-                           0))
+                           (mv start width)))
                   (index (- cur-arg lsb))
 
-                  (value ;;(if (equal slice-size 0)
-                   ;;  (acl2::part-select value :low index :width 1)
-                   (acl2::part-select value
-                                      :low (* slice-size index)
-                                      :width slice-size))
-                  ((when (natp args)) value))
-               (extracted-vl-type-array-accessor value
-                                                 (cdr dims)
-                                                 (cdr args)
-                                                 vec-name
-                                                 allow-redundant-args)))))
+                  (offset (* index slice-size))
+                  (start (+ start offset)))
+               (get-extracted-vl-type-array-ranges start
+                                                   slice-size
+                                                   (cdr dims)
+                                                   (cdr args)
+                                                   vec-name
+                                                   allow-redundant-args))))
+    ///
+    (defret natp-of-start-of-<fn>
+      (implies (and (natp start)
+                    (vl-coretype-collected-dims-p dims))
+               (and (natp res-start)
+                    (integerp res-start)
+                    (<= 0 res-start))))
+    (defret natp-of-width-of-<fn>
+      (implies (and (natp width)
+                    (vl-coretype-collected-dims-p dims))
+               (and (natp res-width)
+                    (integerp res-width)
+                    (<= 0 res-width)))))
 
   (define vl-coretype-collect-dims-aux ((dims vl-dimensionlist-p)
                                         (acc-size natp))
@@ -225,55 +226,45 @@
 
   )
 
-#!VL
-(define vl-enumitemlist->acl2-types-cases ((lst vl-enumitemlist-p)
-                                           &optional
-                                           ((cnt natp) '0))
-  (if (atom lst)
-      nil
-    (b* ((rest (vl-enumitemlist->acl2-types-cases (cdr lst) (1+ cnt)))
-         ((vl-enumitem cur) (car lst))
-         ((unless (equal cur.range nil))
-          (raise "Unexpected enumitem (~p0). Check for (equal cur.range nil) has failed.~%" cur))
-         (cur.value (if cur.value
-                        (b* (((unless (equal (vl-expr-kind cur.value) :vl-literal))
-                              (raise "(equal (vl-expr-kind cur.value) :vl-literal) failed for cur=~p0~%" cur))
-                             (val (vl-literal->val cur.value))
-                             ((unless (equal (vl-value-kind val) :vl-constint))
-                              (raise "(equal (vl-value-kind val) :vl-constint) failed for val=~p0~%" val))
-                             (val (vl-constint->value val)))
-                          val
-                          )
-                      cnt))
-         (case-statement
-          `(,cur.value ,cur.name)))
-      (cons case-statement rest))))
+
+
 
 #!VL
 (define vl-enum-values->acl2-types-cases ((values vl-exprlist-p)
                                           (items vl-enumitemlist-p))
+  :returns (mv string-to-int-cases int-to-string-cases)
   (if (or (atom values)
           (atom items))
-      (if (equal values items) nil
-        (raise "Expected items and values to be of the same length~%"))
-    (b* ((rest (vl-enum-values->acl2-types-cases (cdr values) (cdr items)))
+      (if (equal values items) (mv nil nil)
+        (mv (raise "Expected items and values to be of the same length~%") nil))
+    (b* (((mv string-to-int-cases int-to-string-cases)
+          (vl-enum-values->acl2-types-cases (cdr values) (cdr items)))
          ((unless (equal (vl-expr-kind (car values)) :vl-literal))
-          (raise "(equal (vl-expr-kind (car values)) :vl-literal) failed for values=~p0~%" values))
+          (mv (raise "(equal (vl-expr-kind (car values)) :vl-literal) failed for values=~p0~%" values)
+              nil))
          ((vl-literal x) (car values))
 
          ((unless (equal (vl-value-kind x.val) :vl-constint))
-          (raise "(equal (vl-value-kind x.val) :vl-constint) failed for x=~p0~%" x))
+          (mv (raise "(equal (vl-value-kind x.val) :vl-constint) failed for x=~p0~%" x)
+              nil))
 
          ((unless (equal (vl-value-kind x.val) :vl-constint))
-          (raise "(equal (vl-value-kind x.val) :vl-constint) failed for x=~p0~%" x))
+          (mv (raise "(equal (vl-value-kind x.val) :vl-constint) failed for x=~p0~%" x)
+              nil))
          (value (vl-constint->value x.val))
          ((vl-enumitem cur) (car items))
          ((unless (equal cur.range nil))
-          (raise "Unexpected enumitem (~p0). Check for (equal cur.range nil) has failed.~%" cur))
+          (mv (raise "Unexpected enumitem (~p0). Check for (equal cur.range nil) has failed.~%" cur)
+              nil))
+         (int-to-string-case
+          `(,value ,cur.name))
+         (string-to-int-case
+          `(,cur.name ,value)))
+      (mv (cons string-to-int-case string-to-int-cases)
+          (cons int-to-string-case int-to-string-cases)))))
 
-         (case-statement
-          `(,value ,cur.name)))
-      (cons case-statement rest))))
+
+
 
 #!VL
 (define vl-types->acl2-types-parse-args ((args stringp)
@@ -303,9 +294,9 @@
                 (num (explode (subseq args 1 close-bracket-i)))
                 ((unless (str::dec-digit-char-listp num))
                  (raise "Invalid sequence of indices are given: ~p0. There needs to be a positive integer between brackets.~%" args))
-                  
+
                 ((mv num & &) (Str::parse-nat-from-charlist num 0 0))
-                  
+
                 (rest (vl-types->acl2-types-parse-args
                        (subseq args (1+ close-bracket-i) nil)
                        pkg-sym)))
@@ -315,6 +306,45 @@
                   (rest (vl-types->acl2-types-parse-args rest pkg-sym)))
                (cons (intern-in-package-of-symbol this pkg-sym)
                      rest))))))
+
+(define extract-vl-types-generate-macros
+  (accessor-macro-name
+   changer-macro-name-aux
+   changer-macro-name
+   ranges-fn-name pkg-sym)
+  `(
+    (define ,changer-macro-name-aux (args)
+      :mode :program
+      (b* (((when (atom args)) nil)
+           ((unless (and (consp (cdr args))
+                         (stringp (car args))))
+            (raise "Args should be given as pairs, first element of each is a string and the second is the desired value to update"))
+           (rest (,changer-macro-name-aux (cddr args)))
+           (cur-arg (vl-types->acl2-types-parse-args
+                     (car args) ',pkg-sym))
+           ((mv start width)
+            (,ranges-fn-name 0 cur-arg)))
+        (cons (list 'value (list 'acl2::part-install
+                                 (cadr args)
+                                 'value
+                                 :low start :width width))
+              rest)))
+
+    (defmacro ,changer-macro-name (value &rest args)
+      (b* ((assignments (,changer-macro-name-aux args)))
+        (list 'b*
+              (cons (list 'value value)
+                    assignments)
+              'value)))
+
+    (defmacro ,accessor-macro-name
+        (value &optional (args '""))
+      (b* ((args (vl-types->acl2-types-parse-args
+                  args ',pkg-sym))
+           ((mv start width)
+            (,ranges-fn-name 0 args)))
+        (list 'acl2::part-select
+              value :low start :width width)))))
 
 #!VL
 (defines vl-types->acl2-types
@@ -350,11 +380,15 @@
         (:VL-CORETYPE
          (b* (((mv collected-dims size) (vl-coretype-collect-dims member.type))
               (case-statement
-               `(,(INTERN-IN-PACKAGE-OF-SYMBOL member.name pkg-sym)
-                 (b* (,@(and offset 
-                             `((value (acl2::part-select value :low ,offset :width ,size))))
-                      (dims ',collected-dims))
-                   (extracted-vl-type-array-accessor value dims rest-args ,member.name nil))))
+               `(,(intern-in-package-of-symbol member.name pkg-sym)
+                 (b* (,@(and offset
+                             `((offset ,offset)
+                               (start (+ start offset))))
+                      (width ,size)
+                      (collected-dims ',collected-dims))
+                   (get-extracted-vl-type-array-ranges start width
+                                                       collected-dims rest-args
+                                                       ,member.name nil))))
               (events nil))
            (mv case-statement events size)))
 
@@ -362,29 +396,33 @@
          (b* (((vl-usertype x) member.type)
               ((mv events size)
                (vl-types->acl2-types-new-type x.name x.res pkg-sym))
-              ((mv dims2 acc-size) (vl-coretype-collect-dims-aux x.pdims size))
-              ((mv dims1 acc-size) (vl-coretype-collect-dims-aux x.udims acc-size))
+              ((mv dims2 size) (vl-coretype-collect-dims-aux x.pdims size))
+              ((mv dims1 size) (vl-coretype-collect-dims-aux x.udims size))
               (collected-dims (append dims1 dims2))
-              (fn-name (intern-in-package-of-symbol (str::cat x.name "-FN") pkg-sym))
+              (fn-name (intern-in-package-of-symbol (str::cat x.name "-RANGES") pkg-sym))
               (case-statement
                `(,(intern-in-package-of-symbol member.name pkg-sym)
                  ,(if collected-dims
-                      `(b* (,@(and offset 
-                                   `((value (acl2::part-select value :low ,offset :width ,acc-size))))
-                            (value (extracted-vl-type-array-accessor value
-                                                         ',collected-dims
-                                                         rest-args
-                                                         ,member.name t))
+                      `(b* (,@(and offset
+                                   `((offset ,offset)
+                                     (start (+ start offset))))
+                            (width ,size)
+                            (collected-dims ',collected-dims)
+                            ((mv start width)
+                             (get-extracted-vl-type-array-ranges start width
+                                                                 collected-dims
+                                                                 rest-args
+                                                                 ,member.name t))
                             (rest-args (nthcdr ,(len collected-dims) rest-args))
-                            (value (if (equal rest-args nil)
-                                       value
-                                     (,fn-name value rest-args))))
-                         value)
+                            ((mv start width) (if (equal rest-args nil)
+                                                  (mv start width)
+                                                (,fn-name start rest-args))))
+                         (mv start width))
                     `(,fn-name ,(if offset
-                                    `(acl2::part-select value :low ,offset :width ,acc-size)
-                                  'value)
+                                    `(+ start ,offset)
+                                  'start)
                                rest-args)))))
-           (mv case-statement events acc-size)))
+           (mv case-statement events size)))
         (otherwise
          (progn$ (raise "Unexpected vl-structmember type: ~p0 ~%" member)
                  (mv nil nil 0))))))
@@ -395,26 +433,36 @@
     (b* (((unless (stringp name))
           (mv (raise "(stringp name) is failed for: ~p0 ~%" name) 0))
          ((unless (vl-datatype-p vl-datatype))
-          (mv (raise "(stringp name) is failed for: ~p0 ~%" name) 0)))
+          (mv (raise "(stringp name) is failed for: ~p0 ~%" name) 0))
+         (ranges-fn-name (INTERN-IN-PACKAGE-OF-SYMBOL (str::cat name "-RANGES") pkg-sym))
+
+         (changer-macro-name-aux (INTERN-IN-PACKAGE-OF-SYMBOL (str::cat "CHANGE-" name "-AUX") pkg-sym))
+         (changer-macro-name (INTERN-IN-PACKAGE-OF-SYMBOL (str::cat "CHANGE-" name) pkg-sym))
+         (accessor-macro-name (INTERN-IN-PACKAGE-OF-SYMBOL name pkg-sym)))
       (case (vl-datatype-kind vl-datatype)
         (:vl-coretype
          (b* (((mv collected-dims size) (vl-coretype-collect-dims vl-datatype))
-              (fn-name (INTERN-IN-PACKAGE-OF-SYMBOL (str::cat name "-FN") pkg-sym))
-              (macro-name (INTERN-IN-PACKAGE-OF-SYMBOL name pkg-sym))
+              
               ;; accessor function expects indices only in a list such as '(1 2 3)
               (events
-               `((define ,fn-name
-                   ((value integerp) (args true-listp))
-                   (b* ((value (acl2::loghead ,size value))
-                        ((when (atom args)) (ifix value))
+               `((define ,ranges-fn-name
+                   ((start natp) (args true-listp))
+                   (b* ((width ,size)
+                        ((when (atom args)) (mv start width))
                         (dims ',collected-dims))
-                     (extracted-vl-type-array-accessor value dims args
-                                           ,name nil)))
-                 (defmacro ,macro-name (value &optional (args '""))
-                   (list ',fn-name value
+                     (get-extracted-vl-type-array-ranges start width dims args
+                                                         ,name nil)))
+                 ,@(extract-vl-types-generate-macros
+                    accessor-macro-name
+                    changer-macro-name-aux changer-macro-name ranges-fn-name pkg-sym)
+
+                 
+                         
+                 #|(defmacro ,accessor-macro-name (value &optional (args '""))
+                   (list ',accessor-fn-name value
                          (list 'quote
                                (vl-types->acl2-types-parse-args
-                                args ',pkg-sym)))))))
+                                args ',pkg-sym))))|#)))
            (mv events size)))
         (:vl-struct
          (b* (((vl-struct x) vl-datatype)
@@ -424,28 +472,23 @@
                (mv (raise "(equal x.udims nil) failed for: " x) 0))
               ((mv member-cases member-events size)
                (vl-structmemberlist->acl2-types x.members t pkg-sym))
-              (fn-name (INTERN-IN-PACKAGE-OF-SYMBOL (str::cat name "-FN") pkg-sym))
-              (macro-name (INTERN-IN-PACKAGE-OF-SYMBOL name pkg-sym))
+              
               (this-events
-               `((define ,fn-name
-                   ((value integerp) (args true-listp))
-                   (b* ((value (acl2::loghead ,size value))
-                        ((when (atom args))
-                         (ifix value)
-                         ;;(acl2::loghead ,size value)
-                         )
-                        
+               `((define ,ranges-fn-name
+                   ((start natp) (args true-listp))
+                   (b* ((width ,size)
+                        ((when (atom args)) (mv start width))
                         (cur-arg (car args))
                         (rest-args (cdr args)))
                      (case cur-arg
                        ,@member-cases
                        (otherwise
-                        (raise "An invalid field (~p0) is given for vl-struct type ~s1 ~%" cur-arg ,name)))))
-                 (defmacro ,macro-name (value &optional (args '""))
-                   (list ',fn-name value
-                         (list 'quote
-                               (vl-types->acl2-types-parse-args
-                                args ',pkg-sym)))))))
+                        (progn$ (raise "An invalid field (~p0) is given for vl-struct type ~s1 ~%" cur-arg ,name)
+                                (mv start width))))))
+                 ,@(extract-vl-types-generate-macros
+                    accessor-macro-name
+                    changer-macro-name-aux changer-macro-name ranges-fn-name pkg-sym)
+                 )))
            (mv (append member-events this-events) size)))
         (:vl-union
          ;; TODO: BOZO: not checking taggedp, signedp, and packedp fields at all...
@@ -458,28 +501,23 @@
                (mv (raise "(equal x.taggedp nil) failed for: " x) 0))
               ((mv member-cases member-events size)
                (vl-structmemberlist->acl2-types x.members nil pkg-sym))
-              (fn-name (intern-in-package-of-symbol (str::cat name "-FN") pkg-sym))
-              (macro-name (intern-in-package-of-symbol name pkg-sym))
+              
               (this-events
-               `((define ,fn-name
-                   ((value integerp) (args true-listp))
-                   (b* ((value (acl2::loghead ,size value))
-                        ((when (atom args))
-                         (ifix value)
-                         ;;value
-                         )
-                        
+               `((define ,ranges-fn-name
+                   ((start natp) (args true-listp))
+                   (b* ((width ,size)
+                        ((when (atom args)) (mv start width))
                         (cur-arg (car args))
                         (rest-args (cdr args)))
                      (case cur-arg
                        ,@member-cases
                        (otherwise
-                        (raise "An invalid field (~p0) is given for vl-struct type ~s1 ~%" cur-arg ,name)))))
-                 (defmacro ,macro-name (value &optional (args '""))
-                   (list ',fn-name value
-                         (list 'quote
-                               (vl-types->acl2-types-parse-args
-                                args ',pkg-sym)))))))
+                        (progn$ (raise "An invalid field (~p0) is given for vl-struct type ~s1 ~%" cur-arg ,name)
+                                (mv start width))))))
+                 ,@(extract-vl-types-generate-macros
+                    accessor-macro-name
+                    changer-macro-name-aux changer-macro-name ranges-fn-name pkg-sym)
+                 )))
            (mv (append member-events this-events) size)))
         (:vl-enum
          (b* (((vl-enum x) vl-datatype)
@@ -491,32 +529,41 @@
                               :vl-coretype))
                (mv (raise "Expected to have :vl-coretype for the given vl-enum type: ~p0.~%" x) 0))
               ((mv & size) (vl-coretype-collect-dims x.basetype))
-              (cases (vl-enum-values->acl2-types-cases x.values x.items))
-              ;;(cases (vl-enumitemlist->acl2-types-cases x.items))
-              (fn-name (INTERN-IN-PACKAGE-OF-SYMBOL (str::cat name "-FN") pkg-sym))
-              (macro-name (INTERN-IN-PACKAGE-OF-SYMBOL name pkg-sym))
+              ((mv string-to-int-cases int-to-string-cases)
+               (vl-enum-values->acl2-types-cases x.values x.items))
+              
               (this-events
-               `((define ,fn-name
-                   ((value integerp) &optional (args true-listp))
-                   (declare (ignorable args))
+               `((define ,ranges-fn-name
+                   ((start natp) (args true-listp))
+                   (b* ((width ,size)
+                        ((when args)
+                         (progn$ (raise "Unexpected arguments are passed: ~p0 ~%" args)
+                                 (mv start width))))
+                     (mv start width)))
+                 
+                 (define ,accessor-macro-name ((value))
+                   :guard (or (integerp value)
+                              (stringp value))
 
-                   (b* ((value (acl2::loghead ,size value))
-                        ((when (not args))
-                         value)
-                        (- (or (and (not (cdr args))
-                                    (symbolp (car args))
-                                    (or (equal (symbol-name (car args)) "str")
-                                        (equal (symbol-name (car args)) "string")))
-                               (cw "An extra argument of ~p0 is passed to an accessor for an enum type (~s1). In case of such redundant arguments, we return the string equivalent of that enum type. To suppress this warning, set that extra argument to \"str\" or \"string\" instead of ~p0~%" args ,name))))
+                   (if (integerp value)
                      (case value
-                       ,@cases
+                       ,@int-to-string-cases
                        (otherwise :invalid-enumitem ;;value
-                                  ))))
-                 (defmacro ,macro-name (value &optional (args '""))
+                                  ))
+                     (case-match value
+                       ,@string-to-int-cases
+                       (& -1 ;;value
+                          ))))
+
+                 #|(defmacro ,changer-macro-name ((old-value)
+                                                (new-value))
+                   (declare (ignorable old-value))
+                   (list 'acl2::loghead ,size new-value))|#
+                 #|(defmacro ,macro-name (value &optional (args '""))
                    (list ',fn-name value
                          (list 'quote
                                (vl-types->acl2-types-parse-args
-                                args ',pkg-sym)))))))
+                                args ',pkg-sym))))|#)))
            (mv this-events size)))
         (otherwise
          (mv (raise "Unexpected vl-datatype: ~p0 ~%" vl-datatype)  0)
@@ -560,7 +607,6 @@
   `(make-event
     (cons 'progn (extract-vl-types-fn ,design ,module ',vl-types ',design))))
 
-
 ;;(include-book "xdoc/debug" :dir :system)
 
 (defxdoc extract-vl-types
@@ -589,11 +635,12 @@
 
 <p> Using the generated functions, users can access a part of a given data structure. For example, if we have a large struct with a lot of fields, say named \"t_main\", then the program will generate a macro with the same name: |t_main| (since Verilog is case-sensitive, or function/macro names for the accessors are also made case-sensitive). Say that we have a variable called \"main\" in our conjectures representing a signal of type \"t_main\" (assuming we use (@see acl2::defsvtv) semantics). Then, we can access individual fields of this signal using the generated |t_main| macro. For example: (|t_main| main \"data[0].dword[3]\"), (|t_main| main \"uop.size\") etc.</p>
 
-<p> In case of enumarated types, if you pass an extra argument of \"str\" or \"string\", then the generated functions will return the string equivalant of the given value. For example, if the \"uop.size\" field is an enum type, then (|t_main| main \"uop.size\") will return an integer whereas (|t_main| main \"uop.size.str\") will return the string equivalent of that integer, e.g., \"ZMM\".
-</p> 
+<p> In case of enumarated types, their generator functions can take a string or an integer, and return corresponding integer or string values, respectively.
+</p>
+
+<p> vl::extract-vl-types will also generate \"change\" macros for every type. For example: (change-|t_main| main \"data[0].dword[3]\" 12) will set the \"data[0].dword[3]\" of main to 12. More arguments can be passed to change other entries in the same call: (change-|t_main| main \"data[0].dword[3]\" 12 \"uop.size\" 0).
+</p>
 
 "
-  
-  
-  )
 
+  )
