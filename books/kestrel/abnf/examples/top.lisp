@@ -10,13 +10,13 @@
 
 (in-package "ABNF")
 
-(include-book "abstract-syntax")
-(include-book "semantics")
-(include-book "operations")
-(include-book "core-rules")
-(include-book "concrete-syntax")
-(include-book "parser")
-(include-book "abstractor")
+(include-book "../abstract-syntax")
+(include-book "../semantics")
+(include-book "../operations")
+(include-book "../core-rules")
+(include-book "../concrete-syntax")
+(include-book "../parser")
+(include-book "../abstractor")
 
 ; (depends-on "uri-grammar.abnf")
 ; (depends-on "http-grammar.abnf")
