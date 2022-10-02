@@ -25,10 +25,10 @@
    "The HTTP 1.1 syntax is specified by "
    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "RFC 7230")
    ".")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (defsection *http-grammar-rules*
-  :parents (http-example)
   :short "The HTTP grammar rules from RFC 7230."
   :long
   (xdoc::topstring
@@ -56,7 +56,6 @@
     (rulelist-wfp *http-grammar-rules*)))
 
 (defval *all-http-grammar-rules*
-  :parents (http-example)
   :short "All the HTTP grammar rules,
           including the referenced URI rules and ABNF core rules."
   :long
@@ -119,7 +118,6 @@
     :rule-classes nil))
 
 (defval *all-http-message-grammar-rules*
-  :parents (http-example)
   :short "All the HTTP grammar rules
           that define the first-level structure of messages."
   :long

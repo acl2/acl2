@@ -30,10 +30,10 @@
    "The URI syntax is specified by "
    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
    ".")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (defsection *uri-grammar-rules*
-  :parents (uri-example)
   :short "The URI grammar rules from RFC 3986."
   :long
   (xdoc::topstring
@@ -61,7 +61,6 @@
     (rulelist-wfp *uri-grammar-rules*)))
 
 (defval *all-uri-grammar-rules*
-  :parents (uri-example)
   :short "All the URI grammar rules, including the referenced ABNF core rules."
   :long
   (xdoc::topstring

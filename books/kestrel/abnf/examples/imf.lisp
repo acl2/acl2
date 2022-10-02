@@ -30,10 +30,10 @@
    "The IMF syntax is specified by "
    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5322" "RFC 5322")
    ".")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (defsection *imf-grammar-rules*
-  :parents (imf-example)
   :short "The IMF grammar rules from RFC 5322."
   :long
   (xdoc::topstring

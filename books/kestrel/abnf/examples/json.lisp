@@ -30,10 +30,10 @@
    "The JSON syntax is specified by "
    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7159" "RFC 7159")
    ".")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (defsection *json-grammar-rules*
-  :parents (json-example)
   :short "The JSON grammar rules from RFC 7159."
   :long
   (xdoc::topstring
@@ -61,7 +61,6 @@
     (rulelist-wfp *json-grammar-rules*)))
 
 (defval *all-json-grammar-rules*
-  :parents (json-example)
   :short "All the JSON grammar rules, including the referenced ABNF core rules."
   :long
   (xdoc::topstring

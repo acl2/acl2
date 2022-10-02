@@ -31,10 +31,10 @@
    "The IMAP 4rev1 syntax is specified by "
    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3501" "RFC 3501")
    ".")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (defsection *imap-grammar-rules*
-  :parents (imap-example)
   :short "The IMAP grammar rules from RFC 3501."
   :long
   (xdoc::topstring

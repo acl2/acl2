@@ -30,10 +30,10 @@
    "The SMTP syntax is specified by "
    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5321" "RFC 5321")
    ".")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (defsection *smtp-grammar-rules*
-  :parents (smtp-example)
   :short "The SMTP grammar rules from RFC 5321."
   :long
   (xdoc::topstring
