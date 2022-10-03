@@ -2430,9 +2430,9 @@
                                      (fcons-term 'mv forth-of-y1...ym))))))
        (else-branch
         (cond ((eq :base-case-then undefined$)
-               (acl2::find-a-base-case-translated then-branch (list new$) t))
+               (find-a-base-case-translated then-branch (list new$) t))
               ((eq :base-case-else undefined$)
-               (acl2::find-a-base-case-translated then-branch (list new$) nil))
+               (find-a-base-case-translated then-branch (list new$) nil))
               (t undefined$))))
     (cond ((and compatibility
                 (not (recursivep old$ nil wrld)) then-branch))
