@@ -846,6 +846,126 @@
 
 (must-succeed*
 
+ (test-title "Check UNDEFINED :base-case-then and :base-case-else.")
+
+ (defun f (x)
+   (declare (xargs :guard (natp x)))
+   (if (zp x)
+       (if nil
+           (f (- x 1))
+         (1+ x))
+     (if (< 1 x)
+         (1+ (f (- x 1)))
+       0)))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined :base-case-then)
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
+                     :MEASURE (ACL2-COUNT (IDENTITY X))
+                     :RULER-EXTENDERS :ALL
+                     :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (IF (ZP (IDENTITY X))
+             (IF NIL
+                 (F{1} (IDENTITY (+ -1 (IDENTITY X))))
+                 (+ 1 (IDENTITY X)))
+             (IF (< 1 (IDENTITY X))
+                 (+ 1 (F{1} (IDENTITY (+ -1 (IDENTITY X)))))
+                 0))
+         (+ 1 (identity x))))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined :base-case-else)
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
+                     :MEASURE (ACL2-COUNT (IDENTITY X))
+                     :RULER-EXTENDERS :ALL
+                     :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (IF (ZP (IDENTITY X))
+             (IF NIL
+                 (F{1} (IDENTITY (+ -1 (IDENTITY X))))
+                 (+ 1 (IDENTITY X)))
+             (IF (< 1 (IDENTITY X))
+                 (+ 1 (F{1} (IDENTITY (+ -1 (IDENTITY X)))))
+                 0))
+         0))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined ':base-case-then)
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
+                     :MEASURE (ACL2-COUNT (IDENTITY X))
+                     :RULER-EXTENDERS :ALL
+                     :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (IF (ZP (IDENTITY X))
+             (IF NIL
+                 (F{1} (IDENTITY (+ -1 (IDENTITY X))))
+                 (+ 1 (IDENTITY X)))
+             (IF (< 1 (IDENTITY X))
+                 (+ 1 (F{1} (IDENTITY (+ -1 (IDENTITY X)))))
+                 0))
+         :base-case-then))))
+
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :undefined ':base-case-else)
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
+                     :MEASURE (ACL2-COUNT (IDENTITY X))
+                     :RULER-EXTENDERS :ALL
+                     :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (IF (ZP (IDENTITY X))
+             (IF NIL
+                 (F{1} (IDENTITY (+ -1 (IDENTITY X))))
+                 (+ 1 (IDENTITY X)))
+             (IF (< 1 (IDENTITY X))
+                 (+ 1 (F{1} (IDENTITY (+ -1 (IDENTITY X)))))
+                 0))
+         :base-case-else))))
+
+ (defun g (x)
+   (declare (xargs :guard (natp x)))
+   (cond ((zp x)
+          (cond (nil (g (- x 1)))
+                (t (1+ x))))
+         (t
+          (cond ((< 1 x) (1+ (g (- x 1))))
+                (t 0)))))
+
+ (must-succeed*
+  (isodata g ((x (natp natp identity identity))) :undefined :base-case-else)
+  (must-be-redundant
+   (DEFUN G{1} (X)
+     (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
+                     :MEASURE (ACL2-COUNT (IDENTITY X))
+                     :RULER-EXTENDERS :ALL
+                     :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (COND ((MBT$ (NATP X))
+            (COND ((ZP (IDENTITY X))
+                   (IF NIL
+                       (G{1} (IDENTITY (+ -1 (IDENTITY X))))
+                       (+ 1 (IDENTITY X))))
+                  (T (IF (< 1 (IDENTITY X))
+                         (+ 1 (G{1} (IDENTITY (+ -1 (IDENTITY X)))))
+                         0))))
+           (T 0)))))
+
+ :with-output-off nil)
+
+(must-succeed*
+
  (test-title "Check UNDEFINED input on multi-valued function.")
 
  (defun f (x) ; OLD with just a top-level MV
@@ -890,6 +1010,29 @@
   (must-fail (isodata f ((x (natp natp identity identity))) :undefined (mv 0 0 0)))
   (must-fail (isodata f ((x (natp natp identity identity))) :undefined (mv y 0)))
   (must-fail (isodata f ((x (natp natp identity identity))) :undefined (mv (f (+ x 1)) 0))))
+
+ (defun g (x)
+   (declare (xargs :guard (natp x)))
+   (if (zp x)
+       (mv (+ x x) (* x x))
+     (g (- x 1))))
+
+ (must-succeed*
+  (isodata g ((x (natp natp identity identity))) :undefined :base-case-else)
+  (must-be-redundant
+   (DEFUN G{1} (X)
+     (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
+                     :MEASURE (ACL2-COUNT (IDENTITY X))
+                     :RULER-EXTENDERS :ALL
+                     :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T))
+     (IF (MBT$ (NATP X))
+         (IF (ZP (IDENTITY X))
+             (MV (+ (IDENTITY X) (IDENTITY X))
+                 (* (IDENTITY X) (IDENTITY X)))
+             (G{1} (IDENTITY (+ -1 (IDENTITY X)))))
+         (MV (+ (IDENTITY X) (IDENTITY X))
+             (* (IDENTITY X) (IDENTITY X)))))))
 
  :with-output-off nil)
 
