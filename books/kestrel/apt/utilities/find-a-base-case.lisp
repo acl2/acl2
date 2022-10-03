@@ -64,7 +64,7 @@
      base-cases, we return one of those, with the aforementioned biases.
      Otherwise, we pick the largest base-case in the biased branch."))
   (b* (((unless (consp term)) (mv nil t nil))
-       ((unless (eq 'if (ffn-symb term)))
+       ((unless (eq 'if (car term)))
         (if (expr-calls-some-fn fns term)
             (mv t nil nil)
           (mv nil t nil)))
