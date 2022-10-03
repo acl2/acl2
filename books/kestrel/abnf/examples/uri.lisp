@@ -18,7 +18,7 @@
 (include-book "../parser")
 (include-book "../abstractor")
 
-; (depends-on "uri-grammar.abnf")
+; (depends-on "uri.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,7 +38,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('uri-grammar.abnf') contains the URI grammar rules,
+    "The file @('uri.abnf') contains the URI grammar rules,
      copied and pasted from RFC 3986.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the URI grammar rules,
@@ -51,7 +51,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "uri-grammar.abnf") state)
+     (parse-grammar-from-file (string-append (cbd) "uri.abnf") state)
      (value `(defconst *uri-grammar-rules*
                (abstract-rulelist ',tree)))))
 

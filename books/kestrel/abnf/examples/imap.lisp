@@ -18,7 +18,7 @@
 (include-book "../parser")
 (include-book "../abstractor")
 
-; (depends-on "imap-grammar.abnf")
+; (depends-on "imap.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,7 +39,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('imap-grammar.abnf') contains the grammar rules,
+    "The file @('imap.abnf') contains the grammar rules,
      copied and pasted from RFC 3501.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the IMAP grammar rules,
@@ -52,7 +52,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "imap-grammar.abnf") state)
+     (parse-grammar-from-file (string-append (cbd) "imap.abnf") state)
      (value `(defconst *imap-grammar-rules*
                (abstract-rulelist ',tree)))))
 

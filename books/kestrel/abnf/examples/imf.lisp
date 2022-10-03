@@ -18,7 +18,7 @@
 (include-book "../parser")
 (include-book "../abstractor")
 
-; (depends-on "imf-grammar.abnf")
+; (depends-on "imf.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,7 +38,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('imf-grammar.abnf') contains the IMF grammar rules,
+    "The file @('imf.abnf') contains the IMF grammar rules,
      copied and pasted from RFC 5322.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the IMF grammar rules,
@@ -51,7 +51,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "imf-grammar.abnf") state)
+     (parse-grammar-from-file (string-append (cbd) "imf.abnf") state)
      (value `(defconst *imf-grammar-rules*
                (abstract-rulelist ',tree)))))
 

@@ -18,7 +18,7 @@
 (include-book "../parser")
 (include-book "../abstractor")
 
-; (depends-on "smtp-grammar.abnf")
+; (depends-on "smtp.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,7 +38,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('smtp-grammar.abnf') contains the grammar rules,
+    "The file @('smtp.abnf') contains the grammar rules,
      copied and pasted from RFC 5321.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the SMTP grammar rules,
@@ -51,7 +51,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "smtp-grammar.abnf") state)
+     (parse-grammar-from-file (string-append (cbd) "smtp.abnf") state)
      (value `(defconst *smtp-grammar-rules*
                (abstract-rulelist ',tree)))))
 
