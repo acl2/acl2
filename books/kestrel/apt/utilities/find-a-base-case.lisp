@@ -3,13 +3,16 @@
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/terms-light/expr-calls-fn" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/magic-macroexpand" :dir :system)
 (include-book "kestrel/utilities/fake-worlds" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+
 
 (local
  (defthm pseudo-termp-of-if-condition
@@ -33,18 +36,33 @@
 
 ;; Variant on translated terms
 
-;; `term` is the term to find a base-case within.
-;; `fns` is a list of functions to avoid. A base-case must not include these functions.
-;; If `prefer-then` is `t`, we search with a bias toward "then" branches. If it
-;; is `nil`, we are biased toward "else" branches.
-
-;; Returns `(mv erp all-base largest)`, where `erp` is `nil` when a base-case
-;; is found, `all-base` is `t` when the entire term is a base-case, and
-;; if `erp` and `all-base` are both `nil`, then `largest` is the largest base-case.
-(defun find-a-base-case-translated-aux (term fns prefer-then)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbol-listp fns)
-                              (booleanp prefer-then))))
+(define find-a-base-case-translated-aux
+  ((term pseudo-termp)
+   (fns symbol-listp)
+   (prefer-then booleanp))
+  :returns (mv (erp "@('nil') when a base-case is found.")
+               (all-base booleanp
+                         "@('t') when @('term') is a base-case.")
+               (largest pseudo-termp
+                        "If @('(or erp all-base)'), then this is nil. Otherwise,
+                         it is the largest (proper) subterm which is a
+                         base-case."
+                        :hyp :guard))
+  :short "Find a base-case within a translated term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If none of @('fns') appear in @('term'), @('term') is a base-case of itself.
+     If @('term') is an @('if') call, then all base-cases of the ``then'' and
+     ``else'' branches are base-cases of @('term').")
+   (xdoc::p
+    "A term may have many base-cases. We bias our search toward larger
+     base-cases, and toward ``then'' branches if @('prefer-then'), and ``else''
+     branches otherwise.")
+   (xdoc::p
+    "If @('term') is a base-case, we return it. If either of its branches are
+     base-cases, we return one of those, with the aforementioned biases.
+     Otherwise, we pick the largest base-case in the biased branch."))
   (b* (((unless (consp term)) (mv nil t nil))
        ((unless (eq 'if (ffn-symb term)))
         (if (expr-calls-some-fn fns term)
@@ -77,13 +95,22 @@
           (prefer-then (mv nil nil largest-then))
           (t (mv nil nil largest-else)))))
 
-(defun find-a-base-case-translated (term fns prefer-then)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbol-listp fns)
-                              (booleanp prefer-then))))
+(define find-a-base-case-translated
+  ((term pseudo-termp)
+   (fns symbol-listp)
+   (prefer-then booleanp))
+  :returns (base-case "Either a @(tsee pseudo-termp) representing the base-case,
+                       or a hard error. A hard error should not occur if
+                       @('term') is the translated body of a valid function, and
+                       @('fns') includes only symbols corresponding to the
+                       function or functions defined in mutual recursion with the
+                       function.")
+  :short "Find a base-case within a translated term."
   (mv-let (erp all-base largest)
           (find-a-base-case-translated-aux term fns prefer-then)
-          (cond (erp (hard-error 'find-a-base-case-translated "Cannot find a base case!" nil))
+          (cond (erp (hard-error 'find-a-base-case-translated
+                                 "Cannot find a base case!"
+                                 nil))
                 (all-base term)
                 (t largest))))
 
@@ -91,18 +118,41 @@
 
 ;; Variant on untranslated terms
 
-(defun untranslated-expr-calls-some-fn (fns term wrld)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (plist-worldp wrld))
-                  :mode :program))
+(define untranslated-expr-calls-some-fn
+  ((fns symbol-listp)
+   term
+   (wrld plist-worldp))
+  :mode :program
   (expr-calls-some-fn fns (translate-term term 'top wrld)))
 
-(defun find-a-base-case-aux (term fns prefer-then wrld state)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (booleanp prefer-then)
-                              (plist-worldp wrld))
-                  :mode :program
-                  :stobjs state))
+(define find-a-base-case-aux
+  (term
+   (fns symbol-listp)
+   (prefer-then booleanp)
+   (wrld plist-worldp)
+   state)
+  :returns (mv (erp "@('nil') when a base-case is found.")
+               (all-base "A @(tsee booleanp). @('t') when @('term') is a
+                          base-case.")
+               (largest "A@(tsee pseudo-termp). If @('(or erp all-base)'), then
+                         this is nil. Otherwise, it is the largest (proper)
+                         subterm which is a base-case."))
+  :mode :program
+  :short "Find a base-case within an untranslated term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If none of @('fns') appear in @('term'), @('term') is a base-case of itself.
+     If @('term') macro-expands to an @('if') call, then all base-cases of the
+     ``then'' and ``else'' branches are base-cases of @('term').")
+   (xdoc::p
+    "A term may have many base-cases. We bias our search toward larger
+     base-cases, and toward ``then'' branches if @('prefer-then'), and ``else''
+     branches otherwise.")
+   (xdoc::p
+    "If @('term') is a base-case, we return it. If either of its branches are
+     base-cases, we return one of those, with the aforementioned biases.
+     Otherwise, we pick the largest base-case in the biased branch."))
   (b* (((unless (consp term)) (mv nil t nil))
        ((mv erp term) (magic-macroexpand term 'find-a-base-case wrld state))
        ((when erp) (mv erp nil nil))
@@ -138,13 +188,19 @@
           (prefer-then (mv nil nil largest-then))
           (t (mv nil nil largest-else)))))
 
-(defun find-a-base-case (term fns fake-fns prefer-then state)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (symbol-alistp fake-fns)
-                              (nat-listp (strip-cdrs fake-fns))
-                              (booleanp prefer-then))
-                  :mode :program
-                  :stobjs state))
+(define find-a-base-case
+  (term
+   (fns symbol-listp)
+   (fake-fns (and (symbol-alistp fake-fns)
+                  (nat-listp (strip-cdrs fake-fns))))
+   (prefer-then booleanp)
+   state)
+  :returns (base-case "Either a @(tsee pseudo-termp) representing the base-case,
+                       or a hard error. A hard error should not occur if
+                       @('term') is the body of a valid function, and @('fns')
+                       includes only symbols corresponding to the function or
+                       functions defined in mutual recursion with the function.")
+  :mode :program
   (mv-let (erp all-base largest)
           (find-a-base-case-aux term
                                 (append fns (strip-cars fake-fns))
