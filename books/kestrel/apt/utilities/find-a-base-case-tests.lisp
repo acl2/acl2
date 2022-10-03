@@ -21,7 +21,7 @@
 
  (assert-equal
   '(binary-+ '1 x)
-  (find-a-base-case-translated
+  (apt::find-a-base-case-translated
    '(IF (ZP X)
         (BINARY-+ '1 X)
         (BINARY-+ '1 (F (BINARY-+ '-1 X))))
@@ -30,7 +30,7 @@
 
  (assert-equal
   '(binary-+ '1 x)
-  (find-a-base-case-translated
+  (apt::find-a-base-case-translated
    '(IF (ZP X)
         (BINARY-+ '1 X)
         (BINARY-+ '1 (F (BINARY-+ '-1 X))))
@@ -56,7 +56,7 @@
 
  (assert-equal
   '(binary-+ '1 x)
-  (find-a-base-case-translated
+  (apt::find-a-base-case-translated
    '(IF (ZP X)
         (IF 'NIL
             (F (BINARY-+ '-1 X))
@@ -69,7 +69,7 @@
 
  (assert-equal
   ''0
-  (find-a-base-case-translated
+  (apt::find-a-base-case-translated
    '(IF (ZP X)
         (IF 'NIL
             (F (BINARY-+ '-1 X))
@@ -99,7 +99,7 @@
 
  (assert-equal
   '(1+ x)
-  (find-a-base-case
+  (apt::find-a-base-case
    '(if (zp x)
         (if nil
             (f (- x 1))
@@ -114,7 +114,7 @@
 
  (assert-equal
   '0
-  (find-a-base-case
+  (apt::find-a-base-case
    '(if (zp x)
         (if nil
             (f (- x 1))
@@ -136,7 +136,7 @@
 (must-succeed*
  (assert-equal
   '(1+ x)
-  (find-a-base-case
+  (apt::find-a-base-case
    '(if (zp x)
         (if nil
             (f (- x 1))
@@ -151,7 +151,7 @@
 
  (assert-equal
   '0
-  (find-a-base-case
+  (apt::find-a-base-case
    '(if (zp x)
         (if nil
             (f (- x 1))
@@ -180,7 +180,7 @@
 
  (assert-equal
   '(flet ((f (x) x)) (f (1+ x)))
-  (find-a-base-case
+  (apt::find-a-base-case
    '(if (zp x)
         (flet ((f (x) x))
           (f (1+ x)))
@@ -208,7 +208,7 @@
 
  (assert-equal
   '(1+ x)
-  (find-a-base-case
+  (apt::find-a-base-case
    '(cond ((zp x)
            (cond (nil (f (- x 1)))
                  (t (1+ x))))
@@ -222,7 +222,7 @@
 
  (assert-equal
   '0
-  (find-a-base-case
+  (apt::find-a-base-case
    '(cond ((zp x)
            (cond (nil (f (- x 1)))
                  (t (1+ x))))
@@ -255,7 +255,7 @@
 
  (assert-equal
   '(if (equal 1 x) (f 1) (1+ x))
-  (find-a-base-case
+  (apt::find-a-base-case
    '(if (zp x)
         (if (equal 1 x)
             (f 1)
@@ -268,7 +268,7 @@
 
  (assert-equal
   '(1+ x)
-  (find-a-base-case
+  (apt::find-a-base-case
    '(if (zp x)
         (if (equal 1 x)
             (f 1)
@@ -286,7 +286,7 @@
 ;; Test find-a-base-case failure when no base-case
 
 (must-fail-with-hard-error
- (find-a-base-case
+ (apt::find-a-base-case
   '(if (zp x)
        (f (1+ x))
      (if (< 1 x)
