@@ -18,7 +18,7 @@
 (include-book "../parser")
 (include-book "../abstractor")
 
-; (depends-on "json-grammar.abnf")
+; (depends-on "json.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,7 +38,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('json-grammar.abnf') contains the grammar rules,
+    "The file @('json.abnf') contains the grammar rules,
      copied and pasted from RFC 7159.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the JSON grammar rules,
@@ -51,7 +51,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "json-grammar.abnf") state)
+     (parse-grammar-from-file (string-append (cbd) "json.abnf") state)
      (value `(defconst *json-grammar-rules*
                (abstract-rulelist ',tree)))))
 

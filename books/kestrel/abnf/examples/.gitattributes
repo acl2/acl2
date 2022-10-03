@@ -1,6 +1,6 @@
-uri-grammar.abnf text eol=crlf
-http-grammar.abnf text eol=crlf
-imf-grammar.abnf text eol=crlf
-smtp-grammar.abnf text eol=crlf
-imap-grammar.abnf text eol=crlf
-json-grammar.abnf text eol=crlf
+uri.abnf text eol=crlf
+http.abnf text eol=crlf
+imf.abnf text eol=crlf
+smtp.abnf text eol=crlf
+imap.abnf text eol=crlf
+json.abnf text eol=crlf

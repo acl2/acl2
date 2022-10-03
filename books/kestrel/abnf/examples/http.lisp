@@ -12,7 +12,7 @@
 
 (include-book "uri")
 
-; (depends-on "http-grammar.abnf")
+; (depends-on "http.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,7 +33,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('http-grammar.abnf') contains the HTTP grammar rules,
+    "The file @('http.abnf') contains the HTTP grammar rules,
      copied and pasted from RFC 7230.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the HTTP grammar rules,
@@ -46,7 +46,7 @@
 
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "http-grammar.abnf") state)
+     (parse-grammar-from-file (string-append (cbd) "http.abnf") state)
      (value `(defconst *http-grammar-rules*
                (abstract-rulelist ',tree)))))
 
