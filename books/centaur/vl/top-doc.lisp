@@ -37,6 +37,7 @@
 (local (include-book "transforms/problem-mods"))
 (local (include-book "doc"))
 (local (include-book "mlib/remove-bad")) ;; hack -- only included by sv/vl/top
+(local (include-book "mlib/extract-vl-types"))
 
 (xdoc::archive-matching-topics
  (or (str::strprefixp "[books]/centaur/vl/" (cdr (assoc :from x)))

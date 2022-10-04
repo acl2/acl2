@@ -802,3 +802,17 @@
 (check-counterexample
  (not (equal (+ (loghead 3 x) (loghead 4 y)) 9)))
  
+
+
+(acl2::must-fail
+ (fgl-thm
+  (implies (and (unsigned-byte-p 4 x)
+                (> x 20)) ;; vacuity check should catch this
+           (equal x x))))
+
+(fgl-thm
+ (implies (and (unsigned-byte-p 4 x)
+               (> x 20)) ;; vacuity check should catch this but we're turning it off
+          (equal x x))
+ :skip-vacuity-check t)
+
