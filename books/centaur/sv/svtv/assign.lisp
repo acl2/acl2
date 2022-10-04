@@ -125,35 +125,6 @@
                   :in-theory (disable svar-of-fields
                                       equal-of-svar)))))
 
-(define svtv-name-lhs-map-keys-change-override ((map svtv-name-lhs-map-p)
-                                                &key
-                                                ((override-val booleanp) 'nil)
-                                                ((override-test booleanp) 'nil))
-  :returns (new-map svtv-name-lhs-map-p)
-  (if (atom map)
-      nil
-    (if (mbt (and (consp (car map)) (svar-p (caar map))))
-        (b* (((cons var val) (car map)))
-          (cons (cons (change-svar var
-                                   :override-val override-val
-                                   :override-test override-test)
-                      (lhs-fix val))
-                (svtv-name-lhs-map-keys-change-override (cdr map)
-                                                        :override-val override-val
-                                                        :override-test override-test)))
-      (svtv-name-lhs-map-keys-change-override (cdr map)
-                                              :override-val override-val
-                                              :override-test override-test)))
-  ///
-  (local (in-theory (enable svtv-name-lhs-map-fix)))
-
-  (defret lookup-of-<fn>-when-wrong-override-val
-    (implies (not (iff (svar->override-val v) override-val))
-             (not (hons-assoc-equal v new-map))))
-
-  (defret lookup-of-<fn>-when-wrong-override-test
-    (implies (not (iff (svar->override-test v) override-test))
-             (not (hons-assoc-equal v new-map)))))
 
 
 ;; (local (Defthm svtv-name-lhs-map-p-of-fast-alist-clean
@@ -233,21 +204,22 @@
                  (svtv-name-lhs-map-eval-x
                   (svtv-name-lhs-map-keys-change-override
                    (svtv-fsm-env-inversemap (alist-keys (svex-env-fix inputs))
-                                            map))
+                                            map)
+                   nil)
                   inputs)))
        (val-env (with-fast-alist inputs
                  (svtv-name-lhs-map-eval-x
                   (svtv-name-lhs-map-keys-change-override
                    (svtv-fsm-env-inversemap (alist-keys (svex-env-fix override-vals))
                                             map)
-                   :override-val t)
+                   :val)
                   override-vals)))
        (test-env (with-fast-alist inputs
                  (svtv-name-lhs-map-eval-x
                   (svtv-name-lhs-map-keys-change-override
                    (svtv-fsm-env-inversemap (alist-keys (svex-env-fix override-tests))
                                             map)
-                   :override-test t)
+                   :test)
                   override-tests))))
     (append test-env val-env in-env)))
 
@@ -312,21 +284,22 @@
                    (svtv-name-lhs-map-subst-x
                     (svtv-name-lhs-map-keys-change-override
                      (svtv-fsm-env-inversemap (svex-alist-keys inputs)
-                                              map))
+                                              map)
+                     nil)
                     inputs)))
        (val-subst (with-fast-alist inputs
                     (svtv-name-lhs-map-subst-x
                      (svtv-name-lhs-map-keys-change-override
                       (svtv-fsm-env-inversemap (svex-alist-keys override-vals)
                                                map)
-                      :override-val t)
+                      :val)
                      override-vals)))
        (test-subst (with-fast-alist inputs
                      (svtv-name-lhs-map-subst-x
                       (svtv-name-lhs-map-keys-change-override
                        (svtv-fsm-env-inversemap (svex-alist-keys override-tests)
                                                 map)
-                       :override-test t)
+                       :test)
                       override-tests))))
     (append test-subst val-subst in-subst))
   ///
@@ -368,26 +341,6 @@
     
 
 
-(define svtv-name-lhs-map-eval ((x svtv-name-lhs-map-p) (env svex-env-p))
-  :returns (res svex-env-p)
-  (b* (((when (atom x)) nil)
-       ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
-        (svtv-name-lhs-map-eval (cdr x) env)))
-    (cons (cons (caar x) (lhs-eval-zero (cdar x) env))
-          (svtv-name-lhs-map-eval (cdr x) env)))
-  ///
-  (defret lookup-in-<fn>
-    (equal (hons-assoc-equal var res)
-           (let ((pair (hons-assoc-equal var (svtv-name-lhs-map-fix x))))
-             (and pair
-                  (cons var (lhs-eval-zero (cdr pair) env))))))
-
-  (defcong svex-envs-similar equal (lhs-eval-zero x env) 2
-    :hints(("Goal" :in-theory (enable lhs-eval-zero lhatom-eval-zero))))
-
-  (defcong svex-envs-similar equal (svtv-name-lhs-map-eval x env) 2)
-
-  (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 (define lhatom-subst-zero ((x lhatom-p) (subst svex-alist-p))
   :returns (val svex-p)
@@ -891,9 +844,9 @@
 
 
 (define svtv-fsm-to-base-fsm-inputs ((inputs svex-envlist-p)
-                                            (override-vals svex-envlist-p)
-                                            (override-tests svex-envlist-p)
-                                            (map svtv-name-lhs-map-p))
+                                     (override-vals svex-envlist-p)
+                                     (override-tests svex-envlist-p)
+                                     (map svtv-name-lhs-map-p))
   :returns (phase-envs svex-envlist-p)
   (if (atom inputs)
       nil

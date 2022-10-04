@@ -31,6 +31,7 @@
 (in-package "SV")
 
 (include-book "alist-equiv")
+(include-book "lists")
 (include-book "rewrite-base")
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
@@ -788,3 +789,19 @@
     :hints(("Goal" :in-theory (enable fast-alist-clean
                                       svex-alist-eval)))))
 
+
+
+
+(defsection svex-alistlist-eval
+
+  (defthmd svex-alistlist-eval-when-envs-agree
+    (implies (svex-envs-agree (svex-alistlist-vars x) env1 env2)
+             (equal (svex-alistlist-eval x env1)
+                    (svex-alistlist-eval x env2)))
+    :hints(("Goal" :in-theory (enable svex-alistlist-eval svex-alistlist-vars
+                                      svex-alist-eval-when-envs-agree))))
+  
+  
+  (defcong svex-envs-similar equal (svex-alistlist-eval x env) 2
+    :hints(("Goal" :in-theory (enable svex-alistlist-eval)))
+    :package :function))

@@ -101,6 +101,9 @@ properties of the SVTV and its conditional overrides.</li>
 
 
 
+(local (include-book "std/osets/element-list" :dir :system))
+(local (fty::deflist svarlist :elt-type svar-p :true-listp t :elementp-of-nil nil))
+
 
 
 
@@ -994,35 +997,6 @@ properties of the SVTV and its conditional overrides.</li>
 
 
 
-
-(local (include-book "std/osets/element-list" :dir :system))
-(local (fty::deflist svarlist :elt-type svar-p :true-listp t :elementp-of-nil nil))
-
-;; move somewhere
-(define svex-alistlist-vars ((x svex-alistlist-p))
-  :returns (vars (and (svarlist-p vars)
-                      (set::setp vars)))
-  (if (atom x)
-      nil
-    (union (svex-alist-vars (car x))
-           (svex-alistlist-vars (cdr x))))
-  ///
-
-  (defthmd svex-alistlist-eval-when-envs-agree
-    (implies (svex-envs-agree (svex-alistlist-vars x) env1 env2)
-             (equal (svex-alistlist-eval x env1)
-                    (svex-alistlist-eval x env2)))
-    :hints(("Goal" :in-theory (enable svex-alistlist-eval svex-alistlist-vars
-                                      svex-alist-eval-when-envs-agree)))))
-
-
-
-
-;; move somewhere
-
-(defcong svex-envs-similar equal (svex-alistlist-eval x env) 2
-  :hints(("Goal" :in-theory (enable svex-alistlist-eval)))
-  :package :function)
 
 (local
  (defthm svex-env-p-nth-of-svex-envlist-p

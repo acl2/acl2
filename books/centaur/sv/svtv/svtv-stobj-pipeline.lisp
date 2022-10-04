@@ -103,7 +103,7 @@
                                                    :namemap (svtv-data->namemap svtv-data))
                                     outvars precomp-inputs simp)))
         (result (svtv-probealist-extract-alist setup.probes outs))
-        (- (fast-alistlist-clean outs))
+        (- (fast-alistlist-free outs))
         (svtv-data (update-svtv-data->pipeline result svtv-data)))
      (update-svtv-data->pipeline-validp t svtv-data))
    :msg "; Svtv-data pipeline: ~st seconds, ~sa bytes.~%")
