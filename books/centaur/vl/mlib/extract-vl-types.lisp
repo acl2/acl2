@@ -605,7 +605,11 @@
 
 (defmacro extract-vl-types (design module &rest vl-types)
   `(make-event
-    (cons 'progn (extract-vl-types-fn ,design ,module ',vl-types ',design))))
+    (cons 'progn (extract-vl-types-fn ,design ,module ',vl-types
+                                      ;; to  prevent  conflicts when  the  same
+                                      ;; type  is  extracted  across  different
+                                      ;; books with different design constants:
+                                      (intern-in-package-of-symbol "PKG-SYM" ',design)))))
 
 ;;(include-book "xdoc/debug" :dir :system)
 
