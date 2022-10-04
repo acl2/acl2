@@ -689,7 +689,10 @@
      We return an error if they do not match in number or types,
      or if there are repeated parameters.
      We perform array-to-pointer conversion on both types
-     before comparing them."))
+     before comparing them.")
+   (xdoc::p
+    "Prior to storing each actual, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
@@ -712,7 +715,7 @@
                      :actual actual-type))))
     (if (omap::in name scope)
         (error (list :init-scope :duplicate-param name))
-      (omap::update name actual scope)))
+      (omap::update name (remove-flexible-array-member actual) scope)))
   :hooks (:fix)
   :measure (len formals)
   :verify-guards nil ; done below

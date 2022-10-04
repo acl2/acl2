@@ -85,7 +85,10 @@
     "We look up the members in order;
      given that the members have distinct names (see @(tsee value)),
      the search order is immaterial.
-     The new value must have the same type as the old value."))
+     The new value must have the same type as the old value.")
+   (xdoc::p
+    "Prior to storing the value, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((new-members
         (value-struct-write-aux name val (value-struct->members struct)))
        ((when (errorp new-members)) new-members))
@@ -111,7 +114,9 @@
           ((when (equal member.name (ident-fix name)))
            (if (equal (type-of-value member.value)
                       (type-of-value val))
-               (cons (make-member-value :name name :value val)
+               (cons (make-member-value
+                      :name name
+                      :value (remove-flexible-array-member val))
                      (member-value-list-fix (cdr members)))
              (error (list :mistype-member (ident-fix name)
                           :old-value member.value
@@ -151,7 +156,7 @@
                               (type-of-value old)))
                   (equal (value-struct-read-aux name1 memvals1)
                          (if (ident-equiv name1 name)
-                             (value-fix new)
+                             (remove-flexible-array-member new)
                            (value-struct-read-aux name1 memvals)))))
        :enable value-struct-read-aux)
 
@@ -208,7 +213,7 @@
                            (type-of-value old)))
                (equal (value-struct-read name1 struct1)
                       (if (ident-equiv name1 name)
-                          (value-fix new)
+                          (remove-flexible-array-member new)
                         (value-struct-read name1 struct)))))
     :enable (value-struct-read
              value-struct-read-aux-of-value-struct-write-aux)))
