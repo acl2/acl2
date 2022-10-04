@@ -95,4 +95,10 @@
   (defrule remove-flexible-array-member-when-absent
     (implies (not (flexible-array-member-p val))
              (equal (remove-flexible-array-member val)
-                    (value-fix val)))))
+                    (value-fix val))))
+
+  (defrule type-of-value-of-remove-flexible-array-member
+    (equal (type-of-value (remove-flexible-array-member val))
+           (type-of-value val))
+    :enable (flexible-array-member-p
+             type-of-value)))
