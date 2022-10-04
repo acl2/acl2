@@ -3767,6 +3767,8 @@
                collect `(:t ,reader)))
        (type-of-value-thms
         (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
+       (flexiblep-thms
+        (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
        (member-read-thms
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
@@ -3784,6 +3786,7 @@
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
                                ,@type-of-value-thms
+                               ,@flexiblep-thms
                                ,@member-read-thms
                                ,@member-write-thms
                                ,@type-prescriptions-called
@@ -4814,6 +4817,8 @@
                collect `(:t ,reader)))
        (type-of-value-thms
         (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
+       (flexiblep-thms
+        (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
        (member-read-thms
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
@@ -4830,6 +4835,7 @@
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
                                ,@type-of-value-thms
+                               ,@flexiblep-thms
                                ,@member-read-thms
                                ,@member-write-thms
                                ,@type-prescriptions-called
@@ -4994,6 +5000,8 @@
                collect `(:t ,reader)))
        (type-of-value-thms
         (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
+       (flexiblep-thms
+        (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
        (member-read-thms
         (atc-string-taginfo-alist-to-member-read-thms prec-tags))
        (member-write-thms
@@ -5032,6 +5040,7 @@
                                    *integer-value-disjoint-rules*
                                    *array-value-disjoint-rules*
                                    *atc-value-fix-rules*
+                                   *atc-flexible-array-member-rules*
                                    '(,@not-error-thms
                                      ,@valuep-thms
                                      not
@@ -5039,6 +5048,7 @@
                                      ,@struct-reader-return-thms
                                      ,@struct-writer-return-thms
                                      ,@type-of-value-thms
+                                     ,@flexiblep-thms
                                      ,@member-read-thms
                                      ,@member-write-thms
                                      ,@type-prescriptions-called
