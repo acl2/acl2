@@ -8,11 +8,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
-; Certification has been observed to fail for semantics.lisp
-; in ACL2(p) with waterfall-parallelism enabled,
-; but the log didn't seem to show why.
-; So we just disable waterfall-parallelism here for now.
-#+acl2-par
-(set-waterfall-parallelism nil)
+(ld "../package.lsp")
+
+(reset-prehistory)
+
+(in-package "ABNF")

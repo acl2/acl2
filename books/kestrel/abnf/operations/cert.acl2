@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(include-book "../portcullis")
 
 ; Certification has been observed to fail for semantics.lisp
 ; in ACL2(p) with waterfall-parallelism enabled,
