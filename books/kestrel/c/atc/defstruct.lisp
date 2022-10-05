@@ -14,6 +14,7 @@
 (include-book "abstract-syntax")
 
 (include-book "symbolic-execution-rules/arrays")
+(include-book "symbolic-execution-rules/flexible-array-member")
 
 (include-book "../language/portable-ascii-identifiers")
 (include-book "../language/structure-operations")
@@ -142,10 +143,14 @@
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies that @(tsee type-of-value)
-      returns the struct type."))
-   (xdoc::p
-    "The call of @(tsee defstruct).
-     This supports redundancy checking."))
+      returns the struct type.")
+    (xdoc::li
+     "The name of the theorem asserting that
+      the recognizer implies that the flexible array member flag
+      is @('nil').")
+    (xdoc::li
+     "The call of @(tsee defstruct).
+      This supports redundancy checking.")))
   ((tag ident)
    (members defstruct-member-info-list)
    (recognizer symbolp)
@@ -155,6 +160,7 @@
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
    (type-of-value-thm symbolp)
+   (flexiblep-thm symbolp)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -664,14 +670,17 @@
                (not-error-thm symbolp)
                (valuep-thm symbolp)
                (value-kind-thm symbolp)
-               (type-of-value-thm symbolp))
+               (type-of-value-thm symbolp)
+               (flexiblep-thm symbolp))
   :short "Generate the recognizer of
           the structures defined by the @(tsee defstruct)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This recognizes structures
-     with the appropriate types, member names, and member types.")
+     with the appropriate types, member names, and member types.
+     For now the flexible array member flag (see @(tsee value))
+     is unset, because @(tsee defstruct) does not support that.")
    (xdoc::p
     "We also generate several theorems;
      see @(tsee defstruct-info)."))
@@ -687,6 +696,8 @@
        (type-of-value-when-struct-tag-p
         (packn-pos (list 'type-of-value-when- struct-tag-p)
                    struct-tag-p))
+       (flexiblep-when-struct-tag-p
+        (packn-pos (list 'flexiblep-when- struct-tag-p) struct-tag-p))
        (event
         `(define ,struct-tag-p (x)
            :returns (yes/no booleanp)
@@ -696,7 +707,8 @@
                        (ident ,(symbol-name tag)))
                 (equal (member-value-list->name-list (value-struct->members x))
                        ',(member-type-list->name-list memtypes))
-                ,@(defstruct-gen-recognizer-all-conjuncts memtypes))
+                ,@(defstruct-gen-recognizer-all-conjuncts memtypes)
+                (not (value-struct->flexiblep x)))
            :hooks (:fix)
            ///
            (defruled ,not-errorp-when-struct-tag-p
@@ -716,12 +728,17 @@
                       (equal (type-of-value x)
                              (type-struct (ident ,(symbol-name tag)))))
              :in-theory '(,struct-tag-p
-                          type-of-value)))))
+                          type-of-value))
+           (defruled ,flexiblep-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (equal (value-struct->flexiblep x)
+                             nil))))))
     (mv event
         not-errorp-when-struct-tag-p
         valuep-when-struct-tag-p
         value-kind-when-struct-tag-p
-        type-of-value-when-struct-tag-p)))
+        type-of-value-when-struct-tag-p
+        flexiblep-when-struct-tag-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,7 +835,8 @@
            :param x
            :body-fix (make-value-struct
                       :tag (ident ,(symbol-name tag))
-                      :members (list ,@(defstruct-gen-fixer-aux memtypes)))))
+                      :members (list ,@(defstruct-gen-fixer-aux memtypes))
+                      :flexiblep nil)))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
@@ -907,6 +925,9 @@
                       (,struct-tag-p (value-struct-write ',name val struct)))
              :enable (,struct-tag-p
                       value-struct-write
+                      ,(packn-pos (list 'not-flexible-array-member-p-when-
+                                        typep)
+                                  'not-flexible-array-member-p)
                       member-value-listp-of-value-struct-write-aux
                       member-value-list->name-list-of-struct-write-aux
                       value-struct-read-aux-of-value-struct-write-aux
@@ -1046,6 +1067,9 @@
                      (,struct-tag-p (value-struct-write ',name array struct)))
             :enable (,struct-tag-p
                      value-struct-write
+                     ,(packn-pos (list 'not-flexible-array-member-p-when-
+                                       arr-typep)
+                                 'not-flexible-array-member-p)
                      member-value-listp-of-value-struct-write-aux
                      member-value-list->name-list-of-struct-write-aux
                      value-struct-read-aux-of-value-struct-write-aux
@@ -1288,7 +1312,8 @@
             not-errorp-when-struct-tag-p
             valuep-when-struct-tag-p
             value-kind-when-struct-tag-p
-            type-of-value-when-struct-tag-p)
+            type-of-value-when-struct-tag-p
+            flexiblep-when-struct-tag-p)
         (defstruct-gen-recognizer struct-tag-p tag members))
        ((mv fixer-event
             fixer-recognizer-thm)
@@ -1309,6 +1334,7 @@
               :valuep-thm valuep-when-struct-tag-p
               :value-kind-thm value-kind-when-struct-tag-p
               :type-of-value-thm type-of-value-when-struct-tag-p
+              :flexiblep-thm flexiblep-when-struct-tag-p
               :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info))
        (label-event `(deflabel ,tag)))

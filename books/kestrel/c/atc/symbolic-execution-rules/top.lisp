@@ -47,6 +47,7 @@
 (include-book "misc-rewrite")
 (include-book "type-prescriptions")
 (include-book "compound-recognizers")
+(include-book "flexible-array-member")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,7 +188,8 @@
           *atc-boolean-from-integer-return-rules*
           *atc-integer-constructors-return-rules*
           *atc-computation-state-return-rules*
-          *atc-value-fix-rules*))
+          *atc-value-fix-rules*
+          *atc-flexible-array-member-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

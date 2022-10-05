@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "values")
+(include-book "flexible-array-member-removal")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,7 +61,10 @@
     "If the index is too large, it is an error.")
    (xdoc::p
     "If the type of the new element does not match the array type,
-     it is an error."))
+     it is an error.")
+   (xdoc::p
+    "Prior to storing the value, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((index (nfix index))
        ((unless (< index (value-array->length array)))
         (error (list :array-write-index index (value-fix array))))
@@ -70,7 +74,7 @@
                      :required (value-array->elemtype array)
                      :supplied (type-of-value elem))))
        (new-elements (update-nth index
-                                 (value-fix elem)
+                                 (remove-flexible-array-member elem)
                                  (value-array->elements array))))
     (change-value-array array :elements new-elements))
   :guard-hints (("Goal" :in-theory (enable value-array->length)))

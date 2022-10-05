@@ -212,6 +212,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-flexiblep-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @('flexiblep') flag theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->flexiblep-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-flexiblep-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-member-read-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)

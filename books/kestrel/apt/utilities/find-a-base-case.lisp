@@ -1,6 +1,6 @@
 ;; Author: Grant Jurgensen (grant@kestrel.edu)
 
-(in-package "ACL2")
+(in-package "APT")
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
@@ -12,6 +12,12 @@
 (include-book "xdoc/constructors" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+
+
+;; Export fargn macros to APT package
+(defmacro farg1 (x) (list 'acl2::farg1 x))
+(defmacro farg2 (x) (list 'acl2::farg2 x))
+(defmacro farg3 (x) (list 'acl2::farg3 x))
 
 
 (local
@@ -65,7 +71,7 @@
      Otherwise, we pick the largest base-case in the biased branch."))
   (b* (((unless (consp term)) (mv nil t nil))
        ((unless (eq 'if (car term)))
-        (if (expr-calls-some-fn fns term)
+        (if (acl2::expr-calls-some-fn fns term)
             (mv t nil nil)
           (mv nil t nil)))
        ((mv erp-then all-base-then largest-then)
@@ -84,7 +90,7 @@
                          largest-then)))
           (all-base-then
            (if all-base-else
-               (if (not (expr-calls-some-fn fns (farg1 term)))
+               (if (not (acl2::expr-calls-some-fn fns (farg1 term)))
                    (mv nil t nil)
                  (mv nil nil (if prefer-then
                                  (farg2 term)
@@ -123,7 +129,7 @@
    term
    (wrld plist-worldp))
   :mode :program
-  (expr-calls-some-fn fns (translate-term term 'top wrld)))
+  (acl2::expr-calls-some-fn fns (acl2::translate-term term 'top wrld)))
 
 (define find-a-base-case-aux
   (term
@@ -154,7 +160,7 @@
      base-cases, we return one of those, with the aforementioned biases.
      Otherwise, we pick the largest base-case in the biased branch."))
   (b* (((unless (consp term)) (mv nil t nil))
-       ((mv erp term) (magic-macroexpand term 'find-a-base-case wrld state))
+       ((mv erp term) (acl2::magic-macroexpand term 'find-a-base-case wrld state))
        ((when erp) (mv erp nil nil))
        ((unless (consp term)) (mv nil t nil))
        ((unless (eq 'if (ffn-symb term)))
@@ -205,7 +211,7 @@
           (find-a-base-case-aux term
                                 (append fns (strip-cars fake-fns))
                                 prefer-then
-                                (add-fake-fns-to-world fake-fns (w state))
+                                (acl2::add-fake-fns-to-world fake-fns (w state))
                                 state)
           (cond (erp (hard-error 'find-a-base-case "Cannot find a base case!" nil))
                 (all-base term)
