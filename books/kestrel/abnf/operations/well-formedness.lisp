@@ -33,6 +33,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define rulename-wfp ((rulename rulenamep))
   :returns (yes/no booleanp)
   :short "A rule name must start with a lowercase letter (and thus not be empty)
@@ -51,6 +53,8 @@
          (str::letter/digit/dash-charlist-p (cdr chars))
          (equal (str::downcase-charlist chars) chars)))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define num-val-wfp ((num-val num-val-p))
   :returns (yes/no booleanp)
@@ -78,6 +82,8 @@
              (not (tree-match-num-val-p tree num-val)))
     :enable tree-match-num-val-p))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define char-val-wfp ((char-val char-val-p))
   :returns (yes/no booleanp)
   :short "A character value notation is well-formed iff
@@ -101,6 +107,8 @@
                                          allowed-chars)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define prose-val-wfp ((prose-val prose-val-p))
   :returns (yes/no booleanp)
   :short "A prose value notation is well-formed iff
@@ -119,6 +127,8 @@
     (subsetp (explode (prose-val->get prose-val))
              allowed-chars))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define repeat-range-wfp ((range repeat-rangep))
   :returns (yes/no booleanp)
@@ -142,6 +152,8 @@
                      (nati-finite->get (repeat-range->max range))))
              (not (numrep-match-repeat-range-p numrep range)))
     :enable numrep-match-repeat-range-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines alt/conc/rep/elem-wfp
 
@@ -243,6 +255,8 @@
     :guard (concatenationp x)
     :elementp-of-nil nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define rule-wfp ((rule rulep))
   :returns (yes/no booleanp)
   :short "A rule is well-formed iff its name and definiens are well-formed."
@@ -253,11 +267,15 @@
        (alternation-wfp (rule->definiens rule)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist rule-list-wfp (x)
   (rule-wfp x)
   :guard (rulelistp x)
   :short "Check if all the rules in a list of rules are well-formed."
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rulelist-incremental-ok-p ((rules rulelistp))
   :returns (yes/no booleanp)
@@ -292,6 +310,8 @@
                                              (cdr next-rules))))
      :measure (len next-rules)
      :no-function t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rulelist-wfp ((rules rulelistp))
   :returns (yes/no booleanp)
