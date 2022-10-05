@@ -30,11 +30,11 @@
    either required by the concrete syntax defined in [RFC:4]
    or otherwise reasonably justifiable.
    These additional conditions are captured by the notion of well-formedness.")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (define rulename-wfp ((rulename rulenamep))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "A rule name must start with a lowercase letter (and thus not be empty)
           and contain only lowercase letters, numbers, and dashes."
   :long
@@ -54,7 +54,6 @@
 
 (define num-val-wfp ((num-val num-val-p))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "A direct numeric value notation is well-formed iff
           it consists of at least one number;
           a range numeric value notation is well-formed iff
@@ -81,7 +80,6 @@
 
 (define char-val-wfp ((char-val char-val-p))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "A character value notation is well-formed iff
           it consists of only non-control ASCII characters,
           except for the double quote character."
@@ -105,7 +103,6 @@
 
 (define prose-val-wfp ((prose-val prose-val-p))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "A prose value notation is well-formed iff
           it consists of only non-control ASCII characters,
           except for the right angle bracket character."
@@ -125,7 +122,6 @@
 
 (define repeat-range-wfp ((range repeat-rangep))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "A repetition range is well-formed iff
           the minimum does not exceed the maximum."
   :long
@@ -151,7 +147,6 @@
 
   (define alternation-wfp ((alternation alternationp))
     :returns (yes/no booleanp)
-    :parents (well-formedness)
     :short "An alternation is well-formed iff
             it is not empty and all its concatenations are well-formed."
     :long
@@ -168,7 +163,6 @@
 
   (define concatenation-list-wfp ((concatenations alternationp))
     :returns (yes/no booleanp)
-    :parents (well-formedness)
     :short "Check if all the concatenations in a list of concatenations
             are well-formed."
     :long (xdoc::topstring-@def "concatenation-list-wfp")
@@ -180,7 +174,6 @@
 
   (define concatenation-wfp ((concatenation concatenationp))
     :returns (yes/no booleanp)
-    :parents (well-formedness)
     :short "A concatenation is well-formed iff
             it is not empty and all its repetitions are well-formed."
     :long
@@ -197,7 +190,6 @@
 
   (define repetition-list-wfp ((repetitions concatenationp))
     :returns (yes/no booleanp)
-    :parents (well-formedness)
     :short "Check if all the repetitions in a list of repetitions
             are well-formed."
     :long (xdoc::topstring-@def "repetition-list-wfp")
@@ -209,7 +201,6 @@
 
   (define repetition-wfp ((repetition repetitionp))
     :returns (yes/no booleanp)
-    :parents (well-formedness)
     :short "A repetition is well-formed iff
             its repetition range and its element are well-formed."
     :long
@@ -224,7 +215,6 @@
 
   (define element-wfp ((element elementp))
     :returns (yes/no booleanp)
-    :parents (well-formedness)
     :short "An element is well-formed iff its constituents are well-formed."
     :long
     (xdoc::topstring
@@ -255,7 +245,6 @@
 
 (define rule-wfp ((rule rulep))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "A rule is well-formed iff its name and definiens are well-formed."
   :long
   (xdoc::topstring-p
@@ -267,13 +256,11 @@
 (std::deflist rule-list-wfp (x)
   (rule-wfp x)
   :guard (rulelistp x)
-  :parents (well-formedness)
   :short "Check if all the rules in a list of rules are well-formed."
   :elementp-of-nil nil)
 
 (define rulelist-incremental-ok-p ((rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "Check if incremental rules appear after
           non-incremental rules with the same names."
   :long
@@ -308,7 +295,6 @@
 
 (define rulelist-wfp ((rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (well-formedness)
   :short "A rule list is well-formed iff
           all its rules are well-formed,
           there are no duplicate rules,
