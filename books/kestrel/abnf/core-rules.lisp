@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "operations")
+(include-book "operations/top")
 
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 

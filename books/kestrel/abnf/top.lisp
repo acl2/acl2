@@ -14,7 +14,7 @@
 ; the order of the subtopics of the ABNF topic below:
 (include-book "abstract-syntax")
 (include-book "semantics")
-(include-book "operations")
+(include-book "operations/top")
 (include-book "core-rules")
 (include-book "concrete-syntax")
 (include-book "parsing-primitives-seq")
