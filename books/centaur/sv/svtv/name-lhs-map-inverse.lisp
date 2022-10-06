@@ -835,8 +835,16 @@
     (implies (and (not (member-equal v (lhs-vars inverse-lhs)))
                   (not (member-equal v (lhatom-vars (lhrange->atom dom-range)))))
              (not (member-equal v (lhs-vars new-lhs))))
-    :hints(("Goal" :in-theory (disable lhs-vars-when-consp)))))
+    :hints(("Goal" :in-theory (disable lhs-vars-when-consp))))
 
+
+  (defret lhs-bitproj-of-<fn>
+    (equal (lhs-bitproj n new-lhs)
+           (if (and (<= (nfix offset) (nfix n))
+                    (< (nfix n) (+ (nfix offset) (lhrange->w dom-range))))
+               (lhatom-bitproj (- (nfix n) (nfix offset)) (lhrange->atom dom-range))
+             (lhs-bitproj n inverse-lhs)))
+    :hints(("Goal" :in-theory (enable lhrange-bitproj)))))
 
 
 
@@ -1037,23 +1045,23 @@
 
 
 
-
 (define lhs-var-distribute-value ((val 4vec-p)
                                   (v svar-p)
-                                  (x lhs-p))
+                                  (x lhs-p)
+                                  (prev 4vec-p))
   :returns (new-val 4vec-p)
   :verify-guards :after-returns
   (b* (((when (atom x))
-        0)
+        (4vec-fix prev))
        ((lhrange x1) (car x))
        ((when (lhatom-case x1.atom :z))
-        (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v (cdr x)))
+        (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v (cdr x) prev))
        ((lhatom-var x1.atom))
        ((unless (equal x1.atom.name (svar-fix v)))
-        (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v (cdr x))))
+        (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v (cdr x) prev)))
     (4vec-part-install (2vec x1.atom.rsh)
                        (2vec x1.w)
-                       (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v (cdr x))
+                       (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v (cdr x) prev)
                        val))
   ///
   (deffixequiv lhs-var-distribute-value)
@@ -1071,9 +1079,9 @@
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core)))))
   
   (defthm lhs-var-distribute-value-of-lhs-cons
-    (equal (lhs-var-distribute-value val v (lhs-cons x1 x))
+    (equal (lhs-var-distribute-value val v (lhs-cons x1 x) prev)
            (b* (((lhrange x1))
-                (rest (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v x)))
+                (rest (lhs-var-distribute-value (4vec-rsh (2vec x1.w) val) v x prev)))
              (if (and (lhatom-case x1.atom :var)
                       (equal (lhatom-var->name x1.atom) (svar-fix v)))
                  (4vec-part-install (2vec (lhatom-var->rsh x1.atom))
@@ -1086,11 +1094,11 @@
                                     4vec-part-install)))))
 
   (defthm lhs-var-distribute-value-of-lhs-norm
-    (equal (lhs-var-distribute-value val v (lhs-norm x))
-           (lhs-var-distribute-value val v x))
+    (equal (lhs-var-distribute-value val v (lhs-norm x) prev)
+           (lhs-var-distribute-value val v x prev))
     :hints(("Goal" :in-theory (enable lhs-norm))))
 
-  (defcong lhs-norm-equiv equal (lhs-var-distribute-value val v x) 3
+  (defcong lhs-norm-equiv equal (lhs-var-distribute-value val v x prev) 3
     :hints (("goal" :use ((:instance lhs-var-distribute-value-of-lhs-norm)
                           (:instance lhs-var-distribute-value-of-lhs-norm (x x-equiv)))
              :in-theory (disable lhs-var-distribute-value-of-lhs-norm)))))
@@ -1208,6 +1216,161 @@
      :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-concat 4vec-rsh 4vec-shift-core)
                                     (acl2::commutativity-of-logand
                                      acl2::commutativity-of-logior)))))))
+
+
+(defthm lhs-width-of-lhs-cons-strong
+  (equal (lhs-width (lhs-cons x y))
+         (lhs-width (cons x y)))
+  :hints(("Goal" :in-theory (enable lhs-width lhs-cons))))
+
+
+(defthm lhs-width-of-lhs-rsh-strong
+  (equal (lhs-width (lhs-rsh n x))
+         (nfix (- (lhs-width x) (nfix n))))
+  :hints(("Goal" :in-theory (enable lhs-rsh lhs-width))))
+
+
+(define lhs-join ((x lhs-p)
+                  (y lhs-p))
+  ;; Returns a new lhs which has all of x's non-z ranges, and any of y's non-z ranges whereever x has zs.
+  :returns (join lhs-p)
+  :measure (+ (lhs-width x) (lhs-width y))
+  :hints (("goal" :expand ((lhs-width x) (lhs-width y))))
+  :verify-guards nil
+  (b* (((when (atom x)) (lhs-fix y))
+       ((when (atom y)) (lhs-fix x))
+       ((lhrange x1) (car x))
+       ((lhrange y1) (car y))
+       (w (min x1.w y1.w))
+       (atom (lhatom-case x1.atom
+               :var x1.atom
+               :z y1.atom)))
+    (lhs-cons (lhrange w atom)
+              (lhs-join (lhs-rsh w x)
+                        (lhs-rsh w y))))
+  ///
+  (local (defthm 4vec-bit?!-of-4vec-concat
+           (implies (natp w)
+                    (equal (4vec-bit?! test (4vec-concat (2vec w) x y) z)
+                           (4vec-concat (2vec w)
+                                        (4vec-bit?! test x z)
+                                        (4vec-bit?! (4vec-rsh (2vec w) test)
+                                                    y
+                                                    (4vec-rsh (2vec w) z)))))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core 4vec-bit?!))
+                  (bitops::logbitp-reasoning))))
+
+  (local (defthm 4vec-concat-of-4vec-bit?!-ash
+           (implies (natp w)
+                    (equal (4vec-concat (2vec w)
+                                        (4vec-bit?! (2vec (ash test w)) x y)
+                                        z)
+                           (4vec-concat (2vec w) y z)))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?!))
+                  (bitops::logbitp-reasoning))))
+
+  ;; (local (defthm 4vec-rsh-of-x
+  ;;          (implies (natp w)
+  ;;                   (equal (4vec-rsh (2vec w) (4vec-x))
+  ;;                          (4vec-x)))
+  ;;          :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core)))))
+
+  (local (defthm 4vec-bit?!-varmask-eval
+           (equal (4vec-bit?! (2vec (lhs-varmask x)) (lhs-eval-x x env) (4vec-x))
+                  (lhs-eval-x x env))
+           :hints(("Goal" :in-theory (enable lhs-eval-x lhs-varmask bool->bit lhatom-eval-x)))))
+
+  (local (defthm 4vec-concat-rsh-of-4vec-concat-rsh
+           (implies (and (natp w1) (natp w2) (natp sh))
+                    (equal (4vec-concat (2vec w1)
+                                        (4vec-rsh (2vec sh) x)
+                                        (4vec-concat (2vec w2) (4vec-rsh (2vec (+ w1 sh)) x) y))
+                           (4vec-concat (2vec (+ w1 w2)) (4vec-rsh (2vec sh) x) y)))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core)))))
+  
+  (defret eval-of-lhs-join
+    (equal (lhs-eval-x join env)
+           (4vec-bit?! (2vec (lhs-varmask x)) (lhs-eval-x x env) (lhs-eval-x y env)))
+    :hints(("Goal" :in-theory (enable lhs-eval-x bool->bit lhatom-eval-x)
+            :induct <call>
+            :expand ((lhs-eval-x x env)
+                     (lhs-eval-x y env)
+                     (lhs-varmask x)))))
+  
+  (verify-guards lhs-join))
+
+;; (define lhs-invert-var ((v svar-p)
+;;                         (target svar-p)
+;;                         (offset natp)
+;;                         (x lhs-p))
+;;   ;; This inverts references to v within x, an LHS assumed equivalent to target at offset.
+;;   ;; E.g., if x is { v[5:3], w[2:0], v[8:7] } then this returns { target[1:0], 1'bz, target[7:5], 3'bz }
+;;   ;; -- because v[8:7] corresponds to target[1:0] and v[5:3] corresponds to target[7:5]
+;;   ;; (systemverilog syntax above, so lsb-last).
+;;   :returns (inv-lhs lhs-p)
+;;   :verify-guards nil
+;;   (b* (((when (atom x)) nil)
+;;        ((lhrange x1) (car x))
+;;        ((unless (and (lhatom-case x1.atom :var)
+;;                      (equal (lhatom-var->name x1.atom) (svar-fix v))))
+;;         (lhs-invert-var v target (+ (lnfix offset) x1.w) (cdr x)))
+;;        (rest (lhs-invert-var v target (+ (lnfix offset) x1.w) (cdr x)))
+;;        (rsh (lhatom-var->rsh x1.atom)))
+;;     (lhs-concat rsh rest (lhs-cons (lhrange x1.w (lhatom-var target offset))
+;;                                    (lhs-rsh (+ x1.w rsh) rest))))
+;;   ///
+;;   (verify-guards lhs-invert-var)
+  
+;;   (defret lhs-varmask-of-<fn>
+;;     (equal (lhs-varmask inv-lhs)
+;;            (var-lhs-mask v x))
+;;     :hints(("Goal" :in-theory (e/d (lhs-varmask var-lhs-mask
+;;                                                 bitops::part-install-in-terms-of-logapp)
+;;                                    (bitops::part-install)))))
+  
+;;   (defret eval-of-<fn>
+;;     (equal (lhs-eval-x inv-lhs env)
+;;            (4vec-bit?! (2vec (var-lhs-mask v x))
+;;                        (lhs-var-distribute-value
+;;                         (4vec-rsh (2vec (nfix offset)) (svex-env-lookup target env))
+;;                         v x)
+;;                        (4vec-x)))
+;;     :hints(("Goal" :in-theory (e/d (lhs-var-distribute-value
+;;                                     var-lhs-mask
+;;                                     lhs-eval-x
+;;                                     4vec-part-install
+;;                                     bitops::part-install-in-terms-of-logapp)
+;;                                    (bitops::part-install))))))
+
+
+(define lhs-var/idx-find ((var svar-p)
+                          (idx natp)
+                          (x lhs-p))
+  :returns (var-index maybe-natp :rule-classes :type-prescription)
+  ;; Finds the bit index of the given LHS that corresponds to bit idx of var.
+  (b* (((when (atom x)) nil)
+       ((lhrange x1) (car x))
+       ((when (lhatom-case x1.atom
+                  :var
+                  (and (equal x1.atom.name (svar-fix var))
+                       (<= x1.atom.rsh (lnfix idx))
+                       (< (lnfix idx) (+ x1.atom.rsh x1.w)))
+                  :z nil))
+        (- (lnfix idx) (lhatom-var->rsh x1.atom)))
+       (rest (lhs-var/idx-find var idx (cdr x)))
+       ((unless rest) nil))
+    (+ rest x1.w))
+  ///
+  (defret <fn>-correct
+    (implies var-index
+             (equal (lhs-bitproj var-index x)
+                    (lhbit-var var idx)))
+    :hints(("Goal" :in-theory (enable lhatom-bitproj)
+            :induct <call>
+            :expand ((:free (idx) (lhs-bitproj idx x)))))))
+    
+    
+
 
 
 (define lhs-accumulate-name-lhs-map-inverse ((dom-var svar-p)
@@ -1473,12 +1636,11 @@
   (defret lhs-eval-x-of-lookup-of-<fn>
     (implies (svar-p v)
              (equal (lhs-eval-x (cdr (hons-assoc-equal v new-inverse)) env)
-                    (4vec-bit?! (2vec (var-lhs-mask v lhs))
-                                ;; (4vec-rsh (2vec (nfix offset)) (svex-env-lookup dom-var env))
-                                (lhs-var-distribute-value (4vec-rsh (2vec (nfix offset)) (svex-env-lookup dom-var env))
-                                                          v lhs)
-                                ;; ???
-                                (lhs-eval-x (cdr (hons-assoc-equal v inverse-acc)) env))))
+                    ;; (4vec-bit?! (2vec (var-lhs-mask v lhs))
+                    ;; (4vec-rsh (2vec (nfix offset)) (svex-env-lookup dom-var env))
+                    (lhs-var-distribute-value (4vec-rsh (2vec (nfix offset)) (svex-env-lookup dom-var env))
+                                              v lhs
+                                              (lhs-eval-x (cdr (hons-assoc-equal v inverse-acc)) env))))
     :hints(("Goal" :in-theory (e/d (var-lhs-mask
                                     lhatom-eval-x
                                     lhs-var-distribute-value
@@ -1502,8 +1664,51 @@
                   (not (equal v (svar-fix dom-var))))
              (not (member v (svtv-name-lhs-map-vars new-inverse))))
     :hints(("Goal" :in-theory (enable svtv-name-lhs-map-vars
-                                      lhatom-vars)))))
+                                      lhatom-vars))))
+
+  (defret lhs-bitproj-of-<fn>
+    (implies (svar-p v)
+             (equal (lhs-bitproj n (cdr (hons-assoc-equal v new-inverse)))
+                    (let ((idx (lhs-var/idx-find v n lhs)))
+                      (if idx
+                          (lhbit-var dom-var (+ (nfix offset) idx))
+                        (lhs-bitproj n (cdr (hons-assoc-equal v inverse-acc)))))))
+    :hints(("Goal" :in-theory (enable lhs-var/idx-find lhatom-bitproj)))))
                                    
+
+
+(define svtv-name-lhs-map-var/idx-find ((var svar-p)
+                                        (idx natp)
+                                        (x svtv-name-lhs-map-p))
+  :returns (lhbit lhbit-p)
+  (if (atom x)
+      (lhbit-z)
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (b* ((n (lhs-var/idx-find var idx (cdar x))))
+          (if n
+              (lhbit-var (caar x) n)
+            (svtv-name-lhs-map-var/idx-find var idx (cdr x))))
+      (svtv-name-lhs-map-var/idx-find var idx (cdr x))))
+  ///
+  (defret <fn>-lookup-lemma
+    (implies (lhbit-case lhbit :var)
+             (hons-assoc-equal (lhbit-var->name lhbit)
+                               x))
+    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix))))
+  
+  (defret <fn>-correct
+    (implies (and (lhbit-case lhbit :var)
+                  (no-duplicatesp-equal (alist-keys (svtv-name-lhs-map-fix x))))
+             (equal (lhs-bitproj (lhbit-var->idx lhbit)
+                                 (cdr (hons-assoc-equal (lhbit-var->name lhbit) x)))
+                    (lhbit-var var idx)))
+    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
+                                      alist-keys))))
+
+  (local (in-theory (enable svtv-name-lhs-map-fix))))
+
+
 
 (define svtv-name-lhs-map-extract-env ((x svtv-name-lhs-map-p)
                                        (env svex-env-p))
@@ -1548,19 +1753,37 @@
                                   (4vec-rsh sh y))))))
 
    (defthm lhs-mask-distribute-value-of-lhs-eval-zero
-     (Equal (lhs-var-distribute-value (lhs-eval-zero x env) v x)
+     (Equal (lhs-var-distribute-value (lhs-eval-zero x env) v x prev)
             (4vec-bit?! (2vec (var-lhs-mask v x))
                         (svex-env-lookup v env)
-                        0))
+                        prev))
          :hints (("goal" :expand ((var-lhs-mask v x)
                                   (lhs-eval-zero x env)
-                                  (:free (val) (lhs-var-distribute-value val v x)))
+                                  (:free (val) (lhs-var-distribute-value val v x prev)))
                   :in-theory (e/d (bitops::part-install-in-terms-of-logapp
                                    4vec-part-install
                                    lhatom-eval-zero
                                    (:i var-lhs-mask))
                                   (bitops::part-install))
                   :induct (var-lhs-mask v x))))))
+
+(define svtv-name-lhs-map-var-inverse-eval-x ((v svar-p)
+                                              (x svtv-name-lhs-map-p)
+                                              (env svex-env-p))
+  :returns (val 4vec-p)
+  :verify-guards nil
+  (if (atom x)
+      (4vec-x)
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (b* ((rest (svtv-name-lhs-map-var-inverse-eval-x v (cdr x) env)))
+          (lhs-var-distribute-value (svex-env-lookup (caar x) env)
+                                            v (cdar x) rest))
+      (svtv-name-lhs-map-var-inverse-eval-x v (cdr x) env)))
+  ///
+  (verify-guards svtv-name-lhs-map-var-inverse-eval-x)
+
+  (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 
 (define svtv-name-lhs-map-inverse ((x svtv-name-lhs-map-p))
@@ -1706,7 +1929,24 @@
             :induct t)
            (and stable-under-simplificationp
                 (eq (caar (last clause)) 'svex-envs-similar)
-                `(:expand (,(car (last clause))))))))
+                `(:expand (,(car (last clause)))))))
+
+
+  (defret eval-<fn>-of-lookup-gen
+    (implies (svar-p v)
+             (equal (lhs-eval-x (cdr (hons-assoc-equal v inverse)) env)
+                    (svtv-name-lhs-map-var-inverse-eval-x v x env)))
+    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-var-inverse-eval-x
+                                      lhs-eval-x))))
+
+
+  (defret lhs-bitproj-of-<fn>-lookup
+    (implies (svar-p v)
+             (equal (lhs-bitproj n (cdr (hons-assoc-equal v inverse)))
+                    (svtv-name-lhs-map-var/idx-find v n x)))
+    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-var/idx-find)
+            :induct <call>
+            :expand ((lhs-bitproj n nil))))))
 
 
 ;; Mapping between SVTV (pipeline) inputs and phase FSM inputs has some
