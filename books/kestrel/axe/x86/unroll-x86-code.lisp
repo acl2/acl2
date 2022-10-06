@@ -208,6 +208,7 @@
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
                              stack-slots
+                             position-independentp
                              output
                              use-internal-contextsp
                              prune
@@ -226,6 +227,7 @@
                               ;; assumptions ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
+                              (booleanp position-independentp)
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -258,14 +260,19 @@
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
+       ((when (and (not position-independentp)
+                   (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
+        (er hard? 'def-unrolled-fn-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
+        (mv :bad-options nil nil nil state))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if suppress-assumptions
+                        ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
                         assumptions
                       (if (eq :mach-o-64 executable-type)
                           (cons `(standard-assumptions-mach-o-64 ',target
                                                                  ',parsed-executable
                                                                  ',stack-slots
-                                                                 text-offset
+                                                                 ,(if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
                                                                  x86)
                                 assumptions)
                         (if (eq :pe-64 executable-type)
@@ -279,7 +286,7 @@
                               (cons `(standard-assumptions-elf-64 ',target
                                                                   ',parsed-executable
                                                                   ',stack-slots
-                                                                  text-offset
+                                                                  ,(if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
                                                                   x86)
                                     assumptions)
                             (if (eq :mach-o-32 executable-type)
@@ -359,6 +366,7 @@
                         assumptions
                         suppress-assumptions
                         stack-slots
+                        position-independent
                         output
                         use-internal-contextsp
                         prune
@@ -384,6 +392,7 @@
                               ;; assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
+                              (member-eq position-independent '(t nil :auto))
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -410,12 +419,22 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       (executable-type (acl2::parsed-executable-type parsed-executable))
+       ;; Handle a :position-independent of :auto:
+       (position-independentp (if (eq :auto position-independent)
+                                  (if (eq executable-type :mach-o-64)
+                                      t ; since clang seems to produce position-independent code by default
+                                    (if (eq executable-type :elf-64)
+                                        nil ; since gcc seems to not produce position-independent code by default
+                                      ;; TODO: Think about this case:
+                                      t))
+                                position-independent))
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag rules-used
             & ; assumption-rules-used
             state)
         (def-unrolled-fn-core target parsed-executable
-          assumptions suppress-assumptions stack-slots
+          assumptions suppress-assumptions stack-slots position-independentp
           output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base state))
        ((when erp) (mv erp nil state))
@@ -521,6 +540,7 @@
                                (assumptions 'nil) ;extra assumptions in addition to the standard-assumptions (todo: rename to :extra-assumptions)
                                (suppress-assumptions 'nil) ;suppress the standard assumptions
                                (stack-slots '100) ;; tells us what to assume about available stack space
+                               (position-independent ':auto)
                                (output ':all)
                                (use-internal-contextsp 't)
                                (prune '1000)
@@ -547,6 +567,7 @@
       ,assumptions
       ',suppress-assumptions
       ',stack-slots
+      ',position-independent
       ',output
       ',use-internal-contextsp
       ',prune
