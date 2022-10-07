@@ -5349,6 +5349,7 @@
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
+       (length (defstruct-member-info->length meminfo))
        (readers (defstruct-member-info->readers meminfo))
        (checkers (defstruct-member-info->checkers meminfo))
        ((when (type-nonchar-integerp type))
@@ -5440,6 +5441,7 @@
                                       (car checkers)
                                       (cdr readers)
                                       (cdr checkers)
+                                      length
                                       names-to-avoid
                                       wrld))
 
@@ -5454,6 +5456,7 @@
                                              (checker-acl2int symbolp)
                                              (readers symbol-listp)
                                              (checkers symbol-listp)
+                                             (length symbolp)
                                              (names-to-avoid symbol-listp)
                                              (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
@@ -5498,6 +5501,9 @@
                                               nil
                                               names-to-avoid
                                               wrld))
+          (check-hyp (if length
+                         `(,checker index struct)
+                       `(,checker index)))
           (formula-member
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (,recognizer struct)
@@ -5506,7 +5512,7 @@
                                                      ,(ident->name memname))
                                                     struct))
                           (,indextypep index)
-                          (,checker index))
+                          ,check-hyp)
                      (equal (exec-arrsub-of-member struct
                                                    (ident
                                                     ,(ident->name memname))
@@ -5528,7 +5534,7 @@
                                                      ,(ident->name memname))
                                                     struct))
                           (,indextypep index)
-                          (,checker index))
+                          ,check-hyp)
                      (equal (exec-arrsub-of-memberp ptr
                                                     (ident
                                                      ,(ident->name memname))
@@ -5583,7 +5589,10 @@
                       ,not-error-array-thm
                       ,kind-array-thm
                       ,valuep-when-indextype
-                      (:t ,type-thm)))))
+                      (:t ,type-thm)
+                      ,@(and length
+                             (list length
+                                   'value-struct-read))))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
@@ -5605,6 +5614,7 @@
                                              checker-acl2int
                                              (cdr readers)
                                              (cdr checkers)
+                                             length
                                              names-to-avoid
                                              wrld)))
        (mv (list* event-member event-memberp events)
@@ -5700,6 +5710,7 @@
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
+       (length (defstruct-member-info->length meminfo))
        (writers (defstruct-member-info->writers meminfo))
        (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
        (writer-return-thm (car writer-return-thms))
@@ -5921,6 +5932,7 @@
                                        writer-return-thm
                                        not-error-thm
                                        type-of-value-thm
+                                       length
                                        names-to-avoid
                                        wrld))
 
@@ -5938,6 +5950,7 @@
                                               (writer-return-thm symbolp)
                                               (not-error-thm symbolp)
                                               (type-of-value-thm symbolp)
+                                              (length symbolp)
                                               (names-to-avoid symbol-listp)
                                               (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
@@ -5987,6 +6000,9 @@
                                               wrld))
           (arrayp-of-arrary-write
            (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
+          (check-hyp (if length
+                         `(,checker idx struct)
+                       `(,checker idx)))
           (formula-member
            `(implies (and (syntaxp (quotep e))
                           (equal (expr-kind e) :binary)
@@ -6007,7 +6023,7 @@
                           (,recognizer struct)
                           (equal idx (exec-expr-pure index compst))
                           (,indextypep idx)
-                          (,checker idx)
+                          ,check-hyp
                           (equal val (exec-expr-pure right compst))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
@@ -6042,7 +6058,7 @@
                           (,recognizer struct)
                           (equal idx (exec-expr-pure index compst))
                           (,indextypep idx)
-                          (,checker idx)
+                          ,check-hyp
                           (equal val (exec-expr-pure right compst))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
@@ -6100,7 +6116,8 @@
                 ,valuep-when-elemtypep
                 ,valuep-when-indextype
                 ,@*integer-value-disjoint-rules*
-                (:t ,type-thm))
+                (:t ,type-thm)
+                ,@(and length (list length)))
               :use
               ((:instance
                 ,writer-return-thm
@@ -6185,7 +6202,8 @@
                 ,valuep-when-elemtypep
                 ,valuep-when-indextype
                 ,@*integer-value-disjoint-rules*
-                (:t ,type-thm))
+                (:t ,type-thm)
+                ,@(and length (list length)))
               :use
               ((:instance
                 ,writer-return-thm
@@ -6249,6 +6267,7 @@
                                               writer-return-thm
                                               not-error-thm
                                               type-of-value-thm
+                                              length
                                               names-to-avoid
                                               wrld)))
        (mv (list* event-member event-memberp events)
