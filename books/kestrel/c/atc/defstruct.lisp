@@ -299,7 +299,7 @@
      or a doublet @('(<type> <pos>)')
      consisting of one of the fixtype names of the C integer types
      followed by a positive integer,
-     or a singleton @('(<type>)
+     or a singleton @('(<type>)')
      consisting of one of the fixtype names of the C integer types.
      The latter is for flexible array members,
      and can only occur in the last member."))
