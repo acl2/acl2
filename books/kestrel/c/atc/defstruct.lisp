@@ -1133,7 +1133,6 @@
               (,arr-read array index))
             :guard-hints (("Goal" :in-theory (enable ,index-okp
                                                      ,arr-index-okp
-                                                     ,arr-length
                                                      ,struct-tag-p
                                                      ,@(and (not size?)
                                                             (list length))
@@ -1174,7 +1173,6 @@
                                   new-array
                                   (,struct-tag-fix struct)))
             :guard-hints (("Goal" :in-theory (enable ,index-okp
-                                                     ,arr-length
                                                      ,arr-index-okp
                                                      ,struct-tag-p
                                                      ,@(and (not size?)
