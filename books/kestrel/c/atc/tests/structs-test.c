@@ -16,6 +16,12 @@ struct scalar_and_array { // copied from structs.c
   unsigned char aggreg[10];
 };
 
+struct flex { // copied from structs.c
+    unsigned char fixed[5];
+    unsigned int filler;
+    unsigned char last[];
+};
+
 // without these, we get a type error
 // because the compiler thinks that these two functions return int
 // (eventually ATC should also generate a .h file,
@@ -99,6 +105,13 @@ void test_write_to_scalar_and_array_by_pointer() {
   printf("a = %d\nb = %d\n", a, b);
 }
 
+void test_flex_struct_read_write() {
+  struct flex *p = (struct flex *) malloc(sizeof(struct flex) + 10);
+  write_flex_last(p, 5, 11);
+  unsigned char c = read_flex_last(p, 5);
+  printf("c = %d\n", c);
+}
+
 int main(void) {
   test_read_from_point2D_by_value();
   test_read_from_point2D_by_pointer();
@@ -109,5 +122,6 @@ int main(void) {
   test_read_from_scalar_and_array();
   test_write_to_scalar_and_array_by_value();
   test_write_to_scalar_and_array_by_pointer();
+  test_flex_struct_read_write();
   return 0;
 }

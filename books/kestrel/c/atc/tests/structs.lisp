@@ -113,6 +113,14 @@
      (c::pointer (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|)))))
   (struct-|scalar_and_array|-read-|aggreg|-sint |i| |a|))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |read_flex_last| (|fl| |i|)
+  (declare (xargs :guard (and (c::pointer (struct-|flex|-p |fl|))
+                              (c::sintp |i|)
+                              (struct-|flex|-|last|-sint-index-okp |i| |fl|))))
+  (struct-|flex|-read-|last|-sint |i| |fl|))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Return structures unchanged, by value and by pointer.
@@ -267,12 +275,23 @@
   (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-sint |i| |v| |a|)))
     |a|))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |write_flex_last| (|fl| |i| |c|)
+  (declare (xargs :guard (and (c::pointer (struct-|flex|-p |fl|))
+                              (c::sintp |i|)
+                              (struct-|flex|-|last|-sint-index-okp |i| |fl|)
+                              (c::ucharp |c|))))
+  (let ((|fl| (struct-|flex|-write-|last|-sint |i| |c| |fl|)))
+    |fl|))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |point2D|
         |point3D|
         |integers|
         |scalar_and_array|
+        |flex|
         |read_x_from_point2D_by_value|
         |read_x_from_point2D_by_pointer|
         |read_y_from_point2D_by_value|
@@ -283,6 +302,7 @@
         |read_scalar_by_pointer|
         |read_aggreg_by_value|
         |read_aggreg_by_pointer|
+        |read_flex_last|
         |return1|
         |return2|
         |return3|
@@ -301,4 +321,5 @@
         |write_scalar_by_pointer|
         |write_aggreg_by_value|
         |write_aggreg_by_pointer|
+        |write_flex_last|
         :output-file "structs.c")
