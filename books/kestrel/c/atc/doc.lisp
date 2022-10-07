@@ -342,6 +342,7 @@
        where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
        representing the corresponding C structure type,
        @('struct <tag>').
+       The structure type must not have a flexible array member.
        The @('<tag>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)').")
      (xdoc::li
@@ -531,7 +532,7 @@
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
       "@('var') is in scope,
-       @('var') has a pointer type whose referenced is
+       @('var') has a pointer type whose referenced type is
        the C integer type corresponding to @('<type1>'),
        @('var') is one of the symbols in @('vars'),
        @('term1') is a pure expression term for @('fn')
