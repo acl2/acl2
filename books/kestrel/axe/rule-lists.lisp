@@ -1970,7 +1970,7 @@
      sbvdivdown-rewrite-gen
 
 ;    unsigned-byte-p-tighten ;;removed tue jan 12 06:27:23 2010
-     bvif-1-1-0
+     bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
      equal-of-bool-to-bit-and-0
      equal-of-bool-to-bit-and-1
      ;;fixme what about backchain-limit? <- for which rule??
@@ -2402,6 +2402,7 @@
   (append ;(base-rules) ;new! was bad in that it turned around equalities
    (unsigned-byte-p-forced-rules)                  ;new
    (booleanp-rules) ;new!
+   (boolean-rules-safe) ;new!
    (type-rules)     ;very new (seems safe)
    '(integerp-when-unsigned-byte-p-free ;tue jan 11 16:53:16 2011
      equal-of-not-and-nil               ;tue jan 11 16:52:09 2011
@@ -2411,8 +2412,8 @@
      <-of-bv-and-non-positive-constant
      not-of-not
      equal-nil-of-not
-     not-of-bool-fix ; just include boolean-rules-safe?
-     bool-fix-when-booleanp ; just include boolean-rules-safe?
+     ;;not-of-bool-fix ; just include boolean-rules-safe?
+     ;;bool-fix-when-booleanp ; just include boolean-rules-safe?
      equal-same
      not-<-same
      if-of-t

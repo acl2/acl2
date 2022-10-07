@@ -40,8 +40,8 @@
   (not (< (seg-hidden-limiti *cs* x86)
           (read-from-segment 4 (esp x86) *ss* x86))))
 
-;;for axe
-(defthm booleanp-of-return-address-okp
+;; for axe
+(defthmd booleanp-of-return-address-okp
   (booleanp (return-address-okp x86)))
 
 (defthm return-address-okp-intro
