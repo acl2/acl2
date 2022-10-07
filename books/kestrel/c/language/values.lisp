@@ -470,7 +470,7 @@
               :array (make-type-array :of val.elemtype
                                       :size (len val.elements))
               :struct (type-struct val.tag))
-  :guard-hints (("Goal" :in-theory (enable acl2::pos-optionp)))
+  :guard-hints (("Goal" :in-theory (enable pos-optionp)))
   :hooks (:fix)
   :prepwork ((local (include-book "std/lists/len" :dir :system)))
   ///
