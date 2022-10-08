@@ -1069,7 +1069,10 @@
                    ((unless (atc-tag-infop info))
                     (raise "Internal error: malformed ATC-TAG-INFO ~x0." info))
                    (info (atc-tag-info->defstruct info))
-                   ((unless (eq fn (defstruct-info->recognizer info))) nil))
+                   ((unless (eq fn (defstruct-info->recognizer info))) nil)
+                   ((when (and (defstruct-info->flexiblep info)
+                               (not pointerp)))
+                    nil))
                 (type-struct (defstruct-info->tag info))))
              ((when (equal (symbol-name struct/object) "OBJECT"))
               (b* ((name (symbol-name tag/name))
@@ -5345,10 +5348,15 @@
      where the first reader and checker operate on ACL2 integers,
      while the other 10 readers and 10 checkers operate on C integers.
      We iterate through the 10 readers and checkers on C integers,
-     while using the reader and checker on ACL2 integers at each iteration."))
+     while using the reader and checker on ACL2 integers at each iteration.")
+   (xdoc::p
+    "If the structure type has a flexible array member,
+     we avoid generating theorems for accessing members by structure value,
+     because in ATC-generated code we only allow access by pointer."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
+       (length (defstruct-member-info->length meminfo))
        (readers (defstruct-member-info->readers meminfo))
        (checkers (defstruct-member-info->checkers meminfo))
        ((when (type-nonchar-integerp type))
@@ -5440,6 +5448,7 @@
                                       (car checkers)
                                       (cdr readers)
                                       (cdr checkers)
+                                      length
                                       names-to-avoid
                                       wrld))
 
@@ -5454,6 +5463,7 @@
                                              (checker-acl2int symbolp)
                                              (readers symbol-listp)
                                              (checkers symbol-listp)
+                                             (length symbolp)
                                              (names-to-avoid symbol-listp)
                                              (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
@@ -5498,6 +5508,9 @@
                                               nil
                                               names-to-avoid
                                               wrld))
+          (check-hyp (if length
+                         `(,checker index struct)
+                       `(,checker index)))
           (formula-member
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (,recognizer struct)
@@ -5506,7 +5519,7 @@
                                                      ,(ident->name memname))
                                                     struct))
                           (,indextypep index)
-                          (,checker index))
+                          ,check-hyp)
                      (equal (exec-arrsub-of-member struct
                                                    (ident
                                                     ,(ident->name memname))
@@ -5528,7 +5541,7 @@
                                                      ,(ident->name memname))
                                                     struct))
                           (,indextypep index)
-                          (,checker index))
+                          ,check-hyp)
                      (equal (exec-arrsub-of-memberp ptr
                                                     (ident
                                                      ,(ident->name memname))
@@ -5583,7 +5596,10 @@
                       ,not-error-array-thm
                       ,kind-array-thm
                       ,valuep-when-indextype
-                      (:t ,type-thm)))))
+                      (:t ,type-thm)
+                      ,@(and length
+                             (list length
+                                   'value-struct-read))))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
@@ -5605,10 +5621,17 @@
                                              checker-acl2int
                                              (cdr readers)
                                              (cdr checkers)
+                                             length
                                              names-to-avoid
                                              wrld)))
-       (mv (list* event-member event-memberp events)
-           (list* thm-member-name thm-memberp-name thm-names)
+       (mv (append (and (not length)
+                        (list event-member))
+                   (list event-memberp)
+                   events)
+           (append (and (not length)
+                        (list thm-member-name))
+                   (list thm-memberp-name)
+                   thm-names)
            names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5696,10 +5719,15 @@
      where the first writer and checker operate on ACL2 integers,
      while the other 10 writers and 10 checkers operate on C integers.
      We iterate through the 10 writers and checkers on C integers,
-     while using the writer and checker on ACL2 integers at each iteration."))
+     while using the writer and checker on ACL2 integers at each iteration.")
+   (xdoc::p
+    "If the structure type has a flexible array member,
+     we avoid generating theorems for accessing members by structure value,
+     because in ATC-generated code we only allow access by pointer."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
+       (length (defstruct-member-info->length meminfo))
        (writers (defstruct-member-info->writers meminfo))
        (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
        (writer-return-thm (car writer-return-thms))
@@ -5921,6 +5949,7 @@
                                        writer-return-thm
                                        not-error-thm
                                        type-of-value-thm
+                                       length
                                        names-to-avoid
                                        wrld))
 
@@ -5938,6 +5967,7 @@
                                               (writer-return-thm symbolp)
                                               (not-error-thm symbolp)
                                               (type-of-value-thm symbolp)
+                                              (length symbolp)
                                               (names-to-avoid symbol-listp)
                                               (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
@@ -5987,6 +6017,9 @@
                                               wrld))
           (arrayp-of-arrary-write
            (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
+          (check-hyp (if length
+                         `(,checker idx struct)
+                       `(,checker idx)))
           (formula-member
            `(implies (and (syntaxp (quotep e))
                           (equal (expr-kind e) :binary)
@@ -6007,7 +6040,7 @@
                           (,recognizer struct)
                           (equal idx (exec-expr-pure index compst))
                           (,indextypep idx)
-                          (,checker idx)
+                          ,check-hyp
                           (equal val (exec-expr-pure right compst))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
@@ -6042,7 +6075,7 @@
                           (,recognizer struct)
                           (equal idx (exec-expr-pure index compst))
                           (,indextypep idx)
-                          (,checker idx)
+                          ,check-hyp
                           (equal val (exec-expr-pure right compst))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
@@ -6100,7 +6133,8 @@
                 ,valuep-when-elemtypep
                 ,valuep-when-indextype
                 ,@*integer-value-disjoint-rules*
-                (:t ,type-thm))
+                (:t ,type-thm)
+                ,@(and length (list length)))
               :use
               ((:instance
                 ,writer-return-thm
@@ -6185,7 +6219,8 @@
                 ,valuep-when-elemtypep
                 ,valuep-when-indextype
                 ,@*integer-value-disjoint-rules*
-                (:t ,type-thm))
+                (:t ,type-thm)
+                ,@(and length (list length)))
               :use
               ((:instance
                 ,writer-return-thm
@@ -6249,10 +6284,17 @@
                                               writer-return-thm
                                               not-error-thm
                                               type-of-value-thm
+                                              length
                                               names-to-avoid
                                               wrld)))
-       (mv (list* event-member event-memberp events)
-           (list* thm-member-name thm-memberp-name thm-names)
+       (mv (append (and (not length)
+                        (list event-member))
+                   (list event-memberp)
+                   events)
+           (append (and (not length)
+                        (list thm-member-name))
+                   (list thm-memberp-name)
+                   thm-names)
            names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

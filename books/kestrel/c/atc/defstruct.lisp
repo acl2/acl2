@@ -54,9 +54,9 @@
    (xdoc::ul
     (xdoc::li
      "The member type, which consists of the name and type of the member.
-      See @(tsee member-type) in the deep embedding.")
+      See @(tsee member-type).")
     (xdoc::li
-     "The named of the readers of the member.
+     "The names of the readers of the member.
       For an integer member, it is a singleton list of the one reader.
       For an array member, it is a list of ten readers,
       one for each supported integer type for the index.")
@@ -71,6 +71,9 @@
       while it consists of ten checkers for an array member,
       one for each supported integer type for the index.")
     (xdoc::li
+     "The name of the length function of the member.
+      This is @('nil') except for a flexible array member.")
+    (xdoc::li
      "The names of the return type theorems
       for all the readers, in the same order as the list of readers.")
     (xdoc::li
@@ -80,6 +83,7 @@
    (readers symbol-listp)
    (writers symbol-listp)
    (checkers symbol-listp)
+   (length symbolp)
    (reader-return-thms symbol-listp)
    (writer-return-thms symbol-listp))
   :pred defstruct-member-infop)
@@ -122,7 +126,9 @@
       will spare us from having to double-check the invariants
       if we were to construct the identifier from the string.")
     (xdoc::li
-     "Information for the members; see @(tsee defstruct-member-info).")
+     "Information about the members; see @(tsee defstruct-member-info).")
+    (xdoc::li
+     "A flag saying whether the structure type has a flexible array member.")
     (xdoc::li
      "The recognizer of the structures.")
     (xdoc::li
@@ -145,14 +151,14 @@
       the recognizer implies that @(tsee type-of-value)
       returns the struct type.")
     (xdoc::li
-     "The name of the theorem asserting that
-      the recognizer implies that the flexible array member flag
-      is @('nil').")
+     "The name of the theorem asserting the value of
+      the flexible array member flag.")
     (xdoc::li
      "The call of @(tsee defstruct).
       This supports redundancy checking.")))
   ((tag ident)
    (members defstruct-member-info-list)
+   (flexiblep bool)
    (recognizer symbolp)
    (fixer symbolp)
    (fixer-recognizer-thm symbolp)
@@ -295,7 +301,11 @@
      either one of the fixtype names of the C integer types,
      or a doublet @('(<type> <pos>)')
      consisting of one of the fixtype names of the C integer types
-     followed by a positive integer."))
+     followed by a positive integer,
+     or a singleton @('(<type>)')
+     consisting of one of the fixtype names of the C integer types.
+     The latter is for flexible array members,
+     and can only occur in the last member."))
   (b* ((typelist '(schar
                    uchar
                    sshort
@@ -307,6 +317,7 @@
                    sllong
                    ullong))
        ((when (endp members)) (acl2::value nil))
+       (lastp (endp (cdr members)))
        (member (car members))
        ((unless (std::tuplep 2 member))
         (er-soft+ ctx t nil
@@ -332,97 +343,119 @@
                    but the SYMBOL-NAME of the first component of ~x0 ~
                    is not a portable ASCII C identifier."
                   member))
+       (members-msg (msg "Each input after the first one ~
+                          must be a doublet (NAME TYPE) ~
+                          where TYPE is ~
+                          either one of the symbols in ~&0, ~
+                          or a doublet (ELEM SIZE) ~
+                          where ELEM is one of the aforementioned symbols ~
+                          and SIZE is a positive integer,
+                          or a singleton (ELEM) ~
+                          where ELEM is one of the aforementioned symbols."
+                         typelist))
        ((er type)
-        (if (symbolp type)
-            (b* ((type (fixtype-to-integer-type type))
-                 ((when (not type))
-                  (er-soft+ ctx t nil
-                            "Each input after the first one ~
-                             must be a doublet (NAME TYPE) ~
-                             where TYPE is ~
-                             either one of the symbols in ~&0, ~
-                             or a doublet (ELEM SIZE) ~
-                             where ELEM is one of the symbols in ~&0 ~
-                             and SIZE is a positive integer. ~
-                             The second component of ~x1 ~
-                             is a symbol, but not among ~&0."
-                            typelist
-                            member)))
-              (acl2::value type))
-          (b* (((unless (std::tuplep 2 type))
+        (cond
+         ((atom type)
+          (b* (((unless (symbolp type))
                 (er-soft+ ctx t nil
-                          "Each input after the first one ~
-                           must be a doublet (NAME TYPE) ~
-                           where TYPE is ~
-                           either one of the symbols in ~&0, ~
-                           or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0 ~
-                           and SIZE is a positive integer. ~
-                           The second component of ~x1 ~
-                           is neither a symbol nor a doublet."
-                          typelist
+                          "~@0 ~
+                           The second component of ~x1 is an atom, ~
+                           but not a symbol."
+                          members-msg
                           member))
-               (elem (first type))
+               (type (fixtype-to-integer-type type))
+               ((when (not type))
+                (er-soft+ ctx t nil
+                          "~@0 ~
+                           The second component of ~x1 is a symbol, ~
+                           but not among ~&2."
+                          members-msg
+                          member
+                          typelist)))
+            (acl2::value type)))
+         ((std::tuplep 2 type)
+          (b* ((elem (first type))
                (size (second type))
                ((unless (symbolp elem))
                 (er-soft+ ctx t nil
-                          "Each input after the first one ~
-                           must be a doublet (NAME TYPE) ~
-                           where TYPE is ~
-                           either one of the symbols in ~&0, ~
-                           or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0 ~
-                           and SIZE is a positive integer. ~
+                          "~@0. ~
                            The second component of ~x1 is a doublet, ~
-                           but its first component is not a symbol."
-                          typelist
-                          member))
+                           but its first component ~x2 is not a symbol."
+                          members-msg
+                          member
+                          elem))
                (elem (fixtype-to-integer-type elem))
                ((when (not elem))
                 (er-soft+ ctx t nil
-                          "Each input after the first one ~
-                           must be a doublet (NAME TYPE) ~
-                           where TYPE is ~
-                           either one of the symbols in ~&0, ~
-                           or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0 ~
-                           and SIZE is a positive integer. ~
+                          "~@0 ~
                            The second component of ~x1 is a doublet, ~
-                           but its first component is not ~
-                           one of the symbols in ~&0."
-                          typelist
-                          member))
+                           and its first component ~x2 is a symbol, ~
+                           but not among ~&3."
+                          members-msg
+                          member
+                          elem
+                          typelist))
                ((unless (posp size))
                 (er-soft+ ctx t nil
-                          "Each input after the first one ~
-                           must be a doublet (NAME TYPE) ~
-                           where TYPE is ~
-                           either one of the symbols in ~&0, ~
-                           or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0 ~
-                           and SIZE is a positive integer. ~
+                          "~@0 ~
                            The second component of ~x1 is a doublet, ~
-                           but its second component is not a positive integer."
-                          typelist
-                          member))
+                           but its second component ~x2 ~
+                           is not a positive integer."
+                          members-msg
+                          member
+                          size))
                ((unless (<= size (ullong-max)))
                 (er-soft+ ctx t nil
-                          "Each input after the first one ~
-                           must be a doublet (NAME TYPE) ~
-                           where TYPE is ~
-                           either one of the symbols in ~&0, ~
-                           or a doublet (ELEM SIZE) ~
-                           where ELEM is one of the symbols in ~&0 ~
-                           and SIZE is a positive integer. ~
+                          "~@0 ~
                            The second component of ~x1 is a doublet, ~
-                           its second component is a positive integer, ~
-                           but it exceeds ~x2, ~
+                           its second component ~x2 is a positive integer, ~
+                           but it exceeds ~x3, ~
                            which is the maximum integer ~
                            representable in an unsigned long long int."
-                          typelist
+                          members-msg
                           member
+                          size
                           (ullong-max))))
-            (acl2::value (make-type-array :of elem :size size)))))
+            (acl2::value (make-type-array :of elem :size size))))
+         ((std::tuplep 1 type)
+          (b* ((elem (first type))
+               ((unless (symbolp elem))
+                (er-soft+ ctx t nil
+                          "~@0 ~
+                           The second component of ~x1 is a singleton, ~
+                           but its (only) component ~x2 is not a symbol."
+                          members-msg
+                          member
+                          elem))
+               (elem (fixtype-to-integer-type elem))
+               ((when (not elem))
+                (er-soft+ ctx t nil
+                          "~@0 ~
+                           The second component of ~x1 is a singleton, ~
+                           and its (only) component ~x2 is a symbol, ~
+                           but not among ~&3."
+                          members-msg
+                          member
+                          elem
+                          typelist))
+               ((unless lastp)
+                (er-soft+ ctx t nil
+                          "The member ~x0 has ~
+                           an array type of unspecified size, ~
+                           but it is not the last member. ~
+                           A flexible array members can only be ~
+                           the last one in a structure."
+                          member)))
+            (acl2::value (make-type-array :of elem :size nil))))
+         (t
+          (er-soft+ ctx t nil
+                    "~@0 ~
+                     The member ~x1 is ~
+                     neither an atom ~
+                     nor a doublet ~
+                     nor a singleton."
+                    members-msg
+                    member))))
        (memtype (make-member-type :name (ident name) :type type))
        ((er memtypes) (defstruct-process-members (cdr members) ctx state))
        ((when (member-equal (ident name)
@@ -443,6 +476,7 @@
                (val (tuple (tag symbolp)
                            (tag-ident identp)
                            (memtypes member-type-listp)
+                           (flexiblep booleanp)
                            (redundant booleanp)
                            val))
                state)
@@ -454,7 +488,7 @@
      If the table already contains an entry for this tag,
      the call must be identical, in which case the call is redundant;
      if the call is not identical, it is an error."))
-  (b* ((irrelevant (list nil (irr-ident) nil nil))
+  (b* ((irrelevant (list nil (irr-ident) nil nil nil))
        ((unless (consp args))
         (er-soft+ ctx t irrelevant
                   "There must be at least one input, ~
@@ -476,7 +510,7 @@
        (info (defstruct-table-lookup tag-name (w state)))
        ((when info)
         (if (equal (defstruct-info->call info) call)
-            (acl2::value (list tag (irr-ident) nil t))
+            (acl2::value (list tag (irr-ident) nil nil t))
           (er-soft+ ctx t irrelevant
                     "There is already a structure with tag ~x0 ~
                      recorded in the table of shallowly embedded C structures, ~
@@ -488,8 +522,13 @@
         (er-soft+ ctx t irrelevant
                   "There must be at least one member."))
        ((er memtypes :iferr irrelevant)
-        (defstruct-process-members members ctx state)))
-    (acl2::value (list tag tag-ident memtypes nil)))
+        (defstruct-process-members members ctx state))
+       (flexiblep (and (consp memtypes)
+                       (b* ((memtype (car (last memtypes)))
+                            (type (member-type->type memtype)))
+                         (and (type-case type :array)
+                              (not (type-array->size type)))))))
+    (acl2::value (list tag tag-ident memtypes flexiblep nil)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -506,10 +545,12 @@
      For each member, there is one or more conjunct that constrains its value.
      An integer member has just one conjunct saying that
      the value satisfies the predicate that recognizes those integer values.
-     An array member has two conjuncts,
+     A non-flexible array member has two conjuncts,
      one saying that the value is an array of the appropriate type,
      and one saying that the length of the array
-     is the one indicated in the type.")
+     is the one indicated in the type.
+     A flexible array member has just one conjunct saying that
+     the value is an array of the appropriate type.")
    (xdoc::p
     "The value of the member is retrieved via @('value-struct-read-aux')
      (see @(tsee value-struct-read)),
@@ -544,105 +585,113 @@
                                                (value-struct->members x))))
      :struct (raise "Internal error: type ~x0." type)
      :pointer (raise "Internal error: type ~x0." type)
-     :array (if (not type.size)
-                (raise "Internal error: type ~x0." type)
-              (type-case
-               type.of
-               :void (raise "Internal error: type ~x0." type)
-               :char (raise "Internal error: type ~x0." type)
-               :schar `((schar-arrayp
-                         (value-struct-read-aux
-                          ',name
-                          (value-struct->members x)))
-                        (equal (schar-array-length
-                                (value-struct-read-aux
-                                 ',name
-                                 (value-struct->members x)))
-                               ,type.size))
-               :uchar `((uchar-arrayp
-                         (value-struct-read-aux
-                          ',name
-                          (value-struct->members x)))
-                        (equal (uchar-array-length
-                                (value-struct-read-aux
-                                 ',name
-                                 (value-struct->members x)))
-                               ,type.size))
-               :sshort `((sshort-arrayp
-                          (value-struct-read-aux
-                           ',name
-                           (value-struct->members x)))
-                         (equal (sshort-array-length
-                                 (value-struct-read-aux
-                                  ',name
-                                  (value-struct->members x)))
-                                ,type.size))
-               :ushort `((ushort-arrayp
-                          (value-struct-read-aux
-                           ',name
-                           (value-struct->members x)))
-                         (equal (ushort-array-length
-                                 (value-struct-read-aux
-                                  ',name
-                                  (value-struct->members x)))
-                                ,type.size))
-               :sint `((sint-arrayp
+     :array (type-case
+             type.of
+             :void (raise "Internal error: type ~x0." type)
+             :char (raise "Internal error: type ~x0." type)
+             :schar `((schar-arrayp
+                       (value-struct-read-aux
+                        ',name
+                        (value-struct->members x)))
+                      ,@(and type.size
+                             `((equal (schar-array-length
+                                       (value-struct-read-aux
+                                        ',name
+                                        (value-struct->members x)))
+                                      ,type.size))))
+             :uchar `((uchar-arrayp
+                       (value-struct-read-aux
+                        ',name
+                        (value-struct->members x)))
+                      ,@(and type.size
+                             `((equal (uchar-array-length
+                                       (value-struct-read-aux
+                                        ',name
+                                        (value-struct->members x)))
+                                      ,type.size))))
+             :sshort `((sshort-arrayp
                         (value-struct-read-aux
                          ',name
                          (value-struct->members x)))
-                       (equal (sint-array-length
-                               (value-struct-read-aux
-                                ',name
-                                (value-struct->members x)))
-                              ,type.size))
-               :uint `((uint-arrayp
+                       ,@(and type.size
+                              `((equal (sshort-array-length
+                                        (value-struct-read-aux
+                                         ',name
+                                         (value-struct->members x)))
+                                       ,type.size))))
+             :ushort `((ushort-arrayp
                         (value-struct-read-aux
                          ',name
                          (value-struct->members x)))
-                       (equal (uint-array-length
-                               (value-struct-read-aux
-                                ',name
-                                (value-struct->members x)))
-                              ,type.size))
-               :slong `((slong-arrayp
-                         (value-struct-read-aux
-                          ',name
-                          (value-struct->members x)))
-                        (equal (slong-array-length
-                                (value-struct-read-aux
-                                 ',name
-                                 (value-struct->members x)))
-                               ,type.size))
-               :ulong `((ulong-arrayp
-                         (value-struct-read-aux
-                          ',name
-                          (value-struct->members x)))
-                        (equal (ulong-array-length
-                                (value-struct-read-aux
-                                 ',name
-                                 (value-struct->members x)))
-                               ,type.size))
-               :sllong `((sllong-arrayp
-                          (value-struct-read-aux
-                           ',name
-                           (value-struct->members x)))
-                         (equal (sllong-array-length
-                                 (value-struct-read-aux
-                                  ',name
-                                  (value-struct->members x)))
-                                ,type.size))
-               :ullong `((ullong-arrayp
-                          (value-struct-read-aux
-                           ',name
-                           (value-struct->members x)))
-                         (equal (ullong-array-length
-                                 (value-struct-read-aux
-                                  ',name
-                                  (value-struct->members x)))
-                                ,type.size))
-               :struct (raise "Internal error: type ~x0." type)
-               :pointer (raise "Internal error: type ~x0." type)
-               :array (raise "Internal error: type ~x0." type)))))
+                       ,@(and type.size
+                              `((equal (ushort-array-length
+                                        (value-struct-read-aux
+                                         ',name
+                                         (value-struct->members x)))
+                                       ,type.size))))
+             :sint `((sint-arrayp
+                      (value-struct-read-aux
+                       ',name
+                       (value-struct->members x)))
+                     ,@(and type.size
+                            `((equal (sint-array-length
+                                      (value-struct-read-aux
+                                       ',name
+                                       (value-struct->members x)))
+                                     ,type.size))))
+             :uint `((uint-arrayp
+                      (value-struct-read-aux
+                       ',name
+                       (value-struct->members x)))
+                     ,@(and type.size
+                            `((equal (uint-array-length
+                                      (value-struct-read-aux
+                                       ',name
+                                       (value-struct->members x)))
+                                     ,type.size))))
+             :slong `((slong-arrayp
+                       (value-struct-read-aux
+                        ',name
+                        (value-struct->members x)))
+                      ,@(and type.size
+                             `((equal (slong-array-length
+                                       (value-struct-read-aux
+                                        ',name
+                                        (value-struct->members x)))
+                                      ,type.size))))
+             :ulong `((ulong-arrayp
+                       (value-struct-read-aux
+                        ',name
+                        (value-struct->members x)))
+                      ,@(and type.size
+                             `((equal (ulong-array-length
+                                       (value-struct-read-aux
+                                        ',name
+                                        (value-struct->members x)))
+                                      ,type.size))))
+             :sllong `((sllong-arrayp
+                        (value-struct-read-aux
+                         ',name
+                         (value-struct->members x)))
+                       ,@(and type.size
+                              `((equal (sllong-array-length
+                                        (value-struct-read-aux
+                                         ',name
+                                         (value-struct->members x)))
+                                       ,type.size))))
+             :ullong `((ullong-arrayp
+                        (value-struct-read-aux
+                         ',name
+                         (value-struct->members x)))
+                       ,@(and type.size
+                              `((equal (ullong-array-length
+                                        (value-struct-read-aux
+                                         ',name
+                                         (value-struct->members x)))
+                                       ,type.size))))
+             :struct (raise "Internal error: type ~x0." type)
+             :pointer (raise "Internal error: type ~x0." type)
+             :array (raise "Internal error: type ~x0." type))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -665,7 +714,8 @@
 
 (define defstruct-gen-recognizer ((struct-tag-p symbolp)
                                   (tag symbolp)
-                                  (memtypes member-type-listp))
+                                  (memtypes member-type-listp)
+                                  (flexiblep booleanp))
   :returns (mv (event pseudo-event-formp)
                (not-error-thm symbolp)
                (valuep-thm symbolp)
@@ -708,7 +758,8 @@
                 (equal (member-value-list->name-list (value-struct->members x))
                        ',(member-type-list->name-list memtypes))
                 ,@(defstruct-gen-recognizer-all-conjuncts memtypes)
-                (not (value-struct->flexiblep x)))
+                (equal (value-struct->flexiblep x)
+                       ,flexiblep))
            :hooks (:fix)
            ///
            (defruled ,not-errorp-when-struct-tag-p
@@ -732,7 +783,7 @@
            (defruled ,flexiblep-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (equal (value-struct->flexiblep x)
-                             nil))))))
+                             ,flexiblep))))))
     (mv event
         not-errorp-when-struct-tag-p
         valuep-when-struct-tag-p
@@ -766,42 +817,41 @@
    :ullong '(ullong 0)
    :struct (raise "Internal error: type ~x0." type)
    :pointer (raise "Internal error: type ~x0." type)
-   :array (if (not type.size)
-              (raise "Internal error: type ~x0." type)
+   :array (b* ((size (or type.size 1)))
             (type-case
              type.of
              :void (raise "Internal error: type ~x0." type)
              :char (raise "Internal error: type ~x0." type)
              :schar `(make-value-array
                       :elemtype (type-schar)
-                      :elements (repeat ,type.size (schar 0)))
+                      :elements (repeat ,size (schar 0)))
              :uchar `(make-value-array
                       :elemtype (type-uchar)
-                      :elements (repeat ,type.size (uchar 0)))
+                      :elements (repeat ,size (uchar 0)))
              :sshort `(make-value-array
                        :elemtype (type-sshort)
-                       :elements (repeat ,type.size (sshort 0)))
+                       :elements (repeat ,size (sshort 0)))
              :ushort `(make-value-array
                        :elemtype (type-ushort)
-                       :elements repeat ,type.size (ushort 0))
+                       :elements repeat ,size (ushort 0))
              :sint `(make-value-array
                      :elemtype (type-sint)
-                     :elements (repeat ,type.size (sint 0)))
+                     :elements (repeat ,size (sint 0)))
              :uint `(make-value-array
                      :elemtype (type-uint)
-                     :elements (repeat ,type.size (uint 0)))
+                     :elements (repeat ,size (uint 0)))
              :slong `(make-value-array
                       :elemtype (type-slong)
-                      :elements (repeat ,type.size (slong 0)))
+                      :elements (repeat ,size (slong 0)))
              :ulong `(make-value-array
                       :elemtype (type-ulong)
-                      :elements (repeat ,type.size (ulong 0)))
+                      :elements (repeat ,size (ulong 0)))
              :sllong `(make-value-array
                        :elemtype (type-sllong)
-                       :elements (repeat ,type.size (sllong 0)))
+                       :elements (repeat ,size (sllong 0)))
              :ullong `(make-value-array
                        :elemtype (type-ullong)
-                       :elements (repeat ,type.size (ullong 0)))
+                       :elements (repeat ,size (ullong 0)))
              :struct (raise "Internal error: type ~x0." type)
              :pointer (raise "Internal error: type ~x0." type)
              :array (raise "Internal error: type ~x0." type))))
@@ -812,7 +862,8 @@
 (define defstruct-gen-fixer ((struct-tag-fix symbolp)
                              (struct-tag-p symbolp)
                              (tag symbolp)
-                             (memtypes member-type-listp))
+                             (memtypes member-type-listp)
+                             (flexiblep booleanp))
   :returns (mv (event pseudo-event-formp)
                (fixer-recognizer-thm symbolp))
   :short "Generate the fixer of
@@ -836,7 +887,7 @@
            :body-fix (make-value-struct
                       :tag (ident ,(symbol-name tag))
                       :members (list ,@(defstruct-gen-fixer-aux memtypes))
-                      :flexiblep nil)))
+                      :flexiblep ,flexiblep)))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
@@ -962,9 +1013,10 @@
                                         (struct-tag-fix symbolp)
                                         (name identp)
                                         (type typep)
-                                        (size posp))
+                                        (size? pos-optionp))
   :guard (type-nonchar-integerp type)
   :returns (mv (event pseudo-event-formp)
+               (length symbolp)
                (checkers symbol-listp)
                (readers symbol-listp)
                (writers symbol-listp)
@@ -1012,7 +1064,13 @@
      Note that the definition of the checkers
      is in terms of the known length of the array member,
      and that guard verification for functions involving these structures
-     is performed by opening the checkers."))
+     is performed by opening the checkers.")
+   (xdoc::p
+    "For a flexible array member, we also generate a length function.
+     This function takes the whole structure as input, not just the array,
+     for the same reason mentioned above for index checkers,
+     namely that we do not provide operations
+     to extract a whole array member."))
   (b* ((fixtype (integer-type-to-fixtype type))
        (arr-typep (pack fixtype '-arrayp))
        (arr-length (pack fixtype '-array-length))
@@ -1022,6 +1080,11 @@
        (arr-write (pack fixtype '-array-write))
        (elem-typep (pack fixtype 'p))
        (type-of-value-when-arr-typep (pack 'type-of-value-when- arr-typep))
+       (length (packn-pos (list struct-tag
+                                '-
+                                (ident->name name)
+                                '-length)
+                          struct-tag))
        (index-okp (packn-pos (list struct-tag
                                    '-
                                    (ident->name name)
@@ -1044,26 +1107,46 @@
                                            writer)
                                      writer))
        (events
-        `((define ,index-okp ((index integerp))
-            :returns (yes/no booleanp)
-            (integer-range-p 0 ,size (ifix index))
-            :hooks (:fix))
+        `(,@(and
+             (not size?)
+             `((define ,length ((struct ,struct-tag-p))
+                 :returns (len natp)
+                 (b* ((array (value-struct-read (ident ,(ident->name name))
+                                                (,struct-tag-fix struct))))
+                   (,arr-length array))
+                 :guard-hints (("Goal" :in-theory (enable ,struct-tag-p
+                                                          value-struct-read)))
+                 :hooks (:fix))))
+          ,(if size?
+               `(define ,index-okp ((index integerp))
+                  :returns (yes/no booleanp)
+                  (integer-range-p 0 ,size? (ifix index))
+                  :hooks (:fix))
+             `(define ,index-okp ((index integerp) (struct ,struct-tag-p))
+                :returns (yes/no booleanp)
+                (integer-range-p 0 (,length struct) (ifix index))
+                :hooks (:fix)))
           (define ,reader ((index integerp) (struct ,struct-tag-p))
-            :guard (,index-okp index)
+            :guard ,(if size?
+                        `(,index-okp index)
+                      `(,index-okp index struct))
             :returns (val ,elem-typep)
             (b* ((array (value-struct-read (ident ,(ident->name name))
                                            (,struct-tag-fix struct))))
               (,arr-read array index))
             :guard-hints (("Goal" :in-theory (enable ,index-okp
                                                      ,arr-index-okp
-                                                     ,arr-length
                                                      ,struct-tag-p
+                                                     ,@(and (not size?)
+                                                            (list length))
                                                      value-struct-read)))
             :hooks (:fix))
           (defruledl writer-lemma
             (implies (and (,struct-tag-p struct)
                           (,arr-typep array)
-                          (equal (,arr-length array) ,size))
+                          (equal (,arr-length array)
+                                 ,(or size?
+                                      `(,length struct))))
                      (,struct-tag-p (value-struct-write ',name array struct)))
             :enable (,struct-tag-p
                      value-struct-write
@@ -1075,11 +1158,16 @@
                      value-struct-read-aux-of-value-struct-write-aux
                      ,arr-length-alt-def
                      not-errorp-when-member-value-listp
-                     ,type-of-value-when-arr-typep))
+                     ,type-of-value-when-arr-typep
+                     ,@(and (not size?)
+                            (list length
+                                  'value-struct-read))))
           (define ,writer ((index integerp)
                            (val ,elem-typep)
                            (struct ,struct-tag-p))
-            :guard (,index-okp index)
+            :guard ,(if size?
+                        `(,index-okp index)
+                      `(,index-okp index struct))
             :returns new-struct
             (b* ((array (value-struct-read (ident ,(ident->name name))
                                            (,struct-tag-fix struct)))
@@ -1088,9 +1176,10 @@
                                   new-array
                                   (,struct-tag-fix struct)))
             :guard-hints (("Goal" :in-theory (enable ,index-okp
-                                                     ,arr-length
                                                      ,arr-index-okp
                                                      ,struct-tag-p
+                                                     ,@(and (not size?)
+                                                            (list length))
                                                      value-struct-read)))
             :hooks (:fix)
             ///
@@ -1103,8 +1192,12 @@
               ((defrule lemma
                  (implies (,struct-tag-p struct)
                           (equal (,arr-length (value-struct-read ',name struct))
-                                 ,size))
-                 :enable (,struct-tag-p value-struct-read)
+                                 ,(or size?
+                                      `(,length struct))))
+                 :enable (,struct-tag-p
+                          value-struct-read
+                          ,@(and (not size?)
+                                 (list length)))
                  :rule-classes :forward-chaining)))
             (more-returns
              (new-struct ,struct-tag-p
@@ -1119,9 +1212,11 @@
             more-reader-return-thms
             more-writer-return-thms)
         (defstruct-gen-array-member-ops-aux *nonchar-integer-types**
-          struct-tag struct-tag-p name elem-typep index-okp reader writer))
+          struct-tag struct-tag-p name elem-typep
+          index-okp reader writer size?))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event
+        (and (not size?) length)
         (cons index-okp more-checkers)
         (cons reader more-readers)
         (cons writer more-writers)
@@ -1136,7 +1231,8 @@
                                                (elem-typep symbolp)
                                                (index-okp symbolp)
                                                (reader symbolp)
-                                               (writer symbolp))
+                                               (writer symbolp)
+                                               (size? pos-optionp))
      :guard (type-nonchar-integer-listp index-types)
      :returns (mv (more-events pseudo-event-form-listp)
                   (more-readers symbol-listp)
@@ -1174,13 +1270,21 @@
                                               writer-for-index)
                                         writer-for-index))
           (events
-           `((define ,index-okp-for-index ((index ,index-typep))
-               :returns (yes/no booleanp)
-               (,index-okp (,index-getter index))
-               :hooks (:fix))
+           `(,(if size?
+                  `(define ,index-okp-for-index ((index ,index-typep))
+                     :returns (yes/no booleanp)
+                     (,index-okp (,index-getter index))
+                     :hooks (:fix))
+                `(define ,index-okp-for-index ((index ,index-typep)
+                                               (struct ,struct-tag-p))
+                   :returns (yes/no booleanp)
+                   (,index-okp (,index-getter index) struct)
+                   :hooks (:fix)))
              (define ,reader-for-index ((index ,index-typep)
                                         (struct ,struct-tag-p))
-               :guard (,index-okp-for-index index)
+               :guard ,(if size?
+                           `(,index-okp-for-index index)
+                         `(,index-okp-for-index index struct))
                :returns (val ,elem-typep)
                (,reader (,index-getter index) struct)
                :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
@@ -1188,7 +1292,9 @@
              (define ,writer-for-index ((index ,index-typep)
                                         (val ,elem-typep)
                                         (struct ,struct-tag-p))
-               :guard (,index-okp-for-index index)
+               :guard ,(if size?
+                           `(,index-okp-for-index index)
+                         `(,index-okp-for-index index struct))
                :returns (new-struct ,struct-tag-p)
                (,writer (,index-getter index) val struct)
                :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
@@ -1200,7 +1306,8 @@
                more-reader-return-thms
                more-writer-return-thms)
            (defstruct-gen-array-member-ops-aux (cdr index-types)
-             struct-tag struct-tag-p name elem-typep index-okp reader writer)))
+             struct-tag struct-tag-p name elem-typep
+             index-okp reader writer size?)))
        (mv (append events more-events)
            (cons reader-for-index more-readers)
            (cons writer-for-index more-writers)
@@ -1238,6 +1345,7 @@
                     :readers (list reader)
                     :writers (list writer)
                     :checkers nil
+                    :length nil
                     :reader-return-thms (list reader-return-thm)
                     :writer-return-thms (list writer-return-thm))))
           (mv event info)))
@@ -1248,23 +1356,22 @@
        ((unless (type-nonchar-integerp elem-type))
         (raise "Internal error: member type ~x0." type)
         (mv '(_) (make-defstruct-member-info :memtype member)))
-       (size (type-array->size type))
-       ((unless (posp size))
-        (raise "Internal error: member type ~x0." type)
-        (mv '(_) (make-defstruct-member-info :memtype member)))
+       (size? (type-array->size type))
        ((mv event
+            length
             checkers
             readers
             writers
             reader-return-thms
             writer-return-thms)
         (defstruct-gen-array-member-ops
-          struct-tag struct-tag-p struct-tag-fix name elem-type size))
+          struct-tag struct-tag-p struct-tag-fix name elem-type size?))
        (info (make-defstruct-member-info
               :memtype member
               :readers readers
               :writers writers
               :checkers checkers
+              :length length
               :reader-return-thms reader-return-thms
               :writer-return-thms writer-return-thms)))
     (mv event info)))
@@ -1294,6 +1401,7 @@
 (define defstruct-gen-everything ((tag symbolp)
                                   (tag-ident identp)
                                   (members member-type-listp)
+                                  (flexiblep booleanp)
                                   (call pseudo-event-formp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
@@ -1314,10 +1422,10 @@
             value-kind-when-struct-tag-p
             type-of-value-when-struct-tag-p
             flexiblep-when-struct-tag-p)
-        (defstruct-gen-recognizer struct-tag-p tag members))
+        (defstruct-gen-recognizer struct-tag-p tag members flexiblep))
        ((mv fixer-event
             fixer-recognizer-thm)
-        (defstruct-gen-fixer struct-tag-fix struct-tag-p tag members))
+        (defstruct-gen-fixer struct-tag-fix struct-tag-p tag members flexiblep))
        (fixtype-event (defstruct-gen-fixtype
                         struct-tag struct-tag-p
                         struct-tag-fix struct-tag-equiv))
@@ -1327,6 +1435,7 @@
        (info (make-defstruct-info
               :tag tag-ident
               :members member-infos
+              :flexiblep flexiblep
               :recognizer struct-tag-p
               :fixer struct-tag-fix
               :fixer-recognizer-thm fixer-recognizer-thm
@@ -1354,10 +1463,10 @@
                       state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Process the inputs and generate the events."
-  (b* (((er (list tag tag-ident members redundant) :iferr '(_))
+  (b* (((er (list tag tag-ident members flexiblep redundant) :iferr '(_))
         (defstruct-process-inputs args call ctx state))
        ((when redundant) (acl2::value '(value-triple :redundant)))
-       (event (defstruct-gen-everything tag tag-ident members call)))
+       (event (defstruct-gen-everything tag tag-ident members flexiblep call)))
     (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
