@@ -128,6 +128,8 @@
     (xdoc::li
      "Information about the members; see @(tsee defstruct-member-info).")
     (xdoc::li
+     "A flag saying whether the structure type has a flexible array member.")
+    (xdoc::li
      "The recognizer of the structures.")
     (xdoc::li
      "The fixer of the structures.")
@@ -156,6 +158,7 @@
       This supports redundancy checking.")))
   ((tag ident)
    (members defstruct-member-info-list)
+   (flexiblep bool)
    (recognizer symbolp)
    (fixer symbolp)
    (fixer-recognizer-thm symbolp)
@@ -1432,6 +1435,7 @@
        (info (make-defstruct-info
               :tag tag-ident
               :members member-infos
+              :flexiblep flexiblep
               :recognizer struct-tag-p
               :fixer struct-tag-fix
               :fixer-recognizer-thm fixer-recognizer-thm
