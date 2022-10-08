@@ -5348,7 +5348,11 @@
      where the first reader and checker operate on ACL2 integers,
      while the other 10 readers and 10 checkers operate on C integers.
      We iterate through the 10 readers and checkers on C integers,
-     while using the reader and checker on ACL2 integers at each iteration."))
+     while using the reader and checker on ACL2 integers at each iteration.")
+   (xdoc::p
+    "If the structure type has a flexible array member,
+     we avoid generating theorems for accessing members by structure value,
+     because in ATC-generated code we only allow access by pointer."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
@@ -5620,8 +5624,14 @@
                                              length
                                              names-to-avoid
                                              wrld)))
-       (mv (list* event-member event-memberp events)
-           (list* thm-member-name thm-memberp-name thm-names)
+       (mv (append (and (not length)
+                        (list event-member))
+                   (list event-memberp)
+                   events)
+           (append (and (not length)
+                        (list thm-member-name))
+                   (list thm-memberp-name)
+                   thm-names)
            names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5709,7 +5719,11 @@
      where the first writer and checker operate on ACL2 integers,
      while the other 10 writers and 10 checkers operate on C integers.
      We iterate through the 10 writers and checkers on C integers,
-     while using the writer and checker on ACL2 integers at each iteration."))
+     while using the writer and checker on ACL2 integers at each iteration.")
+   (xdoc::p
+    "If the structure type has a flexible array member,
+     we avoid generating theorems for accessing members by structure value,
+     because in ATC-generated code we only allow access by pointer."))
   (b* ((memtype (defstruct-member-info->memtype meminfo))
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
@@ -6273,8 +6287,14 @@
                                               length
                                               names-to-avoid
                                               wrld)))
-       (mv (list* event-member event-memberp events)
-           (list* thm-member-name thm-memberp-name thm-names)
+       (mv (append (and (not length)
+                        (list event-member))
+                   (list event-memberp)
+                   events)
+           (append (and (not length)
+                        (list thm-member-name))
+                   (list thm-memberp-name)
+                   thm-names)
            names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
