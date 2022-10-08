@@ -14,7 +14,6 @@
 ;; This book gathers all xdoc topics that we want to contribute to the manual.
 
 (include-book "abnf/top")
-(include-book "abnf/examples/top") ; they have XDOC topics for the manual
 (include-book "acl2pl/top")
 (include-book "apt/doc")
 (include-book "axe/doc")
