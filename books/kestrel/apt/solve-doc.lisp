@@ -182,12 +182,12 @@
      (xdoc::ul
       (xdoc::li
        "@(':acl2-rewriter'), to use the ACL2 rewriter.
-        This method is made available by including
-        @('[books]/kestrel/apt/solve-method-acl2-rewriter.lisp').")
+        This method is made available by including community book
+        @('kestrel/apt/solve-method-acl2-rewriter.lisp').")
       (xdoc::li
        "@(':axe-rewriter'), to use the Axe rewriter.
-        This method is available by including
-        @('[books]/kestrel/apt/solve-method-axe-rewriter.lisp').")
+        This method is available by including community book
+        @('kestrel/apt/solve-method-axe-rewriter.lisp').")
       (xdoc::li
        "@(':manual'), to manually supply a solution."))
      (xdoc::p

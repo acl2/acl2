@@ -4325,37 +4325,6 @@
                 (symbol-name fn))
    fn))
 
-(defun string-prefixp-1 (str1 i str2)
-  (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
-           (xargs :guard (and (<= i (length str1))
-                              (<= i (length str2)))))
-  (cond ((zpf i) t)
-        (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
-             (cond ((eql (the character (char str1 i))
-                         (the character (char str2 i)))
-                    (string-prefixp-1 str1 i str2))
-                   (t nil))))))
-
-(defun string-prefixp (root string)
-
-; We return a result propositionally equivalent to
-;   (and (<= (length root) (length string))
-;        (equal root (subseq string 0 (length root))))
-; but, unlike subseq, without allocating memory.
-
-; At one time this was a macro that checked `(eql 0 (search ,root ,string
-; :start2 0)).  But it seems potentially inefficient to search for any match,
-; only to insist at the end that the match is at 0.
-
-  (declare (type string root string)
-           (xargs :guard (<= (length root) (fixnum-bound))))
-  (let ((len (length root)))
-    (and (<= len (length string))
-         (assert$ (<= len (fixnum-bound))
-                  (string-prefixp-1 root len string)))))
-
 (defun warrant-name-inverse (warrant-fn)
 
 ; Warning: Keep this in sync with warrant-name (q.v.).
@@ -4369,7 +4338,6 @@
                   (length warrant-fn-name))
           warrant-fn))))
 
-; Matt:  The following function used to be called warrantp.
 (defun warrant-function-namep (warrant-fn wrld)
 
 ; We check whether warrant-fn is the warrant function of some function, fn.  If

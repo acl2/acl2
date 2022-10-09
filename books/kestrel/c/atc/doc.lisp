@@ -1493,7 +1493,7 @@
        (if using @('gcc') on macOS or Linux).")
 
      (xdoc::p
-      "The directory @('[books]/kestrel/c/atc/tests')
+      "The community books directory @('kestrel/c/atc/tests')
        contains some examples of C code generation
        and handwritten C code to test the generated code.")))
 

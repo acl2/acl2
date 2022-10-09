@@ -34,7 +34,9 @@
                     (booleanp (cdr (car (cadr val)))) ; skipped-proofs-p
                     (consp (cdr (cadr val)))
                     (or (symbolp (cadr (cadr val))) ; name introduced
-                        (stringp (cadr (cadr val))) ; name introduced
+                        (if (eq (car (car (cadr val))) 'include-book)
+                            (book-name-p (cadr (cadr val)))
+                          (stringp (cadr (cadr val)))) ; name introduced
                         (equal 0 (cadr (cadr val))) ; no names introduced
                         (string-or-symbol-listp (cadr (cadr val)))) ; list of names introduced
                     (member-eq (cddr (cadr val)) ; symbol-class

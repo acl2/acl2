@@ -516,7 +516,7 @@
                    (clique-runic-designators (cdr clique))))))
 
 ; The following function has been moved here from
-; [books]/kestrel/utilities/user-interface.lisp, because it is an obsolete user
+; kestrel/utilities/user-interface.lisp, because it is an obsolete user
 ; interface utility that is only used in this simplify-defun.lisp file.
 (define control-screen-output-and-maybe-replay
   ((verbose "@('t') (or @(''t')) or @('nil') (or @(''nil')), else indicates

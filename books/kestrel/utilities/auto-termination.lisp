@@ -567,7 +567,10 @@
                       function~|; ~x0, defined ~@1.~|"
                      (list (cons #\0 fn)
                            (cons #\1
-                                 (cond (book (msg "in the book~|; ~s0" book))
+                                 (cond (book (msg "in the book~|; ~s0"
+                                                  (book-name-to-filename
+                                                   book world
+                                                   'auto-termination-declare)))
                                        (t "at the top level"))))
                      (standard-co state) state nil))
                (t state))

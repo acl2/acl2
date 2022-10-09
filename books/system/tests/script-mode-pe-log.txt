@@ -13,13 +13,13 @@ ACL2 !>>(INCLUDE-BOOK "arithmetic/top"
 Summary
 Form:  ( INCLUDE-BOOK "arithmetic/top" ...)
 Rules: NIL
- "[books]/arithmetic/top.lisp"
+ (:SYSTEM . "arithmetic/top.lisp")
 ACL2 !>>(PE 'MINUS-CANCELLATION-ON-RIGHT)
    d       4:x(INCLUDE-BOOK "arithmetic/top" :DIR ...)
               \
               [Included books, outermost to innermost:
-               "[books]/arithmetic/top.lisp"
-               "[books]/arithmetic/equalities.lisp"
+               (:SYSTEM . "arithmetic/top.lisp")
+               (:SYSTEM . "arithmetic/equalities.lisp")
               ]
               \
 >              (DEFTHM MINUS-CANCELLATION-ON-RIGHT
@@ -29,12 +29,13 @@ ACL2 !>>(INCLUDE-BOOK "script-mode-pe-helper")
 Summary
 Form:  ( INCLUDE-BOOK "script-mode-pe-helper" ...)
 Rules: NIL
- "script-mode-pe-helper.lisp"
+ (:SYSTEM .
+          "system/tests/script-mode-pe-helper.lisp")
 ACL2 !>>(PE 'H)
            5:x(INCLUDE-BOOK "script-mode-pe-helper")
               \
               [Included books, outermost to innermost:
-               "[:MY-DIR]/script-mode-pe-helper.lisp"
+               (:MY-DIR . "script-mode-pe-helper.lisp")
               ]
               \
 >L             (DEFUN H (X) X)

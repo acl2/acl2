@@ -1151,7 +1151,7 @@ ACL2 !>>(UBT 2)
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobj-table.lisp"
+ (:SYSTEM . "std/stobjs/stobj-table.lisp")
 ACL2 !>>(IN-THEORY (DISABLE NTH UPDATE-NTH))
  :CURRENT-THEORY-UPDATED
 ACL2 !>>(DEFSTOBJ FOO (FOO-FLD))
@@ -1220,7 +1220,7 @@ ACL2 !>>(UBT 2)
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobj-table.lisp"
+ (:SYSTEM . "std/stobjs/stobj-table.lisp")
 ACL2 !>>(DEFSTOBJ ST (FLD :TYPE INTEGER :INITIALLY 0))
  ST
 ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-TRY1
@@ -1288,7 +1288,7 @@ ACL2 !>>(UBT 2)
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobjtab"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobjtab.lisp"
+ (:SYSTEM . "std/stobjs/stobjtab.lisp")
 ACL2 !>>(DEFSTOBJ ST (FLD :TYPE INTEGER :INITIALLY 0))
  ST
 ACL2 !>>(DEFTHM
@@ -1318,10 +1318,10 @@ ACL2 !>>(UBT 2)
    d       1:x(INCLUDE-BOOK "tools/run-script"
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/top" :DIR :SYSTEM)
- "[books]/std/top.lisp"
+ (:SYSTEM . "std/top.lisp")
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobj-table.lisp"
+ (:SYSTEM . "std/stobjs/stobj-table.lisp")
 ACL2 !>>(DEFSTOBJ ST FLD)
  ST
 ACL2 !>>(DEFINE GOOD-ST-P (ST) (NATP (FLD ST)))

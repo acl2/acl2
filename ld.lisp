@@ -1972,7 +1972,9 @@
       (cond (*load-compiled-stack*
              (error "It is illegal to call LD while loading a compiled book, ~
                      in this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
-                    (caar *load-compiled-stack*)))
+                    (book-name-to-filename (caar *load-compiled-stack*)
+                                           (w state)
+                                           'ld)))
             ((= *ld-level* 0)
              (return-from
               ld-fn
@@ -3234,18 +3236,21 @@
 ; We puff an include-book simply by going to the file named by the include-book
 ; and return the events in it.  Recursive include-books are not flattened here.
 
-  (let ((full-book-name (access-event-tuple-namex (cddr (car wrld)))))
+  (let* ((full-book-string (access-event-tuple-namex (cddr (car wrld))))
+         (installed-wrld (w state))
+         (full-book-name (filename-to-book-name full-book-string
+                                                installed-wrld)))
     (cond
-     ((assoc-equal full-book-name (table-alist 'puff-included-books (w state)))
+     ((assoc-equal full-book-name (table-alist 'puff-included-books
+                                               installed-wrld))
       (value final-cmds))
      (t
       (er-progn
-       (chk-input-object-file full-book-name ctx state)
-       (chk-book-name full-book-name full-book-name ctx state)
+       (chk-input-object-file full-book-string ctx state)
        (er-let*
-           ((ev-lst (read-object-file full-book-name ctx state))
+           ((ev-lst (read-object-file full-book-string ctx state))
             (cert-obj (chk-certificate-file
-                       full-book-name
+                       full-book-string
                        nil
                        'puff
                        ctx
@@ -3278,7 +3283,7 @@
                            (access cert-obj cert-obj :cmds))))
            (er-let* ((ev-lst-book-hash
                       (if old-book-hash ; otherwise, don't care
-                          (book-hash old-book-hash full-book-name cmds
+                          (book-hash old-book-hash full-book-string cmds
                                      expansion-alist cert-data ev-lst state)
                         (value nil))))
              (cond
@@ -3299,7 +3304,7 @@
                     thus presumably been modified since it was last included ~
                     and we cannot now recover the events that created the ~
                     current logical world."
-                   full-book-name
+                   full-book-string
                    old-book-hash
                    ev-lst-book-hash))
               (t (let ((fixed-cmds
@@ -3324,7 +3329,7 @@
 
                        '((set-cbd
                           ,(directory-of-absolute-pathname
-                            full-book-name))
+                            full-book-string))
                          ,@fixed-cmds
                          ,@(and include-book-alist-entry ; always true?
                                 `((table puff-included-books
@@ -3368,7 +3373,9 @@
        ((and (eq immediate 'certify-book)
              (eq event-type 'include-book)
              (equal (car include-book-alist-entry)
-                    (access-event-tuple-namex event-tuple)))
+                    (filename-to-book-name
+                     (access-event-tuple-namex event-tuple)
+                     (w state))))
 
 ; The include-book here represents the evaluation of all events after the final
 ; local event in the book common to the certify-book command and the current

@@ -59,5 +59,5 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These extensions could be moved under @('[books]/std/system')
+    "These extensions could be moved under @('std/system')
      at some point.")))

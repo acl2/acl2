@@ -12,7 +12,7 @@
 
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
 
-;; See also [books]/std/strings/suffixp.lisp but that brings in many books.
+;; See also community book std/strings/suffixp.lisp but that brings in many books.
 
 ;; Check whether STR ends with SUFFIX.
 ;; TODO: Consider giving this a name that includes 'suffix'

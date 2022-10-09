@@ -55,7 +55,7 @@
    (xdoc::p
     "This manual page provides reference documentation for ATJ.
      A separate tutorial in being written, as noted above.
-     See the files under @('[books]/kestrel/java/atj/tests/')
+     See the files under @('kestrel/java/atj/tests/')
      for examples of use of ATJ.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -894,9 +894,9 @@
     (xdoc::seetopic "aij" "AIJ")
     " must be in the classpath:
      this file is at
-     @('[books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar').
+     @('kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar').
      The files @('compile.sh') and @('run.sh')
-     under @('[books]/kestrel/java/atj/tests/')
+     under @('kestrel/java/atj/tests/')
      contains examples of command to compile and run the code.
      See "
     (xdoc::seetopic "aij" "the AIJ documentation")
@@ -917,7 +917,7 @@
      These stack overflow issues may be mitigated
      by passing a larger stack size to the Java Virtual Machine
      (via the @('-Xss') option to the @('java') command;
-     see the comments in the file @('[books]/kestrel/atj/tests/run.sh')),
+     see the comments in the file @('kestrel/atj/tests/run.sh')),
      or, when @(':deep') is @('nil'),
      by making all the recursive ACL2 functions tail-recursive
      (e.g. via "

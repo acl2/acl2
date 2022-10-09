@@ -59,6 +59,6 @@
 
 
 (xdoc::archive-matching-topics
- (or (str::strprefixp "[books]/centaur/aignet/" (cdr (assoc :from x)))
-     (str::strprefixp "[books]/centaur/truth/" (cdr (assoc :from x)))
-     (equal "[books]/centaur/misc/nth-nat-equiv.lisp" (cdr (assoc :from x)))))
+ (or (str::strprefixp "centaur/aignet/" (cdr (assoc :from x)))
+     (str::strprefixp "centaur/truth/" (cdr (assoc :from x)))
+     (equal "centaur/misc/nth-nat-equiv.lisp :DIR :SYSTEM" (cdr (assoc :from x)))))
