@@ -37,6 +37,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod rulename
   :short "Fixtype of rule names."
   :long
@@ -59,10 +61,14 @@
   :layout :list
   :pred rulenamep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption rulename-option
   rulename
   :short "Fixtype of rule names and @('nil')."
   :pred rulename-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset rulename-set
   :elt-type rulename
@@ -71,6 +77,8 @@
   :fix rulename-sfix
   :equiv rulename-sequiv
   :short "Finite sets of rule names.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum num-val
   :short "Fixtype of numeric value notations."
@@ -94,6 +102,8 @@
   (:range ((min nat)
            (max nat))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum char-val
   :short "Fixtype of character value notations."
   :long
@@ -116,6 +126,8 @@
   (:sensitive ((get acl2::string)))
   (:insensitive ((get acl2::string))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod prose-val
   :short "Fixtype of prose value notations."
   :long
@@ -132,6 +144,8 @@
   ((get acl2::string))
   :tag :prose
   :layout :list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod repeat-range
   :short "Fixtype of repetition ranges."
@@ -155,6 +169,8 @@
   :tag :repeat
   :layout :list
   :pred repeat-rangep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes alt/conc/rep/elem
 
@@ -230,6 +246,8 @@
     :pred elementp
     :measure (two-nats-measure (acl2-count x) 0)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod rule
   :short "Fixtype of rules."
   :long
@@ -249,10 +267,14 @@
   :layout :list
   :pred rulep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption maybe-rule
   rule
   :short "Fixtype of rules and @('nil')."
   :pred maybe-rulep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist rulelist
   :short "Fixtype of lists of rules."
@@ -266,6 +288,8 @@
   :true-listp t
   :elementp-of-nil nil
   :pred rulelistp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc grammar
   :short
