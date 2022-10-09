@@ -269,10 +269,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-rule
+(fty::defoption rule-option
   rule
   :short "Fixtype of rules and @('nil')."
-  :pred maybe-rulep)
+  :pred rule-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
