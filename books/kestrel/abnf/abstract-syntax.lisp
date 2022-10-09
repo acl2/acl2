@@ -11,13 +11,11 @@
 (in-package "ABNF")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/fty/nati" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/util/defval" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
