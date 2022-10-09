@@ -3176,12 +3176,12 @@ ACL2 >>(INCLUDE-BOOK "perm")
 Summary
 Form:  ( INCLUDE-BOOK "perm" ...)
 Rules: NIL
- "perm.lisp"
+ (:SYSTEM . "demos/marktoberdorf-08/perm.lisp")
 ACL2 >>(PE 'PERM)
           10:x(INCLUDE-BOOK "perm")
               \
               [Included books, outermost to innermost:
-               "[books]/demos/marktoberdorf-08/perm.lisp"
+               (:SYSTEM . "demos/marktoberdorf-08/perm.lisp")
               ]
               \
 >L             (DEFUN PERM (X Y)

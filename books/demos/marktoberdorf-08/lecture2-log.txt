@@ -20,7 +20,7 @@ ACL2 >>(INCLUDE-BOOK "m1")
 Summary
 Form:  ( INCLUDE-BOOK "m1" ...)
 Rules: NIL
- "m1.lisp"
+ (:SYSTEM . "demos/marktoberdorf-08/m1.lisp")
 ACL2 >>(IN-PACKAGE "M1")
  "M1"
 M1 >>'(END OF SETUP)
@@ -114,7 +114,7 @@ M1 >>(INCLUDE-BOOK "compile")
 Summary
 Form:  ( INCLUDE-BOOK "compile" ...)
 Rules: NIL
- "compile.lisp"
+ (:SYSTEM . "demos/marktoberdorf-08/compile.lisp")
 M1 >>(COMPILE '(N)
               '((A = 1)
                 (WHILE (N > 0)

@@ -173,7 +173,7 @@ command, along the following lines:</p>
 })
 
 <p>Your topic should then automatically overwrite this default page.</p>")
-           (cons :from "[books]/xdoc/save-classic.lisp"))
+           (cons :from "xdoc/save-classic.lisp :DIR :SYSTEM"))
      all-topics)))
 
 (defun find-roots (x)

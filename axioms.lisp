@@ -880,7 +880,7 @@
 
 ;   Each defpkg event added to the portcullis as described above will have a
 ;   :book-path argument derived from the book-path field of a package-entry in
-;   the known-package-alist, intended to represent the list of full book names
+;   the known-package-alist, intended to represent the list of full-book-names
 ;   leading from the innermost book actually containing the corresponding
 ;   defpkg (in the car), up to the top-level such include-book (at the end of
 ;   the list).  Thus, when we evaluate that defpkg, the new package-entry in
@@ -960,7 +960,7 @@
 
  ; The remaining fields are used for messages only; they have no logical import.
 
-          ,book-path ; a true list of full book names, where the path
+          ,book-path ; a true list of full-book-names, where the path
                      ; from the first to the last in the list is intended to
                      ; give the location of the introducing defpkg, starting
                      ; with the innermost book
@@ -1832,7 +1832,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         ttags
                         dir)
   (declare (ignore uncertified-okp defaxioms-okp skip-proofs-okp ttags))
-  `(include-book-raw ,user-book-name nil ,load-compiled-file ,dir
+  `(include-book-raw ,user-book-name nil nil ,load-compiled-file ,dir
                      '(include-book . ,user-book-name)
                      *the-live-state*))
 
@@ -1882,6 +1882,31 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               ACL2 bug; please contact the ACL2 implementors and report the ~%~
               offending form:~%~%~s~%"
              ',event-form))))
+
+(defun defconst-redeclare-error (name)
+  (let ((stk (symbol-value '*load-compiled-stack*))
+        (project-dir-alist (project-dir-alist (w *the-live-state*)))
+        (ctx 'defconst-redeclare-error))
+    (cond
+     (stk (error
+           "Illegal attempt to redeclare the constant ~s.~%~
+            The problem appears to be that you are including a book,~%~
+            ~2T~a,~%~
+            that attempts to give a definition of this constant that~%~
+            is incompatible with its existing definition.  The ~%~
+            discrepancy is being discovered while loading that book's~%~
+            compiled (or expansion) file~:[, as the last such load for~%~
+            the following nested sequence of included books (outermost~%~
+            to innermost):~%~{  ~a~%~}~;.~]"
+           name
+           (book-name-to-filename (caar stk) project-dir-alist ctx)
+           (null (cdr stk))
+           (book-name-lst-to-filename-lst
+            (reverse-strip-cars stk nil)
+            project-dir-alist
+            ctx)))
+     (t (error "Illegal attempt to redeclare the constant ~s."
+               name)))))
 )
 
 ;                          STANDARD CHANNELS
@@ -12331,18 +12356,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; that is part of that deflabel (but which is not actually part of the
 ; ACL2 documentation).
 
-    (let* ((old-book-path
-            (reverse (unrelativize-book-path
-                      (package-entry-book-path package-entry)
-                      (project-dir-alist (w *the-live-state*)))))
+    (let* ((state *the-live-state*)
+           (wrld (w state))
+           (ctx 'check-proposed-imports)
+           (project-dir-alist (project-dir-alist wrld))
+           (old-book-path (package-entry-book-path package-entry))
            (current-book-path
-            (reverse
-             (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
-                     (global-val 'include-book-path (w *the-live-state*)))))
+            (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
+                    (global-val 'include-book-path wrld)))
            (old-imports (package-entry-imports package-entry))
            (proposed-not-old (set-difference-eq proposed-imports old-imports))
            (old-not-proposed (set-difference-eq old-imports proposed-imports))
-           (current-package (f-get-global 'current-package *the-live-state*)))
+           (current-package (f-get-global 'current-package state)))
       (interface-er
        "~%We cannot reincarnate the package ~x0 because it was previously ~
         defined with a different list of imported symbols.~|~%The previous ~
@@ -12363,15 +12388,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         package-reincarnation-import-restrictions."
        name
        (if old-book-path 1 0)
-       old-book-path
+       (book-name-lst-to-filename-lst (reverse old-book-path)
+                                      project-dir-alist
+                                      ctx)
        (if current-book-path 1 0)
-       current-book-path
+       (book-name-lst-to-filename-lst (reverse current-book-path)
+                                      project-dir-alist
+                                      ctx)
        (if old-not-proposed 0 1)
        old-not-proposed
        (if proposed-not-old 0 1)
        proposed-not-old
-       current-package
-       )))))
+       current-package)))))
 
 (defun-one-output defpkg-raw1 (name imports book-path event-form)
   (let ((package-entry (find-package-entry name *ever-known-package-alist*))
@@ -21947,10 +21975,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                     defines this package (with a defpkg ~
                                     event).~|~%  ~F0"
                                    (reverse
-                                    (unrelativize-book-path
+                                    (book-name-lst-to-filename-lst
                                      (package-entry-book-path entry)
-                                     (project-dir-alist
-                                      (w *the-live-state*)))))))))))))
+                                     (project-dir-alist (w *the-live-state*))
+                                     'bad-lisp-atomp)))))))))))
                 (t nil))))))
         ((typep x 'string)
          (bad-lisp-stringp x))
@@ -27223,21 +27251,21 @@ Lisp definition."
   10000)
 
 #-acl2-loop-only
-(defun print-call-history ()
+(defun print-call-history (&aux (state *the-live-state*))
 
 ; We welcome suggestions from users or Lisp-specific experts for how to improve
 ; this function, which is intended to give a brief but useful look at the debug
 ; stack.
 
   (declare (xargs :guard t))
-  (when (f-get-global 'boot-strap-flg *the-live-state*)
+  (when (f-get-global 'boot-strap-flg state)
 
 ; We don't know why SBCL 1.0.37 hung during guard verification of
 ; maybe-print-call-history during the boot-strap.  But we sidestep that issue
 ; here.
 
     (return-from print-call-history nil))
-  (when (f-get-global 'certify-book-info *the-live-state*)
+  (when (f-get-global 'certify-book-info state)
 
 ; The additional "Book under certification" message is helpful when the
 ; backtrace output goes to the terminal instead of a .out file, which could
@@ -27248,9 +27276,12 @@ Lisp definition."
     (eval ; using eval because the certify-book-info record is not yet defined
      '(format *debug-io*
               "~%; Book under certification: ~s~%"
-              (access certify-book-info
-                      (f-get-global 'certify-book-info *the-live-state*)
-                      :full-book-name))))
+              (book-name-to-filename (access certify-book-info
+                                             (f-get-global 'certify-book-info
+                                                           state)
+                                             :full-book-name)
+                                     (w state)
+                                     'print-call-history))))
   #+ccl
   (when (fboundp 'ccl::print-call-history)
 ; See CCL file lib/backtrace.lisp for more options

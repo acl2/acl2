@@ -87,7 +87,7 @@
     "Since osets are in the @('\"SET\"') package,
      it would be natural to use a @('\"BAG\') package for obags.
      However, a package with this name is already defined
-     in @('[books]/coi/bags/package.lsp') (see below).
+     in @('coi/bags/package.lsp') (see below).
      So, we use @('\"OBAG\"') for obags
      to allow interoperability with this @('coi') bag library,
      in the sense that an application can use both @('coi') bags and obags.
@@ -96,13 +96,13 @@
      for consistency.
      (A similar issue applies to "
     (xdoc::seetopic "omap::omaps" "the library of omaps")
-    " and the @('[books]/coi/maps') library,
+    " and the @('coi/maps') library,
      which defines a @('\"MAP\"') package.)")
 
    (xdoc::p
     "This obag library is in the same @('SET') package as osets
      because obags are related to osets.
-     Furthermore, a @('BAG') package already exists in @('[books]/coi/bags/').")
+     Furthermore, a @('BAG') package already exists in @('coi/bags/').")
    (xdoc::p
     "This obag library could become a new @('std/obags') library,
      part of @(csee std), parallel to @(tsee set::std/osets).")
@@ -112,7 +112,7 @@
      at the cost of maintaining their non-strict order.
      These tradeoffs are analogous to the ones between using osets
      and using the built-in @(see acl2::lists) to represent sets.
-     The bag library in @('[books]/coi/bags/')
+     The bag library in @('coi/bags/')
      operates on possibly unordered lists."))
   :default-parent t)
 

@@ -131,7 +131,7 @@ append-with-key
 
 list-equiv")
 
-     (xdoc::topparas "The library is located in <tt>[books]/kestrel/lists-light/</tt>.  It is being developed in a lightweight style that minimizes dependencies.  See the individual files for details."))))
+     (xdoc::topparas "The library is located in @(see community-books) directory <tt>kestrel/lists-light/</tt>.  It is being developed in a lightweight style that minimizes dependencies.  See the individual files for details."))))
 
 ;; (gen-xdoc-for-file "all-true-listp.lisp"
 ;;                    ((all-true-listp "Recognize a list of true-lists"))

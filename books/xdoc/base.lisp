@@ -86,25 +86,14 @@
          :hints(("Goal" :in-theory (enable state-p1)))
          :rule-classes nil))
 
-(defun normalize-bookname (bookname state)
-  (declare (xargs :stobjs (state)
-                  :guard-hints (("goal" :use ((:instance state-p1-implies-all-boundp
-                                               (st state)))
-                                 :in-theory (disable all-boundp assoc)
-                                 :expand ((:free (a b x) (all-boundp (cons a b) x)))))
-                  :guard t))  ;; WAHJr. added guard (see original below)
-  (let ((dir-system (acl2::system-books-dir state)))
-    (if (not (and (stringp dir-system) (stringp bookname)))
-        bookname
-      (let ((lds (length dir-system)))
-        ;; Eventually we could do something fancier to support
-        ;; add-include-book-dirs, but this is probably fine for the
-        ;; Community Books, at least.
-        (if (and (<= lds (length bookname))
-                 (equal dir-system (subseq bookname 0 lds)))
-            (concatenate 'string "[books]/"
-                         (subseq bookname lds nil))
-          bookname)))))
+(defun normalize-bookname (bookname)
+  (declare (xargs :guard t))
+  (cond ((acl2::sysfile-p bookname)
+         (concatenate 'string
+                      (acl2::sysfile-filename bookname)
+                      " :DIR :"
+                      (symbol-name (acl2::sysfile-key bookname))))
+        (t bookname)))
 
 ;; This book potentially needs recertification after any change to the
 ;; CERTIFY-BOOK-INFO record, because the ACCESS call below macroexpands to some
@@ -122,7 +111,7 @@
              (bookname (if info
                            (acl2::access acl2::certify-book-info info :full-book-name)
                          "Current Interactive Session"))
-             (bookname (normalize-bookname bookname state))
+             (bookname (normalize-bookname bookname))
              (parents (or parents (get-default-parents (w state))))
              (entry (list (cons :name name)
                           (cons :base-pkg (acl2::pkg-witness pkg))

@@ -22,7 +22,7 @@ ACL2 !>>(INCLUDE-BOOK "models/jvm/m1/m1"
 Summary
 Form:  ( INCLUDE-BOOK "models/jvm/m1/m1" ...)
 Rules: NIL
- "[books]/models/jvm/m1/m1.lisp"
+ (:SYSTEM . "models/jvm/m1/m1.lisp")
 ACL2 !>>(IN-PACKAGE "M1")
  "M1"
 M1 !>>(DEFUN SQ (X) (* X X))

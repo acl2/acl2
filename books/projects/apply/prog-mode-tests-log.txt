@@ -19,7 +19,7 @@ ACL2 !>>(INCLUDE-BOOK "projects/apply/loop"
 Summary
 Form:  ( INCLUDE-BOOK "projects/apply/loop" ...)
 Rules: NIL
- "[books]/projects/apply/loop.lisp"
+ (:SYSTEM . "projects/apply/loop.lisp")
 ACL2 !>>(DEFCONST
              *TESTS*
              '((TRACE$ HELLO)

@@ -21,7 +21,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The JSON parser in @('[books]/kestrel/json-parser/')
+    "The JSON parser in @('kestrel/json-parser/')
      produces output (parsed and abstracted JSON) in a form
      that is slightly different from the JSON abstract syntax
      formalized in this JSON library (see @(see abstract-syntax));

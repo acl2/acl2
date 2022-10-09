@@ -36,7 +36,7 @@
 ;
 ; where p is a fixed positive integer constant or constrained 0-ary function
 ; (this definition avoids the need to define n-ary equivalence relation;
-; see [books]/coi/nary/).
+; see community books directory coi/nary/).
 
 ; Ideally we would like to show the following congruences
 ;

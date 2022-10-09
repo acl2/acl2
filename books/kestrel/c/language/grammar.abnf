@@ -295,7 +295,6 @@ integer-constant = decimal-constant [ integer-suffix ]
 decimal-constant = nonzero-digit
                  / decimal-constant digit
 
-
 octal-constant = "0"
                / octal-constant octal-digit
 

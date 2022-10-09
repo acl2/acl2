@@ -48,18 +48,18 @@ arithmetic, modular arithmetic, etc.")
 (defsection arithmetic-2
   :parents (arithmetic)
   :short "A newer arithmetic library that is considered deprecated in favor of arithmetic-5."
-  :long "For more information, see @('[books]/arithmetic-2/README')."
+  :long "For more information, see @('arithmetic-2/README')."
   )
 
 (defsection arithmetic-3
   :parents (arithmetic)
   :short "Another newer arithmetic library that is considered deprecated in favor of arithmetic-5."
-  :long "For more information, see @('[books]/arithmetic-3/README').")
+  :long "For more information, see @('arithmetic-3/README').")
 
 (defsection arithmetic-5
   :parents (arithmetic)
   :short "A powerful arithmetic library."
-  :long "For more information, see @('[books]/arithmetic-5/README').")
+  :long "For more information, see @('arithmetic-5/README').")
 
 (defsection bit-vectors
   :parents (math)

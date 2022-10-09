@@ -772,7 +772,7 @@
     "         (signed-byte-p n (lognot x)))")
    (xdoc::p
     "which can be proved, for example,
-     by including @('[books]/kestrel/arithmetic-light/expt.lisp').")
+     by including community book @('kestrel/arithmetic-light/expt.lisp').")
    (xdoc::p
     "Thus, applying @(tsee result-integer-value) never yields an error
      when applied to the result @(tsee lognot),

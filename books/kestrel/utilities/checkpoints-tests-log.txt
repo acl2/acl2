@@ -12,7 +12,7 @@ ACL2 !>>(INCLUDE-BOOK "checkpoints")
 Summary
 Form:  ( INCLUDE-BOOK "checkpoints" ...)
 Rules: NIL
- "checkpoints.lisp"
+ (:SYSTEM . "kestrel/utilities/checkpoints.lisp")
 ACL2 !>>(DEFMACRO
          PRINT-AND-RUN
          (FORM &OPTIONAL (PRINT 'T))
@@ -1425,7 +1425,7 @@ ACL2 !>>(INCLUDE-BOOK "tools/prove-dollar"
 Summary
 Form:  ( INCLUDE-BOOK "tools/prove-dollar" ...)
 Rules: NIL
- "[books]/tools/prove-dollar.lisp"
+ (:SYSTEM . "tools/prove-dollar.lisp")
 ACL2 !>>(PROVE$ '(EQUAL (APPEND (APPEND (IF A X Z) Y) X)
                         (APPEND X Y X)))
  NIL

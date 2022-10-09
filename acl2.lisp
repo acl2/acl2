@@ -846,27 +846,6 @@
 
 (defvar acl2::*compiling-certified-file* nil)
 
-(defun acl2::defconst-redeclare-error (name)
-  (let ((stk (symbol-value 'acl2::*load-compiled-stack*)))
-    (cond (stk
-           (error
-            "Illegal attempt to redeclare the constant ~s.~%~
-             The problem appears to be that you are including a book,~%~
-             ~2T~a,~%~
-             that attempts to give a definition of this constant that~%~
-             is incompatible with its existing definition.  The ~%~
-             discrepancy is being discovered while loading that book's~%~
-             compiled (or expansion) file~:[, as the last such load for~%~
-             the following nested sequence of included books (outermost~%~
-             to innermost):~%~{  ~a~%~}~;.~]"
-            name
-            (caar stk)
-            (null (cdr stk))
-            (reverse (loop for x in stk collect (car x)))))
-          (t
-           (error "Illegal attempt to redeclare the constant ~s."
-                  name)))))
-
 (defparameter acl2::*safe-mode-verified-p*
 
 ; This global may be bound to t when we are evaluating a form that we know will
@@ -941,7 +920,7 @@
                                    (equal (car (cdr disc)) qterm)))
                             (equal (cdr (cdr ,disc)) ,term)))
                    (symbol-value ',name))
-                  (t (acl2::defconst-redeclare-error ',name))))
+                  (t (acl2::qfuncall acl2::defconst-redeclare-error ',name))))
                 ((acl2::raw-mode-p acl2::*the-live-state*)
 
 ; In this case we allow redeclaration of the constant; this is, after all, raw
@@ -949,7 +928,7 @@
 
                  ,term)
                 (t
-                 (acl2::defconst-redeclare-error ',name)))))))
+                 (acl2::qfuncall acl2::defconst-redeclare-error ',name)))))))
 
 ; If ',name is not bound, we must evaluate ,term.  Note that we do so
 ; outside of all local bindings, so as not to disturb variables in
