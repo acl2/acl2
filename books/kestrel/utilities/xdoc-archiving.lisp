@@ -62,7 +62,13 @@
 (defun archive-topics-for-books-tree-fn (tree-path ; relative to "books/"
                                          )
   (declare (xargs :guard (stringp tree-path)))
-  (let ((path-prefix (concatenate 'string "[books]/" tree-path "/")))
+; Matt K. mod, October 2022: In consultation with Sol Swords, :doc topic paths
+; are no longer displayed with the "[books]/" prefix; instead they have a
+; suffix, " :DIR :SYSTEM".  (This generalizes to other project directories
+; besides :SYSTEM.)  For completeness such a suffix should perhaps be
+; considered below, though it seems to me unlikely to matter in practice.
+;  (let ((path-prefix (concatenate 'string "[books]/" tree-path "/")))
+  (let ((path-prefix (concatenate 'string tree-path "/")))
     `(archive-matching-topics
       ;; The test to apply to an arbitrary topic, X, to decide whether to archive
       ;; it (a topic is an alist whose keys are :from, :name, :short, etc.):

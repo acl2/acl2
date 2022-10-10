@@ -43,5 +43,5 @@
                  (cdr (assoc 'resource-dirs (table-alist 'xdoc world))))))
 
 (xdoc::archive-matching-topics
- (or (str::strprefixp "[books]/projects/" (cdr (assoc :from x)))
-     (equal "[books]/tools/defsum.lisp" (cdr (assoc :from x)))))
+ (or (str::strprefixp "projects/" (cdr (assoc :from x)))
+     (equal "tools/defsum.lisp :DIR :SYSTEM" (cdr (assoc :from x)))))

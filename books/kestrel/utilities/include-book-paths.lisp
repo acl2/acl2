@@ -233,7 +233,10 @@
 
 (defun books-included-by (full-book-name ctx state)
   (declare (xargs :mode :program))
-  (let ((cert-file-name (convert-book-name-to-cert-name full-book-name t)))
+  (let* ((full-book-string (book-name-to-filename full-book-name
+                                                  (w state)
+                                                  ctx))
+         (cert-file-name (convert-book-string-to-cert full-book-string t)))
     (er-let* ((alist (post-alist-from-pcert1
                       cert-file-name
                       (msg "Unable to open file ~x0 for input."
@@ -401,11 +404,12 @@
          (er hard ctx
              "Not a string: ~x0"
              (car books)))
-        (t (mv-let (full-book-name directory-name familiar-name)
+        (t (mv-let (full-book-name full-book-string directory-name
+                                   familiar-name)
              (parse-book-name cbd
                               (maybe-remove-dot-lisp-suffix (car books))
                               ".lisp" ctx state)
-             (declare (ignore directory-name familiar-name))
+             (declare (ignore full-book-string directory-name familiar-name))
              (cons full-book-name
                    (full-book-name-lst (cdr books) cbd ctx state))))))
 

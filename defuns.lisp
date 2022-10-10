@@ -9328,7 +9328,11 @@
                  (cond
                   (include-book-path
                    (cons " in the book ~xa"
-                         (list (cons #\a (car include-book-path)))))
+                         (list (cons #\a
+                                     (book-name-to-filename
+                                      (car include-book-path)
+                                      wrld
+                                      ctx)))))
                   (t ""))
                  (cond
                   ((cddr include-book-path)
@@ -9336,12 +9340,17 @@
                           following sequence of included books from outside ~
                           to inside, i.e., top-level included book ~
                           first:~|~&b.~|"
-                         (list (cons #\b (reverse
-                                          (cdr include-book-path))))))
+                         (list (cons #\b (book-name-lst-to-filename-lst
+                                          (reverse (cdr include-book-path))
+                                          (project-dir-alist wrld)
+                                          ctx)))))
                   ((cdr include-book-path)
                    (cons "Note: The above book is included inside the book ~
                           ~xb.  "
-                         (list (cons #\b (cadr include-book-path)))))
+                         (list (cons #\b (book-name-to-filename
+                                          (cadr include-book-path)
+                                          wrld
+                                          ctx)))))
                   (t ""))
                  (if erp 1 0))
              (pprogn (if erp
@@ -12172,7 +12181,10 @@
              (if (global-val 'include-book-path (w state))
                  (msg "~%NOTE: This error might be eliminated by certifying ~
                        the book,~|~x0.~|See :DOC certify-book."
-                      (car (global-val 'include-book-path (w state))))
+                      (book-name-to-filename
+                       (car (global-val 'include-book-path (w state)))
+                       (w state)
+                       'in-package))
                "")))
         (t (let ((state (f-put-global 'current-package str state)))
              (value str)))))

@@ -7,6 +7,9 @@
 ; (redef-pkg name imports &optional doc book-path)
 ; where doc and book-path are ignored.
 
+; Updated by Matt Kaufmann 10/2/2022 to accommodate changes supporting book
+; relocation.
+
 ; Certify with:
 
 ; (certify-book "redef-pkg" 0 t :ttags (:redef-pkg))
@@ -202,22 +205,47 @@
               (find-package-entry
                name
                (global-val 'known-package-alist w)))))
+    (cond
+     ((not (true-listp defpkg-book-path))
+      (er soft ctx
+          "The book-path argument to defpkg, if supplied, must be a ~
+           true-listp.  It is not recommended to supply this argument, since ~
+           the system makes use of it for producing useful error messages.  ~
+           The defpkg of ~x0 is thus illegal."
+          name))
+     ((get-invalid-book-name defpkg-book-path (os w) w)
+      (er soft ctx
+         "A defpkg form for ~x0 specifies an invalid book-path entry, ~x1.~@2"
+         name
+         (get-invalid-book-name defpkg-book-path (os w) w)
+         (let ((x (get-invalid-book-name defpkg-book-path (os w) w)))
+           (if (and (sysfile-p x)
+                    (not (project-dir-lookup (sysfile-key x)
+                                             (project-dir-alist w)
+                                             nil)))
+               (msg "  Note that the keyword ~x0 is not currently bound in ~
+                     the project-dir-alist.  Probably it was bound in the ~
+                     project-dir-alist in a previous session, when this ~
+                     defpkg form was written to a book's certificate.  See ~
+                     :DOC project-dir-alist."
+                    (sysfile-key x))
+; The following case is presumably rare or impossible.
+             ""))))
 ;;; Begin code deletion
 ; I removed the case with the same `form' from the previous defpkg call,
 ; because the evaluation of `form' may results in a list with different
 ; symbols.  The case in which form is evaluated to the same imported
 ; symbol list is processed as redundant at the end of the function.
 #||
-    (cond
      ((and package-entry
            (or hidden-p
                (not (package-entry-hidden-p package-entry)))
            (equal (caddr (package-entry-defpkg-event-form package-entry))
                   form))
       (value 'redundant))
-     (t
 ||#
 ;;; End code deletion
+     (t
       (er-progn
        (cond
         ((or package-entry
@@ -278,13 +306,6 @@
               with the string \"~@0\".  ACL2 makes internal use of package ~
               names starting with that string."
              *1*-pkg-prefix*))
-        ((not (true-listp defpkg-book-path))
-         (er soft ctx
-             "The book-path argument to defpkg, if supplied, must be a ~
-              true-listp.  It is not recommended to supply this argument, ~
-              since the system makes use of it for producing useful error ~
-              messages.  The defpkg of ~x0 is thus illegal."
-             name))
         (t (value nil)))
 
 ; At one time we checked that if the package exists, i.e. (member-equal name
@@ -332,7 +353,7 @@ nil
                       (conflict (conflicting-imports imports))
                       (base-symbol (packn (cons name '("-PACKAGE")))))
 
-; Base-symbol is the the base symbol of the rune for the rule added by
+; Base-symbol is the base symbol of the rune for the rule added by
 ; defpkg describing the properties of symbol-package-name on interns
 ; with the new package.
 
@@ -369,8 +390,7 @@ nil
                              imports)
                             (package-entry-book-path package-entry)
                             defpkg-book-path
-                            w
-                            (system-books-dir state)))
+                            w))
 ||#
 ;;; End code deletion
 ;;; Begin code addition
@@ -412,5 +432,6 @@ nil
                            (value (list* tform
                                          imports
                                          package-entry ; hidden-p is true
-                                         ))))))))))))))))))
+                                         )))))))))))))))))))
+)
 

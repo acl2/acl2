@@ -8021,20 +8021,6 @@
          wrld)
         (t (scan-to-defpkg name (cdr wrld)))))
 
-(defun scan-to-include-book (full-book-name wrld)
-
-; We wish to give meaning to stringp logical names such as "arith".  We
-; do it in an inefficient way: we scan the whole world looking for an event
-; tuple of type INCLUDE-BOOK and namex full-book-name.
-
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value)
-              (eq (access-event-tuple-type (cddar wrld)) 'include-book)
-              (equal full-book-name (access-event-tuple-namex (cddar wrld))))
-         wrld)
-        (t (scan-to-include-book full-book-name (cdr wrld)))))
-
 (defun multiple-assoc-terminal-substringp1 (x i alist)
   (cond ((null alist) nil)
         ((terminal-substringp x (caar alist) i (1- (length (caar alist))))
@@ -8264,32 +8250,17 @@
            (let ((n (getpropc name 'absolute-event-number nil wrld)))
              (cond ((null n) nil)
                    (t (lookup-world-index 'event n wrld)))))))
-   ((stringp name)
-
-; Name may be a package name or a book name.
-
-    (cond
-     ((find-non-hidden-package-entry name
-                                     (global-val 'known-package-alist wrld))
-      (cond ((find-package-entry name *initial-known-package-alist*)
+   ((and (stringp name)
+         (find-non-hidden-package-entry name
+                                        (global-val 'known-package-alist
+                                                    wrld)))
+    (cond ((find-package-entry name *initial-known-package-alist*)
 
 ; These names are not DEFPKGd and so won't be found in a scan.  They
 ; are introduced by absolute event number 0.
 
-             (lookup-world-index 'event 0 wrld))
-            (t (scan-to-defpkg name wrld))))
-     (t (let ((hits (multiple-assoc-terminal-substringp
-                     (possibly-add-lisp-extension name)
-                     (global-val 'include-book-alist wrld))))
-
-; Hits is a subset of the include-book-alist.  The form of each
-; element is (full-book-name user-book-name familiar-name
-; cert-annotations . book-hash).
-
-          (cond
-           ((and hits (null (cdr hits)))
-            (scan-to-include-book (car (car hits)) wrld))
-           (t nil))))))
+           (lookup-world-index 'event 0 wrld))
+          (t (scan-to-defpkg name wrld))))
    (t nil)))
 
 (defun access-x-rule-rune (x rule)

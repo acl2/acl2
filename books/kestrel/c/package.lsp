@@ -121,6 +121,7 @@
                pos-listp
                pos-option
                pos-optionp
+               prefixp
                pseudo-event-form-listp
                pseudo-event-formp
                pseudo-event-form
