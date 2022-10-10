@@ -7888,6 +7888,11 @@
 ; 1 - translate the form, and then clean it up (but don't untranslate)
 ; 2 - translate the form, clean it up, and untranslate it
 
+; Twice below you'll see a call of possibly-clean-up-dirty-lambda-objects on a
+; remove-guard-holders-weak term.  Those calls are just the same as
+; (remove-guard-holders term wrld) except that here we provide hyps instead of
+; nil as the first arg to the clean-up.
+
   (declare (xargs :mode :program))
   (let ((wrld (w state)))
     (mv-let (flg term bindings state)
@@ -7908,15 +7913,23 @@
             (value (untranslate term nil wrld)))
            ((eql level 1)
             (value
-             (remove-guard-holders
-              (clean-up-dirty-lambda-objects hyps term nil wrld t)
-              wrld)))
+;            (remove-guard-holders term wrld)
+             (possibly-clean-up-dirty-lambda-objects
+              hyps
+              (remove-guard-holders-weak term
+                                         (remove-guard-holders-lamp))
+              wrld
+              (remove-guard-holders-lamp))))
            (t
             (value
              (untranslate
-              (remove-guard-holders
-               (clean-up-dirty-lambda-objects hyps term nil wrld t)
-               wrld)
+;             (remove-guard-holders term wrld)
+              (possibly-clean-up-dirty-lambda-objects
+               hyps
+               (remove-guard-holders-weak term
+                                          (remove-guard-holders-lamp))
+               wrld
+               (remove-guard-holders-lamp))
               nil wrld))))))
        (t (mv t :invisible state))))))
 
