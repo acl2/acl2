@@ -1001,7 +1001,44 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
     (svex-alist-fixpoint-iterate n x start-subst) 2)
 
   (defcong svex-alist-eval-equiv svex-alist-eval-equiv
-    (svex-alist-fixpoint-iterate n x start-subst) 3))
+    (svex-alist-fixpoint-iterate n x start-subst) 3)
+
+  (local (defthm vars-of-svex-alist-compose-strong
+           (implies (and (not (member-equal v (svex-alist-vars a)))
+                         (or (member-equal v (svex-alist-keys a))
+                             (not (member-equal v (svex-alist-vars x)))))
+                    (not (member-equal v (svex-alist-vars (svex-alist-compose x a)))))
+           :hints(("Goal" :in-theory (enable svex-alist-vars svex-alist-compose
+                                             vars-of-svex-compose-strong)
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:cases ((svar-p v))
+                         :in-theory (e/d (vars-of-svex-compose-strong)
+                                         (SVAR-P-WHEN-MEMBER-EQUAL-OF-SVARLIST-P
+                                          svar-p-when-member-svex-vars))))
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable SVAR-P-WHEN-MEMBER-EQUAL-OF-SVARLIST-P
+                                            svar-p-when-member-svex-vars))))))
+  
+  (local (defthm vars-of-svex-alist-extract
+           (implies (not (member-equal v (svex-alist-vars x)))
+                    (not (member-equal v (svex-alist-vars (svex-alist-extract keys x)))))
+           :hints(("Goal" :in-theory (enable svex-alist-extract svex-alist-vars)))))
+  
+  (defret vars-of-<fn>
+    (implies (and (not (member-equal v (svex-alist-vars start-subst)))
+                  (not (member-equal v (set-difference-equal (svex-alist-vars x)
+                                                             (svex-alist-keys x)))))
+             (not (member-equal v (svex-alist-vars iter-subst))))
+    :hints (("goal" :induct <call>)
+            (and stable-under-simplificationp
+                 '(:cases ((svar-p v))
+                   :in-theory (e/d (vars-of-svex-compose-strong)
+                                   (SVAR-P-WHEN-MEMBER-EQUAL-OF-SVARLIST-P
+                                    svar-p-when-member-svex-vars))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable SVAR-P-WHEN-MEMBER-EQUAL-OF-SVARLIST-P
+                                      svar-p-when-member-svex-vars))))))
 
 (defthm svex-alist-monotonic-on-vars-of-svarlist-x-subst
   (svex-alist-monotonic-on-vars vars (svarlist-x-subst keys))
@@ -1079,6 +1116,12 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
     (implies (svex-alist-monotonic-p x)
              (svex-alist-monotonic-p least-fixpoint)))
 
-  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-least-fixpoint x) 1))
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-least-fixpoint x) 1)
+
+  (defret vars-of-<fn>
+    (implies (not (member-equal v (set-difference-equal (svex-alist-vars x)
+                                                        (svex-alist-keys x))))
+             (not (member-equal v (svex-alist-vars least-fixpoint))))))
+
 
 

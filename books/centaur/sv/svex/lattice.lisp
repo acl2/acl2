@@ -31,9 +31,11 @@
 (in-package "SV")
 (include-book "eval")
 (include-book "xeval")
+(include-book "lists")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 
 (define 4vec-<<= ((a 4vec-p) (b 4vec-p))
   :returns approxp
@@ -571,6 +573,24 @@ an approximation of its value in @('y')?"
   (defthm svex-env-<<=-empty
     (svex-env-<<= nil x)
     :hints ((witness))))
+
+(define svex-envlist-<<= ((x svex-envlist-p) (y svex-envlist-p))
+  :hooks (:fix)
+  (if (atom x)
+      t ;; if lengths differ, all bindings in x would be considered to be X at this point
+    (and (ec-call (svex-env-<<= (car x) (car y)))
+         (svex-envlist-<<= (Cdr x) (cdr y))))
+  ///
+  (local (defun nth-x-y-ind (n x y)
+           (if (zp n)
+               (list x y)
+             (nth-x-y-ind (1- n) (cdr x) (cdr y)))))
+  
+  (defthm svex-envlist-<<=-implies-nth
+    (implies (svex-envlist-<<= x y)
+             (svex-env-<<= (nth n x) (nth n y)))
+    :hints (("goal" :induct (nth-x-y-ind n x y)))))
+
 
 (defsection svex-apply-monotonocity
   :parents (svex-apply 4vec-<<=)

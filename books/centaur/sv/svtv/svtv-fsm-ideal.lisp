@@ -1247,7 +1247,26 @@
                                    (flatnorm->ideal-fsm))
             :induct (base-fsm-eval-2-ind ref-inputs ref-initst (flatnorm->ideal-fsm x) override-inputs override-initst approx-fsm)
             :expand ((:free (fsm) (base-fsm-final-state ref-inputs ref-initst fsm))
-                     (:free (fsm) (base-fsm-final-state override-inputs override-initst fsm)))))))
+                     (:free (fsm) (base-fsm-final-state override-inputs override-initst fsm))))))
+
+  (defret svex-alist-vars-of-<fn>
+    (b* (((flatnorm-res x)))
+      (implies (and (not (member-equal v (svex-alist-vars x.delays)))
+                    (not (and (member-equal v (svex-alist-vars x.assigns))
+                              (not (member-equal v (svex-alist-keys x.assigns))))))
+               (b* (((base-fsm fsm)))
+                 (and (not (member-equal v (svex-alist-vars fsm.values)))
+                      (not (member-equal v (svex-alist-vars fsm.nextstate))))))))
+
+  (defret <fn>-monotonic-p
+    (b* (((base-fsm fsm))
+         ((flatnorm-res x)))
+      (implies (and (svex-alist-monotonic-p x.assigns)
+                    (svex-alist-monotonic-p x.delays))
+               (and (svex-alist-monotonic-p fsm.values)
+                    (svex-alist-monotonic-p fsm.nextstate))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
 
 
 (define design-flatten-okp ((x design-p))
@@ -1275,7 +1294,21 @@
     (no-duplicatesp-equal (svex-alist-keys (flatnorm-res->assigns flatnorm))))
 
   (defret svex-alist-width-of-<fn>-assigns
-    (svex-alist-width (flatnorm-res->assigns flatnorm))))
+    (svex-alist-width (flatnorm-res->assigns flatnorm)))
+
+  (defret svarlist-addr-p-vars-of-<fn>
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (design-flatten-okp x))
+             (b* (((flatnorm-res flatnorm)))
+               (and (svarlist-addr-p (svex-alist-vars flatnorm.assigns))
+                    (svarlist-addr-p (svex-alist-vars flatnorm.delays))
+                    (svarlist-addr-p (svex-alist-keys flatnorm.assigns))
+                    (svarlist-addr-p (svex-alist-keys flatnorm.delays))))))
+
+  (defret <fn>-monotonic-p
+    (b* (((flatnorm-res flatnorm)))
+      (and (svex-alist-monotonic-p flatnorm.assigns)
+           (svex-alist-monotonic-p flatnorm.delays)))))
 
 (define design->ideal-fsm ((x design-p))
   :guard (modalist-addr-p (design->modalist x))
@@ -1372,4 +1405,20 @@
                               design->flatnorm)
                              (base-fsm-eval-of-flatnorm->ideal-fsm-refines-overridden-approximation
                               phase-fsm-validp-of-svtv-data-obj))))
-    :otf-flg t))
+    :otf-flg t)
+
+  (defret svex-alist-vars-of-<fn>
+    (b* (((base-fsm ideal-fsm)))
+      (implies (and (modalist-addr-p (design->modalist x))
+                    (design-flatten-okp x))
+               (and (svarlist-addr-p (svex-alist-vars ideal-fsm.values))
+                    (svarlist-addr-p (svex-alist-vars ideal-fsm.nextstate))
+                    (svarlist-addr-p (svex-alist-keys ideal-fsm.values))
+                    (svarlist-addr-p (svex-alist-keys ideal-fsm.nextstate))))))
+
+  
+
+  (defret <fn>-monotonic-p
+    (b* (((base-fsm fsm) ideal-fsm))
+      (and (svex-alist-monotonic-p fsm.values)
+           (svex-alist-monotonic-p fsm.nextstate)))))

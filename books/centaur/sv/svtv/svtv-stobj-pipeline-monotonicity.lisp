@@ -800,18 +800,7 @@
   :hints(("Goal" :use ((:instance cycle-fsm-okp-implies-cycle-compile-values-equiv)))))
 
 
-(define svtv-cyclephaselist-has-outputs-captured ((phases svtv-cyclephaselist-p))
-  (if (atom phases)
-      nil
-    (or (svtv-cyclephase->outputs-captured (car phases))
-        (svtv-cyclephaselist-has-outputs-captured (cdr phases))))
-  ///
-  (defthm svex-alist-keys-of-svtv-cycle-compile-values
-    (equal (svex-alist-keys (mv-nth 0 (svtv-cycle-compile prev-st phases x simp)))
-           (and (svtv-cyclephaselist-has-outputs-captured phases)
-                (svex-alist-keys (base-fsm->values x))))
-    :hints(("Goal" :in-theory (enable svtv-cycle-compile
-                                      svtv-cycle-step-phase-exprs)))))
+
              
 
 
@@ -857,21 +846,6 @@
     (and (ec-call (svex-alist-partial-monotonic params (car X)))
          (svex-alistlist-partial-monotonic params (Cdr x)))))
 
-(define svex-envlist-<<= ((x svex-envlist-p) (y svex-envlist-p))
-  (if (atom x)
-      t ;; if lengths differ, all bindings in x would be considered to be X at this point
-    (and (ec-call (svex-env-<<= (car x) (car y)))
-         (svex-envlist-<<= (Cdr x) (cdr y))))
-  ///
-  (local (defun nth-x-y-ind (n x y)
-           (if (zp n)
-               (list x y)
-             (nth-x-y-ind (1- n) (cdr x) (cdr y)))))
-  
-  (defthm svex-envlist-<<=-implies-nth
-    (implies (svex-envlist-<<= x y)
-             (svex-env-<<= (nth n x) (nth n y)))
-    :hints (("goal" :induct (nth-x-y-ind n x y)))))
 
 (define svex-envlists-agree ((keys svarlist-p)
                              (x svex-envlist-p)
@@ -1046,39 +1020,39 @@
   :hints(("Goal" :in-theory (enable svex-monotonic-p))))
 
 
-(defthm lhatom-compose-zero-partial-monotonic
-  (implies (svex-alist-partial-monotonic params compose)
-           (svex-partial-monotonic params (lhatom-compose-zero x compose)))
-  :hints(("Goal" :in-theory (e/d (lhatom-compose-zero
+(defthm lhatom-subst-zero-partial-monotonic
+  (implies (svex-alist-partial-monotonic params subst)
+           (svex-partial-monotonic params (lhatom-subst-zero x subst)))
+  :hints(("Goal" :in-theory (e/d (lhatom-subst-zero
                                   svex-apply)
                                  (LOOKUP-WHEN-SVEX-ALIST-PARTIAL-MONOTONIC))
           :use ((:instance LOOKUP-WHEN-SVEX-ALIST-PARTIAL-MONOTONIC
-                 (x compose) (param-keys params) (k (lhatom-var->name x)))))
+                 (x subst) (param-keys params) (k (lhatom-var->name x)))))
          (and stable-under-simplificationp
               `(:expand ((:with svex-partial-monotonic-by-eval
                           ,(car (last clause)))
                          (:free (x env) (svex-eval (svex-var x) env)))))))
 
-(defthm lhs-compose-zero-partial-monotonic
-  (implies (svex-alist-partial-monotonic params compose)
-           (svex-partial-monotonic params (lhs-compose-zero x compose)))
-  :hints(("Goal" :in-theory (enable lhs-compose-zero)
+(defthm lhs-subst-zero-partial-monotonic
+  (implies (svex-alist-partial-monotonic params subst)
+           (svex-partial-monotonic params (lhs-subst-zero x subst)))
+  :hints(("Goal" :in-theory (enable lhs-subst-zero)
           :induct t)
          (and stable-under-simplificationp
               `(:expand ((:with svex-partial-monotonic-by-eval
                           ,(car (last clause))))
-                :use ((:instance lhatom-compose-zero-partial-monotonic
+                :use ((:instance lhatom-subst-zero-partial-monotonic
                        (x (lhrange->atom (car x)))))
                 :in-theory (e/d (svex-apply)
-                                (lhatom-compose-zero-partial-monotonic
-                                 eval-of-lhatom-compose-zero
-                                 eval-of-lhs-compose-zero))))))
+                                (lhatom-subst-zero-partial-monotonic
+                                 eval-of-lhatom-subst-zero
+                                 eval-of-lhs-subst-zero))))))
 
 
-(defthm svtv-name-lhs-map-compose-partial-monotonic
+(defthm svtv-name-lhs-map-subst-partial-monotonic
   (implies (svex-alist-partial-monotonic params subst)
-           (svex-alist-partial-monotonic params (svtv-name-lhs-map-compose x subst)))
-  :hints(("Goal" :in-theory (enable svtv-name-lhs-map-compose))))
+           (svex-alist-partial-monotonic params (svtv-name-lhs-map-subst x subst)))
+  :hints(("Goal" :in-theory (enable svtv-name-lhs-map-subst))))
 
 
 (define svex-alist-check-monotonic ((x svex-alist-p))

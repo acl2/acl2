@@ -591,3 +591,17 @@
 
   (local (in-theory (enable svex-envlist-fix))))
 
+
+
+(define svtv-cyclephaselist-has-outputs-captured ((phases svtv-cyclephaselist-p))
+  (if (atom phases)
+      nil
+    (or (svtv-cyclephase->outputs-captured (car phases))
+        (svtv-cyclephaselist-has-outputs-captured (cdr phases))))
+  ///
+  (defthm svex-alist-keys-of-svtv-cycle-compile-values
+    (equal (svex-alist-keys (mv-nth 0 (svtv-cycle-compile prev-st phases x simp)))
+           (and (svtv-cyclephaselist-has-outputs-captured phases)
+                (svex-alist-keys (base-fsm->values x))))
+    :hints(("Goal" :in-theory (enable svtv-cycle-compile
+                                      svtv-cycle-step-phase-exprs)))))

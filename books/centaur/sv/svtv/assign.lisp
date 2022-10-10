@@ -389,6 +389,19 @@
     :hints(("Goal" :in-theory (enable svex-alist-eval
                                       svtv-name-lhs-map-eval))))
 
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys res)
+           (alist-keys (svtv-name-lhs-map-fix x)))
+    :hints(("Goal" :in-theory (enable svex-alist-keys alist-keys svtv-name-lhs-map-fix))))
+
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv!
+    (svtv-name-lhs-map-subst x subst) 2
+    :hints (("goal" :use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
+                           (x (svtv-name-lhs-map-subst x subst))
+                           (y (svtv-name-lhs-map-subst x subst-equiv))))
+             :in-theory (enable svex-alist-eval-equiv!-when-svex-alist-eval-equiv)
+             :do-not-induct t)))
+
   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 
@@ -468,7 +481,7 @@
   (b* (((svtv-fsm x))
        (renamed-values
         (with-fast-alist x.values
-          (svtv-name-lhs-map-compose x.namemap x.values))))
+          (svtv-name-lhs-map-subst x.namemap x.values))))
     (make-base-fsm :nextstate x.nextstate :values renamed-values))
   ///
   (memoize 'svtv-fsm->renamed-fsm)

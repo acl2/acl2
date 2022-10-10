@@ -2810,54 +2810,6 @@ proved.</p>")
 
 
 
-(define svtv-probealist-sufficient-varlists ((x svtv-probealist-p)
-                                             (vars svarlist-list-p))
-  :prepwork ((local (defthm true-listp-when-svarlist-p-rw
-                      (implies (svarlist-p x)
-                               (true-listp x))))
-             (local (defthm svarlist-p-nth-of-svarlist-list
-                      (implies (svarlist-list-p x)
-                               (svarlist-p (nth n x))))))
-  (if (atom x)
-      t
-    (if (mbt (consp (car x)))
-        (b* (((svtv-probe x1) (cdar x)))
-          (and (member-equal x1.signal (svarlist-fix (nth x1.time vars)))
-               (svtv-probealist-sufficient-varlists (cdr x) vars)))
-      (svtv-probealist-sufficient-varlists (cdr x) vars)))
-  ///
-  (defthm add-preserves-sufficient-varlists
-    (implies (svtv-probealist-sufficient-varlists x vars)
-             (svtv-probealist-sufficient-varlists x (update-nth n (cons v (nth n vars)) vars)))
-    :hints(("Goal" :in-theory (disable nth))))
-
-  (defthm svtv-probealist-sufficient-of-outvars
-    (svtv-probealist-sufficient-varlists x
-                                         (svtv-probealist-outvars x))
-    :hints(("Goal" :in-theory (enable svtv-probealist-outvars))))
-
-  ;; (local (defthm nth-of-svex-envlist-extract
-  ;;          (Equal (nth n (svex-envlist-extract vars envs))
-  ;;                 (svex-env-extract (nth n vars)
-  ;;                                   (nth n envs)))
-  ;;          :hints(("Goal" :in-theory (enable svex-envlist-extract)))))
-
-  (defthm svtv-probealist-extract-of-svex-envlist-extract-when-sufficient
-    (implies (svtv-probealist-sufficient-varlists x vars)
-             (equal (svtv-probealist-extract x (svex-envlist-extract vars envs))
-                    (svtv-probealist-extract x envs)))
-    :hints(("Goal" :in-theory (enable svtv-probealist-extract))))
-
-  (local (in-theory (enable svtv-probealist-fix)))
-
-  (local (defthm nth-out-of-bounds
-           (implies (<= (len x) (nfix n))
-                    (equal (nth n x) nil)))))
-
-(defthm svtv-probealist-extract-of-svex-envlist-extract-outvars
-  (equal (svtv-probealist-extract probes (svex-envlist-extract (svtv-probealist-outvars probes) envs))
-         (svtv-probealist-extract probes envs))
-  :hints(("Goal" :in-theory (enable svtv-probealist-outvars svtv-probealist-extract))))
 
 
 (define svtv-probealist-all-outvars ((x svtv-probealist-p))
@@ -3046,24 +2998,7 @@ proved.</p>")
 ;;                                     base-fsm-step
 ;;                                     base-fsm-step-env))))
 
-(defthm base-fsm-step-outs-of-svtv-fsm->renamed-fsm
-  (equal (base-fsm-step-outs in prev-st (svtv-fsm->renamed-fsm fsm))
-         (svtv-name-lhs-map-eval
-          (svtv-fsm->namemap fsm)
-          (append (base-fsm-step-outs in prev-st (svtv-fsm->base-fsm fsm))
-                  (base-fsm-step-env in prev-st (svtv-fsm->nextstate fsm)))))
-  :hints(("Goal" :in-theory (enable base-fsm-step-outs
-                                    svtv-fsm->renamed-fsm
-                                    base-fsm-step-env))))
 
-
-
-
-
-(defthmd base-fsm->nextstate-of-svtv-fsm->renamed-fsm
-  (equal (base-fsm->nextstate (svtv-fsm->renamed-fsm svtv-fsm))
-         (base-fsm->nextstate (svtv-fsm->base-fsm svtv-fsm)))
-  :hints(("Goal" :in-theory (enable svtv-fsm->renamed-fsm))))
 
 (define base-fsm-eval-envs ((ins svex-envlist-p)
                             (prev-st svex-env-p)
@@ -3075,24 +3010,7 @@ proved.</p>")
     (cons (base-fsm-step-env (car ins) prev-st x.nextstate)
           (base-fsm-eval-envs (cdr ins)
                               (base-fsm-step (car ins) prev-st x.nextstate)
-                              x.nextstate)))
-  ///
-  (defthmd base-fsm-eval-of-svtv-fsm->renamed-fsm
-    (equal (base-fsm-eval ins prev-st (svtv-fsm->renamed-fsm x))
-           (svtv-name-lhs-map-eval-list
-            (svtv-fsm->namemap x)
-            (svex-envlists-append-corresp
-             (base-fsm-eval ins prev-st (svtv-fsm->base-fsm x))
-             (base-fsm-eval-envs ins prev-st (svtv-fsm->nextstate x)))))
-    :hints(("Goal" :in-theory (enable base-fsm-eval
-                                      base-fsm-step
-                                      base-fsm-step-env
-                                      svex-envlists-append-corresp
-                                      svtv-name-lhs-map-eval-list
-                                      base-fsm->nextstate-of-svtv-fsm->renamed-fsm)
-            :induct (base-fsm-eval ins prev-st (svtv-fsm->base-fsm x))
-            :expand ((:free (x) (base-fsm-eval ins prev-st x))
-                     (base-fsm-eval-envs ins prev-st (svtv-fsm->base-fsm x)))))))
+                              x.nextstate))))
 
 
 
