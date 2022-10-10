@@ -51,6 +51,15 @@
                                                 'TABLE-ALIST
                                                 NIL WRLD))))))))))
 
+; The next defthm was added by JSM to handle the new handling of DO$ in
+; remove-guard-holders1.  The resulting proofs are very inefficient but at
+; least the book certifies now.
+
+(local (defthm acl2-count-car-last
+         (< (acl2-count (car (last args)))
+            (+ 1 (acl2-count args)))
+         :rule-classes :linear))
+
 (verify-termination (remove-guard-holders1
                      (declare (xargs :verify-guards nil))))
 
