@@ -35,6 +35,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection %.
   :short "Construct a direct numeric value notation element
           from a variable number of numbers."
@@ -57,6 +59,8 @@
     :hooks (:fix)
     :no-function t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define %- ((min natp) (max natp))
   :returns (element elementp)
   :short "Construct a range numeric value notation element
@@ -72,6 +76,8 @@
   :hooks (:fix)
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define <> ((charstring acl2::stringp))
   :returns (element elementp)
   :short "Construct a prose value notation element from a character string."
@@ -83,6 +89,8 @@
   (element-prose-val (prose-val charstring))
   :hooks (:fix)
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define element/rulename-p (x)
   :returns (yes/no booleanp)
@@ -99,6 +107,8 @@
     (not (and (elementp x)
               (rulenamep x)))
     :enable (elementp rulenamep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define *_ ((x element/rulename-p))
   :returns (repetition repetitionp)
@@ -118,6 +128,8 @@
   :no-function t
   :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define 1*_ ((x element/rulename-p))
   :returns (repetition repetitionp)
   :short "Construct a repetition of one or more instances of an element."
@@ -135,6 +147,8 @@
   :hooks (:fix)
   :no-function t
   :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define repetition/element/rulename/charstring-p (x)
   :returns (yes/no booleanp)
@@ -176,12 +190,16 @@
     (not (and (rulenamep x)
               (acl2::stringp x)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist repetition/element/rulename/charstring-listp (x)
   (repetition/element/rulename/charstring-p x)
   :short "Recognize true lists of
           repetitions, elements, rule names, and character strings."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection /_
   :short "Construct a concatenation from a variable number of repetitions."
@@ -237,6 +255,8 @@
                    :in-theory
                    (enable repetition/element/rulename/charstring-p)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection !_
   :short "Construct a group from a variable number of concatenations."
   :long
@@ -255,6 +275,8 @@
     :hooks (:fix)
     :no-function t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection ?_
   :short "Construct an option from a variable number of concatenations."
   :long
@@ -272,6 +294,8 @@
     (element-option alternation)
     :hooks (:fix)
     :no-function t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection =_
   :short "Construct a non-incremental rule from
@@ -294,6 +318,8 @@
     :hooks (:fix)
     :no-function t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection =/_
   :short "Construct an incremental rule from
           a rule name and a variable number of concatenations."
@@ -314,6 +340,8 @@
                :definiens (alternation-fix alternation))
     :hooks (:fix)
     :no-function t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection def-rule-const
   :short "Introduce an ACL2 constant for a (non-incremental) rule."
