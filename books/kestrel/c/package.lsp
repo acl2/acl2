@@ -114,6 +114,8 @@
                msg-listp
                mv-nth-of-cons
                nat
+               nat-list-fix
+               nats=>string
                nvariablep
                one-way-unify
                packn
@@ -162,6 +164,7 @@
                restore-output?
                run-when
                str-fix
+               string=>nats
                symbol-fix
                symbol-list
                symbol-list-fix
