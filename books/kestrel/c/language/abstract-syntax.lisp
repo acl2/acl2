@@ -39,10 +39,20 @@
     (xdoc::seetopic "character-sets" "character sets")
     " to lift the ASCII assumption.")
    (xdoc::p
-    "This abstract syntax models C code after preprocessing.
-     As part of a more comprehensive formalization of C,
-     we also plan to formalize abstract syntax before preprocessing,
-     and in fact to formalize the translation phases [C:5.1.1.2] in detail."))
+    "We also plan to differentiate this abstract syntax,
+     used as part of our C langauge formalization,
+     from a different abstract syntax
+     that is tailored to being used in tools such as ATC:
+     see @(see atc-abstract-syntax) for a discussion.
+     Currently this abstract syntax plays that role too,
+     and corresponds to the concrete syntax captured in @('grammar.abnf'):
+     see the discussion there as well.
+     Thus, this abstract syntax is meant to capture syntax
+     that is neither before nor after preprocessing,
+     but rather that may include constructs from
+     both before and after preprocessing.
+     For the language formalization, instead we plan
+     to formalize the translation phases [C:5.1.1.2] in detail."))
   :order-subtopics t
   :default-parent t)
 
