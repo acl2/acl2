@@ -12,7 +12,7 @@ ACL2 !>>(INCLUDE-BOOK "../paco")
 Summary
 Form:  ( INCLUDE-BOOK "../paco" ...)
 Rules: NIL
- "../paco.lisp"
+ (:SYSTEM . "projects/paco/paco.lisp")
 ACL2 !>>(IN-PACKAGE "PACO")
  "PACO"
 PACO !>>(ACL2::SET-GAG-MODE :GOALS)
@@ -1075,7 +1075,7 @@ PACO !>>(INCLUDE-BOOK "models/jvm/m5/jvm-fact-setup"
 Summary
 Form:  ( INCLUDE-BOOK "models/jvm/m5/jvm-fact-setup" ...)
 Rules: NIL
- "[books]/models/jvm/m5/jvm-fact-setup.lisp"
+ (:SYSTEM . "models/jvm/m5/jvm-fact-setup.lisp")
 PACO !>>(IN-PACKAGE "M5")
  "M5"
 M5 !>>(DEFTHM INT-LEMMA0-REWRITE

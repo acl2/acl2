@@ -94,7 +94,7 @@
     "Since osets are in the @('\"SET\"') package,
      it would be natural to use a @('\"MAP\') package for omaps.
      However, a package with this name is already defined
-     in @('[books]/coi/maps/package.lsp') (see below).
+     in @('coi/maps/package.lsp') (see below).
      So, we use @('\"OMAP\"') for omaps
      to allow interoperability with this @('coi') map library,
      in the sense that an application can use both @('coi') maps and omaps.
@@ -102,7 +102,7 @@
      could be renamed to @('\"OSET\"') at some point,
      for consistency.
      (A similar issue applies to the library of obags, i.e. ordered bags,
-     and the @('[books]/coi/bags') library,
+     and the @('coi/bags') library,
      which defines a @('\"BAG\"') package.)")
    (xdoc::p
     "This omap library could become a new @('std/omaps') library,
@@ -113,15 +113,15 @@
      at the cost of maintaining their strict order.
      These tradeoffs are analogous to the ones between using osets
      and using the built-in @(see acl2::lists) to represent sets.
-     The map library in @('[books]/coi/maps/')
+     The map library in @('coi/maps/')
      operates on possibly unordered alists.")
    (xdoc::p
     "Compared to the records in "
-    (xdoc::seetopic "acl2::misc/records" "@('[books]/misc/records.lisp')")
-    " and @('[books]/coi/records/'),
+    (xdoc::seetopic "acl2::misc/records" "@('misc/records.lisp')")
+    " and @('coi/records/'),
      omaps allow any value to be associated to keys,
      without having to exclude @('nil') or some other fixed value.
-     Furthermore, as noted in the comments in @('[books]/coi/maps/maps.lisp'),
+     Furthermore, as noted in the comments in @('coi/maps/maps.lisp'),
      the `get' operation on those records
      does not always yield a value smaller than the map.
      On the other hand, theorems about omaps have generally more hypotheses

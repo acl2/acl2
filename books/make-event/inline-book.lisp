@@ -77,13 +77,12 @@ this file for inlining into the current book.
         (cond (dir (include-book-dir-with-chk soft ctx dir))
               (t (value (cbd))))))
       (mv-let
-       (full-book-name directory-name familiar-name)
+       (full-book-string full-book-name directory-name familiar-name)
        (parse-book-name dir-value user-book-name ".lisp" ctx state)
-       (declare (ignore directory-name familiar-name))
+       (declare (ignore full-book-name directory-name familiar-name))
        (er-progn
-        (chk-book-name user-book-name full-book-name ctx state)
-        (chk-input-object-file full-book-name ctx state)
-        (er-let* ((ev-lst (read-object-file full-book-name ctx state)))
+        (chk-input-object-file full-book-string ctx state)
+        (er-let* ((ev-lst (read-object-file full-book-string ctx state)))
           (value `(,@ (if respect-localp '(encapsulate ()) '(progn))
                       ,@ (if (eq :logic
                                  (cdr (assoc-eq :defun-mode saved-acl2-defaults-table)))
@@ -97,7 +96,7 @@ this file for inlining into the current book.
                                                :clear)
                                        ;;now restore the include-book-dir-alist field
                                        (generate-add-include-book-dir-calls saved-book-dir-alist)))
-                               (value-triple ',full-book-name)))))))))
+                               (value-triple ',full-book-string)))))))))
 
 ; for inlining this book in other books (see intro)
 (defmacro compute-inline-book-value (user-book-name

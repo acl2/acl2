@@ -338,8 +338,8 @@
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the files @('[books]/kestrel/c/atc/integers.lisp')
-    and @('[books]/kestrel/c/atc/integer-operations.lisp').
+    is in the community books @('kestrel/c/atc/integers.lisp')
+    and @('kestrel/c/atc/integer-operations.lisp').
     These are automatically included when ATC is included,
     but one may want to include those file as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
@@ -434,8 +434,8 @@
     C includes @('int') constants [C:6.4.4.1]
     (more precisely, integer constants, some of which have type @('int')),
     which may be regarded as (a large number of nullary) @('int') operations.
-    Our ACL2 representation in @('[books]/kestrel/c/atc/integers.lisp')
-    provides functions
+    Our ACL2 representation in community book
+    @('kestrel/c/atc/integers.lisp') provides functions
     @(tsee sint-dec-const),
     @(tsee sint-oct-const), and
     @(tsee sint-hex-const)
@@ -571,7 +571,7 @@
     in the sense that they do not represent anything in the C code.
     However the functions @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
     must be the ones in the @('\"C\"') package,
-    from the file @('[books]/kestrel/c/atc/integers.lisp').")
+    from the community book @('kestrel/c/atc/integers.lisp').")
 
   (xdoc::p
    "In the envisioned use of ATC,
@@ -756,7 +756,7 @@
    "First, we must include ATC.
     To avoid certain trust tag messages,
     the @(tsee include-book) form could be augmented with a @(':ttags') option;
-    see the tests in @('[books]/kestrel/c/atc/tests') for examples.")
+    see the tests in community book @('kestrel/c/atc/tests') for examples.")
 
   (xdoc::p
    "The ATC tool is invoked on one or more ACL2 function symbols,
@@ -779,7 +779,8 @@
     but those are examined elsewhere, as mentioned above.")
 
   (xdoc::p
-   "This example can be found in @('[books]/kestrel/c/atc/tests/f.lisp').")
+   "This example can be found in community book
+    @('kestrel/c/atc/tests/f.lisp').")
 
   (atc-tutorial-section "Compilation and Execution")
 
@@ -809,7 +810,8 @@
     and prints inputs and output.
     The inclusion of @('stdio.h') is needed because of the use of @('printf').")
   (xdoc::p
-   "This file is found in @('[books]/kestrel/c/atc/tests/f-test.c').")
+   "This file is found in community book
+    @('kestrel/c/atc/tests/f-test.c').")
 
   (xdoc::p
    "The two files may be compiled as follows on macOS or Linux:")
@@ -1489,7 +1491,7 @@
     Since @('nil') is different from the ACL2 model of any C scalar zero,
     and also @('t') is different from the ACL2 model of any C scalar non-zero,
     ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
-    The file @('[books]/kestrel/c/atc/signed-ints.lisp'),
+    The community book @('kestrel/c/atc/signed-ints.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
     provides a function @(tsee boolean-from-sint)
     the converts (the ACL2 representation of) a C @('int')

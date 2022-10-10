@@ -42,5 +42,5 @@
    (include-book "rtl/rel11/lib/sqrt" :dir :system)))
 
 (xdoc::archive-matching-topics
- (str::strprefixp "[books]/rtl/" (cdr (assoc :from x))))
+ (str::strprefixp "rtl/" (cdr (assoc :from x))))
 

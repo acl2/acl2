@@ -14,21 +14,21 @@ ACL2 !>>(INCLUDE-BOOK "rewrite-dollar")
 Summary
 Form:  ( INCLUDE-BOOK "rewrite-dollar" ...)
 Rules: NIL
- "rewrite-dollar.lisp"
+ (:SYSTEM . "tools/rewrite-dollar.lisp")
 ACL2 !>>(INCLUDE-BOOK "std/testing/must-eval-to"
                       :DIR :SYSTEM)
 
 Summary
 Form:  ( INCLUDE-BOOK "std/testing/must-eval-to" ...)
 Rules: NIL
- "[books]/std/testing/must-eval-to.lisp"
+ (:SYSTEM . "std/testing/must-eval-to.lisp")
 ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
                       :DIR :SYSTEM)
 
 Summary
 Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
+ (:SYSTEM . "std/testing/must-fail.lisp")
 ACL2 !>>(DEFMACRO
          MF (FORM &KEY (EXPECTED ':SOFT))
          (CONS

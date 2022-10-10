@@ -1502,29 +1502,9 @@
   (let ((wrld1 (decode-logical-name name wrld)))
     (cond
      ((null wrld1)
-      (let ((hits (and (stringp name)
-                       (not (find-non-hidden-package-entry
-                             name
-                             (global-val 'known-package-alist wrld)))
-                       (multiple-assoc-terminal-substringp
-                        (possibly-add-lisp-extension name)
-                        (global-val 'include-book-alist wrld)))))
-
-; Hits is a subset of the include-book-alist.  The form of each
-; element is (full-book-name user-book-name familiar-name
-; cert-annotations . book-hash).
-
-        (cond
-         ((and hits (cdr hits))
-          (er soft ctx
-              "More than one book matches the name ~x0, in particular ~&1.  We ~
-               therefore consider ~x0 not to be a logical name and insist ~
-               that you use an unambiguous form of it.  See :DOC logical-name."
-              name
-              (strip-cars hits)))
-         (t (er soft ctx
-                "The object ~x0 is not a logical name.  See :DOC logical-name."
-                name)))))
+      (er soft ctx
+          "The object ~x0 is not a logical name.  See :DOC logical-name."
+          name))
      (t (value wrld1)))))
 
 (defun renew-lemmas (fn lemmas)
@@ -6526,150 +6506,7 @@
                  (list (cons #\0 (print-indented-list-msg objects indent nil)))
                  0 channel state evisc-tuple))))
 
-(defun sysfile-p (x)
-  (and (consp x)
-       (keywordp (car x))
-       (stringp (cdr x))))
-
-(defun sysfile-key (x)
-  (declare (xargs :guard (sysfile-p x)))
-  (car x))
-
-(defun sysfile-filename (x)
-  (declare (xargs :guard (sysfile-p x)))
-  (cdr x))
-
-(defun project-dir-alist (wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (global-val 'project-dir-alist wrld))
-
-(defun project-dir-lookup (key alist ctx)
-
-; At the top level, alist is presumably (project-dir-alist (w state)).  We
-; guarantee that the value of key in alist exists and is a string.  Except, we
-; allow that to fail if ctx is nil, returning nil in that case.
-
-; We use hons-assoc-equal below not because of hons (in fact hons-assoc-equal
-; has no under-the-hood code for fast alists), but because its guard is t and
-; that allows a guard of t here and simplifies guard verification.
-
-  (declare (xargs :guard t))
-  (let ((ans (if (stringp alist)
-
-; The first implementation of the project-dir-alist set it to a string during
-; the boot-strap.  We don't do that any more.
-
-                 (er hard? 'project-dir-alist
-                     "Implementation error: The project-dir-alist is a ~
-                      string, ~x0.  Please contact the implementors, as this ~
-                      suggests a part of the initial implementation of the ~
-                      project-dir-alist that remains to be updated."
-                     alist)
-               (cdr (hons-assoc-equal key alist)))))
-    (cond ((and (stringp ans)
-
-; It is tempting to check (absolute-pathname-string-p str t (os (w state))),
-; but we don't have state (or world) here.  The caller could supply it, or the
-; caller could do the check; but actually, we know that this will truly be an
-; absolute pathname, and if anyone needs that fact they can do the check.
-
-; Relativize-book-path requires the string not to be too long, because it calls
-; string-prefixp.
-
-                (<= (length ans) (fixnum-bound)))
-           ans)
-          ((null ctx) nil)
-          (t (prog2$
-              (er-hard? ctx "Missing project"
-                        "The project-dir-alist needs an entry for the keyword ~
-                         ~x0 but that keyword is missing the current ~
-                         project-dir-alist, ~x1.  See :DOC project-dir-alist."
-                        key alist)
-; Dumb default so caller gets a sufficiently short string:
-              *directory-separator-string*)))))
-
-(defun project-dir (key wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (project-dir-lookup key (project-dir-alist wrld) 'project-dir))
-
-(defun system-books-dir (state)
-
-; As of this writing, this function is not used in the ACL2 sources.  But it's
-; convenient to introduce it here for use in books.
-
-  (declare (xargs :stobjs state))
-  (project-dir :system (w state)))
-
-(defun project-dir-prefix-entry (filename project-dir-alist)
-
-; Return the first entry in project-dir-alist whose filename is a prefix of the
-; given filename, if there is one.  Otherwise return nil, which is appropriate
-; when filename isn't under a project directory.
-
-  (declare (xargs :guard (stringp filename)))
-  (cond ((atom project-dir-alist) nil)
-        ((and (consp (car project-dir-alist)) ; always t (for guard proof)
-              (stringp (cdar project-dir-alist)) ; always t (for guard proof)
-              (<= (length (cdar project-dir-alist))
-                  (fixnum-bound)) ; (for guard proof)
-              (string-prefixp (cdar project-dir-alist) filename))
-         (car project-dir-alist))
-        (t (project-dir-prefix-entry filename (cdr project-dir-alist)))))
-
-(defun relativize-book-path (filename project-dir-alist action)
-
-; Project-dir-alist is presumably the value of (project-dir-alist (w state)).
-; There are three possibilities, depending on action, which should either be
-; :make-cons (the default), nil, or a book name as supplied to include-book
-; (hence without the .lisp extension).
-
-; First suppose that for some pair (:K . s) in project-dir-alist, s is a prefix
-; of the given filename.  Then if action is :make-cons, return (:K . suffix),
-; where suffix is a relative pathname, relative to the first such s associated
-; with :K.  Otherwise return action.lisp if action is non-nil, and otherwise, a
-; suitable pathname relative to the community books directory, prefixed by
-; "[books]/".
-
-; Otherwise, return action.lisp if action is a string, else the given filename.
-
-  (declare (xargs :guard (or (eq action :make-cons)
-                             (eq action nil)
-                             (stringp action))))
-  (let ((pair (and (stringp filename)
-                   (not (stringp action)) ; optimization
-                   (project-dir-prefix-entry filename
-                                             project-dir-alist))))
-
-    (cond ((stringp action) ; hence not :make-cons
-           (concatenate 'string action ".lisp"))
-          (pair ; (:kwd . "absolute-pathname/")
-           (let ((relative-pathname
-                  (subseq filename (length (cdr pair)) nil)))
-             (cond
-              ((eq action :make-cons)
-               (cons (car pair) relative-pathname))
-              (t
-               (concatenate 'string
-                            (if (eq (car pair) :system)
-                                "[books]/"
-                              (concatenate 'string
-                                           "[:"
-                                           (symbol-name (car pair))
-                                           "]/"))
-                            relative-pathname)))))
-          (t filename))))
-
-(defun relativize-book-path-lst (lst project-dir-alist action)
-  (declare (xargs :guard (string-listp lst)))
-  (cond
-   ((endp lst) nil)
-   (t (cons (relativize-book-path (car lst) project-dir-alist action)
-            (relativize-book-path-lst (cdr lst) project-dir-alist action)))))
-
-(defun filename-to-sysfile (filename wrld)
-  (relativize-book-path filename (project-dir-alist wrld) :make-cons))
-
-(defun print-book-path (book-path indent channel state)
+(defun print-book-path (book-path indent channel ctx state)
   (assert$
    book-path
    (mv-let (col state)
@@ -6680,10 +6517,10 @@
      (mv-let (col state)
        (print-indented-list
         (cond ((f-get-global 'script-mode state)
-               (relativize-book-path-lst book-path
-                                         (project-dir-alist (w state))
-                                         nil))
-              (t book-path))
+               book-path)
+              (t (book-name-lst-to-filename-lst book-path
+                                                (project-dir-alist (w state))
+                                                ctx)))
         (1+ indent) 0 channel nil state)
        (pprogn (if (eql col 0)
                    (spaces indent col channel state)
@@ -6712,7 +6549,7 @@
          (cond (book-path
                 (pprogn
                  (print-book-path (reverse book-path)
-                                  indent channel state)
+                                  indent channel 'pe state)
                  (fms "~_0\\~%" (list (cons #\0 indent)) channel state nil)))
                (t state)))
        (print-ldd
@@ -7327,7 +7164,7 @@
                (current-path-rev (reverse (global-val 'include-book-path
                                                       wrld))))
            (io? error nil state
-                (name book-path-rev current-path-rev wrld)
+                (name book-path-rev current-path-rev ctx wrld)
                 (pprogn
                  (cond ((and (null book-path-rev)
                              (acl2-system-namep name wrld))
@@ -7352,7 +7189,7 @@
                                 (standard-co state) state nil)
                            (print-book-path
                             book-path-rev
-                            3 (standard-co state) state)
+                            3 (standard-co state) ctx state)
                            (newline (standard-co state) state))))
                  (cond ((null current-path-rev)
                         state)
@@ -7364,7 +7201,7 @@
                                 (standard-co state) state nil)
                            (print-book-path
                             current-path-rev
-                            3 (standard-co state) state)
+                            3 (standard-co state) ctx state)
                            (newline (standard-co state) state)))))))
          (silent-error state)))))
      ((cdr (assoc-eq name (table-alist 'memoize-table wrld)))
@@ -18302,16 +18139,20 @@
 
 (defun active-book-name (wrld state)
 
-; This returns the full book name (an absolute pathname ending in .lisp) of the
-; book currently being included, if any.  Otherwise, this returns the full book
-; name of the book currently being certified, if any.
+; This returns the full-book-name of the book currently being included, if any.
+; Otherwise, this returns the full-book-name of the book currently being
+; certified, if any.
 
   (or (car (global-val 'include-book-path wrld))
-      (let ((x (f-get-global 'certify-book-info state)))
-        (cond (x (let ((y (access certify-book-info x :full-book-name)))
-                   (assert$ (stringp y) y)))))))
+      (let ((info (f-get-global 'certify-book-info state)))
+        (and info
+             (access certify-book-info info :full-book-name)))))
 
 (defrec deferred-ttag-note
+
+; Val is a keyword.  Active-book-name is a full-book-name.  Include-bookp is
+; either nil, :quiet, or of the form (ctx . book-name).
+
   (val active-book-name . include-bookp)
   t)
 
@@ -18326,22 +18167,34 @@
                        (standard-evisc-tuplep evisc-tuple))))
   (fms str alist *standard-co* state evisc-tuple))
 
+(defun remove-lisp-suffix (x dotp)
+
+; X is a full-book-name, hence a string ending in ".lisp".  We remove that
+; "lisp" suffix, leaving the final "." if and only if dotp is true.
+
+  (subseq x 0 (- (length x)
+                 (if dotp 5 4))))
+
 (defun print-ttag-note (val active-book-name include-bookp deferred-p state)
 
-; Active-book-name is nil or else satisfies chk-book-name.  If non-nil, we
-; print it as "book x" where x omits the .lisp extension, since the defttag
-; event might not be in the .lisp file.  For example, it could be in the
-; expansion-alist in the book's certificate or, if the book is not certified,
-; it could be in the .port file.
+; Active-book-name is nil or a full-book-name.  If non-nil, we print it as
+; "book x" where x omits the .lisp extension, since the defttag event might not
+; be in the .lisp file.  For example, it could be in the expansion-alist in the
+; book's certificate or, if the book is not certified, it could be in the .port
+; file.
 
-; If include-bookp is a cons, then its cdr satisfies chk-book-name.
+; If include-bookp is a cons, then it is of the form (ctx . book-name).
 
-  (flet ((book-name-root (book-name)
-                         (subseq book-name 0 (- (length book-name) 5))))
+  (flet ((book-name-root (full-book-name wrld)
+                         (remove-lisp-suffix
+                          (book-name-to-filename full-book-name
+                                                 wrld
+                                                 'print-ttag-note)
+                          t)))
     (pprogn
-     (let* ((book-name (cond (active-book-name
-                              (book-name-root active-book-name))
-                             (t "")))
+     (let* ((book-string (cond (active-book-name
+                                (book-name-root active-book-name (w state)))
+                               (t "")))
             (included (if include-bookp
                           " (for included book)"
                         ""))
@@ -18353,7 +18206,7 @@
                       (length (symbol-package-name val))
                       2 ; for "::"
                       (length (symbol-name val))
-                      (length book-name))))
+                      (length book-string))))
        (mv-let (erp val state)
                (state-global-let*
                 ((fmt-hard-right-margin bound set-fmt-hard-right-margin)
@@ -18361,14 +18214,14 @@
                 (pprogn (fms-to-standard-co str
                                             (list (cons #\0 included)
                                                   (cons #\1 val)
-                                                  (cons #\2 book-name))
+                                                  (cons #\2 book-string))
                                             state nil)
                         (cond (deferred-p state)
                               (t (newline *standard-co* state)))
                         (value nil)))
                (declare (ignore erp val))
                state))
-     (cond ((and (consp include-bookp) ; (cons ctx full-book-name)
+     (cond ((and (consp include-bookp) ; (cons ctx full-book-string)
                  (not deferred-p))
             (warning$ (car include-bookp) ; ctx
                       "Ttags"
@@ -18377,7 +18230,8 @@
                        an explicit :TTAGS argument when including the book ~
                        ~x0."
                       (book-name-root
-                       (cdr include-bookp)) ; full-book-name
+                       (cdr include-bookp)
+                       (w state)) ; full-book-string
                       ))
            (t state)))))
 
@@ -18499,6 +18353,8 @@
 
 (defun notify-on-defttag (val active-book-name include-bookp state)
 
+; Val is a ttag value, hence a keyword.
+
 ; Warning: Here we must not call observation or any other printing function
 ; whose output can be inhibited.  The tightest security for ttags is obtained
 ; by searching for "TTAG NOTE" strings in the output.
@@ -18508,7 +18364,7 @@
         (eq include-bookp :quiet))
     state)
    ((and (null include-bookp)
-         (equal val (ttag (w state))))
+         (eq val (ttag (w state))))
 ; Avoid some noise, e.g. in encapsulate when there is already an active ttag.
     state)
    ((eq (f-get-global 'deferred-ttag-notes state)
@@ -18561,16 +18417,14 @@
 (defun chk-acceptable-ttag1 (val active-book-name ttags-allowed ttags-seen
                                  include-bookp ctx state)
 
+; Val should be a keyword (else an error will occur when val is checked with
+; ttag-allowed-p below).  Active-book-name is nil, representing the top level,
+; or a full-book-name.
+
 ; An error triple (mv erp pair state) is returned, where if erp is nil then
-; pair is either of the form (ttags-allowed1 . ttags-seen1), indicating a
-; refined value for ttags-allowed and an extended value for ttags-seen, else is
-; nil, indicating no such update.  By a "refined value" above, we mean that if
-; val is a symbol then it is replaced in ttags-allowed by (val
-; active-book-name).  However, val may be of the form (symbol), in which case
-; no refinement takes place, or else of the form (symbol . filenames) where
-; filenames is not nil, in which case active-book-name must be a member of
-; filenames or we get an error.  Active-book-name is nil, representing the top
-; level, or a string, generally thought of as an absolute filename.
+; pair either is of the form (ttags-allowed1 . ttags-seen1), indicating a
+; refined value for ttags-allowed (see ttag-allowed-p) and an extended value
+; for ttags-seen, else is nil, indicating no such update.
 
 ; This function must be called if we are to add a ttag.  In particular, it
 ; should be called under table-fn; it would be a mistake to call this only
@@ -18596,7 +18450,8 @@
            ~x2.~|See :DOC defttag.~@3"
           val
           (if active-book-name
-              (msg "file ~s0" active-book-name)
+              (msg "file ~s0"
+                   (book-name-to-filename active-book-name (w state) ctx))
             "the top level loop")
           ttags-allowed
           (cond
@@ -18614,14 +18469,14 @@
      (t
       (pprogn
        (notify-on-defttag val active-book-name include-bookp state)
-       (let ((old-filenames (cdr (assoc-eq val ttags-seen))))
+       (let ((old-book-names (cdr (assoc-eq val ttags-seen))))
          (cond
-          ((member-equal active-book-name old-filenames)
+          ((member-equal active-book-name old-book-names)
            (value (cons ttags-allowed1 ttags-seen)))
           (t
            (value (cons ttags-allowed1
                         (put-assoc-eq val
-                                      (cons active-book-name old-filenames)
+                                      (cons active-book-name old-book-names)
                                       ttags-seen)))))))))))
 
 (defun chk-acceptable-ttag (val include-bookp ctx wrld state)
@@ -18639,18 +18494,18 @@
                           (global-val 'ttags-seen wrld)
                           include-bookp ctx state))))
 
-(defun chk-acceptable-ttags2 (ttag filenames ttags-allowed ttags-seen
+(defun chk-acceptable-ttags2 (ttag book-names ttags-allowed ttags-seen
                                    include-bookp ctx state)
-  (cond ((endp filenames)
+  (cond ((endp book-names)
          (value (cons ttags-allowed ttags-seen)))
-        (t (er-let* ((pair (chk-acceptable-ttag1 ttag (car filenames)
+        (t (er-let* ((pair (chk-acceptable-ttag1 ttag (car book-names)
                                                  ttags-allowed ttags-seen
                                                  include-bookp ctx state)))
                     (mv-let (ttags-allowed ttags-seen)
                             (cond ((null pair)
                                    (mv ttags-allowed ttags-seen))
                                   (t (mv (car pair) (cdr pair))))
-                            (chk-acceptable-ttags2 ttag (cdr filenames)
+                            (chk-acceptable-ttags2 ttag (cdr book-names)
                                                    ttags-allowed ttags-seen
                                                    include-bookp ctx
                                                    state))))))
@@ -18660,8 +18515,8 @@
 
 ; See chk-acceptable-ttag1 for a description of the value returned based on the
 ; given active-book-name, tags-allowed, and ttags-seen.  Except, for this
-; function, an element of vals can be a pair (tag . filenames), in which case
-; active-book-name is irrelevant, as it is replaced by each filename in turn.
+; function, an element of vals can be a pair (ttag . book-names), in which case
+; active-book-name is irrelevant, as it is replaced by each book-name in turn.
 ; If every element of vals has that form then active-book-name is irrelevant.
 
   (cond ((endp vals)
@@ -18810,16 +18665,12 @@
 
 (defun chk-table-guards (name alist ctx wrld ens state)
 
-; Consider the case that name is 'acl2-defaults-table.  We do not allow a
-; transition from a non-nil (ttag wrld) to a nil (ttag wrld) at the top level,
-; but no such check will be made by chk-table-guard if :ttag is not bound in
-; alist.  See chk-acceptable-ttag.
+; At one time we performed a check here to enforce the the following
+; prohibition: do not allow a transition from a non-nil (ttag wrld) to a nil
+; (ttag wrld) at the top level.  However, we see no reason to make such a
+; prohibition, so in Fall 2022 we removed that check.
 
-  (er-let* ((pair (cond ((and (eq name 'acl2-defaults-table)
-                              (null (assoc-eq :ttag alist)))
-                         (chk-acceptable-ttag nil nil ctx wrld state))
-                        (t (value nil)))))
-            (chk-table-guards-rec name alist ctx pair wrld ens state)))
+  (chk-table-guards-rec name alist ctx nil wrld ens state))
 
 (defun put-assoc-equal-fast (name val alist)
 

@@ -24,6 +24,6 @@
   :long
   (xdoc::topstring-p
    "See @('pseudo-command-landmarkp')
-    in @('[books]/system/pseudo-command-landmarkp.lisp').")
+    in @('system/pseudo-command-landmarkp.lisp').")
   :true-listp t
   :elementp-of-nil nil)

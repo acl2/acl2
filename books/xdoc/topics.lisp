@@ -82,9 +82,10 @@ following:</p>
  (include-book \"xdoc/constructors\" :dir :system)
 })
 
-<p>This book includes @('[books]/xdoc/top.lisp'), and in addition provides
-utilities to construct well-formed XDOC strings in a modular way.  See <see
-topic='@(url xdoc::constructors)'>the documentation</see> for more details.</p>
+<p>This book includes community book @('xdoc/top.lisp'), and in addition
+provides utilities to construct well-formed XDOC strings in a modular way.  See
+<see topic='@(url xdoc::constructors)'>the documentation</see> for more
+details.</p>
 
 <p>Once you have documented your books, you may wish to create a manual that
 can be viewed from a web browser or from the @(see acl2::acl2-doc) Emacs-based
