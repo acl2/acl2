@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "core-rules")
+(include-book "operations/plugging")
 
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))

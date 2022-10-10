@@ -11,7 +11,9 @@
 (in-package "ABNF")
 
 (include-book "convenience-constructors")
-(include-book "operations/top")
+(include-book "operations/well-formedness")
+(include-book "operations/closure")
+(include-book "operations/in-terminal-set")
 
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 (include-book "std/util/defval" :dir :system)
