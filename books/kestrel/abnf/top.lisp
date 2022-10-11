@@ -16,6 +16,7 @@
 (include-book "semantics")
 (include-book "operations/top")
 (include-book "core-rules")
+(include-book "core-rules-validation")
 (include-book "concrete-syntax")
 (include-book "parsing-primitives-seq")
 (include-book "parsing-primitives-defresult")

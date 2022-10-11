@@ -11,6 +11,9 @@
 (in-package "ABNF")
 
 (include-book "core-rules")
+(include-book "operations/well-formedness")
+(include-book "operations/closure")
+(include-book "operations/in-terminal-set")
 
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))

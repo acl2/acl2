@@ -11,9 +11,6 @@
 (in-package "ABNF")
 
 (include-book "convenience-constructors")
-(include-book "operations/well-formedness")
-(include-book "operations/closure")
-(include-book "operations/in-terminal-set")
 
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -151,12 +148,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The core rules are well-formed and closed.")
-   (xdoc::p
-    "They generate only strings of octets.
-     Without the @('OCTET') rule,
-     they generate only strings of ASCII codes.")
-   (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
   (list *rule_alpha*
@@ -180,17 +171,4 @@
   (add-const-to-untranslate-preprocess *core-rules*)
 
   (defruled rulelistp-of-*core-rules*
-    (rulelistp *core-rules*))
-
-  (defruled rulelist-wfp-of-*core-rules*
-    (rulelist-wfp *core-rules*))
-
-  (defruled rulelist-closedp-of-*core-rules*
-    (rulelist-closedp *core-rules*))
-
-  (defruled octet-only-*core-rules*
-    (rulelist-in-termset-p *core-rules* (integers-from-to 0 255)))
-
-  (defruled ascii-only-*core-rules*-without-*octet*
-    (rulelist-in-termset-p (remove-equal *rule_octet* *core-rules*)
-                           (integers-from-to 0 127))))
+    (rulelistp *core-rules*)))
