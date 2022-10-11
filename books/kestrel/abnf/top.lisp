@@ -20,6 +20,7 @@
 (include-book "concrete-syntax-rules")
 (include-book "concrete-syntax-rules-validation")
 (include-book "concrete-syntax")
+(include-book "concrete-syntax-validation")
 (include-book "parsing-primitives-seq")
 (include-book "parsing-primitives-defresult")
 (include-book "parser")

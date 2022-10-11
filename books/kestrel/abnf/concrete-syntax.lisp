@@ -12,10 +12,9 @@
 
 (include-book "core-rules")
 (include-book "concrete-syntax-rules")
+(include-book "semantics")
 
-(include-book "operations/well-formedness")
-(include-book "operations/closure")
-(include-book "operations/in-terminal-set")
+(include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,15 +59,8 @@
 
   (add-const-to-untranslate-preprocess *all-concrete-syntax-rules*)
 
-  (defruled rulelist-wfp-of-*all-concrete-syntax-rules*
-    (rulelist-wfp *all-concrete-syntax-rules*))
-
-  (defruled rulelist-closedp-of-*all-concrete-syntax-rules*
-    (rulelist-closedp *all-concrete-syntax-rules*))
-
-  (defruled ascii-only-*all-concrete-syntax-rules*
-    (rulelist-in-termset-p *all-concrete-syntax-rules*
-                           (integers-from-to 0 127))))
+  (defruled rulelistp-of-*all-concrete-syntax-rules*
+    (rulelistp *all-concrete-syntax-rules*)))
 
 (define parse-grammar* ((nats nat-listp))
   :returns (result (or (tree-setp result)
