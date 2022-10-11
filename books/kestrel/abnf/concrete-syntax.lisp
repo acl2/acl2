@@ -11,7 +11,6 @@
 (in-package "ABNF")
 
 (include-book "core-rules")
-(include-book "operations/plugging")
 
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
@@ -272,8 +271,19 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-  (plug-rules *concrete-syntax-rules*
-              *core-rules*)
+  (append *concrete-syntax-rules*
+          (list *rule_alpha*
+                *rule_bit*
+                *rule_cr*
+                *rule_crlf*
+                *rule_digit*
+                *rule_dquote*
+                *rule_hexdig*
+                *rule_htab*
+                *rule_lf*
+                *rule_sp*
+                *rule_vchar*
+                *rule_wsp*))
   ///
 
   (add-const-to-untranslate-preprocess *all-concrete-syntax-rules*)

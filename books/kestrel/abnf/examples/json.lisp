@@ -15,6 +15,7 @@
 (include-book "../operations/well-formedness")
 (include-book "../operations/closure")
 (include-book "../operations/in-terminal-set")
+(include-book "../operations/plugging")
 (include-book "../core-rules")
 (include-book "../concrete-syntax")
 (include-book "../parser")
