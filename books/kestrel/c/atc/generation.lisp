@@ -2855,7 +2855,7 @@
         (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
        (fn-name (symbol-name fn))
        (formula `(equal (fun-env-lookup (ident ,fn-name)
-                                        (init-fun-env ,prog-const))
+                                        (init-fun-env (preprocess ,prog-const)))
                         ',finfo?))
        (hints `(("Goal" :in-theory '((:e fun-env-lookup)
                                      (:e ident)
@@ -3717,7 +3717,8 @@
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
-                   (equal ,fenv-var (init-fun-env ,prog-const))
+                   (equal ,fenv-var
+                          (init-fun-env (preprocess ,prog-const)))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
                    ,@hyps
@@ -4327,7 +4328,7 @@
                                            names-to-avoid
                                            wrld))
        (exec-stmt-while-for-fn-body
-        `(b* ((fenv (init-fun-env ,prog-const))
+        `(b* ((fenv (init-fun-env (preprocess ,prog-const)))
               ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
               (test (exec-expr-pure ',loop-test compst))
               ((when (errorp test)) (mv test (compustate-fix compst)))
@@ -4369,7 +4370,8 @@
                           (exec-stmt-while ',loop-test
                                            ',loop-body
                                            compst
-                                           (init-fun-env ,prog-const)
+                                           (init-fun-env
+                                            (preprocess ,prog-const))
                                            limit))
          :rule-classes nil
          :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
@@ -4777,7 +4779,7 @@
         (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
-                   (equal ,fenv-var (init-fun-env ,prog-const))
+                   (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
                    ,@hyps
@@ -4954,7 +4956,8 @@
         (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
-                   (equal ,fenv-var (init-fun-env ,prog-const))
+                   (equal ,fenv-var
+                          (init-fun-env (preprocess ,prog-const)))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
                    ,@hyps
@@ -6501,7 +6504,8 @@
                                 :iferr (list nil nil nil nil nil))
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
                                             proofs
-                                            prog-const init-fun-env-thm fn-thms
+                                            prog-const
+                                            init-fun-env-thm fn-thms
                                             print names-to-avoid ctx state))
                            (ext (ext-declon-fundef fundef)))
                         (acl2::value (list (list ext)
@@ -6556,7 +6560,8 @@
                   more-exported-events
                   names-to-avoid))
         (atc-gen-ext-declon-list (cdr targets) prec-fns prec-tags prec-objs
-                                 proofs prog-const init-fun-env-thm fn-thms
+                                 proofs prog-const
+                                 init-fun-env-thm fn-thms
                                  fn-appconds appcond-thms
                                  print names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
@@ -6567,12 +6572,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-prog-const ((prog-const symbolp)
-                            (tunit transunitp)
+                            (file filep)
                             (print evmac-input-print-p))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. translation unit)."
+          of the generated C code (i.e. C file)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -6582,7 +6587,7 @@
              `((cw-event "~%Generating the named constant..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (defconst-event `(defconst ,prog-const ',tunit))
+       (defconst-event `(defconst ,prog-const ',file))
        (local-event `(progn ,@progress-start?
                             (local ,defconst-event)
                             ,@progress-end?)))
@@ -6605,7 +6610,7 @@
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
-     using just the executable counterpart of @(tsee check-transunit),
+     using just the executable counterpart of @(tsee check-file),
      which is an executable function.")
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
@@ -6614,8 +6619,8 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
-         :formula `(equal (check-transunit ,prog-const) :wellformed)
-         :hints '(("Goal" :in-theory '((:e check-transunit))))
+         :formula `(equal (check-file ,prog-const) :wellformed)
+         :hints '(("Goal" :in-theory '((:e check-file))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
@@ -6633,7 +6638,7 @@
 (define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
                                   (proofs booleanp)
                                   (prog-const symbolp)
-                                  (tunit transunitp))
+                                  (file filep))
   :returns (local-events pseudo-event-form-listp)
   :short "Generate the theorem asserting that
           applying @(tsee init-fun-env) to the translation unit
@@ -6642,12 +6647,22 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-transunit)."))
+     is explained in @(tsee atc-gen-cfile)."))
   (b* (((unless proofs) nil)
+       (tunit (preprocess file))
+       ((when (errorp tunit))
+        (raise "Internal error: preprocessing of ~x0 fails with error ~x1."
+               file tunit))
        (fenv (init-fun-env tunit))
-       (formula `(equal (init-fun-env ,prog-const)
+       ((when (errorp fenv))
+        (raise "Internal error: ~
+                function environment initialization of ~x0 ~
+                fails with error ~x1."
+               tunit fenv))
+       (formula `(equal (init-fun-env (preprocess ,prog-const))
                         ',fenv))
-       (hints '(("Goal" :in-theory '((:e init-fun-env)))))
+       (hints '(("Goal" :in-theory '((:e preprocess)
+                                     (:e init-fun-env)))))
        ((mv event &)
         (evmac-generate-defthm init-fun-env-thm
                                :formula formula
@@ -6657,34 +6672,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-transunit ((targets symbol-listp)
-                           (proofs booleanp)
-                           (prog-const symbolp)
-                           (wf-thm symbolp)
-                           (fn-thms symbol-symbol-alistp)
-                           (print evmac-input-print-p)
-                           (names-to-avoid symbol-listp)
-                           (ctx ctxp)
-                           state)
+(define atc-gen-cfile ((targets symbol-listp)
+                       (proofs booleanp)
+                       (prog-const symbolp)
+                       (wf-thm symbolp)
+                       (fn-thms symbol-symbol-alistp)
+                       (print evmac-input-print-p)
+                       (names-to-avoid symbol-listp)
+                       (ctx ctxp)
+                       state)
   :returns (mv erp
-               (val "A @('(tuple (tunit transunitp)
+               (val "A @('(tuple (file filep)
                                  (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
                state)
   :mode :program
-  :short "Generate a C translation unit from the ACL2 target functions,
-          and accompanying event."
+  :short "Generate a C file from the ATC targets, and accompanying events."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This does not yet generate an actual file in the file system;
+     it generates an abstract syntactic C file.")
    (xdoc::p
     "In order to speed up the proofs of
      the generated theorems for the function environment
      for relatively large C programs,
      we generate a theorem to ``cache''
      the result of calling @(tsee init-fun-env)
-     on the generated translation unit,
+     on the generated translation unit
+     (obtained by preprocessing the generated C file),
      to avoid recomputing that for every function environment theorem.
      We need to generate the name of this (local) theorem
      before generating the function environment theorems,
@@ -6719,14 +6737,14 @@
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
-       (tunit (make-transunit :declons exts))
+       (file (make-file :declons exts))
        (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                             proofs
                                                             prog-const
-                                                            tunit))
+                                                            file))
        ((mv local-const-event exported-const-event)
         (if proofs
-            (atc-gen-prog-const prog-const tunit print)
+            (atc-gen-prog-const prog-const file print)
           (mv nil nil)))
        (local-events (append appcond-local-events
                              (and proofs (list local-const-event))
@@ -6736,31 +6754,34 @@
        (exported-events (append (and proofs (list exported-const-event))
                                 wf-thm-exported-events
                                 fn-thm-exported-events)))
-    (acl2::value (list tunit
+    (acl2::value (list file
                        local-events
                        exported-events
                        names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-file ((tunit transunitp)
-                      (output-file stringp)
-                      (pretty-printing pprint-options-p)
-                      state)
+(define atc-gen-outfile ((file filep)
+                         (output-file stringp)
+                         (pretty-printing pprint-options-p)
+                         state)
   :returns (mv erp val state)
   :mode :program
-  :short "Pretty-print the generated C code (i.e. translation unit)
-          to the output file."
-  (b* ((lines (pprint-transunit tunit pretty-printing)))
+  :short "Pretty-print the generated C code (i.e. C file) to the output file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This actually writes the file to disk, in the file system."))
+  (b* ((lines (pprint-file file pretty-printing)))
     (pprinted-lines-to-file lines output-file state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-file-event ((tunit transunitp)
-                            (output-file stringp)
-                            (pretty-printing pprint-options-p)
-                            (print evmac-input-print-p)
-                            state)
+(define atc-gen-outfile-event ((file filep)
+                               (output-file stringp)
+                               (pretty-printing pprint-options-p)
+                               (print evmac-input-print-p)
+                               state)
   :returns (mv erp
                (event "A @(tsee pseudo-event-formp).")
                state)
@@ -6769,7 +6790,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee atc-gen-file)
+    "This serves to run @(tsee atc-gen-outfile)
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -6778,22 +6799,22 @@
      we get to this file generation event
      only if the previous events are successful.
      This is a sort of safety/security constraint:
-     do not even generate the file, unless it is correct.")
+     do not even generate the output file, unless it is correct.")
    (xdoc::p
-    "If @(':print') is at @(':info') or @(':all'),
+    "If @(':print') is @(':info') or @(':all'),
      we also generate events to print progress messages,
      as done with the constant and theorem events.")
    (xdoc::p
-    "In order to generate an embedded event form for file generation,
+    "In order to generate an embedded event form for output file generation,
      we generate a @(tsee make-event) whose argument generates the file.
      The argument must also return an embedded event form,
      so we use @(tsee value-triple) with @(':invisible'),
      so there is no extra screen output.
-     This is a ``dummy'' event, it is not supposed to do anything:
+     This is a ``dummy'' event, which is not supposed to do anything:
      it is the execution of the @(tsee make-event) argument
-     that matters, because it generates the file.
+     that matters, because it generates the output file.
      In essence, we use @(tsee make-event) to turn a computation
-     (the one that generates the file)
+     (the one that generates the output file)
      into an event.
      But we cannot use just @(tsee value-triple)
      because our computation returns an error triple."))
@@ -6804,10 +6825,10 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &) (atc-gen-file ',tunit
-                                     ,output-file
-                                     ',pretty-printing
-                                     state)))
+          (b* (((er &) (atc-gen-outfile ',file
+                                        ,output-file
+                                        ',pretty-printing
+                                        state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
@@ -6867,14 +6888,14 @@
      if the call is the body of a @(tsee let),
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit targets proofs prog-const wf-thm fn-thms
-                           print names-to-avoid ctx state))
-       ((er file-gen-event) (atc-gen-file-event tunit
-                                                output-file
-                                                pretty-printing
-                                                print
-                                                state))
+       ((er (list file local-events exported-events &))
+        (atc-gen-cfile targets proofs prog-const wf-thm fn-thms
+                       print names-to-avoid ctx state))
+       ((er file-gen-event) (atc-gen-outfile-event file
+                                                   output-file
+                                                   pretty-printing
+                                                   print
+                                                   state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate

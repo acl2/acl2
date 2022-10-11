@@ -2363,3 +2363,39 @@
         (error (list :transunit-error funtab+vartab+tagenv))))
     :wellformed)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define preprocess ((file filep))
+  :returns (tunit transunit-resultp)
+  :short "Preprocess a file [C:5.1.1.2/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a very simplified model of C preprocessing [C:6.10].
+     In fact, for now it is essentially a no-op:
+     it turns a file into a translation unit,
+     which just amounts to unwrapping and re-wrapping.
+     However, we plan to extend this soon.
+     Even though currently this never fails,
+     we have this ACL2 function return a result type,
+     to facilitate future extensions,
+     where preprocessing may actually fail."))
+  (make-transunit :declons (file->declons file))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-file ((file filep))
+  :returns (wf wellformed-resultp)
+  :short "Check a file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "First we preprocess a file.
+     If preprocessing is successful,
+     we check the translation unit."))
+  (b* ((tunit (preprocess file))
+       ((when (errorp tunit)) tunit))
+    (check-transunit tunit))
+  :hooks (:fix))

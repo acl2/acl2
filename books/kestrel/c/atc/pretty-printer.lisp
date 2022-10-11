@@ -49,7 +49,7 @@
      in the form of @(tsee msgp) and @(tsee msg-listp) values.
      The latter generally consist of lines of text;
      that is always the case at the top level,
-     i.e. a C translation unit is turned into a list of lines.
+     i.e. a C file is turned into a list of lines.
      Some pretty-printing functions produce @(tsee msgp) values
      that other pretty-printing functions
      incorporate into larger text.
@@ -60,14 +60,8 @@
      @('line') for @(tsee msgp) values that are individual lines, and
      @('lines') for @(tsee msg-listp) values that are multiple lines.")
    (xdoc::p
-    "A separate function writes the lines for a C translation unit
-     to an output channel, which is associated to a file.")
-   (xdoc::p
-    "Currently in our abstract syntax there is no distinction between
-     translation units and preprocessing translation units.
-     However, it is the latter, not the former,
-     that must be pretty-printed to files
-     [C:5.1.1.2].")
+    "A separate function writes the lines for a C (syntactic) file
+     to an output channel, which is associated to a file in the file system.")
    (xdoc::p
     "We use some "
     (xdoc::seetopic "atc-pretty-printing-options" "pretty-printing options")
@@ -1303,6 +1297,14 @@
   :short "Pretty-print a translation units."
   (b* (((transunit tunit) tunit))
     (pprint-ext-declon-list tunit.declons options)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-file ((file filep) (options pprint-options-p))
+  :returns (lines msg-listp)
+  :short "Pretty-print a file."
+  (b* (((file file) file))
+    (pprint-ext-declon-list file.declons options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
