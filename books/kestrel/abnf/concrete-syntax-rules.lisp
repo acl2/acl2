@@ -24,10 +24,12 @@
    (xdoc::p
     "Note that these rules refer to some core rule names,
      so we include the core rules in this file."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection concrete-syntax-rule-names
-  :parents (concrete-syntax-rules)
   :short "Names of the ABNF concrete syntax rules."
 
   (local (xdoc::set-default-parents concrete-syntax-rule-names))
@@ -57,8 +59,9 @@
   (defval *rulelist* (rulename "rulelist"))
   (defval *rulename* (rulename "rulename")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection concrete-syntax-rule-definitions
-  :parents (concrete-syntax-rules)
   :short "Definition of the concrete syntax rules."
   :long
   (xdoc::topstring-p
@@ -202,8 +205,9 @@
                 (/_ (%- #x3f #x7e))))
         ">")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *concrete-syntax-rules*
-  :parents (concrete-syntax-rules)
   :short "The ABNF concrete syntax rules, excluding the core rules."
   :long
   (xdoc::topstring
