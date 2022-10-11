@@ -14,8 +14,6 @@
 (include-book "concrete-syntax-rules")
 (include-book "semantics")
 
-(include-book "kestrel/utilities/strings/chars-codes" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax
