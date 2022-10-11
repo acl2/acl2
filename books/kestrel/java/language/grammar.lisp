@@ -14,6 +14,9 @@
 
 (include-book "kestrel/abnf/parser" :dir :system)
 (include-book "kestrel/abnf/abstractor" :dir :system)
+(include-book "kestrel/abnf/operations/well-formedness" :dir :system)
+(include-book "kestrel/abnf/operations/closure" :dir :system)
+(include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
 ; (depends-on "lexical-grammar.abnf")
 ; (depends-on "syntactic-grammar.abnf")
