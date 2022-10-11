@@ -4972,7 +4972,11 @@
      (iv) the termination theorem of the loop function, suitably instantiated.
      Given the correctness lemma, the correctness theorem is easily proved,
      via the lemma and the generate theorem that equates
-     the specialized @(tsee exec-stmt-while) to the general one."))
+     the specialized @(tsee exec-stmt-while) to the general one.")
+   (xdoc::p
+    "Similarly to @(tsee atc-gen-cfun-correct-thm),
+     we stage the proof of the lemma in two phases:
+     see the documentation of that function for motivation."))
   (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-lemma (add-suffix correct-thm "-LEMMA"))
        ((mv correct-lemma names-to-avoid)
@@ -5103,12 +5107,65 @@
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@instantiation)
                              (:instance ,termination-of-fn-thm
-                              :extra-bindings-ok ,@instantiation))
-                       :expand (:lambdas
-                                (,fn ,@(fsublis-var-lst
-                                        (doublets-to-alist
-                                         instantiation)
-                                        formals))))))
+                              :extra-bindings-ok ,@instantiation)))
+                      (and stable-under-simplificationp
+                           '(:in-theory
+                             (append
+                              *atc-symbolic-computation-state-rules*
+                              *atc-valuep-rules*
+                              *atc-value-listp-rules*
+                              *atc-value-optionp-rules*
+                              *atc-type-of-value-rules*
+                              *atc-type-of-value-option-rules*
+                              *atc-value-array->elemtype-rules*
+                              *atc-array-length-rules*
+                              *atc-array-length-write-rules*
+                              *atc-other-executable-counterpart-rules*
+                              *atc-wrapper-rules*
+                              *atc-distributivity-over-if-rewrite-rules*
+                              *atc-identifier-rules*
+                              *atc-not-rules*
+                              *atc-integer-size-rules*
+                              *atc-limit-rules*
+                              *atc-not-error-rules*
+                              *atc-integer-ops-1-return-rewrite-rules*
+                              *atc-integer-ops-2-return-rewrite-rules*
+                              *atc-integer-convs-return-rewrite-rules*
+                              *atc-array-read-return-rewrite-rules*
+                              *atc-array-write-return-rewrite-rules*
+                              *atc-misc-rewrite-rules*
+                              *atc-computation-state-return-rules*
+                              *atc-boolean-from-integer-return-rules*
+                              *atc-type-prescription-rules*
+                              *atc-compound-recognizer-rules*
+                              *integer-value-disjoint-rules*
+                              *array-value-disjoint-rules*
+                              *atc-value-fix-rules*
+                              *atc-flexible-array-member-rules*
+                              '(,@not-error-thms
+                                ,@valuep-thms
+                                not
+                                ,exec-stmt-while-for-fn
+                                ,@struct-reader-return-thms
+                                ,@struct-writer-return-thms
+                                ,@type-of-value-thms
+                                ,@flexiblep-thms
+                                ,@member-read-thms
+                                ,@member-write-thms
+                                ,@type-prescriptions-called
+                                ,@type-prescriptions-struct-readers
+                                ,@result-thms
+                                ,@correct-thms
+                                ,@measure-thms
+                                ,natp-of-measure-of-fn-thm
+                                ,@extobj-recognizers
+                                ,correct-test-thm
+                                ,correct-body-thm))
+                             :expand (:lambdas
+                                      (,fn ,@(fsublis-var-lst
+                                              (doublets-to-alist
+                                               instantiation)
+                                              formals)))))))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
           (:induct (,exec-stmt-while-for-fn ,compst-var ,limit-var))
