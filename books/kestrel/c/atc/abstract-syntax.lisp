@@ -269,3 +269,12 @@
   (with-guard-checking :none (ec-call (transunit-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-transunit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-file ()
+  :returns (file filep)
+  :short "An irrelevant file, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (file-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-file))))

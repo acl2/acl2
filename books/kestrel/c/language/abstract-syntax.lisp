@@ -11,6 +11,8 @@
 
 (in-package "C")
 
+(include-book "errors")
+
 (include-book "kestrel/fty/defset" :dir :system)
 
 ; to generate more typed list theorems:
@@ -1033,3 +1035,43 @@
   ((declons ext-declon-list))
   :tag :transunit
   :pred transunitp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult transunit "translation units")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod file
+  :short "Fixtype of files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar in [C] does not quite define files in the form we want here.
+     The closest things are
+     preprocessing files [C:6.10/1]
+     and translation units [C:6.9/1].
+     However, the grammar rule for preprocessing files
+     describes their content before preprocessing [C:5.1.1.1/1] [C:5.1.1.2/3],
+     and the grammar rule for translation units
+     describes their contents after preprocessing
+     (which may involve copying contents of included files).
+     As discussed in @(see abstract-syntax),
+     the purpose of this abstract syntax is to capture the content of files
+     neither before nor after preprocessing.
+     Thus, we use the more ``neutral'' term `file' here,
+     which can capture constructs from both before and after preprocessing.")
+   (xdoc::p
+    "A file consists of a list of external declarations currently.
+     This is actually the same as a translation unit (see @(tsee transunit)),
+     but we plan to extend and change this soon.
+     We put the list into a one-field product fixtype
+     so that in the future it may be easier to extend this fixtype.")
+   (xdoc::p
+    "Note that here by `file' we mean the content of a file,
+     not the file as a full entity of the file system,
+     which also includes a name and possibly other information.
+     We plan to formalize this additional information separately."))
+  ((declons ext-declon-list))
+  :tag :file
+  :pred filep)
