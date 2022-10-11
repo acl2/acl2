@@ -1060,10 +1060,10 @@
   (xdoc::p
    "ATC generates a named constant whose value is
     the AST of the generated C program.
-    More precisely, it is the AST of the generated translation unit,
-    which is a value of the fixtype @(tsee transunit) in "
+    More precisely, it is the AST of the generated C file,
+    which is a value of the fixtype @(tsee file) in "
    (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
-   ". The translation unit is the content of the generated file:
+   ". More precisely, it is the content of the generated file on disk:
     the AST is "
    (xdoc::seetopic "atc-pretty-printer" "pretty-printed")
    " to the @('.c') file.
@@ -1091,10 +1091,10 @@
    "More precisely, ATC generates a theorem of the form")
   (xdoc::codeblock
    "(defthm <constant>-well-formed"
-   "  (equal (check-transunit <constant>) :wellformed))")
+   "  (equal (check-file <constant>) :wellformed))")
   (xdoc::p
    "This asserts that
-    when @(tsee check-transunit) is applied
+    when @(tsee check-file) is applied
     to the named constant described above
     (i.e. the abstract syntax of the generated C program),
     the result is the value @(':wellformed').
@@ -1105,7 +1105,7 @@
 
   (xdoc::p
    "Since the program AST is a constant
-    and @(tsee check-transunit) is executable,
+    and @(tsee check-file) is executable,
     the theorem is proved easily by execution.")
 
   (xdoc::p
@@ -1139,7 +1139,7 @@
    "           (equal (exec-fun (ident \"<fn>\")"
    "                            (list <x1> ... <xn>)"
    "                            compst"
-   "                            (init-fun-env <constant>)"
+   "                            (init-fun-env (preprocess <constant>))"
    "                            limit)"
    "                  (<fn> <x1> ... <xn>))))")
   (xdoc::p
@@ -1155,7 +1155,7 @@
    ": the theorem applies to execution in every possible computation state.")
 
   (xdoc::p
-   "The term @('(init-fun-env <constant>)') constructs the "
+   "The term @('(init-fun-env (preprocess <constant>))') constructs the "
    (xdoc::seetopic "function-environments" "C function environment")
    " of the generated translation unit.")
 
