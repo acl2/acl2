@@ -4280,6 +4280,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :mode :logic :guard t))
   x)
 
+; Elsewhere in this code, e.g., cleanse-type-prescriptions, we use the variable
+; named ``def-nume'' to hold the nume of a :definition rune, whereas we use
+; ``xnume'' to hold the name of an :executable-counterpart rune.  It's in that
+; spirit that we named the constants below to hold the numes for (:definition
+; rewrite-lambda-modep) and (:executable-counterpart rewrite-lambda-modep).
+
+(defconst *rewrite-lambda-modep-def-nume*
+  (+ *tau-system-xnume* 2))
+
 (defconst *rewrite-lambda-modep-xnume*
   (+ *tau-system-xnume* 3))
 
@@ -26072,6 +26081,56 @@ Lisp definition."
   (cond
    ((atom theories) '(CURRENT-THEORY :HERE))
    (t (e/d-fn '(CURRENT-THEORY :HERE) theories t))))
+
+; User-level control of rewrite-lambda-object is determined by the
+; enabled status of two runes, which we'll abbreviate in this
+; discussion by e and d:
+
+; e    (:executable-counterpart rewrite-lambda-modep)
+; d    (:definition rewrite-lambda-modep)
+
+; if e is enabled and d is enabled:
+;    then rewrite-lambda-object does a a recursive rewrite
+;    of the body.
+
+; if e is enabled, but d is disabled,
+;    then rewrite-lambda-object just does syntactic cleaning
+;    of the body.
+
+; If e is disabled,
+;    then rewrite-lambda-object is a no-op.
+
+; These three options could be switched on and off via local
+; :in-theory hints:
+
+; Recursive rewriting:
+; (e/d ((:e rewrite-lambda-modep) (:d rewrite-lambda-modep)) nil)
+
+; Syntactic cleaning:
+; (e/d ((:e rewrite-lambda-modep)) ((:d rewrite-lambda-modep)))
+
+; Hands off:
+; (e/d () ((:e rewrite-lambda-modep)))
+
+; If the only theory adjustments you want to make are to these two
+; runes, i.e., you don't want to also enable or disable other runes in that
+; in-theory event or :in-theory hint, you can use these three macros.
+
+(defmacro rewrite-lambda-objects-theory ()
+  '(e/d ((:e rewrite-lambda-modep) (:d rewrite-lambda-modep)) nil))
+
+(defmacro syntactically-clean-lambda-objects-theory ()
+  '(e/d ((:e rewrite-lambda-modep)) ((:d rewrite-lambda-modep))))
+
+(defmacro hands-off-lambda-objects-theory ()
+  '(e/d () ((:e rewrite-lambda-modep))))
+
+; as in
+
+; :hints (("Subgoal 3.5"
+;          :in-theory (syntactically-clean-lambda-objects-theory)))
+
+; End of discussion of user-level control of rewrite-lambda-object.
 
 ; We avoid skipping proofs for the rest of initialization, so that we can do
 ; the verify-termination-boot-strap proofs below during the first pass.  See

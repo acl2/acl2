@@ -1029,7 +1029,7 @@
   :no-function t)
 
 (define abstract-rule-/-*cwsp-cnl ((tree treep))
-  :returns (rule? maybe-rulep)
+  :returns (rule? rule-optionp)
   :parents (concrete-to-abstract-syntax)
   :short "A @('( rule / (*c-wsp c-nl) )') parse tree is abstracted to
           either its rule (for the first alternative)

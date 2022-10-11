@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-; the order of the following INCLUDE-BOOKs determines
+; the order of the following INCLUDE-BOOKs should determine
 ; the order of the subtopics of the ABNF topic below:
 (include-book "abstract-syntax")
 (include-book "semantics")
@@ -24,6 +24,7 @@
 (include-book "abstractor")
 (include-book "parser-and-abstractor-validation")
 (include-book "parser-generators")
+(include-book "examples/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
