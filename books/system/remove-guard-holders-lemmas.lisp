@@ -83,6 +83,15 @@
          (implies (pseudo-term-listp term)
                   (pseudo-termp (car (last term))))))
 
+(local (defthm pseudo-termp-listp-append
+         (implies (and (pseudo-term-listp terms1)
+                       (pseudo-term-listp terms2))
+                  (pseudo-term-listp (append terms1 terms2)))))
+
+(local (defthm pseudo-termp-listp-take
+         (implies (pseudo-term-listp terms)
+                  (pseudo-term-listp (take n terms)))))
+
 (local (defthm-flag-remove-guard-holders1
          (defthm pseudo-termp-remove-guard-holders1
            (implies (pseudo-termp term)
@@ -93,7 +102,11 @@
            (implies (pseudo-term-listp lst)
                     (pseudo-term-listp
                      (mv-nth 1 (remove-guard-holders1-lst lst lamp))))
-           :flag remove-guard-holders1-lst)))
+           :flag remove-guard-holders1-lst)
+         :hints (("Goal" :in-theory (disable member-equal
+                                             pseudo-termp-lambda-lemma
+                                             take
+                                             quote-listp)))))
 
 (defthm pseudo-termp-remove-guard-holders1 ; redundant
   (implies (pseudo-termp term)
@@ -117,4 +130,3 @@
 ; It was tempting to avoid the following, but the approach in the
 ; remove-guard-holders.lisp requires it.
 (verify-guards remove-guard-holders1)
-
