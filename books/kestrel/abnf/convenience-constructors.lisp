@@ -31,64 +31,12 @@
     "These functions and macros are used only to define
      the core rules [RFC:B] and the concrete syntax rules [RFC:4].
      Thus, these function and macros only need to handle
-     the constructs used in those rules, not all possible constructs."))
+     the constructs used in those rules, not all possible constructs.")
+   (xdoc::p
+    "Before defining the actual constructors,
+     we introduce some predicates used in the constructors' guards."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection %.
-  :short "Construct a direct numeric value notation element
-          from a variable number of numbers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The name of this macro is inspired by
-     the ABNF notation @('%Rn1.n2. ...'),
-     where @('R') is the letter for the radix
-     and @('n1'), @('n2'), ... are numbers in base @('R'):
-     the name of this macro has the @('%') and the @('.') of that notation.")
-   (xdoc::@def "%."))
-
-  (defmacro %. (&rest numbers)
-    `(%.-fn (list ,@numbers)))
-
-  (define %.-fn ((nats nat-listp))
-    :returns (element elementp)
-    (element-num-val (num-val-direct nats))
-    :hooks (:fix)
-    :no-function t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define %- ((min natp) (max natp))
-  :returns (element elementp)
-  :short "Construct a range numeric value notation element
-          from a minimum and a maximum."
-  :long
-  (xdoc::topstring-p
-   "The name of this function is inspired by
-    the ABNF notation @('%Rmin-max'),
-    where @('R') is the letter for the radix
-    and @('min') and @('max') are numbers in base @('R'):
-    the name of this function has the @('%') and the @('-') of that notation.")
-  (element-num-val (num-val-range min max))
-  :hooks (:fix)
-  :no-function t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define <> ((charstring acl2::stringp))
-  :returns (element elementp)
-  :short "Construct a prose value notation element from a character string."
-  :long
-  (xdoc::topstring-p
-   "The name of this function is inspired by
-    the ABNF notation @('<...>'),
-    where the brackets form the name of this function.")
-  (element-prose-val (prose-val charstring))
-  :hooks (:fix)
-  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,47 +56,7 @@
               (rulenamep x)))
     :enable (elementp rulenamep)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define *_ ((x element/rulename-p))
-  :returns (repetition repetitionp)
-  :short "Construct a repetition of zero or more instances of an element."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If a rule name is supplied, it is promoted to an element.")
-   (xdoc::p
-    "The name of this function is inspired by the ABNF notation @('*')."))
-  (b* ((element (if (elementp x)
-                    x
-                  (element-rulename x)))
-       (range (make-repeat-range :min 0 :max (nati-infinity))))
-    (make-repetition :range range :element element))
-  :hooks (:fix)
-  :no-function t
-  :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define 1*_ ((x element/rulename-p))
-  :returns (repetition repetitionp)
-  :short "Construct a repetition of one or more instances of an element."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If a rule name is supplied, it is promoted to an element.")
-   (xdoc::p
-    "The name of this function is inspired by the ABNF notation @('1*')."))
-  (b* ((element (if (elementp x)
-                    x
-                  (element-rulename x)))
-       (range (make-repeat-range :min 1 :max (nati-infinity))))
-    (make-repetition :range range :element element))
-  :hooks (:fix)
-  :no-function t
-  :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define repetition/element/rulename/charstring-p (x)
   :returns (yes/no booleanp)
@@ -190,7 +98,7 @@
     (not (and (rulenamep x)
               (acl2::stringp x)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist repetition/element/rulename/charstring-listp (x)
   (repetition/element/rulename/charstring-p x)
@@ -200,6 +108,101 @@
   :elementp-of-nil nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection %.
+  :short "Construct a direct numeric value notation element
+          from a variable number of numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name of this macro is inspired by
+     the ABNF notation @('%Rn1.n2. ...'),
+     where @('R') is the letter for the radix
+     and @('n1'), @('n2'), ... are numbers in base @('R'):
+     the name of this macro has the @('%') and the @('.') of that notation.")
+   (xdoc::@def "%."))
+
+  (defmacro %. (&rest numbers)
+    `(%.-fn (list ,@numbers)))
+
+  (define %.-fn ((nats nat-listp))
+    :returns (element elementp)
+    (element-num-val (num-val-direct nats))
+    :hooks (:fix)
+    :no-function t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define %- ((min natp) (max natp))
+  :returns (element elementp)
+  :short "Construct a range numeric value notation element
+          from a minimum and a maximum."
+  :long
+  (xdoc::topstring-p
+   "The name of this function is inspired by
+    the ABNF notation @('%Rmin-max'),
+    where @('R') is the letter for the radix
+    and @('min') and @('max') are numbers in base @('R'):
+    the name of this function has the @('%') and the @('-') of that notation.")
+  (element-num-val (num-val-range min max))
+  :hooks (:fix)
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define <> ((charstring acl2::stringp))
+  :returns (element elementp)
+  :short "Construct a prose value notation element from a character string."
+  :long
+  (xdoc::topstring-p
+   "The name of this function is inspired by
+    the ABNF notation @('<...>'),
+    where the brackets form the name of this function.")
+  (element-prose-val (prose-val charstring))
+  :hooks (:fix)
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define *_ ((x element/rulename-p))
+  :returns (repetition repetitionp)
+  :short "Construct a repetition of zero or more instances of an element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If a rule name is supplied, it is promoted to an element.")
+   (xdoc::p
+    "The name of this function is inspired by the ABNF notation @('*')."))
+  (b* ((element (if (elementp x)
+                    x
+                  (element-rulename x)))
+       (range (make-repeat-range :min 0 :max (nati-infinity))))
+    (make-repetition :range range :element element))
+  :hooks (:fix)
+  :no-function t
+  :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define 1*_ ((x element/rulename-p))
+  :returns (repetition repetitionp)
+  :short "Construct a repetition of one or more instances of an element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If a rule name is supplied, it is promoted to an element.")
+   (xdoc::p
+    "The name of this function is inspired by the ABNF notation @('1*')."))
+  (b* ((element (if (elementp x)
+                    x
+                  (element-rulename x)))
+       (range (make-repeat-range :min 1 :max (nati-infinity))))
+    (make-repetition :range range :element element))
+  :hooks (:fix)
+  :no-function t
+  :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection /_
   :short "Construct a concatenation from a variable number of repetitions."
@@ -255,7 +258,7 @@
                    :in-theory
                    (enable repetition/element/rulename/charstring-p)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection !_
   :short "Construct a group from a variable number of concatenations."
@@ -275,7 +278,7 @@
     :hooks (:fix)
     :no-function t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection ?_
   :short "Construct an option from a variable number of concatenations."
@@ -295,7 +298,7 @@
     :hooks (:fix)
     :no-function t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection =_
   :short "Construct a non-incremental rule from
@@ -318,7 +321,7 @@
     :hooks (:fix)
     :no-function t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection =/_
   :short "Construct an incremental rule from
@@ -341,7 +344,7 @@
     :hooks (:fix)
     :no-function t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection def-rule-const
   :short "Introduce an ACL2 constant for a (non-incremental) rule."
