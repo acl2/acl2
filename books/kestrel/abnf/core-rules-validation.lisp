@@ -30,10 +30,10 @@
     (xdoc::li
      "Are closed.")
     (xdoc::li
-     "They generate only strings of octets.")
+     "Generate only strings of octets.")
     (xdoc::li
      "Without the @('OCTET') rule,
-      they generate only strings of ASCII codes."))
+      generate only strings of ASCII codes."))
    (xdoc::p
     "These validation theorems depend on some grammar @(see operations).
      Thus, we put them in a separate file,
