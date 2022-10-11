@@ -13,6 +13,7 @@
 (include-book "concrete-syntax")
 (include-book "parsing-primitives-seq")
 
+(include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))

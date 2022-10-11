@@ -11,18 +11,9 @@
 (in-package "ABNF")
 
 (include-book "convenience-constructors")
-(include-book "operations/well-formedness")
-(include-book "operations/closure")
-(include-book "operations/in-terminal-set")
 
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 (include-book "std/util/defval" :dir :system)
-
-(local (include-book "kestrel/utilities/oset-theorems" :dir :system))
-(local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
-(local (include-book "std/basic/inductions" :dir :system))
-(local (include-book "std/lists/top" :dir :system))
-(local (include-book "std/typed-lists/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,10 +36,12 @@
      uses the core rules,
      we break the circularity by formalizing the core rules
      using the abstract syntax of ABNF."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection core-rule-names
-  :parents (core-rules)
   :short "Names of the core rules."
   :long
   (xdoc::topstring-p
@@ -75,8 +68,9 @@
   (defval *vchar* (rulename "vchar"))
   (defval *wsp* (rulename "wsp")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection core-rule-definitions
-  :parents (core-rules)
   :short "Definition of the core rules."
   :long
   (xdoc::topstring-p
@@ -145,17 +139,12 @@
     (/_ *sp*)
     (/_ *htab*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *core-rules*
-  :parents (core-rules)
   :short "All the core rules."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "The core rules are well-formed and closed.")
-   (xdoc::p
-    "They generate only strings of octets.
-     Without the @('OCTET') rule,
-     they generate only strings of ASCII codes.")
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
@@ -180,17 +169,4 @@
   (add-const-to-untranslate-preprocess *core-rules*)
 
   (defruled rulelistp-of-*core-rules*
-    (rulelistp *core-rules*))
-
-  (defruled rulelist-wfp-of-*core-rules*
-    (rulelist-wfp *core-rules*))
-
-  (defruled rulelist-closedp-of-*core-rules*
-    (rulelist-closedp *core-rules*))
-
-  (defruled octet-only-*core-rules*
-    (rulelist-in-termset-p *core-rules* (integers-from-to 0 255)))
-
-  (defruled ascii-only-*core-rules*-without-*octet*
-    (rulelist-in-termset-p (remove-equal *rule_octet* *core-rules*)
-                           (integers-from-to 0 127))))
+    (rulelistp *core-rules*)))
