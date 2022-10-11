@@ -36,10 +36,12 @@
      uses the core rules,
      we break the circularity by formalizing the core rules
      using the abstract syntax of ABNF."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection core-rule-names
-  :parents (core-rules)
   :short "Names of the core rules."
   :long
   (xdoc::topstring-p
@@ -66,8 +68,9 @@
   (defval *vchar* (rulename "vchar"))
   (defval *wsp* (rulename "wsp")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection core-rule-definitions
-  :parents (core-rules)
   :short "Definition of the core rules."
   :long
   (xdoc::topstring-p
@@ -136,8 +139,9 @@
     (/_ *sp*)
     (/_ *htab*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *core-rules*
-  :parents (core-rules)
   :short "All the core rules."
   :long
   (xdoc::topstring
