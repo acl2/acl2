@@ -262,7 +262,8 @@
 (defval *all-concrete-syntax-rules*
   :parents (concrete-syntax)
   :short "All the ABNF concrete syntax rules,
-          including the core rules that they reference."
+          including the core rules that they reference
+          (directly and indirectly)."
   :long
   (xdoc::topstring
    (xdoc::p
