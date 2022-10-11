@@ -12,18 +12,18 @@
 
 (include-book "core-rules")
 
-(include-book "operations/well-formedness")
-(include-book "operations/closure")
-(include-book "operations/in-terminal-set")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax-rules
   :parents (concrete-syntax)
   :short "Rules that specify the concrete syntax of ABNF."
   :long
-  (xdoc::topstring-p
-   "These are the rules in [RFC:4].")
+  (xdoc::topstring
+   (xdoc::p
+    "These are the rules in [RFC:4].")
+   (xdoc::p
+    "Note that these rules refer to some core rule names,
+     so we include the core rules in this file."))
   :order-subtopics t)
 
 (defsection concrete-syntax-rule-names
@@ -241,7 +241,4 @@
   (add-const-to-untranslate-preprocess *concrete-syntax-rules*)
 
   (defruled rulelistp-of-*concrete-syntax-rules*
-    (rulelistp *concrete-syntax-rules*))
-
-  (defruled rulelist-wfp-of-*concrete-syntax-rules*
-    (rulelist-wfp *concrete-syntax-rules*)))
+    (rulelistp *concrete-syntax-rules*)))

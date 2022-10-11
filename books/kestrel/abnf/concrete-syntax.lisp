@@ -13,6 +13,10 @@
 (include-book "core-rules")
 (include-book "concrete-syntax-rules")
 
+(include-book "operations/well-formedness")
+(include-book "operations/closure")
+(include-book "operations/in-terminal-set")
+
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
