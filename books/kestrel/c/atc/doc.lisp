@@ -198,9 +198,8 @@
     "Representation of C Code in ACL2"
 
     (xdoc::p
-     "Currently ATC supports the ACL2 representation of
-      a single C translation unit, which goes into the generated file.
-      This translation unit consists of
+     "Currently ATC supports the ACL2 representation of a single C file.
+      This file consists of
       one or more C function definitions,
       zero or more C external object definitions,
       and zero or more C structure type declarations.")
@@ -229,7 +228,7 @@
 
     (xdoc::p
      "The order of the C structure types and external objects and functions
-      in the translation unit
+      in the file
       is the same as the order of the corresponding targets
       in the list @('(t1 ... tp)') passed to ATC.")
 
@@ -1136,7 +1135,7 @@
       The conditions make reference to the C scopes
       represented by the ACL2 terms that
       the @(tsee let) or @(tsee mv-let) is part of:
-      there is a C scope for the whole translation unit,
+      there is a C scope for the whole file,
       then each function body is a nested C scope,
       and then each @(tsee if) branch whose test is
       an expression term returning a boolean
@@ -1401,13 +1400,12 @@
      (xdoc::codeblock
       "(defconst *program* ...)")
      (xdoc::p
-      "where @('...') is the abstract syntax tree of
-       the generated C translation unit,
+      "where @('...') is the abstract syntax tree of the generated C file,
        which ATC also pretty-prints and writes
-       to the file specified by the @(':output-file') input."))
+       to the path specified by the @(':output-file') input.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
-       this constant is not generated.")
+       this constant is not generated."))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1420,7 +1418,7 @@
       "(defthm *program*-well-formed ...)")
      (xdoc::p
       "where @('...') is an assertion about @('*program*') stating that
-       the generated (abstract syntax tree of the) translation unit
+       the generated (abstract syntax tree of the) file
        is statically well-formed,
        i.e. it compiles according to [C].")
      (xdoc::p
@@ -1460,8 +1458,9 @@
 
     (xdoc::p
      "ATC generates a single C file that contains
-      a translation unit that contains
-      a C structure type declaration or a C fucnction
+      a C function definition
+      or C external object definition
+      or C structure type declaration
       for each target @('ti') (except recursive target functions),
       as explained in Section `Representation of C Code in ACL2'.")
 
