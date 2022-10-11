@@ -3700,6 +3700,20 @@
      particularly if the same substituted variable occurs more than once.
      With the bindings, we let ACL2 perform the substitution at proof time.")
    (xdoc::p
+    "If @('fn') has conditional (i.e. @(tsee if)s),
+     the C function has corresponding (expression and statement) conditionals.
+     During the proof, all these condtionals, in @('fn') and in the C function,
+     may cause case splits, which make the proof slow.
+     In an attempt to improve speed,
+     we perform the symbolic execution execution of the C function
+     while keeping @('fn') closed,
+     so that @('fn') does not cause case splits during the symbolic execution.
+     Then, once we reach stability (see @(tsee stable-under-simplificationp)),
+     we open @('fn'), which may cause case splits, and complete the proof.
+     The second part of the proof probably does not need
+     all the rules from the first part, which for now we use for simplicity;
+     so we should be able to use simpler hints there eventually.")
+   (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* ((name (cdr (assoc-eq fn fn-thms)))
        (formals (strip-cars typed-formals))
@@ -3785,7 +3799,6 @@
                                ,@valuep-thms
                                ,@value-kind-thms
                                not
-                               ,fn
                                ,@result-thms
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
@@ -3801,7 +3814,28 @@
                                ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
-                 :expand (:lambdas))))
+                 :expand (:lambdas))
+                (and stable-under-simplificationp
+                     '(:in-theory (union-theories
+                                   (theory 'atc-all-rules)
+                                   '(,fn
+                                     ,@not-error-thms
+                                     ,@valuep-thms
+                                     ,@value-kind-thms
+                                     not
+                                     ,@result-thms
+                                     ,@struct-reader-return-thms
+                                     ,@struct-writer-return-thms
+                                     ,@type-of-value-thms
+                                     ,@flexiblep-thms
+                                     ,@member-read-thms
+                                     ,@member-write-thms
+                                     ,@type-prescriptions-called
+                                     ,@type-prescriptions-struct-readers
+                                     ,@extobj-recognizers
+                                     ,@correct-thms
+                                     ,@measure-thms
+                                     ,fn-fun-env-thm))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
