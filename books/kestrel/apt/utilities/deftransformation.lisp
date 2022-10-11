@@ -331,7 +331,7 @@
 
        ,@xdoc-forms)))
 
-;; Expects there to be a function called <name>-event.  It's params should be:
+;; Expects there to be a function called <name>-event.  Its params should be:
 ;; ...required-args...
 ;; ...keyword-args...
 ;; verbose (if :pass-print is true)
