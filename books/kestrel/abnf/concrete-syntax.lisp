@@ -35,8 +35,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These rules are well-formed, closed,
-     and generate terminal strings consisting only of ASCII codes.")
+    "Properties of these rules
+     are proved in @(see concrete-syntax-validation).")
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))

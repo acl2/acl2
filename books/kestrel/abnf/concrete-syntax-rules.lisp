@@ -212,7 +212,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ABNF concrete syntax rules are well-formed.")
+    "Properties of the concrete syntax rules
+     are proved in @(see concrete-syntax-rules-validation).")
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))

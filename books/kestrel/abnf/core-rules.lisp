@@ -147,7 +147,9 @@
   (xdoc::topstring
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output."))
+     to keep this constant unexpanded in output.")
+   (xdoc::p
+    "Properties of the core rules are proved in @(see core-rules-validation)."))
   (list *rule_alpha*
         *rule_bit*
         *rule_char*
