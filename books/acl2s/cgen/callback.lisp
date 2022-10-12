@@ -439,6 +439,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
    ;;  (value nil))
    )
 
+#|
 (defun acl2::test-checkpoint (id cl cl-list processor pspv hist ctx state)
   (declare (xargs :stobjs (state) :mode :program))
   (b* ((debug-enable (acl2::f-get-global 'acl2::debugger-enable state))
@@ -452,6 +453,21 @@ Nested testing not allowed! Skipping testing of new goal...~%"
                                   debug-enable
                                   state)))
     (value val)))
+|#
+
+(defun acl2::test-checkpoint (id cl cl-list processor pspv hist ctx state)
+  (declare (xargs :stobjs (state) :mode :program))
+  (b* ((debug-enable (acl2::f-get-global 'acl2::debugger-enable state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  :never
+                                  state))
+       ((mv erp val state)
+        (acl2::test-checkpoint-h1
+         id cl cl-list processor pspv hist ctx state))
+       (state (acl2::f-put-global 'acl2::debugger-enable
+                                  debug-enable
+                                  state)))
+    (mv erp val state)))
 
 ;;; add no-op override hints that test each checkpoint.  The reason
 ;;; why we need backtrack hint is not that we need clause-list
