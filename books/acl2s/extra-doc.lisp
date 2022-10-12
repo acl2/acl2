@@ -459,10 +459,7 @@ ordering information.
 <tr> <td >A:</td>
      <td>Basically, an ACL2 book is a bunch of ACL2 definitions (functions,
 theorems, proof rules, etc.) that can be easily imported into other ACL2
-work.  See <a
-href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____BOOKS\">:DOC books</a> and
-<a href=\"user_guide.html#guide_book\">our guide to book development in ACL2s</a>
-for more information.</td></tr>
+work.  See @(see acl2::books) for more information.</td></tr>
 </table><br/>
 
 <table class=\"rounded striped\">
@@ -1089,7 +1086,7 @@ Certify as book
 <icon src=\"res/acl2s/icons/acl2_book.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
-See <a href=\"user_guide.html#guide_book\">book development</a>.  Alt+C
+This will use <see topic=\"@(url build::cert.pl)\">cert.pl</see> to <i>certify</i> the current book so that it can be quickly <see topic=\"@(url acl2::include-book)\">included</see> from another file. See @(see acl2::certificate) for more information. Alt+C
 </p>
 </td></tr>
 
@@ -1233,172 +1230,6 @@ See @(see test?) and @(see cgen) for more documentation.
 </p>
 
 </div>
-
-<div class=\"left-center\" data-target=\"guide_book\">
-  <a name=\"guide_book\"></a>
-<h2>ACL2 Book Development</h2>
-<h4>Introduction</h4>
-<p>
-An ACL2/ACL2s <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____BOOKS\">book</a>
-is a reusable collection of definitions and other
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EVENTS\">events</a>
-(<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event forms</a>,
-actually).  A valid book can be certified to demonstrate its validity and/or
-to prepare it for inclusion using @(see include-book) elsewhere.
-</p><p>
-To develop a .lisp file as a book in ACL2s, either create the file using
-the ACL2s/Lisp file wizard selecting \"Create with book code\", or put this at the
-top/beginning:
-<pre>
-<code class=\"lisp\">
-  (begin-book t :ttags :all)
-  (in-package \"ACL2\")
-</code>
-</pre>
-
-Usually the only things that would go before the <code>begin-book</code> form
-are package definitions (<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EVENTS\">defpkg</a>),
-but these aren't worth learning about until you know you need them.
-</p><p>
-After the <code>begin-book</code> and <code>in-package</code> come the
-definitions and other events for your book.  As one is developing a book,
-it is very helpful to use the line action discussed above for interactive
-development.  One difference is that everything starting from the
-<code>begin-book</code> form that is in the \"completed\" region will be
-highlighted blue as long as it is valid for use in a book (see 
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">EMBEDDED-EVENT-FORM</a>).
-Any <em>tangent</em> from book-valid forms will begin gray highlight.  Such
-tangents should eventually be undone and removed before certification.
-</p><p>
-To ensure your book is valid/certifiable, save your changes and choose
-\"Certify as book\" from the menu or toolbar (<icon src=\"res/acl2s/icons/acl2_book.gif\"
-width=\"16\" height=\"16\"/>).  An Eclipse console will dump the output of the
-certification process and indicate success or failure when finished.
-</p>
-
-<h4>More detail</h4>
-<p>
-In ACL2s, a <code>(begin-book ...)</code> form in a .lisp file has
-special significance, indicating the .lisp file is intended to define
-a book.  Our approach might seem strange at first, but it really works
-pretty well with the seemingly obscure requirements ACL2 has for books.
-This and the next subsection get into the details and the justification.
-</p><p><icon src=\"res/acl2s/book_dev.png\" width=\"424\" height=\"400\" align=\"right\"/>
-The <em>preamble</em> is everything that comes before the
-<code>begin-book</code>.  This defines what ACL2 authors call the
-<em>certification world</em> for the book, which become the book's
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____PORTCULLIS\"><em>portcullis</em></a>.  The
-simplest explanation for the preamble/portcullis is that it is where
-any <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EVENTS\"><code>defpkg</code></a> events
-should go, because
-these are not allowed inside books (because Common Lisps vary in their
-ability to compile files that define packages).
-</p><p>
-The <code>begin-book</code> form itself takes the syntax of ACL2's
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____CERTIFY-BOOK\"><code>certify-book</code></a> except
-<code>begin-book</code> doesn't take the \"book-name\" or \"k\" parameters.  In
-fact, here are the parameter and guard specifications for ACL2s's
-<code>begin-book</code>:</p>
-@({
-  (defmacro begin-book (&amp;optional (compile-flg 't)
-                      &amp;key (defaxioms-okp 'nil)
-                           (skip-proofs-okp 'nil)
-                           (ttags 'nil)
-                           (save-expansion 'nil))
-  (declare (xargs :guard (and (booleanp compile-flg)
-                              (booleanp defaxioms-okp)
-                              (booleanp skip-proofs-okp)
-                              (member-eq save-expansion '(t nil :save)))))
-  ...)
-  })
-<p>
-So the parameters to <code>begin-book</code> indicate the parameters that
-should be given to <code>certify-book</code> for certification of the
-containing .lisp file as a book.  One can look up the meaning of the
-<code>compile-flg</code>, <code>defaxioms-okp</code>,
-<code>skip-proofs-okp</code>, and <code>save-expansion</code> arguments
-from <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____CERTIFY-BOOK\">ACL2's documentation for
-<code>certify-book</code></a>.  But the <code>ttags</code> argument is
-important in ACL2s:
-</p><p>
-ACL2s session modes other than \"Compatible\" mode utilize ACL2 extensions that
-ACL2 cannot verify are sound or even safe.  These modes include books
-for ACL2s that define <em>trust tags</em> or <em>ttags</em> in order to tweak
-ACL2 in non-standard ways.  In order to certify a book that depends on
-the use of trust tags, including books defined in a mode other than
-\"Compatible\", an appropriate <code>:ttags</code> argument must
-be given to <code>begin-book</code>.  We recommend the all-encompassing
-<code>:all</code> argument to <code>:ttags</code>, which roughly says,
-\"I recognize this book could depend on some non-standard stuff, and
-I don't want to bother specifying the details.  Just go ahead.\"
-See the docs for <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____TTAGS-SEEN\">ttags-seen</a>
-and <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____CERTIFY-BOOK\">certify-book</a> for more
-information on how to be more specific.
-</p><p>
-The <em>contents</em> or <em>body</em> of a book is everything after the
-<code>begin-book</code> form as long as it conforms to
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____BOOK-CONTENTS\">ACL2's requirements for
-book contents</a>.  Basically, the first form must be
-<code>(in-package \"</code><em>blah</em><code>\")</code> where <em>blah</em> names
-a built-in package (such as ACL2 or ACL2-USER) or a package defined in the
-preamble.  (The wizard for \"New ACL2s/Lisp file\" can generate appropriate
-\"book code\" that defines a package in the standard way, begins the book, and
-enters the defined package.)  After the
-<code>(in-package \"</code><em>blah</em><code>\")</code> form are
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event
-forms</a> using <em>blah</em> as the default package.  In ACL2s, embedded
-event forms have the <a href=\"user_guide.html#guide_classifications\">input
-classification</a> EVENT or EVENT/VALUE.
-</p><p>
-Book code in the completed region is formatted specially.  The preamble
-looks like any other non-book .lisp file, and so uses gray highlighting.
-The <code>begin-book</code> form begins the part that distinguishes this
-.lisp file as a book, and so begins blue highlighting.  The blue
-highlighting continues either until the end of the current \"completed\"
-region, or until the end of the last form that was valid as the contents
-of a book.  This visually tells the user whether and where the book
-contents have became polluted with code disallowed in books.
-</p><p>
-We call anything after a valid book body a <em>tangent</em>, which is given
-gray highlight in the completed region.  A tangent might be intentional;
-the user might want to try things in ACL2 without the restrictions imposed
-by book development and later undo his work and clean it up for use as
-book code.  Any .lisp file with a tangent (that hasn't been commented out)
-will not certify, and we cannot forsee any case in which ACL2s would
-falsely report a form as tangential.
-</p>
-<a name=\"guide_book_impl\"></a>
-<h4>Implementation and compatibility with ACL2</h4>
-<p>
-One of the goals of ACL2s is to maintain a high degree of compatibility
-with existing ACL2 development patterns/infrastructure while hiding some
-of the nasty details from ACL2s-only users.  Compatibility of ACL2s
-book development with existing patterns/infrastructure utilizes the fact
-that the text in the ACL2s .lisp editor is not exactly what is saved on
-disk.  In particular, when book code is present, the preamble and the
-begin-book form are saved in a specially-formatted comment.  Thus, when
-ACL2 reads the .lisp file, the first (uncommented) thing it sees is
-the in-package.
-</p><p>
-Our \"preamble\" roughly corresponds to what ACL2 users would put in
-a .acl2 file.  We have a java subroutine/program that can extract the
-specially-formatted preamble+begin-book from a .lisp file and put it
-into a .acl2 file with the begin-book call translated to a corresponding
-certify-book call.  This subroutine is used to generate a .acl2 file when
-the ACL2s users asks to \"Certify as book\" but the functionality can also
-be accessed as a stand-alone program.  The class is
-acl2s.lib.certify.MaybeExtractPreamble in acl2s-lib (acl2s-lib.jar in the
-plugin directory).  This program plays nice with old codebases in that it
-will not overwrite an existing .acl2 file unless there is an ACL2s preamble
-in the corresponding .lisp file.
-</p><p>
-Right now, however, there's no automatic way to import an existing book AND
-its \"preamble\" into an ACL2s-ready .lisp file.  You can, however, open the
-.lisp file with ACL2s, which from the ACL2s perspective has no book code
-yet, insert the preamble and <code>begin-book</code> form at the top, and
-save it.
-</p>
-</div>
 ")
 
 
@@ -1426,9 +1257,8 @@ order of commonness or importance to the user:
 </thead>
 <tbody>
 <tr><td><b>EVENT</b></td><td>
-These correspond to ACL2 
-<a href=\"@(url acl2::embedded-event-form)\">embedded event forms</a>,
-which are those forms that can appear in <a href=\"user_guide.html#guide_book\">books</a>.
+These correspond to ACL2 <see topic=\"@(url acl2::embedded-event-form)\">embedded event forms</see>,
+which are those forms that can appear in <see topic=\"@(url acl2::books)\">ACL2 books</see>.
 Calls to <tt>defun</tt>, <tt>defmacro</tt>, and <tt>defthm</tt> are examples
 of embedded event forms and <b>EVENT</b>s.
 </td></tr>
@@ -1504,17 +1334,6 @@ or other
 beyond the logical
 <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____WORLD\">WORLD</a>
 will need to use <b>ACTION</b>s heavily, but these are advanced uses of ACL2.
-</td></tr>
-<tr><td valign=\"top\"><b>IN-PACKAGE</b></td><td>
-This <b>COMMAND</b> gets its own category because of its role in
-<a href=\"user_guide.html#guide_book\">book development</a>.  See also
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____IN-PACKAGE\">:DOC
-in-package</a>.
-</td></tr>
-<tr><td valign=\"top\"><b>BEGIN-BOOK</b></td><td>
-This <b>COMMAND</b> gets its own category because of its role in
-<a href=\"user_guide.html#guide_book\">book development</a> with our plugin.  This form
-is not part of ACL2 proper (yet!).
 </td></tr>
 <tr><td valign=\"top\"><b>EVENT/VALUE</b></td><td>
 These are a special type of
