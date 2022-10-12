@@ -1535,3 +1535,259 @@ and it's only supported for the benefit of <em>experts</em>.
 </tbody>
 </table>
 ")
+
+(defxdoc acl2s-implementation-notes
+  :parents (acl2::acl2-sedan)
+  :short "Some details regarding how ACL2s is implemented"
+  :long "
+
+<h2>Wrapping the ACL2 process</h2>
+<p>
+  To support interruption of the ACL2 process, we need more
+  information/functionality than Java provides through its
+  @('java.lang.Process') API.  Roughly, we execute ACL2 in a wrapper
+  that outputs as its first line of text an ID number that can be used
+  to interrupt the process.  All output after that is that of ACL2.
+  The plugin captures that ID number and uses it when needed.
+</p>
+<p>
+  <b>On Unix variants</b> (Linux, Mac OS X), the wrapper for an invocation of
+  @('acl2') would look like this (4 arguments, each underlined):
+</p>
+<blockquote>
+  <code><u>sh</u> <u>-c</u> <u>echo \"$$\"; exec \"$0\" \"$@\"</u> <u>acl2</u></code>
+</blockquote>
+<p>
+  Basically, this uses the standard Bourne shell to echo its process
+  id and then execs (keeping the same pid) acl2--or any other command
+  used there.  To interrupt or terminate acl2 (respectively), we
+  execute one of these:
+</p>
+<blockquote>
+  <code><u>kill</u> <u>-INT</u> <u><i>pid</i></u></code>
+  <code><u>kill</u> <u>-TERM</u> <u><i>pid</i></u></code>
+</blockquote>
+<p>
+  <b>On Windows machines</b>, things are not this easy.  We use a
+  wrapper called <tt>hiddencon</tt>(<tt>.exe</tt>) that opens a new
+  console, immediately hides it (flicker; sorry), outputs an id
+  number, and executes a program \"attached\" to that console.  Then
+  we can invoke <tt>sendctrlc</tt>(<tt>.exe</tt>) with that id to
+  asynchronously deliver a \"Ctrl+C\" equivalent to that console,
+  interrupting the program.  <tt>sendbreak</tt>(<tt>.exe</tt>)
+  likewise sends a \"Ctrl+Break\" equivalent, which causes the program
+  to terminate.
+</p>
+<p>
+  These auxillary programs (hiddencon, sendctrlc, sendbreak) are included
+  with the ACL2s plugin, so there's nothing extra to install.  It's a bit of
+  a mess, but it seems to work reliably these days.
+</p>
+<p>
+  Some wacky details of hiddencon.exe:<br/> The stdin and stdout of
+  the program are inherited from the wrapper--not connected to the
+  console, so one might wonder what the console is for.  The answer:
+  Windows has no \"interrupt\" signal.  When one types \"Ctrl+C\" in a
+  console, the console takes care of notifying the process in some
+  weird way.  Windows has a mechanism for programmatically initiating
+  a \"Ctrl+C\" equivalent, but its really only practical from a
+  process that is \"attached\" to that console.  With this in mind,
+  the job of the wrapper is to enable any other process to initiate an
+  \"interrupt\" on the console it created.  The wrapper has a thread
+  that reads and processes events from its Windows event queue, and
+  one type of event, which could be initiated by anyone who knows the
+  thread id of that wrapper thread, causes the wrapper to send an
+  \"interruption\" to the hidden console.
+</p>
+
+<h2>Hooks: How/what ACL2 functionality is modified for ACL2s</h2>
+<blockquote>
+  <i>Here I discuss the stuff that is common to all modes, including
+  \"Compatible\" mode.  See the @(see acl2s-user-guide) section on modes
+  and \"How modes are implemented\" below.</i>
+</blockquote>
+<p>
+  To support the kind of interaction ACL2s provides requires lots of
+  cooperation and metadata from ACL2.  Thus when we run ACL2 for an
+  interactive session, we install some changes that disallow some
+  things (see <em>Why won't ACL2s let me do &lt;blah&gt; in a
+  session?</em> in the @(see acl2s-faq)), spit out metadata for some
+  things, and provide some system-level extensions in functionality.
+  All of these ACL2 modifications are implemented via books
+  distributed with ACL2 (@('books/acl2s/distribution/acl2s-hooks')).
+</p>
+<ul>
+  <li><b>preinit.lsp</b> - disables raw Lisp debugger, which must be
+  disabled because we can't tell for sure when/what kind of input it
+  is expecting.  This file often includes other version-specific
+  tweaks and fixes.  (This file is loaded by raw Lisp.)</li>
+  <li><b>acl2s.lisp</b> - the main \"hooks\" book, which includes the
+  \"hacking\" books now distributed with ACL2 and the rest of the
+  books listed below.</li>
+  <li><b>canonical-print.lisp</b> - functions for printing
+  things... in a canonical way! (for reading by the acl2s plugin)</li>
+  <li><b>categorize-input.lisp</b> - functions for (you guessed it...)
+  categorizing inputs to ACL2.  Note that categorizing inputs is an
+  example of the plugin executing commands in ACL2 that are unseen to
+  the user.</li>
+  <li><b>super-history.lisp</b> - implements the \"super-history\"
+  mechanism of UNDOing and REDOing.  See \"How undo and redo are
+  implemented\" below.</li>
+  <li><b>protection-hooks.lisp</b> - implements a protection mechanism
+  by which only those with knowledge of a secret number (the plugin)
+  can invoke certain actions, such as UNDOing, REDOing, quitting, or
+  breaking into raw Lisp.  Only a hash of the secret number is stored
+  in the ACL2 runtime.  You could defeat the protection with your own
+  trust tag, but I challenge you defeat it without using trust
+  tags!</li>
+  <li><b>interaction-hooks.lisp</b> - this redefines internal ACL2
+  functions to provide metadata output that is sucked up (hidden) by
+  the plugin and used to inform it about interaction.  Most
+  importantly, extra environment information is sent with the prompt,
+  a special marker is sent in the case of a form being successful, and
+  a special marker is sent whenever ACL2 is about to read another
+  object from *standard-oi*.  The plugin is now also given all of the
+  package definitions so that they can be used in determining whether
+  abstract syntax is the same in checking whether REDO is
+  allowed.</li>
+  <li><b>markup-hooks.lisp</b> - the markups in this book are not
+  critical to intelligent interaction with ACL2, but add some extra
+  helpful info, such as the position of checkpoints in the output.
+  Along these lines, somewhere in startup stuff we remove destructor
+  elimination as a checkpoint-causing processor, since destructor
+  elimination cannot reduce theorems to non-theorems (confirmed by
+  Matt Kaufmann).</li>
+</ul>
+<p>
+  After these are included at startup, @(see acl2::reset-prehistory)
+  is used to suggest to newbies that ACL2 is starting fresh, but
+  @('(strip-cars (global-val 'known-package-alist (w state)))') should
+  reveal the \"ACL2S\" package is defined, and @(':ttags-seen')
+  accurately suggests how severely spoiled your session is.
+</p>
+<p>
+  A consequence of including the standard hacking books for this code
+  is that if you want to include them in your code in ACL2s, it will
+  appear redundant during interactive development but is needed for
+  certification as a book, for which none of the above are
+  required/included.
+</p>
+<p>
+  If you run into a case in which you really need to do something
+  differently between interactive development and certification (like
+  when I'm doing interactive development on the hooks books--my head
+  hurts!), you can use the feature-based reader macros
+  <tt>#+acl2s</tt> and <tt>#-acl2s</tt>.  <tt>:acl2s</tt> is added to
+  *features* for interactive development only.  Please don't abuse. ;)
+</p>
+
+<h2>How undo and redo are implemented</h2>
+<p>
+  The <b>super-history</b> book of the acl2s_hooks plugin implements a
+  stack of old \"states\".  Actually there are two stacks: an undo
+  stack and a redo stack.  An undo pops the undo stack, pushes that
+  \"state\" onto the redo stack, and then installs the \"state\" on
+  the top of the undo stack.  A redo pops the redo stack, pushes that
+  \"state\" onto the undo stack, and installs it as current.  Any
+  other \"state\"-changing form empties the redo stack, and the
+  resulting \"state\" is pushed onto the undo stack.
+</p>
+<p>
+  Now I've put \"state\" in quotes and not called it \"the world\"
+  because this notion of state is not that same as ACL2's <see
+  topic=\"@(url acl2::state)\">state stobj</see> and is more than just
+  ACL2's <see topic=\"@(url acl2::acl2)\">WORLD</see>.  Our
+  super-history states are the world and a bunch of state-global
+  variables that store things like the current package, guard-checking
+  setting, and other things that affect whether things might pass or
+  fail, and what they mean.  The complete list is
+  @('ACL2S::*SETTINGS-GLOBALS*') in the <b>categorize-input</b> book
+  of the acl2s_hooks.  This is similar to--but not exactly--what is
+  saved and restored by <see topic=\"@(url acl2::make-event)\">make-event
+  </see> (Our undo/redo mechanism predates the release of make-event.)
+</p>
+
+<h2>How modes are implemented</h2>
+<p>
+  Since version 0.9.0, ACL2s' session modes other than \"Compatible\"
+  come from an independent plugin, acl2s_modes.  (Note that all three
+  plugins \"acl2s,\" \"acl2s_hooks,\" and \"acl2s_modes\" are
+  installed with the <i>feature</i> \"acl2s.\") Thus, third party
+  Eclipse plugins can also add their own session modes to ACL2s.  To
+  do so, they must extend the \"acl2s.modedir\" extension point, like
+  in the plugin.xml for <a href=\"bobs_mode.jar\">an example \"Bob's
+  mode\"</a>:
+</p>
+<blockquote>
+@({
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<?eclipse version=\"3.2\"?>
+<plugin>
+   <extension point=\"acl2s.modedir\">
+      <include-book-dir-entry keyword=\":bobs-mode\"/>
+      <dependency keyword=\":acl2s-modes\"/>
+      <mode
+            name=\"Bob&apos;s Mode\"
+            short_desc=\"Favorite mode of some hypothetical person named Bob\"
+            long_desc=\"this is an optional long description\"
+            book_dev=\"true\"
+            extra_imports=\"(defun-bob defmacro-bob)\"
+            init_file=\"bobs-mode.lsp\"
+            precedence=\"50\"
+            ttags=\"((:ccg))\">
+      </mode>
+      <certify-order-element book=\"defun-bob\"/>
+      <certify-order-element book=\"defmacro-bob\"/>
+   </extension>
+</plugin>
+})
+</blockquote>
+<p>
+  The plugin is a JAR file with such a plugin.xml file, a proper
+  manifest file, and any books and supporting files needed for the
+  mode.
+</p>
+<p>
+  All of the components shown above are optional, and all but the
+  <tt>include-book-dir-entry</tt> can have multiple instances.  ACL2
+  will be given the root install directory of the plugin with
+  add-include-book-dir and the keyword in
+  <tt>include-book-dir-entry</tt>.  In fact, ACL2s will create a
+  \"dir.lsp\" file with that form whenever the plugin is used.
+  Specifying an <tt>include-book-dir-entry</tt> is required if the
+  initialization of any modes need to refer to that directory for
+  including books.  (The current directory will <i>not</i> be set to
+  the plugin directory.)
+</p>
+<p>
+  Each include-book keyword directory used in your mode initialization
+  (other than yourself and <tt>:system</tt>) should be listed as a
+  <tt>dependency</tt>.  Bob's mode uses \"ccg\" from
+  <tt>:acl2s-modes</tt>.
+</p>
+<p>
+  Technically, only the name and short_desc are required for a mode.
+  The non-obvious parts:
+</p>
+<ul>
+  <li><tt>book_dev</tt> - whether book development/certification
+  should be allowed in this mode (default true)</li>
+  <li><tt>extra_imports</tt> - any extra symbols that are suggested to
+  be imported into packages defined under this mode, aside from the
+  ACL2 standard set</li>
+  <li><tt>init_file</tt> - the file with the forms to execute at
+  startup to initialize the mode.  These should not refer to the
+  current directory (instead use :dir :whatever).  If
+  <tt>book_dev</tt> is true, the forms should follow the guidelines
+  for a .acl2 file, or commands that are okay prior to @(see
+  acl2::certify-book).  We recommend the <i>whatever</i>-mode.lsp
+  naming convention.</li>
+</ul>
+<p>
+  Each <tt>certify-order-element</tt> names a book to be certified
+  with the ACL2s system books, in the order given.  You should name
+  all the books in this mode directory your modes depend on.  Note
+  that here, like in include-book and certify-book, \".lisp\" is not
+  included in the name.
+</p>
+")
