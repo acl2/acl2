@@ -159,8 +159,7 @@ prints out information about the current history or \"world\", in this
 case the definition of the function \"strip-cars\".
 <code>(definec successor (x :int) :int (1+ x))</code> is an \"EVENT\" because it
 (potentially) changes the history.
-See <a href=\"index.html#guide_classifications\">Command Classifications</a> in
-the guide for more detail.
+See @(see acl2s-command-classifications) for more detail.
 For \"EVENT\" inputs, ACL2s pops up a
 dialog asking what to do about the fact that we did something logically
 relevant from the command line rather than from our source code.  Read
@@ -776,136 +775,6 @@ you get some generalization for free, usually resulting in smaller formulas.
 Notes about how these modes are implemented are described in
 <a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_modes\"><em>How modes are implemented</em></a>.
 </p>
-</div>
-
-<div class=\"left-center\" data-target=\"guide_classifications\">
-<h2>Input Command Classifications</h2>
-<p>
-Each input form submitted to ACL2 from the plugin is placed into
-one of the following categories based on its purpose and potential
-effect.  Basically, if you use RAW or ACTION input, we cannot guarantee
-that the plugin will behave in a consistent way with respect to UNDOing,
-etc., but the rest should behave as expected.  We present them in decreasing
-order of commonness or importance to the user:
-</p>
-
-<table>
-<thead>
-  <tr>
-    <th>Class</th>
-    <th>Description</th>
-  </tr>
-</thead>
-<tbody>
-<tr><td><b>EVENT</b></td><td>
-These correspond to ACL2 
-<a href=\"@(url acl2::embedded-event-form)\">embedded event forms</a>,
-which are those forms that can appear in <a href=\"user_guide.html#guide_book\">books</a>.
-Calls to <tt>defun</tt>, <tt>defmacro</tt>, and <tt>defthm</tt> are examples
-of embedded event forms and <b>EVENT</b>s.
-</td></tr>
-<tr><td valign=\"top\"><b>VALUE</b></td><td>
-<p>Such forms are simple computations which return a value when (and if)
-they terminate.
-No <b>VALUE</b> form can alter ACL2's state and, therefore, never
-affects undoing or redoing.
-</p><p>
-A precise definition is that if ACL2 permits <tt>(cons </tt>
-<em>&lt;form&gt;</em> <tt>nil)</tt>, then <em>&lt;form&gt;</em> is a <b>VALUE</b>.
-</p><p>
-<em>Advanced Note</em>: some <b>VALUE</b> forms
-have transient side effects, but they have no logical consequence (e.g.
-<a href=\"@(url acl2::cw)\">CW</a>
-and
-<a href=\"@(url acl2::wormhole)\">WORMHOLE</a>).
-</p>
-</td></tr>
-<tr><td valign=\"top\"><b>QUERY</b></td><td>
-These are calls to some built-in ACL2 functions that report information about
-the current state but are known not to modify state.  Examples include
-@('(pe 'append)')
-and
-@('(pbt 0)').
-</td></tr>
-<tr><td valign=\"top\"><b>UNDO</b><br/>(internal initiation only)</td><td>
-Various UI actions which have to do with \"undoing\" or \"moving the line up\"
-can initiate the execution of an <b>UNDO</b> in the session.  An ordinary
-user need not concern him/herself with how this works
-(<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_undo_redo\"><em>How undo and redo are implemented</em></a>),
-but should keep in mind that <b>UNDO</b>ing an <b>ACTION</b> or <b>RAW</b>
-form may not have the desired effect.
-</td></tr>
-<tr><td valign=\"top\"><b>REDO</b><br/>(internal initiation only)</td><td>
-<p>This is the counterpart of <b>UNDO</b>.  It is used when resubmitting
-something with the same abstract syntax and in the same environment as
-something that was previously undone.
-</p><p>
-<b>REDO</b> enables one to (for example) edit comments above the line, by
-retreating the line far enough to edit what one wants to change, and then
-moving the \"todo\" line back to where it was.  If only comments were
-changed, the session will accept the forms as <b>REDO</b>s, which happen
-almost instantaneously.
-</p>
-</td></tr>
-<tr><td valign=\"top\"><b>BAD</b></td><td>
-<p>If the input is a parseable ACL2 object but is an ill-formed expression
-according to the current history, we call it \"BAD\" input.  Examples of
-violations that would cause input to be staticly ill-formed are:
-<ul>
-<li>wrong number of parameters to a function/macro</li>
-<li>use of an undefined function/macro</li>
-<li>first element of an invocation list is not a symbol or lambda expression</li>
-<li>mismatch between expected and actual @('mv') shape</li>
-</ul>
-</p>
-</td></tr>
-<tr><td valign=\"top\"><b>COMMAND</b></td><td>
-There are many forms that are illegal in books but we are able to undo the
-effect of.  If we recognize a form as such, we call it a <b>COMMAND</b>--
-except for special cases <b>IN-PACKAGE</b> and <b>BEGIN-BOOK</b>.  The
-best example of a command is \"<tt>:set-guard-checking :none</tt>\".
-</td></tr>
-<tr><td valign=\"top\"><b>ACTION</b><br/>
-<font color=\"red\">(potentially dangerous!)</font></td><td>
-This is the \"catch-all\" categorization for forms that may have effects
-that we don't know how to properly undo or might even break or hang the
-ACL2 session.  Users who use
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STOBJ\">STOBJs</a>
-or other
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STATE\">STATE</a>
-beyond the logical
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____WORLD\">WORLD</a>
-will need to use <b>ACTION</b>s heavily, but these are advanced uses of ACL2.
-</td></tr>
-<tr><td valign=\"top\"><b>IN-PACKAGE</b></td><td>
-This <b>COMMAND</b> gets its own category because of its role in
-<a href=\"user_guide.html#guide_book\">book development</a>.  See also
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____IN-PACKAGE\">:DOC
-in-package</a>.
-</td></tr>
-<tr><td valign=\"top\"><b>BEGIN-BOOK</b></td><td>
-This <b>COMMAND</b> gets its own category because of its role in
-<a href=\"user_guide.html#guide_book\">book development</a> with our plugin.  This form
-is not part of ACL2 proper (yet!).
-</td></tr>
-<tr><td valign=\"top\"><b>EVENT/VALUE</b></td><td>
-These are a special type of
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event form</a>
-(<tt>value-triple</tt>s) that have no logical consequence--except that they
-could halt progress by generating a hard lisp error.
-</td></tr>
-<tr><td valign=\"top\"><b>RAW</b><br/>
-<font color=\"red\">(potentially very dangerous!)</font></td><td>
-Most users of ACL2 are familiar with breaking into \"raw lisp\" by typing
-\":q\" at the top-level prompt.  This is not supported in our plugin, but
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____SET-RAW-MODE\">
-\"raw mode\"</a> is supported.  Most forms submitted under this mode are
-classified as <b>RAW</b> because they have no well-defined meaning from the
-ACL2 view of things.  With raw mode, the user can easily break many things,
-and it's only supported for the benefit of <em>experts</em>.
-</td></tr>
-</tbody>
-</table>
 </div>
 
 <div class=\"left-center\" data-target=\"guide_desc\">
@@ -1530,4 +1399,139 @@ yet, insert the preamble and <code>begin-book</code> form at the top, and
 save it.
 </p>
 </div>
+")
+
+
+
+(defxdoc acl2s-command-classifications
+  :parents (acl2s-user-guide)
+  :short "Description of classifications for commands in ACL2s"
+  :long "
+<h2>Input Command Classifications</h2>
+<p>
+Each input form submitted to ACL2 from the plugin is placed into
+one of the following categories based on its purpose and potential
+effect.  Basically, if you use RAW or ACTION input, we cannot guarantee
+that the plugin will behave in a consistent way with respect to UNDOing,
+etc., but the rest should behave as expected.  We present them in decreasing
+order of commonness or importance to the user:
+</p>
+
+<table>
+<thead>
+  <tr>
+    <th>Class</th>
+    <th>Description</th>
+  </tr>
+</thead>
+<tbody>
+<tr><td><b>EVENT</b></td><td>
+These correspond to ACL2 
+<a href=\"@(url acl2::embedded-event-form)\">embedded event forms</a>,
+which are those forms that can appear in <a href=\"user_guide.html#guide_book\">books</a>.
+Calls to <tt>defun</tt>, <tt>defmacro</tt>, and <tt>defthm</tt> are examples
+of embedded event forms and <b>EVENT</b>s.
+</td></tr>
+<tr><td valign=\"top\"><b>VALUE</b></td><td>
+<p>Such forms are simple computations which return a value when (and if)
+they terminate.
+No <b>VALUE</b> form can alter ACL2's state and, therefore, never
+affects undoing or redoing.
+</p><p>
+A precise definition is that if ACL2 permits <tt>(cons </tt>
+<em>&lt;form&gt;</em> <tt>nil)</tt>, then <em>&lt;form&gt;</em> is a <b>VALUE</b>.
+</p><p>
+<em>Advanced Note</em>: some <b>VALUE</b> forms
+have transient side effects, but they have no logical consequence (e.g.
+<a href=\"@(url acl2::cw)\">CW</a>
+and
+<a href=\"@(url acl2::wormhole)\">WORMHOLE</a>).
+</p>
+</td></tr>
+<tr><td valign=\"top\"><b>QUERY</b></td><td>
+These are calls to some built-in ACL2 functions that report information about
+the current state but are known not to modify state.  Examples include
+@('(pe 'append)')
+and
+@('(pbt 0)').
+</td></tr>
+<tr><td valign=\"top\"><b>UNDO</b><br/>(internal initiation only)</td><td>
+Various UI actions which have to do with \"undoing\" or \"moving the line up\"
+can initiate the execution of an <b>UNDO</b> in the session.  An ordinary
+user need not concern him/herself with how this works
+(<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_undo_redo\"><em>How undo and redo are implemented</em></a>),
+but should keep in mind that <b>UNDO</b>ing an <b>ACTION</b> or <b>RAW</b>
+form may not have the desired effect.
+</td></tr>
+<tr><td valign=\"top\"><b>REDO</b><br/>(internal initiation only)</td><td>
+<p>This is the counterpart of <b>UNDO</b>.  It is used when resubmitting
+something with the same abstract syntax and in the same environment as
+something that was previously undone.
+</p><p>
+<b>REDO</b> enables one to (for example) edit comments above the line, by
+retreating the line far enough to edit what one wants to change, and then
+moving the \"todo\" line back to where it was.  If only comments were
+changed, the session will accept the forms as <b>REDO</b>s, which happen
+almost instantaneously.
+</p>
+</td></tr>
+<tr><td valign=\"top\"><b>BAD</b></td><td>
+<p>If the input is a parseable ACL2 object but is an ill-formed expression
+according to the current history, we call it \"BAD\" input.  Examples of
+violations that would cause input to be staticly ill-formed are:
+<ul>
+<li>wrong number of parameters to a function/macro</li>
+<li>use of an undefined function/macro</li>
+<li>first element of an invocation list is not a symbol or lambda expression</li>
+<li>mismatch between expected and actual @('mv') shape</li>
+</ul>
+</p>
+</td></tr>
+<tr><td valign=\"top\"><b>COMMAND</b></td><td>
+There are many forms that are illegal in books but we are able to undo the
+effect of.  If we recognize a form as such, we call it a <b>COMMAND</b>--
+except for special cases <b>IN-PACKAGE</b> and <b>BEGIN-BOOK</b>.  The
+best example of a command is \"<tt>:set-guard-checking :none</tt>\".
+</td></tr>
+<tr><td valign=\"top\"><b>ACTION</b><br/>
+<font color=\"red\">(potentially dangerous!)</font></td><td>
+This is the \"catch-all\" categorization for forms that may have effects
+that we don't know how to properly undo or might even break or hang the
+ACL2 session.  Users who use
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STOBJ\">STOBJs</a>
+or other
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STATE\">STATE</a>
+beyond the logical
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____WORLD\">WORLD</a>
+will need to use <b>ACTION</b>s heavily, but these are advanced uses of ACL2.
+</td></tr>
+<tr><td valign=\"top\"><b>IN-PACKAGE</b></td><td>
+This <b>COMMAND</b> gets its own category because of its role in
+<a href=\"user_guide.html#guide_book\">book development</a>.  See also
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____IN-PACKAGE\">:DOC
+in-package</a>.
+</td></tr>
+<tr><td valign=\"top\"><b>BEGIN-BOOK</b></td><td>
+This <b>COMMAND</b> gets its own category because of its role in
+<a href=\"user_guide.html#guide_book\">book development</a> with our plugin.  This form
+is not part of ACL2 proper (yet!).
+</td></tr>
+<tr><td valign=\"top\"><b>EVENT/VALUE</b></td><td>
+These are a special type of
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event form</a>
+(<tt>value-triple</tt>s) that have no logical consequence--except that they
+could halt progress by generating a hard lisp error.
+</td></tr>
+<tr><td valign=\"top\"><b>RAW</b><br/>
+<font color=\"red\">(potentially very dangerous!)</font></td><td>
+Most users of ACL2 are familiar with breaking into \"raw lisp\" by typing
+\":q\" at the top-level prompt.  This is not supported in our plugin, but
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____SET-RAW-MODE\">
+\"raw mode\"</a> is supported.  Most forms submitted under this mode are
+classified as <b>RAW</b> because they have no well-defined meaning from the
+ACL2 view of things.  With raw mode, the user can easily break many things,
+and it's only supported for the benefit of <em>experts</em>.
+</td></tr>
+</tbody>
+</table>
 ")
