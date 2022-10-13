@@ -2777,7 +2777,8 @@
 
 
 (defcong set-equiv svex-envs-equivalent (svex-env-reduce keys x) 1
-  :hints (("goal" :in-theory (enable svex-envs-equivalent))))
+  :hints (("goal" :in-theory (enable svex-envs-equivalent
+                                     svex-envs-similar))))
 
 
 (define svex-envlist-reduce-varlists ((vars svarlist-list-p)
