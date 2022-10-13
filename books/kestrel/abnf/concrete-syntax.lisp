@@ -25,7 +25,10 @@
     using ABNF concrete syntax.
     We break the circularity by formalizing the concrete syntax of ABNF
     using the abstract syntax of ABNF.")
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *all-concrete-syntax-rules*
   :parents (concrete-syntax)
@@ -59,6 +62,8 @@
 
   (defruled rulelistp-of-*all-concrete-syntax-rules*
     (rulelistp *all-concrete-syntax-rules*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-grammar* ((nats nat-listp))
   :returns (result (or (tree-setp result)
