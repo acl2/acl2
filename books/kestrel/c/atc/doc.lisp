@@ -40,7 +40,7 @@
     (xdoc::p
      "This manual page refers to the official C standard
       in the manner explained in "
-     (xdoc::seetopic "c" "the top-level XDOC topic of this C library")
+     (xdoc::seetopic "c" "the top-level XDOC topic of our C library")
      "."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
