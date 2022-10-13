@@ -80,17 +80,38 @@
   :guard (svtv-cycle-output-phase phases)
   :returns (cycle-outs svex-envlist-p)
   :measure (len phase-outs)
-  (if (atom phase-outs)
-      nil
-    (cons (svex-env-fix (nth (svtv-cycle-output-phase phases) phase-outs))
-          (svex-envlist-phase-outputs-extract-cycle-outputs
-           phases
-           (nthcdr (if (mbt (consp phases))
-                       (len phases)
-                     1)
-                   phase-outs))))
+  :verify-guards nil
+  (mbe :logic
+       (if (<= (len phase-outs)
+               (svtv-cycle-output-phase phases))
+           nil
+         (cons (svex-env-fix (nth (svtv-cycle-output-phase phases) phase-outs))
+               (svex-envlist-phase-outputs-extract-cycle-outputs
+                phases
+                (nthcdr (if (mbt (consp phases))
+                            (len phases)
+                          1)
+                        phase-outs))))
+       :exec
+       (b* ((outphase (svtv-cycle-output-phase phases))
+            (rest (nthcdr (len phases) phase-outs))
+            ((when (atom rest))
+             (if (<= (len phase-outs) outphase)
+                 nil
+               (list (nth outphase phase-outs)))))
+         (cons (nth outphase phase-outs)
+               (svex-envlist-phase-outputs-extract-cycle-outputs phases rest))))
   ///
 
+  
+
+  (local (defthm svtv-cycle-output-phase-<-len
+           (implies (svtv-cyclephaselist-has-outputs-captured phases)
+                    (< (svtv-cycle-output-phase phases) (len phases)))
+           :hints(("Goal" :in-theory (enable svtv-cycle-output-phase
+                                             svtv-cyclephaselist-has-outputs-captured)))
+           :rule-classes :linear))
+  
   (local (defun nth-of-extract-ind (n phases phase-outs)
            (if (zp n)
                (list phases phase-outs)
@@ -120,12 +141,25 @@
     :hints (("goal" :induct (nth-of-extract-ind n phases phase-outs)
              :expand (<call>))))
 
+  (local (defthm svtv-cycle-output-phase-when-not-outputs-captured
+           (implies (not (svtv-cyclephaselist-has-outputs-captured phases))
+                    (not (svtv-cycle-output-phase phases)))
+           :hints(("Goal" :in-theory (enable svtv-cycle-output-phase
+                                             svtv-cyclephaselist-has-outputs-captured)))))
+
   (defret len-of-<fn>
-    (implies (and (equal 0 (mod (len phase-outs) (len phases)))
-                  (consp phases))
+    (implies (consp phases)
              (equal (len cycle-outs)
-                    (floor (len phase-outs) (len phases))))
-    :hints(("Goal" :in-theory (enable acl2::mod-redef acl2::floor-redef))))
+                    (+ (floor (len phase-outs) (len phases))
+                       (if (< (svtv-cycle-output-phase phases)
+                              (mod (len phase-outs) (len phases)))
+                           1
+                         0))))
+    :hints(("Goal" :induct <call>
+            :expand ((:with acl2::mod-redef (mod (len phase-outs) (len phases)))
+                     (:with acl2::floor-redef (floor (len phase-outs) (len phases)))))
+           (and stable-under-simplificationp
+                '(:cases ((svtv-cyclephaselist-has-outputs-captured phases))))))
 
   (local (defthm svtv-cyclephaselist-has-outputs-captured-implies-posp-len
            (implies (svtv-cyclephaselist-has-outputs-captured phases)
@@ -142,7 +176,7 @@
                                       svtv-probealist-cycle-adjust-aux)
             :induct (len probes))))
 
-    (local
+  (local
    (defthm svtv-name-lhs-map-eval-list-under-iff
      (iff (svtv-name-lhs-map-eval-list namemap envs)
           (consp envs))
@@ -150,7 +184,7 @@
 
   (local (defthm consp-of-svex-envlist-phase-outputs-extract-cycle-outputs
            (equal (consp (svex-envlist-phase-outputs-extract-cycle-outputs phases envs))
-                  (consp envs))
+                  (< (svtv-cycle-output-phase phases) (len envs)))
            :hints(("Goal" :in-theory (enable svex-envlist-phase-outputs-extract-cycle-outputs)))))
 
   
@@ -172,16 +206,9 @@
            (equal (consp (svtv-name-lhs-map-eval-list namemap envs))
                   (consp envs))
            :hints(("Goal" :in-theory (enable svtv-name-lhs-map-eval-list)))))
-
-  (local (defthm svtv-cycle-output-phase-<-len
-           (implies (svtv-cyclephaselist-has-outputs-captured phases)
-                    (< (svtv-cycle-output-phase phases) (len phases)))
-           :hints(("Goal" :in-theory (enable svtv-cycle-output-phase
-                                             svtv-cyclephaselist-has-outputs-captured)))
-           :rule-classes :linear))
   
   (defthm svex-envlist-phase-outputs-extract-cycle-outputs-of-svtv-name-lhs-map-eval-list
-    (implies (and (equal 0 (mod (len envs) (len phases)))
+    (implies (and ; (equal 0 (mod (len envs) (len phases)))
                   (svtv-cyclephaselist-has-outputs-captured phases))
              (equal (svex-envlist-phase-outputs-extract-cycle-outputs phases (svtv-name-lhs-map-eval-list namemap envs))
                     (svtv-name-lhs-map-eval-list namemap (svex-envlist-phase-outputs-extract-cycle-outputs phases envs))))
@@ -192,7 +219,17 @@
             :expand ((svex-envlist-phase-outputs-extract-cycle-outputs phases
                                                                        (svtv-name-lhs-map-eval-list namemap envs))))
            (and stable-under-simplificationp
-                '(:cases ((equal (len envs) (svtv-cycle-output-phase phases))))))))
+                '(:cases ((equal (len envs) (svtv-cycle-output-phase phases)))))))
+
+  (local (defthm nthcdr-when-gte-len
+           (implies (<= (len x) (nfix n))
+                    (not (consp (nthcdr n x) )))))
+  
+  (verify-guards svex-envlist-phase-outputs-extract-cycle-outputs
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((SVEX-ENVLIST-PHASE-OUTPUTS-EXTRACT-CYCLE-OUTPUTS
+                             PHASES
+                             (NTHCDR (LEN PHASES) PHASE-OUTS))))))))
 
 
 

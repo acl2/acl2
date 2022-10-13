@@ -29,6 +29,7 @@
 (set-waterfall-parallelism nil)
 
 (include-book "../svex/override")
+(include-book "override-common")
 (include-book "svtv-stobj-export")
 (include-book "cycle-probe")
 (include-book "centaur/fgl/def-fgl-thm" :dir :system)
@@ -2384,28 +2385,6 @@ proved.</p>")
 
 
 
-
-
-
-
-#!sv
-(defthmd 4vec-<<=-when-integerp
-  (implies (integerp x)
-           (equal (4vec-<<= x y)
-                  (equal (4vec-fix y) x)))
-  :hints(("Goal" :in-theory (e/d (4vec->upper 4vec->lower 4vec-fix)))))
-
-#!sv
-(defthmd svex-env-lookup-when-integerp-and-<<=
-  (implies (and (svex-env-<<= env1 env2)
-                (integerp (svex-env-lookup k env1)))
-           (equal (svex-env-lookup k env2)
-                  (svex-env-lookup k env1)))
-  :hints (("goal" :use ((:instance svex-env-<<=-necc
-                         (x env1) (y env2) (var k)))
-           :in-theory (e/d (4vec-<<=-when-integerp)
-                           (svex-env-<<=-necc)))))
-
 #!sv
 (defthmd svex-env-lookup-when-2vec-p-and-<<=
   (implies (and (svex-env-<<= env1 env2)
@@ -2528,11 +2507,6 @@ proved.</p>")
 (cmr::def-force-execute svar-override-triple->refvar-force-execute
   svar-override-triple->refvar)
 
-
-#!sv
-(cmr::def-force-execute hons-intersection-force-execute
-  acl2::hons-intersection)
-
 #!sv
 (cmr::def-force-execute hons-set-diff-force-execute
   acl2::hons-set-diff)
@@ -2546,86 +2520,6 @@ proved.</p>")
   (equal (svex-env-removekeys keys nil) nil)
   :hints(("Goal" :in-theory (enable svex-env-removekeys))))
 
-
-#!sv
-(define svex-env-<<=-each ((x svex-env-p)
-                           (y svex-env-p))
-  ;; Like svex-env-<<=, but iterates over the pairs in x rather than
-  ;; quantifying over the keys.  So it's the same as svex-env-<<= as long as x
-  ;; has no duplicate keys (or at least no duplicated keys bound to different
-  ;; values).
-  (if (atom x)
-      t
-    (and (or (not (mbt (and (consp (car x))
-                            (svar-p (caar x)))))
-             (4vec-<<= (cdar x) (svex-env-lookup (caar x) y)))
-         (svex-env-<<=-each (cdr x) y)))
-  ///
-  (local (defthm svex-env-<<=-each-implies-4vec-<<=
-           (implies (svex-env-<<=-each x y)
-                    (4vec-<<= (svex-env-lookup k x)
-                              (svex-env-lookup k y)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
-
-  (local (defthm svex-env-<<=-each-implies-svex-env-<<=
-           (implies (svex-env-<<=-each x y)
-                    (svex-env-<<= x y))
-           :hints(("Goal" :expand ((svex-env-<<= x y))))))
-
-  (local (defthm svex-env-<<=-cdr-when-first-key-not-repeated
-           (implies (and (or (not (consp (car x)))
-                             (not (svar-p (caar x)))
-                             (not (svex-env-boundp (caar x) (cdr x))))
-                         (svex-env-<<= x y))
-                    (svex-env-<<= (cdr x) y))
-           :hints (("Goal" :expand ((svex-env-<<= (cdr x) y))
-                    :use ((:instance svex-env-<<=-necc
-                           (var (svex-env-<<=-witness (cdr x) y))))
-                    :in-theory (e/d (svex-env-lookup
-                                     svex-env-boundp)
-                                    (svex-env-<<=-necc))))))
-
-  (local (defthm svex-env-<<=-and-no-duplicate-keys-implies-svex-env-<<=-each
-           (implies (and (svex-env-<<= x y)
-                         (no-duplicatesp-equal (alist-keys (svex-env-fix x))))
-                    (svex-env-<<=-each x y))
-           :hints(("Goal" :in-theory (e/d (svex-env-lookup
-                                           svex-env-boundp
-                                           acl2::alist-keys-member-hons-assoc-equal
-                                           svex-env-fix)
-                                          (svex-env-<<=-necc))
-                   :induct t)
-                  (and stable-under-simplificationp
-                       '(:use ((:instance svex-env-<<=-necc
-                                (var (caar x)))))))))
-
-  (defthm svex-env-<<=-each-of-cons
-    (equal (svex-env-<<=-each (cons pair x) y)
-           (and (or (not (consp pair))
-                    (not (svar-p (car pair)))
-                    (4vec-<<= (cdr pair) (svex-env-lookup (car pair) y)))
-                (svex-env-<<=-each x y))))
-
-  (defthm svex-env-<<=-each-of-nil
-    (equal (svex-env-<<=-each nil y) t))
-
-  (local (defthm svarlist-filter-of-alist-keys
-           (equal (svarlist-filter (alist-keys x))
-                  (alist-keys (svex-env-fix x)))
-           :hints(("Goal" :in-theory (enable svarlist-filter alist-keys svex-env-fix)))))
-
-  (defthmd svex-env-<<=-is-svex-env-<<=-each-when-no-duplicate-keys
-    (implies (and (equal keys (alist-keys x))
-                  (syntaxp (quotep keys))
-                  (not (acl2::hons-dups-p (svarlist-filter keys))))
-             (equal (svex-env-<<= x y)
-                    (svex-env-<<=-each x y)))
-    :hints(("Goal" :in-theory (disable acl2::hons-dups-p
-                                       svex-env-<<=-and-no-duplicate-keys-implies-svex-env-<<=-each)
-            :use (svex-env-<<=-and-no-duplicate-keys-implies-svex-env-<<=-each)
-            :do-not-induct t)))
-
-  (local (in-theory (enable svex-env-fix))))
 
 
 (define svex-env-keys-no-1s-p-badguy ((keys svarlist-p)
@@ -2758,16 +2652,6 @@ proved.</p>")
            (and stable-under-simplificationp
                 '(:in-theory (enable svex-env-lookup
                                      acl2::alist-keys-member-hons-assoc-equal)))))
-
-  (defthmd svex-env-extract-of-cons
-    (equal (svex-env-extract (cons key keys) env)
-           (cons (cons (svar-fix key) (svex-env-lookup key env))
-                 (svex-env-extract keys env)))
-    :hints(("Goal" :in-theory (enable svex-env-extract))))
-
-  (defthm svex-env-extract-of-nil
-    (equal (svex-env-extract nil env) nil)
-    :hints(("Goal" :in-theory (enable svex-env-extract))))
 
   (defthm svex-env-extract-nil-under-svex-envs-similar
     (svex-envs-similar (svex-env-extract keys nil) nil)
