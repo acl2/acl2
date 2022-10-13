@@ -115,4 +115,3 @@
 
 (verify-termination extend-pathname) ; not guards
 
-

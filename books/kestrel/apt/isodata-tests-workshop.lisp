@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file collects the ISODATA examples from the ACL2-2020 Workshop paper,
-; so that they are certified every time this [books]/kestrel/apt directory is.
+; so that they are certified every time this kestrel/apt directory is.
 
 ; Note added 9/8/2021 by Matt K.: The workshop books above no longer include
 ; the present directory's isodata.lisp.  Instead they include that workshop

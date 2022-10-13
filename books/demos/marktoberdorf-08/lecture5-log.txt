@@ -12,7 +12,7 @@ ACL2 !>>(INCLUDE-BOOK "m1-fast")
 Summary
 Form:  ( INCLUDE-BOOK "m1-fast" ...)
 Rules: NIL
- "m1-fast.lisp"
+ (:SYSTEM . "demos/marktoberdorf-08/m1-fast.lisp")
 ACL2 !>>(IN-PACKAGE "M1")
  "M1"
 M1 !>>'(END OF SETUP)
@@ -73,7 +73,7 @@ M1 !>>(PE 'M1-BOYER-MOORE-IS-CORRECT)
    d       2  (INCLUDE-BOOK "m1-fast")
               \
               [Included books, outermost to innermost:
-               "[books]/demos/marktoberdorf-08/m1-fast.lisp"
+               (:SYSTEM . "demos/marktoberdorf-08/m1-fast.lisp")
               ]
               \
 >              (DEFTHM

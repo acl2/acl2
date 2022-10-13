@@ -19,7 +19,7 @@
 (include-book "expt")
 
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus"))
 
 (defthm integerp-of-expt2

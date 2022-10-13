@@ -34,7 +34,6 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 (local (in-theory (disable (:i alistp))))

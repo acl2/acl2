@@ -15,7 +15,6 @@
 ;; The definitions below are compatible with books/ihs/basic-definitions.
 
 (local (include-book "../arithmetic-light/expt"))
-(local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/floor"))
 
 (defun expt2$inline (n)

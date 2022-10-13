@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; See also [books]/std/lists/flatten.lisp
+;; See also community book std/lists/flatten.lisp
 
 ;; Similar to flatten but more lightweight and has a stronger guard
 (defund append-all (xs)

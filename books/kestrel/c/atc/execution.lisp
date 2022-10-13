@@ -146,408 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-rem ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute remainder [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/5]."
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-integerp arg1))
-        (error (list :mistype-rem
-                     :required :integer
-                     :supplied arg1)))
-       ((unless (value-integerp arg2))
-        (error (list :mistype-rem
-                     :required :integer
-                     :supplied arg2)))
-       (err (error (list :undefined-rem arg1 arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (if (rem-uint-uint-okp val1 val2)
-                       (rem-uint-uint val1 val2)
-                     err))
-     ((sintp val1) (if (rem-sint-sint-okp val1 val2)
-                       (rem-sint-sint val1 val2)
-                     err))
-     ((ulongp val1) (if (rem-ulong-ulong-okp val1 val2)
-                        (rem-ulong-ulong val1 val2)
-                      err))
-     ((slongp val1) (if (rem-slong-slong-okp val1 val2)
-                        (rem-slong-slong val1 val2)
-                      err))
-     ((ullongp val1) (if (rem-ullong-ullong-okp val1 val2)
-                         (rem-ullong-ullong val1 val2)
-                       err))
-     ((sllongp val1) (if (rem-sllong-sllong-okp val1 val2)
-                         (rem-sllong-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp value-realp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-add ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute addition [C:6.5.6/2] [C:6.5.6/4] [C:6.5.6/5]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support additions involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-add
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-add
-                     :required :arithmetic
-                     :supplied arg2)))
-       (err (error (list :undefined-add arg1 arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (add-uint-uint val1 val2))
-     ((sintp val1) (if (add-sint-sint-okp val1 val2)
-                       (add-sint-sint val1 val2)
-                     err))
-     ((ulongp val1) (add-ulong-ulong val1 val2))
-     ((slongp val1) (if (add-slong-slong-okp val1 val2)
-                        (add-slong-slong val1 val2)
-                      err))
-     ((ullongp val1) (add-ullong-ullong val1 val2))
-     ((sllongp val1) (if (add-sllong-sllong-okp val1 val2)
-                         (add-sllong-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-sub ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute subtraction [C:6.5.6/3] [C:6.5.6/4] [C:6.5.6/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support subtractions involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-sub
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-sub
-                     :required :arithmetic
-                     :supplied arg2)))
-       (err (error (list :undefined-sub arg1 arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (sub-uint-uint val1 val2))
-     ((sintp val1) (if (sub-sint-sint-okp val1 val2)
-                       (sub-sint-sint val1 val2)
-                     err))
-     ((ulongp val1) (sub-ulong-ulong val1 val2))
-     ((slongp val1) (if (sub-slong-slong-okp val1 val2)
-                        (sub-slong-slong val1 val2)
-                      err))
-     ((ullongp val1) (sub-ullong-ullong val1 val2))
-     ((sllongp val1) (if (sub-sllong-sllong-okp val1 val2)
-                         (sub-sllong-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-shl ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute left shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/4]."
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-integerp arg1))
-        (error (list :mistype-shl
-                     :required :integer
-                     :supplied arg1)))
-       (val1 (promote-value arg1))
-       ((unless (value-integerp arg2))
-        (error (list :mistype-shl
-                     :required :integer
-                     :supplied arg2)))
-       (val2 (promote-value arg2))
-       (val2 (value-integer->get val2))
-       (err (error (list :undefined-shl arg1 arg2))))
-    (cond
-     ((uintp val1) (if (shl-uint-okp val1 val2)
-                       (shl-uint val1 val2)
-                     err))
-     ((sintp val1) (if (shl-sint-okp val1 val2)
-                       (shl-sint val1 val2)
-                     err))
-     ((ulongp val1) (if (shl-ulong-okp val1 val2)
-                        (shl-ulong val1 val2)
-                      err))
-     ((slongp val1) (if (shl-slong-okp val1 val2)
-                        (shl-slong val1 val2)
-                      err))
-     ((ullongp val1) (if (shl-ullong-okp val1 val2)
-                         (shl-ullong val1 val2)
-                       err))
-     ((sllongp val1) (if (shl-sllong-okp val1 val2)
-                         (shl-sllong val1 val2)
-                       err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use ((:instance values-of-promote-value (val arg1))
-                       (:instance values-of-promote-value (val arg2)))
-                 :in-theory (enable value-arithmeticp
-                                    value-realp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-shr ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute right shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/5]."
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-integerp arg1))
-        (error (list :mistype-shr
-                     :required :integer
-                     :supplied arg1)))
-       (val1 (promote-value arg1))
-       ((unless (value-integerp arg2))
-        (error (list :mistype-shr
-                     :required :integer
-                     :supplied arg2)))
-       (val2 (promote-value arg2))
-       (val2 (value-integer->get val2))
-       ((when (errorp val2)) val2)
-       (err (error (list :undefined-shr arg1 arg2))))
-    (cond
-     ((uintp val1) (if (shr-uint-okp val1 val2) (shr-uint val1 val2) err))
-     ((sintp val1) (if (shr-sint-okp val1 val2) (shr-sint val1 val2) err))
-     ((ulongp val1) (if (shr-ulong-okp val1 val2) (shr-ulong val1 val2) err))
-     ((slongp val1) (if (shr-slong-okp val1 val2) (shr-slong val1 val2) err))
-     ((ullongp val1) (if (shr-ullong-okp val1 val2) (shr-ullong val1 val2) err))
-     ((sllongp val1) (if (shr-sllong-okp val1 val2) (shr-sllong val1 val2) err))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use ((:instance values-of-promote-value (val arg1))
-                       (:instance values-of-promote-value (val arg2)))
-                 :in-theory (enable value-arithmeticp
-                                    value-realp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-lt ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute less-than [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-realp arg1))
-        (error (list :mistype-lt
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-realp arg2))
-        (error (list :mistype-lt
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (lt-uint-uint val1 val2))
-     ((sintp val1) (lt-sint-sint val1 val2))
-     ((ulongp val1) (lt-ulong-ulong val1 val2))
-     ((slongp val1) (lt-slong-slong val1 val2))
-     ((ullongp val1) (lt-ullong-ullong val1 val2))
-     ((sllongp val1) (lt-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-gt ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute greater-than [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-realp arg1))
-        (error (list :mistype-gt
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-realp arg2))
-        (error (list :mistype-gt
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (gt-uint-uint val1 val2))
-     ((sintp val1) (gt-sint-sint val1 val2))
-     ((ulongp val1) (gt-ulong-ulong val1 val2))
-     ((slongp val1) (gt-slong-slong val1 val2))
-     ((ullongp val1) (gt-ullong-ullong val1 val2))
-     ((sllongp val1) (gt-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-le ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute less-than-or-equal-to [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-realp arg1))
-        (error (list :mistype-le
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-realp arg2))
-        (error (list :mistype-le
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (le-uint-uint val1 val2))
-     ((sintp val1) (le-sint-sint val1 val2))
-     ((ulongp val1) (le-ulong-ulong val1 val2))
-     ((slongp val1) (le-slong-slong val1 val2))
-     ((ullongp val1) (le-ullong-ullong val1 val2))
-     ((sllongp val1) (le-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-ge ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute greater-than-or-equal-to [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-realp arg1))
-        (error (list :mistype-ge
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-realp arg2))
-        (error (list :mistype-ge
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (ge-uint-uint val1 val2))
-     ((sintp val1) (ge-sint-sint val1 val2))
-     ((ulongp val1) (ge-ulong-ulong val1 val2))
-     ((slongp val1) (ge-slong-slong val1 val2))
-     ((ullongp val1) (ge-ullong-ullong val1 val2))
-     ((sllongp val1) (ge-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-eq ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-eq
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-eq
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (eq-uint-uint val1 val2))
-     ((sintp val1) (eq-sint-sint val1 val2))
-     ((ulongp val1) (eq-ulong-ulong val1 val2))
-     ((slongp val1) (eq-slong-slong val1 val2))
-     ((ullongp val1) (eq-ullong-ullong val1 val2))
-     ((sllongp val1) (eq-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-ne ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute non-equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not support comparisons involving pointers for now."))
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-arithmeticp arg1))
-        (error (list :mistype-ne
-                     :required :arithmetic
-                     :supplied arg1)))
-       ((unless (value-arithmeticp arg2))
-        (error (list :mistype-ne
-                     :required :arithmetic
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (ne-uint-uint val1 val2))
-     ((sintp val1) (ne-sint-sint val1 val2))
-     ((ulongp val1) (ne-ulong-ulong val1 val2))
-     ((slongp val1) (ne-slong-slong val1 val2))
-     ((ullongp val1) (ne-ullong-ullong val1 val2))
-     ((sllongp val1) (ne-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
-                              (val1 arg1) (val2 arg2))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-bitand ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute bitwise cojunction [C:6.5.10]."
@@ -661,17 +259,17 @@
     (case (binop-kind op)
       (:mul (mul-values arg1 arg2))
       (:div (div-values arg1 arg2))
-      (:rem (exec-rem arg1 arg2))
-      (:add (exec-add arg1 arg2))
-      (:sub (exec-sub arg1 arg2))
-      (:shl (exec-shl arg1 arg2))
-      (:shr (exec-shr arg1 arg2))
-      (:lt (exec-lt arg1 arg2))
-      (:gt (exec-gt arg1 arg2))
-      (:le (exec-le arg1 arg2))
-      (:ge (exec-ge arg1 arg2))
-      (:eq (exec-eq arg1 arg2))
-      (:ne (exec-ne arg1 arg2))
+      (:rem (rem-values arg1 arg2))
+      (:add (add-values arg1 arg2))
+      (:sub (sub-values arg1 arg2))
+      (:shl (shl-values arg1 arg2))
+      (:shr (shr-values arg1 arg2))
+      (:lt (lt-values arg1 arg2))
+      (:gt (gt-values arg1 arg2))
+      (:le (le-values arg1 arg2))
+      (:ge (ge-values arg1 arg2))
+      (:eq (eq-values arg1 arg2))
+      (:ne (ne-values arg1 arg2))
       (:bitand (exec-bitand arg1 arg2))
       (:bitxor (exec-bitxor arg1 arg2))
       (:bitior (exec-bitior arg1 arg2))
@@ -1091,7 +689,10 @@
      We return an error if they do not match in number or types,
      or if there are repeated parameters.
      We perform array-to-pointer conversion on both types
-     before comparing them."))
+     before comparing them.")
+   (xdoc::p
+    "Prior to storing each actual, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
@@ -1114,7 +715,7 @@
                      :actual actual-type))))
     (if (omap::in name scope)
         (error (list :init-scope :duplicate-param name))
-      (omap::update name actual scope)))
+      (omap::update name (remove-flexible-array-member actual) scope)))
   :hooks (:fix)
   :measure (len formals)
   :verify-guards nil ; done below
@@ -1256,7 +857,12 @@
         either a variable,
         or an array subscripting expression
         where the array is a variable,
+        or a structure member expression
+        where the target is a variable,
         or a structure pointer member expression
+        where the target is a variable,
+        or an array subscripting expression
+        where the array is a structure member expression
         where the target is a variable,
         or an array subscripting expression
         where the array is a structure pointer member expression
@@ -1277,7 +883,7 @@
        if it is an array value, we return a pointer to it instead;
        otherwise, we return the value unchanged.
        The motivation for this is explained in @(tsee exec-ident);
-       it is due to our curently simplified (but correct, in our C subset)
+       it is due to our currently simplified (but correct, in our C subset)
        treatment of arrays and pointer in our C dynamic semantics.")
      (xdoc::p
       "We ensure that if the right-hand side expression is a function call,
@@ -1431,6 +1037,21 @@
                        ((when (errorp new-struct)) new-struct))
                     (write-object objdes new-struct compst)))
                  (t (error (list :expr-asg-arrsub-not-supported arr))))))
+        (:member
+         (b* ((str (expr-member->target left))
+              (mem (expr-member->name left))
+              ((unless (expr-case str :ident))
+               (error (list :expr-asg-member-not-var left)))
+              (var (expr-ident->get str))
+              (struct (read-var var compst))
+              ((when (errorp struct)) struct)
+              ((unless (value-case struct :struct))
+               (error (list :not-struct struct (compustate-fix compst))))
+              (val (exec-expr-pure right compst))
+              ((when (errorp val)) val)
+              (new-struct (value-struct-write mem val struct))
+              ((when (errorp new-struct)) new-struct))
+           (write-var var new-struct compst)))
         (:memberp
          (b* ((str (expr-memberp->target left))
               (mem (expr-memberp->name left))
@@ -1449,7 +1070,7 @@
               (struct (read-object objdes compst))
               ((when (errorp struct)) struct)
               ((unless (value-case struct :struct))
-               (error (list :not-struct str (compustate-fix compst))))
+               (error (list :not-struct struct (compustate-fix compst))))
               ((unless (equal reftype
                               (type-of-value struct)))
                (error (list :mistype-struct-read

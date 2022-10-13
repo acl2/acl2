@@ -20,7 +20,7 @@
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
-(include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for MYIF-BECOMES-BOOLIF-AXE and perhaps ACL2::BVNOT-TRIM-DAG-ALL (move myif-becomes-boolif?)
+(include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for MYIF-BECOMES-BOOLIF-AXE and perhaps ACL2::BVNOT-TRIM-AXE-ALL (move myif-becomes-boolif?)
 ;(include-book "rule-lists")
 
 ;; Register a bunch of x86-related functions as known booleans:

@@ -89,8 +89,8 @@ recognizer function for a typed record; see @(see def-typed-record).</li>
 <li>Optionally, you can have @('defrstobj') define a universal
 accessor and a universal updater function using keywords
 @(':accessor') and @(':updater') respectively.  These functions can
-come in handy when using
-@('[books]/std/stobjs/updater-independence').</li>
+come in handy when using community book
+@('std/stobjs/updater-independence').</li>
 
 </ul>
 

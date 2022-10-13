@@ -139,6 +139,7 @@
   ((define parse-exact-list-aux ((nats nat-listp) (input nat-listp))
      :returns (mv (error? maybe-msgp)
                   (rest-input nat-listp))
+     :parents nil
      (b* (((when (endp nats)) (mv nil (nat-list-fix input)))
           (nat (lnfix (car nats)))
           ((mv error? input-nat input) (parse-any input))

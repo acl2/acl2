@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Each of these rules are integer counterparts of
-; either built-in axioms or rules in [books]/arithmetic/top,
+; either built-in axioms or rules in community book arithmetic/top,
 ; whose names are indicated next to each rule.
 ; The rules asserting that i+, i*, and i- return integers
 ; correspond to "implicit" type prescription rules in ACL2,

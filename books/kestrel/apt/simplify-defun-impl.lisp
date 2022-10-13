@@ -1725,6 +1725,53 @@
              (make-blocked-mbt new)
            new))))
 
+#!acl2
+(defun assume-true-false-hlp (term rrec wrld state)
+
+; This function is an interface to ACL2 source function
+; assume-true-false-heavy-linearp.
+
+  (declare (xargs :stobjs state))
+  (b* (((mv term notp)
+        (cond ((and (ffn-symb-p term 'if)
+                    (equal (fargn term 2) *nil*)
+                    (equal (fargn term 3) *t*))
+               (mv (fargn term  1) t))
+              (t (mv term nil))))
+       (rcnst (access rewrite$-record rrec :rcnst))
+       (type-alist (access rewrite$-record rrec :type-alist))
+       (pot-lst (access rewrite$-record rrec :pot-lst))
+       (gstack (access rewrite$-record rrec :gstack)))
+    (mv-let (step-limit must-be-true must-be-false
+                        true-type-alist false-type-alist
+                        true-pot-lst false-pot-lst
+                        ts-ttree)
+            (assume-true-false-heavy-linearp
+             term
+             (rewrite-stack-limit wrld) ; rdepth
+             *default-step-limit*
+             type-alist
+             '?           ; ignored obj
+             *geneqv-iff* ; geneqv ignored by add-terms-and-lemmas
+             nil          ; pequiv-info ignored by add-terms-and-lemmas
+             wrld state
+             nil ; fnstack = nil in rewrite$*
+             nil ; ancestors = nil in rewrite$*
+             (access rewrite-constant rcnst
+                     :backchain-limit-rw)
+             pot-lst
+             rcnst
+             gstack
+             nil ; ttree ignored by add-terms-and-lemmas
+             )
+            (declare (ignore step-limit))
+            (cond (notp (mv must-be-false must-be-true
+                            false-type-alist true-type-alist
+                            false-pot-lst true-pot-lst ts-ttree))
+                  (t    (mv must-be-true must-be-false
+                            true-type-alist false-type-alist
+                            true-pot-lst false-pot-lst ts-ttree))))))
+
 (defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld
                                          state)
 
@@ -1739,25 +1786,17 @@
      (b* (((er (cons tst2 runes-tst))
            (rewrite1 tst alist *geneqv-iff* rrec ctx wrld state))
           (runes (union-equal? runes-tst runes))
-          (rcnst (access acl2::rewrite$-record rrec :rcnst))
-          (ens (access acl2::rewrite-constant rcnst
-                       :current-enabled-structure))
-          (ok-to-force (acl2::ok-to-force rcnst))
-          (type-alist (access acl2::rewrite$-record rrec :type-alist))
-          (pot-lst (access acl2::rewrite$-record rrec :pot-lst))
           ((mv must-be-true
                must-be-false
                true-type-alist
                false-type-alist
+               true-pot-lst
+               false-pot-lst
                ts-ttree)
-           (acl2::assume-true-false tst2 nil ok-to-force nil type-alist ens
-                                    wrld pot-lst nil nil)))
-       (cond (must-be-true
-              (rewrite-augmented-term-rec tbr alist geneqv rrec
-                                          (all-runes-in-ttree ts-ttree runes)
-                                          ctx wrld state))
-             (must-be-false
-              (rewrite-augmented-term-rec fbr alist geneqv rrec
+           (acl2::assume-true-false-hlp tst2 rrec wrld state)))
+       (cond ((or must-be-true must-be-false)
+              (rewrite-augmented-term-rec (if must-be-true tbr fbr)
+                                          alist geneqv rrec
                                           (all-runes-in-ttree ts-ttree runes)
                                           ctx wrld state))
              (t (b* (((er (cons tbr2 runes))
@@ -1765,21 +1804,31 @@
                                                   (change acl2::rewrite$-record
                                                           rrec
                                                           :type-alist
-                                                          true-type-alist)
+                                                          true-type-alist
+                                                          :pot-lst
+                                                          true-pot-lst)
                                                   runes ctx wrld state))
                      ((er (cons fbr2 runes))
                       (rewrite-augmented-term-rec fbr alist geneqv
                                                   (change acl2::rewrite$-record
                                                           rrec
                                                           :type-alist
-                                                          false-type-alist)
+                                                          false-type-alist
+                                                          :pot-lst
+                                                          false-pot-lst)
                                                   runes ctx wrld state))
+                     (rcnst (access acl2::rewrite$-record rrec :rcnst))
                      ((mv term ttree)
                       (rewrite-if1 (maybe-reconstruct-blocked-mbt tst tst2)
                                    tbr2 fbr2
                                    nil ; swapped-p
-                                   type-alist
-                                   geneqv ens ok-to-force wrld nil)))
+                                   (access acl2::rewrite$-record rrec
+                                           :type-alist)
+                                   geneqv
+                                   (access acl2::rewrite-constant rcnst
+                                           :current-enabled-structure)
+                                   (acl2::ok-to-force rcnst)
+                                   wrld nil)))
                   (value (cons term (all-runes-in-ttree ttree runes))))))))
     ((('LAMBDA formals body) . actuals)
      (b* (((er (cons rewritten-actuals runes-actuals))
@@ -3066,9 +3115,11 @@
 
 (defun simplify-defun-heuristics (alist)
 
+; Warning: Keep this in sync with with-simplify-setup-fn.
+
 ; It is a bit of overkill to make defattach-system local, since it already
-; expands to a local event.  But we use make it local anyhow, so that tools
-; will avoid printing these events to the screen.
+; expands to a local event.  But we make it local anyhow, so that tools will
+; avoid printing these events to the screen.
 
   `(local
     (with-output
@@ -3110,7 +3161,9 @@
               'constant-t-function-arity-0))
         (defattach-system
           acl2::heavy-linear-p
-          constant-t-function-arity-0)))))
+          constant-t-function-arity-0)
+        (set-default-hints nil)
+        (set-override-hints nil)))))
 
 (defun remove-final-hints-lst (lst)
 
@@ -3341,8 +3394,6 @@
              (encapsulate
                ()
                ,(simplify-defun-heuristics nil)
-               (local (set-default-hints nil))
-               (local (set-override-hints nil))
                ,@all-before-vs-after-lemmas)
              ,@hyps-preserved-thm-list
              (install-not-normalized$ ,(access fnsr fnsr :simp) :allp t)
@@ -3387,6 +3438,8 @@
 
 ; See with-simplify-setup.
 
+; Warning: Keep this in sync with simplify-defun-heuristics.
+
   `(b* ((wrld (w state))
         (acl2::simplifiable-mv-nth-p-old
          (cdr (attachment-pair 'acl2::simplifiable-mv-nth-p wrld)))
@@ -3400,6 +3453,20 @@
          (cdr (attachment-pair 'rewrite-if-avoid-swap wrld)))
         (default-hints-old (default-hints wrld))
         (override-hints-old (override-hints wrld))
+        ((er -)
+
+; We are about to evaluate the form generated by the call
+; (apt::simplify-defun-heuristics nil).  But that sets up a local environment,
+; as we prefer when using apt::simplify-defun-heuristics in the event generated
+; by make-event expansion (see simplify-defun-form); and this can be
+; problematic when the default defun-mode is :program, where local events are
+; skipped.  In particular, we have seen a failure due to the skipping of
+; (set-override-hints nil) when the override-hints of the world include a
+; :backtrack hint (which is disallowed for rewrite$).  Since we are evaluating
+; during make-event expansion (as noted in a comment in with-simplify-setup),
+; it's OK to switch to :logic mode here.
+
+         (trans-eval-error-triple '(logic) ctx state))
         ((er -)
          (trans-eval-error-triple (apt::simplify-defun-heuristics nil)
                                   ctx state))
@@ -3426,7 +3493,8 @@
 #!acl2
 (defmacro with-simplify-setup (form)
 
-; This macro assumes that CTX and STATE are bound.
+; This macro assumes that CTX and STATE are bound.  We expect this macro to be
+; evaluated during make-event expansion.
 
   (with-simplify-setup-fn form))
 

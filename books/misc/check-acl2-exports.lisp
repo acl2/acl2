@@ -203,8 +203,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    ER-HARD?
-    PROJECT-DIR-ALIST
   ))
 
 (defconst *special-ops*

@@ -32,11 +32,11 @@
      and it suffices for that purpose,
      namely that ATJ generates this abstract syntax
      and then pretty-prints it to files.
-     This is why this abstract syntax is under @('[books]/kestrel/java/atj'),
-     not under @('[books]/kestrel/java/language').")
+     This is why this abstract syntax is under @('kestrel/java/atj'),
+     not under @('kestrel/java/language').")
    (xdoc::p
     "This abstract syntax may be eventually superseded
-     by a complete formalization under @('[books]/kestrel/java/language').
+     by a complete formalization under @('kestrel/java/language').
      In fact, we have already started replacing some of this abstract syntax
      with more complete counterparts from the language formalization,
      namely the abstract syntax for integer literals.")

@@ -15,7 +15,6 @@
 ;; with other libraries.
 
 (include-book "abnf/top")
-;; (include-book "abnf/examples") ; they have XDOC topics for the manual
 (include-book "acl2pl/top")
 (include-book "algorithm-theories/top")
 (include-book "apt/top")

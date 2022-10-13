@@ -1,0 +1,11 @@
+ACL2s: "The ACL2 Sedan" for Eclipse
+By Peter C. Dillinger, Panagiotis Manolios, and Daron Vroon
+
+Copyright 2008 (c)
+Georgia Tech Research Corporation and Northeastern University
+
+Product comes with ABSOLUTELY NO WARRANTY.
+
+All parts released under the Eclipse Public License v1.0 (see EPL.html).
+Parts in the "acl2s-hooks" directory dual-licensed under the GNU General Public
+License v2.0 as well (see hooks/GPL.txt).

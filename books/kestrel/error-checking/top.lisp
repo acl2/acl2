@@ -65,6 +65,6 @@
      should be capitalized based on where they occur in the error messages.")
    (xdoc::p
     "These error checking functions are being moved
-     from @('[books]/kestrel/utilities/error-checking/')
-     to @('[books]/kestrel/error-checking'),
+     from @('kestrel/utilities/error-checking/')
+     to @('kestrel/error-checking'),
      and are being refactored and improved in the process.")))

@@ -13,6 +13,8 @@
 
 (include-book "../execution")
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-init-scope-rules
@@ -45,7 +47,9 @@
                   (scopep scope)
                   (not (omap::in name scope)))
              (equal (init-scope formals (cons val vals))
-                    (omap::update name val scope)))
+                    (omap::update name
+                                  (remove-flexible-array-member val)
+                                  scope)))
     :enable init-scope)
 
   (defval *atc-init-scope-rules*

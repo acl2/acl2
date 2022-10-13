@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "logext-def")
 (include-book "getbit")
 (local (include-book "logapp"))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -21,7 +21,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))

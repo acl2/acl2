@@ -77,13 +77,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :mode :program
                   :guard (symbolp fun-name)
                   :stobjs (state)))
-  (b* (((mv cl-set &) (guard-clauses-for-clique (list fun-name)
-                                                T ;debug-p
-                                                (ens state)
-                                                (w state)
-                                                (f-get-global 'safe-mode state)
-                                                (gc-off state)
-                                                nil))
+  (b* (((mv cl-set &)
+        (guard-clauses-for-clique (list fun-name)
+                                  T ;debug-p
+                                  (ens state)
+                                  (w state)
+                                  (f-get-global 'safe-mode state)
+                                  (gc-off state)
+                                  nil))
        (guard-ob (prettyify-clause-set cl-set (let*-abstractionp state) (w state)))
        ;;(- (cw "fn: ~x0 and body-contract-obligation: ~x1~%" fun-name guard-ob))
        )
@@ -1912,6 +1913,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (defunc-timeout (get-defunc-timeout))
             (defunc-timeout (or timeout-arg (* 3/4 (or defunc-timeout 10000))))
             (timeout (min ccg-timeout defunc-timeout))
+            (name-bad? (arity name (w state)))
+            (- (cw? (and debug? name-bad?)
+                    "~%The name ~x0 is already defined.
+This is fine if you are redefining the function,
+but may otherwise indicate an error. "   name))
             (args (list* (car args)
                          `(declare (xargs :time-limit ,timeout))
                          (cdr args)))

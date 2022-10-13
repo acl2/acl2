@@ -25,7 +25,7 @@
 
 ;; Note that alist-to-doublets is built in to ACL2.
 
-; See also TUPLEP in in [books]/std/util/support.lisp.
+; See also TUPLEP in std/util/support.lisp.
 
 ;; Recognize a doublet (a true list with two elements)
 (defun doubletp (x)

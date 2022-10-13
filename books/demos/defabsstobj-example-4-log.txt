@@ -521,7 +521,7 @@ ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
 Summary
 Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
+ (:SYSTEM . "std/testing/must-fail.lisp")
 ACL2 !>>(MUST-FAIL (THM (EQUAL X X)
                         :HINTS (("Goal" :CLAUSE-PROCESSOR SIMPLE-CL-PROC))))
 

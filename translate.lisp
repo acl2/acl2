@@ -4325,37 +4325,6 @@
                 (symbol-name fn))
    fn))
 
-(defun string-prefixp-1 (str1 i str2)
-  (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
-           (xargs :guard (and (<= i (length str1))
-                              (<= i (length str2)))))
-  (cond ((zpf i) t)
-        (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
-             (cond ((eql (the character (char str1 i))
-                         (the character (char str2 i)))
-                    (string-prefixp-1 str1 i str2))
-                   (t nil))))))
-
-(defun string-prefixp (root string)
-
-; We return a result propositionally equivalent to
-;   (and (<= (length root) (length string))
-;        (equal root (subseq string 0 (length root))))
-; but, unlike subseq, without allocating memory.
-
-; At one time this was a macro that checked `(eql 0 (search ,root ,string
-; :start2 0)).  But it seems potentially inefficient to search for any match,
-; only to insist at the end that the match is at 0.
-
-  (declare (type string root string)
-           (xargs :guard (<= (length root) (fixnum-bound))))
-  (let ((len (length root)))
-    (and (<= len (length string))
-         (assert$ (<= len (fixnum-bound))
-                  (string-prefixp-1 root len string)))))
-
 (defun warrant-name-inverse (warrant-fn)
 
 ; Warning: Keep this in sync with warrant-name (q.v.).
@@ -4369,7 +4338,6 @@
                   (length warrant-fn-name))
           warrant-fn))))
 
-; Matt:  The following function used to be called warrantp.
 (defun warrant-function-namep (warrant-fn wrld)
 
 ; We check whether warrant-fn is the warrant function of some function, fn.  If
@@ -5363,7 +5331,11 @@
 ; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
 
 ; Special functions recognized by this function are: RETURN-LAST, MV-LIST,
-; CONS-WITH-HINT, and THE-CHECK.
+; CONS-WITH-HINT, THE-CHECK and DO$.
+
+; The last function, DO$, is not exactly a guard holder but has two irrelevant
+; arguments -- args 6 and 7 -- that are replaced by *nil* by this function when
+; they are non-nil quoted objects.
 
   (declare (xargs :guard (pseudo-termp term)
                   :measure (acl2-count term)))
@@ -5449,13 +5421,40 @@
                         (mcons-term
                          (if changedp1
                              (make-lambda lambda-formals lambda-body)
-                           (ffn-symb term))
+                             (ffn-symb term))
                          args)))
                    (t (mv changedp0 term)))))))))
    (t (mv-let
         (changedp1 args)
         (remove-guard-holders1-lst (fargs term) lamp)
-        (cond ((null changedp1)
+
+; If args 6 and 7 of a DO$ are quoted objects other than nil, we replace them
+; by nil.  Note that this means we do not nil out those two arguments if
+; they're variables or other non-quote terms.  We just mess with DO$s that have
+; quoted objects in the last two arguments.  (We used to be more drastic and
+; replace the last to args any time they weren't nil, whether they were quotes
+; or not.  But this prevented centaur/misc/defapply from certifying because
+; that book generates a function containing a call of DO$ on its formals and
+; another function in that book explores the first and expects to find such
+; calls but doesn't after the last two args are smashed.)
+
+; As for how we code this replacement, this is rather odd.  We recursively
+; remove guard holders from ALL the arguments and then recognize the case we
+; want to clean up.  We do it this way, rather than nil them out before
+; recursively processing them, because (a) if we replace terms with acl2-counts
+; of 2, 1, or 0 by *nil* the count goes up and so we need a more complicated
+; measure, and (b) if the rather complicated condition under which we nil them
+; out precedes and thus governs the recursion then the case analysis for the
+; eventual termination argument in
+; books/system/remove-guard-holders-lemmas.lisp, is complicated.
+
+        (cond ((and (eq (ffn-symb term) 'DO$)
+                    (quotep (fargn term 6))
+                    (quotep (fargn term 7))
+                    (unquote (fargn term 6))
+                    (unquote (fargn term 7)))
+               (mv t (mcons-term 'DO$ (append (take 5 args) (list *nil* *nil*)))))
+              ((null changedp1)
                (cond ((quote-listp args)
                       (let ((new-term (mcons-term (ffn-symb term)
                                                   args)))
@@ -5852,6 +5851,15 @@
 ;                              (apply$ '(lambda (x) (my-fn5 x))
 ;                                      (cons c 'nil))))))))
 
+(defabbrev clean-up-dirty-lambda-object-body (hyps body wrld lamp)
+  (expand-all-lambdas
+   (clean-up-dirty-lambda-objects
+    hyps
+    (remove-guard-holders-weak body lamp)
+    nil
+    wrld
+    lamp)))
+
 (mutual-recursion
 
 (defun clean-up-dirty-lambda-objects (hyps term ilk wrld lamp)
@@ -5909,15 +5917,11 @@
                  (kwote
                   (list 'lambda
                         (lambda-object-formals evg)
-                        (expand-all-lambdas
-                         (clean-up-dirty-lambda-objects
-                          hyps
-                          (remove-guard-holders-weak
-                           (lambda-object-body evg)
-                           lamp)
-                          nil
-                          wrld
-                          lamp)))))
+                        (clean-up-dirty-lambda-object-body
+                         hyps
+                         (lambda-object-body evg)
+                         wrld
+                         lamp))))
                 ((null (lambda-object-dcl evg)) term)
                 (t (kwote
                     (list 'lambda

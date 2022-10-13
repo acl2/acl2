@@ -16,10 +16,10 @@
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/minus"))
-(local (include-book "../arithmetic-light/expt"))
+;(local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/integerp"))
-(local (include-book "../arithmetic-light/plus-and-times"))
+;(local (include-book "../arithmetic-light/plus-and-times"))
 
 (in-theory (disable lognot))
 
@@ -160,5 +160,4 @@
 
 (defthm signed-byte-p-of-lognot
   (implies (signed-byte-p size i)
-           (signed-byte-p size (lognot i)))
-  :hints (("Goal" :in-theory (enable lognot))))
+           (signed-byte-p size (lognot i))))

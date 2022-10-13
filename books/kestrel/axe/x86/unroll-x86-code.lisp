@@ -117,6 +117,9 @@
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
+         ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
          ((mv erp dag-or-quote state)
           (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
                           :rules rules ; todo: don't make the rule-alist each time
@@ -132,12 +135,19 @@
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quote))
           (mv (erp-nil) dag-or-quote state))
+         ;; (- (and print (progn$ (cw "(DAG after stepping:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
          (dag dag-or-quote)
-         ;; Prune the DAG (TODO: think about these steps):
+         ;; Prune the DAG quickly but possibly imprecisely:
          ((mv erp dag-or-quotep state) (acl2::prune-dag-with-contexts dag state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
-         (dag dag-or-quotep)
+         (dag dag-or-quotep) ; it wasn't a quotep
+         ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
+         ;; Prune precisely if feasible:
          ((mv erp dag state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
                                            dag
@@ -152,15 +162,18 @@
                                            print
                                            state))
          ((when erp) (mv erp nil state))
+         ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
+         ;;                       (cw "~X01" dag nil)
+         ;;                       (cw ")~%"))))
+         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
-        (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
-            ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
+        (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
-          (if (acl2::equivalent-dags dag old-dag)
+          (if (acl2::equivalent-dags dag old-dag) ; todo: can we test equivalence up to xor nest normalization?
               (prog2$ (cw "Note: Stopping the run because nothing changed.~%")
                       (mv (erp-nil) dag state))
             (let* ((total-steps (+ steps-for-this-iteration total-steps))
@@ -195,6 +208,7 @@
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
                              stack-slots
+                             position-independentp
                              output
                              use-internal-contextsp
                              prune
@@ -213,6 +227,7 @@
                               ;; assumptions ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
+                              (booleanp position-independentp)
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -245,14 +260,19 @@
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
+       ((when (and (not position-independentp)
+                   (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
+        (er hard? 'def-unrolled-fn-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
+        (mv :bad-options nil nil nil state))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if suppress-assumptions
+                        ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
                         assumptions
                       (if (eq :mach-o-64 executable-type)
                           (cons `(standard-assumptions-mach-o-64 ',target
                                                                  ',parsed-executable
                                                                  ',stack-slots
-                                                                 text-offset
+                                                                 ,(if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
                                                                  x86)
                                 assumptions)
                         (if (eq :pe-64 executable-type)
@@ -266,7 +286,7 @@
                               (cons `(standard-assumptions-elf-64 ',target
                                                                   ',parsed-executable
                                                                   ',stack-slots
-                                                                  text-offset
+                                                                  ,(if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
                                                                   x86)
                                     assumptions)
                             (if (eq :mach-o-32 executable-type)
@@ -346,6 +366,7 @@
                         assumptions
                         suppress-assumptions
                         stack-slots
+                        position-independent
                         output
                         use-internal-contextsp
                         prune
@@ -371,6 +392,7 @@
                               ;; assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
+                              (member-eq position-independent '(t nil :auto))
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -397,12 +419,22 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       (executable-type (acl2::parsed-executable-type parsed-executable))
+       ;; Handle a :position-independent of :auto:
+       (position-independentp (if (eq :auto position-independent)
+                                  (if (eq executable-type :mach-o-64)
+                                      t ; since clang seems to produce position-independent code by default
+                                    (if (eq executable-type :elf-64)
+                                        nil ; since gcc seems to not produce position-independent code by default
+                                      ;; TODO: Think about this case:
+                                      t))
+                                position-independent))
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag rules-used
             & ; assumption-rules-used
             state)
         (def-unrolled-fn-core target parsed-executable
-          assumptions suppress-assumptions stack-slots
+          assumptions suppress-assumptions stack-slots position-independentp
           output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base state))
        ((when erp) (mv erp nil state))
@@ -508,6 +540,7 @@
                                (assumptions 'nil) ;extra assumptions in addition to the standard-assumptions (todo: rename to :extra-assumptions)
                                (suppress-assumptions 'nil) ;suppress the standard assumptions
                                (stack-slots '100) ;; tells us what to assume about available stack space
+                               (position-independent ':auto)
                                (output ':all)
                                (use-internal-contextsp 't)
                                (prune '1000)
@@ -534,6 +567,7 @@
       ,assumptions
       ',suppress-assumptions
       ',stack-slots
+      ',position-independent
       ',output
       ',use-internal-contextsp
       ',prune

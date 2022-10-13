@@ -1,0 +1,4 @@
+(ld "cert.acl2")
+
+; We need the following for the use of cgen at the end.
+; cert-flags: ? t :ttags :all

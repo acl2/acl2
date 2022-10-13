@@ -2294,13 +2294,13 @@
 (defun confirm-apply-books (state)
   (declare (xargs :mode :program))
   (let ((wrld (w state))
-        (apply-lemmas-book
-         (extend-pathname :system "projects/apply/base.lisp" state)))
+        (apply-lemmas-book-name (make-sysfile :system
+                                              "projects/apply/base.lisp")))
     (cond
      ((and (not (assoc-equal
-                 apply-lemmas-book
+                 apply-lemmas-book-name
                  (global-val 'include-book-alist wrld)))
-           (not (equal apply-lemmas-book
+           (not (equal apply-lemmas-book-name
                        (active-book-name wrld state)))
            (not (global-val 'boot-strap-flg wrld)))
 

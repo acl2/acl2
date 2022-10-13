@@ -137,7 +137,209 @@
   (if (and (value-arithmeticp val1)
            (value-arithmeticp val2))
       (div-arithmetic-values val1 val2)
-    (error (list :mul-mistype
+    (error (list :div-mistype
+                 :required :arithmetic :arithmetic
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rem-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('%') to values
+          [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/5] [C:6.5.5/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not arithmetic."))
+  (if (and (value-arithmeticp val1)
+           (value-arithmeticp val2))
+      (rem-arithmetic-values val1 val2)
+    (error (list :rem-mistype
+                 :required :arithmetic :arithmetic
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply binary @('+') to values [C:6.5.5/2] [C:6.5.5/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only support arithmetic values for now (no pointer arithmetic)."))
+  (if (and (value-arithmeticp val1)
+           (value-arithmeticp val2))
+      (add-arithmetic-values val1 val2)
+    (error (list :add-mistype
+                 :required :arithmetic :arithmetic
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sub-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply binary @('-') to values [C:6.5.5/3] [C:6.5.5/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only support arithmetic values for now (no pointer arithmetic)."))
+  (if (and (value-arithmeticp val1)
+           (value-arithmeticp val2))
+      (sub-arithmetic-values val1 val2)
+    (error (list :sub-mistype
+                 :required :arithmetic :arithmetic
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shl-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('<<') to values [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not integers.
+     If they are integers, we promote them
+     and then we call the operation on integer values."))
+  (if (and (value-integerp val1)
+           (value-integerp val2))
+      (shl-integer-values (promote-value val1)
+                          (promote-value val2))
+    (error (list :shl-mistype
+                 :required :integer :integer
+                 :supplied (value-fix val1) (value-fix val2))))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shr-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('>>') to values [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not integers.
+     If they are integers, we promote them
+     and then we call the operation on integer values."))
+  (if (and (value-integerp val1)
+           (value-integerp val2))
+      (shr-integer-values (promote-value val1)
+                          (promote-value val2))
+    (error (list :shr-mistype
+                 :required :integer :integer
+                 :supplied (value-fix val1) (value-fix val2))))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lt-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('<') to values [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not real;
+     we do not support comparison of pointers yet."))
+  (if (and (value-realp val1)
+           (value-realp val2))
+      (lt-real-values val1 val2)
+    (error (list :lt-mistype
+                 :required :real :real
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define gt-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('>') to values [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not real;
+     we do not support comparison of pointers yet."))
+  (if (and (value-realp val1)
+           (value-realp val2))
+      (gt-real-values val1 val2)
+    (error (list :gt-mistype
+                 :required :real :real
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define le-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('<=') to values [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not real;
+     we do not support comparison of pointers yet."))
+  (if (and (value-realp val1)
+           (value-realp val2))
+      (le-real-values val1 val2)
+    (error (list :le-mistype
+                 :required :real :real
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ge-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('>=') to values [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not real;
+     we do not support comparison of pointers yet."))
+  (if (and (value-realp val1)
+           (value-realp val2))
+      (ge-real-values val1 val2)
+    (error (list :ge-mistype
+                 :required :real :real
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eq-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('==') to values [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support arithmetic types."))
+  (if (and (value-arithmeticp val1)
+           (value-arithmeticp val2))
+      (eq-arithmetic-values val1 val2)
+    (error (list :eq-mistype
+                 :required :arithmetic :arithmetic
+                 :supplied (value-fix val1) (value-fix val2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ne-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('!=') to values [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support arithmetic types."))
+  (if (and (value-arithmeticp val1)
+           (value-arithmeticp val2))
+      (ne-arithmetic-values val1 val2)
+    (error (list :ne-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
   :hooks (:fix))

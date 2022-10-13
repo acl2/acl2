@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; See also [books]/kestrel/std/system/definedp.lisp, but that doesn't support
+;; See also kestrel/std/system/definedp.lisp, but that doesn't support
 ;; :program mode functions.
 
 ;; Checks whether the function FN is defined (has a body).

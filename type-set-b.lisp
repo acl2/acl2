@@ -1338,6 +1338,7 @@
 ; structure.
 
 (defrec theory-invariant-record
+; The :book field here is a full-book-name.
   ((tterm . error) . (untrans-term . book))
   t)
 
@@ -1462,8 +1463,8 @@
 
 ; The value of state global 'useless-runes has useless-runes record type when
 ; that value is non-nil.  Each :tag value has corresponding associated :data,
-; as shown below.  The :full-book-name is a full pathname of the relevant .lisp
-; file.
+; as shown below.  The :full-book-string is a full pathname string for the
+; relevant .lisp file.
 
 ; :tag = CHANNEL -- used for writing useless-runes
 
@@ -1485,7 +1486,7 @@
 ;   Then :data is an augmented runic theory associated with the current event
 ;   in the global fast-alist.
 
-  (tag data . full-book-name)
+  (tag data . full-book-string)
 
 ; The "cheap" flag below is nil because the flow is a bit odd for state global
 ; 'useless-runes, so we are programming defensively.  Continuing with the
@@ -1515,18 +1516,18 @@
          (and (eq (access useless-runes useless-runes :tag) 'THEORY)
               (access useless-runes useless-runes :data)))))
 
-(defun useless-runes-filename (full-book-name)
+(defun useless-runes-filename (full-book-string)
 
 ; This is analogous to expansion-filename, but for the file containing
 ; useless-runes information.  See expansion-filename.
 
-  (let ((len (length full-book-name))
-        (posn (search *directory-separator-string* full-book-name
+  (let ((len (length full-book-string))
+        (posn (search *directory-separator-string* full-book-string
                       :from-end t)))
-    (assert$ (and (equal (subseq full-book-name (- len 5) len) ".lisp")
+    (assert$ (and (equal (subseq full-book-string (- len 5) len) ".lisp")
                   posn)
              (concatenate 'string
-                          (subseq full-book-name 0 posn)
+                          (subseq full-book-string 0 posn)
 
 ; Currently, the function useless-runes-value avoids creation of useless-runes
 ; files with ACL2(r).  If that is changed, the designation below of distinct
@@ -1545,7 +1546,7 @@
 
                           #-non-standard-analysis "/.sys"
                           #+non-standard-analysis "/.sysr"
-                          (subseq full-book-name posn (- len 5))
+                          (subseq full-book-string posn (- len 5))
                           "@useless-runes.lsp"))))
 
 (defun active-useless-runes-filename (state)
@@ -1557,7 +1558,7 @@
   (let ((useless-runes (f-get-global 'useless-runes state)))
     (and useless-runes
          (useless-runes-filename
-          (access useless-runes useless-runes :full-book-name)))))
+          (access useless-runes useless-runes :full-book-string)))))
 
 (defun@par chk-theory-invariant1 (theory-expr ens invariant-alist errp-acc ctx
                                               state)
@@ -1636,28 +1637,27 @@
                                               errp-acc ctx state))))
            (okp (chk-theory-invariant1@par theory-expr ens (cdr invariant-alist)
                                            errp-acc ctx state))
-           (t (let* ((produced-by-msg
-                      (cond ((eq theory-expr :from-hint)
-                             "an :in-theory hint")
-                            ((eq theory-expr :install)
-                             "the current event")
-                            (t (msg "~x0" theory-expr))))
+           (t (let* ((produced-by-msg (cond ((eq theory-expr :from-hint)
+                                             "an :in-theory hint")
+                                            ((eq theory-expr :install)
+                                             "the current event")
+                                            (t (msg "~x0" theory-expr))))
                      (theory-invariant-term
-                      (access theory-invariant-record inv-rec
-                              :untrans-term))
+                      (access theory-invariant-record inv-rec :untrans-term))
                      (theory-invariant-book
-                      (access theory-invariant-record inv-rec
-                              :book))
-                     (thy-inv-msg
-                      (theory-invariant-msg theory-invariant-term))
+                      (access theory-invariant-record inv-rec :book))
+                     (thy-inv-msg (theory-invariant-msg theory-invariant-term))
                      (msg (msg
                            "Theory invariant ~x0, defined ~@1, failed on the ~
-                            theory produced by ~@2~@3.  Theory invariant ~x0 is ~
-                            ~@4~@5  See :DOC theory-invariant."
+                            theory produced by ~@2~@3.  Theory invariant ~x0 ~
+                            is ~@4~@5  See :DOC theory-invariant."
                            inv-name
                            (if (null theory-invariant-book)
                                "at the top-level"
-                             (msg "in book ~x0" theory-invariant-book))
+                             (msg "in book ~x0"
+                                  (book-name-to-filename theory-invariant-book
+                                                         (w state)
+                                                         ctx)))
                            produced-by-msg
                            (if (active-useless-runes state)
                                (msg ", modified by subtracting the theory for ~

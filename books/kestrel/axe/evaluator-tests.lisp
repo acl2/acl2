@@ -579,11 +579,11 @@
                                                                 ARG2))
                                                               (IF
                                                                (EQ
-                                                                'TAKE-EVERY-NTH
+                                                                'EVERY-NTH
                                                                 FN)
                                                                (MV
                                                                 T
-                                                                (TAKE-EVERY-NTH
+                                                                (EVERY-NTH
                                                                  ARG1
                                                                  ARG2))
                                                                (IF
@@ -2025,11 +2025,11 @@
                                                                 ARG2))
                                                               (IF
                                                                (EQ
-                                                                'TAKE-EVERY-NTH
+                                                                'EVERY-NTH
                                                                 FN)
                                                                (MV
                                                                 T
-                                                                (TAKE-EVERY-NTH
+                                                                (EVERY-NTH
                                                                  ARG1
                                                                  ARG2))
                                                                (IF

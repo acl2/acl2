@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,6 +117,7 @@
      "(isodata old"
      "         isomaps"
      "         :predicate           ; default nil"
+     "         :undefined           ; default :auto"
      "         :new-name            ; default :auto"
      "         :new-enable          ; default :auto"
      "         :old-to-new-name     ; default from table"
@@ -216,9 +218,11 @@
         "It must be one of the following:")
        (xdoc::ul
         (xdoc::li
-         "A non-empty list without duplicates of elements among
+         "A list without duplicates of elements among
           @('x1'), ... @('xn'), @(':result1'), ..., @(':resultm'),
-          in any order.")
+          in any order.
+          The list is allowed to be empty (to facilitate iterative development),
+          in which case the doublet does not induce any transformation.")
         (xdoc::li
          "A single element among
           @('x1'), ... @('xn'), @(':result1'), ..., @(':resultm'),
@@ -381,6 +385,47 @@
        refer to the case in which @(':predicate') is @('nil'),
        while the sections with `Predicate' in their title
        refer to the case in which @(':predicate') is @('t')."))
+
+    (xdoc::desc
+     "@(':undefined') &mdash; default @(':auto')"
+     (xdoc::p
+      "Denotes the value that the generated new function must return
+       outside of the new domain.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use @('nil') or @('(mv nil ... nil)') for single-value
+        and multi-value functions respectively.")
+      (xdoc::li
+       "@(':base-case-then'), to search for a base-case within the domain of the new
+        function. A base-case of a term may be be the whole term when the term
+        does not include any recursive calls, or it may be a base-case of the
+        `then' or `else' branch when the translated term is an `if'. This
+        search for a base-case is biased toward `then' branches.")
+      (xdoc::li
+       "@(':base-case-else'), to search for a base-case with a bias toward
+        `else' branches.")
+      (xdoc::li
+       "Any other term. It must be a term that only references logic-mode
+        functions and that includes no free variables other than
+        @('x1'), ..., @('xn'). This term must have no output
+        @(see acl2::stobj)s. This term must return the same number of results
+        as @('old'). This term must not reference @('old')."))
+     (xdoc::p
+      "If one wishes to use the term @(':auto') as the undefined result, this
+       may be accomplished by providing the quoted constant @('\':auto'). The
+       same applies for @(':base-case-then') and @(':base-case-else').")
+     (xdoc::p
+      "Even if the generated function is guard-verified
+       (which is determined by the @(':verify-guards') input; see below),
+       the undefined term need not be guard-verified.
+       Since the term is governed by the negation of the guard
+       (see the generated new function, below),
+       the verification of its guards always succeeds trivially.")
+     (xdoc::p
+      "In the rest of this documentation page, let @('undefined') be this term
+       specified by @(':undefined')."))
 
     (xdoc::desc-apt-input-new-name)
 
@@ -591,7 +636,7 @@
       "                 ..."
       "                 (newpn xn)))"
       "      old-body<(back1 x1),...,(backn xn)>"
-      "    nil)) ; or (mv nil ... nil)"
+      "    undefined))"
       ""
       ";; when old is not recursive,"
       ";; :predicate is nil,"
@@ -602,7 +647,7 @@
       "                 ..."
       "                 (newpn xn)))"
       "      (forth_r1 old-body<(back1 x1),...,(backn xn)>)"
-      "    nil))"
+      "    undefined))"
       ";; where forth_r1 is actually pushed into"
       ";; the 'if' branches of old-body if it starts with 'if',"
       ";; and recursively into their 'if' branches (if any)"
@@ -618,7 +663,7 @@
       "      (mv-let (y1 ... ym)"
       "        old-body<(back1 x1),...,(backn xn)>"
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
-      "    (mv nil ... nil)))"
+      "    undefined))"
       ""
       ";; when old is recursive"
       ";; and :predicate is t:"
@@ -666,7 +711,7 @@
       "                    (forthn updater-xn<(back1 x1),"
       "                                       ...,"
       "                                       (backn xn)>))>"
-      "    nil)) ; or (mv nil ... nil)"
+      "    undefined))"
       ""
       ";; when old is recursive,"
       ";; :predicate is nil,"
@@ -694,7 +739,7 @@
       "                               (forthn updater-xn<(back1 x1),"
       "                                                  ...,"
       "                                                  (backn xn)>)))>)"
-      "    nil))"
+      "    undefined))"
       ";; where forth_r1 is actually pushed into"
       ";; the 'if' branches of old-body if it starts with 'if',"
       ";; and recursively into their 'if' branches (if any)"
@@ -729,7 +774,7 @@
       "                                           (backn xn)>))"
       "                   (mv (back_r1 y1) ... (back_rm ym)))>"
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
-      "    (mv nil ... nil)))")
+      "    undefined))")
      (xdoc::p
       "If @('old') is recursive,
        the measure term of @('new') is

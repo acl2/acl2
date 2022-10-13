@@ -75,7 +75,10 @@
            (non-trivial-logical-termp (negate-term2 term)))
   :hints (("Goal" :expand (negate-term2 term)
            :in-theory (enable non-trivial-logical-termp
-                              negate-term2))))
+                              negate-term2
+                              strip-nots-from-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund negate-terms2 (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
@@ -105,7 +108,10 @@
   :hints (("Goal" :expand (negate-term2 (car conjuncts))
            :in-theory (enable non-trivial-logical-term-listp
                               negate-terms2
-                              negate-term2))))
+                              negate-term2
+                              strip-nots-from-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Negate all the disjuncts, forming a conjunction of the results
 (defund negate-disjuncts (disjuncts)
@@ -134,6 +140,8 @@
            (conjunct-listp (negate-disjuncts disjuncts)))
   :hints (("Goal" :in-theory (enable negate-disjuncts disjunct-listp conjunct-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Negate all the conjuncts, forming a disjunction of the results
 (defund negate-conjuncts (conjuncts)
    (declare (xargs :guard (pseudo-term-listp conjuncts)))
@@ -160,6 +168,8 @@
                              w))
            (logic-term-listp (negate-conjuncts terms) w))
   :hints (("Goal" :in-theory (enable negate-conjuncts))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version knows about booland/boolor/boolif/myif.
 ;TODO: replace various more specialized routines to get conjuncts (e.g., for if nests) with these?
@@ -189,7 +199,7 @@
                  (if (equal *nil* (farg3 term)) ;; (myif <x> <y> nil) is the same as (and <x> <y>) ;;todo: handle (if x y x) as well?
                      (combine-conjuncts (get-conjuncts-of-term2 (farg1 term))
                                         (get-conjuncts-of-term2 (farg2 term)))
-                   (if (equal *nil* (farg2 term)) ;; (myif x nil y) <=> (and (not x) y)
+                   (if (equal *nil* (farg2 term)) ;; (myif <x> nil <y>) <=> (and (not <x>) <y>)
                        (combine-conjuncts (negate-disjuncts (get-disjuncts-of-term2 (farg1 term)))
                                           (get-conjuncts-of-term2 (farg3 term)))
                      (list term)))
@@ -249,7 +259,9 @@
              (disjunct-listp (get-disjuncts-of-term2 term)))
     :flag get-disjuncts-of-term2)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term2
-                                     get-conjuncts-of-term2))))
+                                     get-conjuncts-of-term2
+                                     negate-term2
+                                     strip-nots-from-term))))
 
 (defthm-flag-get-conjuncts-of-term2
   (defthm true-listp-of-get-conjuncts-of-term2
@@ -286,6 +298,8 @@
              (logic-term-listp (get-disjuncts-of-term2 term) w))
     :flag get-disjuncts-of-term2)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun get-conjuncts-of-terms2 (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))

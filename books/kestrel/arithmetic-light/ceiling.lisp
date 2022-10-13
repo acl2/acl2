@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function ceiling.
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,11 +12,12 @@
 
 (local (include-book "integerp"))
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "floor"))
 (local (include-book "numerator"))
 (local (include-book "denominator"))
 (local (include-book "minus"))
+(local (include-book "mod"))
 
 (in-theory (disable ceiling))
 
@@ -30,7 +31,7 @@
    :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
             :in-theory (disable integerp-of--)))))
 
-(defthmd ceiling-of-0
+(defthmd ceiling-of-0-arg1
   (equal (ceiling 0 j)
          0)
   :hints (("Goal" :in-theory (enable ceiling floor))))
@@ -40,6 +41,38 @@
          (- (floor (- i) j)))
   :hints (("Goal" :cases ((and (rationalp i) (rationalp j)))
            :in-theory (enable ceiling floor))))
+
+;introduces an IF
+(defthmd ceiling-in-terms-of-floor2
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)) ; todo
+                )
+           (equal (ceiling i j)
+                  (if (equal 0 (mod i j))
+                      (/ i j)
+                      (+ 1 (floor i j)))))
+  :hints (("Goal" :in-theory (enable ceiling floor equal-of-0-and-mod))))
+
+(defthmd ceiling-in-terms-of-floor-alt
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (ceiling i j)
+                  (if (integerp (/ i j))
+                      (/ i j)
+                    (+ 1 (floor i j)))))
+  :hints (("Goal" :in-theory (enable ceiling floor))))
+
+;introduces an IF
+(defthmd ceiling-in-terms-of-floor3
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)))
+           (equal (ceiling i j)
+                  (if (equal 0 (mod i j))
+                      (floor i j)
+                    (+ 1 (floor i j)))))
+  :hints (("Goal" :in-theory (enable ceiling floor equal-of-0-and-mod))))
 
 (defthm ceiling-when-<=
   (implies (and (<= i j)

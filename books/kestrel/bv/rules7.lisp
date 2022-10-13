@@ -17,6 +17,7 @@
 (include-book "bitand")
 (include-book "bvxor")
 (include-book "rotate")
+(include-book "trim")
 (local (include-book "rules"))
 
 (defthmd bvcat-of-bitnot-and-bitnot

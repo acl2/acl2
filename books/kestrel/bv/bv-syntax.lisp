@@ -24,12 +24,13 @@
 ;ffixme add binary-+, unary--, myif, etc.?
 ;todo: what about myif when bv branches?
 (defconst *trimmable-non-arithmetic-operators*
-  '( ;;
-    getbit
-    bitxor bitnot bitand bitor  ;could we really trim a one-bit operator?
-    bool-to-bit ;todo: think about this
-    bvxor bvand bvor bvnot bvif
-    bvchop ;$inline
+  '(
+    ;; getbit ; would we ever need to trim a getbit?
+    ;; bitxor bitnot bitand bitor  ;could we really trim a one-bit operator?
+    ;; bool-to-bit ;todo: think about this
+    bvnot bvand bvor bvxor
+    bvif
+    bvchop
     slice
     bvcat
     ;;bv-array-read - trimming array reads seemed bad.  a trimmed array read won't have the same value on test cases as the nth of the corresponding arguments (which will be wider).  Also, if we have a lemma about (bv-array-read 32 80 index <some-function>) but the read is trimmed to less than 32 bits the lemma wont fire on the trimmed read (could get around this if we had bind-free-from-rules) - ffixme maybe we do want to trim reads of constant arrays?
@@ -40,7 +41,6 @@
 (defconst *trimmable-arithmetic-operators*
   '(bvplus bvmult bvminus bvuminus))
 
-;TODO: Ensure we have trim rules for all of these
 (defconst *trimmable-operators*
   (append *trimmable-arithmetic-operators*
           *trimmable-non-arithmetic-operators*))

@@ -19,25 +19,6 @@
 (defttag nil)
 (program)
 
-(defun make-sysfile (filename system-books-dir)
-
-; This is based on ACL2 source function filename-to-sysfile, but takes the
-; value of (system-books-dir state) instead of taking state.  If
-; filename is under the given directory, then we return a sysfile (:system
-; . path), where path is a relative pathname that is relative to that
-; directory.  Otherwise, we return filename unchanged.
-
-; Note added 8/31/2022: We Could probably use the entire project-dir-alist
-; here.  But for now I'll make backward-compatible changes.
-
-  (declare (xargs :mode :logic
-                  :guard (and (stringp filename)
-                              (stringp system-books-dir)
-                              (<= (length system-books-dir) (fixnum-bound)))))
-  (relativize-book-path filename
-                        (list (cons :system system-books-dir))
-                        :make-cons))
-
 (defun td-book-alist (rev-wrld path system-books-dir acc)
 
 ; Rev-wrld is a reversed ACL2 world; thus, we are traversing it in the original
@@ -65,7 +46,7 @@
                          path
                          system-books-dir
                          (let ((sysfile (and (consp path)
-                                             (make-sysfile
+                                             (filename-to-book-name-1
                                               (remove-lisp-suffix (car path) t)
                                               system-books-dir))))
                            (acons (car trip)
@@ -699,7 +680,8 @@
                 (full-book (and full-book-name ; nil for built-ins
                                 (remove-lisp-suffix full-book-name t)))
                 (sysfile (and full-book
-                              (make-sysfile full-book system-books-dir))))
+                              (filename-to-book-name-1 full-book
+                                                       system-books-dir))))
            (cond ((and sysfile
                        (if (sysfile-p sysfile)
                            (not (equal (sysfile-filename sysfile)

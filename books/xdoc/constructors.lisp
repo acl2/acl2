@@ -666,7 +666,7 @@
       @('table') would conflict with the built-in @(tsee table),
       @('u') would conflict with the built-in @(tsee u),
       and @('see') would conflict with an existing function called @('see')
-      in @('[books]/xdoc/names.lisp').</p>
+      in community book @('xdoc/names.lisp').</p>
    <p>See also @(tsee generate-primitive-constructor-for-dir/&&).</p>
    @(def generate-primitive-constructor-for-tag)"
 

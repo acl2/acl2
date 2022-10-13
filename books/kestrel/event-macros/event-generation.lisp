@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -50,6 +50,9 @@
                               ((verify-guards booleanp) ':absent)
                               ((enable booleanp) ':absent)
                               ((guard-hints true-listp) 'nil)
+                              ((guard-simplify
+                                (member-eq guard-simplify '(t :limited)))
+                               't)
                               ((measure "A term.") 'nil)
                               ((well-founded-relation symbolp) 'nil)
                               ((hints true-listp) 'nil))
@@ -79,6 +82,8 @@
        (guard-hints (and guard-hints
                          verify-guards
                          (list :guard-hints guard-hints)))
+       (guard-simplify (and (not (eq guard-simplify t))
+                            (list :guard-simplify guard-simplify)))
        (verify-guards (list :verify-guards verify-guards))
        (local-event
         `(local
@@ -88,7 +93,8 @@
                                   ,@hints
                                   ,@guard
                                   ,@verify-guards
-                                  ,@guard-hints))
+                                  ,@guard-hints
+                                  ,@guard-simplify))
                   ,body)))
        (exported-event
         `(,macro ,name ,formals

@@ -194,3 +194,8 @@
                   (equal (bvchop 1 y) 1))
              1
            0)))
+
+(defthm equal-of-1-and-bitand
+  (equal (equal 1 (bitand x y))
+         (and (equal 1 (getbit 0 x))
+              (equal 1 (getbit 0 y)))))

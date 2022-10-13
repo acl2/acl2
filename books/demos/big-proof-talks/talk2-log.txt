@@ -619,7 +619,7 @@ ACL2 !>>(INCLUDE-BOOK "sorting/perm"
 Summary
 Form:  ( INCLUDE-BOOK "sorting/perm" ...)
 Rules: NIL
- "[books]/sorting/perm.lisp"
+ (:SYSTEM . "sorting/perm.lisp")
 ACL2 !>>(PERM '(CATHY ALICE BOB)
               '(ALICE BOB CATHY))
 T
@@ -630,7 +630,7 @@ ACL2 !>>(PE 'PERM)
           11:x(INCLUDE-BOOK "sorting/perm" :DIR ...)
               \
               [Included books, outermost to innermost:
-               "[books]/sorting/perm.lisp"
+               (:SYSTEM . "sorting/perm.lisp")
               ]
               \
 >L             (DEFUN PERM (X Y)
@@ -2453,7 +2453,7 @@ ACL2 !>>(INCLUDE-BOOK "centaur/gl/gl"
 Summary
 Form:  ( INCLUDE-BOOK "centaur/gl/gl" ...)
 Rules: NIL
- "[books]/centaur/gl/gl.lisp"
+ (:SYSTEM . "centaur/gl/gl.lisp")
 ACL2 !>>(DEFUN 32* (X Y)
                (LOGAND (* X Y) (- (EXPT 2 32) 1)))
 

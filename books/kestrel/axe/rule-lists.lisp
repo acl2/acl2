@@ -66,66 +66,78 @@
             booleanp-of-items-have-len ;new
             )))
 
-;some of these may be necessary for case-splitting in the dag prover to work right
-(defun boolean-rules ()
+(defun boolean-rules-safe ()
   (declare (xargs :guard t))
-  `(;; Rules about bool-fix:
+  '(;; Rules handling constant args:
+    booland-of-constant-arg1
+    booland-of-constant-arg2
+    ;; booland-commute-constant ; trying without since we know how to handle any particular constant
+    boolor-of-constant-arg1
+    boolor-of-constant-arg2
+    boolxor-of-constant-arg1
+    boolxor-of-constant-arg2
+    ;; Rules about repeated arguments in nests:
+    booland-same
+    booland-same-2
+    boolor-same
+    boolor-same-2
+    boolxor-same-1
+    boolxor-same-2
+    ;; Rules about contradicting arguments in nests:
+    booland-of-not-same
+    booland-of-not-same-alt ;drop?
+    booland-of-not-and-booland-same
+    booland-of-not-and-booland-same-alt ;drop?
+    boolor-of-not-same
+    boolor-of-not-same-alt
+    boolor-of-not-same-three-terms-alt ; todo: make name more similar to the booland rule
+    boolor-of-not-same-three-terms ; todo: make name more similar to the booland rule
+    ;; Rules to drop bool-fix when applied to arguments:
     booland-of-bool-fix-arg1
     booland-of-bool-fix-arg2
     boolor-of-bool-fix-arg1
     boolor-of-bool-fix-arg2
     boolxor-of-bool-fix-arg1
     boolxor-of-bool-fix-arg2
-    bool-fix-of-bool-fix
-    if-of-bool-fix-arg1 ; add a rule for myif too?
     boolif-of-bool-fix-arg1
     boolif-of-bool-fix-arg2
     boolif-of-bool-fix-arg3
-
-    ;; Rules about booland:
-    booland-of-constant-arg1
-    booland-of-constant-arg2
-    booland-same
-    booland-same-2
-    ;; booland-commute-constant ; trying without since we know how to handle any particular constant
-    booland-of-not-and-booland-same
-    booland-of-not-and-booland-same-alt ;drop?
-    booland-of-not-same
-    booland-of-not-same-alt ;drop?
-
-    ;; Rules about boolor:
-    boolor-of-constant-arg1
-    boolor-of-constant-arg2
-    boolor-same
-    boolor-same-2
-    boolor-of-not-same-three-terms-alt
-    boolor-of-not-same-three-terms
-    boolor-of-not-same-alt
-    boolor-of-not-same
-    boolor-of-not-of-boolor-of-not-same
-
-    ;; Rules about boolxor:
-    boolxor-of-constant-arg1
-    boolxor-of-constant-arg2
-    boolxor-same-1
-    boolxor-same-2
-
+    not-of-bool-fix
+    if-of-bool-fix-arg1 ; add a rule for myif too?
+    bool-fix-of-bool-fix
+    ;; Rules about not:
+    not-of-not
+    ;; Rules about bool-fix:
+    bool-fix-when-booleanp
     ;; Rules about boolif:
-    boolif-when-quotep-arg1
-    boolif-when-quotep-arg2 ; introduces boolor, or booland of not
-    boolif-when-quotep-arg3 ; introduces boolor of not, or booland
+    boolif-same-branches
+    boolif-of-t-and-nil
+    boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
     boolif-of-not-same-arg3-alt
-    boolif-x-x-y
-    boolif-x-y-x
-    boolif-same-branches
+    ;; Rules about equal:
+    equal-of-t-when-booleanp-arg1
+    equal-of-t-when-booleanp-arg2))
 
-    ;; Rules about iff:
-    ;or should we open iff?
-    iff-of-t-arg1 ; gen?
-    iff-of-t-arg2 ; gen?
-    iff-of-nil-arg1
-    iff-of-nil-arg2))
+;some of these may be necessary for case-splitting in the dag prover to work right
+(defun boolean-rules ()
+  (declare (xargs :guard t))
+  (append
+   (boolean-rules-safe)
+   `(;; Rules about boolor:
+     boolor-of-not-of-boolor-of-not-same ; do we need this?
+
+     ;; Rules about boolif:
+     ;; todo: think about these: sometimes we prefer boolif:
+     boolif-when-quotep-arg2 ; introduces boolor, or booland of not
+     boolif-when-quotep-arg3 ; introduces boolor of not, or booland
+     boolif-x-x-y ; introduces boolor
+     boolif-x-y-x ; introduces booland
+
+     ;; Rules about iff (or should we open iff)?
+     ;; todo: move these to boolean-rules-safe
+     iff-of-constant-arg1
+     iff-of-constant-arg2)))
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
@@ -139,11 +151,9 @@
             force-of-non-nil ;do we still need this?
             equal-nil-of-not
             not-of-not ;BOZO what do we do with the resulting bool-fix?
-            bool-fix-when-booleanp
             equal-same
             not-<-same
             turn-equal-around-axe ; may be dangerous?
-            not-of-bool-fix
 
             ifix-does-nothing
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
@@ -172,6 +182,7 @@
             eql ; introduces EQUAL ; EQL can arise from CASE
             double-rewrite)
           (mv-nth-rules)
+          (boolean-rules-safe)
           (booleanp-rules)))
 
 ;todo: do we have the complete set of these?
@@ -674,8 +685,8 @@
 
      bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017
 
-     bvif-trim-constant-arg1
-     bvif-trim-constant-arg2
+     ;;bvif-trim-constant-arg1
+     ;;bvif-trim-constant-arg2
 
      bvuminus-of-bvuminus
 
@@ -770,6 +781,8 @@
      bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
      bvshr-rewrite-for-constant-shift-amount ; introduces slice
      bvashr-rewrite-for-constant-shift-amount ;new, introduces bvsx
+     getbit-of-bvashr-becomes-getbit-of-bvshr
+     acl2::<-of-constant-and-minus ; helps with getbit-of-bvashr-becomes-getbit-of-bvshr
 
      bvplus-of-bvuminus-same
      bvplus-of-bvuminus-same-alt
@@ -1207,6 +1220,7 @@
     unsigned-byte-p-forced-of-leftrotate32
     unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-repeatbit
+    unsigned-byte-p-forced-of-bool-to-bit
     ;;todo bvshl
     ;;todo bvshr
     ;;todo bvashr
@@ -1499,18 +1513,18 @@
 (defun trim-rules ()
   (declare (xargs :guard t))
   '(;; -all and -non-all versions?
-    slice-trim-dag-all ;new
-    getbit-trim-dag-all  ;new
+    slice-trim-axe-all ;new
+    getbit-trim-axe-all  ;new
     bvmult-trim-arg1-dag-all  ;seemed to need this for rc6 decrypt
     bvmult-trim-arg2-dag-all  ;seemed to need this for rc6 decrypt
     ;; bvmult-trim-arg1-dag
     ;; bvmult-trim-arg2-dag
-    bvminus-trim-arg1-dag-all
-    bvminus-trim-arg2-dag-all
-    bvplus-trim-arg1-dag-all
-    bvplus-trim-arg2-dag-all
-    bvuminus-trim-dag-all
-    bvnot-trim-dag-all
+    bvminus-trim-arg2-axe-all
+    bvminus-trim-arg3-axe-all
+    bvplus-trim-arg2-axe-all
+    bvplus-trim-arg3-axe-all
+    bvuminus-trim-axe-all
+    bvnot-trim-axe-all
     bvand-trim-arg1-dag-all
     bvand-trim-arg2-dag-all
     ;; bvand-trim-arg1-dag
@@ -1523,22 +1537,22 @@
     bvxor-trim-arg2-dag
     ;; bvxor-trim-arg1-dag-all ; use instead?
     ;; bvxor-trim-arg2-dag-all ; use instead?
-    bitnot-trim-dag-all
+    bitnot-trim-axe-all
     bitxor-trim-arg1-dag-all
     bitxor-trim-arg2-dag-all
     bitor-trim-arg1-dag-all
     bitor-trim-arg2-dag-all
     bitand-trim-arg1-dag-all
     bitand-trim-arg2-dag-all
-    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
-    bvcat-trim-arg1-dag-all
-    ;; bvcat-trim-arg1-dag
-    ;; bvcat-trim-arg2-dag
+    bvcat-trim-arg4-axe-all ;hope these are okay; seemed key for rc2 and maybe other proofs
+    bvcat-trim-arg2-axe-all
+    ;; bvcat-trim-arg2-axe
+    ;; bvcat-trim-arg4-axe
     bvif-trim-arg1-dag
     bvif-trim-arg2-dag
     ;; bvif-trim-arg1-dag-all ; use instead?
     ;; bvif-trim-arg2-dag-all ; use instead?
-    leftrotate32-trim-amt-all))
+    leftrotate32-trim-arg1-axe-all))
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
@@ -1579,8 +1593,8 @@
 
 (defun all-trim-rules ()
   (declare (xargs :guard t))
-  (append '(;bvcat-trim-arg1-dag-all
-;bvcat-trim-arg2-dag-all
+  (append '(;;bvcat-trim-arg2-axe-all
+            ;;bvcat-trim-arg4-axe-all
             )
           (trim-rules)))
 
@@ -1629,7 +1643,9 @@
     array-reduction-when-top-bit-is-irrelevant  ;; at least one of these seems needed for aes-128-decrypt
     array-reduction-0-1
     array-reduction-1-0
-    array-reduction-when-all-same-improved2))
+    array-reduction-when-all-same-improved2
+    bv-array-read-of-bvmult-discard-vals
+    bv-array-read-of-bvplus-of-bvmult-discard-vals))
 
 ; despite the name, this also includes bv-array-rules and list rules!
 ;; TODO: Remove non-bv stuff from this:
@@ -1689,9 +1705,6 @@
             ;; bvif-with-small-arg2
             bvor-with-small-arg1
             bvor-with-small-arg2
-
-            ;; ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED ;trying without
-            array-reduction-when-all-same-improved2 ;move
 
             getbit-of-bvxor ; perhaps move to bv-rules-core
 
@@ -1805,7 +1818,7 @@
     slice-of-bvmult-of-expt-gen-constant-version
 ;ceiling-in-terms-of-floor2 ;introduces ;make a bvceil operator? ;removed in favor of the 3 rule?
     ceiling-in-terms-of-floor3
-    floor-when-usb-bind-free-dag
+    floor-of-expt2-becomes-slice-when-bv-axe
     *-becomes-bvmult-8
     ceiling-of-*-same
     <-of-*-of-constant-and-*-of-constant
@@ -1819,7 +1832,6 @@
 ;    bvplus-when-bvchop-known-subst
 ;   bvplus-when-bvchop-known-subst-alt
 
-    equal-of-t-when-booleanp
     bvchop-impossible-value ;gen to any bv?
     <-becomes-bvlt-dag-GEN-BETTER
 ;    <-becomes-bvlt-dag-alt-gen ;Wed Feb 24 15:00:14 2010
@@ -1932,7 +1944,7 @@
      null
      true-listp-of-myif-strong
      unsigned-byte-p-of-myif
-     equal-of-t-when-booleanp-arg2
+     equal-of-t-when-booleanp-arg2 ; todo: drop
 
      booland-of-myif-arg1
 ;nth-of-myif ;ffixme this may be slowing down the prover since it fires repeatedly (on a context node) but is not used in the rewriter
@@ -1958,7 +1970,7 @@
      sbvdivdown-rewrite-gen
 
 ;    unsigned-byte-p-tighten ;;removed tue jan 12 06:27:23 2010
-     bvif-1-1-0
+     bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
      equal-of-bool-to-bit-and-0
      equal-of-bool-to-bit-and-1
      ;;fixme what about backchain-limit? <- for which rule??
@@ -2390,6 +2402,7 @@
   (append ;(base-rules) ;new! was bad in that it turned around equalities
    (unsigned-byte-p-forced-rules)                  ;new
    (booleanp-rules) ;new!
+   (boolean-rules-safe) ;new!
    (type-rules)     ;very new (seems safe)
    '(integerp-when-unsigned-byte-p-free ;tue jan 11 16:53:16 2011
      equal-of-not-and-nil               ;tue jan 11 16:52:09 2011
@@ -2399,8 +2412,8 @@
      <-of-bv-and-non-positive-constant
      not-of-not
      equal-nil-of-not
-     not-of-bool-fix
-     bool-fix-when-booleanp
+     ;;not-of-bool-fix ; just include boolean-rules-safe?
+     ;;bool-fix-when-booleanp ; just include boolean-rules-safe?
      equal-same
      not-<-same
      if-of-t
@@ -2483,15 +2496,15 @@
      lookup-equal-of-acons          ;new
      ;;we may not want these because making a rule requires (equal (pred x) t) instead of (pred x)
      ;;EQUAL-OF-T-WHEN-BOOLEANP-ARG2 ;newer
-     ;;EQUAL-OF-T-WHEN-BOOLEANP ;newer
+     ;;EQUAL-OF-T-WHEN-BOOLEANP-ARG1 ;newer
      )))
 
 ;; Only used in the equivalence checker
 ;we do seem to sometimes need these when verifying that the simplified exit tests are the same as the original exit tests
 (defun exit-test-simplification-proof-rules ()
   (declare (xargs :guard t))
-  (append '(equal-of-t-when-booleanp-arg2 ;new
-            equal-of-t-when-booleanp      ;new
+  (append '(equal-of-t-when-booleanp-arg2 ;new ; todo: instead of these, include boolean-rules-safe?
+            equal-of-t-when-booleanp-arg1 ;new
             turn-equal-around-axe ;Fri Apr  9 22:30:45 2010 hope this is okay
             )
           (boolean-rules)
@@ -2581,8 +2594,8 @@
             not-equal-of-max-when-huge
             bvlt-when-equal-of-constant
             ;; turn-equal-around-axe ;hope this doesn't mess up the assumptions..
-            equal-of-t-when-booleanp      ;new..
-            equal-of-t-when-booleanp-arg2 ;new require it to be a *known-predicates-except-not*, so make-equality-pairs can handle it?
+            ;; equal-of-t-when-booleanp-arg1 ;new..
+            ;; equal-of-t-when-booleanp-arg2 ;new require it to be a *known-predicates-except-not*, so make-equality-pairs can handle it?
             equal-of-nil-when-booleanp    ;new
             )
           (base-rules)
@@ -2707,8 +2720,8 @@
 ;want this to fire late (after the rule for write of write with the same index, for example)
 (table axe-rule-priorities-table 'bv-array-write-does-nothing 10)
 
-(table axe-rule-priorities-table 'bvplus-trim-arg1-dag -3) ;we should trim before commuting the nest
-(table axe-rule-priorities-table 'bvplus-trim-arg2-dag -3) ;we should trim before commuting the nest
+(table axe-rule-priorities-table 'bvplus-trim-arg2-axe -3) ;we should trim before commuting the nest
+(table axe-rule-priorities-table 'bvplus-trim-arg3-axe -3) ;we should trim before commuting the nest
 (table axe-rule-priorities-table 'bvplus-associative -1) ;trying with this before the commutative rules
 
 ;new:
@@ -2726,8 +2739,8 @@
 ;; (defconst *super-rules*
 ;;   '(
 ;; ;   slice-of-bvplus-low
-;; ;;;    bvplus-trim-arg1-dag
-;;  ;;;   bvplus-trim-arg2-dag
+;; ;;;    bvplus-trim-arg2-axe
+;;  ;;;   bvplus-trim-arg3-axe
 
 ;; ;;;    bv-array-write-trim-value
 ;; ;                                         bv-array-write-of-bvminus-32

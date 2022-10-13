@@ -1,0 +1,6 @@
+uri.abnf text eol=crlf
+http.abnf text eol=crlf
+imf.abnf text eol=crlf
+smtp.abnf text eol=crlf
+imap.abnf text eol=crlf
+json.abnf text eol=crlf

@@ -1378,7 +1378,7 @@
              ;; myif-intervening-and-negated-hack
              ;; myif-comparison-hack
              ))
-   '(slice-trim-dag-all                      ;new
+   '(slice-trim-axe-all                      ;new
      ;;array-reduction-when-all-same-improved2 ;looped?
      update-nth-becomes-update-nth2
      )))
@@ -1430,7 +1430,7 @@
              unicity-of-0
              fix-of-len
              integerp-when-signed-byte-p))
-   '(slice-trim-dag-all                      ;new
+   '(slice-trim-axe-all                      ;new
      ;;array-reduction-when-all-same-improved2 ;looped?
      update-nth-becomes-update-nth2)))
 
@@ -2242,7 +2242,7 @@
              bvmult-of-bvcat-hack3
              bvmult-of-bvcat-hack2
              take-of-group2
-             floor-when-usb-bind-free-dag-constant-version
+             floor-of-expt2-becomes-slice-when-bv-axe-constant-version
              take-of-bytes-to-bits
 ;GROUP-BECOMES-GROUP2 ;put this back?
              bvmult-of-bvcat-hack

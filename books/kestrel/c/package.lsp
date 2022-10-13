@@ -24,10 +24,12 @@
                                   byte
                                   defstruct
                                   error
+                                  lexp
                                   member
                                   pi
                                   pointers
                                   pprint-indent
+                                  preprocess
                                   read-object
                                   schar
                                   type
@@ -114,12 +116,16 @@
                msg-listp
                mv-nth-of-cons
                nat
+               nat-list-fix
+               nats=>string
                nvariablep
                one-way-unify
                packn
                packn-pos
                pos-listp
                pos-option
+               pos-optionp
+               prefixp
                pseudo-event-form-listp
                pseudo-event-formp
                pseudo-event-form
@@ -160,6 +166,7 @@
                restore-output?
                run-when
                str-fix
+               string=>nats
                symbol-fix
                symbol-list
                symbol-list-fix

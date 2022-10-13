@@ -25,13 +25,6 @@
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
-(defthm slice-of-bitand-too-high
-  (implies (and (<= 1 low)
-                (natp low))
-           (equal (slice high low (bitand x y))
-                  0))
-  :hints (("Goal" :in-theory (enable bitand slice-too-high-is-0))))
-
 (defthm lessthan-256-backchain
   (implies (and (unsigned-byte-p 8 x))
            (< x 256)))
@@ -108,8 +101,6 @@
 ;; (thm
 ;;  (equal (SLICE '19 '14 (bvcat '8 y '8 x))
 ;;         (slice
-
-
 
 ;bozo drop some hyps
 
@@ -402,75 +393,6 @@
 ;; ;                                      BVAND-OF-BVCAT-TIGHTEN-LOW
 ;;                                        )))))
 
-(defthm trim-of-bvplus
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvplus size2 x y))
-                  (bvplus size1 x y)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
-
-(defthm trim-of-bvmult
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvmult size2 y z))
-                  (bvmult size1 y z)))
-  :hints (("Goal" :in-theory (e/d ( trim) nil))))
-
-(defthm trim-of-bvminus
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvminus size2 y z))
-                  (bvminus size1 y z)))
-  :hints (("Goal" :in-theory (e/d (bvuminus trim) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
-
-(defthm trim-of-bvuminus
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvuminus size2 x))
-                  (bvuminus size1 x)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
-
-(defthm trim-of-bvand
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvand size2 y z))
-                  (bvand size1 y z)))
-  :hints (("Goal" :in-theory (e/d ( trim) nil))))
-
-(defthm trim-of-bvor
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvor size2 y z))
-                  (bvor size1 y z)))
-  :hints (("Goal" :in-theory (enable trim)))) ;bozo
-
-(defthm trim-of-bvxor
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvxor size2 y z))
-                  (bvxor size1 y z)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm trim-of-bvchop
-  (equal (trim size1 (bvchop size i))
-         (if (< (ifix size1) (ifix size))
-             (bvchop size1 i)
-           (bvchop size i)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm trim-of-bvnot
-  (implies (and (<= n size) (natp n) (natp size))
-           (equal (trim n (bvnot size val))
-                  (bvnot n val)))
-  :hints (("Goal" :in-theory (enable trim))))
-
 (defthmd mod-becomes-bvmod-better-free-and-free
   (implies (and (unsigned-byte-p xsize x) ;xsize is a freevar
                 (unsigned-byte-p ysize y)) ;ysize is a freevar
@@ -719,23 +641,6 @@
   :hints (("Goal" :in-theory (e/d (bvsx) (;BVCHOP-32-LOGEXT-8
                                           )))))
 
-
-
-(defthm getbit-of-bvor-when-other-bit-is-0-arg1
-  (implies (and (equal (getbit n x) 0)
-                (< n size)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvor size x y))
-                  (getbit n y))))
-
-(defthm getbit-of-bvor-when-other-bit-is-0-arg2
-  (implies (and (equal (getbit n x) 0)
-                (< n size)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvor size y x))
-                  (getbit n y))))
 
 ;; (skip -proofs
 ;;  (defthmd floor-when-not-evenp
@@ -2557,8 +2462,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable sbvlt UNSIGNED-BYTE-P-FORCED))))
 
-
-
 (defthm bvplus-of-bvmult-tighten-6-5-4
   (implies (and (integerp x)
                 (< y 4)
@@ -2580,14 +2483,6 @@
   (implies (not (equal 0 (bvchop 2 x)))
            (equal (equal (bvmult 5 4 y) x)
                   nil)))
-
-(defthm trim-of-repeatbit
-  (equal (trim size1 (repeatbit size i))
-         (if (< (ifix size1) (ifix size))
-             (repeatbit size1 i)
-             (repeatbit size i)))
-  :hints (("Goal" :in-theory (e/d (trim repeatbit)
-                                  (bvplus-recollapse)))))
 
 (local (in-theory (disable +-becomes-bvplus-hack)))
 
@@ -2945,13 +2840,6 @@
            (equal (bvplus size (- x) y)
                   (bvplus size (bvuminus size x) y)))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
-
-(defthmd bvnot-trim-all
-  (implies (and (syntaxp (term-should-be-trimmed size x ':all))
-                (natp size))
-           (equal (bvnot size x)
-                  (bvnot size (trim size x))))
-  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm slice-too-high-is-0-cheap
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
