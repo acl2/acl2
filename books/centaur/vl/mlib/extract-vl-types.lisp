@@ -424,8 +424,12 @@
                                            (str::nat-to-dec-string user-index)
                                            "]"))
                 ((when (member-equal (list user-index) excludes))
+                 rest)
+                ((when (member-equal (list user-index '*) excludes))
                  (append rest
-                         `((,cur-slice-trace :value ,cur-slice-value :excluded))))
+                         `((,cur-slice-trace :value ,cur-slice-value
+                                             :hex ,(str::hexify cur-slice-value)
+                                             :fields-excluded))))
 
                 (excludes (collect-and-cdr-lists-that-start-with user-index excludes))
 
@@ -438,7 +442,6 @@
 
 (make-event
  (extract-vl-types-generate-debug-vector-functions nil nil 'pkg-sym))
-
 
 #!VL
 (defines vl-types->acl2-types
@@ -488,16 +491,18 @@
                                                        ,member.name nil))))
               (events nil)
               (debug-clause
-               `(cons ,member.name
-                      (b* ((start ,(if offset offset 0))
-                           (width ,size)
-                           (value (acl2::part-select value :low start :width width))
-                           ((when (member-equal (list ',member.symbol) excludes))
-                            `(:value ,value :excluded))
+               `(and (not (member-equal (list ',member.symbol) excludes))
+                     (list
+                      (cons ,member.name
+                            (b* ((start ,(if offset offset 0))
+                                 (width ,size)
+                                 (value (acl2::part-select value :low start :width width))
+                                 ((when (member-equal (list ',member.symbol '*) excludes))
+                                  `(:value ,value :hex ,(str::hexify value) :fields-excluded))
 
-                           (excludes (collect-and-cdr-lists-that-start-with ',member.symbol excludes))
-                           (collected-dims ',collected-dims))
-                        (debug-extracted-vl-type-array value collected-dims excludes)))))
+                                 (excludes (collect-and-cdr-lists-that-start-with ',member.symbol excludes))
+                                 (collected-dims ',collected-dims))
+                              (debug-extracted-vl-type-array value collected-dims excludes)))))))
            (mv ranges-case-statement debug-clause events size)))
 
         (::VL-USERTYPE
@@ -534,19 +539,21 @@
                                          'start)
                                       rest-args))))
               (debug-clause
-               `(cons ,member.name
-                      (b* ((start ,(if offset offset 0))
-                           (width ,size)
-                           (value (acl2::part-select value :low start :width width))
-                           ((when (member-equal (list ',member.symbol) excludes))
-                            `(:value ,value :excluded))
-                           (excludes (collect-and-cdr-lists-that-start-with ',member.symbol
-                                                                            excludes))
-                           ,@(and collected-dims
-                                  `((collected-dims ',collected-dims))))
-                        ,(if collected-dims
-                             `(,debug-vector-fn-name value collected-dims excludes)
-                           `(,debug-fn-name value excludes))))))
+               `(and (not (member-equal (list ',member.symbol) excludes))
+                     (list
+                      (cons ,member.name
+                            (b* ((start ,(if offset offset 0))
+                                 (width ,size)
+                                 (value (acl2::part-select value :low start :width width))
+                                 ((when (member-equal (list ',member.symbol '*) excludes))
+                                  `(:value ,value :hex ,(str::hexify value) :fields-excluded))
+                                 (excludes (collect-and-cdr-lists-that-start-with ',member.symbol
+                                                                                  excludes))
+                                 ,@(and collected-dims
+                                        `((collected-dims ',collected-dims))))
+                              ,(if collected-dims
+                                   `(,debug-vector-fn-name value collected-dims excludes)
+                                 `(,debug-fn-name value excludes))))))))
            (mv ranges-case-statement debug-clause events size)))
         (otherwise
          (progn$ (raise "Unexpected vl-structmember type: ~p0 ~%" member)
@@ -642,8 +649,9 @@
                                          (excludes (and (true-list-listp excludes)
                                                         (true-listp excludes))))
                    (declare (ignorable excludes))
-                   (list ;; :value (acl2::loghead ,size value)
-                    ,@member-debug-clauses))
+                   (flatten
+                    (list ;; :value (acl2::loghead ,size value)
+                     ,@member-debug-clauses)))
 
                  ,(extract-vl-types-generate-debug-vector-functions debug-fn-name
                                                                     debug-vector-fn-name
@@ -687,8 +695,8 @@
                                          (excludes (and (true-list-listp excludes)
                                                         (true-listp excludes))))
                    (declare (ignorable excludes))
-                   (list ;; :value (acl2::loghead ,size value)
-                    ,@member-debug-clauses))
+                   (flatten ;; :value (acl2::loghead ,size value)
+                    (list ,@member-debug-clauses)))
 
                  ,(extract-vl-types-generate-debug-vector-functions debug-fn-name
                                                                     debug-vector-fn-name
@@ -732,7 +740,9 @@
                                     ))
                      (case-match value
                        ,@string-to-int-cases
-                       (& -1 ;;value
+                       (& (progn$ (cw "Invalid enum type given: ~s0 ~%" value)
+                                  -1)
+                          ;;value
                           ))))
 
                  (define ,debug-fn-name ((value integerp)
@@ -856,7 +866,7 @@ nil
 <p> vl::extract-vl-types will also generate \"change\" macros for every type. For example: (change-|t_main| main \"data[0].dword[3]\" 12) will set the \"data[0].dword[3]\" of main to 12. More arguments can be passed to change other entries in the same call: (change-|t_main| main \"data[0].dword[3]\" 12 \"uop.size\" 0).
 </p>
 
-<p> The program will also created \"debug\" macros for every type. For example: (|t_main|-debug main) will return a large term that has all the entries for a given concrete value \"main\". Debug functions can also take a list of fields to exclude from printing. For example: (|t_main|-debug main :exclude (\"uop.size\" \"data[0]\" \"data[1].dword\")) </p>
+<p> The program will also created \"debug\" macros for every type. For example: (|t_main|-debug main) will return a large term that has all the entries for a given concrete value \"main\". Debug functions can also take a list of fields to exclude from printing. For example: (|t_main|-debug main :exclude (\"uop.size\" \"data[0]\" \"data[1].dword\" \"data[2].*\")). When there is a \".*\" at the end of a skipped argument (e.g., \"data[2].*\"), then the value of that argument (e.g., \"data[2]\") will be included but not its fields. </p>
 
 "
 
