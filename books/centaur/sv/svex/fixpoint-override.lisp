@@ -32,6 +32,7 @@
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
 
 ;; We want to show that if we insert override muxes in a network and evaluate its
 ;; fixpoint under an env for which for every override test variable, the corresponding
@@ -821,8 +822,320 @@
 
 
 
+(define 4vec-1mask ((x 4vec-p))
+  :returns (1mask integerp)
+  (b* (((4vec x)))
+    (logand x.upper x.lower)))
+
+(define 4vec-bitmux ((test integerp) (then 4vec-p) (else 4vec-p))
+  :returns (mux 4vec-p)
+  (b* (((4vec then))
+       ((4vec else)))
+    (4vec (logite test then.upper else.upper)
+          (logite test then.lower else.lower)))
+  ///
+  (defthmd 4vec-bit?!-is-4vec-bitmux
+    (equal (4vec-bit?! test then else)
+           (4vec-bitmux (4vec-1mask test) then else))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-1mask
+                                      logite)))))
+  
+
+(define 4vec-muxtest-subsetp ((x 4vec-p) (y 4vec-p))
+  (equal (logandc2 (4vec-1mask x) (4vec-1mask y)) 0))
+
+(define 4vec-override-mux-agrees ((impl-test 4vec-p)
+                                  (impl-val 4vec-p)
+                                  (spec-test 4vec-p)
+                                  (spec-val 4vec-p)
+                                  (spec-ref 4vec-p))
+
+
+  ;; for bits where
+  ;; impl-test  spec-test
+  ;;    0           0     spec-ref = spec-ref
+  ;;    0           1     spec-val = spec-ref
+  ;;    1           0     impl-val = spec-ref
+  ;;    1           1     impl-val = spec-val
+
+  (b* ((spec-mux (4vec-bit?! spec-test spec-val spec-ref)))
+    (equal (4vec-bit?! impl-test impl-val spec-mux)
+           spec-mux))
+  ///
+  (defthm 4vec-override-mux-agrees-implies-impl-mux-<<=-spec-mux
+    (implies (and (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref)
+                  (4vec-muxtest-subsetp spec-test impl-test)
+                  (4vec-<<= impl-in spec-ref))
+             (4vec-<<= (4vec-bit?! impl-test impl-val impl-in)
+                       (4vec-bit?! spec-test spec-val spec-ref)))
+    :hints(("Goal" :in-theory (e/d (4vec-bit?!-is-4vec-bitmux
+                                    4vec-bitmux
+                                    4vec-muxtest-subsetp
+                                    4vec-<<=)))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-and b-ite b-ior b-not)))))
+
+  (defthm 4vec-override-mux-agrees-implies-spec-initial-mux-<<=-impl-initial-mux
+    (implies (and (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref)
+                  (4vec-muxtest-subsetp spec-test impl-test)
+                  (4vec-<<= spec-in impl-in)
+                  (4vec-<<= impl-in spec-ref))
+             (4vec-<<= (4vec-bit?! spec-test spec-val spec-in)
+                       (4vec-bit?! impl-test impl-val impl-in)))
+    :hints(("Goal" :in-theory (e/d (4vec-bit?!-is-4vec-bitmux
+                                    4vec-bitmux
+                                    4vec-muxtest-subsetp
+                                    4vec-<<=)))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-and b-ite b-ior b-not)
+                  :do-not-induct t)))))
+
+(define svar-override-triple-mux-agrees ((x svar-override-triple-p)
+                                         (impl-env svex-env-p)
+                                         (spec-env svex-env-p)
+                                         (spec-outs svex-env-p))
+  (b* (((svar-override-triple x)))
+    (4vec-override-mux-agrees
+     (svex-env-lookup x.testvar impl-env)
+     (svex-env-lookup x.valvar impl-env)
+     (svex-env-lookup x.testvar spec-env)
+     (svex-env-lookup x.valvar spec-env)
+     (svex-env-lookup x.refvar spec-outs))))
+
+
+                           
+
+(define svex-env-muxtests-subsetp ((vars svarlist-p)
+                                   (spec-env svex-env-p)
+                                   (impl-env svex-env-p))
+  (if (atom vars)
+      t
+    (and (4vec-muxtest-subsetp (svex-env-lookup (car vars) spec-env)
+                               (svex-env-lookup (car vars) impl-env))
+         (svex-env-muxtests-subsetp (cdr vars) spec-env impl-env))))
+
+
+(define svar-override-triplelist-muxes-agree ((x svar-override-triplelist-p)
+                                              (impl-env svex-env-p)
+                                              (spec-env svex-env-p)
+                                              (spec-outs svex-env-p))
+  (if (atom x)
+      t
+    (and (svar-override-triple-mux-agrees (car x) impl-env spec-env spec-outs)
+         (svar-override-triplelist-muxes-agree (cdr x) impl-env spec-env spec-outs)))
+  ///
+
+  (local (defthm svex-env-<=-of-cons-same-key-when-rest
+           (implies (and (svex-env-<<= rest1 rest2)
+                         (svar-p key))
+                    (equal (svex-env-<<= (cons (cons key val1) rest1)
+                                         (cons (cons key val2) rest2))
+                           (4vec-<<= val1 val2)))
+           :hints (("goal" :expand ((svex-env-<<= (cons (cons key val1) rest1)
+                                                  (cons (cons key val2) rest2)))
+                    :use ((:instance svex-env-<<=-necc
+                           (x (cons (cons key val1) rest1))
+                           (y (cons (cons key val2) rest2))
+                           (var key))
+                          (:instance svex-env-<<=-necc
+                           (x rest1)
+                           (y rest2)
+                           (var (svex-env-<<=-witness (cons (cons key val1) rest1)
+                                                      (cons (cons key val2) rest2)))))
+                    :in-theory (e/d (svex-env-lookup)
+                                    (svex-env-<<=-necc))))))
+  
+  (defthm svar-override-triplelist-muxes-agree-implies-override-alist-eval-impl-<<=-spec
+    (implies (and (svar-override-triplelist-muxes-agree x impl-env spec-env spec-fixpoint)
+                  (svex-env-<<= impl-start-env spec-fixpoint)
+                  (equal (alist-keys (svex-env-fix spec-fixpoint))
+                         (alist-keys (svex-env-fix impl-start-env)))
+                  (not (intersectp-equal (svar-override-triplelist-override-vars x)
+                                         (alist-keys (svex-env-fix impl-start-env))))
+                  (subsetp-equal (svar-override-triplelist->refvars x)
+                                 (alist-keys (svex-env-fix impl-start-env)))
+                  (svex-env-muxtests-subsetp (svar-override-triplelist->testvars x)
+                                             spec-env impl-env))
+             (svex-env-<<= (svex-alist-eval (svar-override-triplelist->override-alist x)
+                                            (append impl-start-env impl-env))
+                           (svex-alist-eval (svar-override-triplelist->override-alist x)
+                                            (append spec-fixpoint spec-env))))
+    :hints(("Goal" :in-theory (enable svar-override-triplelist->override-alist
+                                      svar-override-triple-mux-agrees
+                                      svar-override-triplelist-override-vars
+                                      svar-override-triplelist->refvars
+                                      svex-env-muxtests-subsetp
+                                      svex-alist-eval
+                                      svex-apply)
+            :induct t
+            :expand ((:free (v env) (svex-eval (svex-var v) env))))))
+
+
+  (defthm svar-override-triplelist-muxes-agree-implies-override-alist-eval-spec-<<=-impl
+    (implies (and (svar-override-triplelist-muxes-agree x impl-env spec-env spec-fixpoint)
+                  (svex-env-<<= spec-start-env impl-start-env)
+                  (svex-env-<<= impl-start-env spec-fixpoint)
+                  (equal (alist-keys (svex-env-fix spec-fixpoint))
+                         (alist-keys (svex-env-fix impl-start-env)))
+                  (equal (alist-keys (svex-env-fix spec-fixpoint))
+                         (alist-keys (svex-env-fix spec-start-env)))
+                  (not (intersectp-equal (svar-override-triplelist-override-vars x)
+                                         (alist-keys (svex-env-fix impl-start-env))))
+                  (subsetp-equal (svar-override-triplelist->refvars x)
+                                 (alist-keys (svex-env-fix impl-start-env)))
+                  (svex-env-muxtests-subsetp (svar-override-triplelist->testvars x)
+                                             spec-env impl-env))
+             (svex-env-<<= (svex-alist-eval (svar-override-triplelist->override-alist x)
+                                            (append spec-start-env spec-env))
+                           (svex-alist-eval (svar-override-triplelist->override-alist x)
+                                            (append impl-start-env impl-env))))
+    :hints(("Goal" :in-theory (enable svar-override-triplelist->override-alist
+                                      svar-override-triple-mux-agrees
+                                      svar-override-triplelist-override-vars
+                                      svar-override-triplelist->refvars
+                                      svex-env-muxtests-subsetp
+                                      svex-alist-eval
+                                      svex-apply)
+            :induct t
+            :expand ((:free (v env) (svex-eval (svex-var v) env)))))))
 
 
 
+(defthmd svex-alist-eval-fixpoint-step-stays-below-fixpoint-free
+  (implies (and (svex-alist-width y)
+                (svex-alist-monotonic-on-vars (svex-alist-keys y) y)
+                (no-duplicatesp-equal (svex-alist-keys y))
+                (svex-env-<<= (svex-alist-eval-fixpoint-step x env in-env)
+                              (svex-alist-eval-fixpoint-step
+                               y (svex-alist-eval-least-fixpoint y in-env2)
+                               in-env2)))
+           (svex-env-<<= (svex-alist-eval-fixpoint-step x env in-env)
+                         (svex-alist-eval-least-fixpoint y in-env2))))
 
+;; Impl-fixpoint <<= spec-fixpoint: the composition of the override-alist with the override-env is <<= the spec-fixpoint,
+;; and composition iterations preserve that <<=.
+
+(defsection svex-alist-eval-fixpoint-override-impl-fixpoint-<<=-spec-fixpoint
+  (defthm svex-alist-eval-fixpoint-override-impl-iter-<<=-spec-fixpoint
+    (b* ((override-network (svex-alist-compose network (svar-override-triplelist->override-alist triples)))
+         (impl-iter (svex-alist-eval-fixpoint-iterate n override-network start-env impl-env))
+         (spec-fixpoint (svex-alist-eval-least-fixpoint override-network spec-env)))
+      (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples) impl-env spec-env)
+                    (svar-override-triplelist-muxes-agree triples impl-env spec-env spec-fixpoint)
+                    (svex-env-muxtests-subsetp (svar-override-triplelist->testvars triples) spec-env impl-env)
+                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
+                    (no-duplicatesp-equal (svex-alist-keys network))
+                    (svex-alist-width network)
+                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
+                    (svex-env-<<= start-env spec-fixpoint)
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network)))
+                    (equal (alist-keys (svex-env-fix start-env)) (svex-alist-keys network)))
+               (svex-env-<<= impl-iter spec-fixpoint)))
+    :hints (("goal" :induct (acl2::dec-induct n)
+             :expand ((:free (network) (svex-alist-eval-fixpoint-iterate n network start-env impl-env))
+                      (:free (network) (svex-alist-eval-fixpoint-iterate 0 network start-env impl-env)))
+             :in-theory (e/d (svex-alist-eval-fixpoint-step-stays-below-fixpoint-free)
+                             (svex-alist-eval-least-fixpoint-is-fixpoint)))))
+
+  (defthm svex-alist-eval-fixpoint-override-impl-fixpoint-<<=-spec-fixpoint
+    (b* ((override-network (svex-alist-compose network (svar-override-triplelist->override-alist triples)))
+         (impl-fixpoint (svex-alist-eval-least-fixpoint override-network impl-env))
+         (spec-fixpoint (svex-alist-eval-least-fixpoint override-network spec-env)))
+      (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples) impl-env spec-env)
+                    (svar-override-triplelist-muxes-agree triples impl-env spec-env spec-fixpoint)
+                    (svex-env-muxtests-subsetp (svar-override-triplelist->testvars triples) spec-env impl-env)
+                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
+                    (no-duplicatesp-equal (svex-alist-keys network))
+                    (svex-alist-width network)
+                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network))))
+               (svex-env-<<= impl-fixpoint spec-fixpoint)))
+    :hints (("goal" :expand ((:free (network) (svex-alist-eval-least-fixpoint network impl-env)))))))
+
+
+;; Spec-fixpoint <<= impl-fixpoint: the composition of the override-alist with
+;; the spec-env is <<= the composition of the override-alist with the override-env
+
+(defsection svex-alist-eval-fixpoint-override-spec-fixpoint-<<=-impl-fixpoint
+  (defthm svex-alist-eval-fixpoint-override-spec-iter-<<=-impl-iter
+    (b* ((override-network (svex-alist-compose network (svar-override-triplelist->override-alist triples)))
+         (impl-iter (svex-alist-eval-fixpoint-iterate n override-network impl-start-env impl-env))
+         (spec-iter (svex-alist-eval-fixpoint-iterate n override-network spec-start-env spec-env))
+         (spec-fixpoint (svex-alist-eval-least-fixpoint override-network spec-env)))
+      (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples) impl-env spec-env)
+                    (svar-override-triplelist-muxes-agree triples impl-env spec-env spec-fixpoint)
+                    (svex-env-muxtests-subsetp (svar-override-triplelist->testvars triples) spec-env impl-env)
+                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
+                    (no-duplicatesp-equal (svex-alist-keys network))
+                    (svex-alist-width network)
+                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
+                    (svex-env-<<= spec-start-env impl-start-env)
+                    (svex-env-<<= impl-start-env spec-fixpoint)
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network)))
+                    (equal (alist-keys (svex-env-fix spec-start-env)) (svex-alist-keys network))
+                    (equal (alist-keys (svex-env-fix impl-start-env)) (svex-alist-keys network)))
+               (svex-env-<<= spec-iter impl-iter)))
+    :hints (("goal" :induct (acl2::dec-induct n)
+             :expand ((:free (network start-env impl-env) (svex-alist-eval-fixpoint-iterate n network start-env impl-env))
+                      (:free (network start-env impl-env) (svex-alist-eval-fixpoint-iterate 0 network start-env impl-env)))
+             :in-theory (e/d (svex-alist-eval-fixpoint-step-stays-below-fixpoint-free)
+                             (svex-alist-eval-least-fixpoint-is-fixpoint)))))
+
+  (defthm svex-alist-eval-fixpoint-override-spec-fixpoint-<<=-impl-fixpoint
+    (b* ((override-network (svex-alist-compose network (svar-override-triplelist->override-alist triples)))
+         (impl-fixpoint (svex-alist-eval-least-fixpoint override-network impl-env))
+         (spec-fixpoint (svex-alist-eval-least-fixpoint override-network spec-env)))
+      (implies (and (svex-envs-agree-except (svar-override-triplelist-override-vars triples) impl-env spec-env)
+                    (svar-override-triplelist-muxes-agree triples impl-env spec-env spec-fixpoint)
+                    (svex-env-muxtests-subsetp (svar-override-triplelist->testvars triples) spec-env impl-env)
+                    (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
+                    (no-duplicatesp-equal (svex-alist-keys network))
+                    (svex-alist-width network)
+                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network))))
+               (svex-env-<<= spec-fixpoint impl-fixpoint)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval-least-fixpoint)))))
+
+(defthm svex-envs-equivalent-when-similar-and-alist-keys-equiv
+  (implies (set-equiv (alist-keys (svex-env-fix x)) (alist-keys (svex-env-fix y)))
+           (equal (svex-envs-equivalent x y)
+                  (svex-envs-similar x y)))
+  :hints (("goal" :cases ((svex-envs-equivalent x y)))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d (svex-envs-equivalent
+                                  SVEX-ENV-BOUNDP-IFF-MEMBER-ALIST-KEYS)))))
+  :otf-flg t)
+
+;; To prove this we need to show impl-fixpoint <<= spec-fixpoint and spec-fixpoint <<= impl-fixpoint.
+
+;; Impl-fixpoint <<= spec-fixpoint: the composition of the override-alist with the override-env is <<= the spec-fixpoint,
+;; and composition iterations preserve that <<=.
+
+;; Spec-fixpoint <<= impl-fixpoint: the composition of the override-alist with
+;; the spec-env is <<= the composition of the override-alist with the override-env
+
+(defthm svex-alist-eval-fixpoint-override-impl-equiv-spec
+  (b* ((override-network (svex-alist-compose network (svar-override-triplelist->override-alist triples)))
+       (impl-fixpoint (svex-alist-eval-least-fixpoint override-network impl-env))
+       (spec-fixpoint (svex-alist-eval-least-fixpoint override-network spec-env)))
+    (implies (and (svar-override-triplelist-muxes-agree triples impl-env spec-env spec-fixpoint)
+                  (svex-envs-agree-except (svar-override-triplelist-override-vars triples) impl-env spec-env)
+                  (svex-env-muxtests-subsetp (svar-override-triplelist->testvars triples) spec-env impl-env)
+                  (svex-alist-monotonic-on-vars (svex-alist-keys network) network)
+                  (no-duplicatesp-equal (svex-alist-keys network))
+                  (svex-alist-width network)
+                  (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys network))
+                  (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys network)))
+                  (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars network))))
+             (svex-envs-equivalent impl-fixpoint spec-fixpoint)))
+  :hints(("Goal" 
+          :use svex-alist-eval-fixpoint-override-spec-fixpoint-<<=-impl-fixpoint
+          :in-theory (e/d (svex-env-<<=-asymm)
+                          (svex-alist-eval-fixpoint-override-spec-fixpoint-<<=-impl-fixpoint)))))
 
