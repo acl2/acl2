@@ -18,6 +18,8 @@
 (include-book "acl2s/match" :dir :system :ttags :all)
 (include-book "acl2s/installation" :dir :system :ttags :all)
 (include-book "acl2s/extra-doc" :dir :system :ttags :all)
+(include-book "acl2s/interface/top" :dir :system)
+(include-book "acl2s/interface/acl2s-utils/top" :dir :system)
 
 #|
 
@@ -28,8 +30,6 @@
 (include-book "acl2s/cgen/defthm-support-for-on-failure" :dir :system)
 (include-book "acl2s/cgen/defthm-support-for-on-failure-local" :dir :system)
 
-(include-book "acl2s/interface/top" :dir :system)
-(include-book "acl2s/interface/acl2s-utils/top" :dir :system)
 (include-book "acl2s/defunc-testing" :dir :system)
 (include-book "acl2s/match-testing" :dir :system)
 
