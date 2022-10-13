@@ -63,21 +63,20 @@ occurring.
   on the \"Command Prompt\" item and select \"Run as administrator\".</li>
   <li>Run @('dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart')</li>
   <li>Run @('dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart')</li>
-  <li>Restart your computer and reopen an administrator terminal as
-      you did previously.</li>
-  <li>Run @('wsl --update')</li>
+  <li>Restart your computer. <b>Select \"Update and Restart\" in the power menu if it appears.</b></li>
+  <li>Reopen an administrator terminal as you did previously and run @('wsl --update')</li>
   </ol>
 </li>
 <li>Download and set up the ACL2s WSL image
   <ol>
   <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
-  <li>Open up a new (non-admininistrator) terminal by opening the Windows
+  <li>Open up a new <b>non-admininistrator</b> terminal by opening the Windows
       menu at the bottom left hand side of the screen and searching for
       @('cmd').
   </li>
   <li>Run @('mkdir C:\\wslDistroStorage')</li>
-  <li>Run @('wsl --import acl2s C:\\wslDistroStorage\\acl2s Downloads\\distro.tar.gz')</li>
-  <li>Run @('wsl -d acl2s') and confirm that the output is something like @({cs2800@YOURCOMPUTER:/mnt/c/Users/yourusername}). If so, you can close the terminal. Note that this may take some time and you may see some errors about @('DISPLAY') first.</li>
+  <li>Run @('wsl --import acl2s C:\\wslDistroStorage\\acl2s Downloads\\distro.tar.gz'). <b>Note that this may take a while, somewhere between 5 and 15 minutes</b>. Disabling any virus scanners may significantly speed this up.</li>
+  <li>Run @('wsl -d acl2s') and confirm that you get some output (e.g. not a blank line). If so, you can close the terminal. Note that this may take some time and you may see some errors about @('DISPLAY') first.</li>
   </ol>
 </li>
 <li>Install Xming and launch it
@@ -96,7 +95,11 @@ occurring.
   <li>Double click on our Xming launch profile to start Xming. If
   Windows asks you which networks you want to allow Xming to
   access, make sure you allow it to access both private and
-  public networks.</li>
+  public networks.<b>Note that double clicking on ACL2sXming.xlaunch
+  will not open a new window.</b> It will add an item to the system
+  tray on the right-hand side of the task bar, and you may need to click
+  on the up caret (^) to see it.
+  </li>
   </ol>
 </li>
 <li>Create a folder for your CS2800 files on your @('C:') drive
@@ -170,7 +173,7 @@ times throughout the process.</li>
 <li>Tap and install ACL2s<ol>
 <li>Run <code>brew tap mister-walter/acl2s</code> and then <code>brew install acl2s --force-bottle</code> inside of Terminal.</li></ol></li>
 <li>Install Java<ol>
-<li>Download and install Java 17. The easiest way to do this is to go to <a href=\"https://www.oracle.com/java/technologies/downloads/#jdk17-mac\">this link</a>
+<li>Download and install Java 17 or 18. The easiest way to do this is to go to <a href=\"https://www.oracle.com/java/technologies/downloads/#jdk17-mac\">this link</a>
 and download either the Arm64 DMG installer (if you are on a M1
 Mac) or the x64 DMG installer. Then, open the DMG and run the
 installer inside of it.</li></ol></li>
@@ -294,13 +297,13 @@ your desktop and this will start ACL2s on your VM.
 <h3>FAQ</h3>
 
 If you are running into a problem on Windows that is not covered by
-the below FAQ items, please try removing your WSL Ubuntu installation
+the below FAQ items, please try removing your WSL acl2s installation
 and going back through the instructions, ensuring that the output that
 you see matches that shown in the installation video linked to in the
 installation instructions. <b>Note that this will remove all of the
 data in the WSL installation, so be sure to backup any files inside it
 that you want to keep.</b> You can remove your WSL Ubuntu installation
-by running <code>wsl --unregister Ubuntu</code>. Then, follow the
+by running <code>wsl --unregister acl2s</code>. Then, follow the
 installation instructions as normal, except that you do not need to
 reinstall Xming if you already have it installed.
 
@@ -329,7 +332,8 @@ reinstall Xming if you already have it installed.
 </ul>
 <h4>Windows FAQ</h4>
 <ul class=\"morespace\">
-  <li>@('./eclipse/eclipse')<span class=\"question\"> doesn't open a window, or just
+  <li><span class=\"question\"> Double-clicking on @('run-acl2s.bat')
+      doesn't open a window, or just
       sits there forever without opening a window!</span><br/>  Ensure
       that Xming is open and running (check your system tray by
       clicking on the ^ button on the bottom right corner of your
@@ -376,6 +380,13 @@ reinstall Xming if you already have it installed.
     This will open the Windows folder that corresponds to your Eclipse
     workspace. You can then create a shortcut to this folder so it is
     easier to get to next time.
+  </li>
+  <li><span class=\"question\">@('wsl') works in an administrator terminal
+      but not in a non-administrator one!</span><br/>
+      Check that @('C:\\Windows\\system32') is in your Windows PATH. See
+      <a href=\"https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/\">this page</a>
+      for instructions on how to do this. Note that you may need to restart
+      your computer after you modify your PATH for Windows to pick it up.
   </li>
 </ul>
 

@@ -9,5 +9,5 @@
 (include-book "ccg/ccg" :ttags ((:ccg)) :load-compiled-file nil)
 (include-book "installation")
 (include-book "extra-doc")
-(include-book "interface/acl2s-utils/top")
+(include-book "interface/acl2s-utils/top" :ttags :all)
 (include-book "interface/top")
