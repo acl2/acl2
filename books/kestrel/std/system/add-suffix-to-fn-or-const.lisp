@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Regents of the University of Texas
+; Copyright (C) 2022 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,9 +16,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-suffix-to-fn-or-const ((name (and (symbolp name)
-                                              (not (keywordp name))))
-                                   (suffix stringp))
+(define add-suffix-to-fn-or-const ((name symbolp) (suffix stringp))
   :returns (new-name symbolp)
   :parents (std/system)
   :short "Add a suffix to a function or constant name."
