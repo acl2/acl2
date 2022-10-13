@@ -363,12 +363,19 @@ I don't need this?
         (defdata::extract-keywords ctx *property-keywords* args PT nil))
        (debug? (defdata::get1 :debug? kwd-alist))
        (debug-all? (== debug? :all))
+       (- (cw? debug-all? "~%**prop-rest is: ~x0~%" prop-rest))
+       (- (cw? debug-all? "~|**kwd-alist is: ~x0~%" kwd-alist))
        (vars? (assoc :vars kwd-alist))
+       (- (cw? debug-all? "~|**vars? is: ~x0~%" vars?))
+       ((when (and (! vars?)
+                   (! (property-varsp (car prop-rest)))))
+        (ecw "~%**ERROR: The variable/type list: ~x0 is not well-formed."
+             (car prop-rest)
+             nil))
        (ivars? (and (! vars?)
-                    (property-varsp (car prop-rest))
                     (cons :vars (car prop-rest))))
        (vars? (or vars? ivars?))
-       (- (cw? debug-all? "~%**vars? is: ~x0~%" vars?))
+       (- (cw? debug-all? "~|**vars? is: ~x0~%" vars?))
        (prop-rest (if ivars? (cdr prop-rest) prop-rest))
        (hyps? (assoc :hyps kwd-alist))
        (hyps? (or hyps? (assoc :h kwd-alist)))
@@ -394,7 +401,7 @@ I don't need this?
             (mv nil nil)
           (acl2::pseudo-translate (car prop-rest) nil wrld)))
        ((when erp)
-        (ecw "~|**ERROR: The translation of hyps: ~
+        (ecw "~%**ERROR: The translation of hyps: ~
               ~x0 ~
               resulted in an error."
              (car prop-rest)
@@ -410,13 +417,18 @@ I don't need this?
        (user-vars (evens user-var-list))
        (user-types (odds user-var-list))
        (user-types (map-intern-types user-types pkg))
-       (- (cw? debug-all? "~%**user-types is: ~x0~%" user-types))
+       (- (cw? debug-all? "~|**user-types is: ~x0~%" user-types))
        (user-preds (map-preds user-types tbl atbl))
-       (- (cw? debug-all? "~%**user-preds is: ~x0~%" user-preds))
+       (- (cw? debug-all? "~|**user-preds is: ~x0~%" user-preds))
+       (bad-type
+        (find-bad-d-arg-types user-types user-preds))
+       ((when bad-type)
+        (ecw "~%**ERROR: One of the argument types, ~x0, is not a type."
+             bad-type nil))
        (type-list1 (make-input-contract user-vars user-preds))
        (type-list (hyps-list-from-hyps type-list1))
        (type-hyps-list (append type-list hyps-list))
-       (- (cw? debug-all? "~%**type-hyps-list is: ~x0~%" type-hyps-list))
+       (- (cw? debug-all? "~|**type-hyps-list is: ~x0~%" type-hyps-list))
        (prop (cond ((endp type-hyps-list) body)
                    ((endp (cdr type-hyps-list))
                     `(implies ,(car type-hyps-list) ,body))
@@ -425,34 +437,34 @@ I don't need this?
         (acl2::pseudo-translate prop nil wrld))
        (all-vars (acl2::all-vars trans-prop))
        (vars (if vars? user-vars all-vars))
-       (- (cw? debug-all? "~%**vars is: ~x0~%" vars))
-       (- (cw? debug-all? "~%**all-vars is: ~x0~%" all-vars))
+       (- (cw? debug-all? "~|**vars is: ~x0~%" vars))
+       (- (cw? debug-all? "~|**all-vars is: ~x0~%" all-vars))
        (var-diff (sym-diff vars all-vars))
-       (- (cw? debug-all? "~%**prop is: ~x0~%" prop))
-       (- (cw? debug-all? "~%**trans-prop is: ~x0~%" trans-prop))
+       (- (cw? debug-all? "~|**prop is: ~x0~%" prop))
+       (- (cw? debug-all? "~|**trans-prop is: ~x0~%" trans-prop))
        (parsed (list name? name prop kwd-alist))
        ((when erp)
-        (ecw "~|**ERROR: The translation of prop: ~
+        (ecw "~%**ERROR: The translation of prop: ~
               ~x0 ~
               resulted in an error."
              prop
              parsed))
        ((unless (or (consp prop-rest) body?))
-        (ecw "~|**ERROR: Empty properties are not allowed."
+        (ecw "~%**ERROR: Empty properties are not allowed."
              parsed))
        ((when var-diff)
-        (ecw "~|**ERROR: The :vars provided do not match the actual variables ~
+        (ecw "~%**ERROR: The :vars provided do not match the actual variables ~
                 appearing in the property. An example is ~x0."
              (car var-diff)
              parsed))
        (gprop (sublis-fn-simple '((implies . impliez)) trans-prop))
-       (- (cw? debug-all? "~%**gprop is: ~x0~%" gprop))
+       (- (cw? debug-all? "~|**gprop is: ~x0~%" gprop))
        ((mv erp val)
         (if check-contracts?
             (guard-obligation gprop nil nil t ctx state)
           (guard-obligation t nil nil t ctx state)))
        ((when erp)
-        (ecw "~|**ERROR Determining Contract Checking Proof Obligation.** ~
+        (ecw "~%**ERROR Determining Contract Checking Proof Obligation.** ~
               ~%**val is: ~x0"
              val
              parsed))
@@ -483,11 +495,11 @@ I don't need this?
        (- (cw? debug-all? "~|**val is: ~x0~%" val))
        (- (cw? debug-all? "~|**thm-erp is: ~x0~%" thm-erp))
        ((when thm-erp)
-        (ecw "~|**ERROR During Contract Checking.** ~
+        (ecw "~%**ERROR During Contract Checking.** ~
               ~|**The Contract Checking Proof Obligation is: ~x0"
              guards
              parsed))
-       (- (cw? thm-erp "~|Form:  ( TESTING PROPERTY CONTRACTS ...)"))
+       (- (cw? thm-erp "~%Form:  ( TESTING PROPERTY CONTRACTS ...)"))
        ((mv te-test-erp val state)
         (if thm-erp
             (with-time-limit
