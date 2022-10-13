@@ -24,10 +24,12 @@
                                   byte
                                   defstruct
                                   error
+                                  lexp
                                   member
                                   pi
                                   pointers
                                   pprint-indent
+                                  preprocess
                                   read-object
                                   schar
                                   type
