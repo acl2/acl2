@@ -15,6 +15,7 @@
 (include-book "operations/well-formedness")
 (include-book "operations/closure")
 (include-book "operations/in-terminal-set")
+(include-book "operations/plugging")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,7 +32,10 @@
     (xdoc::li
      "Are closed.")
     (xdoc::li
-     "Generate only strings of ASCII codes."))
+     "Generate only strings of ASCII codes.")
+    (xdoc::li
+     "Are the same (module ordering) as the resulting of
+      plugging the core rules into the concrete syntax rules."))
    (xdoc::p
     "These theorems are in a separate file
      so that the definition of the concrete syntax
@@ -47,4 +51,8 @@
 
   (defruled ascii-only-*all-concrete-syntax-rules*
     (rulelist-in-termset-p *all-concrete-syntax-rules*
-                           (integers-from-to 0 127))))
+                           (integers-from-to 0 127)))
+
+  (defruled plugging-yields-*all-concrete-syntax-rules*
+    (set-equiv (plug-rules *concrete-syntax-rules* *core-rules*)
+               *all-concrete-syntax-rules*)))
