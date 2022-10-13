@@ -29,6 +29,7 @@
 (include-book "process")
 (include-book "std/util/defredundant" :dir :system)
 (include-book "override-common")
+(include-book "override-thm-common")
 (include-book "centaur/fgl/def-fgl-thm" :dir :system)
 (local (include-book "svtv-idealize-proof"))
 (local (include-book "std/alists/alist-keys" :dir :system))
