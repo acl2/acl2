@@ -1253,13 +1253,6 @@
 
 
 
-;; (b* (((pipeline-setup setup) (ryl::evfdiv-sp-run-overrides-pipeline-setup))
-;;      (cycle (ryl::evfdiv-sp-run-cycle))
-;;      (namemap (ryl::evfdiv-sp-run-overrides-namemap)))
-;;   (sv::svtv-fsm-run-input-substs setup.inputs setup.overrides (svtv-fsm cycle namemap)))
-
-
-
 
 
 ;;   (defthm svex-envlist-override-test-vars-of-svex-alistlist-eval

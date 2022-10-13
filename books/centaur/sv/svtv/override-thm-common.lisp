@@ -44,6 +44,7 @@
    enable
    triples-name
    triple-val-alist
+   lemma-nonlocal
    lemma-defthm
    lemma-args
    no-lemmas

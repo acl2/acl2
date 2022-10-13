@@ -679,7 +679,10 @@
        ((when err) (er hard? `(def-svtv-idealized-thm ,x.name) "Error: ~@0" err)))
     `(defsection ,x.name
        ,@(and (not x.no-lemmas)
-              `((local ,(svtv-genthm-initial-override-lemma x))))
+              (let ((lemma (svtv-genthm-initial-override-lemma x)))
+                (if x.lemma-nonlocal
+                    `(,lemma)
+                  `((local ,lemma)))))
        ,(svtv-idthm-final-thm x))))
 
 
@@ -704,6 +707,7 @@
          concl
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
+         lemma-nonlocal
          no-lemmas
          no-integerp
          hints
@@ -754,6 +758,7 @@
        :concl concl
        :svtv svtv
        :ideal ideal
+       :lemma-nonlocal lemma-nonlocal
        :lemma-defthm lemma-defthm
        :lemma-args lemma-args
        :hints hints
