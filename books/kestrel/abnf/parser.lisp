@@ -2650,8 +2650,7 @@
    (xdoc::p
     "The ABNF language consists of sequences of ASCII codes,
      as shown by theorem "
-    (xdoc::seetopic "*all-concrete-syntax-rules*"
-                    "@('ascii-only-*all-concrete-syntax-rules*')")
+    (xdoc::seetopic "*grammar*" "@('ascii-only-*grammar*')")
     ". ASCII codes are octets (i.e. 8-bit bytes).
      Thus, instead of parsing sequences of natural numbers,
      we can parse sequences of characters (which are isomorphic to octets),

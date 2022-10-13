@@ -34,7 +34,7 @@
      But when they are combined with the "
     (xdoc::seetopic "core-rules" "core rules")
     ", the "
-    (xdoc::seetopic "*all-concrete-syntax-rules*" "resulting rule list")
+    (xdoc::seetopic "concrete-syntax-validation" "resulting rule list")
     " is closed.")
    (xdoc::p
     "As another example,

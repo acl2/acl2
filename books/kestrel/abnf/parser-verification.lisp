@@ -1086,7 +1086,7 @@
   (b* (((mv error? tree? &) (parse-exact nat input)))
     (implies (and (not error?)
                   (equal element (%. nat)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable (parse-exact
            tree-match-num-val-p
            %.-fn))
@@ -1097,7 +1097,7 @@
   (b* (((mv error? tree? &) (parse-in-range min max input)))
     (implies (and (not error?)
                   (equal element (%- min max)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable (parse-in-range
            tree-match-num-val-p
            %-))
@@ -1111,7 +1111,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ (%- min1 max1))
                                      (/_ (%- min2 max2)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable (parse-in-either-range
            !_-fn
            /_-fn))
@@ -1124,7 +1124,7 @@
                                        (/_ (%- min2 max2)))))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable (parse-*-in-either-range
            *_
            !_-fn))
@@ -1137,7 +1137,7 @@
                   (equal element (element-char-val
                                   (char-val-insensitive
                                    (implode (list char))))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable (parse-ichar
            tree-match-char-val-p
            nats-match-insensitive-chars-p
@@ -1151,7 +1151,7 @@
                   (equal element (element-char-val
                                   (char-val-insensitive
                                    (implode (list char1 char2))))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable (parse-ichar2
            tree-match-char-val-p
            nats-match-insensitive-chars-p
@@ -1163,7 +1163,7 @@
   (b* (((mv error? tree? &) (parse-alpha input)))
     (implies (and (not error?)
                   (equal element (element-rulename *alpha*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-alpha)
 
@@ -1173,7 +1173,7 @@
   (b* (((mv error? tree? &) (parse-bit input)))
     (implies (and (not error?)
                   (equal element (element-rulename *bit*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-bit)
 
@@ -1183,7 +1183,7 @@
   (b* (((mv error? tree? &) (parse-cr input)))
     (implies (and (not error?)
                   (equal element (element-rulename *cr*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-cr)
 
@@ -1193,7 +1193,7 @@
   (b* (((mv error? tree? &) (parse-digit input)))
     (implies (and (not error?)
                   (equal element (element-rulename *digit*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-digit)
 
@@ -1203,7 +1203,7 @@
   (b* (((mv error? tree? &) (parse-dquote input)))
     (implies (and (not error?)
                   (equal element (element-rulename *dquote*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-dquote)
 
@@ -1213,7 +1213,7 @@
   (b* (((mv error? tree? &) (parse-htab input)))
     (implies (and (not error?)
                   (equal element (element-rulename *htab*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-htab)
 
@@ -1223,7 +1223,7 @@
   (b* (((mv error? tree? &) (parse-lf input)))
     (implies (and (not error?)
                   (equal element (element-rulename *lf*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-lf)
 
@@ -1233,7 +1233,7 @@
   (b* (((mv error? tree? &) (parse-sp input)))
     (implies (and (not error?)
                   (equal element (element-rulename *sp*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-sp)
 
@@ -1243,7 +1243,7 @@
   (b* (((mv error? tree? &) (parse-vchar input)))
     (implies (and (not error?)
                   (equal element (element-rulename *vchar*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-vchar)
 
@@ -1253,7 +1253,7 @@
   (b* (((mv error? tree? &) (parse-crlf input)))
     (implies (and (not error?)
                   (equal element (element-rulename *crlf*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-crlf)
 
@@ -1263,7 +1263,7 @@
   (b* (((mv error? tree? &) (parse-hexdig input)))
     (implies (and (not error?)
                   (equal element (element-rulename *hexdig*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-hexdig)
 
@@ -1273,7 +1273,7 @@
   (b* (((mv error? tree? &) (parse-wsp input)))
     (implies (and (not error?)
                   (equal element (element-rulename *wsp*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-wsp)
 
@@ -1283,7 +1283,7 @@
   (b* (((mv error? tree? &) (parse-prose-val input)))
     (implies (and (not error?)
                   (equal element (element-rulename *prose-val*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-prose-val)
 
@@ -1294,11 +1294,11 @@
     (and (implies (equal repetition (*_ *bit*))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (element-rulename *bit*))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*bit)
 
 (defrule tree-list-match-of-parse-*digit
@@ -1308,11 +1308,11 @@
     (and (implies (equal repetition (*_ *digit*))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (element-rulename *digit*))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*digit)
 
 (defrule tree-list-match-of-parse-*hexdig
@@ -1322,11 +1322,11 @@
     (and (implies (equal repetition (*_ *hexdig*))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (element-rulename *hexdig*))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*hexdig)
 
 (defrule tree-list-match-of-parse-1*bit
@@ -1337,7 +1337,7 @@
                   (equal repetition (1*_ *bit*)))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-1*bit)
 
 (defrule tree-list-match-of-parse-1*digit
@@ -1348,7 +1348,7 @@
                   (equal repetition (1*_ *digit*)))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-1*digit)
 
 (defrule tree-list-match-of-parse-1*hexdig
@@ -1359,7 +1359,7 @@
                   (equal repetition (1*_ *hexdig*)))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-1*hexdig)
 
 (defrule tree-match-of-parse-dot-1*bit
@@ -1369,7 +1369,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ "."
                                          (1*_ *bit*)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-dot-1*bit)
 
 (defrule tree-match-of-parse-dot-1*digit
@@ -1379,7 +1379,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ "."
                                          (1*_ *digit*)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-dot-1*digit)
 
 (defrule tree-match-of-parse-dot-1*hexdig
@@ -1389,7 +1389,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ "."
                                          (1*_ *hexdig*)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-dot-1*hexdig)
 
 (defrule tree-match-of-parse-dash-1*bit
@@ -1399,7 +1399,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ "-"
                                          (1*_ *bit*)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-dash-1*bit)
 
 (defrule tree-match-of-parse-dash-1*digit
@@ -1409,7 +1409,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ "-"
                                          (1*_ *digit*)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-dash-1*digit)
 
 (defrule tree-match-of-parse-dash-1*hexdig
@@ -1419,7 +1419,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ "-"
                                          (1*_ *hexdig*)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-dash-1*hexdig)
 
 (defrule tree-list-match-of-parse-*-dot-1*bit
@@ -1430,12 +1430,12 @@
                                                 (1*_ *bit*)))))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (!_ (/_ "."
                                          (1*_ *bit*))))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*-dot-1*bit)
 
 (defrule tree-list-match-of-parse-*-dot-1*digit
@@ -1446,12 +1446,12 @@
                                                 (1*_ *digit*)))))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (!_ (/_ "."
                                          (1*_ *digit*))))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*-dot-1*digit)
 
 (defrule tree-list-match-of-parse-*-dot-1*hexdig
@@ -1462,12 +1462,12 @@
                                                 (1*_ *hexdig*)))))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (!_ (/_ "."
                                          (1*_ *hexdig*))))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*-dot-1*hexdig)
 
 (defrule tree-list-match-of-parse-1*-dot-1*bit
@@ -1479,7 +1479,7 @@
                                                  (1*_ *bit*))))))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-1*-dot-1*bit)
 
 (defrule tree-list-match-of-parse-1*-dot-1*digit
@@ -1491,7 +1491,7 @@
                                                  (1*_ *digit*))))))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-1*-dot-1*digit)
 
 (defrule tree-list-match-of-parse-1*-dot-1*hexdig
@@ -1503,7 +1503,7 @@
                                                  (1*_ *hexdig*))))))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-1*-dot-1*hexdig)
 
 (defrule tree-match-of-parse-bin-val-rest
@@ -1514,7 +1514,7 @@
                                                  (1*_ *bit*)))))
                                 (/_ (!_ (/_ "-"
                                             (1*_ *bit*))))))
-             (tree-match-element-p tree element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree element *grammar*)))
   :enable parse-bin-val-rest)
 
 (defrule tree-match-of-parse-dec-val-rest
@@ -1525,7 +1525,7 @@
                                                  (1*_ *digit*)))))
                                 (/_ (!_ (/_ "-"
                                             (1*_ *digit*))))))
-             (tree-match-element-p tree element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree element *grammar*)))
   :enable parse-dec-val-rest)
 
 (defrule tree-match-of-parse-hex-val-rest
@@ -1536,7 +1536,7 @@
                                                  (1*_ *hexdig*)))))
                                 (/_ (!_ (/_ "-"
                                             (1*_ *hexdig*))))))
-             (tree-match-element-p tree element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree element *grammar*)))
   :enable parse-hex-val-rest)
 
 (defrule tree-match-of-parse-bin-val
@@ -1545,7 +1545,7 @@
   (b* (((mv error? tree? &) (parse-bin-val input)))
     (implies (and (not error?)
                   (equal element (element-rulename *bin-val*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-bin-val)
 
@@ -1555,7 +1555,7 @@
   (b* (((mv error? tree? &) (parse-dec-val input)))
     (implies (and (not error?)
                   (equal element (element-rulename *dec-val*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-dec-val)
 
@@ -1565,7 +1565,7 @@
   (b* (((mv error? tree? &) (parse-hex-val input)))
     (implies (and (not error?)
                   (equal element (element-rulename *hex-val*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-hex-val)
 
@@ -1577,7 +1577,7 @@
                   (equal element (!_ (/_ *bin-val*)
                                      (/_ *dec-val*)
                                      (/_ *hex-val*))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-bin/dec/hex-val)
 
 (defrule tree-match-of-parse-num-val
@@ -1586,7 +1586,7 @@
   (b* (((mv error? tree? &) (parse-num-val input)))
     (implies (and (not error?)
                   (equal element (element-rulename *num-val*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-num-val)
 
@@ -1596,7 +1596,7 @@
   (b* (((mv error? tree? &) (parse-quoted-string input)))
     (implies (and (not error?)
                   (equal element (element-rulename *quoted-string*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-quoted-string)
 
@@ -1605,7 +1605,7 @@
   :short "Tree matching theorem for @(tsee parse-?%i)."
   (b* (((mv & tree &) (parse-?%i input)))
     (implies (equal element (?_ (/_ "%i")))
-             (tree-match-element-p tree element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree element *grammar*)))
   :enable parse-?%i)
 
 (defrule tree-match-of-parse-case-insensitive-string
@@ -1615,7 +1615,7 @@
     (implies (and (not error?)
                   (equal element
                          (element-rulename *case-insensitive-string*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-case-insensitive-string)
 
@@ -1625,7 +1625,7 @@
   (b* (((mv error? tree? &) (parse-case-sensitive-string input)))
     (implies (and (not error?)
                   (equal element (element-rulename *case-sensitive-string*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-case-sensitive-string)
 
@@ -1635,7 +1635,7 @@
   (b* (((mv error? tree? &) (parse-char-val input)))
     (implies (and (not error?)
                   (equal element (element-rulename *char-val*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-char-val)
 
@@ -1646,7 +1646,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ *wsp*)
                                      (/_ *vchar*))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-wsp/vchar)
 
 (defrule tree-list-match-of-parse-*wsp/vchar
@@ -1657,7 +1657,7 @@
                                        (/_ *vchar*))))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-*wsp/vchar)
 
 (defrule tree-match-of-parse-comment
@@ -1666,7 +1666,7 @@
   (b* (((mv error? tree? &) (parse-comment input)))
     (implies (and (not error?)
                   (equal element (element-rulename *comment*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-comment)
 
@@ -1676,7 +1676,7 @@
   (b* (((mv error? tree? &) (parse-cnl input)))
     (implies (and (not error?)
                   (equal element (element-rulename *c-nl*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-cnl)
 
@@ -1686,7 +1686,7 @@
   (b* (((mv error? tree? &) (parse-cnl-wsp input)))
     (implies (and (not error?)
                   (equal element (!_ (/_ *c-nl* *wsp*))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-cnl-wsp)
 
 (defrule tree-match-of-parse-cwsp
@@ -1695,7 +1695,7 @@
   (b* (((mv error? tree? &) (parse-cwsp input)))
     (implies (and (not error?)
                   (equal element (element-rulename *c-wsp*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-cwsp)
 
@@ -1706,11 +1706,11 @@
     (and (implies (equal repetition (*_ *c-wsp*))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (element-rulename *c-wsp*))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*cwsp)
 
 (defrule tree-list-match-of-parse-1*cwsp
@@ -1721,7 +1721,7 @@
                   (equal repetition (1*_ *c-wsp*)))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-1*cwsp)
 
 (defrule tree-match-of-parse-*digit-star-*digit
@@ -1730,7 +1730,7 @@
   (b* (((mv error? tree? &) (parse-*digit-star-*digit input)))
     (implies (and (not error?)
                   (equal element (!_ (/_ (*_ *digit*) "*" (*_ *digit*)))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-*digit-star-*digit)
 
 (defrule tree-match-of-parse-repeat
@@ -1739,7 +1739,7 @@
   (b* (((mv error? tree? &) (parse-repeat input)))
     (implies (and (not error?)
                   (equal element (element-rulename *repeat*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-repeat)
 
@@ -1748,7 +1748,7 @@
   :short "Tree matching theorem for @(tsee parse-?repeat)."
   (b* (((mv & tree &) (parse-?repeat input)))
     (implies (equal element (?_ (/_ *repeat*)))
-             (tree-match-element-p tree element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree element *grammar*)))
   :enable parse-?repeat)
 
 (defrule tree-match-of-parse-alpha/digit/dash
@@ -1759,7 +1759,7 @@
                   (equal element (!_ (/_ *alpha*)
                                      (/_ *digit*)
                                      (/_ "-"))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-alpha/digit/dash)
 
 (defrule tree-list-match-of-parse-*-alpha/digit/dash
@@ -1771,7 +1771,7 @@
                                        (/_ "-"))))
              (tree-list-match-repetition-p trees
                                            repetition
-                                           *all-concrete-syntax-rules*)))
+                                           *grammar*)))
   :enable parse-*-alpha/digit/dash)
 
 (defrule tree-match-of-parse-rulename
@@ -1780,7 +1780,7 @@
   (b* (((mv error? tree? &) (parse-rulename input)))
     (implies (and (not error?)
                   (equal element (element-rulename *rulename*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-rulename)
 
@@ -1805,7 +1805,7 @@
         (implies (not error?)
                  (tree-match-element-p tree?
                                        (element-rulename *alternation*)
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-alternation)
 
     (defthmd tree-match-of-parse-concatenation-lemma
@@ -1813,7 +1813,7 @@
         (implies (not error?)
                  (tree-match-element-p tree?
                                        (element-rulename *concatenation*)
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-concatenation)
 
     (defthmd tree-match-of-parse-repetition-lemma
@@ -1821,7 +1821,7 @@
         (implies (not error?)
                  (tree-match-element-p tree?
                                        (element-rulename *repetition*)
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-repetition)
 
     (defthmd tree-match-of-parse-element-lemma
@@ -1829,7 +1829,7 @@
         (implies (not error?)
                  (tree-match-element-p tree?
                                        (element-rulename *element*)
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-element)
 
     (defthmd tree-match-of-parse-group-lemma
@@ -1837,7 +1837,7 @@
         (implies (not error?)
                  (tree-match-element-p tree?
                                        (element-rulename *group*)
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-group)
 
     (defthmd tree-match-of-parse-option-lemma
@@ -1845,7 +1845,7 @@
         (implies (not error?)
                  (tree-match-element-p tree?
                                        (element-rulename *option*)
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-option)
 
     (defthmd tree-list-match-of-parse-alt-rest-lemma
@@ -1855,7 +1855,7 @@
                                                   "/"
                                                   (*_ *c-wsp*)
                                                   *concatenation*)))
-                                      *all-concrete-syntax-rules*))
+                                      *grammar*))
       :flag parse-alt-rest)
 
     (defthmd tree-match-of-parse-alt-rest-comp-lemma
@@ -1866,7 +1866,7 @@
                                                "/"
                                                (*_ *c-wsp*)
                                                *concatenation*))
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-alt-rest-comp)
 
     (defthmd tree-list-match-of-parse-conc-rest-lemma
@@ -1874,7 +1874,7 @@
         (tree-list-match-repetition-p trees
                                       (*_ (!_ (/_ (1*_ *c-wsp*)
                                                   *repetition*)))
-                                      *all-concrete-syntax-rules*))
+                                      *grammar*))
       :flag parse-conc-rest)
 
     (defthmd tree-match-of-parse-conc-rest-comp-lemma
@@ -1883,7 +1883,7 @@
                  (tree-match-element-p tree?
                                        (!_ (/_ (1*_ *c-wsp*)
                                                *repetition*))
-                                       *all-concrete-syntax-rules*)))
+                                       *grammar*)))
       :flag parse-conc-rest-comp)
 
     :hints (("Goal"
@@ -1906,7 +1906,7 @@
                     (equal element (element-rulename *alternation*)))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-alternation-lemma)
 
   (defrule tree-match-of-parse-concatenation
@@ -1915,7 +1915,7 @@
                     (equal element (element-rulename *concatenation*)))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-concatenation-lemma)
 
   (defrule tree-match-of-parse-repetition
@@ -1924,7 +1924,7 @@
                     (equal element (element-rulename *repetition*)))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-repetition-lemma)
 
   (defrule tree-match-of-parse-element
@@ -1933,7 +1933,7 @@
                     (equal element (element-rulename *element*)))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-element-lemma)
 
   (defrule tree-match-of-parse-group
@@ -1942,7 +1942,7 @@
                     (equal element (element-rulename *group*)))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-group-lemma)
 
   (defrule tree-match-of-parse-option
@@ -1951,7 +1951,7 @@
                     (equal element (element-rulename *option*)))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-option-lemma)
 
   (defrule tree-list-match-of-parse-alt-rest
@@ -1962,7 +1962,7 @@
                                              *concatenation*))))
                (tree-list-match-repetition-p trees
                                              repetition
-                                             *all-concrete-syntax-rules*)))
+                                             *grammar*)))
     :use tree-list-match-of-parse-alt-rest-lemma)
 
   (defrule tree-match-of-parse-alt-rest-comp
@@ -1974,7 +1974,7 @@
                                            *concatenation*))))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-alt-rest-comp-lemma)
 
   (defrule tree-list-match-of-parse-conc-rest
@@ -1983,7 +1983,7 @@
                                              *repetition*))))
                (tree-list-match-repetition-p trees
                                              repetition
-                                             *all-concrete-syntax-rules*)))
+                                             *grammar*)))
     :use tree-list-match-of-parse-conc-rest-lemma)
 
   (defrule tree-match-of-parse-conc-rest-comp
@@ -1993,7 +1993,7 @@
                                            *repetition*))))
                (tree-match-element-p tree?
                                      element
-                                     *all-concrete-syntax-rules*)))
+                                     *grammar*)))
     :use tree-match-of-parse-conc-rest-comp-lemma))
 
 (defrule tree-match-of-parse-elements
@@ -2002,7 +2002,7 @@
   (b* (((mv error? tree? &) (parse-elements input)))
     (implies (and (not error?)
                   (equal element (element-rulename *elements*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-elements)
 
@@ -2013,7 +2013,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ "=")
                                      (/_ "=/"))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-equal-/-equal-slash)
 
 (defrule tree-match-of-parse-defined-as
@@ -2022,7 +2022,7 @@
   (b* (((mv error? tree? &) (parse-defined-as input)))
     (implies (and (not error?)
                   (equal element (element-rulename *defined-as*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-defined-as)
 
@@ -2032,7 +2032,7 @@
   (b* (((mv error? tree? &) (parse-rule input)))
     (implies (and (not error?)
                   (equal element (element-rulename *rule*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable parse-rule)
 
@@ -2043,7 +2043,7 @@
     (implies (and (not error?)
                   (equal element (!_ (/_ (*_ *c-wsp*)
                                          *c-nl*))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-*cwsp-cnl)
 
 (defrule tree-match-of-parse-rule-/-*cwsp-cnl
@@ -2054,7 +2054,7 @@
                   (equal element (!_ (/_ *rule*)
                                      (/_ (!_ (/_ (*_ *c-wsp*)
                                                  *c-nl*))))))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :enable parse-rule-/-*cwsp-cnl)
 
 (defrule tree-list-match-of-parse-*-rule-/-*cwsp-cnl
@@ -2066,13 +2066,13 @@
                                                         *c-nl*))))))
                   (tree-list-match-repetition-p trees
                                                 repetition
-                                                *all-concrete-syntax-rules*))
+                                                *grammar*))
          (implies (equal element (!_ (/_ *rule*)
                                      (/_ (!_ (/_ (*_ *c-wsp*)
                                                  *c-nl*)))))
                   (tree-list-match-element-p trees
                                              element
-                                             *all-concrete-syntax-rules*))))
+                                             *grammar*))))
   :enable parse-*-rule-/-*cwsp-cnl)
 
 (defrule tree-match-of-parse-rulelist
@@ -2081,7 +2081,7 @@
   (b* (((mv error? tree? &) (parse-rulelist input)))
     (implies (and (not error?)
                   (equal element (element-rulename *rulelist*)))
-             (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
+             (tree-match-element-p tree? element *grammar*)))
   :expand (:free (tree element rules) (tree-match-element-p tree element rules))
   :enable (parse-rulelist))
 
@@ -2114,7 +2114,7 @@
              (parse-treep tree?
                           (nat-list-fix nats)
                           *rulelist*
-                          *all-concrete-syntax-rules*)))
+                          *grammar*)))
   :enable (parse-grammar parse-treep)
   :use (:instance input-decomposition-of-parse-rulelist
                   (input nats)))
@@ -2153,7 +2153,7 @@
 (define tree-cwsp-restriction-p ((tree treep))
   :guard (and (tree-match-element-p tree
                                     (element-rulename *c-wsp*)
-                                    *all-concrete-syntax-rules*)
+                                    *grammar*)
               (tree-terminatedp tree))
   :returns (yes/no booleanp)
   :parents (grammar-parser-disambiguating-restrictions)
@@ -2167,7 +2167,7 @@
     must not match the @('WSP') alternative of the @('c-wsp') rule.")
   (not (tree-match-element-p (car (car (tree-nonleaf->branches tree)))
                              (element-rulename *wsp*)
-                             *all-concrete-syntax-rules*))
+                             *grammar*))
   :guard-hints (("Goal"
                  :in-theory (enable tree-terminatedp)
                  :expand (:free (element rules)
@@ -2178,7 +2178,7 @@
   :guard (and (tree-match-element-p tree
                                     (!_ (/_ (*_ *c-wsp*)
                                             *c-nl*))
-                                    *all-concrete-syntax-rules*)
+                                    *grammar*)
               (tree-terminatedp tree))
   :returns (yes/no booleanp)
   :parents (grammar-parser-disambiguating-restrictions)
@@ -2203,7 +2203,7 @@
                                     (!_ (/_ *rule*)
                                         (/_ (!_ (/_ (*_ *c-wsp*)
                                                     *c-nl*))))
-                                    *all-concrete-syntax-rules*)
+                                    *grammar*)
               (tree-terminatedp tree))
   :returns (yes/no booleanp)
   :parents (grammar-parser-disambiguating-restrictions)
@@ -2217,7 +2217,7 @@
     otherwise, @(tsee tree-*cwsp-cnl-restriction-p) applies.")
   (or (tree-match-element-p (car (car (tree-nonleaf->branches tree)))
                             (element-rulename *rule*)
-                            *all-concrete-syntax-rules*)
+                            *grammar*)
       (tree-*cwsp-cnl-restriction-p (car (car (tree-nonleaf->branches tree)))))
   :guard-hints (("Goal" :in-theory (enable tree-match-element-p
                                            tree-list-match-repetition-p
@@ -2231,7 +2231,7 @@
                                             (*_ (!_ (/_ *rule*)
                                                     (/_ (!_ (/_ (*_ *c-wsp*)
                                                                 *c-nl*)))))
-                                            *all-concrete-syntax-rules*)
+                                            *grammar*)
               (tree-list-terminatedp x))
   :parents (grammar-parser-disambiguating-restrictions)
   :short "Restrictions on the @('*( rule / (*c-wsp c-nl) )') tree lists
@@ -2249,7 +2249,7 @@
 (define tree-rulelist-restriction-p ((tree treep))
   :guard (and (tree-match-element-p tree
                                     (element-rulename *rulelist*)
-                                    *all-concrete-syntax-rules*)
+                                    *grammar*)
               (tree-terminatedp tree))
   :returns (yes/no booleanp)
   :parents (grammar-parser-disambiguating-restrictions)
@@ -3044,7 +3044,7 @@
           a direct numeric value notation."
   (implies (tree-match-element-p tree
                                  (element-num-val (num-val-direct nats))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal (car (tree->string tree))
                   (car (nat-list-fix nats))))
   :rule-classes nil
@@ -3057,7 +3057,7 @@
           a range numeric value notation."
   (implies (tree-match-element-p tree
                                  (element-num-val (num-val-range min max))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (and (<= (nfix min)
                     (car (tree->string tree)))
                 (<= (car (tree->string tree))
@@ -3073,7 +3073,7 @@
   (implies (tree-match-element-p tree
                                  (element-char-val
                                   (char-val-insensitive charstring))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (nats-match-insensitive-chars-p (tree->string tree)
                                            (explode charstring)))
   :rule-classes nil
@@ -3085,7 +3085,7 @@
   :short "Constraints induced by a terminated tree that matches @('ALPHA')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *alpha*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -3111,7 +3111,7 @@
   :short "Constraints induced by a terminated tree that matches @('CR')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *cr*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\Return)))
@@ -3126,7 +3126,7 @@
   :short "Constraints induced by a terminated tree that matches @('DIGIT')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *digit*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (<= (char-code #\0)
                     (car (tree->string tree)))
@@ -3144,7 +3144,7 @@
   :short "Constraints induced by a terminated tree that matches @('DQUOTE')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *dquote*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\")))
@@ -3159,7 +3159,7 @@
   :short "Constraints induced by a terminated tree that matches @('HTAB')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *htab*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\Tab)))
@@ -3174,7 +3174,7 @@
   :short "Constraints induced by a terminated tree that matches @('SP')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *sp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\Space)))
@@ -3189,7 +3189,7 @@
   :short "Constraints induced by a terminated tree that matches @('VCHAR')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *vchar*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (<= (char-code #\!)
                     (car (tree->string tree)))
@@ -3207,7 +3207,7 @@
   :short "Constraints induced by a terminated tree that matches @('CRLF')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *crlf*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\Return)))
@@ -3221,7 +3221,7 @@
   :short "Constraints induced by a terminated tree that matches @('WSP')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *wsp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\Tab #\Space))))
@@ -3237,7 +3237,7 @@
   :short "Constraints induced by a terminated tree that matches @('prose-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *prose-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\<)))
@@ -3253,7 +3253,7 @@
           that matches @('*DIGIT')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *digit*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (consp (tree-list->string trees)))
            (and (<= (char-code #\0)
@@ -3271,7 +3271,7 @@
           @('1*DIGIT')."
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ *digit*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees))
            (and (<= (char-code #\0)
                     (car (tree-list->string trees)))
@@ -3287,7 +3287,7 @@
   :short "Constraints induced by a tree that matches a group @('(\".\" ...)')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (equal (element-kind element) :group)
                 (consp (element-group->get element))
                 (not (consp (cdr (element-group->get element))))
@@ -3315,7 +3315,7 @@
   :short "Constraints induced by a tree that matches a group @('(\"-\" ...)')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (equal (element-kind element) :group)
                 (consp (element-group->get element))
                 (not (consp (cdr (element-group->get element))))
@@ -3347,7 +3347,7 @@
                                                            (1*_ *bit*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *bit*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (consp (tree->string tree)))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\- #\.))))
@@ -3373,7 +3373,7 @@
                                                            (1*_ *digit*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *digit*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (consp (tree->string tree)))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\- #\.))))
@@ -3399,7 +3399,7 @@
                                                            (1*_ *hexdig*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *hexdig*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (consp (tree->string tree)))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\- #\.))))
@@ -3420,7 +3420,7 @@
   :short "Constraints induced by a terminated tree that matches @('bin-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *bin-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\B #\b))))
@@ -3435,7 +3435,7 @@
   :short "Constraints induced by a terminated tree that matches @('dec-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *dec-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\D #\d))))
@@ -3450,7 +3450,7 @@
   :short "Constraints induced by a terminated tree that matches @('hex-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *hex-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\X #\x))))
@@ -3468,7 +3468,7 @@
                                       (!_ (/_ *bin-val*)
                                           (/_ *dec-val*)
                                           (/_ *hex-val*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\B #\D #\X #\b #\d #\x))))
@@ -3486,7 +3486,7 @@
   :short "Constraints induced by a terminated tree that matches @('num-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *num-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (equal (car (tree->string tree))
                        (char-code #\%))
@@ -3506,7 +3506,7 @@
           @('quoted-string')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *quoted-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\")))
@@ -3521,7 +3521,7 @@
           @('case-sensitive-string')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *case-sensitive-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (equal (car (tree->string tree))
                        (char-code #\%))
@@ -3540,7 +3540,7 @@
           and that has a non-empty string at the leaves."
   (implies (and (tree-match-element-p tree
                                       (?_ (/_ "%i"))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (consp (tree->string tree)))
            (and (equal (car (tree->string tree))
                        (char-code #\%))
@@ -3559,7 +3559,7 @@
   (implies (and (tree-match-element-p tree
                                       (element-rulename
                                        *case-insensitive-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (equal (car (tree->string tree))
                       (char-code #\"))
@@ -3579,7 +3579,7 @@
   :short "Constraints induced by a terminated tree that matches @('char-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *char-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\" #\%))))
@@ -3595,7 +3595,7 @@
   :short "Constraints induced by a terminated tree that matches @('comment')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *comment*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\;)))
@@ -3610,7 +3610,7 @@
   :short "Constraints induced by a terminated tree that matches @('c-nl')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\Return #\;))))
@@ -3627,7 +3627,7 @@
           @('(c-nl WSP)')."
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ *c-nl* *wsp*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\Return #\;))))
@@ -3641,7 +3641,7 @@
   :short "Constraints induced by a terminated tree that matches @('c-wsp')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-wsp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\Tab #\Return #\Space #\;))))
@@ -3658,7 +3658,7 @@
           that matches @('*c-wsp')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (consp (tree-list->string trees)))
            (member-equal (car (tree-list->string trees))
@@ -3674,7 +3674,7 @@
           @('(*DIGIT \"*\" *DIGIT)')."
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (*_ *digit*) "*" (*_ *digit*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\0)
                         (car (tree->string tree)))
@@ -3695,7 +3695,7 @@
   :short "Constraints induced by a terminated tree that matches @('repeat')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *repeat*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\0)
                         (car (tree->string tree)))
@@ -3717,7 +3717,7 @@
           and that has a non-empty string at the leaves."
   (implies (and (tree-match-element-p tree
                                       (?_ (/_ *repeat*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (consp (tree->string tree)))
            (or (and (<= (char-code #\0)
@@ -3736,7 +3736,7 @@
   :short "Constraints induced by a terminated tree that matches @('rulename')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *rulename*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -3756,7 +3756,7 @@
   :short "Constraints induced by a terminated tree that matches @('group')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *group*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\()))
@@ -3771,7 +3771,7 @@
   :short "Constraints induced by a terminated tree that matches @('option')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *option*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (car (tree->string tree))
                   (char-code #\[)))
@@ -3786,7 +3786,7 @@
   :short "Constraints induced by a terminated tree that matches @('element')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *element*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -3819,7 +3819,7 @@
           @('repetition')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *repetition*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -3848,7 +3848,7 @@
           @('concatenation')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *concatenation*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -3875,7 +3875,7 @@
           @('alternation')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *alternation*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -3901,7 +3901,7 @@
   :short "Constraints induced by a terminated tree that matches @('elements')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *elements*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -3929,7 +3929,7 @@
   (implies (tree-match-element-p tree
                                  (!_ (/_ "=")
                                      (/_ "=/"))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal (car (tree->string tree))
                   (char-code #\=)))
   :rule-classes nil
@@ -3947,7 +3947,7 @@
           @('defined-as')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *defined-as*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (member-equal (car (tree->string tree))
                          (chars=>nats '(#\Tab #\Return #\Space #\; #\=))))
@@ -3963,7 +3963,7 @@
   :short "Constraints induced by a terminated tree that matches @('rule')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *rule*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (or (and (<= (char-code #\A)
                         (car (tree->string tree)))
@@ -4439,7 +4439,7 @@
   :short "Disambiguation between two disjoint numeric ranges."
   (implies (and (tree-match-element-p tree
                                       (%- min2 max2)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (< (nfix max1) (nfix min2)))
            (mv-nth 0 (parse-in-range min1 max1 (append (tree->string tree)
                                                        rest-input))))
@@ -4457,7 +4457,7 @@
   :short "Disambiguation between @('\"0\"') and @('\"1\"')."
   (implies (tree-match-element-p tree
                                  (element-char-val (char-val-insensitive "1"))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (mv-nth 0 (parse-ichar #\0 (append (tree->string tree)
                                               rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
@@ -4476,7 +4476,7 @@
           @('\"D\"'),
           @('\"E\"'), and
           @('\"F\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (elementp element)
                 (equal (element-kind element)
                        :char-val)
@@ -4501,7 +4501,7 @@
           @('\"D\"'),
           @('\"E\"'), and
           @('\"F\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (elementp element)
                 (equal (element-kind element)
                        :char-val)
@@ -4527,7 +4527,7 @@
   :short "Disambiguation between @('SP') and @('HTAB')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *htab*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-sp (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-htab
@@ -4539,7 +4539,7 @@
   :short "Disambiguation between @('(%x20-3D / %x3F-7E)') and @('\">\"')."
   (implies (tree-match-element-p tree
                                  (element-char-val (char-val-insensitive ">"))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (mv-nth 0 (parse-in-either-range #x20 #x3d #x3f #x7e
                                             (append (tree->string tree)
                                                     rest-input))))
@@ -4559,7 +4559,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ "."
                                                           (1*_ *bit*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (mv-nth 0 (parse-bit rest-input)))
            (mv-nth 0 (parse-bit (append (tree-list->string trees)
                                         rest-input))))
@@ -4578,7 +4578,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ "."
                                                           (1*_ *digit*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (mv-nth 0 (parse-digit rest-input)))
            (mv-nth 0 (parse-digit (append (tree-list->string trees)
                                           rest-input))))
@@ -4597,7 +4597,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ "."
                                                           (1*_ *hexdig*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (mv-nth 0 (parse-hexdig (append (tree-list->string trees)
                                            rest-input))))
@@ -4614,7 +4614,7 @@
   :short "Disambiguation between @('\".\"') and @('(\"-\" ...)')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (equal (element-kind element) :group)
                 (consp (element-group->get element))
                 (not (consp (cdr (element-group->get element))))
@@ -4639,7 +4639,7 @@
                                                            (1*_ *bit*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *bit*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (mv-nth 0 (parse-bit rest-input)))
            (mv-nth 0 (parse-bit (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-bin-val-rest-when-nonempty
@@ -4656,7 +4656,7 @@
                                                            (1*_ *digit*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *digit*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (mv-nth 0 (parse-digit rest-input)))
            (mv-nth 0 (parse-digit (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-dec-val-rest-when-nonempty
@@ -4673,7 +4673,7 @@
                                                            (1*_ *hexdig*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *hexdig*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (mv-nth 0 (parse-hexdig (append (tree->string tree)
                                            rest-input))))
@@ -4685,7 +4685,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('bin-val') and
           any of @('dec-val') and @('hex-val')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-rulename *dec-val*)
                                             (element-rulename *hex-val*)))
                 (tree-terminatedp tree))
@@ -4701,7 +4701,7 @@
   :short "Disambiguation between @('dec-val') and @('hex-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *hex-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-dec-val (append (tree->string tree)
                                             rest-input))))
@@ -4714,7 +4714,7 @@
   :short "Disambiguation between @('(%x20-21 / %x23-7E)') and @('DQUOTE')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *dquote*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-in-either-range #x20 #x21 #x23 #x7e
                                             (append (tree->string tree)
@@ -4732,7 +4732,7 @@
   :short "Disambiguation between @('\"%i\"') and @('quoted-string')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *quoted-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-ichar2 #\% #\i (append (tree->string tree)
                                                    rest-input))))
@@ -4748,7 +4748,7 @@
           @('case-sensitive-string')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *case-sensitive-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-case-insensitive-string (append (tree->string tree)
                                                             rest-input))))
@@ -4761,7 +4761,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('WSP') and
           any of @('VCHAR'), @('rule'), and @('(c-nl WSP)')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-rulename *vchar*)
                                             (element-rulename *rule*)
                                             (!_ (/_ *c-nl* *wsp*))))
@@ -4778,7 +4778,7 @@
   :short "Disambiguation between @('(WSP / VCHAR)') and @('CRLF')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *crlf*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-wsp/vchar (append (tree->string tree)
                                               rest-input))))
@@ -4791,7 +4791,7 @@
   :short "Disambiguation between @('comment') and @('CRLF')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *crlf*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-comment (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-crlf
@@ -4802,7 +4802,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('DIGIT') and
           any of @('\"*\"') and @('\"-\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive "*"))
                                             (element-char-val
@@ -4821,7 +4821,7 @@
           any of @('DIGIT') and @('\"-\"')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (member-equal element (list (element-rulename *digit*)
                                             (element-char-val
                                              (char-val-insensitive "-"))))
@@ -4837,7 +4837,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('c-wsp') and
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive "/"))
                                             (element-char-val
@@ -4861,7 +4861,7 @@
   (implies (tree-match-element-p tree
                                  (!_ (/_ "=")
                                      (/_ "=/"))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (mv-nth 0 (parse-cwsp (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-equal-/-equal-slash
         (:instance constraints-from-parse-cwsp
@@ -4872,7 +4872,7 @@
   :short "Disambiguation between @('c-wsp') and @('elements')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *elements*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-cwsp (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-elements
@@ -4883,7 +4883,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('c-wsp') and
           any of @('alternation'), @('concatenation'), and @('repetition')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-rulename *alternation*)
                                             (element-rulename *concatenation*)
                                             (element-rulename *repetition*)))
@@ -4899,7 +4899,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('1*c-wsp') and
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive "/"))
                                             (element-char-val
@@ -4920,7 +4920,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('repetition') and
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive "/"))
                                             (element-char-val
@@ -4942,7 +4942,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('(ALPHA / DIGIT / \"-\")') and
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive "/"))
                                             (element-char-val
@@ -4965,7 +4965,7 @@
   :short "Disambiguation between @('(ALPHA / DIGIT / \"-\")') and @('c-nl')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree->string tree)
                                                      rest-input))))
@@ -4978,7 +4978,7 @@
   :short "Disambiguation between @('(ALPHA / DIGIT / \"-\")') and @('c-wsp')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-wsp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree->string tree)
                                                      rest-input))))
@@ -4992,7 +4992,7 @@
           @('*c-wsp') not followed by @('(ALPHA / DIGIT / \"-\")')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input)))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree-list->string trees)
@@ -5009,7 +5009,7 @@
                                               "/"
                                               (*_ *c-wsp*)
                                               *concatenation*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree->string tree)
                                                      rest-input))))
@@ -5035,7 +5035,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input)))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree-list->string trees)
@@ -5050,7 +5050,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (1*_ *c-wsp*)
                                               *repetition*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree->string tree)
                                                      rest-input))))
@@ -5070,7 +5070,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input)))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree-list->string trees)
@@ -5084,9 +5084,9 @@
           @('*c-wsp') followed by @('\")\"') or @('\"]\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
-                (tree-match-element-p tree element *all-concrete-syntax-rules*)
+                (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive ")"))
                                             (element-char-val
@@ -5106,7 +5106,7 @@
           @('defined-as')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *defined-as*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree->string tree)
                                                      rest-input))))
@@ -5121,7 +5121,7 @@
           (ii) @('\"/\"')."
   (implies (tree-match-element-p tree
                                  (element-char-val (char-val-insensitive "/"))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (and (mv-nth 0 (parse-bit (append (tree->string tree)
                                              rest-input)))
                 (mv-nth 0 (parse-digit (append (tree->string tree)
@@ -5154,7 +5154,7 @@
           (ii) @('c-nl')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (mv-nth 0 (parse-bit (append (tree->string tree)
                                              rest-input)))
@@ -5187,7 +5187,7 @@
           (ii) @('c-wsp')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-wsp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (mv-nth 0 (parse-bit (append (tree->string tree)
                                              rest-input)))
@@ -5223,7 +5223,7 @@
                                               "/"
                                               (*_ *c-wsp*)
                                               *concatenation*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (mv-nth 0 (parse-bit (append (tree->string tree)
                                              rest-input)))
@@ -5255,7 +5255,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (1*_ *c-wsp*)
                                               *repetition*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (mv-nth 0 (parse-bit (append (tree->string tree)
                                              rest-input)))
@@ -5280,7 +5280,7 @@
   :short "Disambiguation between (i) any of
           @('BIT'), @('DIGIT'), @('HEXDIG'), @('\".\"'), and @('\"-\"') and
           (ii) any of @('\")\"') and @('\"]\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive ")"))
                                             (element-char-val
@@ -5319,9 +5319,9 @@
           (ii) @('*c-wsp') followed by @('\")\"') or @('\"]\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
-                (tree-match-element-p tree element *all-concrete-syntax-rules*)
+                (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive ")"))
                                             (element-char-val
@@ -5356,7 +5356,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-bit rest-input)))
            (mv-nth 0 (parse-bit (append (tree-list->string trees)
@@ -5374,7 +5374,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input)))
            (mv-nth 0 (parse-digit (append (tree-list->string trees)
@@ -5392,7 +5392,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (mv-nth 0 (parse-hexdig (append (tree-list->string trees)
@@ -5410,7 +5410,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-ichar #\. rest-input)))
            (mv-nth 0 (parse-ichar #\. (append (tree-list->string trees)
@@ -5428,7 +5428,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-ichar #\- rest-input)))
            (mv-nth 0 (parse-ichar #\- (append (tree-list->string trees)
@@ -5444,7 +5444,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-bit rest-input)))
            (mv-nth 0 (parse-bit (append (tree-list->string trees)
@@ -5460,7 +5460,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input)))
            (mv-nth 0 (parse-digit (append (tree-list->string trees)
@@ -5476,7 +5476,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (mv-nth 0 (parse-hexdig (append (tree-list->string trees)
@@ -5492,7 +5492,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-ichar #\. rest-input)))
            (mv-nth 0 (parse-ichar #\. (append (tree-list->string trees)
@@ -5508,7 +5508,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-ichar #\- rest-input)))
            (mv-nth 0 (parse-ichar #\- (append (tree-list->string trees)
@@ -5522,7 +5522,7 @@
           @('*c-wsp') not followed by @('BIT')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-bit rest-input)))
            (mv-nth 0 (parse-bit (append (tree-list->string trees)
@@ -5536,7 +5536,7 @@
           @('*c-wsp') not followed by @('DIGIT')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input)))
            (mv-nth 0 (parse-digit (append (tree-list->string trees)
@@ -5550,7 +5550,7 @@
           @('*c-wsp') not followed by @('HEXDIG')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (mv-nth 0 (parse-hexdig (append (tree-list->string trees)
@@ -5564,7 +5564,7 @@
           @('*c-wsp') not followed by @('\".\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-ichar #\. rest-input)))
            (mv-nth 0 (parse-ichar #\. (append (tree-list->string trees)
@@ -5578,7 +5578,7 @@
           @('*c-wsp') not followed by @('\"=\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-ichar #\- rest-input)))
            (mv-nth 0 (parse-ichar #\- (append (tree-list->string trees)
@@ -5592,7 +5592,7 @@
           @('*c-wsp') not followed by @('\"/\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-ichar #\/ rest-input)))
            (mv-nth 0 (parse-ichar #\/ (append (tree-list->string trees)
@@ -5609,7 +5609,7 @@
   :short "Disambiguation between @('\"/\"') and @('elements')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *elements*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-ichar #\/ (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-elements
@@ -5623,7 +5623,7 @@
           (ii) @('element')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *element*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (mv-nth 0 (parse-digit (append (tree->string tree)
                                                rest-input)))
@@ -5641,7 +5641,7 @@
   :short "Disambiguation between @('num-val') and @('prose-val')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *prose-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-num-val (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-prose-val
@@ -5654,7 +5654,7 @@
           any of @('num-val') and @('prose-val')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (member-equal element (list (element-rulename *num-val*)
                                             (element-rulename *prose-val*)))
                 (tree-terminatedp tree))
@@ -5671,7 +5671,7 @@
           any of @('char-val'), @('num-val'), and @('prose-val')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (member-equal element (list (element-rulename *char-val*)
                                             (element-rulename *num-val*)
                                             (element-rulename *prose-val*)))
@@ -5689,7 +5689,7 @@
           any of @('option'), @('char-val'), @('num-val'), and @('prose-val')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (member-equal element (list (element-rulename *option*)
                                             (element-rulename *char-val*)
                                             (element-rulename *num-val*)
@@ -5714,7 +5714,7 @@
           @('prose-val')."
   (implies (and (tree-match-element-p tree
                                       element
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (member-equal element (list (element-rulename *group*)
                                             (element-rulename *option*)
                                             (element-rulename *char-val*)
@@ -5734,7 +5734,7 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('\"/\"') and
           any of @('\")\"') and @('\"]\"')."
-  (implies (and (tree-match-element-p tree element *all-concrete-syntax-rules*)
+  (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive ")"))
                                             (element-char-val
@@ -5755,7 +5755,7 @@
   (implies (and (tree-match-element-p tree
                                       (element-char-val
                                        (char-val-insensitive "="))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (mv-nth 0 (parse-ichar #\/ rest-input)))
            (mv-nth 0 (parse-ichar2 #\= #\/ (append (tree->string tree)
                                                    rest-input))))
@@ -5778,7 +5778,7 @@
           (ii) @('c-nl')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (and (mv-nth 0 (parse-ichar #\/ (append (tree->string tree)
                                                    rest-input)))
@@ -5809,7 +5809,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (*_ *c-wsp*)
                                               *c-nl*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-rule (append (tree->string tree) rest-input))))
   :cases ((consp (car (tree-nonleaf->branches tree))))
@@ -5833,7 +5833,7 @@
           when the tree satisfies the disambiguating restrictions."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-wsp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (tree-cwsp-restriction-p tree))
            (mv-nth 0 (parse-wsp (append (tree->string tree) rest-input))))
@@ -5856,7 +5856,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (*_ *c-wsp*)
                                               *c-nl*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (tree-*cwsp-cnl-restriction-p tree))
            (mv-nth 0 (parse-wsp (append (tree->string tree) rest-input))))
@@ -5886,7 +5886,7 @@
                                       (!_ (/_ *rule*)
                                           (/_ (!_ (/_ (*_ *c-wsp*)
                                                       *c-nl*))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (tree-rule-/-*cwsp-cnl-restriction-p tree))
            (mv-nth 0 (parse-wsp (append (tree->string tree) rest-input))))
@@ -5909,7 +5909,7 @@
                                               (*_ (!_ (/_ *rule*)
                                                       (/_ (!_ (/_ (*_ *c-wsp*)
                                                                   *c-nl*)))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (tree-list-*-rule-/-*cwsp-cnl-restriction-p trees)
                 (mv-nth 0 (parse-wsp rest-input)))
@@ -6640,7 +6640,7 @@
 (defrule parse-exact-when-tree-match
   :parents (grammar-parser-completeness)
   :short "Completeness theorem for @(tsee parse-exact)."
-  (implies (tree-match-element-p tree (%. nat) *all-concrete-syntax-rules*)
+  (implies (tree-match-element-p tree (%. nat) *grammar*)
            (equal (parse-exact nat (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
   :enable (parse-exact
@@ -6657,7 +6657,7 @@
 (defrule parse-in-range-when-tree-match
   :parents (grammar-parser-completeness)
   :short "Completeness theorem for @(tsee parse-in-range)."
-  (implies (tree-match-element-p tree (%- min max) *all-concrete-syntax-rules*)
+  (implies (tree-match-element-p tree (%- min max) *grammar*)
            (equal (parse-in-range min max (append (tree->string tree)
                                                   rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6677,7 +6677,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (%- min1 max1))
                                           (/_ (%- min2 max2)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (< (nfix max1)
                    (nfix min2)))
            (equal (parse-in-either-range min1 max1 min2 max2
@@ -6696,7 +6696,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (%- min1 max1))
                                                       (/_ (%- min2 max2))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (< (nfix max1)
                    (nfix min2))
                 (mv-nth 0 (parse-in-either-range min1 max1 min2 max2
@@ -6717,7 +6717,7 @@
   (implies (tree-match-element-p tree
                                  (element-char-val (char-val-insensitive
                                                     (implode (list char))))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal (parse-ichar char (append (tree->string tree)
                                             rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6733,7 +6733,7 @@
                                  (element-char-val (char-val-insensitive
                                                     (implode (list char1
                                                                    char2))))
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal (parse-ichar2 char1 char2 (append (tree->string tree)
                                                     rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6747,7 +6747,7 @@
   :short "Completeness theorem for @(tsee parse-alpha)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *alpha*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-alpha (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6765,7 +6765,7 @@
   :short "Completeness theorem for @(tsee parse-bit)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *bit*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-bit (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6778,7 +6778,7 @@
   :short "Completeness theorem for @(tsee parse-cr)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *cr*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-cr (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6790,7 +6790,7 @@
   :short "Completeness theorem for @(tsee parse-digit)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *digit*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-digit (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6802,7 +6802,7 @@
   :short "Completeness theorem for @(tsee parse-dquote)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *dquote*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-dquote (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6814,7 +6814,7 @@
   :short "Completeness theorem for @(tsee parse-htab)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *htab*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-htab (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6826,7 +6826,7 @@
   :short "Completeness theorem for @(tsee parse-lf)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *lf*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-lf (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6838,7 +6838,7 @@
   :short "Completeness theorem for @(tsee parse-sp)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *sp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-sp (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6850,7 +6850,7 @@
   :short "Completeness theorem for @(tsee parse-vchar)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *vchar*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-vchar (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6862,7 +6862,7 @@
   :short "Completeness theorem for @(tsee parse-crlf)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *crlf*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-crlf (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6874,7 +6874,7 @@
   :short "Completeness theorem for @(tsee parse-hexdig)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *hexdig*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-hexdig (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6888,7 +6888,7 @@
   :short "Completeness theorem for @(tsee parse-wsp)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *wsp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-wsp (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6901,7 +6901,7 @@
   :short "Completeness theorem for @(tsee parse-prose-val)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *prose-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-prose-val (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6914,7 +6914,7 @@
   :short "Completeness theorem for @(tsee parse-*bit)."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *bit*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-bit rest-input)))
            (equal (parse-*bit (append (tree-list->string trees) rest-input))
@@ -6929,7 +6929,7 @@
   :short "Completeness theorem for @(tsee parse-*digit)."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *digit*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input)))
            (equal (parse-*digit (append (tree-list->string trees) rest-input))
@@ -6946,7 +6946,7 @@
           and @('1*DIGIT') not followed by @('DIGIT') or @('\"*\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ *digit*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input))
                 (mv-nth 0 (parse-ichar #\* rest-input)))
@@ -6955,14 +6955,14 @@
   :enable parse-*digit-star-*digit
   :use (:instance tree-list-match-repetition-p-of-0+-reps-when-1+-reps
                   (element (element-rulename *digit*))
-                  (rules *all-concrete-syntax-rules*)))
+                  (rules *grammar*)))
 
 (defrule parse-*hexdig-when-tree-list-match
   :parents (grammar-parser-completeness)
   :short "Completeness theorem for @(tsee parse-*hexdig)."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *hexdig*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (equal (parse-*hexdig (append (tree-list->string trees) rest-input))
@@ -6977,7 +6977,7 @@
   :short "Completeness theorem for @(tsee parse-1*bit)."
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ *bit*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-bit rest-input)))
            (equal (parse-1*bit (append (tree-list->string trees) rest-input))
@@ -6990,7 +6990,7 @@
   :short "Completeness theorem for @(tsee parse-1*digit)."
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ *digit*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input)))
            (equal (parse-1*digit (append (tree-list->string trees) rest-input))
@@ -7003,7 +7003,7 @@
   :short "Completeness theorem for @(tsee parse-1*hexdig)."
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ *hexdig*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (equal (parse-1*hexdig (append (tree-list->string trees) rest-input))
@@ -7017,7 +7017,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ "."
                                               (1*_ *bit*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-bit rest-input)))
            (equal (parse-dot-1*bit (append (tree->string tree) rest-input))
@@ -7031,7 +7031,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ "."
                                               (1*_ *digit*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-digit rest-input)))
            (equal (parse-dot-1*digit (append (tree->string tree) rest-input))
@@ -7045,7 +7045,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ "."
                                               (1*_ *hexdig*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (equal (parse-dot-1*hexdig (append (tree->string tree) rest-input))
@@ -7059,7 +7059,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ "-"
                                               (1*_ *bit*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-bit rest-input)))
            (equal (parse-dash-1*bit (append (tree->string tree) rest-input))
@@ -7073,7 +7073,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ "-"
                                               (1*_ *digit*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-digit rest-input)))
            (equal (parse-dash-1*digit (append (tree->string tree) rest-input))
@@ -7087,7 +7087,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ "-"
                                               (1*_ *hexdig*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-hexdig rest-input)))
            (equal (parse-dash-1*hexdig (append (tree->string tree) rest-input))
@@ -7101,7 +7101,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ "."
                                                           (1*_ *bit*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-bit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input)))
@@ -7121,7 +7121,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ "."
                                                           (1*_ *digit*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input)))
@@ -7141,7 +7141,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ "."
                                                           (1*_ *hexdig*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-hexdig rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input)))
@@ -7161,7 +7161,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ (!_ (/_ "."
                                                            (1*_ *bit*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-bit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input)))
@@ -7178,7 +7178,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ (!_ (/_ "."
                                                            (1*_ *digit*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-digit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input)))
@@ -7195,7 +7195,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ (!_ (/_ "."
                                                            (1*_ *hexdig*))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-hexdig rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input)))
@@ -7214,7 +7214,7 @@
                                                            (1*_ *bit*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *bit*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-bit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input))
@@ -7236,7 +7236,7 @@
                                                            (1*_ *digit*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *digit*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-digit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input))
@@ -7258,7 +7258,7 @@
                                                            (1*_ *hexdig*)))))
                                           (/_ (!_ (/_ "-"
                                                       (1*_ *hexdig*)))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-hexdig rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input))
@@ -7277,7 +7277,7 @@
   :short "Completeness theorem for @(tsee parse-bin-val)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *bin-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-bit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input))
@@ -7293,7 +7293,7 @@
   :short "Completeness theorem for @(tsee parse-dec-val)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *dec-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-digit rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input))
@@ -7309,7 +7309,7 @@
   :short "Completeness theorem for @(tsee parse-hex-val)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *hex-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-hexdig rest-input))
                 (mv-nth 0 (parse-ichar #\. rest-input))
@@ -7327,7 +7327,7 @@
                                       (!_ (/_ *bin-val*)
                                           (/_ *dec-val*)
                                           (/_ *hex-val*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-bit rest-input))
                 (mv-nth 0 (parse-digit rest-input))
@@ -7347,7 +7347,7 @@
   :short "Completeness theorem for @(tsee parse-num-val)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *num-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-bit rest-input))
                 (mv-nth 0 (parse-digit rest-input))
@@ -7364,7 +7364,7 @@
   :short "Completeness theorem for @(tsee parse-quoted-string)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *quoted-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-quoted-string (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7377,7 +7377,7 @@
   :short "Completeness theorem for @(tsee parse-case-sensitive-string)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *case-sensitive-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-case-sensitive-string (append (tree->string tree)
                                                        rest-input))
@@ -7390,7 +7390,7 @@
   :short "Completeness theorem for @(tsee parse-?%i)."
   (implies (and (tree-match-element-p tree
                                       (?_ (/_ "%i"))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (mv-nth 0 (parse-ichar2 #\% #\i rest-input)))
            (equal (parse-?%i (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7403,7 +7403,7 @@
   (implies (and (tree-match-element-p tree
                                       (element-rulename
                                        *case-insensitive-string*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-case-insensitive-string (append (tree->string tree)
                                                          rest-input))
@@ -7417,7 +7417,7 @@
   :short "Completeness theorem for @(tsee parse-char-val)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *char-val*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-char-val (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7431,7 +7431,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ *wsp*)
                                           (/_ *vchar*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-wsp/vchar (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7445,7 +7445,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ *wsp*)
                                                       (/_ *vchar*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-wsp/vchar rest-input)))
            (equal (parse-*wsp/vchar (append (tree-list->string trees)
@@ -7461,7 +7461,7 @@
   :short "Completeness theorem for @(tsee parse-comment)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *comment*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-comment (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7474,7 +7474,7 @@
   :short "Completeness theorem for @(tsee parse-cnl)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-cnl (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7489,7 +7489,7 @@
           and @('c-nl') not followed by @('WSP')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-wsp rest-input)))
            (mv-nth 0 (parse-alt-rest-comp
@@ -7508,7 +7508,7 @@
           and @('c-nl') not followed by @('WSP')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-wsp rest-input)))
            (mv-nth 0 (parse-conc-rest-comp
@@ -7527,7 +7527,7 @@
           and @('c-nl') not followed by @('WSP')."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-nl*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-wsp rest-input)))
            (mv-nth 0 (parse-cwsp (append (tree->string tree) rest-input))))
@@ -7541,7 +7541,7 @@
   :short "Completeness theorem for @(tsee parse-cnl-wsp)."
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ *c-nl* *wsp*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-cnl-wsp (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7553,7 +7553,7 @@
   :short "Completeness theorem for @(tsee parse-cwsp)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *c-wsp*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-cwsp (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -7569,7 +7569,7 @@
           not followed by @('(*c-wsp \"/\" *c-wsp concatenation)')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-alt-rest-comp rest-input)))
            (mv-nth 0 (parse-alt-rest-comp
@@ -7582,7 +7582,7 @@
   ((defrule lemma
      (implies (and (tree-match-element-p tree
                                          (element-rulename *c-wsp*)
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (tree-terminatedp tree))
               (equal (mv-nth 2 (parse-*cwsp
                                 (append (tree->string tree) rest-input)))
@@ -7594,7 +7594,7 @@
   :short "Completeness theorem for @(tsee parse-*cwsp)."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-cwsp rest-input)))
            (equal (parse-*cwsp (append (tree-list->string trees) rest-input))
@@ -7611,9 +7611,9 @@
           and @('*c-wsp') followed by @('\")\"') or @('\"]\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
-                (tree-match-element-p tree element *all-concrete-syntax-rules*)
+                (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive ")"))
                                             (element-char-val
@@ -7631,7 +7631,7 @@
   :short "Completeness theorem for @(tsee parse-1*cwsp)."
   (implies (and (tree-list-match-repetition-p trees
                                               (1*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-cwsp rest-input)))
            (equal (parse-1*cwsp (append (tree-list->string trees)
@@ -7647,7 +7647,7 @@
           and @('*c-wsp') not followed by @('repetition') or @('c-wsp')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-repetition rest-input))
                 (mv-nth 0 (parse-cwsp rest-input)))
@@ -7657,7 +7657,7 @@
            parse-conc-rest-comp)
   :use (:instance tree-list-match-repetition-p-of-1+-reps-when-0+-reps
                   (element (element-rulename *c-wsp*))
-                  (rules *all-concrete-syntax-rules*)))
+                  (rules *grammar*)))
 
 ; rewrites with PARSE-1*CWSP-WHEN-TREE-LIST-MATCH:
 (defruled fail-conc-rest-comp-when-match-*cwsp-close-round/square
@@ -7666,9 +7666,9 @@
           and @('*c-wsp') followed by @('\")\"') or @('\"]\"')."
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ *c-wsp*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
-                (tree-match-element-p tree element *all-concrete-syntax-rules*)
+                (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
                                              (char-val-insensitive ")"))
                                             (element-char-val
@@ -7683,7 +7683,7 @@
            fail-repetition-when-match-slash-/-close-round/square)
   :use (:instance tree-list-match-repetition-p-of-1+-reps-when-0+-reps
                   (element (element-rulename *c-wsp*))
-                  (rules *all-concrete-syntax-rules*)))
+                  (rules *grammar*)))
 
 ; rewrites with PARSE-1*CWSP-WHEN-TREE-LIST-MATCH:
 (defruled fail-conc-rest-comp-when-match-alt-rest-comp
@@ -7695,7 +7695,7 @@
                                               "/"
                                               (*_ *c-wsp*)
                                               *concatenation*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-conc-rest-comp
                       (append (tree->string tree) rest-input))))
@@ -7707,7 +7707,7 @@
   :use (:instance tree-list-match-repetition-p-of-1+-reps-when-0+-reps
                   (trees (car (tree-nonleaf->branches tree)))
                   (element (element-rulename *c-wsp*))
-                  (rules *all-concrete-syntax-rules*)))
+                  (rules *grammar*)))
 
 (defruled fail-conc-rest-comp-when-match-alt-rest
   :parents (grammar-parser-disambiguation)
@@ -7719,7 +7719,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-conc-rest-comp rest-input)))
            (mv-nth 0 (parse-conc-rest-comp
@@ -7732,7 +7732,7 @@
   :short "Completeness theorem for @(tsee parse-*digit-star-*digit)."
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (*_ *digit*) "*" (*_ *digit*)))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-digit rest-input)))
            (equal (parse-*digit-star-*digit (append (tree->string tree)
@@ -7747,7 +7747,7 @@
   :short "Completeness theorem for @(tsee parse-repeat)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *repeat*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-digit rest-input))
                 (mv-nth 0 (parse-ichar #\* rest-input)))
@@ -7762,7 +7762,7 @@
   :short "Completeness theorem for @(tsee parse-?repeat)."
   (implies (and (tree-match-element-p tree
                                       (?_ (/_ *repeat*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-digit rest-input))
                 (mv-nth 0 (parse-ichar #\* rest-input)))
@@ -7779,7 +7779,7 @@
                                       (!_ (/_ *alpha*)
                                           (/_ *digit*)
                                           (/_ "-"))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-alpha/digit/dash (append (tree->string tree)
                                                   rest-input))
@@ -7796,7 +7796,7 @@
                                               (*_ (!_ (/_ *alpha*)
                                                       (/_ *digit*)
                                                       (/_ "-")))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input)))
            (equal (parse-*-alpha/digit/dash (append (tree-list->string trees)
@@ -7812,7 +7812,7 @@
   :short "Completeness theorem for @(tsee parse-rulename)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *rulename*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input)))
            (equal (parse-rulename (append (tree->string tree) rest-input))
@@ -7827,7 +7827,7 @@
           (implies
            (and (tree-match-element-p tree
                                       (element-rulename *alternation*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-alt-rest-comp rest-input))
@@ -7852,7 +7852,7 @@
           (implies
            (and (tree-match-element-p tree
                                       (element-rulename *concatenation*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
@@ -7876,7 +7876,7 @@
           (implies
            (and (tree-match-element-p tree
                                       (element-rulename *repetition*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
@@ -7899,7 +7899,7 @@
           (implies
            (and (tree-match-element-p tree
                                       (element-rulename *element*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
@@ -7921,7 +7921,7 @@
   (forall (tree rest-input)
           (implies (and (tree-match-element-p tree
                                               (element-rulename *group*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                         (tree-terminatedp tree)
                         (nat-listp rest-input)
                         (equal input (append (tree->string tree) rest-input)))
@@ -7937,7 +7937,7 @@
   (forall (tree rest-input)
           (implies (and (tree-match-element-p tree
                                               (element-rulename *option*)
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                         (tree-terminatedp tree)
                         (nat-listp rest-input)
                         (equal input (append (tree->string tree) rest-input)))
@@ -7957,7 +7957,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-alt-rest-comp rest-input))
@@ -7986,7 +7986,7 @@
                                               "/"
                                               (*_ *c-wsp*)
                                               *concatenation*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
@@ -8012,7 +8012,7 @@
            (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
@@ -8038,7 +8038,7 @@
            (and (tree-match-element-p tree
                                       (!_ (/_ (1*_ *c-wsp*)
                                               *repetition*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (nat-listp rest-input)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
@@ -8071,7 +8071,7 @@
                    (pred-concatenation input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *alternation*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8117,7 +8117,7 @@
                     (mv-nth 2 (parse-concatenation input)))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *alternation*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8157,7 +8157,7 @@
                    (pred-repetition input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *concatenation*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8200,7 +8200,7 @@
                    (pred-conc-rest (mv-nth 2 (parse-repetition input)))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *concatenation*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8238,7 +8238,7 @@
                    (pred-element (mv-nth 2 (parse-?repeat input)))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *repetition*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8273,7 +8273,7 @@
                    (pred-element (mv-nth 2 (parse-?repeat input)))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *repetition*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8318,7 +8318,7 @@
                    (pred-option input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *element*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8361,7 +8361,7 @@
                    (pred-option input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *element*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8402,7 +8402,7 @@
                    (pred-option input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *element*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8442,7 +8442,7 @@
                    (pred-option input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *element*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8480,7 +8480,7 @@
                    (pred-option input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *element*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8514,7 +8514,7 @@
                    (pred-group input)
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *element*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8544,7 +8544,7 @@
      (implies (and (not (mv-nth 0 (parse-rulename input)))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *element*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8574,7 +8574,7 @@
      (implies (and (mv-nth 0 (parse-ichar #\( input))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *group*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8609,7 +8609,7 @@
                                (mv-nth 2 (parse-ichar #\( input)))))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *group*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8667,7 +8667,7 @@
             (mv-nth 2 (parse-*cwsp (mv-nth 2 (parse-ichar #\( input)))))
            (tree-match-element-p tree
                                  element
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal element (element-rulename *group*))
            (tree-terminatedp tree)
            (nat-listp rest-input)
@@ -8728,7 +8728,7 @@
             (mv-nth 2 (parse-*cwsp (mv-nth 2 (parse-ichar #\( input)))))
            (tree-match-element-p tree
                                  element
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal element (element-rulename *group*))
            (tree-terminatedp tree)
            (nat-listp rest-input)
@@ -8758,7 +8758,7 @@
      (implies (and (mv-nth 0 (parse-ichar #\[ input))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *option*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8793,7 +8793,7 @@
                                (mv-nth 2 (parse-ichar #\[ input)))))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (element-rulename *option*))
                    (tree-terminatedp tree)
                    (nat-listp rest-input)
@@ -8848,7 +8848,7 @@
                                                                 input))))))))))
            (pred-alternation
             (mv-nth 2 (parse-*cwsp (mv-nth 2 (parse-ichar #\[ input)))))
-           (tree-match-element-p tree element *all-concrete-syntax-rules*)
+           (tree-match-element-p tree element *grammar*)
            (equal element (element-rulename *option*))
            (tree-terminatedp tree)
            (nat-listp rest-input)
@@ -8907,7 +8907,7 @@
                                                               input)))))))))))
            (pred-alternation
             (mv-nth 2 (parse-*cwsp (mv-nth 2 (parse-ichar #\[ input)))))
-           (tree-match-element-p tree element *all-concrete-syntax-rules*)
+           (tree-match-element-p tree element *grammar*)
            (equal element (element-rulename *option*))
            (tree-terminatedp tree)
            (nat-listp rest-input)
@@ -8939,7 +8939,7 @@
                    (pred-alt-rest-comp input)
                    (tree-list-match-repetition-p trees
                                                  repetition
-                                                 *all-concrete-syntax-rules*)
+                                                 *grammar*)
                    (equal repetition (*_ (!_ (/_ (*_ *c-wsp*)
                                                  "/"
                                                  (*_ *c-wsp*)
@@ -8991,7 +8991,7 @@
                     (mv-nth 2 (parse-alt-rest-comp input)))
                    (tree-list-match-repetition-p trees
                                                  repetition
-                                                 *all-concrete-syntax-rules*)
+                                                 *grammar*)
                    (equal repetition (*_ (!_ (/_ (*_ *c-wsp*)
                                                  "/"
                                                  (*_ *c-wsp*)
@@ -9033,7 +9033,7 @@
      (implies (and (mv-nth 0 (parse-ichar #\/ (mv-nth 2 (parse-*cwsp input))))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (!_ (/_ (*_ *c-wsp*)
                                           "/"
                                           (*_ *c-wsp*)
@@ -9089,7 +9089,7 @@
                                   (mv-nth 2 (parse-*cwsp input)))))))
            (tree-match-element-p tree
                                  element
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal element (!_ (/_ (*_ *c-wsp*)
                                   "/"
                                   (*_ *c-wsp*)
@@ -9147,7 +9147,7 @@
                                   (mv-nth 2 (parse-*cwsp input)))))))
            (tree-match-element-p tree
                                  element
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal element (!_ (/_ (*_ *c-wsp*)
                                   "/"
                                   (*_ *c-wsp*)
@@ -9184,7 +9184,7 @@
                    (pred-conc-rest-comp input)
                    (tree-list-match-repetition-p trees
                                                  repetition
-                                                 *all-concrete-syntax-rules*)
+                                                 *grammar*)
                    (equal repetition (*_ (!_ (/_ (1*_ *c-wsp*)
                                                  *repetition*))))
                    (tree-list-terminatedp trees)
@@ -9233,7 +9233,7 @@
                     (mv-nth 2 (parse-conc-rest-comp input)))
                    (tree-list-match-repetition-p trees
                                                  repetition
-                                                 *all-concrete-syntax-rules*)
+                                                 *grammar*)
                    (equal repetition (*_ (!_ (/_ (1*_ *c-wsp*)
                                                  *repetition*))))
                    (tree-list-terminatedp trees)
@@ -9272,7 +9272,7 @@
      (implies (and (mv-nth 0 (parse-1*cwsp input))
                    (tree-match-element-p tree
                                          element
-                                         *all-concrete-syntax-rules*)
+                                         *grammar*)
                    (equal element (!_ (/_ (1*_ *c-wsp*)
                                           *repetition*)))
                    (tree-terminatedp tree)
@@ -9309,7 +9309,7 @@
            (pred-repetition (mv-nth 2 (parse-1*cwsp input)))
            (tree-match-element-p tree
                                  element
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal element (!_ (/_ (1*_ *c-wsp*)
                                   *repetition*)))
            (tree-terminatedp tree)
@@ -9346,7 +9346,7 @@
            (pred-repetition (mv-nth 2 (parse-1*cwsp input)))
            (tree-match-element-p tree
                                  element
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (equal element (!_ (/_ (1*_ *c-wsp*)
                                   *repetition*)))
            (tree-terminatedp tree)
@@ -9452,7 +9452,7 @@
   :short "Completeness theorem for @(tsee parse-alternation)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *alternation*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-alt-rest-comp rest-input))
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
@@ -9476,7 +9476,7 @@
   :short "Completeness theorem for @(tsee parse-concatenation)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *concatenation*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
@@ -9499,7 +9499,7 @@
   :short "Completeness theorem for @(tsee parse-repetition)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *repetition*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
                 (mv-nth 0 (parse-bit rest-input))
@@ -9521,7 +9521,7 @@
   :short "Completeness theorem for @(tsee parse-element)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *element*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
                 (mv-nth 0 (parse-bit rest-input))
@@ -9543,7 +9543,7 @@
   :short "Completeness theorem for @(tsee parse-group)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *group*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-group (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -9559,7 +9559,7 @@
   :short "Completeness theorem for @(tsee parse-option)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *option*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree))
            (equal (parse-option (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -9578,7 +9578,7 @@
                                                           "/"
                                                           (*_ *c-wsp*)
                                                           *concatenation*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-alt-rest-comp rest-input))
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
@@ -9606,7 +9606,7 @@
                                               "/"
                                               (*_ *c-wsp*)
                                               *concatenation*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
@@ -9631,7 +9631,7 @@
   (implies (and (tree-list-match-repetition-p trees
                                               (*_ (!_ (/_ (1*_ *c-wsp*)
                                                           *repetition*)))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
@@ -9656,7 +9656,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (1*_ *c-wsp*)
                                               *repetition*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-alpha/digit/dash rest-input))
                 (mv-nth 0 (parse-bit rest-input))
@@ -9679,7 +9679,7 @@
   :short "Completeness theorem for @(tsee parse-elements)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *elements*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-alt-rest-comp rest-input))
                 (mv-nth 0 (parse-conc-rest-comp rest-input))
@@ -9710,7 +9710,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ "=")
                                           (/_ "=/"))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (mv-nth 0 (parse-ichar #\/ rest-input)))
            (equal (parse-equal-/-equal-slash (append (tree->string tree)
                                                      rest-input))
@@ -9724,7 +9724,7 @@
   :short "Completeness theorem for @(tsee parse-defined-as)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *defined-as*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-cwsp rest-input))
                 (mv-nth 0 (parse-ichar #\/ rest-input)))
@@ -9740,7 +9740,7 @@
   :short "Completeness theorem for @(tsee parse-rule)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *rule*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-wsp rest-input)))
            (equal (parse-rule (append (tree->string tree) rest-input))
@@ -9763,7 +9763,7 @@
   (implies (and (tree-match-element-p tree
                                       (!_ (/_ (*_ *c-wsp*)
                                               *c-nl*))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-wsp rest-input)))
            (equal (parse-*cwsp-cnl (append (tree->string tree) rest-input))
@@ -9779,7 +9779,7 @@
                                       (!_ (/_ *rule*)
                                           (/_ (!_ (/_ (*_ *c-wsp*)
                                                       *c-nl*))))
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (mv-nth 0 (parse-wsp rest-input)))
            (equal (parse-rule-/-*cwsp-cnl (append (tree->string tree)
@@ -9796,7 +9796,7 @@
                                               (*_ (!_ (/_ *rule*)
                                                       (/_ (!_ (/_ (*_ *c-wsp*)
                                                                   *c-nl*)))))
-                                              *all-concrete-syntax-rules*)
+                                              *grammar*)
                 (tree-list-terminatedp trees)
                 (tree-list-*-rule-/-*cwsp-cnl-restriction-p trees)
                 (mv-nth 0 (parse-rule-/-*cwsp-cnl rest-input))
@@ -9816,7 +9816,7 @@
   :short "Completeness theorem for @(tsee parse-rulelist)."
   (implies (and (tree-match-element-p tree
                                       (element-rulename *rulelist*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (tree-rulelist-restriction-p tree)
                 (mv-nth 0 (parse-rule-/-*cwsp-cnl rest-input))
@@ -9851,7 +9851,7 @@
      but include the hypothesis that the tree satisfies @(tsee treep)."))
   (implies (and (tree-match-element-p tree
                                       (element-rulename *rulelist*)
-                                      *all-concrete-syntax-rules*)
+                                      *grammar*)
                 (tree-terminatedp tree)
                 (tree-rulelist-restriction-p tree))
            (equal (parse-grammar (tree->string tree))

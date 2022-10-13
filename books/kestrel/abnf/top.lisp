@@ -175,4 +175,4 @@
 
     (xdoc::li
      "The paper uses @('*abnf-grammar*')
-      as the name of the constant @(tsee *all-concrete-syntax-rules*)."))))
+      as the name of the constant @(tsee *grammar*)."))))

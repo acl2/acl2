@@ -43,16 +43,16 @@
      as also done for @(see core-rules-validation)
      and for @(see concrete-syntax-rules-validation)."))
 
-  (defruled rulelist-wfp-of-*all-concrete-syntax-rules*
-    (rulelist-wfp *all-concrete-syntax-rules*))
+  (defruled rulelist-wfp-of-*grammar*
+    (rulelist-wfp *grammar*))
 
-  (defruled rulelist-closedp-of-*all-concrete-syntax-rules*
-    (rulelist-closedp *all-concrete-syntax-rules*))
+  (defruled rulelist-closedp-of-*grammar*
+    (rulelist-closedp *grammar*))
 
-  (defruled ascii-only-*all-concrete-syntax-rules*
-    (rulelist-in-termset-p *all-concrete-syntax-rules*
+  (defruled ascii-only-*grammar*
+    (rulelist-in-termset-p *grammar*
                            (integers-from-to 0 127)))
 
-  (defruled plugging-yields-*all-concrete-syntax-rules*
+  (defruled plugging-yields-*grammar*
     (set-equiv (plug-rules *concrete-syntax-rules* *core-rules*)
-               *all-concrete-syntax-rules*)))
+               *grammar*)))

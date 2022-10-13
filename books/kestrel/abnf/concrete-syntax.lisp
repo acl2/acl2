@@ -30,13 +30,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *all-concrete-syntax-rules*
+(defval *grammar*
   :parents (concrete-syntax)
-  :short "All the ABNF concrete syntax rules,
-          including the core rules that they reference
-          (directly and indirectly)."
+  :short "Grammar of ABNF."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The ABNF grammar of ABNF consists of
+     the concrete syntax rules
+     and the core rules that they reference (directly and indirectly).")
    (xdoc::p
     "Properties of these rules
      are proved in @(see concrete-syntax-validation).")
@@ -58,10 +60,10 @@
                 *rule_wsp*))
   ///
 
-  (add-const-to-untranslate-preprocess *all-concrete-syntax-rules*)
+  (add-const-to-untranslate-preprocess *grammar*)
 
-  (defruled rulelistp-of-*all-concrete-syntax-rules*
-    (rulelistp *all-concrete-syntax-rules*)))
+  (defruled rulelistp-of-*grammar*
+    (rulelistp *grammar*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,7 +74,7 @@
                                          return-type-of-parse
                                          (string nats)
                                          (rulename *rulelist*)
-                                         (rules *all-concrete-syntax-rules*)))))
+                                         (rules *grammar*)))))
   :parents (concrete-syntax)
   :short "Parse a sequence of natural numbers as an ABNF grammar."
   :long
@@ -110,7 +112,7 @@
    (xdoc::p
     "It remains to be proved that this function
      always returns a finite set of trees, never @(':infinite')."))
-  (parse nats *rulelist* *all-concrete-syntax-rules*)
+  (parse nats *rulelist* *grammar*)
   :no-function t
   ///
 
@@ -168,10 +170,10 @@
            (treep tree-rulelist-2)
            (tree-match-element-p tree-rulelist-1
                                  (element-rulename *rulelist*)
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (tree-match-element-p tree-rulelist-2
                                  (element-rulename *rulelist*)
-                                 *all-concrete-syntax-rules*)
+                                 *grammar*)
            (not (equal tree-rulelist-1 tree-rulelist-2))
            (equal (tree->string tree-rulelist-1) string)
            (equal (tree->string tree-rulelist-2) string)))))
