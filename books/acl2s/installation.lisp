@@ -297,13 +297,13 @@ your desktop and this will start ACL2s on your VM.
 <h3>FAQ</h3>
 
 If you are running into a problem on Windows that is not covered by
-the below FAQ items, please try removing your WSL Ubuntu installation
+the below FAQ items, please try removing your WSL acl2s installation
 and going back through the instructions, ensuring that the output that
 you see matches that shown in the installation video linked to in the
 installation instructions. <b>Note that this will remove all of the
 data in the WSL installation, so be sure to backup any files inside it
 that you want to keep.</b> You can remove your WSL Ubuntu installation
-by running <code>wsl --unregister Ubuntu</code>. Then, follow the
+by running <code>wsl --unregister acl2s</code>. Then, follow the
 installation instructions as normal, except that you do not need to
 reinstall Xming if you already have it installed.
 

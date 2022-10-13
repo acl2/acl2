@@ -140,24 +140,24 @@ appearing after a few seconds.
 
 <p>
 <b>Type an \"immediate command\" for ACL2</b>, such as
-<code>(* 21 2)</code> in the session editor (.a2s editor).  Notice
+@({(* 21 2)}) in the session editor (.a2s editor).  Notice
 that the editor is read-only except for the part after the last prompt.
 Hitting <b>Enter</b> (<b>Return</b>) at the end of this editor will submit
 the typed
 form to ACL2.  Actually, it will only submit <b>syntactically valid</b>
 commands to ACL2, so if one tries to trick it by hitting <b>Enter</b>
-after just <code>(* 21</code>, the editor just goes to the next
+after just @({(* 21}), the editor just goes to the next
 line.
 </p>
 
 <p>
 <b>Try submitting other types of input</b> to ACL2.
-<code>(* 21 2)</code> was classified by the plugin as \"VALUE\"
+@({(* 21 2)}) was classified by the plugin as \"VALUE\"
 input, because it's just computation that returns a value.  Another
-example is a \"QUERY\" such as <code>:pe strip-cars</code>, which
+example is a \"QUERY\" such as @({:pe strip-cars}), which
 prints out information about the current history or \"world\", in this
 case the definition of the function \"strip-cars\".
-<code>(definec successor (x :int) :int (1+ x))</code> is an \"EVENT\" because it
+@({(definec successor (x :int) :int (1+ x))}) is an \"EVENT\" because it
 (potentially) changes the history.
 See @(see acl2s-command-classifications) for more detail.
 For \"EVENT\" inputs, ACL2s pops up a
@@ -168,7 +168,7 @@ the dialog and for now choose \"Insert\".
 
 <p>
 <b>Try submitting something with an error</b> such as
-<code>(successor 1 2)</code>--an error because the arity of the <tt>successor</tt>
+@({(successor 1 2)}) This has an error because the arity of the <tt>successor</tt>
 function we just defined is 1.  The red (maroon, I guess) output indicates
 the command was not successful.  ACL2 is back in the state it was in before
 you submitted the form that caused the error.
@@ -178,7 +178,7 @@ you submitted the form that caused the error.
 
 <p>
 <b>Switch back to the .lisp editor</b> where you will discover the
-<code>(definec successor (x :int) :int (1+ x))</code> form we submitted in the
+@({(definec successor (x :int) :int (1+ x))}) form we submitted in the
 session editor has been \"inserted\" above what we had typed previously!
 Also, that form is \"above the line\" and read-only.  This is
 part of the intrinsic linkage between <tt>somename.lisp</tt> and
@@ -477,7 +477,7 @@ we just try executing \"acl2\" and see what happens.
 <tr> <td>Q:</td>
      <td><b>Do I already have Java?  What version?</b></td> </tr>
 <tr> <td>A:</td>
-     <td>The simple answer is to type <code>java -version</code> at
+     <td>The simple answer is to type @({java -version}) at
 your operating system's command prompt/terminal/shell.  You might
 still have Java if the command is rejected.
 </td></tr>
@@ -545,31 +545,28 @@ modified for ACL2s</b> in the @(see acl2s-implementation-notes).
      features individually, see the next question. 
 </p>
 <p>
-  Assuming you have ACL2s installed as an eclipse plugin
-     in <tt>/Users/sarah/tools/eclipse</tt>, here are instructions on
-     how to run an <b>ACL2s mode</b> session in Emacs. Name the above
-     directory <b>my_eclipse</b>.
+  You first need to identify where your ACL2 systems book directory is.
+  You can do this by running @({(assoc :system (project-dir-alist (w state)))}) inside of an Eclipse ACL2s-mode session.
+  The output of that command will start with @('(:system . ')) and will be followed by a path inside of a string.
+  That path is your ACL2 system books directory, and we'll refer to it below as @('[books]').
 </p>
     <ol>
-    <li>Open a shell in emacs, start the ACL2 session: <code><b>my_eclipse</b>/plugins/acl2_image.<b>something</b>/run_acl2</code></li>
-    <li>In the ACL2 session, submit the following 3 commands:
+    <li>Open a shell in emacs, start the ACL2 session: @({[books]../saved_acl2})</li>
+    <li>In the ACL2 session, submit the following commands:
  @({
-   (add-include-book-dir :acl2s-modes \"my_eclipse/plugins/acl2s_modes_<b>something</b>/\")
-   (ld \"acl2s-mode.lsp\" :dir :acl2s-modes)
+   (ld \"acl2s/acl2s-mode.lsp\" :dir :system)
    (reset-prehistory t)
    })
 </li>
 </ol>
 <p>
-If you want finer control on what gets loaded, you can selectively copy paste the forms in the <tt>acl2s-mode.lsp</tt> that
+If you want finer control on what gets loaded, you can selectively copy and paste the forms in @('[books]/acl2s/acl2s-mode.lsp') that
 you need, in the emacs session. For example, say you want a session without trust tags, then except
 for the @('(include-book \"ccg\" ...)') form, submit the rest of the events in <tt>acl2s-mode.lsp</tt>.
 </p>
-<p>
-To reproduce other sessions modes, follow the above, but replace acl2s-mode.lsp by the corresponding session mode file, e.g. acl2s-beginner.lsp
-</p>
 </td></tr>
-</table><br/>
+</table>
+<br/>
 
 
 <table class=\"rounded striped\">
@@ -1132,7 +1129,7 @@ please refer to @(see acl2::ccg).
 Data definitions are an essential part of crafting programs and
 modeling systems. Whereas most programming languages provide rich
 mechanisms for defining datatypes, ACL2 only really provides a
-limited collection of built-in types and <code>cons</code>. 
+limited collection of built-in types and @('cons').
 </p>
 
 <p>
@@ -1318,6 +1315,12 @@ and it's only supported for the benefit of <b>experts</b>.
   :short "Some details regarding how ACL2s is implemented"
   :long
   "
+<h2>WARNING</h2>
+<color rgb=\"red\">
+Note that much of the information here is not up-to-date with the current implementation of ACL2s.
+</color>
+We're in the process of going through this documentation and updating it, but we haven't finished updating
+this file yet.
 <h2>Wrapping the ACL2 process</h2>
 <p>
   To support interruption of the ACL2 process, we need more
