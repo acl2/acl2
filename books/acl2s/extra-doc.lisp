@@ -88,10 +88,10 @@ syntax-based coloring:
 </p>
 
 <p>
-Upon creating the new file, an <em>editor</em> has now opened in the
-<em>editor area</em> of the <em>workbench</em>.
-Around the editor area are <em>views</em>,
-such as the <em>Project Explorer</em> view to the left and <em>Outline</em> view
+Upon creating the new file, an <b>editor</b> has now opened in the
+<b>editor area</b> of the <b>workbench</b>.
+Around the editor area are <b>views</b>,
+such as the <b>Project Explorer</b> view to the left and <b>Outline</b> view
 to the right.  From their title areas, these can be dragged around, tiled,
 minimized, etc.  You probably also noticed that <tt>(definec fib (n :nat) :nat</tt> showed up in
 the Outline view, which you can use to navigate the top-level forms of your
@@ -142,10 +142,10 @@ appearing after a few seconds.
 <b>Type an \"immediate command\" for ACL2</b>, such as
 <code>(* 21 2)</code> in the session editor (.a2s editor).  Notice
 that the editor is read-only except for the part after the last prompt.
-Hitting <em>Enter</em> (<em>Return</em>) at the end of this editor will submit
+Hitting <b>Enter</b> (<b>Return</b>) at the end of this editor will submit
 the typed
-form to ACL2.  Actually, it will only submit <em>syntactically valid</em>
-commands to ACL2, so if one tries to trick it by hitting <em>Enter</em>
+form to ACL2.  Actually, it will only submit <b>syntactically valid</b>
+commands to ACL2, so if one tries to trick it by hitting <b>Enter</b>
 after just <code>(* 21</code>, the editor just goes to the next
 line.
 </p>
@@ -264,19 +264,14 @@ accepted.
   :short "A longer introduction to ACL2s"
   :long
   "
- 
-  <div class=\"row\">
-    <div class=\"eight columns centered\" style=\"margin-bottom: 10pt; font-size: 120%; text-align:justify;\">
-      The ACL2 Sedan theorem prover (<strong>ACL2s</strong>) is an
-      Eclipse plug-in that provides a modern integrated development
-      environment, supports several modes of interaction, provides a
-      powerful termination analysis engine, includes a rich support
-      for \"types\" and seamlessly integrates semi-automated bug-finding
-      methods with interactive theorem proving.
-    </div>
-  </div>
-
-
+<p>
+  The ACL2 Sedan theorem prover (<b>ACL2s</b>) is an Eclipse plug-in
+  that provides a modern integrated development environment, supports
+  several modes of interaction, provides a powerful termination
+  analysis engine, includes a rich support for \"types\" and
+  seamlessly integrates semi-automated bug-finding methods with
+  interactive theorem proving.
+</p>
 
   <h2>Introduction</h2>
   <p><see topic=\"@(url acl2::acl2)\">ACL2</see> is a powerful system for integrated
@@ -344,7 +339,7 @@ even more intuitive, self-teaching, etc.  in the future.
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>What is Eclipse?</strong></td> </tr>
+     <td><b>What is Eclipse?</b></td> </tr>
 <tr> <td>A:</td>
      <td>Eclipse is a highly modularized, extensible, free
 development environment for a variety of programming languages.  See <a
@@ -356,10 +351,10 @@ for Java.</td></tr>
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Where do I learn about all this Eclipse lingo?</strong></td> </tr>
+     <td><b>Where do I learn about all this Eclipse lingo?</b></td> </tr>
 <tr> <td>A:</td>
      <td>See the <a href=\"http://help.eclipse.org/2022-06/topic/org.eclipse.platform.doc.user/gettingStarted/qs-02a.htm\">Basic
-Tutorial section of the <em>Workbench User Guide</em></a>.
+Tutorial section of the <b>Workbench User Guide</b></a>.
 </td></tr>
 </table><br/>
 
@@ -367,7 +362,7 @@ Tutorial section of the <em>Workbench User Guide</em></a>.
 
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong>How do I tell what Java version Eclipse is running under, and if its 64bit?</strong></td> </tr>
+     <td><b>How do I tell what Java version Eclipse is running under, and if its 64bit?</b></td> </tr>
 <tr> <td>A:</td>
      <td>Inside Eclipse, go to <b>Help</b> | <b>About Eclipse SDK</b> and
 click \"Installation Details\".  Under \"Configuration\" tab are the \"eclipse.commands\"
@@ -381,7 +376,7 @@ example, \"X86_64\" will indicate that you are running a 64bit Eclipse.
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Where is Eclipse documentation?</strong></td> </tr>
+     <td><b>Where is Eclipse documentation?</b></td> </tr>
 <tr> <td>A:</td>
      <td><a href=\"http://www.eclipse.org/documentation/main.html\">http://www.eclipse.org/documentation/main.html</a>
 </td></tr>
@@ -390,7 +385,7 @@ example, \"X86_64\" will indicate that you are running a 64bit Eclipse.
 
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong> Can I do a multi-user install of Eclipse?</strong></td> </tr>
+     <td><b> Can I do a multi-user install of Eclipse?</b></td> </tr>
 <tr> <td >A:</td>
      <td><p>It is tricky to support a multi-user install of Eclipse.  The key
 seems to be not running Eclipse at all in a way that would allow modification
@@ -412,7 +407,7 @@ files, and life will be easier.
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>What is ACL2?</strong></td> </tr>
+     <td><b>What is ACL2?</b></td> </tr>
 <tr> <td>A:</td>
      <td>ACL2 is a programming language, logic, and theorem
 prover/checker based on Common Lisp.  See <a
@@ -422,12 +417,12 @@ information.</td></tr>
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>What is CAR?</strong></td> </tr>
+     <td><b>What is CAR?</b></td> </tr>
 <tr> <td>A:</td>
      <td><u>CAR</u> is an abbreviation we sometimes use to refer to this
 (print) book:
 <blockquote>
-<strong>Computer-Aided Reasoning: An Approach</strong>.<br/>
+<b>Computer-Aided Reasoning: An Approach</b>.<br/>
 Matt Kaufmann, Panagiotis Manolios, and J Strother Moore.<br/>
 Kluwer Academic Publishers, June, 2000. (ISBN 0-7923-7744-3)
 </blockquote>
@@ -440,7 +435,7 @@ ordering information.
 
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong>What is an ACL2 book?</strong></td> </tr>
+     <td><b>What is an ACL2 book?</b></td> </tr>
 <tr> <td >A:</td>
      <td>Basically, an ACL2 book is a bunch of ACL2 definitions (functions,
 theorems, proof rules, etc.) that can be easily imported into other ACL2
@@ -449,7 +444,7 @@ work.  See @(see acl2::books) for more information.</td></tr>
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-<td><strong>Can I use my own version of ACL2? i.e. Finding ACL2 on user's system:</strong></td>
+<td><b>Can I use my own version of ACL2? i.e. Finding ACL2 on user's system:</b></td>
 </tr>
 <tr> <td>A:</td>
 <td>
@@ -480,7 +475,7 @@ we just try executing \"acl2\" and see what happens.
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Do I already have Java?  What version?</strong></td> </tr>
+     <td><b>Do I already have Java?  What version?</b></td> </tr>
 <tr> <td>A:</td>
      <td>The simple answer is to type <code>java -version</code> at
 your operating system's command prompt/terminal/shell.  You might
@@ -491,7 +486,7 @@ still have Java if the command is rejected.
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Do I need the Java SDK or is the JRE fine?</strong></td> </tr>
+     <td><b>Do I need the Java SDK or is the JRE fine?</b></td> </tr>
 <tr> <td>A:</td>
      <td>The SDK is only needed if you plan on ever doing any Java
 development. The (smaller) JRE should be opted if there is a
@@ -503,7 +498,7 @@ choice. It is recommended to have separate eclipse installations
 
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong>Can I use another version of Java?</strong></td> </tr>
+     <td><b>Can I use another version of Java?</b></td> </tr>
 <tr> <td >A:</td>
      <td>The ACL2s Eclipse plugin uses Java constructs from Java 11.
 You are likely to encounter problems if you use a Java runtime that is
@@ -516,7 +511,7 @@ older than Java 11.  We recommend the use of JRE 17 or 18.
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Why won't ACL2s let me do &lt;blah&gt; in a session?</strong></td> </tr>
+     <td><b>Why won't ACL2s let me do &lt;blah&gt; in a session?</b></td> </tr>
 <tr> <td>A:</td>
      <td><p>In order for the plugin to follow what's going on in ACL2, we
 must impose some small limitations.  One, for example, is that it will not let
@@ -532,15 +527,15 @@ will only let you read from
 <tt>good-bye</tt> and other exit commands are disabled to the user,
 to encourage use of the user interface operation \"Stop session\" instead.
 </p><p>
-For more details, see <em>How/what ACL2 functionality is
-modified for ACL2s</em> in the @(see acl2s-implementation-notes).
+For more details, see <b>How/what ACL2 functionality is
+modified for ACL2s</b> in the @(see acl2s-implementation-notes).
 </p>
 </td></tr>
 </table><br/>
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Can I use ACL2s extensions to ACL2 in an Emacs development environment?</strong></td> </tr>
+     <td><b>Can I use ACL2s extensions to ACL2 in an Emacs development environment?</b></td> </tr>
 <tr> <td>A:</td>
      <td>
 
@@ -552,14 +547,14 @@ modified for ACL2s</em> in the @(see acl2s-implementation-notes).
 <p>
   Assuming you have ACL2s installed as an eclipse plugin
      in <tt>/Users/sarah/tools/eclipse</tt>, here are instructions on
-     how to run an <em>ACL2s mode</em> session in Emacs. Name the above
-     directory <em>my_eclipse</em>.
+     how to run an <b>ACL2s mode</b> session in Emacs. Name the above
+     directory <b>my_eclipse</b>.
 </p>
     <ol>
-    <li>Open a shell in emacs, start the ACL2 session: <code><em>my_eclipse</em>/plugins/acl2_image.<em>something</em>/run_acl2</code></li>
+    <li>Open a shell in emacs, start the ACL2 session: <code><b>my_eclipse</b>/plugins/acl2_image.<b>something</b>/run_acl2</code></li>
     <li>In the ACL2 session, submit the following 3 commands:
  @({
-   (add-include-book-dir :acl2s-modes \"my_eclipse/plugins/acl2s_modes_<em>something</em>/\") 
+   (add-include-book-dir :acl2s-modes \"my_eclipse/plugins/acl2s_modes_<b>something</b>/\")
    (ld \"acl2s-mode.lsp\" :dir :acl2s-modes)
    (reset-prehistory t)
    })
@@ -579,8 +574,8 @@ To reproduce other sessions modes, follow the above, but replace acl2s-mode.lsp 
 
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Can I use CCG termination analysis and Counterexample
-     generation in Emacs (ACL2 session)?</strong></td> </tr>
+     <td><b>Can I use CCG termination analysis and Counterexample
+     generation in Emacs (ACL2 session)?</b></td> </tr>
 <tr> <td>A:</td>
 <td>
 <p>To enable CCG termination analysis, submit the following two commands
@@ -732,24 +727,24 @@ developing definitions and theorems to be used by ACL2 outside of ACL2s.
 <p>
 Admissibility in this mode, however, does not *guarantee* admissibility
 in ACL2 proper (and vice-versa).  For more details, see
-the <em>How/what ACL2 functionality is modified for ACLs</em> section of the @(see acl2s-implementation-notes).
+the <b>How/what ACL2 functionality is modified for ACLs</b> section of the @(see acl2s-implementation-notes).
 </p>
 </td></tr>
 </tbody>
 </table>
 
-<p><em>Additional advanced note:</em>
+<p><b>Additional advanced note:</b>
 Another feature of all these modes except \"Compatible\" is doing destructor
 elimination before laying down a checkpoint.  Thus, the checkpoint summary
 will show the formula after destructor elimination.  The downside is that the
 variable names may appear cryptic and unfamiliar, but the upside is that
 you get some generalization for free, usually resulting in smaller formulas.
 </p><p>
-Notes about how these modes are implemented are described in the <em>How modes are implemented</em> section of the @(see acl2s-implementation-notes).
+Notes about how these modes are implemented are described in the <b>How modes are implemented</b> section of the @(see acl2s-implementation-notes).
 </p>
 </div>
 
-<div class=\"left-center\" data-target=\"guide_desc\">
+<div class=\"left-center\">
 <h2>Descriptions of UI Actions with key bindings</h2>
 <p>
 The keyboard bindings for these actions
@@ -764,7 +759,7 @@ application menus (under <b>ACL2</b> or <b>Navigate</b>).
 The keybindings below are for PC users.  The Mac equivalents (if available)
 are the same except that Ctrl+Shift is replaced by
 <icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift.  For
-example, <em>Interrupt</em> is still Ctrl+Break (if you have a Break key), but
+example, <b>Interrupt</b> is still Ctrl+Break (if you have a Break key), but
 switching editors is
 <icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift+o.
 </p>
@@ -796,7 +791,7 @@ If the character behind the caret (cursor) is matched to another (such as
 <u><color rgb=\"red\">(</color></u> and <u><color rgb=\"red\">)</color></u>,
 or <u><color rgb=\"red\">\"</color></u> and <u><color rgb=\"red\">\"</color></u>),
 then this action moves the cursor just beyond the match.  Invoking this action
-twice in a row should have no net effect <em>except</em> in the case of
+twice in a row should have no net effect <b>except</b> in the case of
 going from a <u><color rgb=\"red\">,</color></u> to its matching
 <u><color rgb=\"red\">`</color></u>, which could potentially have many commas
 matching to it.  The keyboard shortcut is
@@ -834,7 +829,7 @@ Ctrl+Shift+Up, Ctrl+Shift+Right.
 The .a2s editor keeps a history of acl2 forms that have been submitted as
 \"immediates\" (typed in the .a2s editor).  One can navigate through this
 history in much the same way one can navigate through a shell history, or a
-history of ACL2 commands (assuming <em>readline</em> support).  Previous:
+history of ACL2 commands (assuming <b>readline</b> support).  Previous:
 Ctrl+Shift+, (comma);  Next: Ctrl+Shift+. (period);  Last/Current: Ctrl+Shift+/
 (slash).
 <p>
@@ -850,12 +845,12 @@ Submit Immediate
 </td><td>
 </td><td>
 When ACL2 is running and waiting for input, one can type input forms directly
-into the .a2s buffer.  We call these \"immediates.\"  Whenever <em>Enter</em>
-(sometimes called <em>Return</em>) is typed at the end of the .a2s buffer,
+into the .a2s buffer.  We call these \"immediates.\"  Whenever <b>Enter</b>
+(sometimes called <b>Return</b>) is typed at the end of the .a2s buffer,
 we check to see
 if some prefix of the typed input is a valid, complete input form.  If so,
-the <em>Enter</em> is interpreted as submitting the form.  If not, the
-<em>Enter</em> is inserted, as in a traditional editor.  <em>Ctrl+Enter</em>
+the <b>Enter</b> is interpreted as submitting the form.  If not, the
+<b>Enter</b> is inserted, as in a traditional editor.  <b>Ctrl+Enter</b>
 ignores the location of the caret and will submit the first complete, valid
 input form if there is one.
 <p>
@@ -1114,7 +1109,7 @@ Regardless of this or other settings, ACL2's built-in
 method will be used if an explicit measure is specified.
 </p><p>
 For advanced debugging purposes, <tt>:set-ccg-verbose t</tt> causes the
-analysis to show what it is doing.  This generates <em>lots</em> of
+analysis to show what it is doing.  This generates <b>lots</b> of
 output, however.
 </p><p>
 Finally, \"Compatible\" mode does not include CCG, and \"Programming\" mode
@@ -1235,9 +1230,9 @@ No <b>VALUE</b> form can alter ACL2's state and, therefore, never
 affects undoing or redoing.
 <br/><br/>
 A precise definition is that if ACL2 permits <tt>(cons </tt>
-<em>&lt;form&gt;</em> <tt>nil)</tt>, then <em>&lt;form&gt;</em> is a <b>VALUE</b>.
+<b>&lt;form&gt;</b> <tt>nil)</tt>, then <b>&lt;form&gt;</b> is a <b>VALUE</b>.
 <br/><br/>
-<em>Advanced Note</em>: some <b>VALUE</b> forms
+<b>Advanced Note</b>: some <b>VALUE</b> forms
 have transient side effects, but they have no logical consequence (e.g.
 <see topic=\"@(url acl2::cw)\">CW</see>
 and
@@ -1254,7 +1249,7 @@ and
 Various UI actions which have to do with \"undoing\" or \"moving the line up\"
 can initiate the execution of an <b>UNDO</b> in the session.  An ordinary
 user need not concern him/herself with how this works
-(See <em>How undo and redo are implemented</em> in the <see topic=\"@(url acl2s-implementation-notes)\">ACL2s implementation notes</see>),
+(See <b>How undo and redo are implemented</b> in the <see topic=\"@(url acl2s-implementation-notes)\">ACL2s implementation notes</see>),
 but should keep in mind that <b>UNDO</b>ing an <b>ACTION</b> or <b>RAW</b>
 form may not have the desired effect.
 </td></tr>
@@ -1312,7 +1307,7 @@ Most users of ACL2 are familiar with breaking into \"raw lisp\" by typing
 \"raw mode\"</see> is supported.  Most forms submitted under this mode are
 classified as <b>RAW</b> because they have no well-defined meaning from the
 ACL2 view of things.  With raw mode, the user can easily break many things,
-and it's only supported for the benefit of <em>experts</em>.
+and it's only supported for the benefit of <b>experts</b>.
 </td></tr>
 </tbody>
 </table>
@@ -1396,7 +1391,7 @@ and it's only supported for the benefit of <em>experts</em>.
   session?</b> in the @(see acl2s-faq)), spit out metadata for some
   things, and provide some system-level extensions in functionality.
   All of these ACL2 modifications are implemented via books
-  distributed with ACL2 (@('books/acl2s/distribution/acl2s-hooks')).
+  distributed with ACL2 (@('[books]/acl2s/distribution/acl2s-hooks')).
 </p>
 <ul>
   <li><b>preinit.lsp</b> - disables raw Lisp debugger, which must be
