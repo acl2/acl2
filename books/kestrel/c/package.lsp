@@ -24,6 +24,7 @@
                                   byte
                                   defstruct
                                   error
+                                  lexp
                                   member
                                   pi
                                   pointers
