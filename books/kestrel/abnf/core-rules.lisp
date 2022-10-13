@@ -146,10 +146,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output.")
+    "Properties of the core rules are proved in @(see core-rules-validation).")
    (xdoc::p
-    "Properties of the core rules are proved in @(see core-rules-validation)."))
+    "We use @(tsee add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output."))
   (list *rule_alpha*
         *rule_bit*
         *rule_char*
