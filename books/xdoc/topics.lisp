@@ -1218,6 +1218,7 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
     [:long      long]
     [:autodoc   autodoc]
     [:extension topic]
+    [:set-as-default-parent t/nil]
     ... events and commentary ...)
 })
 
@@ -1298,6 +1299,10 @@ with:</p>
 <p>If you do not want this automatic documentation, you can turn it off with
 @(':autodoc nil').</p>
 
+<p>If you want the section name to be the default parent for the encapsulated
+events, then you can pass @(':set-as-default-parent t'). Then @('(local
+(xdoc::set-default-parents name))') will be inserted at the beginning of the
+events, where \"name\" is the name of the section.</p>
 
 <h3>Extended Sections</h3>
 

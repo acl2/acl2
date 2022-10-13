@@ -25,9 +25,9 @@
 
 (in-package "SV")
 
-
 (include-book "svtv-fsm-override")
 (include-book "override-thm-common")
+(include-book "process")
 
 
 
@@ -250,9 +250,20 @@
        (output-part-vars (all-vars1-lst trans-parts nil))
        ((mv err svtv-val) (magic-ev-fncall svtv nil state t t))
        ((when err) (er soft ctx "Couldn't evaluate ~x0" (list svtv)))
+       (input-vars (if (equal input-vars :all)
+                       (b* ((all-ins (svtv->ins svtv-val))
+                            (ovr-controls (svar-override-triplelist->testvars triples-val))
+                            (ovr-signals (svar-override-triplelist->valvars triples-val))
+                            (all-ins (set-difference-eq all-ins ovr-controls))
+                            (all-ins (set-difference-eq all-ins ovr-signals))
+                            (all-ins (set-difference-eq all-ins
+                                                        (strip-cars input-var-bindings))))
+                         all-ins)
+                     input-vars))
        (hyp (if unsigned-byte-hyps
                 (b* ((inmasks (svtv->inmasks svtv-val))
                      (inputs (append input-vars override-vars))
+                     (inputs (remove-duplicates inputs))
                      (masks (acl2::fal-extract inputs inmasks)))
                   `(and ,@(svtv-unsigned-byte-hyps masks) ,hyp))
               hyp))
@@ -327,9 +338,12 @@ theorem proved in FGL and the generalized corollary this macro generates.</p>
 
 <ul>
 <li>@(':svtv') is the name of the SVTV</li>
+
 <li>@(':input-vars') are the names of any input variables of the SVTV that will
 appear in the hypothesis or conclusion, except those that are bound in
-@(':input-var-bindings')</li>
+@(':input-var-bindings'). Instead of a list of signals, users may pass \":all\" parameter to get all the
+input variables that are not bound.</li>
+
 <li>@(':input-var-bindings') is a list of @('let')-like bindings of input
 variables to expressions</li>
 
