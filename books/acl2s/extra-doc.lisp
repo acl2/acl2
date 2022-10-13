@@ -88,10 +88,10 @@ syntax-based coloring:
 </p>
 
 <p>
-Upon creating the new file, an <em>editor</em> has now opened in the
-<em>editor area</em> of the <em>workbench</em>.
-Around the editor area are <em>views</em>,
-such as the <em>Project Explorer</em> view to the left and <em>Outline</em> view
+Upon creating the new file, an <b>editor</b> has now opened in the
+<b>editor area</b> of the <b>workbench</b>.
+Around the editor area are <b>views</b>,
+such as the <b>Project Explorer</b> view to the left and <b>Outline</b> view
 to the right.  From their title areas, these can be dragged around, tiled,
 minimized, etc.  You probably also noticed that <tt>(definec fib (n :nat) :nat</tt> showed up in
 the Outline view, which you can use to navigate the top-level forms of your
@@ -140,27 +140,26 @@ appearing after a few seconds.
 
 <p>
 <b>Type an \"immediate command\" for ACL2</b>, such as
-<code>(* 21 2)</code> in the session editor (.a2s editor).  Notice
+@({(* 21 2)}) in the session editor (.a2s editor).  Notice
 that the editor is read-only except for the part after the last prompt.
-Hitting <em>Enter</em> (<em>Return</em>) at the end of this editor will submit
+Hitting <b>Enter</b> (<b>Return</b>) at the end of this editor will submit
 the typed
-form to ACL2.  Actually, it will only submit <em>syntactically valid</em>
-commands to ACL2, so if one tries to trick it by hitting <em>Enter</em>
-after just <code>(* 21</code>, the editor just goes to the next
+form to ACL2.  Actually, it will only submit <b>syntactically valid</b>
+commands to ACL2, so if one tries to trick it by hitting <b>Enter</b>
+after just @({(* 21}), the editor just goes to the next
 line.
 </p>
 
 <p>
 <b>Try submitting other types of input</b> to ACL2.
-<code>(* 21 2)</code> was classified by the plugin as \"VALUE\"
+@({(* 21 2)}) was classified by the plugin as \"VALUE\"
 input, because it's just computation that returns a value.  Another
-example is a \"QUERY\" such as <code>:pe strip-cars</code>, which
+example is a \"QUERY\" such as @({:pe strip-cars}), which
 prints out information about the current history or \"world\", in this
 case the definition of the function \"strip-cars\".
-<code>(definec successor (x :int) :int (1+ x))</code> is an \"EVENT\" because it
+@({(definec successor (x :int) :int (1+ x))}) is an \"EVENT\" because it
 (potentially) changes the history.
-See <a href=\"index.html#guide_classifications\">Command Classifications</a> in
-the guide for more detail.
+See @(see acl2s-command-classifications) for more detail.
 For \"EVENT\" inputs, ACL2s pops up a
 dialog asking what to do about the fact that we did something logically
 relevant from the command line rather than from our source code.  Read
@@ -169,7 +168,7 @@ the dialog and for now choose \"Insert\".
 
 <p>
 <b>Try submitting something with an error</b> such as
-<code>(successor 1 2)</code>--an error because the arity of the <tt>successor</tt>
+@({(successor 1 2)}) This has an error because the arity of the <tt>successor</tt>
 function we just defined is 1.  The red (maroon, I guess) output indicates
 the command was not successful.  ACL2 is back in the state it was in before
 you submitted the form that caused the error.
@@ -179,7 +178,7 @@ you submitted the form that caused the error.
 
 <p>
 <b>Switch back to the .lisp editor</b> where you will discover the
-<code>(definec successor (x :int) :int (1+ x))</code> form we submitted in the
+@({(definec successor (x :int) :int (1+ x))}) form we submitted in the
 session editor has been \"inserted\" above what we had typed previously!
 Also, that form is \"above the line\" and read-only.  This is
 part of the intrinsic linkage between <tt>somename.lisp</tt> and
@@ -231,7 +230,7 @@ proof that caused ACL2 to reject the definition.
 
 <p>So what was the meaning of the flash of green highlighting?
 Clicking \"advance todo\" moved the \"todo line\" from between
-  <code>(definec successor ...)</code> and <code>(definec fib
+<code>(definec successor ...)</code> and <code>(definec fib
 ...)</code>  to after <code>(definec fib ...)</code>.  With
 at least one form in the \"todo region\", the session started processing
 the first (and only) one.  If you look at the session output, you see
@@ -265,19 +264,14 @@ accepted.
   :short "A longer introduction to ACL2s"
   :long
   "
- 
-  <div class=\"row\">
-    <div class=\"eight columns centered\" style=\"margin-bottom: 10pt; font-size: 120%; text-align:justify;\">
-      The ACL2 Sedan theorem prover (<strong>ACL2s</strong>) is an
-      Eclipse plug-in that provides a modern integrated development
-      environment, supports several modes of interaction, provides a
-      powerful termination analysis engine, includes a rich support
-      for \"types\" and seamlessly integrates semi-automated bug-finding
-      methods with interactive theorem proving.
-    </div>
-  </div>
-
-
+<p>
+  The ACL2 Sedan theorem prover (<b>ACL2s</b>) is an Eclipse plug-in
+  that provides a modern integrated development environment, supports
+  several modes of interaction, provides a powerful termination
+  analysis engine, includes a rich support for \"types\" and
+  seamlessly integrates semi-automated bug-finding methods with
+  interactive theorem proving.
+</p>
 
   <h2>Introduction</h2>
   <p><see topic=\"@(url acl2::acl2)\">ACL2</see> is a powerful system for integrated
@@ -317,13 +311,12 @@ traditional undo mechanism.
 
 <p>
 We have implemented our tool as a plugin for the Eclipse development
-environment (see <a href=\"index.html#faq_eclipse\"><i>What is Eclipse?</i></a>).
+environment (see <i>What is Eclipse?</i> in the @(see acl2s-faq)).
 In addition, the plugin requires some extra functionality from ACL2
 that is not included in the main distribution.  This functionality is
 largely hidden from the user and shouldn't alter ACL2's behavior for
 all practical purposes.  To be sure, though, users can certify their
-work in a clean ACL2 session (see <a href=\"index.html#guide_book\">Book
-development</a>).
+work in a clean ACL2 session.
 </p>
 
 <p>
@@ -341,27 +334,12 @@ even more intuitive, self-teaching, etc.  in the future.
   :short "Frequently Asked Questions"
   :long
   "
-<h3>General</h3>
-
-<table class=\"rounded striped\">
-<tr> <td>Q:</td>
-     <td><strong>Is my OS 32 bit or 64 bit?</strong></td> </tr>
-<tr> <td valign=\"top\">A:</td>
-     <td>For Linux and MacOS, if you see \"x86_64\" or \"amd64\" in the
-output of shell command <code>uname -a</code> in your terminal, you have a
-64bit OS, otherwise a 32 bit one.  For other operating systems, please
-visit their respective FAQ
-pages: <a href=\"http://support.microsoft.com/kb/827218\">Windows</a>.
-</td></tr>
-</table>
-
-<div class=\"left-center\" data-target=\"faq_section_eclipse\">
+<div class=\"left-center\">
 <h3>Eclipse-related</h3>
 
-<a name=\"faq_eclipse\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>What is Eclipse?</strong></td> </tr>
+     <td><b>What is Eclipse?</b></td> </tr>
 <tr> <td>A:</td>
      <td>Eclipse is a highly modularized, extensible, free
 development environment for a variety of programming languages.  See <a
@@ -371,33 +349,20 @@ for Java.</td></tr>
 </table><br/>
 
 
-<a name=\"faq_eclipse_lingo\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Where do I learn about all this Eclipse lingo?</strong></td> </tr>
+     <td><b>Where do I learn about all this Eclipse lingo?</b></td> </tr>
 <tr> <td>A:</td>
      <td>See the <a href=\"http://help.eclipse.org/2022-06/topic/org.eclipse.platform.doc.user/gettingStarted/qs-02a.htm\">Basic
-Tutorial section of the <em>Workbench User Guide</em></a>.
+Tutorial section of the <b>Workbench User Guide</b></a>.
 </td></tr>
 </table><br/>
 
 
-<a name=\"faq_eclipse_running\"></a>
-<table class=\"rounded striped\">
-<tr> <td>Q:</td>
-     <td><strong>How do I run Eclipse--with the right options?</strong></td> </tr>
-<tr> <td>A:</td>
-     <td>See the \"Running Eclipse\" section of the 3.5 Release Notes.
-To view details about how a currently-running Eclipse was invoked, go to
-<b>Help</b> | <b>About Eclipse SDK</b> and click \"Configuration Details\".
-</td></tr>
-</table><br/>
 
-
-<a name=\"faq_eclipse_java_version\"></a>
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong>How do I tell what Java version Eclipse is running under, and if its 64bit?</strong></td> </tr>
+     <td><b>How do I tell what Java version Eclipse is running under, and if its 64bit?</b></td> </tr>
 <tr> <td>A:</td>
      <td>Inside Eclipse, go to <b>Help</b> | <b>About Eclipse SDK</b> and
 click \"Installation Details\".  Under \"Configuration\" tab are the \"eclipse.commands\"
@@ -409,20 +374,18 @@ example, \"X86_64\" will indicate that you are running a 64bit Eclipse.
 </table><br/>
 
 
-<a name=\"faq_eclipse_docs\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Where is Eclipse documentation?</strong></td> </tr>
+     <td><b>Where is Eclipse documentation?</b></td> </tr>
 <tr> <td>A:</td>
      <td><a href=\"http://www.eclipse.org/documentation/main.html\">http://www.eclipse.org/documentation/main.html</a>
 </td></tr>
 </table><br/>
 
 
-<a name=\"faq_eclipse_multiuser\"></a>
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong> Can I do a multi-user install of Eclipse?</strong></td> </tr>
+     <td><b> Can I do a multi-user install of Eclipse?</b></td> </tr>
 <tr> <td >A:</td>
      <td><p>It is tricky to support a multi-user install of Eclipse.  The key
 seems to be not running Eclipse at all in a way that would allow modification
@@ -439,13 +402,12 @@ files, and life will be easier.
 </table>
 </div>
 
-<div class=\"left-center\" data-target=\"faq_section_acl2\">
+<div class=\"left-center\">
   <h3>ACL2-related</h3>
 
-  <a name=\"faq_acl2\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>What is ACL2?</strong></td> </tr>
+     <td><b>What is ACL2?</b></td> </tr>
 <tr> <td>A:</td>
      <td>ACL2 is a programming language, logic, and theorem
 prover/checker based on Common Lisp.  See <a
@@ -453,15 +415,14 @@ href=\"http://www.cs.utexas.edu/~moore/acl2/\">the ACL2 home page</a> for more
 information.</td></tr>
 </table>
 
-<a name=\"faq_car\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>What is CAR?</strong></td> </tr>
+     <td><b>What is CAR?</b></td> </tr>
 <tr> <td>A:</td>
      <td><u>CAR</u> is an abbreviation we sometimes use to refer to this
 (print) book:
 <blockquote>
-<strong>Computer-Aided Reasoning: An Approach</strong>.<br/>
+<b>Computer-Aided Reasoning: An Approach</b>.<br/>
 Matt Kaufmann, Panagiotis Manolios, and J Strother Moore.<br/>
 Kluwer Academic Publishers, June, 2000. (ISBN 0-7923-7744-3)
 </blockquote>
@@ -472,35 +433,18 @@ ordering information.
 </tr>
 </table>
 
-<a name=\"faq_acl2_book\"></a>
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong>What is an ACL2 book?</strong></td> </tr>
+     <td><b>What is an ACL2 book?</b></td> </tr>
 <tr> <td >A:</td>
      <td>Basically, an ACL2 book is a bunch of ACL2 definitions (functions,
 theorems, proof rules, etc.) that can be easily imported into other ACL2
-work.  See <a
-href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____BOOKS\">:DOC books</a> and
-<a href=\"user_guide.html#guide_book\">our guide to book development in ACL2s</a>
-for more information.</td></tr>
+work.  See @(see acl2::books) for more information.</td></tr>
 </table><br/>
 
-<a name=\"faq_acl2_image_outside\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Can I use the ACL2 image downloaded by Eclipse outside of Eclipse?</strong></td> </tr>
-<tr> <td>A:</td>
-     <td>Absolutely!  From the ACL2 perspective, it has everything you would
-have building ACL2 yourself. Use the following executable script
-<code>myeclipse/plugins/acl2_image.<em>something</em>/run_acl2</code>
-instead of the usual <code>saved_acl2</code>
-</td></tr>
-</table>
-
-<a name=\"impl_acl2_path\"></a>
-<table class=\"rounded striped\">
-<tr> <td>Q:</td>
-<td><strong>Can I use my own version of ACL2? i.e. Finding ACL2 on user's system:</strong></td>
+<td><b>Can I use my own version of ACL2? i.e. Finding ACL2 on user's system:</b></td>
 </tr>
 <tr> <td>A:</td>
 <td>
@@ -526,28 +470,23 @@ we just try executing \"acl2\" and see what happens.
 </table>
 </div>
 
-<div class=\"left-center\" data-target=\"faq_section_java\">
+<div class=\"left-center\">
 <h3>Java-related</h3>
 
-<a name=\"faq_already_java\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Do I already have Java?  What version?</strong></td> </tr>
+     <td><b>Do I already have Java?  What version?</b></td> </tr>
 <tr> <td>A:</td>
-     <td>The simple answer is to type <code>java -version</code> at
+     <td>The simple answer is to type @({java -version}) at
 your operating system's command prompt/terminal/shell.  You might
 still have Java if the command is rejected.
-See also <a href=\"faq.html#faq_eclipse_running\">How do I run Eclipse--with the
-right options?</a> and <a href=\"faq.html#faq_5.0\">Is there a difference
-between Java SDK 1.5.0 and 5.0?</a> for more info.
 </td></tr>
 </table>
 
 
-<a name=\"faq_sdk\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Do I need the Java SDK or is the JRE fine?</strong></td> </tr>
+     <td><b>Do I need the Java SDK or is the JRE fine?</b></td> </tr>
 <tr> <td>A:</td>
      <td>The SDK is only needed if you plan on ever doing any Java
 development. The (smaller) JRE should be opted if there is a
@@ -557,80 +496,46 @@ choice. It is recommended to have separate eclipse installations
 </table><br/>
 
 
-<a name=\"faq_5.0\"></a>
-<table class=\"rounded striped\">
-<tr> <td>Q:</td>
-     <td><strong>Is there a difference between Java SDK 1.5.0 and 5.0?</strong></td> </tr>
-<tr> <td>A:</td>
-     <td>No.  \"5.0\" is the version number adjusted for marketing-hype.  See
-<a href=\"http://java.sun.com/j2se/1.5.0/docs/relnotes/version-5.0.html\">
-\"Version 1.5.0 or 5.0?\"</a> on Sun's site. Similarily, there is no
-difference between Java version \"6.0\" and JDK/JRE 1.6.0 etc etc.
-</td></tr>
-</table><br/>
-
-
-<a name=\"faq_netbeans\"></a>
-<table class=\"rounded striped\">
-<tr> <td>Q:</td>
-     <td><strong>What is Netbeans?</strong></td> </tr>
-<tr> <td>A:</td>
-     <td>Netbeans is a Java development environment that feels much like
-Eclipse but is more Java-specific.  You do not need it.
-</td></tr>
-</table><br/>
-
-
-<a name=\"faq_oldjava\"></a>
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong>Can I use a version 1.* of Java?</strong></td> </tr>
+     <td><b>Can I use another version of Java?</b></td> </tr>
 <tr> <td >A:</td>
-     <td>ACL2s Eclipse plugin uses 1.5
-<a href=\"http://java.sun.com/j2se/1.5.0/docs/relnotes/features.html#lang\">language constructs</a> and
-<a href=\"http://java.sun.com/j2se/1.5.0/docs/relnotes/features.html#base_libs\">APIs</a>.
+     <td>The ACL2s Eclipse plugin uses Java constructs from Java 11.
 You are likely to encounter problems if you use a Java runtime that is
-older than \"5.0\". Moreover due to
-a <a href=\"http://java-performance.info/changes-to-string-java-1-7-0_06/\">bug</a>
-in JRE 1.7, ACL2s will not work with it. We recommend the use of JRE
-1.6 or 1.8.
+older than Java 11.  We recommend the use of JRE 17 or 18.
 </td></tr>
 </table><br/>
 </div>
 
-<div class=\"left-center\" data-target=\"faq_section_acl2s\">
 <h3>ACL2s-related</h3>
 
-<a name=\"faq_restrictions\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Why won't ACL2s let me do &lt;blah&gt; in a session?</strong></td> </tr>
+     <td><b>Why won't ACL2s let me do &lt;blah&gt; in a session?</b></td> </tr>
 <tr> <td>A:</td>
      <td><p>In order for the plugin to follow what's going on in ACL2, we
 must impose some small limitations.  One, for example, is that it will not let
 you break into raw Lisp.  For those interested in this dangerous,
 low-level form of interaction, however,
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____SET-RAW-MODE\">raw
-mode</a> is supported (because it uses ACL2's reader).  
+<see topic=\"@(url acl2::set-raw-mode)\">raw
+mode</see> is supported (because it uses ACL2's reader).
 </p><p>
 Another subtle limitation is that--aside from
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2_____WORMHOLE\">wormholes</a>--<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____LD\">ld</a>
+<see topic=\"@(url acl2::wormhole)\">wormholes</see>--@(see ld)
 will only let you read from
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2_____star_STANDARD-OI_star_\">*standard-oi*</a> at ld level 1.  The reason has to do with undoing and
-also <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____LD-ERROR-ACTION\">ld-error-action</a>.  Another example is that
+<see topic=\"@(url acl2::standard-oi)\">*standard-oi*</see> at ld level 1.  The reason has to do with undoing and also @(see ld-error-action).  Another example is that
 <tt>good-bye</tt> and other exit commands are disabled to the user,
 to encourage use of the user interface operation \"Stop session\" instead.
 </p><p>
-For more details, see <a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_hooks\">How/what ACL2 functionality is
-modified for ACL2s</a>.
+For more details, see <b>How/what ACL2 functionality is
+modified for ACL2s</b> in the @(see acl2s-implementation-notes).
 </p>
 </td></tr>
 </table><br/>
 
-<a name=\"faq_acl2s_emacs\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Can I use ACL2s extensions to ACL2 in an Emacs development environment?</strong></td> </tr>
+     <td><b>Can I use ACL2s extensions to ACL2 in an Emacs development environment?</b></td> </tr>
 <tr> <td>A:</td>
      <td>
 
@@ -640,38 +545,34 @@ modified for ACL2s</a>.
      features individually, see the next question. 
 </p>
 <p>
-  Assuming you have ACL2s installed as an eclipse plugin
-     in <tt>/Users/sarah/tools/eclipse</tt>, here are instructions on
-     how to run an <em>ACL2s mode</em> session in Emacs. Name the above
-     directory <em>my_eclipse</em>.
+  You first need to identify where your ACL2 systems book directory is.
+  You can do this by running @({(assoc :system (project-dir-alist (w state)))}) inside of an Eclipse ACL2s-mode session.
+  The output of that command will start with @('(:system . ')) and will be followed by a path inside of a string.
+  That path is your ACL2 system books directory, and we'll refer to it below as @('[books]').
 </p>
     <ol>
-    <li>Open a shell in emacs, start the ACL2 session: <code><em>my_eclipse</em>/plugins/acl2_image.<em>something</em>/run_acl2</code></li>
-    <li>In the ACL2 session, submit the following 3 commands:
+    <li>Open a shell in emacs, start the ACL2 session: @({[books]../saved_acl2})</li>
+    <li>In the ACL2 session, submit the following commands:
  @({
-   (add-include-book-dir :acl2s-modes \"my_eclipse/plugins/acl2s_modes_<em>something</em>/\") 
-   (ld \"acl2s-mode.lsp\" :dir :acl2s-modes)
+   (ld \"acl2s/acl2s-mode.lsp\" :dir :system)
    (reset-prehistory t)
    })
 </li>
 </ol>
 <p>
-If you want more finer control on what gets loaded, you can selectively copy paste the forms in the <tt>acl2s-mode.lsp</tt> that
+If you want finer control on what gets loaded, you can selectively copy and paste the forms in @('[books]/acl2s/acl2s-mode.lsp') that
 you need, in the emacs session. For example, say you want a session without trust tags, then except
-for the <code>(include-book \"ccg\" ...)</code> form, submit the rest of the events in <tt>acl2s-mode.lsp</tt>.
-</p>
-<p>
-To reproduce other sessions modes, follow the above, but replace acl2s-mode.lsp by the corresponding session mode file, e.g. acl2s-beginner.lsp
+for the @('(include-book \"ccg\" ...)') form, submit the rest of the events in <tt>acl2s-mode.lsp</tt>.
 </p>
 </td></tr>
-</table><br/>
+</table>
+<br/>
 
 
-<a name=\"faq_ccg_emacs\"></a>
 <table class=\"rounded striped\">
 <tr> <td>Q:</td>
-     <td><strong>Can I use CCG termination analysis and Counterexample
-     generation in Emacs (ACL2 session)?</strong></td> </tr>
+     <td><b>Can I use CCG termination analysis and Counterexample
+     generation in Emacs (ACL2 session)?</b></td> </tr>
 <tr> <td>A:</td>
 <td>
 <p>To enable CCG termination analysis, submit the following two commands
@@ -691,71 +592,9 @@ To reproduce other sessions modes, follow the above, but replace acl2s-mode.lsp 
 </td></tr>
 </table><br/>
 
-</div>
 
-<div class=\"left-center\" data-target=\"faq_section_installation\">
-  <a name=\"faq_section_installation\"></a>
 <h3>Installation Issues</h3>
-<a name=\"faq_installation_problems\"></a>
-<table class=\"rounded striped\">
-<tr> <td>Q:</td>
-     <td><strong>I am having trouble installing/running ACL2s, what should I do?</strong></td> </tr>
-<tr> <td>A:</td>
-     <td>
-<h5>Case: Standard prepackaged installation</h5>
-<ul class=\"disc\"> 
-
-<li><b><sf>ACL2 appears to be stuck on starting (Anti-virus software is getting in the way):</sf></b> Do whatever is necessary to give eclipse/plugins/acl2_image*/run_acl2.exe appropriate privileges. In particular, if on Avast Anti-virus, go to settings and uncheck the DeepScreen feature.
-</li>
-
-<li><b>Old Linux distros</b> On linux machines whose glibc version is older
-than 2.15 the current prepackaged tarball does not work. Please contact
-the ACL2s maintainer to provide you with a custom ACL2s build.
-</li>
-
-</ul>
-<br/>
-<h5> Case: Non-standard Installation:</h5>
-<ul class=\"disc\">
-
-<li><strong><sf>MacOSX/Linux Permissions:</sf></strong> If you
-installed eclipse on your Mac/Linux machine using a package manager
-that comes with the OS, then you will have trouble installing and
-starting ACL2s due to different permissions. Instead follow the
-eclipse download instructions as described above in the website,
-mainly: Download the Eclipse tar.gz and extract (without using sudo)
-the archive in your home directory
-(e.g. <tt>/home/johnd/tools/eclipse</tt>).</li>
-
-<li><b><sf>Cannot Start ACL2:</sf></b> If ACL2s was installed
-correctly, but when you start an ACL2 session, you get an error, then
-there can be other causes like: 
-<br/><font size=\"2\">
-1. You only installed ACl2s plugin and not the ACL2 image and you forgot to specify the build path in <em>Windows&rarr;Preferences&rarr;ACL2s&rarr;ACL2</em>.
-</font>
-<br/><font size=\"2\">
-2. You are using an older ACL2 version, again check the build path in <em>Windows&rarr;Preferences&rarr;ACL2s&rarr;ACL2</em> and modify it to point to a newer version.
-</font>
-<br/><font size=\"2\">
-3. You are using a workspace on network share path. Switch to a workspace on local path.
-</font>
-<br/><font size=\"2\">
-4. Certain exectuable scripts e.g. run_acl2, dx86cl64, wx86cl64.exe etc in your acl2_image* plugin do not have executable permissions.
-</font>
-
-</li>
-
-<li><strong><sf>Java issues:</sf></strong> We recommend JRE version 1.8 (also known as Java 8.0).
-Either Java is not
-installed (not in PATH) or you are using a version of JRE 1.7 that
-has a
-<a href=\"http://java-performance.info/changes-to-string-java-1-7-0_06/\">bug</a>
-in its string library.</li>
-
-</ul>
-</td></tr>
-</table><br/>
-</div>
+See @(see acl2s-installation-faq) as well as the corresponding @(see acl2s-installation) page for your operating system for more information.
 ")
  
 (defxdoc acl2s-user-guide
@@ -772,14 +611,13 @@ language, logic and theorem proving system. For in-depth documentation
 about ACL2 itself refer to @(see acl2::acl2).
 </p>
 
+<div class=\"left-center\">
+  <h2>Cheat Sheet</h2>
+  A cheat sheet is available with a summary of key bindings and
+  command types <a href=\"res/acl2s/sheet.pdf\">here</a>.
+</div>
 
-        <div class=\"left-center\" data-target=\"cheat_sheet\">
-          <h2>Cheat Sheet</h2>
-          A cheat sheet is available with a summary of key bindings and command types:
-          <a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/sheet.html\">HTML</a> or <a href=\"res/acl2s/sheet.pdf\">PDF</a>.
-        </div>
-
-<div class=\"left-center\" data-target=\"guide_customization\">
+<div class=\"left-center\">
 <h2>Customization</h2>
 <h4>Workspace Layout</h4>
 <p>
@@ -832,7 +670,7 @@ take effect.</i></li>
 <p>
 If you want to add some configuration input to be loaded with each interactive
 session, use an
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____ACL2-CUSTOMIZATION\">acl2-customization file</a>.
+<see topic=\"@(url acl2::acl2-customization)\">acl2-customization file</see>.
 This can include your own configuration to be done after the session mode is
 loaded and configured.  This should not include events, which should be
 specified or explicitly loaded in the source code.  In fact, we do not load
@@ -886,157 +724,24 @@ developing definitions and theorems to be used by ACL2 outside of ACL2s.
 <p>
 Admissibility in this mode, however, does not *guarantee* admissibility
 in ACL2 proper (and vice-versa).  For more details, see
-<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_hooks\">How/what ACL2 functionality is modified for ACLs</a>.
-Also see <a href=\"user_guide.html#guide_book\">book development</a> for certification
-with ACL2 proper inside of ACL2s/Eclipse.
+the <b>How/what ACL2 functionality is modified for ACLs</b> section of the @(see acl2s-implementation-notes).
 </p>
 </td></tr>
 </tbody>
 </table>
 
-<p><em>Additional advanced note:</em>
+<p><b>Additional advanced note:</b>
 Another feature of all these modes except \"Compatible\" is doing destructor
 elimination before laying down a checkpoint.  Thus, the checkpoint summary
 will show the formula after destructor elimination.  The downside is that the
 variable names may appear cryptic and unfamiliar, but the upside is that
 you get some generalization for free, usually resulting in smaller formulas.
 </p><p>
-Notes about how these modes are implemented are described in
-<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_modes\"><em>How modes are implemented</em></a>.
+Notes about how these modes are implemented are described in the <b>How modes are implemented</b> section of the @(see acl2s-implementation-notes).
 </p>
 </div>
 
-<div class=\"left-center\" data-target=\"guide_classifications\">
-<h2>Input Command Classifications</h2>
-<p>
-Each input form submitted to ACL2 from the plugin is placed into
-one of the following categories based on its purpose and potential
-effect.  Basically, if you use RAW or ACTION input, we cannot guarantee
-that the plugin will behave in a consistent way with respect to UNDOing,
-etc., but the rest should behave as expected.  We present them in decreasing
-order of commonness or importance to the user:
-</p>
-
-<table>
-<thead>
-  <tr>
-    <th>Class</th>
-    <th>Description</th>
-  </tr>
-</thead>
-<tbody>
-<tr><td><b>EVENT</b></td><td>
-These correspond to ACL2 
-<a href=\"@(url acl2::embedded-event-form)\">embedded event forms</a>,
-which are those forms that can appear in <a href=\"user_guide.html#guide_book\">books</a>.
-Calls to <tt>defun</tt>, <tt>defmacro</tt>, and <tt>defthm</tt> are examples
-of embedded event forms and <b>EVENT</b>s.
-</td></tr>
-<tr><td valign=\"top\"><b>VALUE</b></td><td>
-<p>Such forms are simple computations which return a value when (and if)
-they terminate.
-No <b>VALUE</b> form can alter ACL2's state and, therefore, never
-affects undoing or redoing.
-</p><p>
-A precise definition is that if ACL2 permits <tt>(cons </tt>
-<em>&lt;form&gt;</em> <tt>nil)</tt>, then <em>&lt;form&gt;</em> is a <b>VALUE</b>.
-</p><p>
-<em>Advanced Note</em>: some <b>VALUE</b> forms
-have transient side effects, but they have no logical consequence (e.g.
-<a href=\"@(url acl2::cw)\">CW</a>
-and
-<a href=\"@(url acl2::wormhole)\">WORMHOLE</a>).
-</p>
-</td></tr>
-<tr><td valign=\"top\"><b>QUERY</b></td><td>
-These are calls to some built-in ACL2 functions that report information about
-the current state but are known not to modify state.  Examples include
-@('(pe 'append)')
-and
-@('(pbt 0)').
-</td></tr>
-<tr><td valign=\"top\"><b>UNDO</b><br/>(internal initiation only)</td><td>
-Various UI actions which have to do with \"undoing\" or \"moving the line up\"
-can initiate the execution of an <b>UNDO</b> in the session.  An ordinary
-user need not concern him/herself with how this works
-(<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_undo_redo\"><em>How undo and redo are implemented</em></a>),
-but should keep in mind that <b>UNDO</b>ing an <b>ACTION</b> or <b>RAW</b>
-form may not have the desired effect.
-</td></tr>
-<tr><td valign=\"top\"><b>REDO</b><br/>(internal initiation only)</td><td>
-<p>This is the counterpart of <b>UNDO</b>.  It is used when resubmitting
-something with the same abstract syntax and in the same environment as
-something that was previously undone.
-</p><p>
-<b>REDO</b> enables one to (for example) edit comments above the line, by
-retreating the line far enough to edit what one wants to change, and then
-moving the \"todo\" line back to where it was.  If only comments were
-changed, the session will accept the forms as <b>REDO</b>s, which happen
-almost instantaneously.
-</p>
-</td></tr>
-<tr><td valign=\"top\"><b>BAD</b></td><td>
-<p>If the input is a parseable ACL2 object but is an ill-formed expression
-according to the current history, we call it \"BAD\" input.  Examples of
-violations that would cause input to be staticly ill-formed are:
-<ul>
-<li>wrong number of parameters to a function/macro</li>
-<li>use of an undefined function/macro</li>
-<li>first element of an invocation list is not a symbol or lambda expression</li>
-<li>mismatch between expected and actual @('mv') shape</li>
-</ul>
-</p>
-</td></tr>
-<tr><td valign=\"top\"><b>COMMAND</b></td><td>
-There are many forms that are illegal in books but we are able to undo the
-effect of.  If we recognize a form as such, we call it a <b>COMMAND</b>--
-except for special cases <b>IN-PACKAGE</b> and <b>BEGIN-BOOK</b>.  The
-best example of a command is \"<tt>:set-guard-checking :none</tt>\".
-</td></tr>
-<tr><td valign=\"top\"><b>ACTION</b><br/>
-<font color=\"red\">(potentially dangerous!)</font></td><td>
-This is the \"catch-all\" categorization for forms that may have effects
-that we don't know how to properly undo or might even break or hang the
-ACL2 session.  Users who use
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STOBJ\">STOBJs</a>
-or other
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STATE\">STATE</a>
-beyond the logical
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____WORLD\">WORLD</a>
-will need to use <b>ACTION</b>s heavily, but these are advanced uses of ACL2.
-</td></tr>
-<tr><td valign=\"top\"><b>IN-PACKAGE</b></td><td>
-This <b>COMMAND</b> gets its own category because of its role in
-<a href=\"user_guide.html#guide_book\">book development</a>.  See also
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____IN-PACKAGE\">:DOC
-in-package</a>.
-</td></tr>
-<tr><td valign=\"top\"><b>BEGIN-BOOK</b></td><td>
-This <b>COMMAND</b> gets its own category because of its role in
-<a href=\"user_guide.html#guide_book\">book development</a> with our plugin.  This form
-is not part of ACL2 proper (yet!).
-</td></tr>
-<tr><td valign=\"top\"><b>EVENT/VALUE</b></td><td>
-These are a special type of
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event form</a>
-(<tt>value-triple</tt>s) that have no logical consequence--except that they
-could halt progress by generating a hard lisp error.
-</td></tr>
-<tr><td valign=\"top\"><b>RAW</b><br/>
-<font color=\"red\">(potentially very dangerous!)</font></td><td>
-Most users of ACL2 are familiar with breaking into \"raw lisp\" by typing
-\":q\" at the top-level prompt.  This is not supported in our plugin, but
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____SET-RAW-MODE\">
-\"raw mode\"</a> is supported.  Most forms submitted under this mode are
-classified as <b>RAW</b> because they have no well-defined meaning from the
-ACL2 view of things.  With raw mode, the user can easily break many things,
-and it's only supported for the benefit of <em>experts</em>.
-</td></tr>
-</tbody>
-</table>
-</div>
-
-<div class=\"left-center\" data-target=\"guide_desc\">
+<div class=\"left-center\">
 <h2>Descriptions of UI Actions with key bindings</h2>
 <p>
 The keyboard bindings for these actions
@@ -1051,7 +756,7 @@ application menus (under <b>ACL2</b> or <b>Navigate</b>).
 The keybindings below are for PC users.  The Mac equivalents (if available)
 are the same except that Ctrl+Shift is replaced by
 <icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift.  For
-example, <em>Interrupt</em> is still Ctrl+Break (if you have a Break key), but
+example, <b>Interrupt</b> is still Ctrl+Break (if you have a Break key), but
 switching editors is
 <icon src=\"res/acl2s/mac-command.gif\" width=\"14\" height=\"13\" alt=\"Command\"/>+Shift+o.
 </p>
@@ -1080,12 +785,12 @@ Ctrl+Shift+o (since it is related to emacs' C-x o).
 </td><td>
 </td><td>
 If the character behind the caret (cursor) is matched to another (such as
-<u><font color=\"red\">(</font></u> and <u><font color=\"red\">)</font></u>,
-or <u><font color=\"red\">\"</font></u> and <u><font color=\"red\">\"</font></u>),
+<u><color rgb=\"red\">(</color></u> and <u><color rgb=\"red\">)</color></u>,
+or <u><color rgb=\"red\">\"</color></u> and <u><color rgb=\"red\">\"</color></u>),
 then this action moves the cursor just beyond the match.  Invoking this action
-twice in a row should have no net effect <em>except</em> in the case of
-going from a <u><font color=\"red\">,</font></u> to its matching
-<u><font color=\"red\">`</font></u>, which could potentially have many commas
+twice in a row should have no net effect <b>except</b> in the case of
+going from a <u><color rgb=\"red\">,</color></u> to its matching
+<u><color rgb=\"red\">`</color></u>, which could potentially have many commas
 matching to it.  The keyboard shortcut is
 Ctrl+Shift+P (as in Eclipse's Java Development Environment).
 </td></tr>
@@ -1107,9 +812,7 @@ binding).
 <p>
 These grant the user finer-grained navigation through the session history
 than the above by also visiting checkpoints in proof attempts.  For a
-description of checkpoints, see
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____THE-METHOD\">:DOC
-THE-METHOD</a>.
+description of checkpoints, see @(see acl2::the-method).
 </p><p>
 \"Next\" is bound to Ctrl+Shift+Right and \"Previous\" is bound to Ctrl+Shift+Left.
 Thus, to go to the first checkpoint of the previous form's output, type
@@ -1123,7 +826,7 @@ Ctrl+Shift+Up, Ctrl+Shift+Right.
 The .a2s editor keeps a history of acl2 forms that have been submitted as
 \"immediates\" (typed in the .a2s editor).  One can navigate through this
 history in much the same way one can navigate through a shell history, or a
-history of ACL2 commands (assuming <em>readline</em> support).  Previous:
+history of ACL2 commands (assuming <b>readline</b> support).  Previous:
 Ctrl+Shift+, (comma);  Next: Ctrl+Shift+. (period);  Last/Current: Ctrl+Shift+/
 (slash).
 <p>
@@ -1139,12 +842,12 @@ Submit Immediate
 </td><td>
 </td><td>
 When ACL2 is running and waiting for input, one can type input forms directly
-into the .a2s buffer.  We call these \"immediates.\"  Whenever <em>Enter</em>
-(sometimes called <em>Return</em>) is typed at the end of the .a2s buffer,
+into the .a2s buffer.  We call these \"immediates.\"  Whenever <b>Enter</b>
+(sometimes called <b>Return</b>) is typed at the end of the .a2s buffer,
 we check to see
 if some prefix of the typed input is a valid, complete input form.  If so,
-the <em>Enter</em> is interpreted as submitting the form.  If not, the
-<em>Enter</em> is inserted, as in a traditional editor.  <em>Ctrl+Enter</em>
+the <b>Enter</b> is interpreted as submitting the form.  If not, the
+<b>Enter</b> is inserted, as in a traditional editor.  <b>Ctrl+Enter</b>
 ignores the location of the caret and will submit the first complete, valid
 input form if there is one.
 <p>
@@ -1247,10 +950,7 @@ currently being executed by ACL2, it will be interrupted.
 If there were no \"todo\" forms, both lines will be moved up one form, and if
 that form was relevant to the logical history, it will be undone in the
 ACL2 session.  ACL2 need not be running to use this action.
-Shortcut: Ctrl+Shift+M <font color=\"red\">This has changed from 0.9.6
-    to accomodate for GNOME users. To restore this binding to
-    Ctrl+Shift+U, go to Window&rarr;Preferences&rarr;General&rarr;Keys and change
-    the \"Retreat Line\" action's binding.</font>
+Shortcut: Ctrl+Shift+M
 </p><p>
 The small arrow in the icon is intended to indicate the undoing of a
 single form.
@@ -1348,7 +1048,7 @@ Certify as book
 <icon src=\"res/acl2s/icons/acl2_book.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
-See <a href=\"user_guide.html#guide_book\">book development</a>.  Alt+C
+This will use <see topic=\"@(url build::cert.pl)\">cert.pl</see> to <i>certify</i> the current book so that it can be quickly <see topic=\"@(url acl2::include-book)\">included</see> from another file. See @(see acl2::certificate) for more information. Shortcut: Alt+C
 </p>
 </td></tr>
 
@@ -1369,8 +1069,8 @@ version of ACL2 you are using with ACL2s.
 <h2>CCG termination analysis</h2>
 <h4>Background</h4>
 <p>
-The \"ACL2s,\" \"Intermediate,\" and \"Recursion &amp; Induction\" session modes
-include
+The \"ACL2s,\" session mode
+includes
 improved termination analysis for ACL2 based on research by Pete Manolios
 and Daron Vroon.  The analysis is based on \"context calling graphs,\" so
 we refer to it as CCG termination analysis for short.
@@ -1406,7 +1106,7 @@ Regardless of this or other settings, ACL2's built-in
 method will be used if an explicit measure is specified.
 </p><p>
 For advanced debugging purposes, <tt>:set-ccg-verbose t</tt> causes the
-analysis to show what it is doing.  This generates <em>lots</em> of
+analysis to show what it is doing.  This generates <b>lots</b> of
 output, however.
 </p><p>
 Finally, \"Compatible\" mode does not include CCG, and \"Programming\" mode
@@ -1417,8 +1117,8 @@ that it is implemented as an ACL2 book in the acl2s-modes plugin.
 <h4>More Documentation</h4>
 <p>
 Our CCG termination analysis is highly customizable and includes
-many features not mentioned here. For  detailed documentation
-please refer to <tt>:doc ccg</tt> from inside a session. 
+many features not mentioned here. For detailed documentation
+please refer to @(see acl2::ccg).
 </p>
 </div>
 
@@ -1429,7 +1129,7 @@ please refer to <tt>:doc ccg</tt> from inside a session.
 Data definitions are an essential part of crafting programs and
 modeling systems. Whereas most programming languages provide rich
 mechanisms for defining datatypes, ACL2 only really provides a
-limited collection of built-in types and <code>cons</code>. 
+limited collection of built-in types and @('cons').
 </p>
 
 <p>
@@ -1440,9 +1140,9 @@ of the world.
 </p>
 
 <p>
-We introduced the <b class=\"embolden\">defdata</b> framework in ACL2s
+We introduced the <b>defdata</b> framework in ACL2s
 in order to provide a convenient, intuitive way to specify data
-definitions.  A version of <code>defdata</code> has appeared in ACL2s
+definitions.  A version of @('defdata') has appeared in ACL2s
 since at least August 2009 (in version 0.9.7), and we have been
 extending and improving it since then.
 </p>
@@ -1450,7 +1150,7 @@ extending and improving it since then.
 
 <h4>Documentation</h4>
 <p>
-See @(see defdata::defdata) for defdata's documentation. In particular,
+See @(see acl2::defdata) for defdata's documentation. In particular,
 a readable and example-oriented description of defdata framework appears
 in the ACL2 2014 Workshop paper linked at the bottom of that topic.
 </p>
@@ -1480,304 +1180,394 @@ The ACL2 2011 workshop paper
 goes into the details of this feature, but is a very easy read. The reader is encouraged to go through it.
 </p>
 <p>
-All modes except \"Compatible\" and \"Programming\" have testing enabled
-by default.  This feature is independent of the rest of ACL2s in the
-sense that it is implemented as an ACL2 book in the acl2s-modes
-plugin.
+All modes except \"Compatible\" have testing enabled by default.
 </p>
 
 <h4>Documentation</h4>
 <p>
-See @(see test?) and @(see cgen) for more documentation.
+See @(see acl2::test?) and @(see acl2::cgen) for more documentation.
 </p>
 
 </div>
+")
 
-<div class=\"left-center\" data-target=\"guide_book\">
-  <a name=\"guide_book\"></a>
-<h2>ACL2 Book Development</h2>
-<h4>Introduction</h4>
+(defxdoc acl2s-command-classifications
+  :parents (acl2s-user-guide)
+  :short "Description of classifications for commands in ACL2s"
+  :long
+  "
+<h2>Input Command Classifications</h2>
 <p>
-An ACL2/ACL2s <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____BOOKS\">book</a>
-is a reusable collection of definitions and other
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EVENTS\">events</a>
-(<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event forms</a>,
-actually).  A valid book can be certified to demonstrate its validity and/or
-to prepare it for inclusion using @(see include-book) elsewhere.
-</p><p>
-To develop a .lisp file as a book in ACL2s, either create the file using
-the ACL2s/Lisp file wizard selecting \"Create with book code\", or put this at the
-top/beginning:
-<pre>
-<code class=\"lisp\">
-  (begin-book t :ttags :all)
-  (in-package \"ACL2\")
-</code>
-</pre>
-
-Usually the only things that would go before the <code>begin-book</code> form
-are package definitions (<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EVENTS\">defpkg</a>),
-but these aren't worth learning about until you know you need them.
-</p><p>
-After the <code>begin-book</code> and <code>in-package</code> come the
-definitions and other events for your book.  As one is developing a book,
-it is very helpful to use the line action discussed above for interactive
-development.  One difference is that everything starting from the
-<code>begin-book</code> form that is in the \"completed\" region will be
-highlighted blue as long as it is valid for use in a book (see 
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">EMBEDDED-EVENT-FORM</a>).
-Any <em>tangent</em> from book-valid forms will begin gray highlight.  Such
-tangents should eventually be undone and removed before certification.
-</p><p>
-To ensure your book is valid/certifiable, save your changes and choose
-\"Certify as book\" from the menu or toolbar (<icon src=\"res/acl2s/icons/acl2_book.gif\"
-width=\"16\" height=\"16\"/>).  An Eclipse console will dump the output of the
-certification process and indicate success or failure when finished.
+Each input form submitted to ACL2 from the plugin is placed into
+one of the following categories based on its purpose and potential
+effect.  Basically, if you use RAW or ACTION input, we cannot guarantee
+that the plugin will behave in a consistent way with respect to UNDOing,
+etc., but the rest should behave as expected.  We present them in decreasing
+order of commonness or importance to the user:
 </p>
 
-<h4>More detail</h4>
+<table>
+<thead>
+  <tr>
+    <th>Class</th>
+    <th>Description</th>
+  </tr>
+</thead>
+<tbody>
+<tr><td><b>EVENT</b></td><td>
+These correspond to ACL2 <see topic=\"@(url acl2::embedded-event-form)\">embedded event forms</see>,
+which are those forms that can appear in <see topic=\"@(url acl2::books)\">ACL2 books</see>.
+Calls to <tt>defun</tt>, <tt>defmacro</tt>, and <tt>defthm</tt> are examples
+of embedded event forms and <b>EVENT</b>s.
+</td></tr>
+<tr><td valign=\"top\"><b>VALUE</b></td><td>
+Such forms are simple computations which return a value when (and if)
+they terminate.
+No <b>VALUE</b> form can alter ACL2's state and, therefore, never
+affects undoing or redoing.
+<br/><br/>
+A precise definition is that if ACL2 permits <tt>(cons </tt>
+<b>&lt;form&gt;</b> <tt>nil)</tt>, then <b>&lt;form&gt;</b> is a <b>VALUE</b>.
+<br/><br/>
+<b>Advanced Note</b>: some <b>VALUE</b> forms
+have transient side effects, but they have no logical consequence (e.g.
+<see topic=\"@(url acl2::cw)\">CW</see>
+and
+<see topic=\"@(url acl2::wormhole)\">WORMHOLE</see>).
+</td></tr>
+<tr><td valign=\"top\"><b>QUERY</b></td><td>
+These are calls to some built-in ACL2 functions that report information about
+the current state but are known not to modify state.  Examples include
+@('(pe 'append)')
+and
+@('(pbt 0)').
+</td></tr>
+<tr><td valign=\"top\"><b>UNDO</b><br/>(internal initiation only)</td><td>
+Various UI actions which have to do with \"undoing\" or \"moving the line up\"
+can initiate the execution of an <b>UNDO</b> in the session.  An ordinary
+user need not concern him/herself with how this works
+(See <b>How undo and redo are implemented</b> in the <see topic=\"@(url acl2s-implementation-notes)\">ACL2s implementation notes</see>),
+but should keep in mind that <b>UNDO</b>ing an <b>ACTION</b> or <b>RAW</b>
+form may not have the desired effect.
+</td></tr>
+<tr><td valign=\"top\"><b>REDO</b><br/>(internal initiation only)</td><td>
+This is the counterpart of <b>UNDO</b>.  It is used when resubmitting
+something with the same abstract syntax and in the same environment as
+something that was previously undone.
+<br/><br/>
+<b>REDO</b> enables one to (for example) edit comments above the line, by
+retreating the line far enough to edit what one wants to change, and then
+moving the \"todo\" line back to where it was.  If only comments were
+changed, the session will accept the forms as <b>REDO</b>s, which happen
+almost instantaneously.
+</td></tr>
+<tr><td valign=\"top\"><b>BAD</b></td><td>
+If the input is a parseable ACL2 object but is an ill-formed expression
+according to the current history, we call it \"BAD\" input.  Examples of
+violations that would cause input to be statically ill-formed are:
+<ul>
+<li>wrong number of parameters to a function/macro</li>
+<li>use of an undefined function/macro</li>
+<li>first element of an invocation list is not a symbol or lambda expression</li>
+<li>mismatch between expected and actual @('mv') shape</li>
+</ul>
+</td></tr>
+<tr><td valign=\"top\"><b>COMMAND</b></td><td>
+There are many forms that are illegal in books but we are able to undo the
+effect of.  If we recognize a form as such, we call it a <b>COMMAND</b>--
+except for special case <b>IN-PACKAGE</b>.  The
+best example of a command is \"<tt>:set-guard-checking :none</tt>\".
+</td></tr>
+<tr><td valign=\"top\"><b>ACTION</b><br/>
+<color rgb=\"red\">(potentially dangerous!)</color></td><td>
+This is the \"catch-all\" categorization for forms that may have effects
+that we don't know how to properly undo or might even break or hang the
+ACL2 session.  Users who use
+<see topic=\"@(url acl2::stobj)\">STOBJs</see>
+or other
+<see topic=\"@(url acl2::state)\">STATE</see>
+beyond the logical
+<see topic=\"@(url acl2::acl2)\">WORLD</see>
+will need to use <b>ACTION</b>s heavily, but these are advanced uses of ACL2.
+</td></tr>
+<tr><td valign=\"top\"><b>EVENT/VALUE</b></td><td>
+These are a special type of
+<see topic=\"@(url acl2::embedded-event-form)\">embedded event form</see>
+(<tt>value-triple</tt>s) that have no logical consequence--except that they
+could halt progress by generating a hard lisp error.
+</td></tr>
+<tr><td valign=\"top\"><b>RAW</b><br/>
+<color rgb=\"red\">(potentially very dangerous!)</color></td><td>
+Most users of ACL2 are familiar with breaking into \"raw lisp\" by typing
+\":q\" at the top-level prompt.  This is not supported in our plugin, but
+<see topic=\"@(url acl2::set-raw-mode)\">
+\"raw mode\"</see> is supported.  Most forms submitted under this mode are
+classified as <b>RAW</b> because they have no well-defined meaning from the
+ACL2 view of things.  With raw mode, the user can easily break many things,
+and it's only supported for the benefit of <b>experts</b>.
+</td></tr>
+</tbody>
+</table>
+")
+
+(defxdoc acl2s-implementation-notes
+  :parents (acl2::acl2-sedan)
+  :short "Some details regarding how ACL2s is implemented"
+  :long
+  "
+<h2>WARNING</h2>
+<color rgb=\"red\">
+Note that much of the information here is not up-to-date with the current implementation of ACL2s.
+</color>
+We're in the process of going through this documentation and updating it, but we haven't finished updating
+this file yet.
+<h2>Wrapping the ACL2 process</h2>
 <p>
-In ACL2s, a <code>(begin-book ...)</code> form in a .lisp file has
-special significance, indicating the .lisp file is intended to define
-a book.  Our approach might seem strange at first, but it really works
-pretty well with the seemingly obscure requirements ACL2 has for books.
-This and the next subsection get into the details and the justification.
-</p><p><icon src=\"res/acl2s/book_dev.png\" width=\"424\" height=\"400\" align=\"right\"/>
-The <em>preamble</em> is everything that comes before the
-<code>begin-book</code>.  This defines what ACL2 authors call the
-<em>certification world</em> for the book, which become the book's
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____PORTCULLIS\"><em>portcullis</em></a>.  The
-simplest explanation for the preamble/portcullis is that it is where
-any <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EVENTS\"><code>defpkg</code></a> events
-should go, because
-these are not allowed inside books (because Common Lisps vary in their
-ability to compile files that define packages).
-</p><p>
-The <code>begin-book</code> form itself takes the syntax of ACL2's
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____CERTIFY-BOOK\"><code>certify-book</code></a> except
-<code>begin-book</code> doesn't take the \"book-name\" or \"k\" parameters.  In
-fact, here are the parameter and guard specifications for ACL2s's
-<code>begin-book</code>:</p>
+  To support interruption of the ACL2 process, we need more
+  information/functionality than Java provides through its
+  @('java.lang.Process') API.  Roughly, we execute ACL2 in a wrapper
+  that outputs as its first line of text an ID number that can be used
+  to interrupt the process.  All output after that is that of ACL2.
+  The plugin captures that ID number and uses it when needed.
+</p>
+<p>
+  <b>On Unix variants</b> (Linux, Mac OS X), the wrapper for an invocation of
+  @('acl2') would look like this (4 arguments, each underlined):
+</p>
+<blockquote>
+  <code><u>sh</u> <u>-c</u> <u>echo \"$$\"; exec \"$0\" \"$@\"</u> <u>acl2</u></code>
+</blockquote>
+<p>
+  Basically, this uses the standard Bourne shell to echo its process
+  id and then execs (keeping the same pid) acl2--or any other command
+  used there.  To interrupt or terminate acl2 (respectively), we
+  execute one of these:
+</p>
+<blockquote>
+  <code><u>kill</u> <u>-INT</u> <u><i>pid</i></u></code>
+  <code><u>kill</u> <u>-TERM</u> <u><i>pid</i></u></code>
+</blockquote>
+<p>
+  <b>On Windows machines</b>, things are not this easy.  We use a
+  wrapper called <tt>hiddencon</tt>(<tt>.exe</tt>) that opens a new
+  console, immediately hides it (flicker; sorry), outputs an id
+  number, and executes a program \"attached\" to that console.  Then
+  we can invoke <tt>sendctrlc</tt>(<tt>.exe</tt>) with that id to
+  asynchronously deliver a \"Ctrl+C\" equivalent to that console,
+  interrupting the program.  <tt>sendbreak</tt>(<tt>.exe</tt>)
+  likewise sends a \"Ctrl+Break\" equivalent, which causes the program
+  to terminate.
+</p>
+<p>
+  These auxillary programs (hiddencon, sendctrlc, sendbreak) are included
+  with the ACL2s plugin, so there's nothing extra to install.  It's a bit of
+  a mess, but it seems to work reliably these days.
+</p>
+<p>
+  Some wacky details of hiddencon.exe:<br/> The stdin and stdout of
+  the program are inherited from the wrapper--not connected to the
+  console, so one might wonder what the console is for.  The answer:
+  Windows has no \"interrupt\" signal.  When one types \"Ctrl+C\" in a
+  console, the console takes care of notifying the process in some
+  weird way.  Windows has a mechanism for programmatically initiating
+  a \"Ctrl+C\" equivalent, but its really only practical from a
+  process that is \"attached\" to that console.  With this in mind,
+  the job of the wrapper is to enable any other process to initiate an
+  \"interrupt\" on the console it created.  The wrapper has a thread
+  that reads and processes events from its Windows event queue, and
+  one type of event, which could be initiated by anyone who knows the
+  thread id of that wrapper thread, causes the wrapper to send an
+  \"interruption\" to the hidden console.
+</p>
+
+<h2>Hooks: How/what ACL2 functionality is modified for ACL2s</h2>
+<blockquote>
+  <i>Here I discuss the stuff that is common to all modes, including
+  \"Compatible\" mode.  See the @(see acl2s-user-guide) section on modes
+  and \"How modes are implemented\" below.</i>
+</blockquote>
+<p>
+  To support the kind of interaction ACL2s provides requires lots of
+  cooperation and metadata from ACL2.  Thus when we run ACL2 for an
+  interactive session, we install some changes that disallow some
+  things (see <b>Why won't ACL2s let me do &lt;blah&gt; in a
+  session?</b> in the @(see acl2s-faq)), spit out metadata for some
+  things, and provide some system-level extensions in functionality.
+  All of these ACL2 modifications are implemented via books
+  distributed with ACL2 (@('[books]/acl2s/distribution/acl2s-hooks')).
+</p>
+<ul>
+  <li><b>preinit.lsp</b> - disables raw Lisp debugger, which must be
+  disabled because we can't tell for sure when/what kind of input it
+  is expecting.  This file often includes other version-specific
+  tweaks and fixes.  (This file is loaded by raw Lisp.)</li>
+  <li><b>acl2s.lisp</b> - the main \"hooks\" book, which includes the
+  \"hacking\" books now distributed with ACL2 and the rest of the
+  books listed below.</li>
+  <li><b>canonical-print.lisp</b> - functions for printing
+  things... in a canonical way! (for reading by the acl2s plugin)</li>
+  <li><b>categorize-input.lisp</b> - functions for (you guessed it...)
+  categorizing inputs to ACL2.  Note that categorizing inputs is an
+  example of the plugin executing commands in ACL2 that are unseen to
+  the user.</li>
+  <li><b>super-history.lisp</b> - implements the \"super-history\"
+  mechanism of UNDOing and REDOing.  See \"How undo and redo are
+  implemented\" below.</li>
+  <li><b>protection-hooks.lisp</b> - implements a protection mechanism
+  by which only those with knowledge of a secret number (the plugin)
+  can invoke certain actions, such as UNDOing, REDOing, quitting, or
+  breaking into raw Lisp.  Only a hash of the secret number is stored
+  in the ACL2 runtime.  You could defeat the protection with your own
+  trust tag, but I challenge you defeat it without using trust
+  tags!</li>
+  <li><b>interaction-hooks.lisp</b> - this redefines internal ACL2
+  functions to provide metadata output that is sucked up (hidden) by
+  the plugin and used to inform it about interaction.  Most
+  importantly, extra environment information is sent with the prompt,
+  a special marker is sent in the case of a form being successful, and
+  a special marker is sent whenever ACL2 is about to read another
+  object from *standard-oi*.  The plugin is now also given all of the
+  package definitions so that they can be used in determining whether
+  abstract syntax is the same in checking whether REDO is
+  allowed.</li>
+  <li><b>markup-hooks.lisp</b> - the markups in this book are not
+  critical to intelligent interaction with ACL2, but add some extra
+  helpful info, such as the position of checkpoints in the output.
+  Along these lines, somewhere in startup stuff we remove destructor
+  elimination as a checkpoint-causing processor, since destructor
+  elimination cannot reduce theorems to non-theorems (confirmed by
+  Matt Kaufmann).</li>
+</ul>
+<p>
+  After these are included at startup, @(see acl2::reset-prehistory)
+  is used to suggest to newbies that ACL2 is starting fresh, but
+  @('(strip-cars (global-val 'known-package-alist (w state)))') should
+  reveal the \"ACL2S\" package is defined, and @(':ttags-seen')
+  accurately suggests how severely spoiled your session is.
+</p>
+<p>
+  A consequence of including the standard hacking books for this code
+  is that if you want to include them in your code in ACL2s, it will
+  appear redundant during interactive development but is needed for
+  certification as a book, for which none of the above are
+  required/included.
+</p>
+<p>
+  If you run into a case in which you really need to do something
+  differently between interactive development and certification (like
+  when I'm doing interactive development on the hooks books--my head
+  hurts!), you can use the feature-based reader macros
+  <tt>#+acl2s</tt> and <tt>#-acl2s</tt>.  <tt>:acl2s</tt> is added to
+  *features* for interactive development only.  Please don't abuse. ;)
+</p>
+
+<h2>How undo and redo are implemented</h2>
+<p>
+  The <b>super-history</b> book of the acl2s_hooks plugin implements a
+  stack of old \"states\".  Actually there are two stacks: an undo
+  stack and a redo stack.  An undo pops the undo stack, pushes that
+  \"state\" onto the redo stack, and then installs the \"state\" on
+  the top of the undo stack.  A redo pops the redo stack, pushes that
+  \"state\" onto the undo stack, and installs it as current.  Any
+  other \"state\"-changing form empties the redo stack, and the
+  resulting \"state\" is pushed onto the undo stack.
+</p>
+<p>
+  Now I've put \"state\" in quotes and not called it \"the world\"
+  because this notion of state is not that same as ACL2's <see
+  topic=\"@(url acl2::state)\">state stobj</see> and is more than just
+  ACL2's <see topic=\"@(url acl2::acl2)\">WORLD</see>.  Our
+  super-history states are the world and a bunch of state-global
+  variables that store things like the current package, guard-checking
+  setting, and other things that affect whether things might pass or
+  fail, and what they mean.  The complete list is
+  @('ACL2S::*SETTINGS-GLOBALS*') in the <b>categorize-input</b> book
+  of the acl2s_hooks.  This is similar to--but not exactly--what is
+  saved and restored by <see topic=\"@(url acl2::make-event)\">make-event
+  </see> (Our undo/redo mechanism predates the release of make-event.)
+</p>
+
+<h2>How modes are implemented</h2>
+<p>
+  Since version 0.9.0, ACL2s' session modes other than \"Compatible\"
+  come from an independent plugin, acl2s_modes.  (Note that all three
+  plugins \"acl2s,\" \"acl2s_hooks,\" and \"acl2s_modes\" are
+  installed with the <i>feature</i> \"acl2s.\") Thus, third party
+  Eclipse plugins can also add their own session modes to ACL2s.  To
+  do so, they must extend the \"acl2s.modedir\" extension point, like
+  in the plugin.xml for <a href=\"bobs_mode.jar\">an example \"Bob's
+  mode\"</a>:
+</p>
+<blockquote>
 @({
-  (defmacro begin-book (&amp;optional (compile-flg 't)
-                      &amp;key (defaxioms-okp 'nil)
-                           (skip-proofs-okp 'nil)
-                           (ttags 'nil)
-                           (save-expansion 'nil))
-  (declare (xargs :guard (and (booleanp compile-flg)
-                              (booleanp defaxioms-okp)
-                              (booleanp skip-proofs-okp)
-                              (member-eq save-expansion '(t nil :save)))))
-  ...)
-  })
-<p>
-So the parameters to <code>begin-book</code> indicate the parameters that
-should be given to <code>certify-book</code> for certification of the
-containing .lisp file as a book.  One can look up the meaning of the
-<code>compile-flg</code>, <code>defaxioms-okp</code>,
-<code>skip-proofs-okp</code>, and <code>save-expansion</code> arguments
-from <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____CERTIFY-BOOK\">ACL2's documentation for
-<code>certify-book</code></a>.  But the <code>ttags</code> argument is
-important in ACL2s:
-</p><p>
-ACL2s session modes other than \"Compatible\" mode utilize ACL2 extensions that
-ACL2 cannot verify are sound or even safe.  These modes include books
-for ACL2s that define <em>trust tags</em> or <em>ttags</em> in order to tweak
-ACL2 in non-standard ways.  In order to certify a book that depends on
-the use of trust tags, including books defined in a mode other than
-\"Compatible\", an appropriate <code>:ttags</code> argument must
-be given to <code>begin-book</code>.  We recommend the all-encompassing
-<code>:all</code> argument to <code>:ttags</code>, which roughly says,
-\"I recognize this book could depend on some non-standard stuff, and
-I don't want to bother specifying the details.  Just go ahead.\"
-See the docs for <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____TTAGS-SEEN\">ttags-seen</a>
-and <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____CERTIFY-BOOK\">certify-book</a> for more
-information on how to be more specific.
-</p><p>
-The <em>contents</em> or <em>body</em> of a book is everything after the
-<code>begin-book</code> form as long as it conforms to
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____BOOK-CONTENTS\">ACL2's requirements for
-book contents</a>.  Basically, the first form must be
-<code>(in-package \"</code><em>blah</em><code>\")</code> where <em>blah</em> names
-a built-in package (such as ACL2 or ACL2-USER) or a package defined in the
-preamble.  (The wizard for \"New ACL2s/Lisp file\" can generate appropriate
-\"book code\" that defines a package in the standard way, begins the book, and
-enters the defined package.)  After the
-<code>(in-package \"</code><em>blah</em><code>\")</code> form are
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event
-forms</a> using <em>blah</em> as the default package.  In ACL2s, embedded
-event forms have the <a href=\"user_guide.html#guide_classifications\">input
-classification</a> EVENT or EVENT/VALUE.
-</p><p>
-Book code in the completed region is formatted specially.  The preamble
-looks like any other non-book .lisp file, and so uses gray highlighting.
-The <code>begin-book</code> form begins the part that distinguishes this
-.lisp file as a book, and so begins blue highlighting.  The blue
-highlighting continues either until the end of the current \"completed\"
-region, or until the end of the last form that was valid as the contents
-of a book.  This visually tells the user whether and where the book
-contents have became polluted with code disallowed in books.
-</p><p>
-We call anything after a valid book body a <em>tangent</em>, which is given
-gray highlight in the completed region.  A tangent might be intentional;
-the user might want to try things in ACL2 without the restrictions imposed
-by book development and later undo his work and clean it up for use as
-book code.  Any .lisp file with a tangent (that hasn't been commented out)
-will not certify, and we cannot forsee any case in which ACL2s would
-falsely report a form as tangential.
-</p>
-<a name=\"guide_book_impl\"></a>
-<h4>Implementation and compatibility with ACL2</h4>
-<p>
-One of the goals of ACL2s is to maintain a high degree of compatibility
-with existing ACL2 development patterns/infrastructure while hiding some
-of the nasty details from ACL2s-only users.  Compatibility of ACL2s
-book development with existing patterns/infrastructure utilizes the fact
-that the text in the ACL2s .lisp editor is not exactly what is saved on
-disk.  In particular, when book code is present, the preamble and the
-begin-book form are saved in a specially-formatted comment.  Thus, when
-ACL2 reads the .lisp file, the first (uncommented) thing it sees is
-the in-package.
-</p><p>
-Our \"preamble\" roughly corresponds to what ACL2 users would put in
-a .acl2 file.  We have a java subroutine/program that can extract the
-specially-formatted preamble+begin-book from a .lisp file and put it
-into a .acl2 file with the begin-book call translated to a corresponding
-certify-book call.  This subroutine is used to generate a .acl2 file when
-the ACL2s users asks to \"Certify as book\" but the functionality can also
-be accessed as a stand-alone program.  The class is
-acl2s.lib.certify.MaybeExtractPreamble in acl2s-lib (acl2s-lib.jar in the
-plugin directory).  This program plays nice with old codebases in that it
-will not overwrite an existing .acl2 file unless there is an ACL2s preamble
-in the corresponding .lisp file.
-</p><p>
-Right now, however, there's no automatic way to import an existing book AND
-its \"preamble\" into an ACL2s-ready .lisp file.  You can, however, open the
-.lisp file with ACL2s, which from the ACL2s perspective has no book code
-yet, insert the preamble and <code>begin-book</code> form at the top, and
-save it.
-</p>
-</div>
-
-<div class=\"left-center\" data-target=\"guide_trace\">
-<h2>Tracing function execution</h2>
-<p>
-ACL2s offers a \"beautified\" version of ACL2's tracing capability, which is
-inspired by Common Lisp tracing capabilities.  Perhaps the capability is
-most easily demonstrated with an example:
-</p>
-<h4>Tracing Example</h4>
-@({
-(defun app (x y)
-  (if (endp x)
-    y
-    (cons (car x)
-          (app (cdr x) y))))
-
-(defun rev (x)
-  (if (endp x)
-    nil
-    (app (rev (cdr x))
-         (cons (car x) nil))))
-
-(trace* app)
-
-(rev '(1 2))
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<?eclipse version=\"3.2\"?>
+<plugin>
+   <extension point=\"acl2s.modedir\">
+      <include-book-dir-entry keyword=\":bobs-mode\"/>
+      <dependency keyword=\":acl2s-modes\"/>
+      <mode
+            name=\"Bob&apos;s Mode\"
+            short_desc=\"Favorite mode of some hypothetical person named Bob\"
+            long_desc=\"this is an optional long description\"
+            book_dev=\"true\"
+            extra_imports=\"(defun-bob defmacro-bob)\"
+            init_file=\"bobs-mode.lsp\"
+            precedence=\"50\"
+            ttags=\"((:ccg))\">
+      </mode>
+      <certify-order-element book=\"defun-bob\"/>
+      <certify-order-element book=\"defmacro-bob\"/>
+   </extension>
+</plugin>
 })
+</blockquote>
 <p>
-The last input produces the following output:
+  The plugin is a JAR file with such a plugin.xml file, a proper
+  manifest file, and any books and supporting files needed for the
+  mode.
 </p>
-<code>
-<span style=\"color:#0000b0\">ACL2 &gt;</span><span style=\"color:#808080\">VALUE</span>
-<span>(rev '(1 2))</span><br/></code>
-<table style=\"border:solid yellow\" cellpadding=\"0\" cellspacing=\"0\"><tr><td>
-<code><span style=\"color:#008000\">
-<pre style=\"margin: 0cm 0cm 0cm 0cm\">1&gt; (APP NIL '(2))
-&lt;1 (APP NIL '(2))
- = '(2)
-1&gt; (APP '(2) '(1))
-  2&gt; (APP NIL '(1))
-  &lt;2 (APP NIL '(1))
-   = '(1)
-&lt;1 (APP '(2) '(1))
- = '(2 1)</pre></span></code>
-</td></tr></table>
-
-<code>
-<span style=\"color:#008000;border:solid purple\">(2 1)</span><br/>
-<span style=\"color:#0000b0\">ACL2 &gt;</span><br/>
-</code>
-
 <p>
-The output outlined in yellow is the tracing output.  This indicates that
-during the execution of <code>(rev '(1 2))</code>, <code>app</code> was
-first called with parameters <code>nil</code> and the list <code>(2)</code>.
-Note that arguments are quoted as needed so that one could copy and paste
-the call that is displayed, as in <code>(APP NIL '(2))</code>.  The second
-and third line of tracing output indicate that the same call returned the list
-<code>(2)</code>.  Like parameters, the return value
-is quoted, so that what is displayed is a theorem, in this case that
-<code>(APP NIL '(2))</code> equals <code>'(2)</code>.
-</p><p>
-The next time <code>app</code> is called in the execution of
-<code>(rev '(1 2))</code> is, as the output indicates, as
-<code>(APP '(2) '(1))</code>.  The next line,
-\"<code>2&gt; (APP NIL '(1))</code>\" indicates that <code>app</code> was
-called recursively.  The \"2\" means the recursive depth is two.  We then
-see that that call (level 2) returns <code>(1)</code> and the outer call
-of <code>app</code> (level 1) returns <code>(2 1)</code>.
-</p><p>
-The final <code>(2 1)</code> outlined with purple is the usual printed
-output of evaluating <code>(rev '(1 2))</code>.  This comes from the
-\"PRINT\" part of \"READ-EVAL-PRINT (LOOP)\".
+  All of the components shown above are optional, and all but the
+  <tt>include-book-dir-entry</tt> can have multiple instances.  ACL2
+  will be given the root install directory of the plugin with
+  add-include-book-dir and the keyword in
+  <tt>include-book-dir-entry</tt>.  In fact, ACL2s will create a
+  \"dir.lsp\" file with that form whenever the plugin is used.
+  Specifying an <tt>include-book-dir-entry</tt> is required if the
+  initialization of any modes need to refer to that directory for
+  including books.  (The current directory will <i>not</i> be set to
+  the plugin directory.)
 </p>
-
-<h4>More Tracing Details</h4>
 <p>
-One can trace multiple functions simultaneously with
-<code>(trace* fn1 fn2)</code> or with multiple calls
-to <code>trace*</code>.
-</p><p>
-The tracing is active as long as the <code>trace*</code> form is in the
-completed region of your source code.  It is true that tracing has no
-impact on ACL2's logical world, but tracing does depend on ACL2's logical
-world.  So at least for now, we consider <code>trace*</code> to be
-\"relevant\".  Calls to <code>trace*</code> are
-<a href=\"user_guide.html#guide_classifications\">classified</a> as COMMAND, which means they
-are not allows in <a href=\"user_guide.html#guide_book\">books</a>.
-</p><p>
-It is ill-advised to trace functions built into ACL2.  Such functions
-are likely to be used by ACL2 itself, so you are likely to get mounds of
-output that originates from the operation of ACL2 itself before you get
-the output you are looking for.  One can effectively trace one's own uses
-of a built-in function by writing a simple proxy function that directly
-calls the desired function, replacing your uses of the built-in function,
-and tracing the proxy.  For example: 
+  Each include-book keyword directory used in your mode initialization
+  (other than yourself and <tt>:system</tt>) should be listed as a
+  <tt>dependency</tt>.  Bob's mode uses \"ccg\" from
+  <tt>:acl2s-modes</tt>.
 </p>
-@({
-(defun my-butlast (lst n)
-  (butlast lst n))
-
-(trace* my-butlast)
-})
-
 <p>
-If one attempts to use tracing in \"Compatible\" mode,
-you might get this output:
+  Technically, only the name and short_desc are required for a mode.
+  The non-obvious parts:
 </p>
-<pre><code class=\"lisp\">1&gt; !! Warning: guard-checking is not :none, so trace    !!
-   !!   output could be misleading or appear incorrect. !!
-   !!   (see :DOC set-guard-checking)                   !!
-   (REV '(1 2))
-  2&gt; (APP NIL '(2))
-  &lt;2 (APP NIL '(2))
-   = '(2)
-  2&gt; (APP '(2) '(1))
-  &lt;2 (APP '(2) '(1))
-   = '(2 1)
-&lt;1 (REV '(1 2))
- = '(2 1)
-</code></pre>
-which means exactly what it says.
-</div>
+<ul>
+  <li><tt>book_dev</tt> - whether book development/certification
+  should be allowed in this mode (default true)</li>
+  <li><tt>extra_imports</tt> - any extra symbols that are suggested to
+  be imported into packages defined under this mode, aside from the
+  ACL2 standard set</li>
+  <li><tt>init_file</tt> - the file with the forms to execute at
+  startup to initialize the mode.  These should not refer to the
+  current directory (instead use :dir :whatever).  If
+  <tt>book_dev</tt> is true, the forms should follow the guidelines
+  for a .acl2 file, or commands that are okay prior to @(see
+  acl2::certify-book).  We recommend the <i>whatever</i>-mode.lsp
+  naming convention.</li>
+</ul>
+<p>
+  Each <tt>certify-order-element</tt> names a book to be certified
+  with the ACL2s system books, in the order given.  You should name
+  all the books in this mode directory your modes depend on.  Note
+  that here, like in include-book and certify-book, \".lisp\" is not
+  included in the name.
+</p>
 ")
