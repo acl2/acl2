@@ -230,7 +230,7 @@ proof that caused ACL2 to reject the definition.
 
 <p>So what was the meaning of the flash of green highlighting?
 Clicking \"advance todo\" moved the \"todo line\" from between
-  <code>(definec successor ...)</code> and <code>(definec fib
+<code>(definec successor ...)</code> and <code>(definec fib
 ...)</code>  to after <code>(definec fib ...)</code>.  With
 at least one form in the \"todo region\", the session started processing
 the first (and only) one.  If you look at the session output, you see
@@ -316,13 +316,12 @@ traditional undo mechanism.
 
 <p>
 We have implemented our tool as a plugin for the Eclipse development
-environment (see <a href=\"index.html#faq_eclipse\"><i>What is Eclipse?</i></a>).
+environment (see <i>What is Eclipse?</i> in the @(see acl2s-faq)).
 In addition, the plugin requires some extra functionality from ACL2
 that is not included in the main distribution.  This functionality is
 largely hidden from the user and shouldn't alter ACL2's behavior for
 all practical purposes.  To be sure, though, users can certify their
-work in a clean ACL2 session (see <a href=\"index.html#guide_book\">Book
-development</a>).
+work in a clean ACL2 session.
 </p>
 
 <p>
@@ -340,21 +339,7 @@ even more intuitive, self-teaching, etc.  in the future.
   :short "Frequently Asked Questions"
   :long
   "
-<h3>General</h3>
-
-<table class=\"rounded striped\">
-<tr> <td>Q:</td>
-     <td><strong>Is my OS 32 bit or 64 bit?</strong></td> </tr>
-<tr> <td valign=\"top\">A:</td>
-     <td>For Linux and MacOS, if you see \"x86_64\" or \"amd64\" in the
-output of shell command <code>uname -a</code> in your terminal, you have a
-64bit OS, otherwise a 32 bit one.  For other operating systems, please
-visit their respective FAQ
-pages: <a href=\"http://support.microsoft.com/kb/827218\">Windows</a>.
-</td></tr>
-</table>
-
-<div class=\"left-center\" data-target=\"faq_section_eclipse\">
+<div class=\"left-center\">
 <h3>Eclipse-related</h3>
 
 <table class=\"rounded striped\">
@@ -518,16 +503,11 @@ choice. It is recommended to have separate eclipse installations
 
 <table class=\"rounded striped\">
 <tr> <td >Q:</td>
-     <td><strong>Can I use a version 1.* of Java?</strong></td> </tr>
+     <td><strong>Can I use another version of Java?</strong></td> </tr>
 <tr> <td >A:</td>
-     <td>ACL2s Eclipse plugin uses 1.5
-<a href=\"http://java.sun.com/j2se/1.5.0/docs/relnotes/features.html#lang\">language constructs</a> and
-<a href=\"http://java.sun.com/j2se/1.5.0/docs/relnotes/features.html#base_libs\">APIs</a>.
+     <td>The ACL2s Eclipse plugin uses Java constructs from Java 11.
 You are likely to encounter problems if you use a Java runtime that is
-older than \"5.0\". Moreover due to
-a <a href=\"http://java-performance.info/changes-to-string-java-1-7-0_06/\">bug</a>
-in JRE 1.7, ACL2s will not work with it. We recommend the use of JRE
-1.6 or 1.8.
+older than Java 11.  We recommend the use of JRE 17 or 18.
 </td></tr>
 </table><br/>
 </div>
@@ -542,19 +522,18 @@ in JRE 1.7, ACL2s will not work with it. We recommend the use of JRE
 must impose some small limitations.  One, for example, is that it will not let
 you break into raw Lisp.  For those interested in this dangerous,
 low-level form of interaction, however,
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____SET-RAW-MODE\">raw
-mode</a> is supported (because it uses ACL2's reader).  
+<see topic=\"@(url acl2::set-raw-mode)\">raw
+mode</see> is supported (because it uses ACL2's reader).
 </p><p>
 Another subtle limitation is that--aside from
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2_____WORMHOLE\">wormholes</a>--<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____LD\">ld</a>
+<see topic=\"@(url acl2::wormhole)\">wormholes</see>--@(see ld)
 will only let you read from
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2_____star_STANDARD-OI_star_\">*standard-oi*</a> at ld level 1.  The reason has to do with undoing and
-also <a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____LD-ERROR-ACTION\">ld-error-action</a>.  Another example is that
+<see topic=\"@(url acl2::standard-oi)\">*standard-oi*</see> at ld level 1.  The reason has to do with undoing and also @(see ld-error-action).  Another example is that
 <tt>good-bye</tt> and other exit commands are disabled to the user,
 to encourage use of the user interface operation \"Stop session\" instead.
 </p><p>
-For more details, see <a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_hooks\">How/what ACL2 functionality is
-modified for ACL2s</a>.
+For more details, see <em>How/what ACL2 functionality is
+modified for ACL2s</em> in the @(see acl2s-implementation-notes).
 </p>
 </td></tr>
 </table><br/>
@@ -587,9 +566,9 @@ modified for ACL2s</a>.
 </li>
 </ol>
 <p>
-If you want more finer control on what gets loaded, you can selectively copy paste the forms in the <tt>acl2s-mode.lsp</tt> that
+If you want finer control on what gets loaded, you can selectively copy paste the forms in the <tt>acl2s-mode.lsp</tt> that
 you need, in the emacs session. For example, say you want a session without trust tags, then except
-for the <code>(include-book \"ccg\" ...)</code> form, submit the rest of the events in <tt>acl2s-mode.lsp</tt>.
+for the @('(include-book \"ccg\" ...)') form, submit the rest of the events in <tt>acl2s-mode.lsp</tt>.
 </p>
 <p>
 To reproduce other sessions modes, follow the above, but replace acl2s-mode.lsp by the corresponding session mode file, e.g. acl2s-beginner.lsp
@@ -640,14 +619,13 @@ language, logic and theorem proving system. For in-depth documentation
 about ACL2 itself refer to @(see acl2::acl2).
 </p>
 
+<div class=\"left-center\">
+  <h2>Cheat Sheet</h2>
+  A cheat sheet is available with a summary of key bindings and
+  command types <a href=\"res/acl2s/sheet.pdf\">here</a>.
+</div>
 
-        <div class=\"left-center\" data-target=\"cheat_sheet\">
-          <h2>Cheat Sheet</h2>
-          A cheat sheet is available with a summary of key bindings and command types:
-          <a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/sheet.html\">HTML</a> or <a href=\"res/acl2s/sheet.pdf\">PDF</a>.
-        </div>
-
-<div class=\"left-center\" data-target=\"guide_customization\">
+<div class=\"left-center\">
 <h2>Customization</h2>
 <h4>Workspace Layout</h4>
 <p>
@@ -700,7 +678,7 @@ take effect.</i></li>
 <p>
 If you want to add some configuration input to be loaded with each interactive
 session, use an
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____ACL2-CUSTOMIZATION\">acl2-customization file</a>.
+<see topic=\"@(url acl2::acl2-customization)\">acl2-customization file</see>.
 This can include your own configuration to be done after the session mode is
 loaded and configured.  This should not include events, which should be
 specified or explicitly loaded in the source code.  In fact, we do not load
@@ -754,9 +732,7 @@ developing definitions and theorems to be used by ACL2 outside of ACL2s.
 <p>
 Admissibility in this mode, however, does not *guarantee* admissibility
 in ACL2 proper (and vice-versa).  For more details, see
-<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_hooks\">How/what ACL2 functionality is modified for ACLs</a>.
-Also see <a href=\"user_guide.html#guide_book\">book development</a> for certification
-with ACL2 proper inside of ACL2s/Eclipse.
+the <em>How/what ACL2 functionality is modified for ACLs</em> section of the @(see acl2s-implementation-notes).
 </p>
 </td></tr>
 </tbody>
@@ -769,8 +745,7 @@ will show the formula after destructor elimination.  The downside is that the
 variable names may appear cryptic and unfamiliar, but the upside is that
 you get some generalization for free, usually resulting in smaller formulas.
 </p><p>
-Notes about how these modes are implemented are described in
-<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_modes\"><em>How modes are implemented</em></a>.
+Notes about how these modes are implemented are described in the <em>How modes are implemented</em> section of the @(see acl2s-implementation-notes).
 </p>
 </div>
 
@@ -818,12 +793,12 @@ Ctrl+Shift+o (since it is related to emacs' C-x o).
 </td><td>
 </td><td>
 If the character behind the caret (cursor) is matched to another (such as
-<u><font color=\"red\">(</font></u> and <u><font color=\"red\">)</font></u>,
-or <u><font color=\"red\">\"</font></u> and <u><font color=\"red\">\"</font></u>),
+<u><color rgb=\"red\">(</color></u> and <u><color rgb=\"red\">)</color></u>,
+or <u><color rgb=\"red\">\"</color></u> and <u><color rgb=\"red\">\"</color></u>),
 then this action moves the cursor just beyond the match.  Invoking this action
 twice in a row should have no net effect <em>except</em> in the case of
-going from a <u><font color=\"red\">,</font></u> to its matching
-<u><font color=\"red\">`</font></u>, which could potentially have many commas
+going from a <u><color rgb=\"red\">,</color></u> to its matching
+<u><color rgb=\"red\">`</color></u>, which could potentially have many commas
 matching to it.  The keyboard shortcut is
 Ctrl+Shift+P (as in Eclipse's Java Development Environment).
 </td></tr>
@@ -845,9 +820,7 @@ binding).
 <p>
 These grant the user finer-grained navigation through the session history
 than the above by also visiting checkpoints in proof attempts.  For a
-description of checkpoints, see
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____THE-METHOD\">:DOC
-THE-METHOD</a>.
+description of checkpoints, see @(see acl2::the-method).
 </p><p>
 \"Next\" is bound to Ctrl+Shift+Right and \"Previous\" is bound to Ctrl+Shift+Left.
 Thus, to go to the first checkpoint of the previous form's output, type
@@ -985,10 +958,7 @@ currently being executed by ACL2, it will be interrupted.
 If there were no \"todo\" forms, both lines will be moved up one form, and if
 that form was relevant to the logical history, it will be undone in the
 ACL2 session.  ACL2 need not be running to use this action.
-Shortcut: Ctrl+Shift+M <font color=\"red\">This has changed from 0.9.6
-    to accomodate for GNOME users. To restore this binding to
-    Ctrl+Shift+U, go to Window&rarr;Preferences&rarr;General&rarr;Keys and change
-    the \"Retreat Line\" action's binding.</font>
+Shortcut: Ctrl+Shift+M
 </p><p>
 The small arrow in the icon is intended to indicate the undoing of a
 single form.
@@ -1086,7 +1056,7 @@ Certify as book
 <icon src=\"res/acl2s/icons/acl2_book.gif\" width=\"16\" height=\"16\"/>
 </td><td>
 <p>
-This will use <see topic=\"@(url build::cert.pl)\">cert.pl</see> to <i>certify</i> the current book so that it can be quickly <see topic=\"@(url acl2::include-book)\">included</see> from another file. See @(see acl2::certificate) for more information. Alt+C
+This will use <see topic=\"@(url build::cert.pl)\">cert.pl</see> to <i>certify</i> the current book so that it can be quickly <see topic=\"@(url acl2::include-book)\">included</see> from another file. See @(see acl2::certificate) for more information. Shortcut: Alt+C
 </p>
 </td></tr>
 
@@ -1107,8 +1077,8 @@ version of ACL2 you are using with ACL2s.
 <h2>CCG termination analysis</h2>
 <h4>Background</h4>
 <p>
-The \"ACL2s,\" \"Intermediate,\" and \"Recursion &amp; Induction\" session modes
-include
+The \"ACL2s,\" session mode
+includes
 improved termination analysis for ACL2 based on research by Pete Manolios
 and Daron Vroon.  The analysis is based on \"context calling graphs,\" so
 we refer to it as CCG termination analysis for short.
@@ -1155,8 +1125,8 @@ that it is implemented as an ACL2 book in the acl2s-modes plugin.
 <h4>More Documentation</h4>
 <p>
 Our CCG termination analysis is highly customizable and includes
-many features not mentioned here. For  detailed documentation
-please refer to <tt>:doc ccg</tt> from inside a session. 
+many features not mentioned here. For detailed documentation
+please refer to @(see acl2::ccg).
 </p>
 </div>
 
@@ -1178,9 +1148,9 @@ of the world.
 </p>
 
 <p>
-We introduced the <b class=\"embolden\">defdata</b> framework in ACL2s
+We introduced the <b>defdata</b> framework in ACL2s
 in order to provide a convenient, intuitive way to specify data
-definitions.  A version of <code>defdata</code> has appeared in ACL2s
+definitions.  A version of @('defdata') has appeared in ACL2s
 since at least August 2009 (in version 0.9.7), and we have been
 extending and improving it since then.
 </p>
@@ -1188,7 +1158,7 @@ extending and improving it since then.
 
 <h4>Documentation</h4>
 <p>
-See @(see defdata::defdata) for defdata's documentation. In particular,
+See @(see acl2::defdata) for defdata's documentation. In particular,
 a readable and example-oriented description of defdata framework appears
 in the ACL2 2014 Workshop paper linked at the bottom of that topic.
 </p>
@@ -1218,26 +1188,22 @@ The ACL2 2011 workshop paper
 goes into the details of this feature, but is a very easy read. The reader is encouraged to go through it.
 </p>
 <p>
-All modes except \"Compatible\" and \"Programming\" have testing enabled
-by default.  This feature is independent of the rest of ACL2s in the
-sense that it is implemented as an ACL2 book in the acl2s-modes
-plugin.
+All modes except \"Compatible\" have testing enabled by default.
 </p>
 
 <h4>Documentation</h4>
 <p>
-See @(see test?) and @(see cgen) for more documentation.
+See @(see acl2::test?) and @(see acl2::cgen) for more documentation.
 </p>
 
 </div>
 ")
 
-
-
 (defxdoc acl2s-command-classifications
   :parents (acl2s-user-guide)
   :short "Description of classifications for commands in ACL2s"
-  :long "
+  :long
+  "
 <h2>Input Command Classifications</h2>
 <p>
 Each input form submitted to ACL2 from the plugin is placed into
@@ -1263,20 +1229,19 @@ Calls to <tt>defun</tt>, <tt>defmacro</tt>, and <tt>defthm</tt> are examples
 of embedded event forms and <b>EVENT</b>s.
 </td></tr>
 <tr><td valign=\"top\"><b>VALUE</b></td><td>
-<p>Such forms are simple computations which return a value when (and if)
+Such forms are simple computations which return a value when (and if)
 they terminate.
 No <b>VALUE</b> form can alter ACL2's state and, therefore, never
 affects undoing or redoing.
-</p><p>
+<br/><br/>
 A precise definition is that if ACL2 permits <tt>(cons </tt>
 <em>&lt;form&gt;</em> <tt>nil)</tt>, then <em>&lt;form&gt;</em> is a <b>VALUE</b>.
-</p><p>
+<br/><br/>
 <em>Advanced Note</em>: some <b>VALUE</b> forms
 have transient side effects, but they have no logical consequence (e.g.
-<a href=\"@(url acl2::cw)\">CW</a>
+<see topic=\"@(url acl2::cw)\">CW</see>
 and
-<a href=\"@(url acl2::wormhole)\">WORMHOLE</a>).
-</p>
+<see topic=\"@(url acl2::wormhole)\">WORMHOLE</see>).
 </td></tr>
 <tr><td valign=\"top\"><b>QUERY</b></td><td>
 These are calls to some built-in ACL2 functions that report information about
@@ -1289,64 +1254,62 @@ and
 Various UI actions which have to do with \"undoing\" or \"moving the line up\"
 can initiate the execution of an <b>UNDO</b> in the session.  An ordinary
 user need not concern him/herself with how this works
-(<a href=\"http://acl2s.ccs.neu.edu/acl2s/doc/impl.html#impl_undo_redo\"><em>How undo and redo are implemented</em></a>),
+(See <em>How undo and redo are implemented</em> in the <see topic=\"@(url acl2s-implementation-notes)\">ACL2s implementation notes</see>),
 but should keep in mind that <b>UNDO</b>ing an <b>ACTION</b> or <b>RAW</b>
 form may not have the desired effect.
 </td></tr>
 <tr><td valign=\"top\"><b>REDO</b><br/>(internal initiation only)</td><td>
-<p>This is the counterpart of <b>UNDO</b>.  It is used when resubmitting
+This is the counterpart of <b>UNDO</b>.  It is used when resubmitting
 something with the same abstract syntax and in the same environment as
 something that was previously undone.
-</p><p>
+<br/><br/>
 <b>REDO</b> enables one to (for example) edit comments above the line, by
 retreating the line far enough to edit what one wants to change, and then
 moving the \"todo\" line back to where it was.  If only comments were
 changed, the session will accept the forms as <b>REDO</b>s, which happen
 almost instantaneously.
-</p>
 </td></tr>
 <tr><td valign=\"top\"><b>BAD</b></td><td>
-<p>If the input is a parseable ACL2 object but is an ill-formed expression
+If the input is a parseable ACL2 object but is an ill-formed expression
 according to the current history, we call it \"BAD\" input.  Examples of
-violations that would cause input to be staticly ill-formed are:
+violations that would cause input to be statically ill-formed are:
 <ul>
 <li>wrong number of parameters to a function/macro</li>
 <li>use of an undefined function/macro</li>
 <li>first element of an invocation list is not a symbol or lambda expression</li>
 <li>mismatch between expected and actual @('mv') shape</li>
 </ul>
-</p>
 </td></tr>
 <tr><td valign=\"top\"><b>COMMAND</b></td><td>
 There are many forms that are illegal in books but we are able to undo the
 effect of.  If we recognize a form as such, we call it a <b>COMMAND</b>--
-except for special cases <b>IN-PACKAGE</b> and <b>BEGIN-BOOK</b>.  The
+except for special case <b>IN-PACKAGE</b>.  The
 best example of a command is \"<tt>:set-guard-checking :none</tt>\".
 </td></tr>
 <tr><td valign=\"top\"><b>ACTION</b><br/>
-<font color=\"red\">(potentially dangerous!)</font></td><td>
+<color rgb=\"red\">(potentially dangerous!)</color></td><td>
 This is the \"catch-all\" categorization for forms that may have effects
 that we don't know how to properly undo or might even break or hang the
 ACL2 session.  Users who use
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STOBJ\">STOBJs</a>
+<see topic=\"@(url acl2::stobj)\">STOBJs</see>
 or other
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____STATE\">STATE</a>
+<see topic=\"@(url acl2::state)\">STATE</see>
 beyond the logical
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____WORLD\">WORLD</a>
+<see topic=\"@(url acl2::acl2)\">WORLD</see>
 will need to use <b>ACTION</b>s heavily, but these are advanced uses of ACL2.
 </td></tr>
 <tr><td valign=\"top\"><b>EVENT/VALUE</b></td><td>
 These are a special type of
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____EMBEDDED-EVENT-FORM\">embedded event form</a>
+<see topic=\"@(url acl2::embedded-event-form)\">embedded event form</see>
 (<tt>value-triple</tt>s) that have no logical consequence--except that they
 could halt progress by generating a hard lisp error.
 </td></tr>
 <tr><td valign=\"top\"><b>RAW</b><br/>
-<font color=\"red\">(potentially very dangerous!)</font></td><td>
+<color rgb=\"red\">(potentially very dangerous!)</color></td><td>
 Most users of ACL2 are familiar with breaking into \"raw lisp\" by typing
 \":q\" at the top-level prompt.  This is not supported in our plugin, but
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/v8-0/manual/index.html?topic=ACL2____SET-RAW-MODE\">
-\"raw mode\"</a> is supported.  Most forms submitted under this mode are
+<see topic=\"@(url acl2::set-raw-mode)\">
+\"raw mode\"</see> is supported.  Most forms submitted under this mode are
 classified as <b>RAW</b> because they have no well-defined meaning from the
 ACL2 view of things.  With raw mode, the user can easily break many things,
 and it's only supported for the benefit of <em>experts</em>.
@@ -1358,8 +1321,8 @@ and it's only supported for the benefit of <em>experts</em>.
 (defxdoc acl2s-implementation-notes
   :parents (acl2::acl2-sedan)
   :short "Some details regarding how ACL2s is implemented"
-  :long "
-
+  :long
+  "
 <h2>Wrapping the ACL2 process</h2>
 <p>
   To support interruption of the ACL2 process, we need more
@@ -1429,8 +1392,8 @@ and it's only supported for the benefit of <em>experts</em>.
   To support the kind of interaction ACL2s provides requires lots of
   cooperation and metadata from ACL2.  Thus when we run ACL2 for an
   interactive session, we install some changes that disallow some
-  things (see <em>Why won't ACL2s let me do &lt;blah&gt; in a
-  session?</em> in the @(see acl2s-faq)), spit out metadata for some
+  things (see <b>Why won't ACL2s let me do &lt;blah&gt; in a
+  session?</b> in the @(see acl2s-faq)), spit out metadata for some
   things, and provide some system-level extensions in functionality.
   All of these ACL2 modifications are implemented via books
   distributed with ACL2 (@('books/acl2s/distribution/acl2s-hooks')).
