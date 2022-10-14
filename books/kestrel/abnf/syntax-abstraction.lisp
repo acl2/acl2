@@ -38,6 +38,8 @@
      should be proved to follow from suitable guards."))
   :order-subtopics t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-fail ()
   :returns (nothing null)
   :parents (concrete-to-abstract-syntax)
@@ -48,6 +50,8 @@
     but it keeps the abstraction functions simple for now.")
   (hard-error 'abnf "ABNF Grammar Abstraction Error." nil)
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-terminals ((tree treep))
   :returns (nats nat-listp)
@@ -63,6 +67,8 @@
       (tree-leafterm->get tree)
     (abstract-fail))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-terminal ((tree treep))
   :returns (nat natp :rule-classes (:rewrite :type-prescription))
@@ -80,6 +86,8 @@
         (car nats)
       (prog2$ (abstract-fail) 0)))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-grouped-terminals ((tree treep))
   :returns (nats nat-listp)
@@ -103,6 +111,8 @@
     (abstract-terminals subtree))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-grouped-terminal ((tree treep))
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
@@ -121,6 +131,8 @@
         (car nats)
       (prog2$ (abstract-fail) 0)))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-*-grouped-terminal ((trees tree-listp))
   :returns (nats nat-listp)
@@ -142,6 +154,8 @@
        (nats (abstract-*-grouped-terminal trees)))
     (cons nat nats))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-bit ((tree treep))
   :returns (bit (integer-range-p 0 2 bit))
@@ -167,6 +181,8 @@
         :name abstract-bit-linear
         :rule-classes :linear)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-digit ((tree treep))
   :returns (digit (integer-range-p 0 10 digit))
   :parents (concrete-to-abstract-syntax)
@@ -190,6 +206,8 @@
    (digit (< digit 10)
           :name abstract-digit-linear
           :rule-classes :linear)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-hexdig ((tree treep))
   :returns (hexdig (integer-range-p 0 16 hexdig))
@@ -219,6 +237,8 @@
            :name abstract-hexdig-linear
            :rule-classes :linear)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-*bit ((trees tree-listp))
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
@@ -235,6 +255,8 @@
        (abstract-*bit-aux (cdr trees)
                           (+ (* 2 accumulator) bit)))
      :no-function t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-*digit ((trees tree-listp))
   :returns (nat natp)
@@ -253,6 +275,8 @@
                             (+ (* 10 accumulator) digit)))
      :no-function t)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-*hexdig ((trees tree-listp))
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
@@ -270,6 +294,8 @@
                              (+ (* 16 accumulator) hexdig)))
      :no-function t)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-dot/dash-1*bit ((tree treep))
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
@@ -282,6 +308,8 @@
                      (consp (cdr treess)))) (fail)))
     (abstract-*bit (cadr treess)))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-dot/dash-1*digit ((tree treep))
   :returns (nat natp)
@@ -296,6 +324,8 @@
     (abstract-*digit (cadr treess)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-dot/dash-1*hexdig ((tree treep))
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
@@ -309,6 +339,8 @@
     (abstract-*hexdig (cadr treess)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-*-dot-1*bit ((trees tree-listp))
   :returns (nats nat-listp)
   :parents (concrete-to-abstract-syntax)
@@ -319,6 +351,8 @@
        (nats (abstract-*-dot-1*bit (cdr trees))))
     (cons nat nats))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-*-dot-1*digit ((trees tree-listp))
   :returns (nats nat-listp)
@@ -331,6 +365,8 @@
     (cons nat nats))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-*-dot-1*hexdig ((trees tree-listp))
   :returns (nats nat-listp)
   :parents (concrete-to-abstract-syntax)
@@ -341,6 +377,8 @@
        (nats (abstract-*-dot-1*hexdig (cdr trees))))
     (cons nat nats))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-bin/dec/hex-val-rest-dot-p ((tree treep))
   :returns (yes/no booleanp)
@@ -372,6 +410,8 @@
     (equal subtree (tree-leafterm (list (char-code #\.)))))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-bin-val-rest ((tree treep))
   :returns (result (or (nat-listp result)
                        (natp result)))
@@ -391,6 +431,8 @@
         (abstract-*-dot-1*bit trees)
       (abstract-dot/dash-1*bit 1st-subtree)))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-dec-val-rest ((tree treep))
   :returns (result (or (nat-listp result)
@@ -412,6 +454,8 @@
       (abstract-dot/dash-1*digit 1st-subtree)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-hex-val-rest ((tree treep))
   :returns (result (or (nat-listp result)
                        (natp result)))
@@ -431,6 +475,8 @@
         (abstract-*-dot-1*hexdig trees)
       (abstract-dot/dash-1*hexdig 1st-subtree)))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-bin-val ((tree treep))
   :returns (num-val num-val-p)
@@ -458,6 +504,8 @@
                        (tree (car (caddr (tree-nonleaf->branches tree)))))))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-dec-val ((tree treep))
   :returns (num-val num-val-p)
   :parents (concrete-to-abstract-syntax)
@@ -483,6 +531,8 @@
                        return-type-of-abstract-dec-val-rest
                        (tree (car (caddr (tree-nonleaf->branches tree)))))))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-hex-val ((tree treep))
   :returns (num-val num-val-p)
@@ -510,6 +560,8 @@
                        (tree (car (caddr (tree-nonleaf->branches tree)))))))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-bin/dec/hex-val ((tree treep))
   :returns (num-val num-val-p)
   :parents (concrete-to-abstract-syntax)
@@ -529,6 +581,8 @@
           (t (abstract-hex-val subtree))))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-num-val ((tree treep))
   :returns (num-val num-val-p)
   :parents (concrete-to-abstract-syntax)
@@ -544,6 +598,8 @@
        (subtree (car trees)))
     (abstract-bin/dec/hex-val subtree))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-quoted-string ((tree treep))
   :returns (charstring acl2::stringp)
@@ -562,6 +618,8 @@
     (nats=>string nats))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-case-sensitive/insensitive-string ((tree treep))
   :returns (charstring acl2::stringp)
   :parents (concrete-to-abstract-syntax)
@@ -577,6 +635,8 @@
        (subtree (car trees)))
     (abstract-quoted-string subtree))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-char-val ((tree treep))
   :returns (char-val char-val-p)
@@ -599,6 +659,8 @@
       (char-val-insensitive charstring)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-prose-val ((tree treep))
   :returns (prose-val prose-val-p)
   :parents (concrete-to-abstract-syntax)
@@ -616,6 +678,8 @@
     (prose-val (nats=>string nats)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-alpha ((tree treep))
   :returns (letter characterp)
   :parents (concrete-to-abstract-syntax)
@@ -631,6 +695,8 @@
        ((unless (< nat 256)) (fail)))
     (code-char nat))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-alpha/digit/dash ((tree treep))
   :returns (char characterp)
@@ -653,6 +719,8 @@
     (code-char (+ (char-code #\0) digit)))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-*-alpha/digit/dash ((trees tree-listp))
   :returns (chars character-listp)
   :parents (concrete-to-abstract-syntax)
@@ -664,6 +732,8 @@
        (chars (abstract-*-alpha/digit/dash trees)))
     (cons char chars))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-rulename ((tree treep))
   :returns (rulename rulenamep)
@@ -690,6 +760,8 @@
     (rulename charstring))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-*digit-star-*digit ((tree treep))
   :returns (mv (min natp) (max natip))
   :parents (concrete-to-abstract-syntax)
@@ -713,6 +785,8 @@
               (nati-infinity))))
     (mv min max))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-repeat ((tree treep))
   :returns (range repeat-rangep)
@@ -746,6 +820,8 @@
         (make-repeat-range :min min :max max))))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-?repeat ((tree treep))
   :returns (range repeat-rangep)
   :parents (concrete-to-abstract-syntax)
@@ -765,6 +841,8 @@
        (subtree (car trees)))
     (abstract-repeat subtree))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines abstract-alt/conc/rep/elem/group/option
   :verify-guards nil ; done below
@@ -964,6 +1042,8 @@
 
   (verify-guards abstract-alternation))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-defined-as ((tree treep))
   :returns (incremental booleanp)
   :parents (concrete-to-abstract-syntax)
@@ -981,6 +1061,8 @@
     (not (equal nats (list (char-code #\=)))))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-elements ((tree treep))
   :returns (alternation alternationp)
   :parents (concrete-to-abstract-syntax)
@@ -994,6 +1076,8 @@
        (tree (car trees)))
     (abstract-alternation tree))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-rule ((tree treep))
   :returns (rule rulep)
@@ -1023,6 +1107,8 @@
                :definiens alternation))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-rule-/-*cwsp-cnl ((tree treep))
   :returns (rule? rule-optionp)
   :parents (concrete-to-abstract-syntax)
@@ -1042,6 +1128,8 @@
       nil))
   :no-function t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abstract-*-rule-/-*cwsp-cnl ((trees tree-listp))
   :returns (rules rulelistp)
   :parents (concrete-to-abstract-syntax)
@@ -1056,6 +1144,8 @@
         (cons rule? rules)
       rules))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-rulelist ((tree treep))
   :returns (rules rulelistp)
