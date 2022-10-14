@@ -40,8 +40,8 @@
   (not (< (seg-hidden-limiti *cs* x86)
           (read-from-segment 4 (esp x86) *ss* x86))))
 
-;;for axe
-(defthm booleanp-of-return-address-okp
+;; for axe
+(defthmd booleanp-of-return-address-okp
   (booleanp (return-address-okp x86)))
 
 (defthm return-address-okp-intro
@@ -103,7 +103,6 @@
             ;; target is a string (subroutine name):
             (b* (((mv offset-to-subroutine section-number)
                   (acl2::subroutine-offset-and-section-number-pe-32 target parsed-pe))
-                 (sections (acl2::get-pe-sections parsed-pe))
                  ;; (symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
                  ;; ((when (eq :none symbol-table))
                  ;;  (er hard 'gen-standard-assumption-pe-32 "No symbol table present."))

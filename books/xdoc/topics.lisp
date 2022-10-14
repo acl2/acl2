@@ -82,9 +82,10 @@ following:</p>
  (include-book \"xdoc/constructors\" :dir :system)
 })
 
-<p>This book includes @('[books]/xdoc/top.lisp'), and in addition provides
-utilities to construct well-formed XDOC strings in a modular way.  See <see
-topic='@(url xdoc::constructors)'>the documentation</see> for more details.</p>
+<p>This book includes community book @('xdoc/top.lisp'), and in addition
+provides utilities to construct well-formed XDOC strings in a modular way.  See
+<see topic='@(url xdoc::constructors)'>the documentation</see> for more
+details.</p>
 
 <p>Once you have documented your books, you may wish to create a manual that
 can be viewed from a web browser or from the @(see acl2::acl2-doc) Emacs-based
@@ -667,7 +668,10 @@ As might be expected:</p>
 <li>If the target directory does not exist, it will be created.</li>
 
 <li>If the target directory already exists, it <color rgb=\"#ff0000\">will be
-overwritten</color>.</li>
+overwritten</color>.  (<b><color rgb=\"#ff0000\">WARNING</color></b>: So, the
+target directory should not be one containing files that you want to keep, such
+as the directory containing the file that invokes @('xdoc::save'), or its
+parent directory (or its parent, etc.).)</li>
 
 </ul>
 

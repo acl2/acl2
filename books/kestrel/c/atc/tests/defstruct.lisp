@@ -18,26 +18,31 @@
 ; Some tests for DEFSTRUCT.
 
 (c::defstruct |point2D|
-              (|x| c::sint)
-              (|y| c::sint))
+  (|x| c::sint)
+  (|y| c::sint))
 
 (c::defstruct |point3D|
-              (|x| c::slong)
-              (|y| c::slong)
-              (|z| c::slong))
+  (|x| c::slong)
+  (|y| c::slong)
+  (|z| c::slong))
 
 (c::defstruct |integers|
-              (|uchar| c::uchar)
-              (|schar| c::schar)
-              (|ushort| c::ushort)
-              (|sshort| c::sshort)
-              (|uint| c::uint)
-              (|sint| c::sint)
-              (|ulong| c::ulong)
-              (|slong| c::slong)
-              (|ullong| c::ullong)
-              (|sllong| c::sllong))
+  (|uchar| c::uchar)
+  (|schar| c::schar)
+  (|ushort| c::ushort)
+  (|sshort| c::sshort)
+  (|uint| c::uint)
+  (|sint| c::sint)
+  (|ulong| c::ulong)
+  (|slong| c::slong)
+  (|ullong| c::ullong)
+  (|sllong| c::sllong))
 
 (c::defstruct |scalar_and_array|
-              (|scalar| c::sint)
-              (|aggreg| (c::uchar 10)))
+  (|scalar| c::sint)
+  (|aggreg| (c::uchar 10)))
+
+(c::defstruct |flex|
+  (|fixed| (c::uchar 5))
+  (|filler| c::uint)
+  (|last| (c::uchar)))

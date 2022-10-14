@@ -28,10 +28,15 @@
 (local (in-theory (disable ;len-of-cdr-better member-of-cons ;CONSP-CDR
                    default-car))) ;for speed
 
+(defthm non-trivial-logical-termp-of-negate-term
+  (implies (non-trivial-logical-termp term)
+           (non-trivial-logical-termp (negate-term term)))
+  :hints (("Goal" :in-theory (enable negate-term strip-nots-from-term))))
+
 (defthm non-trivial-logical-term-listp-of-negate-terms
   (implies (non-trivial-logical-term-listp terms)
            (non-trivial-logical-term-listp (negate-terms terms)))
-  :hints (("Goal" :in-theory (enable negate-terms negate-term))))
+  :hints (("Goal" :in-theory (e/d (negate-terms) (non-trivial-logical-termp)))))
 
 
 ;todo: handle (equal x 'nil) like (not 'x)
@@ -168,7 +173,8 @@
              (disjunct-listp (get-disjuncts-of-term term)))
     :flag get-disjuncts-of-term)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term
-                                     get-conjuncts-of-term))))
+                                     get-conjuncts-of-term
+                                     strip-nots-from-term))))
 
 (defthm-flag-get-conjuncts-of-term
   (defthm true-listp-of-get-conjuncts-of-term

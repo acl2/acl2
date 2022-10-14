@@ -1,10 +1,11 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,6 +392,14 @@
   :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
   :short "Generate the applicability conditions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We retrieve the guard with limited simplification,
+     for greater predictability and robustness.
+     This is matched by the fact that
+     we verify guards with limited simplification,
+     in @(tsee restrict-gen-verify-guards)."))
   (b* ((wrld (w state)))
     (append
      (make-evmac-appcond?
@@ -406,7 +415,7 @@
       :restriction-guard
       (b* ((old-guard (guard old nil wrld))
            (restriction-guard
-            (term-guard-obligation restriction state)))
+            (term-guard-obligation restriction :limited state)))
         (implicate old-guard
                    restriction-guard))
       :when verify-guards))))
@@ -634,62 +643,74 @@
   :verify-guards nil
   :short "Generate the event to verify the guards of the new function."
   :long
-  "<p>
-   As mentioned in @(tsee restrict-gen-new),
-   the verification of the guards of the new function,
-   when it has to take place,
-   is deferred when the function is introduced.
-   The reason is that, as shown in the design notes,
-   the guard verification proof for the recursive case
-   uses the theorem that relates the old and new functions:
-   thus, the theorem must be proved before guard verification,
-   and the new function must be introduced before proving the theorem.
-   In the non-recursive case, we could avoid deferring guard verification,
-   but we defer it anyhow for uniformity.
-   </p>
-   <p>
-   Following the design notes, the guards are verified
-   using the guard theorem of the old function
-   and the @(':restriction-guard') applicability condition.
-   This suffices for the non-recursive case (in the empty theory).
-   For the recursive case,
-   we also use the @(':restriction-of-rec-calls') applicability condition,
-   and we carry out the proof in the theory consisting of
-   the theorem that relates the old and new functions:
-   this theorem rewrites all the recursive calls of the old function,
-   in the old function's guard theorem,
-   to corresponding recursive calls of the new function
-   (the design notes cover the representative case of a single recursive call,
-   but the transformation covers functions with multiple recursive calls).
-   If the old and new functions are reflexive,
-   we functionally instantiate the stub
-   in the @(':restriction-of-rec-calls') applicability condition.
-   </p>
-   <p>
-   The guard verification event is local;
-   the exported function definition has @(':verify-guards') set to @('t')
-   (when it must be guard-verified).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned in @(tsee restrict-gen-new),
+     the verification of the guards of the new function,
+     when it has to take place,
+     is deferred when the function is introduced.
+     The reason is that, as shown in the design notes,
+     the guard verification proof for the recursive case
+     uses the theorem that relates the old and new functions:
+     thus, the theorem must be proved before guard verification,
+     and the new function must be introduced before proving the theorem.
+     In the non-recursive case, we could avoid deferring guard verification,
+     but we defer it anyhow for uniformity.")
+   (xdoc::p
+    "Following the design notes, the guards are verified
+     using the guard theorem of the old function
+     and the @(':restriction-guard') applicability condition.
+     This suffices for the non-recursive case (in the empty theory).
+     For the recursive case,
+     we also use the @(':restriction-of-rec-calls') applicability condition,
+     and we carry out the proof in the theory consisting of
+     the theorem that relates the old and new functions:
+     this theorem rewrites all the recursive calls of the old function,
+     in the old function's guard theorem,
+     to corresponding recursive calls of the new function
+     (the design notes cover the representative case of a single recursive call,
+     but the transformation covers functions with multiple recursive calls).
+     If the old and new functions are reflexive,
+     we functionally instantiate the stub
+     in the @(':restriction-of-rec-calls') applicability condition.")
+   (xdoc::p
+    "The guard verification event is local;
+     the exported function definition has @(':verify-guards') set to @('t')
+     (when it must be guard-verified).")
+   (xdoc::p
+    "We use the limited simplification option
+     to prevent the dropping of guard hypotheses,
+     which we have otherwise observed in at least one case.
+     As this may involve additional obligations,
+     we make sure to use the guard theorem with limited simplification
+     (which is actually the default, but we make it explicit for clarity),
+     and, in @(tsee restrict-gen-appconds), as discussed there,
+     we retrieve the guard obligations of the restricting predicate
+     with limited simplification as well,
+     so that we have a possibly stronger theorem
+     as that applicability condition."))
   (b* ((recursive (recursivep old nil wrld))
        (hints (if recursive
                   `(("Goal"
                      :in-theory '(,old-to-new)
                      :use ((:guard-theorem ,old)
                            ,(cdr (assoc-eq :restriction-guard
-                                   appcond-thm-names))
+                                           appcond-thm-names))
                            ,(if stub?
                                 `(:functional-instance
                                   ,(cdr (assoc-eq :restriction-of-rec-calls
-                                          appcond-thm-names))
+                                                  appcond-thm-names))
                                   (,stub? ,new))
                               (cdr (assoc-eq :restriction-of-rec-calls
-                                     appcond-thm-names))))))
+                                             appcond-thm-names))))))
                 `(("Goal"
                    :in-theory nil
                    :use ((:guard-theorem ,old)
                          ,(cdr (assoc-eq :restriction-guard
-                                 appcond-thm-names)))))))
-       (event `(local (verify-guards ,new :hints ,hints))))
+                                         appcond-thm-names)))))))
+       (event `(local (verify-guards ,new
+                        :guard-simplify :limited
+                        :hints ,hints))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

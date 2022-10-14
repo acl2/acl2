@@ -102,7 +102,10 @@
        (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
        (nextstate-keys (svex-alist-keys fsm.nextstate))
        (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
-    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+    (fast-alist-free fsm.values)
+    (fast-alist-free fsm.nextstate)
+    (make-base-fsm :values (make-fast-alist values-rw)
+                   :nextstate (make-fast-alist nextstate-rw)))
   ///
   (defret base-fsm-eval-equiv-of-<fn>
     (base-fsm-eval-equiv new-fsm fsm)
@@ -130,7 +133,10 @@
        (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
        (nextstate-keys (svex-alist-keys fsm.nextstate))
        (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
-    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+    (fast-alist-free fsm.values)
+    (fast-alist-free fsm.nextstate)
+    (make-base-fsm :values (make-fast-alist values-rw)
+                   :nextstate (make-fast-alist nextstate-rw)))
   ///
   (defret base-fsm-eval-equiv-of-<fn>
     (base-fsm-eval-equiv new-fsm fsm)
@@ -307,6 +313,12 @@
                               x)
          :hints ((witness) (witness))))
 
+(local (include-book "std/lists/sets" :dir :system))
+
+(local (defthmd svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite
+         (implies (and (double-rewrite (svex-alist-eval-equiv x y))
+                       (equal (svex-alist-keys x) (svex-alist-keys y)))
+                  (equal (svex-alist-eval-equiv! x y) t))))
 
 (define svtv-data-rewrite-flatnorm (svtv-data &key ((count natp) '4) (verbosep 'nil))
   :guard ;; (or (svtv-data->flatnorm-validp svtv-data)
@@ -314,7 +326,9 @@
   (not (svtv-data->phase-fsm-validp svtv-data))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
+                     '(:in-theory (enable svtv-data$ap
+                                          acl2::subsetp-witness-rw
+                                          svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite)))
                 )
   :returns new-svtv-data
   (time$
@@ -339,7 +353,9 @@
   (not (svtv-data->phase-fsm-validp svtv-data))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
+                     '(:in-theory (enable svtv-data$ap
+                                          acl2::subsetp-witness-rw
+                                          svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite)))
                 )
   :returns new-svtv-data
   (time$

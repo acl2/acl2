@@ -99,7 +99,8 @@
 (verify-termination string-prefixp-1) ; and guards
 (verify-termination string-prefixp) ; and guards
 (verify-termination project-dir-prefix-entry) ; and guards
-(verify-termination relativize-book-path) ; and guards
+(verify-termination filename-to-book-name-1) ; and guards
+(verify-termination filename-to-book-name) ; and guards
 (verify-termination include-book-dir) ; and guards
 (verify-termination strip-non-hidden-package-names) ; and guards
 

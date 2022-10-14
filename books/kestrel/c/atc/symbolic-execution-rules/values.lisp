@@ -13,6 +13,8 @@
 
 (include-book "../../language/values")
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-value-listp-rules

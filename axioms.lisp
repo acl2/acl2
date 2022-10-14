@@ -880,7 +880,7 @@
 
 ;   Each defpkg event added to the portcullis as described above will have a
 ;   :book-path argument derived from the book-path field of a package-entry in
-;   the known-package-alist, intended to represent the list of full book names
+;   the known-package-alist, intended to represent the list of full-book-names
 ;   leading from the innermost book actually containing the corresponding
 ;   defpkg (in the car), up to the top-level such include-book (at the end of
 ;   the list).  Thus, when we evaluate that defpkg, the new package-entry in
@@ -960,7 +960,7 @@
 
  ; The remaining fields are used for messages only; they have no logical import.
 
-          ,book-path ; a true list of full book names, where the path
+          ,book-path ; a true list of full-book-names, where the path
                      ; from the first to the last in the list is intended to
                      ; give the location of the introducing defpkg, starting
                      ; with the innermost book
@@ -1832,7 +1832,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         ttags
                         dir)
   (declare (ignore uncertified-okp defaxioms-okp skip-proofs-okp ttags))
-  `(include-book-raw ,user-book-name nil ,load-compiled-file ,dir
+  `(include-book-raw ,user-book-name nil nil ,load-compiled-file ,dir
                      '(include-book . ,user-book-name)
                      *the-live-state*))
 
@@ -1882,6 +1882,31 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               ACL2 bug; please contact the ACL2 implementors and report the ~%~
               offending form:~%~%~s~%"
              ',event-form))))
+
+(defun defconst-redeclare-error (name)
+  (let ((stk (symbol-value '*load-compiled-stack*))
+        (project-dir-alist (project-dir-alist (w *the-live-state*)))
+        (ctx 'defconst-redeclare-error))
+    (cond
+     (stk (error
+           "Illegal attempt to redeclare the constant ~s.~%~
+            The problem appears to be that you are including a book,~%~
+            ~2T~a,~%~
+            that attempts to give a definition of this constant that~%~
+            is incompatible with its existing definition.  The ~%~
+            discrepancy is being discovered while loading that book's~%~
+            compiled (or expansion) file~:[, as the last such load for~%~
+            the following nested sequence of included books (outermost~%~
+            to innermost):~%~{  ~a~%~}~;.~]"
+           name
+           (book-name-to-filename (caar stk) project-dir-alist ctx)
+           (null (cdr stk))
+           (book-name-lst-to-filename-lst
+            (reverse-strip-cars stk nil)
+            project-dir-alist
+            ctx)))
+     (t (error "Illegal attempt to redeclare the constant ~s."
+               name)))))
 )
 
 ;                          STANDARD CHANNELS
@@ -4254,6 +4279,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun rewrite-lambda-modep (x)
   (declare (xargs :mode :logic :guard t))
   x)
+
+; Elsewhere in this code, e.g., cleanse-type-prescriptions, we use the variable
+; named ``def-nume'' to hold the nume of a :definition rune, whereas we use
+; ``xnume'' to hold the name of an :executable-counterpart rune.  It's in that
+; spirit that we named the constants below to hold the numes for (:definition
+; rewrite-lambda-modep) and (:executable-counterpart rewrite-lambda-modep).
+
+(defconst *rewrite-lambda-modep-def-nume*
+  (+ *tau-system-xnume* 2))
 
 (defconst *rewrite-lambda-modep-xnume*
   (+ *tau-system-xnume* 3))
@@ -8758,14 +8792,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond
    ((equal test ''eq)
     `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
-              :logic (position-equal-ac item lst)
-              :exec  (position-ac-eq-exec item lst)))
+              :logic (position-equal-ac item lst acc)
+              :exec  (position-ac-eq-exec item lst acc)))
    ((equal test ''eql)
     `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
               :logic (position-equal-ac item lst acc)
               :exec  (position-ac-eql-exec item lst acc)))
    (t ; (equal test 'equal)
-    `(position-equal-ac ,item ,lst))))
+    `(position-equal-ac ,item ,lst ,acc))))
 
 ; Position
 
@@ -12331,18 +12365,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; that is part of that deflabel (but which is not actually part of the
 ; ACL2 documentation).
 
-    (let* ((old-book-path
-            (reverse (unrelativize-book-path
-                      (package-entry-book-path package-entry)
-                      (project-dir-alist *the-live-state*))))
+    (let* ((state *the-live-state*)
+           (wrld (w state))
+           (ctx 'check-proposed-imports)
+           (project-dir-alist (project-dir-alist wrld))
+           (old-book-path (package-entry-book-path package-entry))
            (current-book-path
-            (reverse
-             (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
-                     (global-val 'include-book-path (w *the-live-state*)))))
+            (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
+                    (global-val 'include-book-path wrld)))
            (old-imports (package-entry-imports package-entry))
            (proposed-not-old (set-difference-eq proposed-imports old-imports))
            (old-not-proposed (set-difference-eq old-imports proposed-imports))
-           (current-package (f-get-global 'current-package *the-live-state*)))
+           (current-package (f-get-global 'current-package state)))
       (interface-er
        "~%We cannot reincarnate the package ~x0 because it was previously ~
         defined with a different list of imported symbols.~|~%The previous ~
@@ -12363,15 +12397,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         package-reincarnation-import-restrictions."
        name
        (if old-book-path 1 0)
-       old-book-path
+       (book-name-lst-to-filename-lst (reverse old-book-path)
+                                      project-dir-alist
+                                      ctx)
        (if current-book-path 1 0)
-       current-book-path
+       (book-name-lst-to-filename-lst (reverse current-book-path)
+                                      project-dir-alist
+                                      ctx)
        (if old-not-proposed 0 1)
        old-not-proposed
        (if proposed-not-old 0 1)
        proposed-not-old
-       current-package
-       )))))
+       current-package)))))
 
 (defun-one-output defpkg-raw1 (name imports book-path event-form)
   (let ((package-entry (find-package-entry name *ever-known-package-alist*))
@@ -14128,6 +14165,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-bad-lisp-consp-memoize
     retract-stobj-tables
     get-cpu-time get-real-time
+    increment-file-clock
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
   ))
@@ -14626,7 +14664,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (print-readably . nil)
     (print-right-margin . nil)
     (program-fns-with-raw-code . ,*initial-program-fns-with-raw-code*)
-    (project-dir-alist . nil) ; set in enter-boot-strap-mode and perhaps lp
     (prompt-function . default-print-prompt)
     (prompt-memo . nil)
     (proof-tree . nil)
@@ -18036,72 +18073,87 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (go loop)))))
 
 #-acl2-loop-only
-(defvar *read-file-alist*
+(defvar *read-file-into-string-alist*
 
-; This alist associates each key, an ACL2 filename (see the Essay on
-; Pathnames), with both a file-clock and its file-write-date.  Recall that the
-; keys into the readable-files component of the ACL2 state are of the form
-; (list file-name typ file-clock); see open-input-channel.  In order to
-; preserve our logical story about file IO, we must avoid logically associating
-; such a key with two different character lists.  That could happen if
-; read-file-into-string is called twice on the same filename, say "F", in the
-; case that there is an intervening write not performed by ACL2.  We avoid that
-; problem by associating "F" with its current file-write-date, FWD, in the
-; global *read-file-alist* just before opening a character input channel to
-; "F".  That global is cleared whenever the file-clock of the state is updated,
-; except when under read-file-into-string (or any with-local-state actually).
-; Now suppose we later attempt to open a (new) character input channel to "F"
-; when the file-clock of the state is as before.  Then we cause an error if the
-; file-write-date is later than FWD.
+; In this alist, each key is a filename (in the native OS, as discussed further
+; below) whose value is a triple (str fwd . fc): str is initially a character
+; stream str for that file ut may be replaced by nil, fwd is the
+; file-write-date at the time the stream was created, and fc is the file-clock
+; of the state at the time the stream was opened.  If str is nil, then the
+; entry may be deleted (essentially, garbage collected) when the file-clock
+; advances (see increment-file-clock), since at that point there is no
+; restriction on using read-file-into-string on the given filename and no
+; stream to re-use.
 
-; But consider the following situation: when we close an input channel on
-; behalf of read-file-into-string, the file-write-date of "F" is not FWD.  In
-; that case we could simply update the file-write-date associated with "F" in
-; *read-file-alist*, provided this is the first time that read-file-into-string
-; has been called on "F" when the file-clock is FC.  We could record whether
-; this was indeed the first time, but instead, we avoid that overhead and
-; simply cause an error in this (presumably) rare case; see
-; read-file-into-string2.
+; We use this variable to protect our logical story on filenames.  Recall that
+; (open-input-channels state) is logically an alist that is extended by
+; function open-input-channel, by reading (readable-files state) --
+; specifically, by looking up the key (list file-name typ (file-clock state)).
+; Then (again, logically) read-char$ picks off characters from the suitable
+; entry in that extended value of (open-input-channels state).  The concern
+; here stems from the use of open-input-channel in
+; read-file-into-string2-logical.  Suppose (file-clock state) is fc.  Then by
+; using open-input-channel, read-file-into-string2-logical reads
+; (open-input-channels state) at key (list file-name :character fc+1.  Two
+; successive calls of read-file-into-string2-logical on file-name with the same
+; state (hence same file-clock) should give the same result, but that won't
+; happen if the file has changed inbetween the calls.  Note that the
+; fundamental problem here is that read-file-into-string2-logical does not
+; return state, so (file-clock state) remains unchanged after the call.  There
+; can be a similar conflict between a call of read-file-into-string2-logical
+; and a subsequent ordinary call of open-input-channel; see the call of
+; check-against-read-file-into-string-alist in open-input-channel.  (The other
+; way around, namely open-input-channel followed by
+; read-file-into-string2-logical, isn't a concern, because open-input-channel
+; updates the file-clock.)  Note that a key in *read-file-into-string-alist* is
+; based on fc, not fc+1.
 
-; Any time the file-clock of the state is updated outside
-; read-file-into-string, we assign *read-file-alist* to nil (if it is not
-; already nil).
+; Recall that we key on the filename in the native OS?  It would also be fine
+; to key on the Unix filename, but our code just developed this way.  It's fine
+; though: if we encounter the same Unix filename twice, then of course we'd
+; encouter the same OS filename twice, which would catch the problem we're
+; trying to catch.
 
   nil)
 
 #-acl2-loop-only
-(defvar *inside-with-local-state* nil)
-
+(declaim (inline increment-file-clock-raw))
 #-acl2-loop-only
-(defun increment-*file-clock* ()
+(defun increment-file-clock-raw ()
   (incf *file-clock*)
-  (when (not *inside-with-local-state*)
-    (setq *read-file-alist* nil)) ; see *read-file-alist*
-  *file-clock*)
+  (when (loop for pair in *read-file-into-string-alist*
+              thereis (null (car (cdr pair)))) ; empty stream
+    (setq *read-file-into-string-alist*
+          (loop for pair in *read-file-into-string-alist*
+                when (car (cdr pair))
+                collect pair))))
 
 #-acl2-loop-only
-(defun check-against-read-file-alist (filename
-                                      &optional
-                                      (fwd (our-ignore-errors
-                                            (file-write-date$ filename
-                                                              *the-live-state*))))
+(defun check-against-read-file-into-string-alist (os-filename)
 
-; See *read-file-alist* for relevant background.
+; See *read-file-into-string-alist* for relevant background.
 
-  (let ((pair (assoc-equal filename *read-file-alist*)))
-    (cond (pair
-           (cond
-            ((null fwd)
-             (error "Unable to determine file-write-date of file ~
-                     ~s.~%Therefore, considering consecutive reads from that ~
-                     file to be illegal;~%see :DOC read-file-into-string."
-                    filename))
-            ((< (cdr pair) fwd)
-             (error "Illegal consecutive reads from file ~s.~%See :DOC ~
-                     read-file-into-string."
-                    filename))
-            (t fwd)))
-          (t nil))))
+  (let ((pair (assoc-equal os-filename *read-file-into-string-alist*)))
+    (when pair
+      (let ((stream (car (cdr pair))))
+        (when stream
+          (setf (car (cdr pair)) nil)
+          (close stream)))
+      (let ((fwd (our-ignore-errors (file-write-date os-filename))))
+        (cond
+         ((null fwd)
+          (error "Unable to determine the file-write-date of file ~s.~%~
+                  This is necessary for checking compatibility with a~%~
+                  previous read of this file using read-file-into-string.~%~
+                  Execute ~s to avoid this error.~%"
+                 os-filename
+                 '(increment-file-clock state)))
+         ((< (cadr (cdr pair)) fwd)
+          (error "An attempt to read file ~s is illegal, because~%~
+                  that file has changed since a previous read by~%~
+                  read-file-into-string.  Execute ~s to avoid this error.~%"
+                 os-filename
+                 '(increment-file-clock state))))))))
 
 (skip-proofs
 (defun open-input-channel (file-name typ state-state)
@@ -18124,82 +18176,81 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (wormhole-er 'open-input-channel (list file-name typ))))
          (return-from
           open-input-channel
-          (progn
-            (when (eq typ :character)
-              (check-against-read-file-alist file-name))
-            (increment-*file-clock*)
 
 ; We do two different opens here because the default :element-type is
 ; different in CLTL and CLTL2.
 
-            (let ((os-file-name
-                   (pathname-unix-to-os file-name *the-live-state*)))
+          (let ((os-file-name
+                 (pathname-unix-to-os file-name *the-live-state*)))
+            (when (eq typ :character)
+              (check-against-read-file-into-string-alist os-file-name))
+            (increment-file-clock-raw)
 
 ; Protect against the sort of behavior Bob Boyer has pointed out for GCL, as
 ; the following kills all processes:
 
+            (cond
+             ((and (not (equal os-file-name ""))
+                   (eql (char os-file-name 0) #\|))
+              (error "It is illegal in ACL2 to open a filename whose ~%first ~
+                      character is |, as this may permit dangerous ~
+                      ~%behavior.  For example, in GCL the following kills ~
+                      ~%all processes:~%~%~s~%"
+                     '(open "|kill -9 -1"))))
+            (let ((stream
+                   (case
+                     typ
+                     ((:character :object)
+                      (safe-open os-file-name :direction :input
+                                 :if-does-not-exist nil))
+                     (:byte (safe-open os-file-name :direction :input
+                                       :element-type '(unsigned-byte 8)
+                                       :if-does-not-exist nil))
+                     (otherwise
+                      (interface-er "Illegal input-type ~x0." typ)))))
               (cond
-               ((and (not (equal os-file-name ""))
-                     (eql (char os-file-name 0) #\|))
-                (error "It is illegal in ACL2 to open a filename whose ~%~
-                        first character is |, as this may permit dangerous ~%~
-                        behavior.  For example, in GCL the following kills ~%~
-                        all processes:~%~%~s~%"
-                       '(open "|kill -9 -1"))))
-              (let ((stream
-                     (case
-                       typ
-                       ((:character :object)
-                        (safe-open os-file-name :direction :input
-                                   :if-does-not-exist nil))
-                       (:byte (safe-open os-file-name :direction :input
-                                         :element-type '(unsigned-byte 8)
-                                         :if-does-not-exist nil))
-                       (otherwise
-                        (interface-er "Illegal input-type ~x0." typ)))))
-                (cond
-                 ((null stream) (mv nil *the-live-state*))
-                 #+(and acl2-infix akcl)
-                 ((and (eq typ :object)
-                       (not (lisp-book-syntaxp os-file-name)))
+               ((null stream) (mv nil *the-live-state*))
+               #+(and acl2-infix akcl)
+               ((and (eq typ :object)
+                     (not (lisp-book-syntaxp os-file-name)))
 
 ; Note that lisp-book-syntaxp returns t unless state global 'infixp is t.  So
 ; ignore the code below unless you're thinking about the infix case!
 
-                  (let* ((mirror-file-name
-                          (concatenate 'string
-                                       (namestring stream)
-                                       ".mirror"))
-                         (er-code
-                          (cond
-                           (*parser*
-                            (si::system
-                             (format nil "~s < ~s > ~s"
-                                     *parser*
+                (let* ((mirror-file-name
+                        (concatenate 'string
                                      (namestring stream)
-                                     mirror-file-name)))
-                           (t (parse-infix-file file-name
-                                                mirror-file-name)
-                              0))))
-                    (cond
-                     ((not (equal er-code 3))
-                      (let ((channel
-                             (make-input-channel mirror-file-name
-                                                 *file-clock*))
-                            (mirror-stream
-                             (open mirror-file-name :direction :input)))
-                        (symbol-name channel)
-                        (setf (get channel *open-input-channel-type-key*) typ)
-                        (setf (get channel *open-input-channel-key*)
-                              mirror-stream)
-                        (mv channel *the-live-state*)))
-                     (t (mv nil *the-live-state*)))))
-                 (t (let ((channel
-                           (make-input-channel file-name *file-clock*)))
+                                     ".mirror"))
+                       (er-code
+                        (cond
+                         (*parser*
+                          (si::system
+                           (format nil "~s < ~s > ~s"
+                                   *parser*
+                                   (namestring stream)
+                                   mirror-file-name)))
+                         (t (parse-infix-file file-name
+                                              mirror-file-name)
+                            0))))
+                  (cond
+                   ((not (equal er-code 3))
+                    (let ((channel
+                           (make-input-channel mirror-file-name
+                                               *file-clock*))
+                          (mirror-stream
+                           (open mirror-file-name :direction :input)))
                       (symbol-name channel)
                       (setf (get channel *open-input-channel-type-key*) typ)
-                      (setf (get channel *open-input-channel-key*) stream)
-                      (mv channel *the-live-state*))))))))))
+                      (setf (get channel *open-input-channel-key*)
+                            mirror-stream)
+                      (mv channel *the-live-state*)))
+                   (t (mv nil *the-live-state*)))))
+               (t (let ((channel
+                         (make-input-channel file-name *file-clock*)))
+                    (symbol-name channel)
+                    (setf (get channel *open-input-channel-type-key*) typ)
+                    (setf (get channel *open-input-channel-key*) stream)
+                    (mv channel *the-live-state*)))))))))
 
   (let ((state-state
         (update-file-clock (1+ (file-clock state-state)) state-state)))
@@ -18265,7 +18316,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from
           close-input-channel
           (progn
-            (increment-*file-clock*)
+            (increment-file-clock-raw)
             (let ((stream (get channel *open-input-channel-key*)))
               (remprop channel *open-input-channel-key*)
               (remprop channel *open-input-channel-type-key*)
@@ -18334,7 +18385,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from
           open-output-channel
           (progn
-            (increment-*file-clock*)
+            (increment-file-clock-raw)
             (let* ((os-file-name
                     (and (not (eq file-name :string))
                          (pathname-unix-to-os file-name *the-live-state*)))
@@ -18836,7 +18887,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from
           close-output-channel
           (progn
-            (increment-*file-clock*)
+            (increment-file-clock-raw)
             (let ((str (get channel *open-output-channel-key*)))
               (remprop channel *open-output-channel-key*)
               (remprop channel *open-output-channel-type-key*)
@@ -19830,12 +19881,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                        (list (cons #\0 filename))))))
           (t nil))))
 
+#-acl2-loop-only
 (defun mswindows-drive (filename state)
+
+; At one time this was admitted in the logic in program mode (without the
+; readtime conditional #-acl2-loop-only).  But we changed that when replacing
+; (os (w state)) by (get-os), as discussed below.
 
 ; We get the drive from filename if possible, else from cbd.
 
   (declare (xargs :mode :program))
-  (or (and (eq (os (w state)) :mswindows)
+  (or (and (eq (get-os)
+
+; At one time we had (os (w state)) above instead of (get-os).  But we changed
+; that when calling this function during the boot-strap, when (w state) was
+; still nil.
+
+               :mswindows)
            (or (and filename (mswindows-drive1 filename))
                (let ((cbd (f-get-global 'connected-book-directory state)))
                  (cond (cbd (mswindows-drive1 cbd))
@@ -19867,9 +19929,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (eql (char str0 0) *directory-separator*))
 
 ; Warning: Do not append the drive if there is already a drive present.  We
-; rely on this in LP, where we initialize state global 'system-books-dir based
-; on environment variable ACL2_SYSTEM_BOOKS, which might already have a drive
-; that differs from that of the user.
+; rely on this in LP, where we initialize the system books directory based on
+; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
+; differs from that of the user.
 
                   (string-append (mswindows-drive nil state)
                                  str0))
@@ -19920,7 +19982,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (if (equal str "")
       str
-    (let ((os (os (w state))))
+    (let ((os
+
+; At one time the next argument was (os (w state)).  But we changed that when
+; calling this function during the boot-strap, when (w state) was still nil.
+
+           (get-os)))
       (case os
         (:unix str)
         (:mswindows
@@ -21567,7 +21634,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(temp-touchable-vars
     temp-touchable-fns
 
-    project-dir-alist
     user-home-dir
 
     acl2-version
@@ -21918,10 +21984,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                     defines this package (with a defpkg ~
                                     event).~|~%  ~F0"
                                    (reverse
-                                    (unrelativize-book-path
+                                    (book-name-lst-to-filename-lst
                                      (package-entry-book-path entry)
-                                     (project-dir-alist
-                                      *the-live-state*))))))))))))
+                                     (project-dir-alist (w *the-live-state*))
+                                     'bad-lisp-atomp)))))))))))
                 (t nil))))))
         ((typep x 'string)
          (bad-lisp-stringp x))
@@ -26016,6 +26082,56 @@ Lisp definition."
    ((atom theories) '(CURRENT-THEORY :HERE))
    (t (e/d-fn '(CURRENT-THEORY :HERE) theories t))))
 
+; User-level control of rewrite-lambda-object is determined by the
+; enabled status of two runes, which we'll abbreviate in this
+; discussion by e and d:
+
+; e    (:executable-counterpart rewrite-lambda-modep)
+; d    (:definition rewrite-lambda-modep)
+
+; if e is enabled and d is enabled:
+;    then rewrite-lambda-object does a a recursive rewrite
+;    of the body.
+
+; if e is enabled, but d is disabled,
+;    then rewrite-lambda-object just does syntactic cleaning
+;    of the body.
+
+; If e is disabled,
+;    then rewrite-lambda-object is a no-op.
+
+; These three options could be switched on and off via local
+; :in-theory hints:
+
+; Recursive rewriting:
+; (e/d ((:e rewrite-lambda-modep) (:d rewrite-lambda-modep)) nil)
+
+; Syntactic cleaning:
+; (e/d ((:e rewrite-lambda-modep)) ((:d rewrite-lambda-modep)))
+
+; Hands off:
+; (e/d () ((:e rewrite-lambda-modep)))
+
+; If the only theory adjustments you want to make are to these two
+; runes, i.e., you don't want to also enable or disable other runes in that
+; in-theory event or :in-theory hint, you can use these three macros.
+
+(defmacro rewrite-lambda-objects-theory ()
+  '(e/d ((:e rewrite-lambda-modep) (:d rewrite-lambda-modep)) nil))
+
+(defmacro syntactically-clean-lambda-objects-theory ()
+  '(e/d ((:e rewrite-lambda-modep)) ((:d rewrite-lambda-modep))))
+
+(defmacro hands-off-lambda-objects-theory ()
+  '(e/d () ((:e rewrite-lambda-modep))))
+
+; as in
+
+; :hints (("Subgoal 3.5"
+;          :in-theory (syntactically-clean-lambda-objects-theory)))
+
+; End of discussion of user-level control of rewrite-lambda-object.
+
 ; We avoid skipping proofs for the rest of initialization, so that we can do
 ; the verify-termination-boot-strap proofs below during the first pass.  See
 ; the comment in the encapsulate that follows.  Note that preceding in-theory
@@ -27118,9 +27234,8 @@ Lisp definition."
 ; file-clock is greater than fc1.  Thus, there will be no way to detect
 ; logically any effect of delete-file$ on the four state fields above, since
 ; nothing was known about fields for file-clock exceeding fc1 before running
-; delete-file$.  The special case of read-file-into-string is also handled,
-; because of reliance on the file-write-date when the file-clock hasn't
-; changed; see *read-file-alist*.
+; delete-file$.  There is no problem with read-file-into-string since it checks
+; that the file-write-date hasn't changed before returning a value.
 
   (declare (xargs :guard (stringp file)
                   :stobjs state))
@@ -27195,21 +27310,21 @@ Lisp definition."
   10000)
 
 #-acl2-loop-only
-(defun print-call-history ()
+(defun print-call-history (&aux (state *the-live-state*))
 
 ; We welcome suggestions from users or Lisp-specific experts for how to improve
 ; this function, which is intended to give a brief but useful look at the debug
 ; stack.
 
   (declare (xargs :guard t))
-  (when (f-get-global 'boot-strap-flg *the-live-state*)
+  (when (f-get-global 'boot-strap-flg state)
 
 ; We don't know why SBCL 1.0.37 hung during guard verification of
 ; maybe-print-call-history during the boot-strap.  But we sidestep that issue
 ; here.
 
     (return-from print-call-history nil))
-  (when (f-get-global 'certify-book-info *the-live-state*)
+  (when (f-get-global 'certify-book-info state)
 
 ; The additional "Book under certification" message is helpful when the
 ; backtrace output goes to the terminal instead of a .out file, which could
@@ -27220,9 +27335,12 @@ Lisp definition."
     (eval ; using eval because the certify-book-info record is not yet defined
      '(format *debug-io*
               "~%; Book under certification: ~s~%"
-              (access certify-book-info
-                      (f-get-global 'certify-book-info *the-live-state*)
-                      :full-book-name))))
+              (book-name-to-filename (access certify-book-info
+                                             (f-get-global 'certify-book-info
+                                                           state)
+                                             :full-book-name)
+                                     (w state)
+                                     'print-call-history))))
   #+ccl
   (when (fboundp 'ccl::print-call-history)
 ; See CCL file lib/backtrace.lisp for more options
@@ -28736,64 +28854,6 @@ Lisp definition."
 
   (1- (ash 1 60)))
 
-#-acl2-loop-only
-(defvar *read-file-into-string-alist*
-
-; Associates filenames (in the native OS) with streams and positions.  The pair
-; ("fname" str . pos) means that the next time we call read-file-into-string to
-; read the next chunk from a file whose filename is "fname", we will be read
-; from the stream, str, at position pos.  When pos reaches end of file we
-; delete that entry.
-
-  nil)
-
-#-acl2-loop-only
-(defun read-file-into-string2-raw (os-filename stream posn bytes)
-  (let* ((file-len (file-length stream))
-         (max-bytes (if (<= posn file-len)
-                        (- file-len posn)
-                      (error "The :start position, ~s, specified for a call ~%~
-                              of read-file-into-string, exceeds the length ~%~
-                              of file ~s, which is ~s."
-                             posn os-filename file-len)))
-         (finish-p (or (null bytes)
-                       (< max-bytes bytes)))
-         (bytes (if bytes
-                    (min bytes max-bytes)
-                  max-bytes)))
-    (and (<= bytes *read-file-into-string-bound*)
-         (let ((fwd (file-write-date os-filename)))
-           (or (check-against-read-file-alist os-filename fwd)
-               (push (cons os-filename fwd)
-                     *read-file-alist*))
-           (when (not (eql fwd (file-write-date os-filename)))
-             (error "Illegal attempt to call ~s concurrently with some write ~
-                     to that file!~%See :DOC read-file-into-string."
-                    'read-file-into-string))
-
-; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
-; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
-; authored by @sabetts, who is apparently Shawn Betts.  The URL above presents
-; five implementations of file slurping and I found the discussion truly
-; excellent.  Thank you @sabetts!
-
-; The URL above says ``You can do anything you like with the code.''
-
-           (let ((seq (make-string bytes)))
-             (declare (type string seq))
-             (read-sequence seq stream)
-             (let ((temp (remove1-assoc-equal os-filename
-                                              *read-file-into-string-alist*)))
-               (cond
-                (finish-p
-                 (close stream)
-                 (setq *read-file-into-string-alist* temp))
-                (t
-                 (setq *read-file-into-string-alist*
-                       (cons (list* os-filename stream (+ posn bytes))
-                             temp)))))
-             seq)))))
-
 (defun read-file-into-string1 (channel state ans bound)
 
 ; Channel is an open input character channel.  We read all the characters in
@@ -28863,14 +28923,40 @@ Lisp definition."
                            (length val))
                     (length val)))))))
 
-(defun read-file-into-string2 (filename start bytes state)
+(defun increment-file-clock (state)
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (progn (increment-file-clock-raw)
+         state)
+
+; For the logical definition, we use the rather goofy LET below so that ACL2
+; can establish the proper stobjs-out.
+
+  #+acl2-loop-only
+  (let ((state (non-exec (update-file-clock (1+ (file-clock state)) state))))
+    state))
+
+(defun read-file-into-string2 (filename start bytes close state)
 
 ; Filename is an ACL2 pathname; see the Essay on Pathnames.
+
+; This function relies on the default character encoding of :iso-8859-1, as
+; noted below.  See acl2-set-character-encoding.
+
+; We want the raw Lisp code below to be consistent with the logical call below
+; of read-file-into-string2-logical.  To that end, we don't pay attention to
+; the file-write-date until after attempting to open the stream: we return nil
+; if the open fails, regardless of the file-write-date, just as with the
+; logical code.  But in the raw code, if the open succeeds but the
+; file-write-date isn't suitable, we cause an error.
+
+; In error cases we typically close the associated stream, if any.  But in
+; these cases we first make updates to avoid having a closed stream in
+; *read-file-into-string-alist*.
 
 ; Parallelism wart: avoid potential illegal behavior caused by this function.
 ; A simple but expensive solution is probably to add a lock.  But with some
 ; thought one might provide for correct parallel evaluations of this function.
-; Perhaps that's already the case!
 
   (declare (xargs :stobjs state :guard (and (stringp filename)
                                             (natp start)
@@ -28878,48 +28964,164 @@ Lisp definition."
                                                 (natp bytes)))))
   #-acl2-loop-only
   (let* ((os-filename (pathname-unix-to-os filename state))
-         (triple (assoc-equal os-filename
-                              *read-file-into-string-alist*)))
-    (cond
-     ((eql start 0)
-      (when triple
-        (close (cadr triple)) ; close the stream
-        (setq *read-file-into-string-alist*
-              (remove1-assoc-equal os-filename
-                                   *read-file-into-string-alist*)))
-      (let ((stream
-             (open os-filename :direction :input :if-does-not-exist nil)))
-        (cond
-         (stream
-          (push (list* os-filename stream 0)
-                *read-file-into-string-alist*)
-          (read-file-into-string2-raw os-filename stream 0 bytes))
-         (t nil))))
-     ((null triple) ; and start > 0
-      (error "It is illegal to call read-file-into-string with a non-zero ~%~
-              :start value, in this case ~s, when there is no suitable ~%~
-              preceding call of read-file-into-string on the same file,~%~
-              ~s.  See :DOC read-file-into-string."
-             start os-filename))
-     ((not (eql (cddr triple) ; position
-                start))
-      (error "It is illegal to call read-file-into-string with a ~%~
-              non-zero :start value, in this case ~s, that is not the ~%~
-              position of the first byte unread by the preceding call ~%~
-              of read-file-into-string on the same file, in this case, ~%~
-              position ~s of file ~s.~%~
-              See :DOC read-file-into-string."
-             start (cddr triple) os-filename))
-     (t ; start = (cddr triple) > 0
-      (read-file-into-string2-raw os-filename
-                                  (cadr triple) ; stream
-                                  start         ; (cddr triple)
-                                  bytes))))
+         (pair0 ; nil or (old-stream/nil old-file-write-date . old-file-clock)
+          (assoc-equal os-filename *read-file-into-string-alist*))
+         (pair pair0) ; to be reset below to a new pair if pair0 is nil
+         (old-stream-or-nil (car (cdr pair0)))
+         (stream (or old-stream-or-nil
+                     (open os-filename
+                           :element-type 'character ; the default
+                           :direction :input
+                           :if-does-not-exist nil)))
+         (old-fwd (cadr (cdr pair0)))
+         (old-fc (cddr (cdr pair0)))
+         (fwd (our-ignore-errors (file-write-date os-filename))))
+    (cond ((null stream)
+
+; The call of open failed.  We return nil just as we would in
+; read-file-into-string2-logical.  But consider the converse: if
+; read-file-into-string2-logical would return nil because its call of open
+; would fail, then what happens here?  We still might have a stream to the file
+; even though it no longer can be opened.  Logically, we can imagine that the
+; file actually still exists in that case, so that logically it could be
+; opened.
+
+           (return-from read-file-into-string2 nil))
+          ((null fwd) ; e.g., if old stream exists but file has been deleted
+           (when old-stream-or-nil ; remove the closed stream from pair0
+             (setf (car (cdr pair0)) nil))
+           (close stream)
+           (error "Unable to determine the file-write-date of file ~
+                   ~s.~%Perhaps this file was read previously by ~s and then ~
+                   deleted."
+                  os-filename 'read-file-into-string))
+          ((null pair0) ; no prior read that could conflict with this one
+
+; We reset pair to be the new pair that we push onto
+; *read-file-into-string-alist*.
+
+           (push (setq pair (cons os-filename (list* stream fwd *file-clock*)))
+                 *read-file-into-string-alist*))
+          ((or (= old-fwd fwd)
+               (< old-fc *file-clock*))
+
+; The read is legal in both of these cases.  If fwd has changed (presumably
+; increased), though, we need to replace an existing stream with a new one.
+
+           (cond ((null old-stream-or-nil)
+                  (setf (car (cdr pair0)) stream))
+                 ((= old-fwd fwd)) ; nothing to do
+                 (t
+
+; We don't want a closed stream in *read-file-into-string-alist*, so we remove
+; that stream before closing it (in case there's an interrupt).
+
+                  (setf (car (cdr pair0)) nil)
+                  (close old-stream-or-nil)
+                  (setq stream
+                        (open os-filename
+                              :element-type 'character ; the default
+                              :direction :input
+                              :if-does-not-exist nil))
+                  (setf (car (cdr pair0)) stream) ; could be nil
+                  (when (null stream) ; failure to open; return nil as above
+                    (return-from read-file-into-string2 nil)))))
+          (t ; presumably original file clock but increased file-write-date
+           (when old-stream-or-nil ; remove the to-be-closed stream from pair0
+             (setf (car (cdr pair0)) nil))
+           (close stream)
+           (error "Illegal consecutive reads from file~%~s,~%which appears to ~
+                   have been written between the two reads.~%Execute ~s to ~
+                   avoid this error.~%See :DOC read-file-into-string."
+                  os-filename
+                  '(increment-file-clock state))))
+    (let* ((file-len (file-length stream))
+           (max-bytes (cond ((<= start file-len)
+                             (- file-len start))
+                            (t
+
+; Before causing an error, we do some cleaning up.
+
+                             (cond ((null pair0) ; then pop off the new pair
+                                    (pop *read-file-into-string-alist*)
+                                    (close stream))
+                                   (old-stream-or-nil
+
+; If an already-opened stream is in pair (i.e., in pair0), then we leave it
+; there since the user might want to try again with a suitable :start value.
+
+                                    nil)
+                                   (t ; Close the newly-opened stream.
+                                    (setf (car (cdr pair0)) nil)
+                                    (close stream)))
+                             (error "The :start value, ~s, specified for a ~
+                                     call~%of ~s, exceeds the length ~s of ~
+                                     file~%~s."
+                                    start 'read-file-into-string file-len
+                                    os-filename))))
+           (finish-p (if (eq close :default)
+                         (or (null bytes)
+                             (< max-bytes bytes))
+                       close))
+           (bytes (if bytes
+                      (min bytes max-bytes)
+                    max-bytes))
+           seq)
+      (declare (type (integer 0 *) file-len max-bytes bytes))
+      (when (<= bytes *read-file-into-string-bound*)
+
+; The following #-acl2-loop-only code, minus the WHEN clause, is originally
+; based on code found at
+; http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was authored by
+; @sabetts, who is apparently Shawn Betts.  The URL above presents five
+; implementations of file slurping and I found the discussion truly excellent.
+; Thank you @sabetts!
+
+; The URL above says ``You can do anything you like with the code.''
+
+        (setq seq (make-string bytes))
+        (file-position stream start)
+
+; It's probably important for the following call that the character encoding is
+; :iso-8859-1, so that stream is copied into seq one byte at a time.
+
+        (read-sequence (the string seq) stream)
+        (when (not (eql fwd
+                        (ignore-errors (file-write-date os-filename))))
+
+; The file-write-date has changed!  This is presumably a rare occurrence.  No
+; further reads will be allowed on the current stream.  We might as well close
+; it.
+
+          (cond ((null pair0) ; then pop off the new pair
+                 (pop *read-file-into-string-alist*))
+                (t (setf (car (cdr pair0)) nil)))
+          (close stream)
+          (error "Illegal attempt to call ~s concurrently~%with some change to ~
+                  that file!  See :DOC read-file-into-string."
+                 'read-file-into-string)))
+      (when finish-p
+
+; We close the stream, but we leave the entry in *read-file-into-string-alist*
+; to prevent inappropriate reads after the file-write-date has changed but the
+; *file-clock* has not.
+
+; Note that we use pair here, not pair0, because we want to close the stream
+; even if it's in a newly-created pair.
+
+        (setf (car (cdr pair)) nil)
+        (close stream))
+      seq))
+  #+acl2-loop-only
+  (declare (ignore close))
   #+acl2-loop-only
   (read-file-into-string2-logical filename start bytes state))
 
-(defmacro read-file-into-string (filename &key (start '0) bytes)
-  `(read-file-into-string2 ,filename ,start ,bytes state))
+(defmacro read-file-into-string (filename &key
+                                          (start '0)
+                                          bytes
+                                          (close ':default))
+  `(read-file-into-string2 ,filename ,start ,bytes ,close state))
 
 (defmacro-untouchable when-pass-2 (&rest x)
 

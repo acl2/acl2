@@ -15,8 +15,8 @@
 (local (include-book "numerator"))
 (local (include-book "times"))
 (local (include-book "plus"))
-(local (include-book "divides"))
-(local (include-book "times-and-divides"))
+(local (include-book "divide"))
+(local (include-book "times-and-divide"))
 
 (in-theory (disable truncate))
 

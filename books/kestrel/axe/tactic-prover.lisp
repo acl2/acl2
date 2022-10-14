@@ -312,8 +312,8 @@
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches without rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
-       ((mv erp term state)
-        (prune-term term
+       ((mv erp changep term state)
+        (prune-term term ; todo: consider calling prune-dag-precisely-with-rule-alist here
                     assumptions
                     (empty-rule-alist) ;no rules (but see :prune-with-rules below)
                     nil                ;no interpreted-fns (todo)
@@ -321,9 +321,12 @@
                     call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
                     state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
-       ((mv erp new-dag) (make-term-into-dag-basic term nil))
+       ((mv erp new-dag)
+        (if (not changep)
+            (mv (erp-nil) dag)
+          (make-term-into-dag-basic term nil)))
        ((when erp) (mv *error* nil state))
-       ((when (not (< (+ (len new-dag) (len dag))
+       ((when (not (< (+ (len new-dag) (len dag)) ; todo: think about this in the no changep case
                       2147483646)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
@@ -357,13 +360,16 @@
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches with rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
-       ((mv erp term state)
+       ((mv erp changep term state) ; todo: consider calling prune-dag-precisely-with-rule-alist here
         (prune-term term assumptions rule-alist interpreted-function-alist
                     monitor
                     call-stp-when-pruning
                     state))
        ((when erp) (mv *error* nil state))
-       ((mv erp new-dag) (make-term-into-dag-basic term nil))
+       ((mv erp new-dag)
+        (if (not changep)
+            (mv (erp-nil) dag)
+          (make-term-into-dag-basic term nil)))
        ((when erp) (mv *error* nil state))
        ((when (not (< (+ (len new-dag) (len dag))
                       2147483646)))

@@ -39,7 +39,7 @@
 (local (include-book "alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 (defxdoc svex-composition
-  :parents (svex)
+  :parents (svex-compilation)
   :short "The process of composing together a netlist of svex assignments into
 full update functions."
   :long "

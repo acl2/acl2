@@ -62,4 +62,4 @@ book that depends on Glucose being installed.</p>")
 
 
 (xdoc::archive-matching-topics
- (str::strprefixp "[books]/centaur/sv/" (cdr (assoc :from x))))
+ (str::strprefixp "centaur/sv/" (cdr (assoc :from x))))

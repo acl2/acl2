@@ -1779,7 +1779,8 @@
        (final
         (and (= new-position file-length)
 
-             ;; Then close the stream:
+             ;; Then close the stream.  (As of 9/2022 we could use :close t,
+             ;; but the following still works.)
 
              (read-file-into-string
               filename

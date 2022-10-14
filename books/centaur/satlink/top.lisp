@@ -191,7 +191,8 @@ note that this is probably only necessary for FreeBSD/PCBSD, not for Mac:</p>
 })
 
 <p>As a quick test to make sure things are working, you can try to certify this
-book:</p>
+book (where below, &ldquo;[books]&rdquo; refers to the community books
+directory):</p>
 
 @({
     cd [books]/centaur/satlink/solvers

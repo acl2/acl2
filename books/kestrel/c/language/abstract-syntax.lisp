@@ -11,6 +11,8 @@
 
 (in-package "C")
 
+(include-book "errors")
+
 (include-book "kestrel/fty/defset" :dir :system)
 
 ; to generate more typed list theorems:
@@ -39,10 +41,20 @@
     (xdoc::seetopic "character-sets" "character sets")
     " to lift the ASCII assumption.")
    (xdoc::p
-    "This abstract syntax models C code after preprocessing.
-     As part of a more comprehensive formalization of C,
-     we also plan to formalize abstract syntax before preprocessing,
-     and in fact to formalize the translation phases [C:5.1.1.2] in detail."))
+    "We also plan to differentiate this abstract syntax,
+     used as part of our C langauge formalization,
+     from a different abstract syntax
+     that is tailored to being used in tools such as ATC:
+     see @(see atc-abstract-syntax) for a discussion.
+     Currently this abstract syntax plays that role too,
+     and corresponds to the concrete syntax captured in @('grammar.abnf'):
+     see the discussion there as well.
+     Thus, this abstract syntax is meant to capture syntax
+     that is neither before nor after preprocessing,
+     but rather that may include constructs from
+     both before and after preprocessing.
+     For the language formalization, instead we plan
+     to formalize the translation phases [C:5.1.1.2] in detail."))
   :order-subtopics t
   :default-parent t)
 
@@ -1023,3 +1035,43 @@
   ((declons ext-declon-list))
   :tag :transunit
   :pred transunitp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult transunit "translation units")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod file
+  :short "Fixtype of files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar in [C] does not quite define files in the form we want here.
+     The closest things are
+     preprocessing files [C:6.10/1]
+     and translation units [C:6.9/1].
+     However, the grammar rule for preprocessing files
+     describes their content before preprocessing [C:5.1.1.1/1] [C:5.1.1.2/3],
+     and the grammar rule for translation units
+     describes their contents after preprocessing
+     (which may involve copying contents of included files).
+     As discussed in @(see abstract-syntax),
+     the purpose of this abstract syntax is to capture the content of files
+     neither before nor after preprocessing.
+     Thus, we use the more ``neutral'' term `file' here,
+     which can capture constructs from both before and after preprocessing.")
+   (xdoc::p
+    "A file consists of a list of external declarations currently.
+     This is actually the same as a translation unit (see @(tsee transunit)),
+     but we plan to extend and change this soon.
+     We put the list into a one-field product fixtype
+     so that in the future it may be easier to extend this fixtype.")
+   (xdoc::p
+    "Note that here by `file' we mean the content of a file,
+     not the file as a full entity of the file system,
+     which also includes a name and possibly other information.
+     We plan to formalize this additional information separately."))
+  ((declons ext-declon-list))
+  :tag :file
+  :pred filep)

@@ -119,6 +119,7 @@
 ;; Returns the (translated) guard of the given function (a result of t means
 ;; either no guard given or an explicit guard of t).  Works even on :program
 ;; mode functions.
+;; See also the built-in function GUARD.
 (defun fn-guard (name world)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp world))))

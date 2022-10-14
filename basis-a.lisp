@@ -8043,8 +8043,7 @@
              (let* (,@(and (not (eq st 'state))
                            `((,st (,creator))))
                     ,@(cond ((eq st 'state)
-                             '((*inside-with-local-state* t)
-                               (*wormholep*
+                             '((*wormholep*
 
 ; We are in a local state, so it is irrelevant whether or not we are in a
 ; wormhole, since (conceptually at least) the local state will be thrown away
@@ -8787,3 +8786,340 @@
                                    :alist ,(print-object$+-alist args)))
                          ,channel
                          state))))
+
+; Below are notions related to sysfiles and book-names.
+
+; Essay on Book-names
+
+; In October 2022 we completed changes to support relocation of book
+; directories.  A key change was to use sysfiles as full-book-names when
+; possible, not only in book certificates but also in structures in the ACL2
+; world.  More specifically, full-book-names can now be either sysfiles or
+; canonical absolute pathname strings.  We consistently use "full-book-name" in
+; variable and record field names that represent arbitrary full-book-names for
+; which a sysfile will be used whenever it can be.  By contrast, a
+; "full-book-string" is a (generally canonical) absolute pathname string for a
+; book.
+
+; The sysfile-filename of a sysfile may be an absolute or relative pathname,
+; depending on context.  In (project-dir-alist (w state)), a sysfile (:kwd
+; . "dir/") maps :kwd to a canonical absolute directory pathname, "dir/".  Then
+; in a book's certificate, the full-book-name for a book residing in "dir/path"
+; (where "path" is thus a relative pathname) would be (:kwd . "path").
+
+; When ACL2 uses a full-book-name, the sysfile form is preferred (when
+; applicable; of course some pathnames don't lie under any directory in the
+; project-dir-alist).  Thus, virtually all world structures use
+; full-book-names, including the following, listed alphabetically.  (Note that
+; namex is not included.)
+
+;   *hcomp-book-ht*
+;   *load-compiled-stack*
+;   active-book-name
+;   book-path (including include-book-path and package-entry-book-path)
+;   bookdata file headers (see maybe-write-bookdata)
+;   cert-obj record fields :pre-alist and :post-alist
+;   ee-entry: the cadr, when the car is include-book
+;   ignore-cert-files (state global)
+;   include-book-alist
+;   pcert-books (world global)
+;   puff-included-books table
+;   skip-proofs-seen
+;   ttags-allowed
+;   ttags-seen
+
+; There are a few structures that use full-book-strings instead of
+; full-book-names, because it seems more convenient to do so and this doesn't
+; seem to get in the way of relocating book directories.  Among these are namex
+; and the :full-book-string field of the useless-runes record.  But almost
+; always we use full-book-names, not only to support relocation but also to
+; simplify source code maintenance -- it seems easiest to assume that we are
+; dealing with full-book-names (with very few exceptions), which in particular
+; allows EQUAL to be used to determine whether two full-book-names refer to the
+; same file, than to have to consider whether one might be a sysfile and the
+; other a string.  It is simple to convert from full-book-names to
+; full-book-strings, or vice-versa, using utilities defined below.
+
+; A full-book-name always includes the .lisp extension, but a book-name that is
+; not a full-book-name might or might not include that extension.  How that
+; works out should be clear from context (otherwise we should add suitable
+; comments).
+
+(defmacro make-sysfile (key str)
+  `(cons ,key ,str))
+
+(defun sysfile-p (x)
+
+; This predicate is a weak recognizer for a sysfile, which is a pair (:kwd
+; . "relative-pathname/"), which represents the interpretation of the given
+; relative pathname with respect to the absolute pathname associated with the
+; given keyword in the project-dir-alist of the logical world.  A
+; full-book-name is always either an absolute pathname or a sysfile.  See
+; book-name-to-filename and valid-book-name-p.
+
+  (declare (xargs :guard t))
+  (and (consp x)
+       (keywordp (car x))
+       (stringp (cdr x))))
+
+(defun sysfile-key (x)
+  (declare (xargs :guard (sysfile-p x)))
+  (car x))
+
+(defun sysfile-filename (x)
+  (declare (xargs :guard (sysfile-p x)))
+  (cdr x))
+
+(defun project-dir-alist (wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (global-val 'project-dir-alist wrld))
+
+(defun project-dir-lookup (key alist ctx)
+
+; At the top level, alist is presumably (project-dir-alist (w state)).  We
+; guarantee that the value of key in alist exists and is a string.  Except, we
+; allow that to fail if ctx is nil, returning nil in that case.
+
+; We use hons-assoc-equal below not because of hons (in fact hons-assoc-equal
+; has no under-the-hood code for fast alists), but because its guard is t and
+; that allows a guard of t here and simplifies guard verification.
+
+  (declare (xargs :guard t))
+  (let ((ans (cdr (hons-assoc-equal key alist))))
+    (cond ((stringp ans)
+
+; It is tempting to check (absolute-pathname-string-p str t (os (w state))),
+; but we don't have state (or world) here.  The caller could supply it, or the
+; caller could do the check; but actually, we know that this will truly be an
+; absolute pathname, and if anyone needs that fact they can do the check.
+
+           ans)
+          ((null ctx) nil)
+          (t (prog2$
+              (er-hard? ctx "Missing project"
+                        "The project-dir-alist needs an entry for the keyword ~
+                         ~x0 but that keyword is missing the current ~
+                         project-dir-alist, ~x1.  See :DOC project-dir-alist."
+                        key alist)
+; Dumb default so caller gets a sufficiently short string:
+              *directory-separator-string*)))))
+
+(defun project-dir (key wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (project-dir-lookup key (project-dir-alist wrld) 'project-dir))
+
+(defun system-books-dir (state)
+
+; As of this writing, this function is not used in the ACL2 sources.  But it's
+; convenient to introduce it here for use in books.
+
+  (declare (xargs :stobjs state))
+  (project-dir :system (w state)))
+
+(defun string-prefixp-1 (str1 i str2)
+  (declare (type string str1 str2)
+           (type (unsigned-byte 29) i)
+           (xargs :guard (and (<= i (length str1))
+                              (<= i (length str2)))))
+  (cond ((zpf i) t)
+        (t (let ((i (1-f i)))
+             (declare (type (unsigned-byte 29) i))
+             (cond ((eql (the character (char str1 i))
+                         (the character (char str2 i)))
+                    (string-prefixp-1 str1 i str2))
+                   (t nil))))))
+
+(defun string-prefixp (root string)
+
+; We return a result propositionally equivalent to
+;   (and (<= (length root) (length string))
+;        (equal root (subseq string 0 (length root))))
+; but, unlike subseq, without allocating memory.
+
+; At one time this was a macro that checked `(eql 0 (search ,root ,string
+; :start2 0)).  But it seems potentially inefficient to search for any match,
+; only to insist at the end that the match is at 0.
+
+  (declare (type string root string)
+           (xargs :guard (<= (length root) (fixnum-bound))))
+  (let ((len (length root)))
+    (and (<= len (length string))
+         (assert$ (<= len (fixnum-bound))
+                  (string-prefixp-1 root len string)))))
+
+(defun project-dir-prefix-entry (filename project-dir-alist)
+
+; Return the first entry in project-dir-alist whose filename is a prefix of the
+; given filename, if there is one.  Otherwise return nil, which is appropriate
+; when filename isn't under a project directory.
+
+  (declare (xargs :guard (stringp filename)))
+  (cond ((atom project-dir-alist) nil)
+        ((and (consp (car project-dir-alist)) ; always t (for guard proof)
+              (stringp (cdar project-dir-alist)) ; always t (for guard proof)
+              (<= (length (cdar project-dir-alist))
+                  (fixnum-bound)) ; (for guard proof)
+              (string-prefixp (cdar project-dir-alist) filename))
+         (car project-dir-alist))
+        (t (project-dir-prefix-entry filename (cdr project-dir-alist)))))
+
+(defun filename-to-book-name-1 (filename project-dir-alist)
+
+; This version of filename-to-book-name takes a project-dir-alist instead of a
+; world.
+
+  (declare (xargs :guard t))
+  (let ((pair (and (stringp filename)
+                   (project-dir-prefix-entry filename
+                                             project-dir-alist))))
+
+    (cond (pair ; (:kwd . "relative-pathname/")
+           (make-sysfile (car pair)
+                         (subseq filename (length (cdr pair)) nil)))
+          (t filename))))
+
+(defun filename-to-book-name (filename wrld)
+
+; Filename is a (pathname) string.  If there is a corresponding valid sysfile
+; then that is returned; otherwise filename is returned unchanged.  In
+; particular, filename is returned unchanged if it is a relative pathname.
+
+  (declare (xargs :guard (plist-worldp wrld)))
+  (filename-to-book-name-1 filename (project-dir-alist wrld)))
+
+(defun our-merge-pathnames (p s)
+
+; This is something like the Common Lisp function merge-pathnames.  P and s are
+; (Unix-style) pathname strings, where s is a relative pathname.  (If s may be
+; an absolute pathname, use extend-pathname instead.)  We allow p to be nil,
+; which is a case that arises when p is (f-get-global 'connected-book-directory
+; state) during boot-strapping; otherwise p should be an absolute directory
+; pathname (though we allow "" as well).
+
+  (cond
+   ((and (not (equal s ""))
+         (eql (char s 0) *directory-separator*))
+    (er hard 'our-merge-pathnames
+        "Attempt to merge with an absolute filename, ~p0.  Please contact the ~
+         ACL2 implementors."
+        s))
+   ((or (null p) (equal p ""))
+    s)
+   ((stringp p) ; checked because of structured pathnames before Version_2.5
+    (merge-using-dot-dot
+     (if (eql (char p (1- (length p)))
+              *directory-separator*)
+         (subseq p 0 (1- (length p)))
+       p)
+     s))
+   (t
+    (er hard 'our-merge-pathnames
+        "The first argument of our-merge-pathnames must be a string, ~
+         but the following is not:  ~p0."
+        p))))
+
+(defun book-name-p (x)
+
+; This predicate is a basic recognizer for book-names.  See also
+; valid-book-name-p, which is more restrictive.
+
+  (declare (xargs :guard t))
+  (or (stringp x)
+      (sysfile-p x)))
+
+(defun book-name-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (book-name-p (car x))
+                (book-name-listp (cdr x))))))
+
+(defun book-name-to-filename-1 (x project-dir-alist ctx)
+
+; See book-name-to-filename and especially the Warning there.
+
+  (declare (xargs :guard (book-name-p x)))
+  (cond
+   ((consp x) ; (sysfile-p x)
+    (let ((dir (project-dir-lookup (sysfile-key x)
+                                   project-dir-alist
+                                   ctx)))
+      (and (stringp dir) ; true if ctx is non-nil; otherwise error occurred
+           (concatenate 'string dir (sysfile-filename x)))))
+   (t x)))
+
+(defun book-name-to-filename (x wrld ctx)
+
+; If x is a sysfile then we return the absolute pathname obtained by
+; concenating the absolulte directory string represented by the sysfile-key of
+; x with the sysfile-filename of x, which should be a relative pathname.
+
+; If x is a sysfile whose key is not in the project-dir-alist of wrld, then a
+; hard error occurs using ctx if ctx is not nil.  Otherwise nil is returned.
+
+; Warning: The resulting filename need not be canonical unless x is a
+; full-book-name (such as key of the include-book-alist, for example); e.g., it
+; may contain soft links or "..".
+
+  (declare (xargs :guard (and (book-name-p x)
+                              (plist-worldp wrld))))
+  (cond ((and (consp x) ; (sysfile-p x)
+              (absolute-pathname-string-p (sysfile-filename x)
+                                          nil
+                                          (os wrld)))
+         (er hard? ctx
+             "Implementation error the sysfile ~x0 has an absolute pathname as ~
+             its sysfile-filename component."
+             x))
+        (t (book-name-to-filename-1 x (project-dir-alist wrld) ctx))))
+
+(defun book-name-lst-to-filename-lst (x project-dir-alist ctx)
+
+; Note that unlike book-name-to-filename (but like book-name-to-filename-1),
+; the second argument is a project-dir-alist rather than the world in which it
+; sits.  (Otherwise the project-dir-alist would need to be accessed from the
+; world for each sysfile element of the list, x.)
+
+; Ctx should be non-nil, resulting in an error when a sysfile cannot be
+; interpreted with respect to project-dir-alist, unless the caller is prepared
+; to check for nil in the list that is returned.
+
+; This checks (via assert$ in book-name-to-filename), for each sysfile in x,
+; that its filename is a relative pathname.  If it is desired to avoid that
+; check, write a version of this function that calls book-name-to-filename-1
+; instead of book-name-to-filename.  As of this writing, efficiency does not
+; seem to be a concern for calls of this function.
+
+  (declare (xargs :guard (book-name-listp x)))
+  (cond
+   ((endp x) nil)
+   (t (cons (book-name-to-filename-1 (car x) project-dir-alist ctx)
+            (book-name-lst-to-filename-lst (cdr x) project-dir-alist ctx)))))
+
+(defun valid-book-name-p (x os project-dir-alist)
+
+; See also the weaker book-name recognizer, book-name-p.  Even the present
+; recognizer could be strengthened, by insisting that if x is a sysfile then
+; its key is bound to the longest possible prefix for the file represented.
+; The strongest predicate would be to proceed as in translate-book-names:
+; translate a sysfile x to a full-book-name using book-name-to-filename-1,
+; canonicalize using extend-pathname or extend-pathname+, and then translate
+; back to a (presumed) sysfile with filename-to-book-name-1.  The result should
+; be x.
+
+  (or (stringp x)
+      (and (sysfile-p x)
+           (project-dir-lookup (sysfile-key x) project-dir-alist nil)
+           (stringp (sysfile-filename x))
+           (not (absolute-pathname-string-p (sysfile-filename x) nil os)))))
+
+(defun get-invalid-book-name-1 (lst os project-dir-alist)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((valid-book-name-p (car lst) os project-dir-alist)
+         (get-invalid-book-name-1 (cdr lst) os project-dir-alist))
+        (t (car lst))))
+
+(defun get-invalid-book-name (lst os wrld)
+  (declare (xargs :guard (and (true-listp lst)
+                              (plist-worldp wrld))))
+  (get-invalid-book-name-1 lst os (project-dir-alist wrld)))

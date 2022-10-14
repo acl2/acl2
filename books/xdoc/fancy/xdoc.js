@@ -789,10 +789,10 @@ function datLongTopic(key)
         // link to main ACL2 sources dir:
         fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2\">ACL2 Sources</a></p>";
     }
-    else if (from.startsWith("[books]")) {
+    else if (from.endsWith(":DIR :SYSTEM")) {
         // link to the specific file on GitHub:
-        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books"
-            + from.substring(7) // strip "[books]" from front
+        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books/"
+            + from.slice(0,-13) // strip " :DIR :SYSTEM" from end
             + "\">" + from + "</a></p>";
     }
     else {

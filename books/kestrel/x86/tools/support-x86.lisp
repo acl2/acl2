@@ -540,7 +540,6 @@
             (canonical-address-p (+ -1 (len bytes) paddr))
 ;(x86isa::canonical-address-listp addresses)
             (app-view x86)
-            (app-view x86-init)
             (X86P X86) ;too bad
             )
            (equal (mv-nth 1 (rb 1 addr r-w-x x86))

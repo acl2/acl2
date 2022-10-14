@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1056,13 +1056,17 @@
       :domain-guard
       (if (symbolp domain$)
           (guard domain$ nil wrld)
-        (term-guard-obligation (lambda-body domain$) state))
+        (term-guard-obligation (lambda-body domain$)
+                               :limited
+                               state))
       :when verify-guards$)
      (make-evmac-appcond?
       :combine-guard
       (implicate (conjoin2 (apply-term* domain$ q)
                            (apply-term* domain$ r))
-                 (term-guard-obligation combine state))
+                 (term-guard-obligation combine
+                                        :limited
+                                        state))
       :when verify-guards$)
      (make-evmac-appcond?
       :domain-of-base-when-guard
@@ -1402,7 +1406,8 @@
                                   :guard ,guard
                                   :verify-guards ,verify-guards$
                                   ,@(and verify-guards$
-                                         (list :guard-hints guard-hints))))
+                                         (list :guard-hints guard-hints))
+                                  :guard-simplify :limited))
                   ,body)))
        (exported-event
         `(,macro ,new-name$ (,@new-formals)
@@ -1904,7 +1909,9 @@
                                            names-to-avoid
                                            wrld))
        (formula (implicate (guard old$ nil wrld)
-                           (term-guard-obligation base state)))
+                           (term-guard-obligation base
+                                                  :limited
+                                                  state)))
        (formals (formals old$ wrld))
        (alpha-comps (tailrec-gen-alpha-component-terms alpha-name
                                                        old$
@@ -2149,6 +2156,7 @@
      :body body
      :verify-guards verify-guards$
      :guard-hints guard-hints
+     :guard-simplify :limited
      :enable wrapper-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

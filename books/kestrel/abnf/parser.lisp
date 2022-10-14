@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "concrete-syntax")
 (include-book "parsing-primitives-seq")
 
+(include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
@@ -61,6 +62,13 @@
      There are also parameterized parsing functions for
      terminals (natural numbers) matching
      exact values, ranges, and (case-insensitively) characters.")
+
+   (xdoc::h3 "Parsing Primitive")
+
+   (xdoc::p
+    "Some of the parsing functions that make up the parser are "
+    (xdoc::seetopic "parsing-primitives-seq" "<i>Seq</i> parsing primitives")
+    ". The remarks below apply to those functions as well.")
 
    (xdoc::h3 "Inputs and Outputs")
 
@@ -2665,7 +2673,8 @@
      by calling @('set-buffer-file-coding-system') with @('dos'),
      and saving the file.
      If the file is put under a version control system,
-     it should be forced to be treated as a binary file,
+     it should be forced to be treated as a text file with CRLF end-of-line
+     (e.g. see the @('.gitattributes') file in this directory)
      to avoid turning carriage returns and line feeds into just line feeds
      across Windows and Unix platforms.")
    (xdoc::p

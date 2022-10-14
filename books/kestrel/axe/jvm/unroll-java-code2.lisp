@@ -511,7 +511,7 @@
        ;; Build a rule to inline methods not already lifted:
        (inlining-theorem (make-step-opener-for-non-already-lifted-methods all-lifted-method-designator-strings))
        ;; This gets rolled back after the make-event:
-       (state (submit-event inlining-theorem state))
+       (state (submit-event-brief inlining-theorem state))
        ;; Set up the rule sets:
        (symbolic-execution-rules (if t ;(eq :auto steps) ;todo
                                      (compositional-symbolic-execution-rules)

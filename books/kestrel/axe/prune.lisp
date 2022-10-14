@@ -540,9 +540,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp result-term state).
+;; Returns (mv erp changep result-term state).
 ;; TODO: Print some stats about the pruning process?
 ;; TODO: Allow rewriting to be suppressed (just call STP)?
+;; TODO: Allow printing to be suppressed.
 (defund prune-term (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp assumptions)
@@ -563,13 +564,14 @@
                         monitored-rules
                         call-stp
                         state))
-       ((when erp) (mv erp nil state))
-       (- (and (equal term new-term)
+       ((when erp) (mv erp nil nil state))
+       (changep (not (equal term new-term)))
+       (- (and (not changep)
                (cw "No change!~%")))
        (- (cw "Done pruning term.)~%")))
-    (mv (erp-nil) new-term state)))
+    (mv (erp-nil) changep new-term state)))
 
-(defthm pseudo-termp-of-mv-nth-1-of-prune-term
+(defthm pseudo-termp-of-mv-nth-2-of-prune-term
   (implies (and (pseudo-termp term)
                 (pseudo-term-listp assumptions)
                 (rule-alistp rule-alist)
@@ -577,7 +579,7 @@
                 (symbol-listp monitored-rules)
                 (or (booleanp call-stp)
                     (natp call-stp)))
-           (pseudo-termp (mv-nth 1 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
+           (pseudo-termp (mv-nth 2 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
   :hints (("Goal" :in-theory (enable prune-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,10 +600,15 @@
       (mv (erp-nil) dag state)
     (b* ( ;; TODO: Consider first doing a simplification as a DAG, using only approximate contexts.
          (term (dag-to-term dag)) ; can explode!
-         ((mv erp term state)
+         ((mv erp changep term state)
           (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
          ((when erp) (mv erp nil state))
-         ((mv erp dag) (make-term-into-dag-simple term))
+         ((mv erp dag)
+          (if changep
+              ;; something changed, so make a new dag:
+              (make-term-into-dag-simple term)
+            ;; returning the original dag ensures that nodenums didn't change:
+            (mv (erp-nil) dag)))
          ((when erp) (mv erp nil state)))
       (mv (erp-nil) dag state))))
 

@@ -40,7 +40,7 @@
     (xdoc::p
      "This manual page refers to the official C standard
       in the manner explained in "
-     (xdoc::seetopic "c" "the top-level XDOC topic of this C library")
+     (xdoc::seetopic "c" "the top-level XDOC topic of our C library")
      "."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,9 +198,8 @@
     "Representation of C Code in ACL2"
 
     (xdoc::p
-     "Currently ATC supports the ACL2 representation of
-      a single C translation unit, which goes into the generated file.
-      This translation unit consists of
+     "Currently ATC supports the ACL2 representation of a single C file.
+      This file consists of
       one or more C function definitions,
       zero or more C external object definitions,
       and zero or more C structure type declarations.")
@@ -229,7 +228,7 @@
 
     (xdoc::p
      "The order of the C structure types and external objects and functions
-      in the translation unit
+      in the file
       is the same as the order of the corresponding targets
       in the list @('(t1 ... tp)') passed to ATC.")
 
@@ -337,6 +336,14 @@
       "@('(sllong-arrayp x)'), representing @('signed long long *').")
      (xdoc::li
       "@('(ullong-arrayp x)'), representing @('unsigned long long *').")
+     (xdoc::li
+      "@('(struct-<tag>-p x)'),
+       where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
+       representing the corresponding C structure type,
+       @('struct <tag>').
+       The structure type must not have a flexible array member.
+       The @('<tag>') target must precede @('fn')
+       in the list of targets @('(t1 ... tp)').")
      (xdoc::li
       "@('(pointer (struct-<tag>-p x))'),
        where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
@@ -524,7 +531,7 @@
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
       "@('var') is in scope,
-       @('var') has a pointer type whose referenced is
+       @('var') has a pointer type whose referenced type is
        the C integer type corresponding to @('<type1>'),
        @('var') is one of the symbols in @('vars'),
        @('term1') is a pure expression term for @('fn')
@@ -545,6 +552,24 @@
        @('<member>') is the name of
        one of the members of that @(tsee defstruct),
        @('<member>') has an integer type in the @(tsee defstruct),
+       @('var') is assignable,
+       @('var') has the C structure type represented by @('<tag>'),
+       @('term') is a pure expression term for @('fn')
+       returning the C integer type of @('<member>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       a member of the structure represented by @('var')
+       by value (i.e. using @('.'))
+       with the new value expression represented by @('term'),
+       followed by the C code represented by @('body').")
+     (xdoc::li
+      "A term
+       @('(let ((var (struct-<tag>-write-<member> term var))) body)'),
+       when @('<tag>') is a @(tsee defstruct) name,
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<member>') has an integer type in the @(tsee defstruct),
        @('var') is in scope,
        @('var') has a pointer type whose referenced type is
        the C structure type represented by @('<tag>'),
@@ -554,8 +579,44 @@
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents a C assignment to
-       a member of the structure represented by @('var') via its pointer
+       a member of the structure represented by @('var')
+       by pointer (i.e. using @('->'))
        with the new value expression represented by @('term'),
+       followed by the C code represented by @('body').")
+     (xdoc::li
+      "A term
+       @('(let
+           ((var (struct-<tag>-write-<member>-<type> term1 term2 var))) body)'),
+       when @('<tag>') is a @(tsee defstruct) name,
+       @('<member>') is the name of
+       one of the members of that @(tsee defstruct),
+       @('<member>') has an integer array type in the @(tsee defstruct)
+       with element type @('<type2>'),
+       @('<type>') and @('<type2>') are among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('var') is assignable,
+       @('var') has the C structure type represented by @('<tag>'),
+       @('term1') is a pure expression term for @('fn')
+       returning the C type corresponding to @('<type2>'),
+       @('term2') is a pure expression term for @('fn')
+       returning the C type corresponding to @('<type>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       an element of a member of the structure represented by @('var')
+       by value (i.e. using @('.'))
+       using @('term1') as the index
+       with the new value expression represented by @('term2'),
        followed by the C code represented by @('body').")
      (xdoc::li
       "A term
@@ -590,7 +651,8 @@
        returning @('T') and affecting @('vars').
        This represents a C assignment to
        an element of a member of the structure represented by @('var')
-       via its pointer, using @('term1') as the index,
+       by pointer (i.e. using @('->'))
+       using @('term1') as the index
        with the new value expression represented by @('term2'),
        followed by the C code represented by @('body').")
      (xdoc::li
@@ -924,9 +986,13 @@
        one of the members of that @(tsee defstruct),
        @('<member>') has an integer type in the @(tsee defstruct),
        @('T') is the C integer type of @('<member>'), and
-       @('U') is the pointer type to
-       the C structure type represented by @('<tag>').
-       This represents an access to a structure member by pointer.")
+       @('U') is the C structure type represented by @('<tag>')
+       or the pointer type to that C structure type.
+       This represents an access to a structure member,
+       by value if @('U') is the C structure type
+       (i.e. using @('.'))
+       or by pointer if @('U') is the pointer type to the C structure type
+       (i.e. using @('->')).")
      (xdoc::li
       "A call of @('struct-<tag>-read-<member>-<type>')
        on pure expression terms for @('fn') returning @('U') and @('V')
@@ -947,10 +1013,13 @@
        (xdoc::li "@('ullong')"))
       "@('T') is the C element type of the array type of @('<member>'),
        @('U') is the C type corresponding to @('<type>'), and
-       @('V') is the pointer type to
-       the C structure type represented by @('<tag>').
-       This represents an access to
-       an element of a structure member by pointer.")
+       @('V') is the C structure type represented by @('<tag>')
+       or the pointer type to that C structure type.
+       This represents an access to an element of a structure member,
+       by value if @('V') is the C structure type
+       (i.e. using @('.'))
+       or by pointer if @('V') is the pointer type to the C structure type
+       (i.e. using @('->')).")
      (xdoc::li
       "A call of @(tsee sint-from-boolean) on
        an expression term for @('fn') returning boolean,
@@ -1066,7 +1135,7 @@
       The conditions make reference to the C scopes
       represented by the ACL2 terms that
       the @(tsee let) or @(tsee mv-let) is part of:
-      there is a C scope for the whole translation unit,
+      there is a C scope for the whole file,
       then each function body is a nested C scope,
       and then each @(tsee if) branch whose test is
       an expression term returning a boolean
@@ -1331,13 +1400,12 @@
      (xdoc::codeblock
       "(defconst *program* ...)")
      (xdoc::p
-      "where @('...') is the abstract syntax tree of
-       the generated C translation unit,
+      "where @('...') is the abstract syntax tree of the generated C file,
        which ATC also pretty-prints and writes
-       to the file specified by the @(':output-file') input."))
+       to the path specified by the @(':output-file') input.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
-       this constant is not generated.")
+       this constant is not generated."))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1350,7 +1418,7 @@
       "(defthm *program*-well-formed ...)")
      (xdoc::p
       "where @('...') is an assertion about @('*program*') stating that
-       the generated (abstract syntax tree of the) translation unit
+       the generated (abstract syntax tree of the) file
        is statically well-formed,
        i.e. it compiles according to [C].")
      (xdoc::p
@@ -1390,8 +1458,9 @@
 
     (xdoc::p
      "ATC generates a single C file that contains
-      a translation unit that contains
-      a C structure type declaration or a C fucnction
+      a C function definition
+      or C external object definition
+      or C structure type declaration
       for each target @('ti') (except recursive target functions),
       as explained in Section `Representation of C Code in ACL2'.")
 
@@ -1423,7 +1492,7 @@
        (if using @('gcc') on macOS or Linux).")
 
      (xdoc::p
-      "The directory @('[books]/kestrel/c/atc/tests')
+      "The community books directory @('kestrel/c/atc/tests')
        contains some examples of C code generation
        and handwritten C code to test the generated code.")))
 

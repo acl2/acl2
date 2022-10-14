@@ -28,9 +28,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These extensions could be moved under @('[books]/std') at some point.")
+    "These extensions could be moved under @('std') at some point.")
    (xdoc::p
-    "Some material under @('[books]/kestrel/utilities')
+    "Some material under @('kestrel/utilities')
      consists of Std extensions,
-     and thus should be moved here under @('[books]/kestrel/std')
-     (and then possibly under @('[books]/std')).")))
+     and thus should be moved here under @('kestrel/std')
+     (and then possibly under @('std')).")))

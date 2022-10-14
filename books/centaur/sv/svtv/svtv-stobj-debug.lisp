@@ -33,6 +33,7 @@
 
 (include-book "svtv-stobj-defsvtv")
 (include-book "debug")
+(include-book "cycle-probe")
 (include-book "eval-phases")
 (include-book "chase-base")
 (local (include-book "std/io/base" :dir :system))
@@ -42,9 +43,9 @@
 ;; (svtv-cycle-run-fsm-inputs ins phases) produces a set of inputs for the base
 ;; fsm given the cycle phases and inputs for the cycle fsm.
 
-;; (svtv-fsm-run-input-envs
+;; (svtv-fsm-to-base-fsm-inputs
 ;;   (take (len (svtv-probealist-outvars probes)) ins)
-;;   overrides fsm)
+;;   override-vals override-tests fsm)
 ;; produces a set of inputs for the cycle fsm given inputs for the pipeline.
 
 
@@ -333,25 +334,7 @@
 
 
 
-(define svtv-probealist-cycle-adjust-aux ((x svtv-probealist-p)
-                                          (cycle-len posp)
-                                          (cycle-outphase natp))
-  :returns (new-x svtv-probealist-p)
-  (b* (((when (atom x))
-        nil)
-       ((unless (mbt (consp (car x))))
-        (svtv-probealist-cycle-adjust-aux (cdr x) cycle-len cycle-outphase))
-       ((cons var (svtv-probe pr)) (car x)))
-    (cons (cons (svar-fix var) (change-svtv-probe pr :time (+ (* pr.time (lposfix cycle-len))
-                                                   (lnfix cycle-outphase))))
-          (svtv-probealist-cycle-adjust-aux (cdr x) cycle-len cycle-outphase))))
 
-(define svtv-probealist-cycle-adjust ((x svtv-probealist-p)
-                                      (phases svtv-cyclephaselist-p))
-  :returns (new-x svtv-probealist-p)
-  (b* ((len (pos-fix (len phases)))
-       (outphase (or (svtv-cycle-output-phase phases) 0)))
-    (svtv-probealist-cycle-adjust-aux x len outphase)))
        
 
 
@@ -394,22 +377,19 @@
 
 (define svtv-pipeline-setup-to-cycle-inputs ((env svex-env-p)
                                              (setup pipeline-setup-p)
-                                             (cycle-fsm base-fsm-p)
                                              (namemap svtv-name-lhs-map-p))
   :returns (mv (cycle-ins svex-envlist-p)
                (initst svex-env-p))
   (b* (((acl2::with-fast env))
        ((pipeline-setup setup))
-       (rename-ins (svex-alistlist-eval setup.inputs env))
-       (rename-overrides (svex-alistlist-eval setup.overrides env))
        (initst (svex-alist-eval setup.initst env))
        (outvars (svtv-probealist-outvars setup.probes))
        (len (len outvars))
-       (fsm (make-svtv-fsm :base-fsm cycle-fsm
-                           :namemap namemap))
-       (cycle-ins (svtv-fsm-run-input-envs
-                   (take len rename-ins)
-                   rename-overrides fsm)))
+       (cycle-ins (svtv-fsm-to-base-fsm-inputs
+                   (take len (svex-alistlist-eval setup.inputs env))
+                   (svex-alistlist-eval setup.override-vals env)
+                   (svex-alistlist-eval setup.override-tests env)
+                   namemap)))
     (mv cycle-ins initst))
   ///
   (defret initst-alist-keys-of-<fn>
@@ -433,7 +413,6 @@
 
   (b* (((mv cycle-ins initst)
         (svtv-pipeline-setup-to-cycle-inputs env setup
-                                             (svtv-data->phase-fsm svtv-data)
                                              (svtv-data->namemap svtv-data))))
     (svtv-data-debug-cycle-fsm cycle-ins initst :filename filename)))
 
@@ -473,7 +452,6 @@
   (b* (((mv cycle-ins initst)
         (svtv-pipeline-setup-to-cycle-inputs env
                                              setup
-                                             (svtv-data->phase-fsm svtv-data)
                                              (svtv-data->namemap svtv-data)))
        ((pipeline-setup setup))
        (namemap (and (svtv-data->namemap-validp svtv-data)
@@ -632,20 +610,9 @@
               (equal (svex-alist-keys (pipeline-setup->initst setup))
                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   :returns (result svex-env-p)
-  (b* (((acl2::with-fast env))
-       ((pipeline-setup setup))
-       (rename-ins (svex-alistlist-eval setup.inputs env))
-       (rename-overrides (svex-alistlist-eval setup.overrides env))
-       (initst (svex-alist-eval setup.initst env))
-       (outvars (svtv-probealist-outvars setup.probes))
-       (len (len outvars))
-       (fsm (make-svtv-fsm :base-fsm (svtv-data->cycle-fsm svtv-data)
-                           :namemap (svtv-data->namemap svtv-data)))
-       (cycle-ins (svtv-fsm-run-input-envs
-                   (take len rename-ins)
-                   rename-overrides fsm)))
-    (with-fast-alist initst
-      (svtv-data-run-cycle-fsm cycle-ins initst setup.probes))))
+  (b* (((mv cycle-ins initst)
+        (svtv-pipeline-setup-to-cycle-inputs env setup (svtv-data->namemap svtv-data))))
+    (svtv-data-run-cycle-fsm cycle-ins initst (pipeline-setup->probes setup))))
 
 
 

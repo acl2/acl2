@@ -45,6 +45,15 @@
 ; raw Lisp, since make-defun-declare-form uses that assumption to make an
 ; appropriate declaration.
 
+; It might well be possible to relax the restriction implemented below.  We'll
+; look into that if and when it becomes necessary.
+
+  (when (intersection '(&whole &optional &rest &key &allow-other-keys)
+                      args
+                      :test #'eq)
+    (error "Lambda-list keywords are not allowed with defun-one-output, so~%~
+            the following is illegal:~%~s"
+           (cons 'defun-one-output args)))
   (cons 'defun args))
 
 ; The following alist associates package names with Common Lisp packages, and

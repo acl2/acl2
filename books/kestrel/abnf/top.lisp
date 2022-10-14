@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,13 +10,17 @@
 
 (in-package "ABNF")
 
-; the order of the following INCLUDE-BOOKs determines
+; the order of the following INCLUDE-BOOKs should determine
 ; the order of the subtopics of the ABNF topic below:
 (include-book "abstract-syntax")
 (include-book "semantics")
-(include-book "operations")
+(include-book "operations/top")
 (include-book "core-rules")
+(include-book "core-rules-validation")
+(include-book "concrete-syntax-rules")
+(include-book "concrete-syntax-rules-validation")
 (include-book "concrete-syntax")
+(include-book "concrete-syntax-validation")
 (include-book "parsing-primitives-seq")
 (include-book "parsing-primitives-defresult")
 (include-book "parser")
@@ -24,6 +28,7 @@
 (include-book "abstractor")
 (include-book "parser-and-abstractor-validation")
 (include-book "parser-generators")
+(include-book "examples/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,8 +75,25 @@
      "Executable operations on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
+     "Some basic parsing primitives usable as part of larger parsers.")
+    (xdoc::li
+     "Some very preliminary tools to generate
+      parsing functions from grammar rules.")
+    (xdoc::li
      "Examples of use of the parser, the abstractor, and some grammar operations
       on a few real-world ABNF grammars (e.g. for HTTP)."))
+
+   (xdoc::p
+    "Besides the aforementioned examples,
+     the parser, abstractor, and some grammar operations have been used on "
+    (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
+    ", "
+    (xdoc::seetopic "yul::concrete-syntax" "an ABNF grammar of Yul")
+    ", and "
+    (xdoc::seetopic "c::grammar" "an ABNF grammar of a subset of C")
+    ". The parsing generation tools have been used to generate part of "
+    (xdoc::seetopic "yul::lexer" "a Yul lexer")
+    ".")
 
    (xdoc::p
     "In the documentation of this library,
@@ -91,9 +113,13 @@
      "https://www.kestrel.edu/home/people/coglio/vstte18.pdf"
      "VSTTE 2018 paper")
     " provides an overview
-     of the formalization of the ABNF notation
-     and of the verified parser
-     (but not of the operations on ABNF grammars).
+     of the ABNF notation formalization,
+     of the verified parser,
+     and of the syntax abstractor
+     (but not of the operations on ABNF grammars,
+     of the parsing primitives,
+     of the parsing generation tools,
+     or of the real-world examples).
      The differences between the paper and the ABNF library
      are described "
     (xdoc::seetopic "differences-with-paper" "here")

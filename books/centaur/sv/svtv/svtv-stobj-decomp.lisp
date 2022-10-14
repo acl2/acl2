@@ -41,8 +41,8 @@
                 (svex-fastlookup key (hide (make-fast-alist alist)))))
   :hints (("goal" :expand ((hide (make-fast-alist alist))))))
 
-(cmr::def-force-execute svtv-fsm-run-input-substs-execute-term-when-variable-free
-  svtv-fsm-run-input-substs)
+(cmr::def-force-execute svtv-fsm-to-base-fsm-inputsubsts-execute-term-when-variable-free
+  svtv-fsm-to-base-fsm-inputsubsts)
 
 (cmr::def-force-execute svex-fastlookup-execute-term-when-variable-free
   svex-fastlookup)
@@ -63,8 +63,11 @@
 (cmr::def-force-execute pipeline-setup->inputs-execute-when-variable-free
   pipeline-setup->inputs)
 
-(cmr::def-force-execute pipeline-setup->overrides-execute-when-variable-free
-  pipeline-setup->overrides)
+(cmr::def-force-execute pipeline-setup->override-vals-execute-when-variable-free
+  pipeline-setup->override-vals)
+
+(cmr::def-force-execute pipeline-setup->override-tests-execute-when-variable-free
+  pipeline-setup->override-tests)
 
 (cmr::def-force-execute pipeline-setup->probes-execute-when-variable-free
   pipeline-setup->probes)
@@ -643,31 +646,34 @@
     (:ruleset svtv-env-autoins-in-terms-of-svex-env-extract)))
 
 
-(acl2::set-ruleset! svtv-decomp-phase1-rules
-  '((:CONGRUENCE SVEX-ENVS-EQUIVALENT-IMPLIES-SVEX-ENVS-EQUIVALENT-APPEND-1)
-    (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-LOOKUP-2)
-    (:CONGRUENCE svex-envs-similar-implies-equal-svex-env-extract-2)
-    (:congruence SVEX-ENVS-EQUIVALENT-IMPLIES-EQUAL-SVEX-ENV-REDUCE-2)
-    (:DEFINITION SYNP)
-    (:EXECUTABLE-COUNTERPART LEN)
-    (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INITST$INLINE)
-    (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INPUTS$INLINE)
-    (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDES$INLINE)
-    (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->PROBES$INLINE)
-    (:EXECUTABLE-COUNTERPART SVEX-ALIST-EVAL)
-    (:EXECUTABLE-COUNTERPART SVEX-ALIST-VALS)
-    (:EXECUTABLE-COUNTERPART SVEXLIST-VARIABLE-FREE-P)
-    (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-OUTVARS)
-    (:EXECUTABLE-COUNTERPART TAKE)
-    (:META SVTV-FSM-RUN-INPUT-SUBSTS-EXECUTE-TERM-WHEN-VARIABLE-FREE)
-    (:REWRITE SVEX-ALIST-EVAL-WHEN-SVEXLIST-VARIABLE-FREE-P)
-    (:ruleset svtv-pipeline-thms)
-    (:ruleset svtv-pipeline-thm-constants)
-    pipeline-setup->initst-execute-when-variable-free
-    pipeline-setup->inputs-execute-when-variable-free
-    pipeline-setup->overrides-execute-when-variable-free
-    pipeline-setup->probes-execute-when-variable-free
-    ))
+(acl2::set-ruleset!
+ svtv-decomp-phase1-rules
+ '((:CONGRUENCE SVEX-ENVS-EQUIVALENT-IMPLIES-SVEX-ENVS-EQUIVALENT-APPEND-1)
+   (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-LOOKUP-2)
+   (:CONGRUENCE svex-envs-similar-implies-equal-svex-env-extract-2)
+   (:congruence SVEX-ENVS-EQUIVALENT-IMPLIES-EQUAL-SVEX-ENV-REDUCE-2)
+   (:DEFINITION SYNP)
+   (:EXECUTABLE-COUNTERPART LEN)
+   (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INITST$INLINE)
+   (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INPUTS$INLINE)
+   (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-vals$INLINE)
+   (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-tests$INLINE)
+   (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->PROBES$INLINE)
+   (:EXECUTABLE-COUNTERPART SVEX-ALIST-EVAL)
+   (:EXECUTABLE-COUNTERPART SVEX-ALIST-VALS)
+   (:EXECUTABLE-COUNTERPART SVEXLIST-VARIABLE-FREE-P)
+   (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-OUTVARS)
+   (:EXECUTABLE-COUNTERPART TAKE)
+   (:META svtv-fsm-to-base-fsm-inputsubsts-execute-term-when-variable-free)
+   (:REWRITE SVEX-ALIST-EVAL-WHEN-SVEXLIST-VARIABLE-FREE-P)
+   (:ruleset svtv-pipeline-thms)
+   (:ruleset svtv-pipeline-thm-constants)
+   pipeline-setup->initst-execute-when-variable-free
+   pipeline-setup->inputs-execute-when-variable-free
+   pipeline-setup->override-vals-execute-when-variable-free
+   pipeline-setup->override-tests-execute-when-variable-free
+   pipeline-setup->probes-execute-when-variable-free
+   ))
 
 (acl2::set-ruleset! svtv-decomp-phase2-rules
   '((:CONGRUENCE 4VEC-CONCAT-4VEC-EQUIV-CONGRUENCE-ON-HIGH)
@@ -684,6 +690,7 @@
     (:DEFINITION BASE-FSM-STEP-OUTS)
     (:DEFINITION DOUBLE-REWRITE)
     (:DEFINITION LHATOM-EVAL)
+    (:DEFINITION LHATOM-EVAL-ZERO)
     (:DEFINITION LHRANGE-EVAL)
     (:DEFINITION MAKE-FAST-ALIST)
     (:DEFINITION SVEX-APPLY)
@@ -789,7 +796,7 @@
     (:REWRITE BOUNDP-OF-SVTV-PROBEALIST-EXTRACT)
     (:REWRITE CAR-CONS)
     (:REWRITE CDR-CONS)
-    (:REWRITE EVAL-OF-SVTV-NAME-LHS-MAP-COMPOSE)
+    (:REWRITE EVAL-OF-SVTV-NAME-LHS-MAP-SUBST)
     (:REWRITE IF-SVEX-LOOKUP)
     (:REWRITE LEN-OF-BASE-FSM-EVAL)
     (:REWRITE fty::LEN-OF-CONS)
@@ -811,7 +818,7 @@
     (:REWRITE SVEX-ALIST-EVAL-OF-NIL)
     (:REWRITE SVEX-ALIST-FIX-WHEN-SVEX-ALIST-P)
     (:REWRITE SVEX-ALIST-P-OF-BASE-FSM->NEXTSTATE)
-    (:REWRITE SVEX-ALIST-P-OF-SVTV-NAME-LHS-MAP-COMPOSE)
+    (:REWRITE SVEX-ALIST-P-OF-SVTV-NAME-LHS-MAP-SUBST)
     (:REWRITE SVEX-ALISTLIST-EVAL-OF-CONS)
     (:REWRITE SVEX-ALISTLIST-EVAL-OF-NIL)
     (:REWRITE SVEX-ENV-BOUNDP-OF-SVEX-ALIST-EVAL)
@@ -1243,13 +1250,6 @@
 ;;                                   eval-of-svtv-fsm-subst)))))
 
 
-
-
-
-;; (b* (((pipeline-setup setup) (ryl::evfdiv-sp-run-overrides-pipeline-setup))
-;;      (cycle (ryl::evfdiv-sp-run-cycle))
-;;      (namemap (ryl::evfdiv-sp-run-overrides-namemap)))
-;;   (sv::svtv-fsm-run-input-substs setup.inputs setup.overrides (svtv-fsm cycle namemap)))
 
 
 
