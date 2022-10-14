@@ -288,6 +288,7 @@
 (define svtv-data-chase-phase-fsm ((ins svex-envlist-p)
                                    (initst svex-env-p)
                                    &key
+                                   ((labels symbol-listp) 'nil)
                                    ((probes svtv-probealist-p) 'nil)
                                    ((namemap svtv-name-lhs-map-p) 'nil)
                                    (svtv-data 'svtv-data)
@@ -306,6 +307,7 @@
                   :nextstate (make-fast-alist fsm.nextstate)
                   :inputs (make-fast-alists ins)
                   :initst (make-fast-alist initst)))
+       (svtv-chase-data (set-svtv-chase-data->phaselabels labels svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->probes probes svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->namemap namemap svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->evaldata evaldata svtv-chase-data))
@@ -335,12 +337,43 @@
 
 
 
+(define svtv-labels-cycle-adjust-aux ((labels symbol-listp)
+                                      (cycle-len posp)
+                                      (cycle-outphase natp))
+  :prepwork ((local (defthm symbol-listp-of-repeat
+                      (implies (symbolp x)
+                               (symbol-listp (repeat n x)))
+                      :hints(("Goal" :in-theory (enable repeat)))))
+             (local (defthm symbol-listp-of-append
+                      (implies (and (symbol-listp x) (symbol-listp y))
+                               (symbol-listp (append x y))))))
+  :guard (< cycle-outphase cycle-len)
+  :returns (phase-labels symbol-listp)
+  (if (atom labels)
+      nil
+    (append (repeat (lnfix cycle-outphase) nil)
+            (list (mbe :logic (acl2::symbol-fix (car labels)) :exec (car labels)))
+            (repeat (- (lposfix cycle-len) (+ (lnfix cycle-outphase) 1)) nil)
+            (svtv-labels-cycle-adjust-aux (cdr labels) cycle-len cycle-outphase))))
        
+
+(define svtv-labels-cycle-adjust ((labels symbol-listp)
+                                  (phases svtv-cyclephaselist-p))
+  :guard (or (svtv-cycle-output-phase phases) (not phases))
+  :prepwork ((local (defthm svtv-cycle-output-phase-less-than-len
+                      (implies (svtv-cycle-output-phase phases)
+                               (< (svtv-cycle-output-phase phases) (len phases)))
+                      :hints(("Goal" :in-theory (enable svtv-cycle-output-phase)))
+                      :rule-classes :linear)))
+  :returns (phase-labels symbol-listp)
+  (svtv-labels-cycle-adjust-aux labels (pos-fix (len phases))
+                                (or (svtv-cycle-output-phase phases) 0)))
 
 
 (define svtv-data-chase-cycle-fsm ((ins svex-envlist-p)
                                    (initst svex-env-p)
                                    &key
+                                   ((labels symbol-listp) 'nil)
                                    ((probes svtv-probealist-p) 'nil)
                                    ((namemap svtv-name-lhs-map-p) 'nil)
                                    (svtv-data 'svtv-data)
@@ -350,12 +383,16 @@
               (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
               (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
+                  (not (svtv-data->cycle-phases svtv-data))))
   :returns (mv new-svtv-chase-data new-state)
   (b* ((phases (svtv-data->cycle-phases svtv-data))
        (base-ins (svtv-cycle-run-fsm-inputs ins phases))
        (probes (svtv-probealist-cycle-adjust probes phases)))
-    (svtv-data-chase-phase-fsm base-ins initst :probes probes :namemap namemap)))
+    (svtv-data-chase-phase-fsm base-ins initst
+                               :labels (svtv-labels-cycle-adjust labels phases)
+                               :probes probes :namemap namemap)))
 
 
 ;; (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
@@ -438,6 +475,7 @@
 (define svtv-data-chase-pipeline-aux ((env svex-env-p)
                                       (setup pipeline-setup-p)
                                       &key
+                                      ((labels symbol-listp) 'nil)
                                       (svtv-data 'svtv-data)
                                       (svtv-chase-data 'svtv-chase-data)
                                       (state 'state))
@@ -447,7 +485,9 @@
               (svtv-data->flatten-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst setup))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
+                  (not (svtv-data->cycle-phases svtv-data))))
   :returns (mv new-svtv-chase-data new-state)
   (b* (((mv cycle-ins initst)
         (svtv-pipeline-setup-to-cycle-inputs env
@@ -456,10 +496,11 @@
        ((pipeline-setup setup))
        (namemap (and (svtv-data->namemap-validp svtv-data)
                      (svtv-data->namemap svtv-data))))
-    (svtv-data-chase-cycle-fsm cycle-ins initst :probes setup.probes :namemap namemap)))
+    (svtv-data-chase-cycle-fsm cycle-ins initst :labels labels :probes setup.probes :namemap namemap)))
 
 (define svtv-data-chase-pipeline ((env svex-env-p)
                                   &key
+                                  ((labels symbol-listp) 'nil)
                                   (svtv-data 'svtv-data)
                                   (svtv-chase-data 'svtv-chase-data)
                                   (state 'state))
@@ -469,9 +510,12 @@
               (svtv-data->flatten-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
+                  (not (svtv-data->cycle-phases svtv-data))))
   :returns (mv new-svtv-chase-data new-state)
-  (svtv-data-chase-pipeline-aux env (svtv-data->pipeline-setup svtv-data)))
+  (svtv-data-chase-pipeline-aux env (svtv-data->pipeline-setup svtv-data)
+                                :labels labels))
 
 
 
@@ -646,14 +690,20 @@
                                       (svtv-chase-data 'svtv-chase-data)
                                       (state 'state))
   :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args)))
-              (open-input-channel-p *standard-oi* :object state))
+              (open-input-channel-p *standard-oi* :object state)
+              (or (svtv-cycle-output-phase (defsvtv-args->cycle-phases args))
+                  (not (defsvtv-args->cycle-phases args))))
   (b* (((mv err pipeline-setup svtv-data)
         (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
        ((when err)
         (er hard? 'svtv-chase$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
         (mv svtv-chase-data svtv-data state))
+       (labels (defsvtv-args->labels args))
+       ((unless (symbol-listp labels))
+        (er hard? 'svtv-chase$ "Expected labels to be a symbol list: ~x0~%" labels)
+        (mv svtv-chase-data svtv-data state))
        ((mv svtv-chase-data state)
-        (svtv-data-chase-pipeline-aux env pipeline-setup)))
+        (svtv-data-chase-pipeline-aux env pipeline-setup :labels labels)))
     (mv svtv-chase-data svtv-data state)))
 
 

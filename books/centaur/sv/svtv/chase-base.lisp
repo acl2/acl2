@@ -279,6 +279,7 @@
          ;; (new-phase :type (integer 0 *) :initially 0)
          (evaldata :type (satisfies svtv-evaldata-p) :initially ,(make-svtv-evaldata))
          (smartp :initially t)
+         (phaselabels :type (satisfies symbol-listp))
          (updates :type (satisfies svex-alist-p))
          (delays :type (satisfies svex-alist-p))
          (assigns :type (satisfies svex-alist-p))
@@ -550,6 +551,68 @@
                          (len x)))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
+
+
+(define svtv-labelpair-p (x)
+  (or (integerp x) ;; no label, just offset
+      (symbolp x) ;; no offset, just label
+      (and (consp x)
+           (symbolp (car x))
+           (consp (cdr x))
+           (integerp (cadr x))
+           (not (cddr x)))))
+
+(define svtv-chase-phase-labelpair-aux ((phase natp)
+                                        (phaselabels symbol-listp))
+  ;; Scans through the phase labels and returns either the phase label at
+  ;; phase, the last phase label before phase and the offset of phase from that
+  ;; label, or NIL if no label was found at or before phase.
+  :returns (labelpair svtv-labelpair-p
+                      :hints(("Goal" :in-theory (enable svtv-labelpair-p))))
+  (if (zp phase)
+      (mbe :logic (acl2::symbol-fix (car phaselabels))
+           :exec (car phaselabels))
+    (if (car phaselabels)
+        (or (svtv-chase-phase-labelpair-aux (1- phase) (cdr phaselabels))
+            (list (mbe :logic (acl2::symbol-fix (car phaselabels))
+                       :exec (car phaselabels))
+                  phase))
+      (svtv-chase-phase-labelpair-aux (1- phase) (cdr phaselabels)))))
+
+(define svtv-chase-phase-labelpair ((phase integerp)
+                                    (phaselabels symbol-listp))
+  :returns (labelpair svtv-labelpair-p
+                      :hints ((and stable-under-simplificationp
+                                   '(:in-theory (enable svtv-labelpair-p)))))
+  ;; Returns either:
+  ;;  - the phase label exactly at phase,
+  ;;  - the last phase label before phase and the offset of phase at that label,
+  ;;  - phase itself if no labels before phase.
+  (if (< (lifix phase) 0)
+      (lifix phase)
+    (or (svtv-chase-phase-labelpair-aux phase phaselabels)
+        (lnfix phase))))
+
+(define svtv-chase-labelpair-phase ((labelpair svtv-labelpair-p)
+                                    (phaselabels symbol-listp))
+  :prepwork ((local (in-theory (enable svtv-labelpair-p))))
+  :returns (phase acl2::maybe-integerp :rule-classes :type-prescription)
+  (b* (((when (integerp labelpair))
+        labelpair)
+       (name (if (consp labelpair)
+                 (car labelpair)
+               labelpair))
+       (offset (if (consp labelpair)
+                   (lifix (cadr labelpair))
+                 0))
+       (label-index (acl2::index-of name phaselabels)))
+    (and label-index (+ label-index offset))))
+
+
+    
+(local (in-theory (disable nth update-nth)))
+
+
 (define svtv-chase-normalize-var/phase ((var svar-p)
                                         (phase integerp))
   :returns (mv (new-var svar-p)
@@ -564,8 +627,6 @@
   ;;            (svar-addr-p new-var))
   ;;   :hints(("Goal" :in-theory (enable svar-addr-p))))
   )
-    
-(local (in-theory (disable nth update-nth)))
 
 
 (define svtv-chase-signal ((var svar-p)
@@ -591,7 +652,7 @@
        (evaldata svtv-chase-data.evaldata)
        ((4vec val) (svtv-chase-eval var phase))
        (- (svtv-chase-print-signal nil var rsh mask val modidx)
-          (cw! "(Phase ~x0.)~%" phase))
+          (cw! "(Phase ~x0.)~%" (svtv-chase-phase-labelpair phase svtv-chase-data.phaselabels)))
        ((mv type vars expr)
         (svtv-chase-deps var phase rsh mask)))
     (b* (((when (eq type :error))
@@ -828,7 +889,7 @@
        
 
 (define svtv-chase-goto ((str stringp)
-                         (phase natp)
+                         (labelpair svtv-labelpair-p)
                          &key
                          ((moddb moddb-ok) 'moddb)
                          (aliases 'aliases)
@@ -846,6 +907,13 @@
   (b* (((mv err lhs) (svtv-wire->lhs str (svtv-chase-data->modidx svtv-chase-data) moddb aliases))
        ((when err)
         (cw! "Error interpreting name: ~s0~%" str)
+        svtv-chase-data)
+       (phase (svtv-chase-labelpair-phase labelpair (svtv-chase-data->phaselabels svtv-chase-data)))
+       ((unless phase)
+        (cw! "Error interpreting phase: ~x0 -- label not found~%" labelpair)
+        svtv-chase-data)
+       ((unless (<= 0 phase))
+        (cw! "Error interpreting phase: ~x0 -- normalized to negative value: ~x1~%" labelpair phase)
         svtv-chase-data))
     (svtv-chase-goto-lhs lhs phase str))
   ///
@@ -934,7 +1002,10 @@ What you can enter at the SVTV-CHASE prompt:
 
  P                  prints the current state, including the next signal choices
 
- (G \"path\" phase) Go to the signal named by the given path at the given phase
+ (G \"path\" phase) Go to the signal named by the given path at the given phase.
+                    The phase may be specified as a natural number (offset), 
+                    a phase label from the defsvtv form, or a combination
+                    (label num), meaning the numth phase after label.
 
  (O name)           Go to the signal/phase corresponding to the named pipeline output.
 
@@ -1131,11 +1202,12 @@ What you can enter at the SVTV-CHASE prompt:
               (b* (((unless (and (consp args)
                                  (stringp (car args))
                                  (consp (cdr args))
-                                 (natp (cadr args))
+                                 (svtv-labelpair-p (cadr args))
                                  (not (cddr args))))
                     (cw! "G directive must be of the form (G \"path\" phase) ~
                           where the first argument is a string and the second ~
-                          is a natural number.~%")
+                          is either a natural number offset, a phase label ~
+                          (symbol), or a list (label offset).~%")
                     (mv nil svtv-chase-data state))
                    (svtv-chase-data (svtv-chase-goto (car args) (cadr args))))
                 (mv nil svtv-chase-data state)))
