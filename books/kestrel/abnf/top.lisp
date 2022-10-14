@@ -25,7 +25,7 @@
 (include-book "parsing-primitives-defresult")
 (include-book "parser")
 (include-book "parser-verification")
-(include-book "abstractor")
+(include-book "syntax-abstraction")
 (include-book "parser-and-abstractor-validation")
 (include-book "parser-generators")
 (include-book "examples/top")

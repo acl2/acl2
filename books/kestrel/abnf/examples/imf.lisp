@@ -18,7 +18,7 @@
 (include-book "../core-rules")
 (include-book "../concrete-syntax")
 (include-book "../parser")
-(include-book "../abstractor")
+(include-book "../syntax-abstraction")
 
 ; (depends-on "imf.abnf")
 

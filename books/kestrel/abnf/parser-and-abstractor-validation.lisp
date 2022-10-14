@@ -11,7 +11,7 @@
 (in-package "ABNF")
 
 (include-book "parser")
-(include-book "abstractor")
+(include-book "syntax-abstraction")
 
 ; (depends-on "core-rules.abnf")
 ; (depends-on "concrete-syntax-rules.abnf")
