@@ -362,7 +362,7 @@
 (define extract-vl-types-generate-debug-vector-functions ((debug-fn-name symbolp)
                                                           (debug-vector-fn-name symbolp)
                                                           (pkg-sym symbolp))
-  (b* ((debug-vector-fn-name (if debug-fn-name debug-vector-fn-name 'debug-extracted-vl-type-array))
+  (b* ((debug-vector-fn-name (or debug-vector-fn-name 'debug-extracted-vl-type-array))
        (debug-vector-loop-fn-name
         (intern-in-package-of-symbol
          (str::cat (symbol-name debug-vector-fn-name) "-LOOP")
@@ -373,6 +373,7 @@
                                       (dims vl-coretype-collected-dims-p)
                                       (excludes (and (true-list-listp excludes)
                                                      (true-listp excludes)))
+                                      (depth-limit integerp)
                                       &optional
                                       ((trace stringp) '"")
                                       ((measure-cnt natp) '0) ;; only here to prove the measure.
@@ -380,19 +381,26 @@
          :measure (acl2::nat-list-measure (list (len dims) measure-cnt))
          :no-function t
          (declare (ignorable measure-cnt))
-         (if (atom dims)
-             (b* ((result ,(if debug-fn-name `(,debug-fn-name value excludes) 'value))
-                  ((when (equal trace "")) (list result)))
-               (list (,(if debug-fn-name 'cons 'list) trace result)))
-           (b* (((list* slice-size msb lsb) (car dims))
-                (result (,debug-vector-loop-fn-name lsb
-                                                    slice-size
-                                                    (1+ (- msb lsb))
-                                                    value
-                                                    (cdr dims)
-                                                    excludes
-                                                    trace)))
-             result)))
+         (cond ((atom dims)
+                (b* ((result ,(if debug-fn-name `(,debug-fn-name value excludes (1- depth-limit)) 'value))
+                     ((when (equal trace "")) (list result)))
+                  (list (,(if debug-fn-name 'cons 'list) trace result))))
+               ((< depth-limit 1)
+                (b* ((result `(:value ,value
+                                      :hex ,(str::hexify value)
+                                      :limit-reached))
+                     ((when (equal trace "")) (list result)))
+                  (list (cons trace result))))
+               (t (b* (((list* slice-size msb lsb) (car dims))
+                       (result (,debug-vector-loop-fn-name lsb
+                                                           slice-size
+                                                           (1+ (- msb lsb))
+                                                           value
+                                                           (cdr dims)
+                                                           excludes
+                                                           (1- depth-limit)
+                                                           trace)))
+                    result))))
 
        (define ,debug-vector-loop-fn-name ((lsb-offset natp)
                                            (slice-size natp)
@@ -401,6 +409,7 @@
                                            (dims vl-coretype-collected-dims-p)
                                            (excludes (and (true-list-listp excludes)
                                                           (true-listp excludes)))
+                                           (depth-limit integerp)
                                            (trace stringp))
          :measure (acl2::nat-list-measure (list (len dims) cnt))
          :no-function t
@@ -413,6 +422,7 @@
                                                   value
                                                   dims
                                                   excludes
+                                                  depth-limit
                                                   trace))
                 (user-index (+ cnt lsb-offset))
                 (cur-slice-value
@@ -436,6 +446,7 @@
                 (cur-slice-res (,debug-vector-fn-name cur-slice-value
                                                       dims
                                                       excludes
+                                                      depth-limit
                                                       cur-slice-trace
                                                       cnt)))
              (append rest cur-slice-res)))))))
@@ -443,7 +454,6 @@
 (make-event
  (extract-vl-types-generate-debug-vector-functions nil nil 'pkg-sym))
 
-#!VL
 (defines vl-types->acl2-types
 
   (define vl-structmemberlist->acl2-types (members structp pkg-sym)
@@ -499,10 +509,12 @@
                                  (value (acl2::part-select value :low start :width width))
                                  ((when (member-equal (list ',member.symbol '*) excludes))
                                   `(:value ,value :hex ,(str::hexify value) :fields-excluded))
+                                 #|((when (< depth-limit 1))
+                                 `(:value ,value :hex ,(str::hexify value) :limit-reached))|#
 
                                  (excludes (collect-and-cdr-lists-that-start-with ',member.symbol excludes))
                                  (collected-dims ',collected-dims))
-                              (debug-extracted-vl-type-array value collected-dims excludes)))))))
+                              (debug-extracted-vl-type-array value collected-dims excludes (1- depth-limit))))))))
            (mv ranges-case-statement debug-clause events size)))
 
         (::VL-USERTYPE
@@ -512,6 +524,7 @@
               ((mv dims2 size) (vl-coretype-collect-dims-aux x.pdims size))
               ((mv dims1 size) (vl-coretype-collect-dims-aux x.udims size))
               (collected-dims (append dims1 dims2))
+              (x.symbol (intern-in-package-of-symbol x.name pkg-sym))
               (ranges-fn-name (intern-in-package-of-symbol (str::cat x.name "-RANGES") pkg-sym))
               (debug-fn-name (intern-in-package-of-symbol (str::cat x.name "-DEBUG-FN") pkg-sym))
               (debug-vector-fn-name (intern-in-package-of-symbol (str::cat x.name "-VECTOR-DEBUG-FN") pkg-sym))
@@ -541,19 +554,22 @@
               (debug-clause
                `(and (not (member-equal (list ',member.symbol) excludes))
                      (list
-                      (cons ,member.name
-                            (b* ((start ,(if offset offset 0))
-                                 (width ,size)
-                                 (value (acl2::part-select value :low start :width width))
-                                 ((when (member-equal (list ',member.symbol '*) excludes))
-                                  `(:value ,value :hex ,(str::hexify value) :fields-excluded))
-                                 (excludes (collect-and-cdr-lists-that-start-with ',member.symbol
-                                                                                  excludes))
-                                 ,@(and collected-dims
-                                        `((collected-dims ',collected-dims))))
-                              ,(if collected-dims
-                                   `(,debug-vector-fn-name value collected-dims excludes)
-                                 `(,debug-fn-name value excludes))))))))
+                      (list* ,member.name
+                             '(:type ,@(and collected-dims '(:vector)) ,x.symbol)
+                             (b* ((start ,(if offset offset 0))
+                                  (width ,size)
+                                  (value (acl2::part-select value :low start :width width))
+                                  ((when (member-equal (list ',member.symbol '*) excludes))
+                                   `(:value ,value :hex ,(str::hexify value) :fields-excluded))
+                                  #|((when (< depth-limit 1))
+                                  `(:value ,value :hex ,(str::hexify value) :limit-reached))|#
+                                  (excludes (collect-and-cdr-lists-that-start-with ',member.symbol
+                                                                                   excludes))
+                                  ,@(and collected-dims
+                                         `((collected-dims ',collected-dims))))
+                               ,(if collected-dims
+                                    `(,debug-vector-fn-name value collected-dims excludes (1- depth-limit))
+                                  `(,debug-fn-name value excludes (1- depth-limit)))))))))
            (mv ranges-case-statement debug-clause events size)))
         (otherwise
          (progn$ (raise "Unexpected vl-structmember type: ~p0 ~%" member)
@@ -593,26 +609,26 @@
 
                  (define ,debug-fn-name ((value integerp)
                                          (excludes (and (true-list-listp excludes)
-                                                        (true-listp excludes))))
-                   (declare (ignorable excludes))
+                                                        (true-listp excludes)))
+                                         (depth-limit integerp))
+                   (declare (ignorable excludes depth-limit))
                    (b* ((value (acl2::loghead ,size value)))
                      ,(cond ((atom collected-dims)
                              'value)
                             ((atom (cdr collected-dims))
-                             `(list :value
-                                    value
+                             `(list :value value
                                     :hex (str::hexify value)
                                     :bin (str::binify value)))
                             (t
-                             `(debug-extracted-vl-type-array value ',collected-dims excludes)))))
+                             `(debug-extracted-vl-type-array value ',collected-dims excludes depth-limit)))))
 
                  ,(extract-vl-types-generate-debug-vector-functions debug-fn-name
                                                                     debug-vector-fn-name
                                                                     pkg-sym)
 
-                 (defmacro ,debug-macro-name (value &key exclude)
+                 (defmacro ,debug-macro-name (value &key exclude (depth-limit '1000))
                    (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
-                     (list ',debug-fn-name value (list 'quote excludes))))
+                     (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
 
                  #|(defmacro ,accessor-macro-name (value &optional (args '""))
                  (list ',accessor-fn-name value
@@ -647,19 +663,25 @@
 
                  (define ,debug-fn-name ((value integerp)
                                          (excludes (and (true-list-listp excludes)
-                                                        (true-listp excludes))))
+                                                        (true-listp excludes)))
+                                         (depth-limit integerp))
                    (declare (ignorable excludes))
-                   (flatten
-                    (list ;; :value (acl2::loghead ,size value)
-                     ,@member-debug-clauses)))
+                   (cond ((< depth-limit 1)
+                          (list :value value
+                                :hex (str::hexify value)
+                                :limit-reached))
+                         (t
+                          (flatten
+                           (list ;; :value (acl2::loghead ,size value)
+                            ,@member-debug-clauses)))))
 
                  ,(extract-vl-types-generate-debug-vector-functions debug-fn-name
                                                                     debug-vector-fn-name
                                                                     pkg-sym)
 
-                 (defmacro ,debug-macro-name (value &key exclude)
+                 (defmacro ,debug-macro-name (value &key exclude (depth-limit '1000))
                    (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
-                     (list ',debug-fn-name value (list 'quote excludes))))
+                     (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
 
                  )))
            (mv (append member-events this-events) size)))
@@ -693,18 +715,24 @@
 
                  (define ,debug-fn-name ((value integerp)
                                          (excludes (and (true-list-listp excludes)
-                                                        (true-listp excludes))))
+                                                        (true-listp excludes)))
+                                         (depth-limit integerp))
                    (declare (ignorable excludes))
-                   (flatten ;; :value (acl2::loghead ,size value)
-                    (list ,@member-debug-clauses)))
+                   (cond ((< depth-limit 1)
+                          (list :value value
+                                :hex (str::hexify value)
+                                :limit-reached))
+                         (t
+                          (flatten ;; :value (acl2::loghead ,size value)
+                           (list ,@member-debug-clauses)))))
 
                  ,(extract-vl-types-generate-debug-vector-functions debug-fn-name
                                                                     debug-vector-fn-name
                                                                     pkg-sym)
 
-                 (defmacro ,debug-macro-name (value &key exclude)
+                 (defmacro ,debug-macro-name (value &key exclude (depth-limit '1000))
                    (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
-                     (list ',debug-fn-name value (list 'quote excludes))))
+                     (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
                  )))
            (mv (append member-events this-events) size)))
         (:vl-enum
@@ -746,8 +774,9 @@
                           ))))
 
                  (define ,debug-fn-name ((value integerp)
-                                         (excludes))
-                   (declare (ignorable excludes))
+                                         (excludes)
+                                         (depth-limit integerp))
+                   (declare (ignorable excludes depth-limit))
                    (list :value value
                          :string
                          (,accessor-macro-name value)))
@@ -756,8 +785,8 @@
                                                                     debug-vector-fn-name
                                                                     pkg-sym)
 
-                 (defmacro ,debug-macro-name (value)
-                   (list ',debug-fn-name value nil))
+                 (defmacro ,debug-macro-name (value &key (depth-limit '1000))
+                   (list ',debug-fn-name value nil depth-limit))
 
                  #|(defmacro ,changer-macro-name ((old-value)
                  (new-value))
@@ -848,7 +877,7 @@ nil
                        \"my_data_struct\" \"my_data_struct2\")
 })
 
-<p> The above call will generate an event that submits ACL2 accessor functions for \"my_data_struct\", \"my_data_struct2\", and their children if there are any. </p>
+<p> The above call will generate an event that submits ACL2 accessor, modifier, and debug functions for \"my_data_struct\", \"my_data_struct2\", and their children if there are any. </p>
 
 <ul>
 <li> \"design\" should be the \"good\" output from @(see vl::vl-design->sv-design) stage.</li>
@@ -858,16 +887,51 @@ nil
 
 </ul>
 
-<p> Using the generated functions, users can access a part of a given data structure. For example, if we have a large struct with a lot of fields, say named \"t_main\", then the program will generate a macro with the same name: |t_main| (since Verilog is case-sensitive, or function/macro names for the accessors are also made case-sensitive). Say that we have a variable called \"main\" in our conjectures representing a signal of type \"t_main\" (assuming we use (@see acl2::defsvtv) semantics). Then, we can access individual fields of this signal using the generated |t_main| macro. For example: (|t_main| main \"data[0].dword[3]\"), (|t_main| main \"uop.size\") etc.</p>
+<h3>Accessors</h3>
+
+<p> Using the generated functions, users can access a part of a given data structure. For example, if we have a large struct with a lot of fields, say named \"t_main\", then the program will generate a macro with the same name: |t_main| (reminder: Verilog is case-sensitive and so are our symbol/function names). Say that we have a variable called \"main\" in our conjectures representing a signal of type \"t_main\" (assuming we use (@see acl2::defsvtv) semantics). Then, we can access individual fields of this signal using the generated |t_main| macro. For example:</p>
+@({
+(|t_main| main \"data[0].dword[3]\")
+(|t_main| main \"uop.size\")
+})
 
 <p> In case of enumarated types, their generator functions can take a string or an integer, and return corresponding integer or string values, respectively.
 </p>
 
-<p> vl::extract-vl-types will also generate \"change\" macros for every type. For example: (change-|t_main| main \"data[0].dword[3]\" 12) will set the \"data[0].dword[3]\" of main to 12. More arguments can be passed to change other entries in the same call: (change-|t_main| main \"data[0].dword[3]\" 12 \"uop.size\" 0).
-</p>
 
-<p> The program will also created \"debug\" macros for every type. For example: (|t_main|-debug main) will return a large term that has all the entries for a given concrete value \"main\". Debug functions can also take a list of fields to exclude from printing. For example: (|t_main|-debug main :exclude (\"uop.size\" \"data[0]\" \"data[1].dword\" \"data[2].*\")). When there is a \".*\" at the end of a skipped argument (e.g., \"data[2].*\"), then the value of that argument (e.g., \"data[2]\") will be included but not its fields. </p>
+<h3> Modifiers </h3>
 
+<p> vl::extract-vl-types will also generate \"change\" macros for every type. For example:</p>
+@({(change-|t_main| main \"data[0].dword[3]\" 12)})
+<p> will set the \"data[0].dword[3]\" field of main to 12.</p>
+
+<p> More arguments can be passed to change other entries in the same call:</p>
+@({(change-|t_main| main \"data[0].dword[3]\" 12 \"uop.size\" 0)})
+
+<h3> Debug Functions </h3>
+
+<p> The program will also created \"debug\" macros/functions for every type. For example: </p>
+@({(|t_main|-debug main)})
+<p> will return a large term that has all the entries for a given concrete value \"main\". Arguments to these debug functions are:</p>
+<ul>
+<li> A list of fields to exclude from printing. For example:
+@({
+(|t_main|-debug main :exclude (\"uop.size\"
+                               \"data[0]\"
+                               \"data[1].dword\"
+                               \"data[2].*\"))
+})
+When there is a \".*\" at the end of a skipped argument (e.g., \"data[2].*\"), then the value of that argument (e.g., \"data[2]\") will be included but not its fields. </li>
+
+<li> A depth limit (natural number). When set to a large number, the debug functions will dive into the children and call the debug functions of all the subfields. Users can set this to a small natural number to limit the depth of the function calls.
+@({
+(|t_main|-debug main :exclude (\"uop.size\"
+                               \"data[2].*\")
+                     :depth-limit 2)
+})
+</li>
+
+</ul>
 "
 
   )
