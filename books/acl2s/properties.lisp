@@ -368,12 +368,12 @@ I don't need this?
        (vars? (assoc :vars kwd-alist))
        (- (cw? debug-all? "~|**vars? is: ~x0~%" vars?))
        ((when (and (! vars?)
-                   (! (property-varsp (car prop-rest)))))
-        (ecw "~%**ERROR: The variable/type list: ~x0 is not well-formed."
+                   (! (proper-argsp (car prop-rest)))))
+        (ecw "~%**ERROR: The argument list: ~x0 is not well-formed."
              (car prop-rest)
              nil))
        (ivars? (and (! vars?)
-                    (cons :vars (car prop-rest))))
+                    (cons :vars (process-typed-args (car prop-rest)))))
        (vars? (or vars? ivars?))
        (- (cw? debug-all? "~|**vars? is: ~x0~%" vars?))
        (prop-rest (if ivars? (cdr prop-rest) prop-rest))
