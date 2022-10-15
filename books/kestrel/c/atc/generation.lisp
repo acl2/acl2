@@ -262,25 +262,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-bool-gin
+(fty::defprod bexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-bool)."
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol))
-  :pred expr-bool-ginp)
+  :pred bexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-bool-gout
+(fty::defprod bexpr-gout
   :short "Outputs for @(tsee atc-gen-expr-bool)."
   ((expr expr))
-  :pred expr-bool-goutp)
+  :pred bexpr-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pexpr-gin-to-expr-bool-gin ((gin pexpr-ginp))
-  :returns (gin1 expr-bool-ginp)
-  :short "Turn an @(tsee pexpr-gin) into an @(tsee expr-bool-gin)."
+(define pexpr-gin-to-bexpr-gin ((gin pexpr-ginp))
+  :returns (gin1 bexpr-ginp)
+  :short "Turn an @(tsee pexpr-gin) into an @(tsee bexpr-gin)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -289,15 +289,15 @@
      This is used for
      calls of @(tsee atc-gen-expr-bool) from @(tsee atc-gen-expr-pure)."))
   (b* (((pexpr-gin gin) gin))
-    (make-expr-bool-gin :inscope gin.inscope
-                        :prec-tags gin.prec-tags
-                        :fn gin.fn)))
+    (make-bexpr-gin :inscope gin.inscope
+                    :prec-tags gin.prec-tags
+                    :fn gin.fn)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define expr-bool-gin-to-pexpr-gin ((gin expr-bool-ginp))
+(define bexpr-gin-to-pexpr-gin ((gin bexpr-ginp))
   :returns (gin1 pexpr-ginp)
-  :short "Turn an @(tsee expr-bool-gin) into an @(tsee pexpr-gin)."
+  :short "Turn an @(tsee bexpr-gin) into an @(tsee pexpr-gin)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -305,7 +305,7 @@
      so we just copy the components.
      This is used for
      calls of @(tsee atc-gen-expr-pure) from @(tsee atc-gen-expr-bool)."))
-  (b* (((expr-bool-gin gin) gin))
+  (b* (((bexpr-gin gin) gin))
     (make-pexpr-gin :inscope gin.inscope
                     :prec-tags gin.prec-tags
                     :fn gin.fn)))
@@ -575,18 +575,18 @@
                                (type-pointer (type-struct tag)))))))
          ((mv okp arg) (atc-check-sint-from-boolean term))
          ((when okp)
-          (b* (((er (expr-bool-gout arg) :iferr (irr))
+          (b* (((er (bexpr-gout arg) :iferr (irr))
                 (atc-gen-expr-bool arg
-                                   (pexpr-gin-to-expr-bool-gin gin)
+                                   (pexpr-gin-to-bexpr-gin gin)
                                    ctx
                                    state)))
             (acl2::value (make-pexpr-gout :expr arg.expr
-                                              :type (type-sint)))))
+                                          :type (type-sint)))))
          ((mv okp test then else) (atc-check-condexpr term))
          ((when okp)
-          (b* (((er (expr-bool-gout test) :iferr (irr))
+          (b* (((er (bexpr-gout test) :iferr (irr))
                 (atc-gen-expr-bool test
-                                   (pexpr-gin-to-expr-bool-gin gin)
+                                   (pexpr-gin-to-bexpr-gin gin)
                                    ctx
                                    state))
                ((er (pexpr-gout then))
@@ -616,10 +616,10 @@
     :measure (pseudo-term-count term))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (gin expr-bool-ginp)
+                             (gin bexpr-ginp)
                              (ctx ctxp)
                              state)
-    :returns (mv erp (val expr-bool-goutp) state)
+    :returns (mv erp (val bexpr-goutp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be an expression term returning a boolean."
@@ -650,32 +650,32 @@
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
-    (b* (((acl2::fun (irr)) (make-expr-bool-gout :expr (irr-expr)))
-         (fn (expr-bool-gin->fn gin))
+    (b* (((acl2::fun (irr)) (make-bexpr-gout :expr (irr-expr)))
+         (fn (bexpr-gin->fn gin))
          ((mv okp arg) (fty-check-not-call term))
          ((when okp)
-          (b* (((er (expr-bool-gout arg))
+          (b* (((er (bexpr-gout arg))
                 (atc-gen-expr-bool arg gin ctx state)))
-            (acl2::value (make-expr-bool-gout
+            (acl2::value (make-bexpr-gout
                           :expr (make-expr-unary :op (unop-lognot)
                                                  :arg arg.expr)))))
          ((mv okp arg1 arg2) (fty-check-and-call term))
          ((when okp)
-          (b* (((er (expr-bool-gout arg1))
+          (b* (((er (bexpr-gout arg1))
                 (atc-gen-expr-bool arg1 gin ctx state))
-               ((er (expr-bool-gout arg2))
+               ((er (bexpr-gout arg2))
                 (atc-gen-expr-bool arg2 gin ctx state)))
-            (acl2::value (make-expr-bool-gout
+            (acl2::value (make-bexpr-gout
                           :expr (make-expr-binary :op (binop-logand)
                                                   :arg1 arg1.expr
                                                   :arg2 arg2.expr)))))
          ((mv okp arg1 arg2) (fty-check-or-call term))
          ((when okp)
-          (b* (((er (expr-bool-gout arg1))
+          (b* (((er (bexpr-gout arg1))
                 (atc-gen-expr-bool arg1 gin ctx state))
-               ((er (expr-bool-gout arg2))
+               ((er (bexpr-gout arg2))
                 (atc-gen-expr-bool arg2 gin ctx state)))
-            (acl2::value (make-expr-bool-gout
+            (acl2::value (make-bexpr-gout
                           :expr (make-expr-binary :op (binop-logor)
                                                   :arg1 arg1.expr
                                                   :arg2 arg2.expr)))))
@@ -683,7 +683,7 @@
          ((when okp)
           (b* (((er (pexpr-gout arg) :iferr (irr))
                 (atc-gen-expr-pure arg
-                                   (expr-bool-gin-to-pexpr-gin gin)
+                                   (bexpr-gin-to-pexpr-gin gin)
                                    ctx
                                    state))
                ((unless (equal arg.type in-type))
@@ -694,7 +694,7 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           in-type arg arg.type)))
-            (acl2::value (make-expr-bool-gout :expr arg.expr)))))
+            (acl2::value (make-bexpr-gout :expr arg.expr)))))
       (er-soft+ ctx t (irr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
@@ -1532,11 +1532,11 @@
              ((when mbtp) (atc-gen-stmt then gin ctx state))
              ((mv mbt$p &) (check-mbt$-call test))
              ((when mbt$p) (atc-gen-stmt then gin ctx state))
-             ((er (expr-bool-gout test) :iferr irr)
+             ((er (bexpr-gout test) :iferr irr)
               (atc-gen-expr-bool test
-                                 (make-expr-bool-gin :inscope gin.inscope
-                                                     :prec-tags gin.prec-tags
-                                                     :fn gin.fn)
+                                 (make-bexpr-gin :inscope gin.inscope
+                                                 :prec-tags gin.prec-tags
+                                                 :fn gin.fn)
                                  ctx
                                  state))
              ((er (stmt-gout then))
@@ -2707,9 +2707,9 @@
                            proofs
                            ctx
                            state))
-       ((er (expr-bool-gout test0) :iferr (irr))
+       ((er (bexpr-gout test0) :iferr (irr))
         (atc-gen-expr-bool test
-                           (make-expr-bool-gin
+                           (make-bexpr-gin
                             :inscope inscope
                             :prec-tags prec-tags
                             :fn fn)
