@@ -2502,38 +2502,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod lstmt-gin
+  :short "Inputs for @(tsee atc-gen-loop-stmt)."
+  ((inscope atc-symbol-type-alist-listp)
+   (fn symbolp)
+   (measure-for-fn symbolp)
+   (measure-formals symbol-listp)
+   (prec-fns atc-symbol-fninfo-alistp)
+   (prec-tags atc-string-taginfo-alistp)
+   (prec-objs atc-string-objinfo-alistp)
+   (proofs booleanp))
+  :pred lstmt-ginp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod lstmt-gout
+  :short "Outputs for @(tsee atc-gen-loop-stmt)."
+  ((stmt stmtp)
+   (test-term pseudo-termp)
+   (body-term pseudo-termp)
+   (affect symbol-listp)
+   (limit-body pseudo-termp)
+   (limit-all pseudo-termp))
+  :pred lstmt-goutp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-stmt ((term pseudo-termp)
-                           (inscope atc-symbol-type-alist-listp)
-                           (fn symbolp)
-                           (measure-for-fn symbolp)
-                           (measure-formals symbol-listp)
-                           (prec-fns atc-symbol-fninfo-alistp)
-                           (prec-tags atc-string-taginfo-alistp)
-                           (prec-objs atc-string-objinfo-alistp)
-                           (proofs booleanp)
+                           (gin lstmt-ginp)
                            (ctx ctxp)
                            state)
-  :returns (mv erp
-               (val (tuple (stmt stmtp)
-                           (test-term pseudo-termp)
-                           (body-term pseudo-termp)
-                           (affect symbol-listp)
-                           (limit-body pseudo-termp)
-                           (limit-all pseudo-termp)
-                           val)
-                    ;; for speed:
-                    :hints (("Goal" :induct (atc-gen-loop-stmt term
-                                                               inscope
-                                                               fn
-                                                               measure-for-fn
-                                                               measure-formals
-                                                               prec-fns
-                                                               prec-tags
-                                                               prec-objs
-                                                               proofs
-                                                               ctx
-                                                               state))))
-               state)
+  :returns (mv erp (val lstmt-goutp) state)
   :short "Generate a C loop statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -2590,49 +2589,28 @@
      which is the limit for the whole loop,
      we also return @('limit-body'), which is just for the loop body;
      this is in support for more modular proofs. "))
-  (b* (((acl2::fun (irr)) (list (irr-stmt) nil nil nil nil nil))
+  (b* (((acl2::fun (irr)) (ec-call (lstmt-gout-fix :irrelevant)))
+       ((lstmt-gin gin) gin)
        (wrld (w state))
        ((mv okp test then else) (fty-check-if-call term))
        ((unless okp)
         (er-soft+ ctx t (irr)
                   "When generating C loop code for the recursive function ~x0, ~
                    a term ~x1 that is not an IF has been encountered."
-                  fn term))
+                  gin.fn term))
        ((mv mbtp &) (check-mbt-call test))
-       ((when mbtp)
-        (atc-gen-loop-stmt then
-                           inscope
-                           fn
-                           measure-for-fn
-                           measure-formals
-                           prec-fns
-                           prec-tags
-                           prec-objs
-                           proofs
-                           ctx
-                           state))
+       ((when mbtp) (atc-gen-loop-stmt then gin ctx state))
        ((mv mbt$p &) (check-mbt$-call test))
-       ((when mbt$p)
-        (atc-gen-loop-stmt then
-                           inscope
-                           fn
-                           measure-for-fn
-                           measure-formals
-                           prec-fns
-                           prec-tags
-                           prec-objs
-                           proofs
-                           ctx
-                           state))
+       ((when mbt$p) (atc-gen-loop-stmt then gin ctx state))
        ((er (bexpr-gout test0) :iferr (irr))
         (atc-gen-expr-bool test
                            (make-bexpr-gin
-                            :inscope inscope
-                            :prec-tags prec-tags
-                            :fn fn)
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn)
                            ctx
                            state))
-       (formals (formals+ fn wrld))
+       (formals (formals+ gin.fn wrld))
        ((mv okp affect)
         (b* (((when (member-eq else formals)) (mv t (list else)))
              ((mv okp terms) (fty-check-list-call else))
@@ -2645,55 +2623,42 @@
                   "The non-recursive branch ~x0 of the function ~x1 ~
                    does not have the required form. ~
                    See the user documentation."
-                  else fn))
+                  else gin.fn))
        ((er (stmt-gout body) :iferr (irr))
         (atc-gen-stmt then
                       (make-stmt-gin
                        :var-term-alist nil
-                       :inscope (cons nil inscope)
+                       :inscope (cons nil gin.inscope)
                        :loop-flag t
                        :affect affect
-                       :fn fn
-                       :prec-fns prec-fns
-                       :prec-tags prec-tags
-                       :prec-objs prec-objs
-                       :proofs proofs)
+                       :fn gin.fn
+                       :prec-fns gin.prec-fns
+                       :prec-tags gin.prec-tags
+                       :prec-objs gin.prec-objs
+                       :proofs gin.proofs)
                       ctx
                       state))
        ((unless (type-case body.type :void))
         (raise "Internal error: ~
                 the loop body ~x0 of ~x1 ~ returns type ~x2."
-               then fn body.type)
+               then gin.fn body.type)
         (acl2::value (irr)))
        (body-stmt (make-stmt-compound :items body.items))
        (stmt (make-stmt-while :test test0.expr :body body-stmt))
-       ((when (eq measure-for-fn 'quote))
+       ((when (eq gin.measure-for-fn 'quote))
         (raise "Internal error: the measure function is QUOTE.")
         (acl2::value (irr)))
-       (measure-call (pseudo-term-fncall measure-for-fn measure-formals))
+       (measure-call (pseudo-term-fncall gin.measure-for-fn
+                                         gin.measure-formals))
        (limit `(binary-+ '1 (binary-+ ,body.limit ,measure-call))))
-    (acl2::value (list stmt test then affect body.limit limit)))
+    (acl2::value (make-lstmt-gout :stmt stmt
+                                  :test-term test
+                                  :body-term then
+                                  :affect affect
+                                  :limit-body body.limit
+                                  :limit-all limit)))
   :measure (pseudo-term-count term)
-  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
-  ///
-
-  (more-returns
-   (val (and (consp val)
-             (true-listp val))
-        :name cons-true-listp-of-atc-gen-loop-stmt-val
-        :rule-classes :type-prescription
-        ;;  for speed:
-        :hints (("Goal" :induct (atc-gen-loop-stmt term
-                                                   inscope
-                                                   fn
-                                                   measure-for-fn
-                                                   measure-formals
-                                                   prec-fns
-                                                   prec-tags
-                                                   prec-objs
-                                                   proofs
-                                                   ctx
-                                                   state))))))
+  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5181,21 +5146,16 @@
           (mv '(_) nil nil names-to-avoid)))
        ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
        (body (ubody+ fn wrld))
-       ((er (list loop-stmt
-                  test-term
-                  body-term
-                  loop-affect
-                  body-limit
-                  loop-limit))
+       ((er (lstmt-gout loop))
         (atc-gen-loop-stmt body
-                           (list typed-formals)
-                           fn
-                           measure-of-fn
-                           measure-formals
-                           prec-fns
-                           prec-tags
-                           prec-objs
-                           proofs
+                           (make-lstmt-gin :inscope (list typed-formals)
+                                           :fn fn
+                                           :measure-for-fn measure-of-fn
+                                           :measure-formals measure-formals
+                                           :prec-fns prec-fns
+                                           :prec-tags prec-tags
+                                           :prec-objs prec-objs
+                                           :proofs proofs)
                            ctx
                            state))
        ((er (list local-events
@@ -5210,21 +5170,21 @@
                       names-to-avoid)
                   (atc-gen-fn-result-thm fn
                                          nil
-                                         loop-affect
+                                         loop.affect
                                          typed-formals
                                          prec-fns
                                          prec-tags
                                          prec-objs
                                          names-to-avoid
                                          wrld))
-                 (loop-test (stmt-while->test loop-stmt))
-                 (loop-body (stmt-while->body loop-stmt))
+                 (loop-test (stmt-while->test loop.stmt))
+                 (loop-body (stmt-while->body loop.stmt))
                  ((mv exec-stmt-while-events
                       exec-stmt-while-for-fn
                       exec-stmt-while-for-fn-thm
                       names-to-avoid)
                   (atc-gen-exec-stmt-while-for-loop fn
-                                                    loop-stmt
+                                                    loop.stmt
                                                     prog-const
                                                     names-to-avoid
                                                     wrld))
@@ -5253,7 +5213,7 @@
                   (atc-gen-loop-test-correct-thm fn
                                                  typed-formals
                                                  loop-test
-                                                 test-term
+                                                 loop.test-term
                                                  fn-thms
                                                  prec-tags
                                                  prec-objs
@@ -5264,16 +5224,16 @@
                       names-to-avoid)
                   (atc-gen-loop-body-correct-thm fn
                                                  typed-formals
-                                                 loop-affect
+                                                 loop.affect
                                                  loop-body
-                                                 test-term
-                                                 body-term
+                                                 loop.test-term
+                                                 loop.body-term
                                                  prec-fns
                                                  prec-tags
                                                  prec-objs
                                                  prog-const
                                                  fn-thms
-                                                 body-limit
+                                                 loop.limit-body
                                                  names-to-avoid
                                                  wrld))
                  ((mv correct-local-events
@@ -5283,7 +5243,7 @@
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
                                             typed-formals
-                                            loop-affect
+                                            loop.affect
                                             loop-test
                                             loop-body
                                             prec-fns
@@ -5298,7 +5258,7 @@
                                             natp-of-measure-of-fn-thm
                                             correct-test-thm
                                             correct-body-thm
-                                            loop-limit
+                                            loop.limit-all
                                             names-to-avoid
                                             wrld))
                  (progress-start?
@@ -5328,13 +5288,13 @@
           (acl2::value (list nil nil nil nil nil names-to-avoid))))
        (info (make-atc-fn-info :out-type nil
                                :in-types (strip-cdrs typed-formals)
-                               :loop? loop-stmt
-                               :affect loop-affect
+                               :loop? loop.stmt
+                               :affect loop.affect
                                :result-thm fn-result-thm
                                :correct-thm fn-correct-thm
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
-                               :limit loop-limit)))
+                               :limit loop.limit-all)))
     (acl2::value (list local-events
                        exported-events
                        (acons fn info prec-fns)
