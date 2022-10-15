@@ -1720,7 +1720,9 @@
                    (item (block-item-stmt stmt))
                    ((er (stmt-gout body))
                     (atc-gen-stmt body
-                                  gin
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body)
                                   ctx
                                   state))
                    (type body.type)
@@ -2200,7 +2202,12 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body gin ctx state))
+                    (atc-gen-stmt body
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body)
+                                  ctx
+                                  state))
                    (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
