@@ -2489,69 +2489,16 @@
 
   :measure (pseudo-term-count term)
 
-  :prepwork ((local
-              (in-theory
-               ;; for speed:
-               (disable
-                pseudo-termp ; treat terms abstractly
-                w ; treat worlds abstractly
-                ;; useless according to accumulated persistence:
-                acl2::pseudo-term-listp-when-symbol-listp
-                acl2::pseudo-term-listp-of-cdr-when-pseudo-term-listp
-                assoc-equal
-                default-car
-                default-cdr
-                acl2::symbol-listp-when-not-consp
-                nth
-                acl2::consp-when-member-equal-of-symbol-pseudoterm-alistp
-                acl2::consp-when-member-equal-of-symbol-symbol-alistp
-                acl2::consp-when-member-equal-of-keyword-truelist-alistp
-                acl2::consp-when-member-equal-of-keyword-symbol-alistp
-                acl2::consp-when-member-equal-of-symbol-symbol-alistp
-                acl2::consp-when-member-equal-of-keyword-truelist-alistp
-                acl2::consp-when-member-equal-of-keyword-symbol-alistp
-                member-equal
-                acl2::member-when-atom
-                acl2::pseudo-term-listp-when-not-consp
-                acl2::symbolp-of-car-when-member-equal-of-symbol-pseudoterm-alistp
-                type-optionp-of-car-when-type-option-listp
-                typep-of-car-when-type-listp
-                acl2::symbolp-of-car-when-member-equal-of-symbol-symbol-alistp
-                type-listp-when-not-consp
-                type-option-listp-of-cdr-when-type-option-listp
-                acl2::pseudo-term-listp-cdr-when-pseudo-term-listp
-                type-listp-of-cdr-when-type-listp
-                block-item-listp-when-not-consp
-                acl2::pseudo-term-listp-when-subsetp-equal
-                acl2::pseudo-termp-car-when-pseudo-term-listp
-                acl2::append-when-not-consp
-                default-<-1
-                acl2::pseudo-termp-when-member-equal-of-pseudo-term-listp
-                acl2::pseudo-term-list-fix-under-pseudo-term-list-equiv
-                acl2::pseudo-fnsym-fix-under-pseudo-fnsym-equiv
-                type-optionp-when-in-type-option-setp-binds-free-x
-                default-<-2
-                default-+-1
-                typep-when-in-type-setp-binds-free-x
-                default-symbol-name
-                acl2::subsetp-when-atom-right
-                acl2::subsetp-when-atom-left))))
-
   :verify-guards nil ; done below
 
   ///
-
-  (defrulel true-listp-when-keyword-listp
-    (implies (keyword-listp x)
-             (true-listp x)))
 
   (defrulel pseudo-termp-when-symbolp
     (implies (symbolp x)
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (verify-guards atc-gen-stmt
-    :hints (("Goal" :in-theory (disable atc-gen-stmt)))))
+  (verify-guards atc-gen-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
