@@ -140,7 +140,7 @@
      to make the code more readable and more easily extensible,
      at a performance cost that should be unimportant.
      These product fixtypes have names @('...-gin') and @('...-gout'),
-     where @('...') is part of the corresponding function name,
+     where @('...') is derived from the corresponding function name,
      and where the @('g') in @('gin') and @('gout')
      conveys the reference to code and event generation functions."))
   :order-subtopics t
