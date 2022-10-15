@@ -366,17 +366,14 @@
        but the resulting C code may not compile.
        The additional type checking we do here should ensure that
        all the code satisfies the C static semantics."))
-    (b* (((acl2::fun (irr))
-          (make-pexpr-gout :expr (irr-expr) :type (irr-type)))
-         (inscope (pexpr-gin->inscope gin))
-         (prec-tags (pexpr-gin->prec-tags gin))
-         (fn (pexpr-gin->fn gin))
+    (b* (((acl2::fun (irr)) (ec-call (pexpr-gout-fix :irrelevant)))
+         ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
-               (type (atc-get-var var inscope))
+               (type (atc-get-var var gin.inscope))
                ((when (not type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
-                        has no associated type." var fn)
+                        has no associated type." var gin.fn)
                 (acl2::value (irr))))
             (acl2::value
              (make-pexpr-gout
@@ -388,9 +385,10 @@
           (acl2::value
            (make-pexpr-gout :expr (expr-const (const-int const))
                             :type out-type)))
-         ((mv okp op arg in-type out-type) (atc-check-unop term))
+         ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (pexpr-gout arg)) (atc-gen-expr-pure arg gin ctx state))
+          (b* (((er (pexpr-gout arg))
+                (atc-gen-expr-pure arg-term gin ctx state))
                ((unless (equal arg.type in-type))
                 (er-soft+ ctx t (irr)
                           "The unary operator ~x0 is applied ~
@@ -398,18 +396,18 @@
                            but a ~x3 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          op arg arg.type in-type)))
+                          op arg-term arg.type in-type)))
             (acl2::value (make-pexpr-gout
                           :expr (make-expr-unary :op op
                                                  :arg arg.expr)
                           :type out-type))))
-         ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
+         ((mv okp op arg1-term arg2-term in-type1 in-type2 out-type)
           (atc-check-binop term))
          ((when okp)
           (b* (((er (pexpr-gout arg1))
-                (atc-gen-expr-pure arg1 gin ctx state))
+                (atc-gen-expr-pure arg1-term gin ctx state))
                ((er (pexpr-gout arg2))
-                (atc-gen-expr-pure arg2 gin ctx state))
+                (atc-gen-expr-pure arg2-term gin ctx state))
                ((unless (and (equal arg1.type in-type1)
                              (equal arg2.type in-type2)))
                 (er-soft+ ctx t (irr)
@@ -419,15 +417,17 @@
                            but a ~x5 and a ~x6 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          op arg1 arg1.type arg2 arg2.type in-type1 in-type2)))
+                          op arg1-term arg1.type arg2-term arg2.type
+                          in-type1 in-type2)))
             (acl2::value (make-pexpr-gout
                           :expr (make-expr-binary :op op
                                                   :arg1 arg1.expr
                                                   :arg2 arg2.expr)
                           :type out-type))))
-         ((mv okp tyname arg in-type out-type) (atc-check-conv term))
+         ((mv okp tyname arg-term in-type out-type) (atc-check-conv term))
          ((when okp)
-          (b* (((er (pexpr-gout arg)) (atc-gen-expr-pure arg gin ctx state))
+          (b* (((er (pexpr-gout arg))
+                (atc-gen-expr-pure arg-term gin ctx state))
                ((unless (equal arg.type in-type))
                 (er-soft+ ctx t (irr)
                           "The conversion from ~x0 to ~x1 is applied ~
@@ -435,16 +435,18 @@
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          in-type out-type arg arg.type)))
+                          in-type out-type arg-term arg.type)))
             (acl2::value (make-pexpr-gout
                           :expr (make-expr-cast :type tyname
                                                 :arg arg.expr)
                           :type out-type))))
-         ((mv okp arr sub in-type1 in-type2 out-type)
+         ((mv okp arr-term sub-term in-type1 in-type2 out-type)
           (atc-check-array-read term))
          ((when okp)
-          (b* (((er (pexpr-gout arr)) (atc-gen-expr-pure arr gin ctx state))
-               ((er (pexpr-gout sub)) (atc-gen-expr-pure sub gin ctx state))
+          (b* (((er (pexpr-gout arr))
+                (atc-gen-expr-pure arr-term gin ctx state))
+               ((er (pexpr-gout sub))
+                (atc-gen-expr-pure sub-term gin ctx state))
                ((unless (and (equal arr.type in-type1)
                              (equal sub.type in-type2)))
                 (er-soft+ ctx t (irr)
@@ -455,16 +457,17 @@
                            but a ~x0 and a ~x1 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          in-type1 in-type2 arr arr.type sub sub.type)))
+                          in-type1 in-type2
+                          arr-term arr.type sub-term sub.type)))
             (acl2::value (make-pexpr-gout
                           :expr (make-expr-arrsub :arr arr.expr
                                                   :sub sub.expr)
                           :type out-type))))
-         ((mv okp arg tag member mem-type)
-          (atc-check-struct-read-scalar term prec-tags))
+         ((mv okp arg-term tag member mem-type)
+          (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
           (b* (((er (pexpr-gout arg))
-                (atc-gen-expr-pure arg gin ctx state)))
+                (atc-gen-expr-pure arg-term gin ctx state)))
             (cond ((equal arg.type (type-struct tag))
                    (acl2::value (make-pexpr-gout
                                  :expr (make-expr-member :target arg.expr
@@ -485,15 +488,15 @@
                                 given that the code is guard-verified."
                                tag
                                member
-                               arg
+                               arg-term
                                arg.type
                                (type-struct tag)
                                (type-pointer (type-struct tag)))))))
-         ((mv okp index struct tag member index-type elem-type)
-          (atc-check-struct-read-array term prec-tags))
+         ((mv okp index-term struct-term tag member index-type elem-type)
+          (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
           (b* (((er (pexpr-gout index))
-                (atc-gen-expr-pure index gin ctx state))
+                (atc-gen-expr-pure index-term gin ctx state))
                ((unless (equal index.type index-type))
                 (er-soft+ ctx t (irr)
                           "The reading of ~x0 structure with member ~x1 ~
@@ -504,11 +507,11 @@
                            given that the code is guard-verified."
                           (type-struct tag)
                           member
-                          index
+                          index-term
                           index.type
                           index-type))
                ((er (pexpr-gout struct))
-                (atc-gen-expr-pure struct gin ctx state)))
+                (atc-gen-expr-pure struct-term gin ctx state)))
             (cond ((equal struct.type (type-struct tag))
                    (acl2::value (make-pexpr-gout
                                  :expr (make-expr-arrsub
@@ -535,36 +538,36 @@
                                 given that the code is guard-verified."
                                tag
                                member
-                               struct
+                               struct-term
                                struct.type
                                (type-struct tag)
                                (type-pointer (type-struct tag)))))))
-         ((mv okp arg) (atc-check-sint-from-boolean term))
+         ((mv okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((er (bexpr-gout arg) :iferr (irr))
-                (atc-gen-expr-bool arg
+                (atc-gen-expr-bool arg-term
                                    (make-bexpr-gin
-                                    :inscope inscope
-                                    :prec-tags prec-tags
-                                    :fn fn)
+                                    :inscope gin.inscope
+                                    :prec-tags gin.prec-tags
+                                    :fn gin.fn)
                                    ctx
                                    state)))
             (acl2::value (make-pexpr-gout :expr arg.expr
                                           :type (type-sint)))))
-         ((mv okp test then else) (atc-check-condexpr term))
+         ((mv okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
           (b* (((er (bexpr-gout test) :iferr (irr))
-                (atc-gen-expr-bool test
+                (atc-gen-expr-bool test-term
                                    (make-bexpr-gin
-                                    :inscope inscope
-                                    :prec-tags prec-tags
-                                    :fn fn)
+                                    :inscope gin.inscope
+                                    :prec-tags gin.prec-tags
+                                    :fn gin.fn)
                                    ctx
                                    state))
                ((er (pexpr-gout then))
-                (atc-gen-expr-pure then gin ctx state))
+                (atc-gen-expr-pure then-term gin ctx state))
                ((er (pexpr-gout else))
-                (atc-gen-expr-pure else gin ctx state))
+                (atc-gen-expr-pure else-term gin ctx state))
                ((unless (equal then.type else.type))
                 (er-soft+ ctx t (irr)
                           "When generating C code for the function ~x0, ~
@@ -572,7 +575,7 @@
                            have different types ~x3 and ~x4; ~
                            use conversion operations, if needed, ~
                            to make the branches of the same type."
-                          fn then else then.type else.type)))
+                          gin.fn then-term else-term then.type else.type)))
             (acl2::value
              (make-pexpr-gout
               :expr (make-expr-cond :test test.expr
@@ -584,7 +587,7 @@
                  at a point where ~
                  a pure expression term returning a C type is expected, ~
                  the term ~x1 is encountered instead."
-                fn term))
+                gin.fn term))
     :measure (pseudo-term-count term))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
