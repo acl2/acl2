@@ -245,20 +245,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-pure-gin
+(fty::defprod pexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-pure)."
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol))
-  :pred expr-pure-ginp)
+  :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-pure-gout
+(fty::defprod pexpr-gout
   :short "Outputs for @(tsee atc-gen-expr-pure)."
   ((expr expr)
    (type type))
-  :pred expr-pure-goutp)
+  :pred pexpr-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,9 +278,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-pure-gin-to-expr-bool-gin ((gin expr-pure-ginp))
+(define pexpr-gin-to-expr-bool-gin ((gin pexpr-ginp))
   :returns (gin1 expr-bool-ginp)
-  :short "Turn an @(tsee expr-pure-gin) into an @(tsee expr-bool-gin)."
+  :short "Turn an @(tsee pexpr-gin) into an @(tsee expr-bool-gin)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -288,16 +288,16 @@
      so we just copy the components.
      This is used for
      calls of @(tsee atc-gen-expr-bool) from @(tsee atc-gen-expr-pure)."))
-  (b* (((expr-pure-gin gin) gin))
+  (b* (((pexpr-gin gin) gin))
     (make-expr-bool-gin :inscope gin.inscope
                         :prec-tags gin.prec-tags
                         :fn gin.fn)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define expr-bool-gin-to-expr-pure-gin ((gin expr-bool-ginp))
-  :returns (gin1 expr-pure-ginp)
-  :short "Turn an @(tsee expr-bool-gin) into an @(tsee expr-pure-gin)."
+(define expr-bool-gin-to-pexpr-gin ((gin expr-bool-ginp))
+  :returns (gin1 pexpr-ginp)
+  :short "Turn an @(tsee expr-bool-gin) into an @(tsee pexpr-gin)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -306,9 +306,9 @@
      This is used for
      calls of @(tsee atc-gen-expr-pure) from @(tsee atc-gen-expr-bool)."))
   (b* (((expr-bool-gin gin) gin))
-    (make-expr-pure-gin :inscope gin.inscope
-                        :prec-tags gin.prec-tags
-                        :fn gin.fn)))
+    (make-pexpr-gin :inscope gin.inscope
+                    :prec-tags gin.prec-tags
+                    :fn gin.fn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -322,10 +322,10 @@
      and for expression terms returning booleans (which are always pure)."))
 
   (define atc-gen-expr-pure ((term pseudo-termp)
-                             (gin expr-pure-ginp)
+                             (gin pexpr-ginp)
                              (ctx ctxp)
                              state)
-    :returns (mv erp (val expr-pure-goutp) state)
+    :returns (mv erp (val pexpr-goutp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be a pure expression term."
@@ -401,10 +401,10 @@
        The additional type checking we do here should ensure that
        all the code satisfies the C static semantics."))
     (b* (((acl2::fun (irr))
-          (make-expr-pure-gout :expr (irr-expr) :type (irr-type)))
-         (inscope (expr-pure-gin->inscope gin))
-         (prec-tags (expr-pure-gin->prec-tags gin))
-         (fn (expr-pure-gin->fn gin))
+          (make-pexpr-gout :expr (irr-expr) :type (irr-type)))
+         (inscope (pexpr-gin->inscope gin))
+         (prec-tags (pexpr-gin->prec-tags gin))
+         (fn (pexpr-gin->fn gin))
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
                (type (atc-get-var var inscope))
@@ -413,18 +413,18 @@
                         has no associated type." var fn)
                 (acl2::value (irr))))
             (acl2::value
-             (make-expr-pure-gout
+             (make-pexpr-gout
               :expr (expr-ident (make-ident :name (symbol-name var)))
               :type type))))
          ((er (list okp const out-type) :iferr (irr))
           (atc-check-iconst term ctx state))
          ((when okp)
           (acl2::value
-           (make-expr-pure-gout :expr (expr-const (const-int const))
-                                :type out-type)))
+           (make-pexpr-gout :expr (expr-const (const-int const))
+                            :type out-type)))
          ((mv okp op arg in-type out-type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (expr-pure-gout arg)) (atc-gen-expr-pure arg gin ctx state))
+          (b* (((er (pexpr-gout arg)) (atc-gen-expr-pure arg gin ctx state))
                ((unless (equal arg.type in-type))
                 (er-soft+ ctx t (irr)
                           "The unary operator ~x0 is applied ~
@@ -433,16 +433,16 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           op arg arg.type in-type)))
-            (acl2::value (make-expr-pure-gout
+            (acl2::value (make-pexpr-gout
                           :expr (make-expr-unary :op op
                                                  :arg arg.expr)
                           :type out-type))))
          ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
           (atc-check-binop term))
          ((when okp)
-          (b* (((er (expr-pure-gout arg1))
+          (b* (((er (pexpr-gout arg1))
                 (atc-gen-expr-pure arg1 gin ctx state))
-               ((er (expr-pure-gout arg2))
+               ((er (pexpr-gout arg2))
                 (atc-gen-expr-pure arg2 gin ctx state))
                ((unless (and (equal arg1.type in-type1)
                              (equal arg2.type in-type2)))
@@ -454,14 +454,14 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           op arg1 arg1.type arg2 arg2.type in-type1 in-type2)))
-            (acl2::value (make-expr-pure-gout
+            (acl2::value (make-pexpr-gout
                           :expr (make-expr-binary :op op
                                                   :arg1 arg1.expr
                                                   :arg2 arg2.expr)
                           :type out-type))))
          ((mv okp tyname arg in-type out-type) (atc-check-conv term))
          ((when okp)
-          (b* (((er (expr-pure-gout arg)) (atc-gen-expr-pure arg gin ctx state))
+          (b* (((er (pexpr-gout arg)) (atc-gen-expr-pure arg gin ctx state))
                ((unless (equal arg.type in-type))
                 (er-soft+ ctx t (irr)
                           "The conversion from ~x0 to ~x1 is applied ~
@@ -470,15 +470,15 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           in-type out-type arg arg.type)))
-            (acl2::value (make-expr-pure-gout
+            (acl2::value (make-pexpr-gout
                           :expr (make-expr-cast :type tyname
                                                 :arg arg.expr)
                           :type out-type))))
          ((mv okp arr sub in-type1 in-type2 out-type)
           (atc-check-array-read term))
          ((when okp)
-          (b* (((er (expr-pure-gout arr)) (atc-gen-expr-pure arr gin ctx state))
-               ((er (expr-pure-gout sub)) (atc-gen-expr-pure sub gin ctx state))
+          (b* (((er (pexpr-gout arr)) (atc-gen-expr-pure arr gin ctx state))
+               ((er (pexpr-gout sub)) (atc-gen-expr-pure sub gin ctx state))
                ((unless (and (equal arr.type in-type1)
                              (equal sub.type in-type2)))
                 (er-soft+ ctx t (irr)
@@ -490,22 +490,22 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           in-type1 in-type2 arr arr.type sub sub.type)))
-            (acl2::value (make-expr-pure-gout
+            (acl2::value (make-pexpr-gout
                           :expr (make-expr-arrsub :arr arr.expr
                                                   :sub sub.expr)
                           :type out-type))))
          ((mv okp arg tag member mem-type)
           (atc-check-struct-read-scalar term prec-tags))
          ((when okp)
-          (b* (((er (expr-pure-gout arg))
+          (b* (((er (pexpr-gout arg))
                 (atc-gen-expr-pure arg gin ctx state)))
             (cond ((equal arg.type (type-struct tag))
-                   (acl2::value (make-expr-pure-gout
+                   (acl2::value (make-pexpr-gout
                                  :expr (make-expr-member :target arg.expr
                                                          :name member)
                                  :type mem-type)))
                   ((equal arg.type (type-pointer (type-struct tag)))
-                   (acl2::value (make-expr-pure-gout
+                   (acl2::value (make-pexpr-gout
                                  :expr (make-expr-memberp :target arg.expr
                                                           :name member)
                                  :type mem-type)))
@@ -526,7 +526,7 @@
          ((mv okp index struct tag member index-type elem-type)
           (atc-check-struct-read-array term prec-tags))
          ((when okp)
-          (b* (((er (expr-pure-gout index))
+          (b* (((er (pexpr-gout index))
                 (atc-gen-expr-pure index gin ctx state))
                ((unless (equal index.type index-type))
                 (er-soft+ ctx t (irr)
@@ -541,10 +541,10 @@
                           index
                           index.type
                           index-type))
-               ((er (expr-pure-gout struct))
+               ((er (pexpr-gout struct))
                 (atc-gen-expr-pure struct gin ctx state)))
             (cond ((equal struct.type (type-struct tag))
-                   (acl2::value (make-expr-pure-gout
+                   (acl2::value (make-pexpr-gout
                                  :expr (make-expr-arrsub
                                         :arr (make-expr-member
                                               :target struct.expr
@@ -552,7 +552,7 @@
                                         :sub index.expr)
                                  :type elem-type)))
                   ((equal struct.type (type-pointer (type-struct tag)))
-                   (acl2::value (make-expr-pure-gout
+                   (acl2::value (make-pexpr-gout
                                  :expr (make-expr-arrsub
                                         :arr (make-expr-memberp
                                               :target struct.expr
@@ -577,21 +577,21 @@
          ((when okp)
           (b* (((er (expr-bool-gout arg) :iferr (irr))
                 (atc-gen-expr-bool arg
-                                   (expr-pure-gin-to-expr-bool-gin gin)
+                                   (pexpr-gin-to-expr-bool-gin gin)
                                    ctx
                                    state)))
-            (acl2::value (make-expr-pure-gout :expr arg.expr
+            (acl2::value (make-pexpr-gout :expr arg.expr
                                               :type (type-sint)))))
          ((mv okp test then else) (atc-check-condexpr term))
          ((when okp)
           (b* (((er (expr-bool-gout test) :iferr (irr))
                 (atc-gen-expr-bool test
-                                   (expr-pure-gin-to-expr-bool-gin gin)
+                                   (pexpr-gin-to-expr-bool-gin gin)
                                    ctx
                                    state))
-               ((er (expr-pure-gout then))
+               ((er (pexpr-gout then))
                 (atc-gen-expr-pure then gin ctx state))
-               ((er (expr-pure-gout else))
+               ((er (pexpr-gout else))
                 (atc-gen-expr-pure else gin ctx state))
                ((unless (equal then.type else.type))
                 (er-soft+ ctx t (irr)
@@ -602,7 +602,7 @@
                            to make the branches of the same type."
                           fn then else then.type else.type)))
             (acl2::value
-             (make-expr-pure-gout
+             (make-pexpr-gout
               :expr (make-expr-cond :test test.expr
                                     :then then.expr
                                     :else else.expr)
@@ -681,9 +681,9 @@
                                                   :arg2 arg2.expr)))))
          ((mv okp arg in-type) (atc-check-boolean-from-type term))
          ((when okp)
-          (b* (((er (expr-pure-gout arg) :iferr (irr))
+          (b* (((er (pexpr-gout arg) :iferr (irr))
                 (atc-gen-expr-pure arg
-                                   (expr-bool-gin-to-expr-pure-gin gin)
+                                   (expr-bool-gin-to-pexpr-gin gin)
                                    ctx
                                    state))
                ((unless (equal arg.type in-type))
@@ -726,9 +726,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-pure-list-gin-to-expr-pure-gin ((gin expr-pure-list-ginp))
-  :returns (gin1 expr-pure-ginp)
-  :short "Turn an @(tsee expr-pure-list-gin) into an @(tsee expr-pure-gin)."
+(define expr-pure-list-gin-to-pexpr-gin ((gin expr-pure-list-ginp))
+  :returns (gin1 pexpr-ginp)
+  :short "Turn an @(tsee expr-pure-list-gin) into an @(tsee pexpr-gin)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -737,9 +737,9 @@
      This is used for
      calls of @(tsee atc-gen-expr-pure) from @(tsee atc-gen-expr-pure-list)."))
   (b* (((expr-pure-list-gin gin) gin))
-    (make-expr-pure-gin :inscope gin.inscope
-                        :prec-tags gin.prec-tags
-                        :fn gin.fn)))
+    (make-pexpr-gin :inscope gin.inscope
+                    :prec-tags gin.prec-tags
+                    :fn gin.fn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -757,8 +757,8 @@
      However, we do not return the C types of the expressions."))
   (b* ((irr (make-expr-pure-list-gout :exprs nil :types nil))
        ((when (endp terms)) (acl2::value irr))
-       (gin1 (expr-pure-list-gin-to-expr-pure-gin gin))
-       ((er (expr-pure-gout term) :iferr irr)
+       (gin1 (expr-pure-list-gin-to-pexpr-gin gin))
+       ((er (pexpr-gout term) :iferr irr)
         (atc-gen-expr-pure (car terms) gin1 ctx state))
        ((er (expr-pure-list-gout terms))
         (atc-gen-expr-pure-list (cdr terms) gin ctx state)))
@@ -869,11 +869,11 @@
             :type out-type
             :affect affect
             :limit `(binary-+ '2 ,limit))))))
-    (b* (((er (expr-pure-gout term) :iferr (irr))
+    (b* (((er (pexpr-gout term) :iferr (irr))
           (atc-gen-expr-pure term
-                             (make-expr-pure-gin :inscope gin.inscope
-                                                 :prec-tags gin.prec-tags
-                                                 :fn gin.fn)
+                             (make-pexpr-gin :inscope gin.inscope
+                                             :prec-tags gin.prec-tags
+                                             :fn gin.fn)
                              ctx
                              state)))
       (acl2::value (make-expr-gout :expr term.expr
@@ -1855,25 +1855,25 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var gin.affect))
-                   ((er (expr-pure-gout arr) :iferr irr)
+                   ((er (pexpr-gout arr) :iferr irr)
                     (atc-gen-expr-pure var
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
                                        ctx
                                        state))
-                   ((er (expr-pure-gout sub) :iferr irr)
+                   ((er (pexpr-gout sub) :iferr irr)
                     (atc-gen-expr-pure sub
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
                                        ctx
                                        state))
-                   ((er (expr-pure-gout elem) :iferr irr)
+                   ((er (pexpr-gout elem) :iferr irr)
                     (atc-gen-expr-pure elem
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
@@ -1937,9 +1937,9 @@
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
                               val var wrapper?))
-                   ((er (expr-pure-gout struct) :iferr irr)
+                   ((er (pexpr-gout struct) :iferr irr)
                     (atc-gen-expr-pure var
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
@@ -1969,9 +1969,9 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var gin.affect))
-                   ((er (expr-pure-gout member) :iferr irr)
+                   ((er (pexpr-gout member) :iferr irr)
                     (atc-gen-expr-pure member-value
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
@@ -2021,9 +2021,9 @@
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
                               val var wrapper?))
-                   ((er (expr-pure-gout struct) :iferr irr)
+                   ((er (pexpr-gout struct) :iferr irr)
                     (atc-gen-expr-pure var
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
@@ -2053,9 +2053,9 @@
                                but it is not among the variables ~x1 ~
                                currently affected."
                               var gin.affect))
-                   ((er (expr-pure-gout index) :iferr irr)
+                   ((er (pexpr-gout index) :iferr irr)
                     (atc-gen-expr-pure index
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
@@ -2071,9 +2071,9 @@
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
                               var struct.type index index.type index-type))
-                   ((er (expr-pure-gout elem) :iferr irr)
+                   ((er (pexpr-gout elem) :iferr irr)
                     (atc-gen-expr-pure elem
-                                       (make-expr-pure-gin
+                                       (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn)
