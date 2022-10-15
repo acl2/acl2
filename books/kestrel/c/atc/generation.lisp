@@ -709,26 +709,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-pure-list-gin
+(fty::defprod pexprs-gin
   :short "Inputs for @(tsee atc-gen-expr-pure-list)."
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol))
-  :pred expr-pure-list-ginp)
+  :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-pure-list-gout
+(fty::defprod pexprs-gout
   :short "Outputs for @(tsee atc-gen-expr-pure-list)."
   ((exprs expr-list)
    (types type-list))
-  :pred expr-pure-list-goutp)
+  :pred pexprs-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-pure-list-gin-to-pexpr-gin ((gin expr-pure-list-ginp))
+(define pexprs-gin-to-pexpr-gin ((gin pexprs-ginp))
   :returns (gin1 pexpr-ginp)
-  :short "Turn an @(tsee expr-pure-list-gin) into an @(tsee pexpr-gin)."
+  :short "Turn an @(tsee pexprs-gin) into an @(tsee pexpr-gin)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -736,7 +736,7 @@
      so we just copy the components.
      This is used for
      calls of @(tsee atc-gen-expr-pure) from @(tsee atc-gen-expr-pure-list)."))
-  (b* (((expr-pure-list-gin gin) gin))
+  (b* (((pexprs-gin gin) gin))
     (make-pexpr-gin :inscope gin.inscope
                     :prec-tags gin.prec-tags
                     :fn gin.fn)))
@@ -744,10 +744,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-pure-list ((terms pseudo-term-listp)
-                                (gin expr-pure-list-ginp)
+                                (gin pexprs-ginp)
                                 (ctx ctxp)
                                 state)
-  :returns (mv erp (val expr-pure-list-goutp) state)
+  :returns (mv erp (val pexprs-goutp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure expression terms returning C values."
   :long
@@ -755,14 +755,14 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* ((irr (make-expr-pure-list-gout :exprs nil :types nil))
+  (b* ((irr (make-pexprs-gout :exprs nil :types nil))
        ((when (endp terms)) (acl2::value irr))
-       (gin1 (expr-pure-list-gin-to-pexpr-gin gin))
+       (gin1 (pexprs-gin-to-pexpr-gin gin))
        ((er (pexpr-gout term) :iferr irr)
         (atc-gen-expr-pure (car terms) gin1 ctx state))
-       ((er (expr-pure-list-gout terms))
+       ((er (pexprs-gout terms))
         (atc-gen-expr-pure-list (cdr terms) gin ctx state)))
-    (acl2::value (make-expr-pure-list-gout
+    (acl2::value (make-pexprs-gout
                   :exprs (cons term.expr terms.exprs)
                   :types (cons term.type terms.types))))
   :verify-guards nil ; done below
@@ -846,9 +846,9 @@
                         "The call ~x0 does not satisfy the restrictions ~
                          on array arguments being identical to the formals."
                         term))
-             ((er (expr-pure-list-gout args) :iferr (irr))
+             ((er (pexprs-gout args) :iferr (irr))
               (atc-gen-expr-pure-list args
-                                      (make-expr-pure-list-gin
+                                      (make-pexprs-gin
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn)
@@ -2451,9 +2451,9 @@
                          which differs from the variables ~x3 ~
                          being affected here."
                         gin.fn loop-fn fn-affect gin.affect))
-             ((er (expr-pure-list-gout args1) :iferr irr)
+             ((er (pexprs-gout args1) :iferr irr)
               (atc-gen-expr-pure-list args
-                                      (make-expr-pure-list-gin
+                                      (make-pexprs-gin
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn)
