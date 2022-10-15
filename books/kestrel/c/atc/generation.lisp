@@ -278,40 +278,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pexpr-gin-to-bexpr-gin ((gin pexpr-ginp))
-  :returns (gin1 bexpr-ginp)
-  :short "Turn an @(tsee pexpr-gin) into an @(tsee bexpr-gin)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The two types have the same definition currently,
-     so we just copy the components.
-     This is used for
-     calls of @(tsee atc-gen-expr-bool) from @(tsee atc-gen-expr-pure)."))
-  (b* (((pexpr-gin gin) gin))
-    (make-bexpr-gin :inscope gin.inscope
-                    :prec-tags gin.prec-tags
-                    :fn gin.fn)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define bexpr-gin-to-pexpr-gin ((gin bexpr-ginp))
-  :returns (gin1 pexpr-ginp)
-  :short "Turn an @(tsee bexpr-gin) into an @(tsee pexpr-gin)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The two types have the same definition currently,
-     so we just copy the components.
-     This is used for
-     calls of @(tsee atc-gen-expr-pure) from @(tsee atc-gen-expr-bool)."))
-  (b* (((bexpr-gin gin) gin))
-    (make-pexpr-gin :inscope gin.inscope
-                    :prec-tags gin.prec-tags
-                    :fn gin.fn)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -577,7 +543,10 @@
          ((when okp)
           (b* (((er (bexpr-gout arg) :iferr (irr))
                 (atc-gen-expr-bool arg
-                                   (pexpr-gin-to-bexpr-gin gin)
+                                   (make-bexpr-gin
+                                    :inscope inscope
+                                    :prec-tags prec-tags
+                                    :fn fn)
                                    ctx
                                    state)))
             (acl2::value (make-pexpr-gout :expr arg.expr
@@ -586,7 +555,10 @@
          ((when okp)
           (b* (((er (bexpr-gout test) :iferr (irr))
                 (atc-gen-expr-bool test
-                                   (pexpr-gin-to-bexpr-gin gin)
+                                   (make-bexpr-gin
+                                    :inscope inscope
+                                    :prec-tags prec-tags
+                                    :fn fn)
                                    ctx
                                    state))
                ((er (pexpr-gout then))
@@ -683,7 +655,10 @@
          ((when okp)
           (b* (((er (pexpr-gout arg) :iferr (irr))
                 (atc-gen-expr-pure arg
-                                   (bexpr-gin-to-pexpr-gin gin)
+                                   (make-pexpr-gin
+                                    :inscope (bexpr-gin->inscope gin)
+                                    :prec-tags (bexpr-gin->prec-tags gin)
+                                    :fn (bexpr-gin->fn gin))
                                    ctx
                                    state))
                ((unless (equal arg.type in-type))
@@ -726,23 +701,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pexprs-gin-to-pexpr-gin ((gin pexprs-ginp))
-  :returns (gin1 pexpr-ginp)
-  :short "Turn an @(tsee pexprs-gin) into an @(tsee pexpr-gin)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The two types have the same definition currently,
-     so we just copy the components.
-     This is used for
-     calls of @(tsee atc-gen-expr-pure) from @(tsee atc-gen-expr-pure-list)."))
-  (b* (((pexprs-gin gin) gin))
-    (make-pexpr-gin :inscope gin.inscope
-                    :prec-tags gin.prec-tags
-                    :fn gin.fn)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-expr-pure-list ((terms pseudo-term-listp)
                                 (gin pexprs-ginp)
                                 (ctx ctxp)
@@ -757,9 +715,14 @@
      However, we do not return the C types of the expressions."))
   (b* ((irr (make-pexprs-gout :exprs nil :types nil))
        ((when (endp terms)) (acl2::value irr))
-       (gin1 (pexprs-gin-to-pexpr-gin gin))
        ((er (pexpr-gout term) :iferr irr)
-        (atc-gen-expr-pure (car terms) gin1 ctx state))
+        (atc-gen-expr-pure (car terms)
+                           (make-pexpr-gin
+                            :inscope (pexprs-gin->inscope gin)
+                            :prec-tags (pexprs-gin->prec-tags gin)
+                            :fn (pexprs-gin->fn gin))
+                           ctx
+                           state))
        ((er (pexprs-gout terms))
         (atc-gen-expr-pure-list (cdr terms) gin ctx state)))
     (acl2::value (make-pexprs-gout
