@@ -796,7 +796,7 @@
      to not stop right away due to the limit being 0."))
   (b* (((acl2::fun (irr)) (ec-call (expr-gout-fix :irrelevant)))
        ((expr-gin gin) gin)
-       ((mv okp called-fn args in-types out-type affect limit)
+       ((mv okp called-fn arg-terms in-types out-type affect limit)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
        ((when okp)
         (b* (((when (type-case out-type :void))
@@ -808,13 +808,13 @@
                         term called-fn))
              ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
                                                 in-types
-                                                args))
+                                                arg-terms))
               (er-soft+ ctx t (irr)
                         "The call ~x0 does not satisfy the restrictions ~
                          on array arguments being identical to the formals."
                         term))
              ((er (pexprs-gout args) :iferr (irr))
-              (atc-gen-expr-pure-list args
+              (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
@@ -827,7 +827,7 @@
                          is applied to expression terms ~x2 returning ~x3. ~
                          This is indicative of provably dead code, ~
                          given that the code is guard-verified."
-                        called-fn in-types args args.types)))
+                        called-fn in-types arg-terms args.types)))
           (acl2::value
            (make-expr-gout
             :expr (make-expr-call :fun (make-ident
@@ -836,15 +836,15 @@
             :type out-type
             :affect affect
             :limit `(binary-+ '2 ,limit))))))
-    (b* (((er (pexpr-gout term) :iferr (irr))
+    (b* (((er (pexpr-gout pure) :iferr (irr))
           (atc-gen-expr-pure term
                              (make-pexpr-gin :inscope gin.inscope
                                              :prec-tags gin.prec-tags
                                              :fn gin.fn)
                              ctx
                              state)))
-      (acl2::value (make-expr-gout :expr term.expr
-                                   :type term.type
+      (acl2::value (make-expr-gout :expr pure.expr
+                                   :type pure.type
                                    :affect affect
                                    :limit '(quote 1))))))
 
