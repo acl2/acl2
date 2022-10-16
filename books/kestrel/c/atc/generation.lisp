@@ -626,42 +626,42 @@
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
     (b* (((acl2::fun (irr)) (make-bexpr-gout :expr (irr-expr)))
-         (fn (bexpr-gin->fn gin))
-         ((mv okp arg) (fty-check-not-call term))
+         ((bexpr-gin gin) gin)
+         ((mv okp arg-term) (fty-check-not-call term))
          ((when okp)
           (b* (((er (bexpr-gout arg))
-                (atc-gen-expr-bool arg gin ctx state)))
+                (atc-gen-expr-bool arg-term gin ctx state)))
             (acl2::value (make-bexpr-gout
                           :expr (make-expr-unary :op (unop-lognot)
                                                  :arg arg.expr)))))
-         ((mv okp arg1 arg2) (fty-check-and-call term))
+         ((mv okp arg1-term arg2-term) (fty-check-and-call term))
          ((when okp)
           (b* (((er (bexpr-gout arg1))
-                (atc-gen-expr-bool arg1 gin ctx state))
+                (atc-gen-expr-bool arg1-term gin ctx state))
                ((er (bexpr-gout arg2))
-                (atc-gen-expr-bool arg2 gin ctx state)))
+                (atc-gen-expr-bool arg2-term gin ctx state)))
             (acl2::value (make-bexpr-gout
                           :expr (make-expr-binary :op (binop-logand)
                                                   :arg1 arg1.expr
                                                   :arg2 arg2.expr)))))
-         ((mv okp arg1 arg2) (fty-check-or-call term))
+         ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
           (b* (((er (bexpr-gout arg1))
-                (atc-gen-expr-bool arg1 gin ctx state))
+                (atc-gen-expr-bool arg1-term gin ctx state))
                ((er (bexpr-gout arg2))
-                (atc-gen-expr-bool arg2 gin ctx state)))
+                (atc-gen-expr-bool arg2-term gin ctx state)))
             (acl2::value (make-bexpr-gout
                           :expr (make-expr-binary :op (binop-logor)
                                                   :arg1 arg1.expr
                                                   :arg2 arg2.expr)))))
-         ((mv okp arg in-type) (atc-check-boolean-from-type term))
+         ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((er (pexpr-gout arg) :iferr (irr))
-                (atc-gen-expr-pure arg
+                (atc-gen-expr-pure arg-term
                                    (make-pexpr-gin
-                                    :inscope (bexpr-gin->inscope gin)
-                                    :prec-tags (bexpr-gin->prec-tags gin)
-                                    :fn (bexpr-gin->fn gin))
+                                    :inscope gin.inscope
+                                    :prec-tags gin.prec-tags
+                                    :fn gin.fn)
                                    ctx
                                    state))
                ((unless (equal arg.type in-type))
@@ -671,14 +671,14 @@
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          in-type arg arg.type)))
+                          in-type arg-term arg.type)))
             (acl2::value (make-bexpr-gout :expr arg.expr)))))
       (er-soft+ ctx t (irr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
                  an expression term returning boolean is expected, ~
                  the term ~x1 is encountered instead."
-                fn term))
+                gin.fn term))
     :measure (pseudo-term-count term))
 
   :verify-guards nil ; done below
