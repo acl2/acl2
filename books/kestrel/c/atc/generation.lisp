@@ -1493,27 +1493,27 @@
   (b* (((acl2::fun (irr)) (ec-call (stmt-gout-fix :irrelevant)))
        (wrld (w state))
        ((stmt-gin gin) gin)
-       ((mv okp test then else) (fty-check-if-call term))
+       ((mv okp test-term then-term else-term) (fty-check-if-call term))
        ((when okp)
-        (b* (((mv mbtp &) (check-mbt-call test))
-             ((when mbtp) (atc-gen-stmt then gin ctx state))
-             ((mv mbt$p &) (check-mbt$-call test))
-             ((when mbt$p) (atc-gen-stmt then gin ctx state))
+        (b* (((mv mbtp &) (check-mbt-call test-term))
+             ((when mbtp) (atc-gen-stmt then-term gin ctx state))
+             ((mv mbt$p &) (check-mbt$-call test-term))
+             ((when mbt$p) (atc-gen-stmt then-term gin ctx state))
              ((er (bexpr-gout test) :iferr (irr))
-              (atc-gen-expr-bool test
+              (atc-gen-expr-bool test-term
                                  (make-bexpr-gin :inscope gin.inscope
                                                  :prec-tags gin.prec-tags
                                                  :fn gin.fn)
                                  ctx
                                  state))
              ((er (stmt-gout then))
-              (atc-gen-stmt then
+              (atc-gen-stmt then-term
                             (change-stmt-gin gin
                                              :inscope (cons nil gin.inscope))
                             ctx
                             state))
              ((er (stmt-gout else))
-              (atc-gen-stmt else
+              (atc-gen-stmt else-term
                             (change-stmt-gin gin
                                              :inscope (cons nil gin.inscope))
                             ctx
@@ -1525,7 +1525,7 @@
                          have different types ~x3 and ~x4; ~
                          use conversion operations, if needed, ~
                          to make the branches of the same type."
-                        gin.fn then else then.type else.type))
+                        gin.fn then-term else-term then.type else.type))
              (type then.type)
              (limit (pseudo-term-fncall
                      'binary-+
@@ -1544,10 +1544,11 @@
                                 :else (make-stmt-compound :items else.items))))
             :type type
             :limit limit))))
-       ((mv okp var? vars indices val body wrapper?) (atc-check-mv-let term))
+       ((mv okp var? vars indices val-term body-term wrapper?)
+        (atc-check-mv-let term))
        ((when okp)
         (b* ((all-vars (if var? (cons var? vars) vars))
-             (val-instance (fty-fsublis-var gin.var-term-alist val))
+             (val-instance (fty-fsublis-var gin.var-term-alist val-term))
              (vals (atc-make-mv-nth-terms indices val-instance))
              (var-term-alist-body
               (atc-update-var-term-alist all-vars vals gin.var-term-alist))
@@ -1591,7 +1592,7 @@
                                not all of which are assignable."
                               gin.fn vars))
                    ((er (expr-gout init) :iferr (irr))
-                    (atc-gen-expr val
+                    (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
@@ -1607,13 +1608,13 @@
                                is being assigned to a new variable ~x3. ~
                                This is currently disallowed, ~
                                because it would create an alias."
-                              gin.fn val init.type var))
+                              gin.fn val-term init.type var))
                    ((unless (equal init.affect vars))
                     (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
-                              val var vars init.affect))
+                              val-term var vars init.affect))
                    ((er typed-formals :iferr (irr))
                     (atc-typed-formals gin.fn
                                        gin.prec-tags
@@ -1636,7 +1637,7 @@
                    (item (block-item-declon declon))
                    (inscope-body (atc-add-var var init.type gin.inscope))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body
+                    (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
@@ -1671,7 +1672,7 @@
                               gin.fn var))
                    (prev-type type?)
                    ((er (expr-gout rhs) :iferr (irr))
-                    (atc-gen-expr val
+                    (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
@@ -1687,13 +1688,13 @@
                                of the function ~x3 ~
                                differs from the type ~x4 ~
                                of a variable with the same symbol in scope."
-                              rhs.type val var gin.fn prev-type))
+                              rhs.type val-term var gin.fn prev-type))
                    ((unless (equal rhs.affect vars))
                     (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
-                              val var vars rhs.affect))
+                              val-term var vars rhs.affect))
                    ((er typed-formals :iferr (irr))
                     (atc-typed-formals gin.fn
                                        gin.prec-tags
@@ -1715,7 +1716,7 @@
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
-                              val var rhs.type))
+                              val-term var rhs.type))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
@@ -1723,7 +1724,7 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body
+                    (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body)
@@ -1757,13 +1758,13 @@
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are assignable."
                         gin.fn vars))
-             ((unless (atc-affecting-term-for-let-p val gin.prec-fns))
+             ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
               (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          an MV-LET has been encountered ~
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
-                        gin.fn val))
+                        gin.fn val-term))
              ((er typed-formals :iferr (irr))
               (atc-typed-formals gin.fn gin.prec-tags gin.prec-objs ctx state))
              ((er & :iferr (irr))
@@ -1774,7 +1775,7 @@
                                            ctx
                                            state))
              ((er (stmt-gout xform))
-              (atc-gen-stmt val
+              (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect vars
                                              :loop-flag nil)
@@ -1787,9 +1788,9 @@
                          whose term ~x1 to which the variables are bound ~
                          has the non-void type ~x2, ~
                          which is disallowed."
-                        gin.fn val xform.type))
+                        gin.fn val-term xform.type))
              ((er (stmt-gout body))
-              (atc-gen-stmt body
+              (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
                              :var-term-alist var-term-alist-body)
@@ -1803,21 +1804,21 @@
                         :items items
                         :type type
                         :limit limit))))
-       ((mv okp var val body wrapper?) (atc-check-let term))
+       ((mv okp var val-term body-term wrapper?) (atc-check-let term))
        ((when okp)
-        (b* ((val-instance (fty-fsublis-var gin.var-term-alist val))
+        (b* ((val-instance (fty-fsublis-var gin.var-term-alist val-term))
              (var-term-alist-body
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
                                          gin.var-term-alist))
-             ((mv okp sub elem sub-type elem-type)
-              (atc-check-array-write var val))
+             ((mv okp sub-term elem-term sub-type elem-type)
+              (atc-check-array-write var val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (er-soft+ ctx t (irr)
                               "The array write term ~x0 to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
-                              val var wrapper?))
+                              val-term var wrapper?))
                    ((unless (member-eq var gin.affect))
                     (er-soft+ ctx t (irr)
                               "The array ~x0 is being written to, ~
@@ -1833,7 +1834,7 @@
                                        ctx
                                        state))
                    ((er (pexpr-gout sub) :iferr (irr))
-                    (atc-gen-expr-pure sub
+                    (atc-gen-expr-pure sub-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
@@ -1841,7 +1842,7 @@
                                        ctx
                                        state))
                    ((er (pexpr-gout elem) :iferr (irr))
-                    (atc-gen-expr-pure elem
+                    (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
@@ -1884,7 +1885,7 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body
+                    (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body)
@@ -1897,15 +1898,15 @@
                               :items (cons item body.items)
                               :type body.type
                               :limit limit))))
-             ((mv okp member-value tag member-name member-type)
-              (atc-check-struct-write-scalar var val gin.prec-tags))
+             ((mv okp member-term tag member-name member-type)
+              (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (er-soft+ ctx t (irr)
                               "The structure write term ~x0 ~
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
-                              val var wrapper?))
+                              val-term var wrapper?))
                    ((er (pexpr-gout struct) :iferr (irr))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
@@ -1939,7 +1940,7 @@
                                currently affected."
                               var gin.affect))
                    ((er (pexpr-gout member) :iferr (irr))
-                    (atc-gen-expr-pure member-value
+                    (atc-gen-expr-pure member-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
@@ -1955,7 +1956,7 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var struct.type member-value
+                              var struct.type member-term
                               member.type member-type))
                    (asg-mem (if pointerp
                                 (make-expr-memberp :target struct.expr
@@ -1968,7 +1969,7 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body
+                    (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body)
@@ -1981,15 +1982,15 @@
                               :items (cons item body.items)
                               :type body.type
                               :limit limit))))
-             ((mv okp index elem tag member index-type elem-type)
-              (atc-check-struct-write-array var val gin.prec-tags))
+             ((mv okp index-term elem-term tag member index-type elem-type)
+              (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (er-soft+ ctx t (irr)
                               "The structure write term ~x0 ~
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
-                              val var wrapper?))
+                              val-term var wrapper?))
                    ((er (pexpr-gout struct) :iferr (irr))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
@@ -2023,7 +2024,7 @@
                                currently affected."
                               var gin.affect))
                    ((er (pexpr-gout index) :iferr (irr))
-                    (atc-gen-expr-pure index
+                    (atc-gen-expr-pure index-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
@@ -2039,9 +2040,9 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var struct.type index index.type index-type))
+                              var struct.type index-term index.type index-type))
                    ((er (pexpr-gout elem) :iferr (irr))
-                    (atc-gen-expr-pure elem
+                    (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
@@ -2057,7 +2058,7 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var struct.type elem elem.type elem-type))
+                              var struct.type elem-term elem.type elem-type))
                    (asg-mem (if pointerp
                                 (make-expr-memberp :target struct.expr
                                                    :name member)
@@ -2071,7 +2072,7 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body
+                    (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body)
@@ -2108,7 +2109,7 @@
                                but it is not."
                               (symbol-name var) var gin.fn))
                    ((er (expr-gout init) :iferr (irr))
-                    (atc-gen-expr val
+                    (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
@@ -2124,13 +2125,13 @@
                                is being assigned to a new variable ~x3. ~
                                This is currently disallowed, ~
                                because it would create an alias."
-                              gin.fn val init.type var))
+                              gin.fn val-term init.type var))
                    ((when (consp init.affect))
                     (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not affect any variables, ~
                                but it affects ~x2 instead."
-                              val var init.affect))
+                              val-term var init.affect))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init.type))
@@ -2140,7 +2141,7 @@
                    (item (block-item-declon declon))
                    (inscope-body (atc-add-var var init.type gin.inscope))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body
+                    (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
@@ -2167,7 +2168,7 @@
              ((when (eq wrapper? 'assign))
               (b* ((prev-type type?)
                    ((er (expr-gout rhs) :iferr (irr))
-                    (atc-gen-expr val
+                    (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
@@ -2183,13 +2184,13 @@
                                of the function ~x3 ~
                                differs from the type ~x4 ~
                                of a variable with the same symbol in scope."
-                              rhs.type val var gin.fn prev-type))
+                              rhs.type val-term var gin.fn prev-type))
                    ((when (consp rhs.affect))
                     (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not affect any variables, ~
                                but it affects ~x2 instead."
-                              val var rhs.affect))
+                              val-term var rhs.affect))
                    ((when (type-case rhs.type :array))
                     (raise "Internal error: array type ~x0." rhs.type)
                     (acl2::value (irr)))
@@ -2198,7 +2199,7 @@
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
-                              val var rhs.type))
+                              val-term var rhs.type))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
@@ -2206,7 +2207,7 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (stmt-gout body))
-                    (atc-gen-stmt body
+                    (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body)
@@ -2226,7 +2227,7 @@
              ((unless (eq wrapper? nil))
               (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
                       (acl2::value (irr))))
-             ((unless (atc-affecting-term-for-let-p val gin.prec-fns))
+             ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
               (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          we encountered a term ~x1, ~
@@ -2234,7 +2235,7 @@
                          that is not wrapped by C::DECLAR or C::ASSIGN, ~
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
-                        gin.fn val))
+                        gin.fn val-term))
              ((er typed-formals :iferr (irr))
               (atc-typed-formals gin.fn
                                  gin.prec-tags
@@ -2249,7 +2250,7 @@
                                            ctx
                                            state))
              ((er (stmt-gout xform))
-              (atc-gen-stmt val
+              (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect (list var)
                                              :loop-flag nil)
@@ -2263,9 +2264,9 @@
                          to which the variable is bound ~
                          has the non-void type ~x2, ~
                          which is disallowed."
-                        gin.fn val xform.type))
+                        gin.fn val-term xform.type))
              ((er (stmt-gout body))
-              (atc-gen-stmt body
+              (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
                              :var-term-alist var-term-alist-body)
@@ -2400,7 +2401,7 @@
                      a recursive call to the loop function occurs ~
                      not at the end of the computation on some path."
                     gin.fn)))
-       ((mv okp called-fn args in-types out-type fn-affect limit)
+       ((mv okp called-fn arg-terms in-types out-type fn-affect limit)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
@@ -2412,7 +2413,7 @@
                         gin.fn term))
              ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
                                                 in-types
-                                                args))
+                                                arg-terms))
               (er-soft+ ctx t (irr)
                         "The call ~x0 does not satisfy the restrictions ~
                          on array arguments being identical to the formals."
@@ -2425,24 +2426,24 @@
                          which differs from the variables ~x3 ~
                          being affected here."
                         gin.fn loop-fn fn-affect gin.affect))
-             ((er (pexprs-gout args1) :iferr (irr))
-              (atc-gen-expr-pure-list args
+             ((er (pexprs-gout args) :iferr (irr))
+              (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn)
                                       ctx
                                       state))
-             ((unless (equal args1.types in-types))
+             ((unless (equal args.types in-types))
               (er-soft+ ctx t (irr)
                         "The function ~x0 with input types ~x1 is applied to ~
                          expression terms ~x2 returning ~x3. ~
                          This is indicative of provably dead code, ~
                          given that the code is guard-verified."
-                        called-fn in-types args args1.types))
+                        called-fn in-types arg-terms args.types))
              (call-expr (make-expr-call :fun (make-ident
                                               :name (symbol-name called-fn))
-                                        :args args1.exprs)))
+                                        :args args.exprs)))
           (acl2::value (make-stmt-gout
                         :items (list (block-item-stmt (stmt-expr call-expr)))
                         :type (type-void)
