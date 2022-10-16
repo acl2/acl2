@@ -625,7 +625,7 @@
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
-    (b* (((acl2::fun (irr)) (make-bexpr-gout :expr (irr-expr)))
+    (b* (((acl2::fun (irr)) (ec-call (bexpr-gout-fix :irrelevant)))
          ((bexpr-gin gin) gin)
          ((mv okp arg-term) (fty-check-not-call term))
          ((when okp)
@@ -716,9 +716,10 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* ((irr (make-pexprs-gout :exprs nil :types nil))
-       ((when (endp terms)) (acl2::value irr))
-       ((er (pexpr-gout term) :iferr irr)
+  (b* (((acl2::fun (irr)) (ec-call (pexprs-gout-fix :irrelevant)))
+       ((when (endp terms))
+        (acl2::value (make-pexprs-gout :exprs nil :types nil)))
+       ((er (pexpr-gout first) :iferr (irr))
         (atc-gen-expr-pure (car terms)
                            (make-pexpr-gin
                             :inscope (pexprs-gin->inscope gin)
@@ -726,11 +727,11 @@
                             :fn (pexprs-gin->fn gin))
                            ctx
                            state))
-       ((er (pexprs-gout terms))
+       ((er (pexprs-gout rest))
         (atc-gen-expr-pure-list (cdr terms) gin ctx state)))
     (acl2::value (make-pexprs-gout
-                  :exprs (cons term.expr terms.exprs)
-                  :types (cons term.type terms.types))))
+                  :exprs (cons first.expr rest.exprs)
+                  :types (cons first.type rest.types))))
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-expr-pure-list))
