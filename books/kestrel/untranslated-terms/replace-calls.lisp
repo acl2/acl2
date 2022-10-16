@@ -33,7 +33,8 @@
                               (natp last))
                   :measure (nfix (+ 1 (- last first)))))
   (if (or (not (mbt (integerp first)))
-          (not (mbt (integerp last)))(< last first))
+          (not (mbt (integerp last)))
+          (< last first))
       nil
     (cons (intern (symbol-name (pack$ 'arg first)) "KEYWORD")
           (make-arg-keywords-aux (+ 1 first) last))))
@@ -51,9 +52,8 @@
   (symbol-listp (make-arg-keywords count))
   :hints (("Goal" :in-theory (enable make-arg-keywords))))
 
-;; Instantiate TEMPLATE by replacing :arg1 through arg2 with the corresponding ARGS.
+;; Instantiate TEMPLATE by replacing :arg1 through :argn with the corresponding ARGS.
 ;; For now, this is a really dumb replacement, since the template may be an untranslated term.
-;; The template should mention :arg1, etc.
 (defund replace-call (args template)
   (declare (xargs :guard (true-listp args)))
   (replace-symbols-in-tree template
