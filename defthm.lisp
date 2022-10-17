@@ -263,7 +263,7 @@
 
 (mutual-recursion
 
-(defun non-recursive-fnnames-alist-rec (term ens wrld acc)
+(defun non-recursive-fnnames-alist-rec (term ens wrld ilk acc)
 
 ; Accumulate, into acc, an alist that associates each enabled non-recursive
 ; function symbol fn of term either with the base-symbol of its most recent
@@ -278,15 +278,60 @@
                               (alistp acc))))
   (cond
    ((variablep term) acc)
-   ((fquotep term) acc)
+   ((fquotep term)
+
+; Below we look for calls of non-recursive functions that may be rewritten by
+; rewrite-lambda-object.  We don't consider the more general rewriting done by
+; rewrite-quoted-constant.  That's because we want our warnings to be
+; appropriate in most cases, yet rewriting of constants other than well-formed
+; lambda objects requires lemmas of class rewrite-quoted-constant, so
+; non-recursive function calls will generally not be opened up.
+
+    (cond ((or (eq ilk :FN?) ; for apply$, from ilks-per-argument-slot
+               (eq ilk :FN))
+           (let ((evg (unquote term)))
+             (cond ((and (not (symbolp evg))
+                         (well-formed-lambda-objectp evg wrld)
+                         (enabled-numep *rewrite-lambda-modep-xnume* ens)
+
+; Without the indicated enabled rule below, we only call
+; clean-up-dirty-lambda-object-body on the lambda-object's body rather than
+; rewriting it.  That same cleaning up takes place, or close enough to it, when
+; processing the rewrite rule; so we don't bother looking to warn here merely
+; for constructs that aren't cleaned up, as we don't expect to see much or any
+; of that.
+
+                         (enabled-numep *rewrite-lambda-modep-def-nume* ens))
+
+; We are ready to rewrite the body of the lambda object.  The present function,
+; non-recursive-fnnames-alist, is called (either directly or by way of
+; non-recursive-fnnames-alist-lst) by chk-rewrite-rule-warnings,
+; chk-acceptable-linear-rule2, chk-triggers, and
+; warned-non-rec-fns-alist-for-tp.  So rules of class :rewrite, :linear,
+; :forward-chaining, and :type-prescription (respectively) will provide
+; suitable warnings for non-recursive functions called within well-formed
+; lambda objects.
+
+                    (non-recursive-fnnames-alist-rec (lambda-object-body evg)
+                                                     ens wrld nil acc))
+                   (t acc))))
+          (t acc)))
    ((flambda-applicationp term)
     (non-recursive-fnnames-alist-rec-lst
-     (fargs term) ens wrld
+     (fargs term) ens wrld nil
      (if (assoc-equal (ffn-symb term) acc)
          acc
        (acons (ffn-symb term) nil acc))))
    (t (non-recursive-fnnames-alist-rec-lst
        (fargs term) ens wrld
+
+; The following call of ilks-per-argument-slot is responsible for considering
+; :FN? above, which it returns as a slot for for apply$.  So it might be nice
+; to have a version of ilks-per-argument-slot that does not make a special case
+; for apply$, using :FN in place of :FN?.  But the resulting trivial runtime
+; benefit and code simplification didn't seem worth making another definition.
+
+       (ilks-per-argument-slot (ffn-symb term) wrld)
        (cond
         ((assoc-eq (ffn-symb term) acc)
          acc)
@@ -304,15 +349,16 @@
                         acc)))
               (t acc)))))))))
 
-(defun non-recursive-fnnames-alist-rec-lst (lst ens wrld acc)
+(defun non-recursive-fnnames-alist-rec-lst (lst ens wrld ilks acc)
   (declare (xargs :guard (and (pseudo-term-listp lst)
                               (enabled-structure-p ens)
                               (plist-worldp wrld)
                               (alistp acc))))
   (cond ((endp lst) acc)
         (t (non-recursive-fnnames-alist-rec-lst
-            (cdr lst) ens wrld
-            (non-recursive-fnnames-alist-rec (car lst) ens wrld acc)))))
+            (cdr lst) ens wrld (cdr ilks)
+            (non-recursive-fnnames-alist-rec (car lst) ens wrld (car ilks)
+                                             acc)))))
 )
 
 (defun non-recursive-fnnames-alist (term ens wrld)
@@ -320,8 +366,7 @@
 ; See non-recursive-fnnames-alist-rec.  (The present function reverses the
 ; result, to respect the original order of appearance of function symbols.)
 
-  (reverse (non-recursive-fnnames-alist-rec term ens wrld nil)))
-
+  (reverse (non-recursive-fnnames-alist-rec term ens wrld nil nil)))
 
 (defun non-recursive-fnnames-alist-lst (lst ens wrld)
 
@@ -329,7 +374,7 @@
 ; terms; it also reverses the result, to respect the original order of
 ; appearance of function symbols.)
 
-  (reverse (non-recursive-fnnames-alist-rec-lst lst ens wrld nil)))
+  (reverse (non-recursive-fnnames-alist-rec-lst lst ens wrld nil nil)))
 
 ; The alist just constructed is odd because it may contain some lambda
 ; expressions posing as function symbols.  We use the following function
