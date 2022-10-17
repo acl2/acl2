@@ -29,7 +29,7 @@
     and show that they are successfully processed by the "
    (xdoc::seetopic "grammar-parser" "parser")
    " and "
-   (xdoc::seetopic "concrete-to-abstract-syntax" "abstractor")
+   (xdoc::seetopic "syntax-abstraction" "abstractor")
    ". We also demonstrate the use of
     some @(see operations) on these grammars.")
   :order-subtopics t)

@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ concrete-to-abstract-syntax
+(defxdoc+ syntax-abstraction
   :parents (abnf)
   :short "An executable mapping from
           the concrete syntax of ABNF to the abstract syntax of ABNF."

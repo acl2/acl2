@@ -87,7 +87,7 @@
      with ABNF grammar rules (defining the concrete syntax of some language)
      into parse trees;
      the parse trees can be "
-    (xdoc::seetopic "concrete-to-abstract-syntax" "abstracted")
+    (xdoc::seetopic "syntax-abstraction" "abstracted")
     " to lists of rules in the ABNF abstract syntax.")
    (xdoc::p
     "This function may return more than one parse tree,
