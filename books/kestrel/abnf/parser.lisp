@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "concrete-syntax")
+(include-book "notation/concrete-syntax")
 (include-book "parsing-primitives-seq")
 
 (include-book "kestrel/utilities/strings/chars-codes" :dir :system)

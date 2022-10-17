@@ -12,7 +12,7 @@
 
 (include-book "concrete-syntax-rules")
 
-(include-book "operations/well-formedness")
+(include-book "../operations/well-formedness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

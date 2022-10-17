@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics
-  :parents (abnf)
+  :parents (notation)
   :short "Semantics of ABNF."
   :long
   (xdoc::topstring

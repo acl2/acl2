@@ -10,22 +10,12 @@
 
 (in-package "ABNF")
 
-; the order of the following INCLUDE-BOOKs should determine
-; the order of the subtopics of the ABNF topic below:
-(include-book "abstract-syntax")
-(include-book "semantics")
+(include-book "notation/top")
 (include-book "operations/top")
-(include-book "core-rules")
-(include-book "core-rules-validation")
-(include-book "concrete-syntax-rules")
-(include-book "concrete-syntax-rules-validation")
-(include-book "concrete-syntax")
-(include-book "concrete-syntax-validation")
 (include-book "parsing-primitives-seq")
 (include-book "parsing-primitives-defresult")
 (include-book "parser")
 (include-book "parser-verification")
-(include-book "syntax-abstraction")
 (include-book "parser-and-abstractor-validation")
 (include-book "parser-generators")
 (include-book "examples/top")

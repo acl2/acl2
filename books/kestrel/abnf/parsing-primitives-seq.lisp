@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "semantics")
+(include-book "notation/semantics")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "misc/seq" :dir :system)

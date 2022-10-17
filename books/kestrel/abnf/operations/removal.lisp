@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "../abstract-syntax")
+(include-book "../notation/abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

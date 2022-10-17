@@ -11,10 +11,10 @@
 (in-package "ABNF")
 
 (include-book "parser")
-(include-book "syntax-abstraction")
+(include-book "notation/syntax-abstraction")
 
-; (depends-on "core-rules.abnf")
-; (depends-on "concrete-syntax-rules.abnf")
+; (depends-on "notation/core-rules.abnf")
+; (depends-on "notation/concrete-syntax-rules.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,7 +51,9 @@
      to keep this constant unexpanded in output."))
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "core-rules.abnf") state)
+       (parse-grammar-from-file
+        (string-append (cbd) "notation/core-rules.abnf")
+        state)
      (value `(progn
                (defconst *core-rules-parse-tree* ',tree)
                (add-const-to-untranslate-preprocess *core-rules-parse-tree*)
@@ -77,8 +79,9 @@
      to keep this constant unexpanded in output."))
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "concrete-syntax-rules.abnf")
-                              state)
+       (parse-grammar-from-file
+        (string-append (cbd) "notation/concrete-syntax-rules.abnf")
+        state)
      (value `(progn
                (defconst *concrete-syntax-rules-parse-tree*
                  ',tree)
