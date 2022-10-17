@@ -136,7 +136,7 @@
                 (wrld (w state))
                 (formals (fn-formals fn wrld))
                 (non-executable (non-executablep fn wrld))
-                ;; Chose between defun, defund, defun-nx, etc.:
+                ;; Chooses between defun, defund, defun-nx, etc.:
                 (defun-variant (defun-variant fn non-executable function-disabled state))
                 ;; TODO: Pull out the handling of declares into a utility:
                 (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.

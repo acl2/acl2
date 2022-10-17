@@ -132,7 +132,17 @@
      Proof hints are in the former but not in the latter,
      thus keeping the ACL2 history ``clean'';
      some proof hints may refer to events
-     that are generated only locally to the @(tsee encapsulate)."))
+     that are generated only locally to the @(tsee encapsulate).")
+   (xdoc::p
+    "Some code and event generation functions
+     group some of their inputs and some of their outputs
+     into @(tsee fty::defprod) values,
+     to make the code more readable and more easily extensible,
+     at a performance cost that should be unimportant.
+     These product fixtypes have names @('...-gin') and @('...-gout'),
+     where @('...') is derived from the corresponding function name,
+     and where the @('g') in @('gin') and @('gout')
+     conveys the reference to code and event generation functions."))
   :order-subtopics t
   :default-parent t)
 
@@ -235,6 +245,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod pexpr-gin
+  :short "Inputs for @(tsee atc-gen-expr-pure)."
+  ((inscope atc-symbol-type-alist-list)
+   (prec-tags atc-string-taginfo-alist)
+   (fn symbol))
+  :pred pexpr-ginp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod pexpr-gout
+  :short "Outputs for @(tsee atc-gen-expr-pure)."
+  ((expr expr)
+   (type type))
+  :pred pexpr-goutp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod bexpr-gin
+  :short "Inputs for @(tsee atc-gen-expr-bool)."
+  ((inscope atc-symbol-type-alist-list)
+   (prec-tags atc-string-taginfo-alist)
+   (fn symbol))
+  :pred bexpr-ginp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod bexpr-gout
+  :short "Outputs for @(tsee atc-gen-expr-bool)."
+  ((expr expr))
+  :pred bexpr-goutp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -245,16 +288,10 @@
      and for expression terms returning booleans (which are always pure)."))
 
   (define atc-gen-expr-pure ((term pseudo-termp)
-                             (inscope atc-symbol-type-alist-listp)
-                             (prec-tags atc-string-taginfo-alistp)
-                             (fn symbolp)
+                             (gin pexpr-ginp)
                              (ctx ctxp)
                              state)
-    :returns (mv erp
-                 (val (tuple (expr exprp)
-                             (type typep)
-                             val))
-                 state)
+    :returns (mv erp (val pexpr-goutp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be a pure expression term."
@@ -329,59 +366,50 @@
        but the resulting C code may not compile.
        The additional type checking we do here should ensure that
        all the code satisfies the C static semantics."))
-    (b* (((acl2::fun (irr)) (list (irr-expr) (irr-type)))
+    (b* (((acl2::fun (irr)) (ec-call (pexpr-gout-fix :irrelevant)))
+         ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
-               (type (atc-get-var var inscope))
+               (type (atc-get-var var gin.inscope))
                ((when (not type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
-                        has no associated type." var fn)
+                        has no associated type." var gin.fn)
                 (acl2::value (irr))))
             (acl2::value
-             (list (expr-ident (make-ident :name (symbol-name var)))
-                   (type-fix type)))))
+             (make-pexpr-gout
+              :expr (expr-ident (make-ident :name (symbol-name var)))
+              :type type))))
          ((er (list okp const out-type) :iferr (irr))
           (atc-check-iconst term ctx state))
          ((when okp)
           (acl2::value
-           (list (expr-const (const-int const))
-                 out-type)))
-         ((mv okp op arg in-type out-type) (atc-check-unop term))
+           (make-pexpr-gout :expr (expr-const (const-int const))
+                            :type out-type)))
+         ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
-                                                             inscope
-                                                             prec-tags
-                                                             fn
-                                                             ctx
-                                                             state))
-               ((unless (equal type in-type))
+          (b* (((er (pexpr-gout arg))
+                (atc-gen-expr-pure arg-term gin ctx state))
+               ((unless (equal arg.type in-type))
                 (er-soft+ ctx t (irr)
                           "The unary operator ~x0 is applied ~
                            to an expression term ~x1 returning ~x2, ~
                            but a ~x3 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          op arg type in-type)))
-            (acl2::value (list (make-expr-unary :op op
-                                                :arg arg-expr)
-                               out-type))))
-         ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
+                          op arg-term arg.type in-type)))
+            (acl2::value (make-pexpr-gout
+                          :expr (make-expr-unary :op op
+                                                 :arg arg.expr)
+                          :type out-type))))
+         ((mv okp op arg1-term arg2-term in-type1 in-type2 out-type)
           (atc-check-binop term))
          ((when okp)
-          (b* (((er (list arg1-expr type1)) (atc-gen-expr-pure arg1
-                                                               inscope
-                                                               prec-tags
-                                                               fn
-                                                               ctx
-                                                               state))
-               ((er (list arg2-expr type2)) (atc-gen-expr-pure arg2
-                                                               inscope
-                                                               prec-tags
-                                                               fn
-                                                               ctx
-                                                               state))
-               ((unless (and (equal type1 in-type1)
-                             (equal type2 in-type2)))
+          (b* (((er (pexpr-gout arg1))
+                (atc-gen-expr-pure arg1-term gin ctx state))
+               ((er (pexpr-gout arg2))
+                (atc-gen-expr-pure arg2-term gin ctx state))
+               ((unless (and (equal arg1.type in-type1)
+                             (equal arg2.type in-type2)))
                 (er-soft+ ctx t (irr)
                           "The binary operator ~x0 is applied ~
                            to an expression term ~x1 returning ~x2 ~
@@ -389,47 +417,38 @@
                            but a ~x5 and a ~x6 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          op arg1 type1 arg2 type2 in-type1 in-type2)))
-            (acl2::value (list (make-expr-binary :op op
-                                                 :arg1 arg1-expr
-                                                 :arg2 arg2-expr)
-                               out-type))))
-         ((mv okp tyname arg in-type out-type) (atc-check-conv term))
+                          op arg1-term arg1.type arg2-term arg2.type
+                          in-type1 in-type2)))
+            (acl2::value (make-pexpr-gout
+                          :expr (make-expr-binary :op op
+                                                  :arg1 arg1.expr
+                                                  :arg2 arg2.expr)
+                          :type out-type))))
+         ((mv okp tyname arg-term in-type out-type) (atc-check-conv term))
          ((when okp)
-          (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
-                                                             inscope
-                                                             prec-tags
-                                                             fn
-                                                             ctx
-                                                             state))
-               ((unless (equal type in-type))
+          (b* (((er (pexpr-gout arg))
+                (atc-gen-expr-pure arg-term gin ctx state))
+               ((unless (equal arg.type in-type))
                 (er-soft+ ctx t (irr)
                           "The conversion from ~x0 to ~x1 is applied ~
                            to an expression term ~x2 returning ~x3, ~
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          in-type out-type arg type)))
-            (acl2::value (list (make-expr-cast :type tyname
-                                               :arg arg-expr)
-                               out-type))))
-         ((mv okp arr sub in-type1 in-type2 out-type)
+                          in-type out-type arg-term arg.type)))
+            (acl2::value (make-pexpr-gout
+                          :expr (make-expr-cast :type tyname
+                                                :arg arg.expr)
+                          :type out-type))))
+         ((mv okp arr-term sub-term in-type1 in-type2 out-type)
           (atc-check-array-read term))
          ((when okp)
-          (b* (((er (list arr-expr type1)) (atc-gen-expr-pure arr
-                                                              inscope
-                                                              prec-tags
-                                                              fn
-                                                              ctx
-                                                              state))
-               ((er (list sub-expr type2)) (atc-gen-expr-pure sub
-                                                              inscope
-                                                              prec-tags
-                                                              fn
-                                                              ctx
-                                                              state))
-               ((unless (and (equal type1 in-type1)
-                             (equal type2 in-type2)))
+          (b* (((er (pexpr-gout arr))
+                (atc-gen-expr-pure arr-term gin ctx state))
+               ((er (pexpr-gout sub))
+                (atc-gen-expr-pure sub-term gin ctx state))
+               ((unless (and (equal arr.type in-type1)
+                             (equal sub.type in-type2)))
                 (er-soft+ ctx t (irr)
                           "The reading of a ~x0 array with a ~x1 index ~
                            is applied to ~
@@ -438,27 +457,27 @@
                            but a ~x0 and a ~x1 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          in-type1 in-type2 arg1 type1 arg2 type2)))
-            (acl2::value (list (make-expr-arrsub :arr arr-expr
-                                                 :sub sub-expr)
-                               out-type))))
-         ((mv okp arg tag member mem-type)
-          (atc-check-struct-read-scalar term prec-tags))
+                          in-type1 in-type2
+                          arr-term arr.type sub-term sub.type)))
+            (acl2::value (make-pexpr-gout
+                          :expr (make-expr-arrsub :arr arr.expr
+                                                  :sub sub.expr)
+                          :type out-type))))
+         ((mv okp arg-term tag member mem-type)
+          (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
-          (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
-                                                             inscope
-                                                             prec-tags
-                                                             fn
-                                                             ctx
-                                                             state)))
-            (cond ((equal type (type-struct tag))
-                   (acl2::value (list (make-expr-member :target arg-expr
-                                                        :name member)
-                                      mem-type)))
-                  ((equal type (type-pointer (type-struct tag)))
-                   (acl2::value (list (make-expr-memberp :target arg-expr
+          (b* (((er (pexpr-gout arg))
+                (atc-gen-expr-pure arg-term gin ctx state)))
+            (cond ((equal arg.type (type-struct tag))
+                   (acl2::value (make-pexpr-gout
+                                 :expr (make-expr-member :target arg.expr
                                                          :name member)
-                                      mem-type)))
+                                 :type mem-type)))
+                  ((equal arg.type (type-pointer (type-struct tag)))
+                   (acl2::value (make-pexpr-gout
+                                 :expr (make-expr-memberp :target arg.expr
+                                                          :name member)
+                                 :type mem-type)))
                   (t (er-soft+ ctx t (irr)
                                "The reading of a ~x0 structure with member ~x1 ~
                                 is applied to ~
@@ -469,16 +488,16 @@
                                 given that the code is guard-verified."
                                tag
                                member
-                               arg
-                               type
+                               arg-term
+                               arg.type
                                (type-struct tag)
                                (type-pointer (type-struct tag)))))))
-         ((mv okp index struct tag member index-type elem-type)
-          (atc-check-struct-read-array term prec-tags))
+         ((mv okp index-term struct-term tag member index-type elem-type)
+          (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
-          (b* (((er (list index-expr index-type1))
-                (atc-gen-expr-pure index inscope prec-tags fn ctx state))
-               ((unless (equal index-type1 index-type))
+          (b* (((er (pexpr-gout index))
+                (atc-gen-expr-pure index-term gin ctx state))
+               ((unless (equal index.type index-type))
                 (er-soft+ ctx t (irr)
                           "The reading of ~x0 structure with member ~x1 ~
                            is applied to ~
@@ -488,25 +507,27 @@
                            given that the code is guard-verified."
                           (type-struct tag)
                           member
-                          index
-                          index-type1
+                          index-term
+                          index.type
                           index-type))
-               ((er (list struct-expr struct-type))
-                (atc-gen-expr-pure struct inscope prec-tags fn ctx state)))
-            (cond ((equal struct-type (type-struct tag))
-                   (acl2::value (list (make-expr-arrsub
-                                       :arr (make-expr-member
-                                             :target struct-expr
-                                             :name member)
-                                       :sub index-expr)
-                                      elem-type)))
-                  ((equal struct-type (type-pointer (type-struct tag)))
-                   (acl2::value (list (make-expr-arrsub
-                                       :arr (make-expr-memberp
-                                             :target struct-expr
-                                             :name member)
-                                       :sub index-expr)
-                                      elem-type)))
+               ((er (pexpr-gout struct))
+                (atc-gen-expr-pure struct-term gin ctx state)))
+            (cond ((equal struct.type (type-struct tag))
+                   (acl2::value (make-pexpr-gout
+                                 :expr (make-expr-arrsub
+                                        :arr (make-expr-member
+                                              :target struct.expr
+                                              :name member)
+                                        :sub index.expr)
+                                 :type elem-type)))
+                  ((equal struct.type (type-pointer (type-struct tag)))
+                   (acl2::value (make-pexpr-gout
+                                 :expr (make-expr-arrsub
+                                        :arr (make-expr-memberp
+                                              :target struct.expr
+                                              :name member)
+                                        :sub index.expr)
+                                 :type elem-type)))
                   (t (er-soft+ ctx t (irr)
                                "The reading of ~x0 structure with member ~x1 ~
                                 is applied to ~
@@ -517,64 +538,63 @@
                                 given that the code is guard-verified."
                                tag
                                member
-                               struct
-                               struct-type
+                               struct-term
+                               struct.type
                                (type-struct tag)
                                (type-pointer (type-struct tag)))))))
-         ((mv okp arg) (atc-check-sint-from-boolean term))
+         ((mv okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
-          (b* (((er expr :iferr (irr))
-                (atc-gen-expr-bool arg inscope prec-tags fn ctx state)))
-            (mv nil (list expr (type-sint)) state)))
-         ((mv okp test then else) (atc-check-condexpr term))
+          (b* (((er (bexpr-gout arg) :iferr (irr))
+                (atc-gen-expr-bool arg-term
+                                   (make-bexpr-gin
+                                    :inscope gin.inscope
+                                    :prec-tags gin.prec-tags
+                                    :fn gin.fn)
+                                   ctx
+                                   state)))
+            (acl2::value (make-pexpr-gout :expr arg.expr
+                                          :type (type-sint)))))
+         ((mv okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
-          (b* (((er test-expr :iferr (irr)) (atc-gen-expr-bool test
-                                                               inscope
-                                                               prec-tags
-                                                               fn
-                                                               ctx
-                                                               state))
-               ((er (list then-expr then-type)) (atc-gen-expr-pure
-                                                 then
-                                                 inscope
-                                                 prec-tags
-                                                 fn
-                                                 ctx
-                                                 state))
-               ((er (list else-expr else-type)) (atc-gen-expr-pure
-                                                 else
-                                                 inscope
-                                                 prec-tags
-                                                 fn
-                                                 ctx
-                                                 state))
-               ((unless (equal then-type else-type))
+          (b* (((er (bexpr-gout test) :iferr (irr))
+                (atc-gen-expr-bool test-term
+                                   (make-bexpr-gin
+                                    :inscope gin.inscope
+                                    :prec-tags gin.prec-tags
+                                    :fn gin.fn)
+                                   ctx
+                                   state))
+               ((er (pexpr-gout then))
+                (atc-gen-expr-pure then-term gin ctx state))
+               ((er (pexpr-gout else))
+                (atc-gen-expr-pure else-term gin ctx state))
+               ((unless (equal then.type else.type))
                 (er-soft+ ctx t (irr)
                           "When generating C code for the function ~x0, ~
                            two branches ~x1 and ~x2 of a conditional term ~
                            have different types ~x3 and ~x4; ~
                            use conversion operations, if needed, ~
                            to make the branches of the same type."
-                          fn then else then-type else-type)))
+                          gin.fn then-term else-term then.type else.type)))
             (acl2::value
-             (list
-              (make-expr-cond :test test-expr :then then-expr :else else-expr)
-              then-type)))))
-      (er-soft+ ctx t (list (irr-expr) (irr-type))
+             (make-pexpr-gout
+              :expr (make-expr-cond :test test.expr
+                                    :then then.expr
+                                    :else else.expr)
+              :type then.type)))))
+      (er-soft+ ctx t (irr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
                  a pure expression term returning a C type is expected, ~
                  the term ~x1 is encountered instead."
-                fn term))
+                gin.fn term))
     :measure (pseudo-term-count term))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (inscope atc-symbol-type-alist-listp)
-                             (prec-tags atc-string-taginfo-alistp)
-                             (fn symbolp)
+                             (gin bexpr-ginp)
                              (ctx ctxp)
                              state)
-    :returns (mv erp (expr exprp) state)
+    :returns (mv erp (val bexpr-goutp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be an expression term returning a boolean."
@@ -605,112 +625,90 @@
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
-    (b* (((mv okp arg) (fty-check-not-call term))
+    (b* (((acl2::fun (irr)) (ec-call (bexpr-gout-fix :irrelevant)))
+         ((bexpr-gin gin) gin)
+         ((mv okp arg-term) (fty-check-not-call term))
          ((when okp)
-          (b* (((er arg-expr) (atc-gen-expr-bool arg
-                                                 inscope
-                                                 prec-tags
-                                                 fn
-                                                 ctx
-                                                 state)))
-            (acl2::value (make-expr-unary :op (unop-lognot)
-                                          :arg arg-expr))))
-         ((mv okp arg1 arg2) (fty-check-and-call term))
+          (b* (((er (bexpr-gout arg))
+                (atc-gen-expr-bool arg-term gin ctx state)))
+            (acl2::value (make-bexpr-gout
+                          :expr (make-expr-unary :op (unop-lognot)
+                                                 :arg arg.expr)))))
+         ((mv okp arg1-term arg2-term) (fty-check-and-call term))
          ((when okp)
-          (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                                  inscope
-                                                  prec-tags
-                                                  fn
-                                                  ctx
-                                                  state))
-               ((er arg2-expr) (atc-gen-expr-bool arg2
-                                                  inscope
-                                                  prec-tags
-                                                  fn
-                                                  ctx
-                                                  state)))
-            (acl2::value (make-expr-binary :op (binop-logand)
-                                           :arg1 arg1-expr
-                                           :arg2 arg2-expr))))
-         ((mv okp arg1 arg2) (fty-check-or-call term))
+          (b* (((er (bexpr-gout arg1))
+                (atc-gen-expr-bool arg1-term gin ctx state))
+               ((er (bexpr-gout arg2))
+                (atc-gen-expr-bool arg2-term gin ctx state)))
+            (acl2::value (make-bexpr-gout
+                          :expr (make-expr-binary :op (binop-logand)
+                                                  :arg1 arg1.expr
+                                                  :arg2 arg2.expr)))))
+         ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
-          (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                                  inscope
-                                                  prec-tags
-                                                  fn
-                                                  ctx
-                                                  state))
-               ((er arg2-expr) (atc-gen-expr-bool arg2
-                                                  inscope
-                                                  prec-tags
-                                                  fn
-                                                  ctx
-                                                  state)))
-            (acl2::value (make-expr-binary :op (binop-logor)
-                                           :arg1 arg1-expr
-                                           :arg2 arg2-expr))))
-         ((mv okp arg in-type) (atc-check-boolean-from-type term))
+          (b* (((er (bexpr-gout arg1))
+                (atc-gen-expr-bool arg1-term gin ctx state))
+               ((er (bexpr-gout arg2))
+                (atc-gen-expr-bool arg2-term gin ctx state)))
+            (acl2::value (make-bexpr-gout
+                          :expr (make-expr-binary :op (binop-logor)
+                                                  :arg1 arg1.expr
+                                                  :arg2 arg2.expr)))))
+         ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
-          (b* (((er (list expr type) :iferr (irr-expr))
-                (atc-gen-expr-pure arg inscope prec-tags fn ctx state))
-               ((unless (equal type in-type))
-                (er-soft+ ctx t (irr-expr)
+          (b* (((er (pexpr-gout arg) :iferr (irr))
+                (atc-gen-expr-pure arg-term
+                                   (make-pexpr-gin
+                                    :inscope gin.inscope
+                                    :prec-tags gin.prec-tags
+                                    :fn gin.fn)
+                                   ctx
+                                   state))
+               ((unless (equal arg.type in-type))
+                (er-soft+ ctx t (irr)
                           "The conversion from ~x0 to boolean is applied to ~
                            an expression term ~x1 returning ~x2, ~
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
-                          in-type arg type)))
-            (acl2::value expr))))
-      (er-soft+ ctx t (irr-expr)
+                          in-type arg-term arg.type)))
+            (acl2::value (make-bexpr-gout :expr arg.expr)))))
+      (er-soft+ ctx t (irr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
                  an expression term returning boolean is expected, ~
                  the term ~x1 is encountered instead."
-                fn term))
+                gin.fn term))
     :measure (pseudo-term-count term))
 
-  :prepwork ((set-state-ok t)
-             ;; for speed:
-             (local
-              (in-theory (disable default-car
-                                  default-cdr
-                                  acl2::apply$-badgep-properties
-                                  type-optionp-of-car-when-type-option-listp
-                                  typep-of-car-when-type-listp
-                                  symbol-listp
-                                  type-listp-when-not-consp))))
-
   :verify-guards nil ; done below
-
   ///
-
-  (defret-mutual consp-of-atc-gen-expr-pure
-    (defret typeset-of-atc-gen-expr-pure
-      (and (consp val)
-           (true-listp val))
-      :rule-classes :type-prescription
-      :fn atc-gen-expr-pure)
-    (defret true-of-atc-gen-expr-bool
-      t
-      :rule-classes nil
-      :fn atc-gen-expr-bool))
-
   (verify-guards atc-gen-expr-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod pexprs-gin
+  :short "Inputs for @(tsee atc-gen-expr-pure-list)."
+  ((inscope atc-symbol-type-alist-list)
+   (prec-tags atc-string-taginfo-alist)
+   (fn symbol))
+  :pred pexprs-ginp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod pexprs-gout
+  :short "Outputs for @(tsee atc-gen-expr-pure-list)."
+  ((exprs expr-list)
+   (types type-list))
+  :pred pexprs-goutp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-expr-pure-list ((terms pseudo-term-listp)
-                                (inscope atc-symbol-type-alist-listp)
-                                (prec-tags atc-string-taginfo-alistp)
-                                (fn symbolp)
+                                (gin pexprs-ginp)
                                 (ctx ctxp)
                                 state)
-  :returns (mv erp
-               (val (tuple (exprs expr-listp)
-                           (types type-listp)
-                           val))
-               state)
+  :returns (mv erp (val pexprs-goutp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure expression terms returning C values."
   :long
@@ -718,48 +716,54 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* (((when (endp terms)) (acl2::value (list nil nil)))
-       ((er(list expr type) :iferr (list nil nil))
+  (b* (((acl2::fun (irr)) (ec-call (pexprs-gout-fix :irrelevant)))
+       ((when (endp terms))
+        (acl2::value (make-pexprs-gout :exprs nil :types nil)))
+       ((er (pexpr-gout first) :iferr (irr))
         (atc-gen-expr-pure (car terms)
-                           inscope
-                           prec-tags
-                           fn
+                           (make-pexpr-gin
+                            :inscope (pexprs-gin->inscope gin)
+                            :prec-tags (pexprs-gin->prec-tags gin)
+                            :fn (pexprs-gin->fn gin))
                            ctx
                            state))
-       ((er (list exprs types)) (atc-gen-expr-pure-list (cdr terms)
-                                                        inscope
-                                                        prec-tags
-                                                        fn
-                                                        ctx
-                                                        state)))
-    (acl2::value (list (cons expr exprs)
-                       (cons type types))))
+       ((er (pexprs-gout rest))
+        (atc-gen-expr-pure-list (cdr terms) gin ctx state)))
+    (acl2::value (make-pexprs-gout
+                  :exprs (cons first.expr rest.exprs)
+                  :types (cons first.type rest.types))))
   :verify-guards nil ; done below
   ///
-  (more-returns
-   (val (and (consp val)
-             (true-listp val))
-        :name typeset-of-atc-gen-expr-pure-list
-        :rule-classes :type-prescription))
   (verify-guards atc-gen-expr-pure-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod expr-gin
+  :short "Inputs for @(tsee atc-gen-expr)."
+  ((var-term-alist acl2::symbol-pseudoterm-alist)
+   (inscope atc-symbol-type-alist-list)
+   (fn symbol)
+   (prec-fns atc-symbol-fninfo-alist)
+   (prec-tags atc-string-taginfo-alist))
+  :pred expr-ginp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-gout
+  :short "Outputs for @(tsee atc-gen-expr)."
+  ((expr exprp)
+   (type typep)
+   (affect symbol-listp)
+   (limit pseudo-termp))
+  :pred expr-goutp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-expr ((term pseudo-termp)
-                      (var-term-alist symbol-pseudoterm-alistp)
-                      (inscope atc-symbol-type-alist-listp)
-                      (fn symbolp)
-                      (prec-fns atc-symbol-fninfo-alistp)
-                      (prec-tags atc-string-taginfo-alistp)
+                      (gin expr-ginp)
                       (ctx ctxp)
                       state)
-  :returns (mv erp
-               (val (tuple (expr exprp)
-                           (type typep)
-                           (affect symbol-listp)
-                           (limit pseudo-termp)
-                           val))
-               state)
+  :returns (mv erp (val expr-goutp) state)
   :short "Generate a C expression from an ACL2 term
           that must be an expression term."
   :long
@@ -790,11 +794,13 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((mv okp called-fn args in-types out-type affect limit)
-        (atc-check-cfun-call term var-term-alist prec-fns (w state)))
+  (b* (((acl2::fun (irr)) (ec-call (expr-gout-fix :irrelevant)))
+       ((expr-gin gin) gin)
+       ((mv okp called-fn arg-terms in-types out-type affect limit)
+        (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
        ((when okp)
         (b* (((when (type-case out-type :void))
-              (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
+              (er-soft+ ctx t (irr)
                         "A call ~x0 of the function ~x1, which returns void, ~
                          is being used where ~
                          an expression term returning a a non-void C type ~
@@ -802,42 +808,45 @@
                         term called-fn))
              ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
                                                 in-types
-                                                args))
-              (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
+                                                arg-terms))
+              (er-soft+ ctx t (irr)
                         "The call ~x0 does not satisfy the restrictions ~
                          on array arguments being identical to the formals."
                         term))
-             ((er (list arg-exprs types)
-                  :iferr (list (irr-expr) (irr-type) nil nil))
-              (atc-gen-expr-pure-list args
-                                      inscope
-                                      prec-tags
-                                      fn
+             ((er (pexprs-gout args) :iferr (irr))
+              (atc-gen-expr-pure-list arg-terms
+                                      (make-pexprs-gin
+                                       :inscope gin.inscope
+                                       :prec-tags gin.prec-tags
+                                       :fn gin.fn)
                                       ctx
                                       state))
-             ((unless (equal types in-types))
-              (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
+             ((unless (equal args.types in-types))
+              (er-soft+ ctx t (irr)
                         "The function ~x0 with input types ~x1 ~
                          is applied to expression terms ~x2 returning ~x3. ~
                          This is indicative of provably dead code, ~
                          given that the code is guard-verified."
-                        called-fn in-types args types)))
-          (acl2::value (list
-                        (make-expr-call :fun (make-ident
-                                              :name (symbol-name called-fn))
-                                        :args arg-exprs)
-                        out-type
-                        affect
-                        `(binary-+ '2 ,limit))))))
-    (b* (((er (list expr type) :iferr (list (irr-expr) (irr-type) nil nil))
-          (atc-gen-expr-pure term inscope prec-tags fn ctx state)))
-      (acl2::value (list expr type affect '(quote 1)))))
-  ///
-  (more-returns
-   (val (and (consp val)
-             (true-listp val))
-        :name typeset-of-atc-gen-expr
-        :rule-classes :type-prescription)))
+                        called-fn in-types arg-terms args.types)))
+          (acl2::value
+           (make-expr-gout
+            :expr (make-expr-call :fun (make-ident
+                                        :name (symbol-name called-fn))
+                                  :args args.exprs)
+            :type out-type
+            :affect affect
+            :limit `(binary-+ '2 ,limit))))))
+    (b* (((er (pexpr-gout pure) :iferr (irr))
+          (atc-gen-expr-pure term
+                             (make-pexpr-gin :inscope gin.inscope
+                                             :prec-tags gin.prec-tags
+                                             :fn gin.fn)
+                             ctx
+                             state)))
+      (acl2::value (make-expr-gout :expr pure.expr
+                                   :type pure.type
+                                   :affect affect
+                                   :limit '(quote 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1239,25 +1248,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod stmt-gin
+  :short "Inputs for @(tsee atc-gen-stmt)."
+  ((var-term-alist symbol-pseudoterm-alistp)
+   (inscope atc-symbol-type-alist-listp)
+   (loop-flag booleanp)
+   (affect symbol-listp)
+   (fn symbolp)
+   (prec-fns atc-symbol-fninfo-alistp)
+   (prec-tags atc-string-taginfo-alistp)
+   (prec-objs atc-string-objinfo-alistp)
+   (proofs booleanp))
+  :pred stmt-ginp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod stmt-gout
+  :short "Outputs for @(tsee atc-gen-stmt)."
+  ((items block-item-listp)
+   (type typep)
+   (limit pseudo-termp))
+  :pred stmt-goutp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp)
-                      (var-term-alist symbol-pseudoterm-alistp)
-                      (inscope atc-symbol-type-alist-listp)
-                      (loop-flag booleanp)
-                      (affect symbol-listp)
-                      (fn symbolp)
-                      (prec-fns atc-symbol-fninfo-alistp)
-                      (prec-tags atc-string-taginfo-alistp)
-                      (prec-objs atc-string-objinfo-alistp)
-                      (proofs booleanp)
+                      (gin stmt-ginp)
                       (ctx ctxp)
                       state)
-  :returns (mv erp
-               (val (tuple (items block-item-listp)
-                           (type typep)
-                           (limit pseudo-termp)
-                           val)
-                    :hints nil) ; for speed
-               state)
+  :returns (mv erp (val stmt-goutp) state)
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -1471,399 +1490,375 @@
      another 1 to go from there to the @(':return') case
      and @(tsee exec-expr-call-or-pure),
      for which we use the recursively calculated limit."))
-  (b* ((irr (list nil (irr-type) nil))
+  (b* (((acl2::fun (irr)) (ec-call (stmt-gout-fix :irrelevant)))
        (wrld (w state))
-       ((mv okp test then else) (fty-check-if-call term))
+       ((stmt-gin gin) gin)
+       ((mv okp test-term then-term else-term) (fty-check-if-call term))
        ((when okp)
-        (b* (((mv mbtp &) (check-mbt-call test))
-             ((when mbtp)
-              (atc-gen-stmt then
-                            var-term-alist
-                            inscope
-                            loop-flag
-                            affect
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
+        (b* (((mv mbtp &) (check-mbt-call test-term))
+             ((when mbtp) (atc-gen-stmt then-term gin ctx state))
+             ((mv mbt$p &) (check-mbt$-call test-term))
+             ((when mbt$p) (atc-gen-stmt then-term gin ctx state))
+             ((er (bexpr-gout test) :iferr (irr))
+              (atc-gen-expr-bool test-term
+                                 (make-bexpr-gin :inscope gin.inscope
+                                                 :prec-tags gin.prec-tags
+                                                 :fn gin.fn)
+                                 ctx
+                                 state))
+             ((er (stmt-gout then))
+              (atc-gen-stmt then-term
+                            (change-stmt-gin gin
+                                             :inscope (cons nil gin.inscope))
                             ctx
                             state))
-             ((mv mbt$p &) (check-mbt$-call test))
-             ((when mbt$p)
-              (atc-gen-stmt then
-                            var-term-alist
-                            inscope
-                            loop-flag
-                            affect
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
+             ((er (stmt-gout else))
+              (atc-gen-stmt else-term
+                            (change-stmt-gin gin
+                                             :inscope (cons nil gin.inscope))
                             ctx
                             state))
-             ((er test-expr :iferr irr) (atc-gen-expr-bool test
-                                                           inscope
-                                                           prec-tags
-                                                           fn
-                                                           ctx
-                                                           state))
-             ((er (list then-items then-type then-limit))
-              (atc-gen-stmt then
-                            var-term-alist
-                            (cons nil inscope)
-                            loop-flag
-                            affect
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
-                            ctx
-                            state))
-             ((er (list else-items else-type else-limit))
-              (atc-gen-stmt else
-                            var-term-alist
-                            (cons nil inscope)
-                            loop-flag
-                            affect
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
-                            ctx
-                            state))
-             ((unless (equal then-type else-type))
-              (er-soft+ ctx t irr
+             ((unless (equal then.type else.type))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          two branches ~x1 and ~x2 of a conditional term ~
                          have different types ~x3 and ~x4; ~
                          use conversion operations, if needed, ~
                          to make the branches of the same type."
-                        fn then else then-type else-type))
-             (type then-type)
+                        gin.fn then-term else-term then.type else.type))
+             (type then.type)
              (limit (pseudo-term-fncall
                      'binary-+
                      (list
                       (pseudo-term-quote 5)
                       (pseudo-term-fncall
                        'binary-+
-                       (list then-limit else-limit))))))
+                       (list then.limit else.limit))))))
           (acl2::value
-           (list
+           (make-stmt-gout
+            :items
             (list
              (block-item-stmt
-              (make-stmt-ifelse :test test-expr
-                                :then (make-stmt-compound :items then-items)
-                                :else (make-stmt-compound :items else-items))))
-            type
-            limit))))
-       ((mv okp var? vars indices val body wrapper?) (atc-check-mv-let term))
+              (make-stmt-ifelse :test test.expr
+                                :then (make-stmt-compound :items then.items)
+                                :else (make-stmt-compound :items else.items))))
+            :type type
+            :limit limit))))
+       ((mv okp var? vars indices val-term body-term wrapper?)
+        (atc-check-mv-let term))
        ((when okp)
         (b* ((all-vars (if var? (cons var? vars) vars))
-             (val-instance (fty-fsublis-var var-term-alist val))
+             (val-instance (fty-fsublis-var gin.var-term-alist val-term))
              (vals (atc-make-mv-nth-terms indices val-instance))
              (var-term-alist-body
-              (atc-update-var-term-alist all-vars vals var-term-alist))
+              (atc-update-var-term-alist all-vars vals gin.var-term-alist))
              ((when (eq wrapper? 'declar))
               (b* ((var var?)
-                   ((mv type? & errorp) (atc-check-var var inscope))
+                   ((mv type? & errorp) (atc-check-var var gin.inscope))
                    ((when errorp)
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                a new variable ~x1 has been encountered ~
                                that has the same symbol name as, ~
                                but different package name from, ~
                                a variable already in scope. ~
                                This is disallowed."
-                              fn var))
+                              gin.fn var))
                    ((when type?)
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
-                              var fn))
+                              var gin.fn))
                    ((unless (paident-stringp (symbol-name var)))
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "The symbol name ~s0 of ~
                                the MV-LET variable ~x1 of the function ~x2 ~
                                must be a portable ASCII C identifier, ~
                                but it is not."
-                              (symbol-name var) var fn))
+                              (symbol-name var) var gin.fn))
                    ((mv type?-list innermostp-list)
-                    (atc-get-vars-check-innermost vars inscope))
+                    (atc-get-vars-check-innermost vars gin.inscope))
                    ((when (member-eq nil type?-list))
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                an attempt is made to modify the variables ~x1, ~
                                not all of which are in scope."
-                              fn vars))
-                   ((unless (atc-vars-assignablep vars innermostp-list affect))
-                    (er-soft+ ctx t irr
+                              gin.fn vars))
+                   ((unless (atc-vars-assignablep
+                             vars innermostp-list gin.affect))
+                    (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                an attempt is made to modify the variables ~x1, ~
                                not all of which are assignable."
-                              fn vars))
-                   ((er (list init-expr init-type init-affect init-limit)
-                        :iferr irr)
-                    (atc-gen-expr val
-                                  var-term-alist
-                                  inscope
-                                  fn
-                                  prec-fns
-                                  prec-tags
+                              gin.fn vars))
+                   ((er (expr-gout init) :iferr (irr))
+                    (atc-gen-expr val-term
+                                  (make-expr-gin
+                                   :var-term-alist gin.var-term-alist
+                                   :inscope gin.inscope
+                                   :fn gin.fn
+                                   :prec-fns gin.prec-fns
+                                   :prec-tags gin.prec-tags)
                                   ctx
                                   state))
-                   ((when (type-case init-type :pointer))
-                    (er-soft+ ctx t irr
+                   ((when (type-case init.type :pointer))
+                    (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                the term ~x1 of pointer type ~x2 ~
                                is being assigned to a new variable ~x3. ~
                                This is currently disallowed, ~
                                because it would create an alias."
-                              fn val init-type var))
-                   ((unless (equal init-affect vars))
-                    (er-soft+ ctx t irr
+                              gin.fn val-term init.type var))
+                   ((unless (equal init.affect vars))
+                    (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
-                              val var vars init-affect))
-                   ((er typed-formals :iferr irr)
-                    (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((er & :iferr irr)
+                              val-term var vars init.affect))
+                   ((er typed-formals :iferr (irr))
+                    (atc-typed-formals gin.fn
+                                       gin.prec-tags
+                                       gin.prec-objs
+                                       ctx
+                                       state))
+                   ((er & :iferr (irr))
                     (atc-ensure-formals-not-lost vars
-                                                 affect
+                                                 gin.affect
                                                  typed-formals
-                                                 fn
+                                                 gin.fn
                                                  ctx
                                                  state))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
-                                        init-type))
+                                        init.type))
                    (declon (make-obj-declon :tyspec tyspec
                                             :declor declor
-                                            :init? (initer-single init-expr)))
+                                            :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
-                   (inscope (atc-add-var var init-type inscope))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body
-                                  var-term-alist-body
-                                  inscope
-                                  loop-flag
-                                  affect
-                                  fn
-                                  prec-fns
-                                  prec-tags
-                                  prec-objs
-                                  proofs
+                   (inscope-body (atc-add-var var init.type gin.inscope))
+                   ((er (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body
+                                   :inscope inscope-body)
                                   ctx
                                   state))
-                   (type body-type)
+                   (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
                            (list (pseudo-term-quote 3)
                                  (pseudo-term-fncall
                                   'binary-+
-                                  (list init-limit body-limit))))))
-                (acl2::value (list (cons item body-items)
-                                   type
-                                   limit))))
+                                  (list init.limit body.limit))))))
+                (acl2::value (make-stmt-gout
+                              :items (cons item body.items)
+                              :type type
+                              :limit limit))))
              ((when (eq wrapper? 'assign))
               (b* ((var var?)
-                   ((mv type? innermostp &) (atc-check-var var inscope))
+                   ((mv type? innermostp &) (atc-check-var var gin.inscope))
                    ((unless type?)
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                an attempt is being made ~
                                to modify a variable ~x1 not in scope."
-                              fn var))
-                   ((unless (atc-var-assignablep var innermostp affect))
-                    (er-soft+ ctx t irr
+                              gin.fn var))
+                   ((unless (atc-var-assignablep var innermostp gin.affect))
+                    (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                an attempt is being made ~
                                to modify a non-assignable variable ~x1."
-                              fn var))
+                              gin.fn var))
                    (prev-type type?)
-                   ((er (list rhs-expr rhs-type rhs-affect rhs-limit) :iferr irr)
-                    (atc-gen-expr val
-                                  var-term-alist
-                                  inscope
-                                  fn
-                                  prec-fns
-                                  prec-tags
+                   ((er (expr-gout rhs) :iferr (irr))
+                    (atc-gen-expr val-term
+                                  (make-expr-gin
+                                   :var-term-alist gin.var-term-alist
+                                   :inscope gin.inscope
+                                   :fn gin.fn
+                                   :prec-fns gin.prec-fns
+                                   :prec-tags gin.prec-tags)
                                   ctx
                                   state))
-                   ((unless (equal prev-type rhs-type))
-                    (er-soft+ ctx t irr
+                   ((unless (equal prev-type rhs.type))
+                    (er-soft+ ctx t (irr)
                               "The type ~x0 of the term ~x1 ~
                                assigned to the LET variable ~x2 ~
                                of the function ~x3 ~
                                differs from the type ~x4 ~
                                of a variable with the same symbol in scope."
-                              rhs-type val var fn prev-type))
-                   ((unless (equal rhs-affect vars))
-                    (er-soft+ ctx t irr
+                              rhs.type val-term var gin.fn prev-type))
+                   ((unless (equal rhs.affect vars))
+                    (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
-                              val var vars rhs-affect))
-                   ((er typed-formals :iferr irr)
-                    (atc-typed-formals fn prec-tags prec-objs ctx state))
-                   ((er & :iferr irr)
+                              val-term var vars rhs.affect))
+                   ((er typed-formals :iferr (irr))
+                    (atc-typed-formals gin.fn
+                                       gin.prec-tags
+                                       gin.prec-objs
+                                       ctx
+                                       state))
+                   ((er & :iferr (irr))
                     (atc-ensure-formals-not-lost vars
-                                                 affect
+                                                 gin.affect
                                                  typed-formals
-                                                 fn
+                                                 gin.fn
                                                  ctx
                                                  state))
-                   ((when (type-case rhs-type :array))
-                    (raise "Internal error: array type ~x0." rhs-type)
-                    (acl2::value irr))
-                   ((when (type-case rhs-type :pointer))
-                    (er-soft+ ctx t irr
+                   ((when (type-case rhs.type :array))
+                    (raise "Internal error: array type ~x0." rhs.type)
+                    (acl2::value (irr)))
+                   ((when (type-case rhs.type :pointer))
+                    (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
-                              val var rhs-type))
+                              val-term var rhs.type))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
-                         :arg2 rhs-expr))
+                         :arg2 rhs.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body
-                                  var-term-alist
-                                  inscope
-                                  loop-flag
-                                  affect
-                                  fn
-                                  prec-fns
-                                  prec-tags
-                                  prec-objs
-                                  proofs
+                   ((er (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body)
                                   ctx
                                   state))
-                   (type body-type)
+                   (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
                            (list (pseudo-term-quote 6)
                                  (pseudo-term-fncall
                                   'binary-+
-                                  (list rhs-limit body-limit))))))
-                (acl2::value (list (cons item body-items)
-                                   type
-                                   limit))))
+                                  (list rhs.limit body.limit))))))
+                (acl2::value (make-stmt-gout
+                              :items (cons item body.items)
+                              :type type
+                              :limit limit))))
              ((unless (eq wrapper? nil))
-              (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
-                      (acl2::value irr)))
+              (prog2$ (raise "Internal error: MV-LET wrapper is ~x0." wrapper?)
+                      (acl2::value (irr))))
              ((mv type?-list innermostp-list)
-              (atc-get-vars-check-innermost vars inscope))
+              (atc-get-vars-check-innermost vars gin.inscope))
              ((when (member-eq nil type?-list))
-              (er-soft+ ctx t irr
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are in scope."
-                        fn vars))
-             ((unless (atc-vars-assignablep vars innermostp-list affect))
-              (er-soft+ ctx t irr
+                        gin.fn vars))
+             ((unless (atc-vars-assignablep vars innermostp-list gin.affect))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are assignable."
-                        fn vars))
-             ((unless (atc-affecting-term-for-let-p val prec-fns))
-              (er-soft+ ctx t irr
+                        gin.fn vars))
+             ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          an MV-LET has been encountered ~
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
-                        fn val))
-             ((er typed-formals :iferr irr)
-              (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((er & :iferr irr)
+                        gin.fn val-term))
+             ((er typed-formals :iferr (irr))
+              (atc-typed-formals gin.fn gin.prec-tags gin.prec-objs ctx state))
+             ((er & :iferr (irr))
               (atc-ensure-formals-not-lost vars
-                                           affect
+                                           gin.affect
                                            typed-formals
-                                           fn
+                                           gin.fn
                                            ctx
                                            state))
-             ((er (list xform-items xform-type xform-limit))
-              (atc-gen-stmt val
-                            var-term-alist
-                            inscope
-                            nil
-                            vars
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
+             ((er (stmt-gout xform))
+              (atc-gen-stmt val-term
+                            (change-stmt-gin gin
+                                             :affect vars
+                                             :loop-flag nil)
                             ctx
                             state))
-             ((unless (type-case xform-type :void))
-              (er-soft+ ctx t irr
+             ((unless (type-case xform.type :void))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          an MV-LET has been encountered ~
                          whose term ~x1 to which the variables are bound ~
                          has the non-void type ~x2, ~
                          which is disallowed."
-                        fn val xform-type))
-             ((er (list body-items body-type body-limit))
-              (atc-gen-stmt body
-                            var-term-alist-body
-                            inscope
-                            loop-flag
-                            affect
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
+                        gin.fn val-term xform.type))
+             ((er (stmt-gout body))
+              (atc-gen-stmt body-term
+                            (change-stmt-gin
+                             gin
+                             :var-term-alist var-term-alist-body)
                             ctx
                             state))
-             (items (append xform-items body-items))
-             (type body-type)
+             (items (append xform.items body.items))
+             (type body.type)
              (limit (pseudo-term-fncall 'binary-+
-                                        (list xform-limit body-limit))))
-          (acl2::value (list items type limit))))
-       ((mv okp var val body wrapper?) (atc-check-let term))
+                                        (list xform.limit body.limit))))
+          (acl2::value (make-stmt-gout
+                        :items items
+                        :type type
+                        :limit limit))))
+       ((mv okp var val-term body-term wrapper?) (atc-check-let term))
        ((when okp)
-        (b* ((val-instance (fty-fsublis-var var-term-alist val))
+        (b* ((val-instance (fty-fsublis-var gin.var-term-alist val-term))
              (var-term-alist-body
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
-                                         var-term-alist))
-             ((mv okp sub elem sub-type elem-type)
-              (atc-check-array-write var val))
+                                         gin.var-term-alist))
+             ((mv okp sub-term elem-term sub-type elem-type)
+              (atc-check-array-write var val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "The array write term ~x0 to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
-                              val var wrapper?))
-                   ((unless (member-eq var affect))
-                    (er-soft+ ctx t irr
+                              val-term var wrapper?))
+                   ((unless (member-eq var gin.affect))
+                    (er-soft+ ctx t (irr)
                               "The array ~x0 is being written to, ~
                                but it is not among the variables ~x1 ~
                                currently affected."
-                              var affect))
-                   ((er (list arr-expr type1) :iferr irr)
-                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
-                   ((er (list sub-expr type2) :iferr irr)
-                    (atc-gen-expr-pure sub inscope prec-tags fn ctx state))
-                   ((er (list elem-expr type3) :iferr irr)
-                    (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
-                   ((unless (equal type1 (type-pointer elem-type)))
-                    (er-soft+ ctx t irr
+                              var gin.affect))
+                   ((er (pexpr-gout arr) :iferr (irr))
+                    (atc-gen-expr-pure var
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
+                   ((er (pexpr-gout sub) :iferr (irr))
+                    (atc-gen-expr-pure sub-term
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
+                   ((er (pexpr-gout elem) :iferr (irr))
+                    (atc-gen-expr-pure elem-term
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
+                   ((unless (equal arr.type (type-pointer elem-type)))
+                    (er-soft+ ctx t (irr)
                               "The array ~x0 of type ~x1 ~
                                does not have the expected type ~x2. ~
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var type1 (type-pointer elem-type)))
-                   ((unless (equal type2 sub-type))
-                    (er-soft+ ctx t irr
+                              var arr.type (type-pointer elem-type)))
+                   ((unless (equal sub.type sub-type))
+                    (er-soft+ ctx t (irr)
                               "The array ~x0 of type ~x1 ~
                                is being indexed with ~
                                a subscript ~x2 of type x3, ~
@@ -1871,9 +1866,9 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var type1 sub type2 sub-type))
-                   ((unless (equal type3 elem-type))
-                    (er-soft+ ctx t irr
+                              var arr.type sub sub.type sub-type))
+                   ((unless (equal elem.type elem-type))
+                    (er-soft+ ctx t (irr)
                               "The array ~x0 of type ~x1 ~
                                is being written to with ~
                                an element ~x2 of type x3, ~
@@ -1881,73 +1876,79 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var type1 elem type3 elem-type))
+                              var arr.type elem elem.type elem-type))
                    (asg (make-expr-binary
                          :op (binop-asg)
-                         :arg1 (make-expr-arrsub :arr arr-expr
-                                                 :sub sub-expr)
-                         :arg2 elem-expr))
+                         :arg1 (make-expr-arrsub :arr arr.expr
+                                                 :sub sub.expr)
+                         :arg2 elem.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body
-                                  var-term-alist-body
-                                  inscope
-                                  loop-flag
-                                  affect
-                                  fn
-                                  prec-fns
-                                  prec-tags
-                                  prec-objs
-                                  proofs
+                   ((er (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body)
                                   ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
-                                                    body-limit))))
-                (acl2::value (list (cons item body-items)
-                                   body-type
-                                   limit))))
-             ((mv okp member-value tag member-name member-type)
-              (atc-check-struct-write-scalar var val prec-tags))
+                                                    body.limit))))
+                (acl2::value (make-stmt-gout
+                              :items (cons item body.items)
+                              :type body.type
+                              :limit limit))))
+             ((mv okp member-term tag member-name member-type)
+              (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "The structure write term ~x0 ~
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
-                              val var wrapper?))
-                   ((er (list struct-expr type1) :iferr irr)
-                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
+                              val-term var wrapper?))
+                   ((er (pexpr-gout struct) :iferr (irr))
+                    (atc-gen-expr-pure var
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
                    ((er pointerp)
                     (cond
-                     ((equal type1 (type-struct tag))
+                     ((equal struct.type (type-struct tag))
                       (acl2::value nil))
-                     ((equal type1 (type-pointer (type-struct tag)))
+                     ((equal struct.type (type-pointer (type-struct tag)))
                       (acl2::value t))
-                     (t (er-soft+ ctx t irr
+                     (t (er-soft+ ctx t (irr)
                                   "The structure ~x0 of type ~x1 ~
                                    does not have the expected type ~x2 or ~x3. ~
                                    This is indicative of ~
                                    unreachable code under the guards, ~
                                    given that the code is guard-verified."
                                   var
-                                  type1
+                                  struct.type
                                   (type-struct tag)
                                   (type-pointer (type-struct tag))))))
                    ((when (and pointerp
-                               (not (member-eq var affect))))
-                    (er-soft+ ctx t irr
+                               (not (member-eq var gin.affect))))
+                    (er-soft+ ctx t (irr)
                               "The structure ~x0 ~
                                is being written to by pointer, ~
                                but it is not among the variables ~x1 ~
                                currently affected."
-                              var affect))
-                   ((er (list member-expr type2) :iferr irr)
-                    (atc-gen-expr-pure
-                     member-value inscope prec-tags fn ctx state))
-                   ((unless (equal type2 member-type))
-                    (er-soft+ ctx t irr
+                              var gin.affect))
+                   ((er (pexpr-gout member) :iferr (irr))
+                    (atc-gen-expr-pure member-term
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
+                   ((unless (equal member.type member-type))
+                    (er-soft+ ctx t (irr)
                               "The structure ~x0 of type ~x1 ~
                                is being written to with ~
                                a member ~x2 of type ~x3, ~
@@ -1955,75 +1956,83 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var type1 member-value type2 member-type))
+                              var struct.type member-term
+                              member.type member-type))
                    (asg-mem (if pointerp
-                                (make-expr-memberp :target struct-expr
+                                (make-expr-memberp :target struct.expr
                                                    :name member-name)
-                              (make-expr-member :target struct-expr
+                              (make-expr-member :target struct.expr
                                                 :name member-name)))
                    (asg (make-expr-binary :op (binop-asg)
                                           :arg1 asg-mem
-                                          :arg2 member-expr))
+                                          :arg2 member.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body
-                                  var-term-alist-body
-                                  inscope
-                                  loop-flag
-                                  affect
-                                  fn
-                                  prec-fns
-                                  prec-tags
-                                  prec-objs
-                                  proofs
+                   ((er (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body)
                                   ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
-                                                    body-limit))))
-                (acl2::value (list (cons item body-items)
-                                   body-type
-                                   limit))))
-             ((mv okp index elem tag member index-type elem-type)
-              (atc-check-struct-write-array var val prec-tags))
+                                                    body.limit))))
+                (acl2::value (make-stmt-gout
+                              :items (cons item body.items)
+                              :type body.type
+                              :limit limit))))
+             ((mv okp index-term elem-term tag member index-type elem-type)
+              (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "The structure write term ~x0 ~
                                to which ~x1 is bound ~
                                has the ~x2 wrapper, which is disallowed."
-                              val var wrapper?))
-                   ((er (list struct-expr struct-type) :iferr irr)
-                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
+                              val-term var wrapper?))
+                   ((er (pexpr-gout struct) :iferr (irr))
+                    (atc-gen-expr-pure var
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
                    ((er pointerp)
                     (cond
-                     ((equal struct-type (type-struct tag))
+                     ((equal struct.type (type-struct tag))
                       (acl2::value nil))
-                     ((equal struct-type (type-pointer (type-struct tag)))
+                     ((equal struct.type (type-pointer (type-struct tag)))
                       (acl2::value t))
-                     (t (er-soft+ ctx t irr
+                     (t (er-soft+ ctx t (irr)
                                   "The structure ~x0 of type ~x1 ~
                                    does not have the expected type ~x2 or ~x3. ~
                                    This is indicative of ~
                                    unreachable code under the guards, ~
                                    given that the code is guard-verified."
                                   var
-                                  struct-type
+                                  struct.type
                                   (type-struct tag)
                                   (type-pointer (type-struct tag))))))
                    ((when (and pointerp
-                               (not (member-eq var affect))))
-                    (er-soft+ ctx t irr
+                               (not (member-eq var gin.affect))))
+                    (er-soft+ ctx t (irr)
                               "The structure ~x0 ~
                                is being written to by pointer, ~
                                but it is not among the variables ~x1 ~
                                currently affected."
-                              var affect))
-                   ((er (list index-expr index-type1) :iferr irr)
-                    (atc-gen-expr-pure index inscope prec-tags fn ctx state))
-                   ((unless (equal index-type1 index-type))
-                    (er-soft+ ctx t irr
+                              var gin.affect))
+                   ((er (pexpr-gout index) :iferr (irr))
+                    (atc-gen-expr-pure index-term
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
+                   ((unless (equal index.type index-type))
+                    (er-soft+ ctx t (irr)
                               "The structure ~x0 of type ~x1 ~
                                is being written to with ~
                                an index ~x2 of type ~x3, ~
@@ -2031,11 +2040,17 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var struct-type index index-type1 index-type))
-                   ((er (list elem-expr elem-type1) :iferr irr)
-                    (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
-                   ((unless (equal elem-type1 elem-type))
-                    (er-soft+ ctx t irr
+                              var struct.type index-term index.type index-type))
+                   ((er (pexpr-gout elem) :iferr (irr))
+                    (atc-gen-expr-pure elem-term
+                                       (make-pexpr-gin
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn)
+                                       ctx
+                                       state))
+                   ((unless (equal elem.type elem-type))
+                    (er-soft+ ctx t (irr)
                               "The structure ~x0 of type ~x1 ~
                                is being written to with ~
                                a member array element ~x2 of type ~x3, ~
@@ -2043,337 +2058,325 @@
                                This is indicative of ~
                                unreachable code under the guards, ~
                                given that the code is guard-verified."
-                              var struct-type elem elem-type1 elem-type))
+                              var struct.type elem-term elem.type elem-type))
                    (asg-mem (if pointerp
-                                (make-expr-memberp :target struct-expr
+                                (make-expr-memberp :target struct.expr
                                                    :name member)
-                              (make-expr-member :target struct-expr
+                              (make-expr-member :target struct.expr
                                                 :name member)))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (make-expr-arrsub :arr asg-mem
-                                                 :sub index-expr)
-                         :arg2 elem-expr))
+                                                 :sub index.expr)
+                         :arg2 elem.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body
-                                  var-term-alist-body
-                                  inscope
-                                  loop-flag
-                                  affect
-                                  fn
-                                  prec-fns
-                                  prec-tags
-                                  prec-objs
-                                  proofs
+                   ((er (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body)
                                   ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
-                                                    body-limit))))
-                (acl2::value (list (cons item body-items)
-                                   body-type
-                                   limit))))
-             ((mv type? innermostp errorp) (atc-check-var var inscope))
+                                                    body.limit))))
+                (acl2::value (make-stmt-gout
+                              :items (cons item body.items)
+                              :type body.type
+                              :limit limit))))
+             ((mv type? innermostp errorp) (atc-check-var var gin.inscope))
              ((when errorp)
-              (er-soft+ ctx t irr
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          a new variable ~x1 has been encountered ~
                          that has the same symbol name as, ~
                          but different package name from, ~
                          a variable already in scope. ~
                          This is disallowed."
-                        fn var))
+                        gin.fn var))
              ((when (eq wrapper? 'declar))
               (b* (((when type?)
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
-                              var fn))
+                              var gin.fn))
                    ((unless (paident-stringp (symbol-name var)))
-                    (er-soft+ ctx t irr
+                    (er-soft+ ctx t (irr)
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
                                must be a portable ASCII C identifier, ~
                                but it is not."
-                              (symbol-name var) var fn))
-                   ((er (list init-expr init-type init-affect init-limit)
-                        :iferr irr)
-                    (atc-gen-expr val
-                                  var-term-alist
-                                  inscope
-                                  fn
-                                  prec-fns
-                                  prec-tags
+                              (symbol-name var) var gin.fn))
+                   ((er (expr-gout init) :iferr (irr))
+                    (atc-gen-expr val-term
+                                  (make-expr-gin
+                                   :var-term-alist gin.var-term-alist
+                                   :inscope gin.inscope
+                                   :fn gin.fn
+                                   :prec-fns gin.prec-fns
+                                   :prec-tags gin.prec-tags)
                                   ctx
                                   state))
-                   ((when (type-case init-type :pointer))
-                    (er-soft+ ctx t irr
+                   ((when (type-case init.type :pointer))
+                    (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                the term ~x1 of pointer type ~x2 ~
                                is being assigned to a new variable ~x3. ~
                                This is currently disallowed, ~
                                because it would create an alias."
-                              fn val init-type var))
-                   ((when (consp init-affect))
-                    (er-soft+ ctx t irr
+                              gin.fn val-term init.type var))
+                   ((when (consp init.affect))
+                    (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not affect any variables, ~
                                but it affects ~x2 instead."
-                              val var init-affect))
+                              val-term var init.affect))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
-                                        init-type))
+                                        init.type))
                    (declon (make-obj-declon :tyspec tyspec
                                             :declor declor
-                                            :init? (initer-single init-expr)))
+                                            :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
-                   (inscope (atc-add-var var init-type inscope))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body
-                                  var-term-alist-body
-                                  inscope
-                                  loop-flag
-                                  affect
-                                  fn
-                                  prec-fns
-                                  prec-tags
-                                  prec-objs
-                                  proofs
+                   (inscope-body (atc-add-var var init.type gin.inscope))
+                   ((er (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body
+                                   :inscope inscope-body)
                                   ctx
                                   state))
-                   (type body-type)
+                   (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
                            (list (pseudo-term-quote 3)
                                  (pseudo-term-fncall
                                   'binary-+
-                                  (list init-limit body-limit))))))
-                (acl2::value (list (cons item body-items)
-                                   type
-                                   limit))))
-             ((unless (atc-var-assignablep var innermostp affect))
-              (er-soft+ ctx t irr
+                                  (list init.limit body.limit))))))
+                (acl2::value (make-stmt-gout
+                              :items (cons item body.items)
+                              :type type
+                              :limit limit))))
+             ((unless (atc-var-assignablep var innermostp gin.affect))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          an attempt is being made ~
                          to modify a non-assignable variable ~x1."
-                        fn var))
+                        gin.fn var))
              ((when (eq wrapper? 'assign))
               (b* ((prev-type type?)
-                   ((er (list rhs-expr rhs-type rhs-affect rhs-limit)
-                        :iferr irr)
-                    (atc-gen-expr val
-                                  var-term-alist
-                                  inscope
-                                  fn
-                                  prec-fns
-                                  prec-tags
+                   ((er (expr-gout rhs) :iferr (irr))
+                    (atc-gen-expr val-term
+                                  (make-expr-gin
+                                   :var-term-alist gin.var-term-alist
+                                   :inscope gin.inscope
+                                   :fn gin.fn
+                                   :prec-fns gin.prec-fns
+                                   :prec-tags gin.prec-tags)
                                   ctx
                                   state))
-                   ((unless (equal prev-type rhs-type))
-                    (er-soft+ ctx t irr
+                   ((unless (equal prev-type rhs.type))
+                    (er-soft+ ctx t (irr)
                               "The type ~x0 of the term ~x1 ~
                                assigned to the LET variable ~x2 ~
                                of the function ~x3 ~
                                differs from the type ~x4 ~
                                of a variable with the same symbol in scope."
-                              rhs-type val var fn prev-type))
-                   ((when (consp rhs-affect))
-                    (er-soft+ ctx t irr
+                              rhs.type val-term var gin.fn prev-type))
+                   ((when (consp rhs.affect))
+                    (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not affect any variables, ~
                                but it affects ~x2 instead."
-                              val var rhs-affect))
-                   ((when (type-case rhs-type :array))
-                    (raise "Internal error: array type ~x0." rhs-type)
-                    (acl2::value irr))
-                   ((when (type-case rhs-type :pointer))
-                    (er-soft+ ctx t irr
+                              val-term var rhs.affect))
+                   ((when (type-case rhs.type :array))
+                    (raise "Internal error: array type ~x0." rhs.type)
+                    (acl2::value (irr)))
+                   ((when (type-case rhs.type :pointer))
+                    (er-soft+ ctx t (irr)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
-                              val var rhs-type))
+                              val-term var rhs.type))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
-                         :arg2 rhs-expr))
+                         :arg2 rhs.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body
-                                  var-term-alist
-                                  inscope
-                                  loop-flag
-                                  affect
-                                  fn
-                                  prec-fns
-                                  prec-tags
-                                  prec-objs
-                                  proofs
+                   ((er (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body)
                                   ctx
                                   state))
-                   (type body-type)
+                   (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
                            (list (pseudo-term-quote 6)
                                  (pseudo-term-fncall
                                   'binary-+
-                                  (list rhs-limit body-limit))))))
-                (acl2::value (list (cons item body-items)
-                                   type
-                                   limit))))
+                                  (list rhs.limit body.limit))))))
+                (acl2::value (make-stmt-gout
+                              :items (cons item body.items)
+                              :type type
+                              :limit limit))))
              ((unless (eq wrapper? nil))
               (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
-                      (acl2::value irr)))
-             ((unless (atc-affecting-term-for-let-p val prec-fns))
-              (er-soft+ ctx t irr
+                      (acl2::value (irr))))
+             ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          we encountered a term ~x1, ~
                          to which a LET variable is bound, ~
                          that is not wrapped by C::DECLAR or C::ASSIGN, ~
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
-                        fn val))
-             ((er typed-formals :iferr irr)
-              (atc-typed-formals fn prec-tags prec-objs ctx state))
-             ((er & :iferr irr)
+                        gin.fn val-term))
+             ((er typed-formals :iferr (irr))
+              (atc-typed-formals gin.fn
+                                 gin.prec-tags
+                                 gin.prec-objs
+                                 ctx
+                                 state))
+             ((er & :iferr (irr))
               (atc-ensure-formals-not-lost (list var)
-                                           affect
+                                           gin.affect
                                            typed-formals
-                                           fn
+                                           gin.fn
                                            ctx
                                            state))
-             ((er (list xform-items xform-type xform-limit))
-              (atc-gen-stmt val
-                            var-term-alist
-                            inscope
-                            nil
-                            (list var)
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
+             ((er (stmt-gout xform))
+              (atc-gen-stmt val-term
+                            (change-stmt-gin gin
+                                             :affect (list var)
+                                             :loop-flag nil)
                             ctx
                             state))
-             ((unless (type-case xform-type :void))
-              (er-soft+ ctx t irr
+             ((unless (type-case xform.type :void))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          a LET has been encountered ~
                          whose unwrapped term ~x1 ~
                          to which the variable is bound ~
                          has the non-void type ~x2, ~
                          which is disallowed."
-                        fn val xform-type))
-             ((er (list body-items body-type body-limit))
-              (atc-gen-stmt body
-                            var-term-alist-body
-                            inscope
-                            loop-flag
-                            affect
-                            fn
-                            prec-fns
-                            prec-tags
-                            prec-objs
-                            proofs
+                        gin.fn val-term xform.type))
+             ((er (stmt-gout body))
+              (atc-gen-stmt body-term
+                            (change-stmt-gin
+                             gin
+                             :var-term-alist var-term-alist-body)
                             ctx
                             state))
-             (items (append xform-items body-items))
-             (type body-type)
+             (items (append xform.items body.items))
+             (type body.type)
              (limit (pseudo-term-fncall
                      'binary-+
-                     (list xform-limit body-limit))))
-          (acl2::value (list items type limit))))
+                     (list xform.limit body.limit))))
+          (acl2::value (make-stmt-gout
+                        :items items
+                        :type type
+                        :limit limit))))
        ((when (and (pseudo-term-case term :var)
-                   (equal affect (list (pseudo-term-var->name term)))))
-        (if loop-flag
-            (er-soft+ ctx t irr
+                   (equal gin.affect
+                          (list (pseudo-term-var->name term)))))
+        (if gin.loop-flag
+            (er-soft+ ctx t (irr)
                       "A loop body must end with ~
                        a recursive call on every path, ~
                        but in the function ~x0 it ends with ~x1 instead."
-                      fn term)
-          (acl2::value (list nil (type-void) (pseudo-term-quote 1)))))
+                      gin.fn term)
+          (acl2::value (make-stmt-gout
+                        :items nil
+                        :type (type-void)
+                        :limit (pseudo-term-quote 1)))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (b* (((unless (>= (len terms) 2))
               (raise "Internal error: MV applied to ~x0." terms)
-              (acl2::value irr))
-             ((when loop-flag)
-              (er-soft+ ctx t irr
+              (acl2::value (irr)))
+             ((when gin.loop-flag)
+              (er-soft+ ctx t (irr)
                         "A loop body must end with ~
                          a recursive call on every path, ~
                          but in the function ~x0 ~
                          it ends with ~x1 instead."
-                        fn term)))
+                        gin.fn term)))
           (cond
-           ((equal terms affect)
-            (acl2::value (list nil (type-void) (pseudo-term-quote 1))))
-           ((equal (cdr terms) affect)
-            (b* (((er (list expr type eaffect limit) :iferr irr)
+           ((equal terms gin.affect)
+            (acl2::value (make-stmt-gout :items nil
+                                         :type (type-void)
+                                         :limit (pseudo-term-quote 1))))
+           ((equal (cdr terms) gin.affect)
+            (b* (((er (expr-gout first) :iferr (irr))
                   (atc-gen-expr (car terms)
-                                var-term-alist
-                                inscope
-                                fn
-                                prec-fns
-                                prec-tags
+                                (make-expr-gin
+                                 :var-term-alist gin.var-term-alist
+                                 :inscope gin.inscope
+                                 :fn gin.fn
+                                 :prec-fns gin.prec-fns
+                                 :prec-tags gin.prec-tags)
                                 ctx
                                 state))
-                 ((when (consp eaffect))
-                  (er-soft+ ctx t irr
+                 ((when (consp first.affect))
+                  (er-soft+ ctx t (irr)
                             "The first argument ~x0 of the term ~x1 ~
                              in the function ~x2 ~
                              affects the variables ~x3, which is disallowed."
-                            (car terms) term fn eaffect))
+                            (car terms) term gin.fn first.affect))
                  (limit (pseudo-term-fncall
                          'binary-+
                          (list (pseudo-term-quote 3)
-                               limit))))
-              (acl2::value (list
-                            (list
-                             (block-item-stmt (make-stmt-return :value expr)))
-                            type
-                            limit))))
-           (t (er-soft+ ctx t irr
+                               first.limit))))
+              (acl2::value (make-stmt-gout
+                            :items (list (block-item-stmt
+                                          (make-stmt-return :value first.expr)))
+                            :type first.type
+                            :limit limit))))
+           (t (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          a term ~x0 has been encountered, ~
                          which is disallowed."
-                        fn term)))))
+                        gin.fn term)))))
        ((mv okp loop-fn loop-args in-types loop-affect loop-stmt loop-limit)
-        (atc-check-loop-call term var-term-alist prec-fns))
+        (atc-check-loop-call term gin.var-term-alist gin.prec-fns))
        ((when okp)
-        (b* (((when loop-flag)
-              (er-soft+ ctx t irr
+        (b* (((when gin.loop-flag)
+              (er-soft+ ctx t (irr)
                         "A loop body must end with ~
                          a recursive call on every path, ~
                          but in the function ~x0 it ends with ~x1 instead."
-                        fn term))
+                        gin.fn term))
              (formals (formals+ loop-fn wrld))
              ((unless (equal formals loop-args))
-              (er-soft+ ctx t irr
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          a call of the recursive function ~x1 ~
                          has been encountered ~
                          that is not on its formals, ~
                          but instead on the arguments ~x2.
                          This is disallowed; see the ATC user documentation."
-                        fn loop-fn loop-args))
-             ((unless (equal affect loop-affect))
-              (er-soft+ ctx t irr
+                        gin.fn loop-fn loop-args))
+             ((unless (equal gin.affect loop-affect))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          a call of the recursive function ~x1 ~
                          has been encountered
                          that represents a loop affecting ~x2, ~
                          which differs from the variables ~x3 ~
                          being affected here."
-                        fn loop-fn loop-affect affect))
-             (types (atc-get-vars formals inscope))
+                        gin.fn loop-fn loop-affect gin.affect))
+             (types (atc-get-vars formals gin.inscope))
              ((when (member-eq nil types))
               (raise "Internal error: not all formals ~x0 have types ~x1."
                      formals types)
-              (acl2::value irr))
+              (acl2::value (irr)))
              ((unless (equal types in-types))
-              (er-soft+ ctx t irr
+              (er-soft+ ctx t (irr)
                         "The loop function ~x0 with input types ~x1 ~
                          is applied to terms ~x2 returning ~x3. ~
                          This is indicative of dead code under the guards, ~
@@ -2383,224 +2386,158 @@
                      'binary-+
                      (list (pseudo-term-quote 3)
                            loop-limit))))
-          (acl2::value (list (list (block-item-stmt loop-stmt))
-                             (type-void)
-                             limit))))
-       ((when (equal term `(,fn ,@(formals+ fn wrld))))
-        (if loop-flag
-            (acl2::value (list nil (type-void) (pseudo-term-quote 1)))
-          (er-soft+ ctx t irr
+          (acl2::value (make-stmt-gout
+                        :items (list (block-item-stmt loop-stmt))
+                        :type (type-void)
+                        :limit limit))))
+       ((when (equal term `(,gin.fn ,@(formals+ gin.fn wrld))))
+        (if gin.loop-flag
+            (acl2::value (make-stmt-gout
+                          :items nil
+                          :type (type-void)
+                          :limit (pseudo-term-quote 1)))
+          (er-soft+ ctx t (irr)
                     "When generating code for the recursive function ~x0, ~
                      a recursive call to the loop function occurs ~
                      not at the end of the computation on some path."
-                    fn)))
-       ((mv okp called-fn args in-types out-type fn-affect limit)
-        (atc-check-cfun-call term var-term-alist prec-fns wrld))
+                    gin.fn)))
+       ((mv okp called-fn arg-terms in-types out-type fn-affect limit)
+        (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
-        (b* (((when loop-flag)
-              (er-soft+ ctx t irr
+        (b* (((when gin.loop-flag)
+              (er-soft+ ctx t (irr)
                         "A loop body must end with ~
                          a recursive call on every path, ~
                          but in the function ~x0 it ends with ~x1 instead."
-                        fn term))
+                        gin.fn term))
              ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
                                                 in-types
-                                                args))
-              (er-soft+ ctx t irr
+                                                arg-terms))
+              (er-soft+ ctx t (irr)
                         "The call ~x0 does not satisfy the restrictions ~
                          on array arguments being identical to the formals."
                         term))
-             ((unless (equal affect fn-affect))
-              (er-soft+ ctx t irr
+             ((unless (equal gin.affect fn-affect))
+              (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          a call of the non-recursive function ~x1 ~
                          has been encountered that affects ~x2, ~
                          which differs from the variables ~x3 ~
                          being affected here."
-                        fn loop-fn fn-affect affect))
-             ((er (list arg-exprs types) :iferr irr)
-              (atc-gen-expr-pure-list args
-                                      inscope
-                                      prec-tags
-                                      fn
+                        gin.fn loop-fn fn-affect gin.affect))
+             ((er (pexprs-gout args) :iferr (irr))
+              (atc-gen-expr-pure-list arg-terms
+                                      (make-pexprs-gin
+                                       :inscope gin.inscope
+                                       :prec-tags gin.prec-tags
+                                       :fn gin.fn)
                                       ctx
                                       state))
-             ((unless (equal types in-types))
-              (er-soft+ ctx t irr
+             ((unless (equal args.types in-types))
+              (er-soft+ ctx t (irr)
                         "The function ~x0 with input types ~x1 is applied to ~
                          expression terms ~x2 returning ~x3. ~
                          This is indicative of provably dead code, ~
                          given that the code is guard-verified."
-                        called-fn in-types args types))
+                        called-fn in-types arg-terms args.types))
              (call-expr (make-expr-call :fun (make-ident
                                               :name (symbol-name called-fn))
-                                        :args arg-exprs)))
-          (acl2::value (list (list (block-item-stmt (stmt-expr call-expr)))
-                             (type-void)
-                             `(binary-+ '5 ,limit)))))
-       ((er (list expr type eaffect limit) :iferr irr)
+                                        :args args.exprs)))
+          (acl2::value (make-stmt-gout
+                        :items (list (block-item-stmt (stmt-expr call-expr)))
+                        :type (type-void)
+                        :limit `(binary-+ '5 ,limit)))))
+       ((er (expr-gout term) :iferr (irr))
         (atc-gen-expr term
-                      var-term-alist
-                      inscope
-                      fn
-                      prec-fns
-                      prec-tags
+                      (make-expr-gin :var-term-alist gin.var-term-alist
+                                     :inscope gin.inscope
+                                     :fn gin.fn
+                                     :prec-fns gin.prec-fns
+                                     :prec-tags gin.prec-tags)
                       ctx
                       state))
-       ((when loop-flag)
-        (er-soft+ ctx t irr
+       ((when gin.loop-flag)
+        (er-soft+ ctx t (irr)
                   "A loop body must end with ~
                    a recursive call on every path, ~
                    but in the function ~x0 it ends with ~x1 instead."
-                  fn term))
-       ((unless (equal affect eaffect))
-        (er-soft+ ctx t irr
+                  gin.fn term))
+       ((unless (equal gin.affect term.affect))
+        (er-soft+ ctx t (irr)
                   "When generating code for the non-recursive function ~x0, ~
                    a term ~x1 was encountered at the end of the computation, ~
                    that affects the variables ~x2, ~
                    but ~x0 affects the variables ~x3 instead."
-                  fn term eaffect affect))
-       ((when (type-case type :void))
+                  gin.fn term term.affect gin.affect))
+       ((when (type-case term.type :void))
         (raise "Internal error: return term ~x0 has type void." term)
-        (acl2::value irr))
-       ((when (type-case type :array))
-        (raise "Internal error: array type ~x0." type)
-        (acl2::value irr))
-       ((when (type-case type :pointer))
-        (er-soft+ ctx t irr
+        (acl2::value (irr)))
+       ((when (type-case term.type :array))
+        (raise "Internal error: array type ~x0." term.type)
+        (acl2::value (irr)))
+       ((when (type-case term.type :pointer))
+        (er-soft+ ctx t (irr)
                   "When generating a return statement for function ~x0, ~
                    the term ~x1 that represents the return expression ~
                    has pointer type ~x2, which is disallowed."
-                  fn term type))
+                  gin.fn term term.type))
        (limit (pseudo-term-fncall
                'binary-+
                (list (pseudo-term-quote 3)
-                     limit))))
-    (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
-                       type
-                       limit)))
+                     term.limit))))
+    (acl2::value (make-stmt-gout
+                  :items (list (block-item-stmt
+                                (make-stmt-return :value term.expr)))
+                  :type term.type
+                  :limit limit)))
 
   :measure (pseudo-term-count term)
-
-  :prepwork ((local
-              (in-theory
-               ;; for speed:
-               (disable
-                pseudo-termp ; treat terms abstractly
-                w ; treat worlds abstractly
-                ;; useless according to accumulated persistence:
-                acl2::pseudo-term-listp-when-symbol-listp
-                acl2::pseudo-term-listp-of-cdr-when-pseudo-term-listp
-                assoc-equal
-                default-car
-                default-cdr
-                acl2::symbol-listp-when-not-consp
-                nth
-                acl2::consp-when-member-equal-of-symbol-pseudoterm-alistp
-                acl2::consp-when-member-equal-of-symbol-symbol-alistp
-                acl2::consp-when-member-equal-of-keyword-truelist-alistp
-                acl2::consp-when-member-equal-of-keyword-symbol-alistp
-                acl2::consp-when-member-equal-of-symbol-symbol-alistp
-                acl2::consp-when-member-equal-of-keyword-truelist-alistp
-                acl2::consp-when-member-equal-of-keyword-symbol-alistp
-                member-equal
-                acl2::member-when-atom
-                acl2::pseudo-term-listp-when-not-consp
-                acl2::symbolp-of-car-when-member-equal-of-symbol-pseudoterm-alistp
-                type-optionp-of-car-when-type-option-listp
-                typep-of-car-when-type-listp
-                acl2::symbolp-of-car-when-member-equal-of-symbol-symbol-alistp
-                type-listp-when-not-consp
-                type-option-listp-of-cdr-when-type-option-listp
-                acl2::pseudo-term-listp-cdr-when-pseudo-term-listp
-                type-listp-of-cdr-when-type-listp
-                block-item-listp-when-not-consp
-                acl2::pseudo-term-listp-when-subsetp-equal
-                acl2::pseudo-termp-car-when-pseudo-term-listp
-                acl2::append-when-not-consp
-                default-<-1
-                acl2::pseudo-termp-when-member-equal-of-pseudo-term-listp
-                acl2::pseudo-term-list-fix-under-pseudo-term-list-equiv
-                acl2::pseudo-fnsym-fix-under-pseudo-fnsym-equiv
-                type-optionp-when-in-type-option-setp-binds-free-x
-                default-<-2
-                default-+-1
-                typep-when-in-type-setp-binds-free-x
-                default-symbol-name
-                acl2::subsetp-when-atom-right
-                acl2::subsetp-when-atom-left))))
 
   :verify-guards nil ; done below
 
   ///
-
-  (more-returns
-   (val (and (consp val)
-             (true-listp val))
-        :name cons-true-listp-of-atc-gen-stmt-val
-        :rule-classes :type-prescription
-        :hints (("Goal"
-                 :in-theory (e/d (std::tuplep)
-                                 (atc-gen-stmt
-                                  return-type-of-atc-gen-stmt.val))
-                 :use return-type-of-atc-gen-stmt.val))))
-
-  (defret true-listp-of-atc-gen-stmt.items
-    (true-listp (car val))
-    :rule-classes :type-prescription
-    :hints (("Goal"
-             :in-theory (e/d (std::tuplep)
-                             (atc-gen-stmt
-                              return-type-of-atc-gen-stmt.val))
-             :use return-type-of-atc-gen-stmt.val)))
-
-  (defrulel true-listp-when-keyword-listp
-    (implies (keyword-listp x)
-             (true-listp x)))
 
   (defrulel pseudo-termp-when-symbolp
     (implies (symbolp x)
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (verify-guards atc-gen-stmt
-    :hints (("Goal" :in-theory (disable atc-gen-stmt)))))
+  (verify-guards atc-gen-stmt))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod lstmt-gin
+  :short "Inputs for @(tsee atc-gen-loop-stmt)."
+  ((inscope atc-symbol-type-alist-listp)
+   (fn symbolp)
+   (measure-for-fn symbolp)
+   (measure-formals symbol-listp)
+   (prec-fns atc-symbol-fninfo-alistp)
+   (prec-tags atc-string-taginfo-alistp)
+   (prec-objs atc-string-objinfo-alistp)
+   (proofs booleanp))
+  :pred lstmt-ginp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod lstmt-gout
+  :short "Outputs for @(tsee atc-gen-loop-stmt)."
+  ((stmt stmtp)
+   (test-term pseudo-termp)
+   (body-term pseudo-termp)
+   (affect symbol-listp)
+   (limit-body pseudo-termp)
+   (limit-all pseudo-termp))
+  :pred lstmt-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-stmt ((term pseudo-termp)
-                           (inscope atc-symbol-type-alist-listp)
-                           (fn symbolp)
-                           (measure-for-fn symbolp)
-                           (measure-formals symbol-listp)
-                           (prec-fns atc-symbol-fninfo-alistp)
-                           (prec-tags atc-string-taginfo-alistp)
-                           (prec-objs atc-string-objinfo-alistp)
-                           (proofs booleanp)
+                           (gin lstmt-ginp)
                            (ctx ctxp)
                            state)
-  :returns (mv erp
-               (val (tuple (stmt stmtp)
-                           (test-term pseudo-termp)
-                           (body-term pseudo-termp)
-                           (affect symbol-listp)
-                           (limit-body pseudo-termp)
-                           (limit-all pseudo-termp)
-                           val)
-                    ;; for speed:
-                    :hints (("Goal" :induct (atc-gen-loop-stmt term
-                                                               inscope
-                                                               fn
-                                                               measure-for-fn
-                                                               measure-formals
-                                                               prec-fns
-                                                               prec-tags
-                                                               prec-objs
-                                                               proofs
-                                                               ctx
-                                                               state))))
-               state)
+  :returns (mv erp (val lstmt-goutp) state)
   :short "Generate a C loop statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -2657,47 +2594,28 @@
      which is the limit for the whole loop,
      we also return @('limit-body'), which is just for the loop body;
      this is in support for more modular proofs. "))
-  (b* (((acl2::fun (irr)) (list (irr-stmt) nil nil nil nil nil))
+  (b* (((acl2::fun (irr)) (ec-call (lstmt-gout-fix :irrelevant)))
+       ((lstmt-gin gin) gin)
        (wrld (w state))
        ((mv okp test then else) (fty-check-if-call term))
        ((unless okp)
         (er-soft+ ctx t (irr)
                   "When generating C loop code for the recursive function ~x0, ~
                    a term ~x1 that is not an IF has been encountered."
-                  fn term))
+                  gin.fn term))
        ((mv mbtp &) (check-mbt-call test))
-       ((when mbtp)
-        (atc-gen-loop-stmt then
-                           inscope
-                           fn
-                           measure-for-fn
-                           measure-formals
-                           prec-fns
-                           prec-tags
-                           prec-objs
-                           proofs
-                           ctx
-                           state))
+       ((when mbtp) (atc-gen-loop-stmt then gin ctx state))
        ((mv mbt$p &) (check-mbt$-call test))
-       ((when mbt$p)
-        (atc-gen-loop-stmt then
-                           inscope
-                           fn
-                           measure-for-fn
-                           measure-formals
-                           prec-fns
-                           prec-tags
-                           prec-objs
-                           proofs
+       ((when mbt$p) (atc-gen-loop-stmt then gin ctx state))
+       ((er (bexpr-gout test0) :iferr (irr))
+        (atc-gen-expr-bool test
+                           (make-bexpr-gin
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn)
                            ctx
                            state))
-       ((er test-expr :iferr (irr)) (atc-gen-expr-bool test
-                                                       inscope
-                                                       prec-tags
-                                                       fn
-                                                       ctx
-                                                       state))
-       (formals (formals+ fn wrld))
+       (formals (formals+ gin.fn wrld))
        ((mv okp affect)
         (b* (((when (member-eq else formals)) (mv t (list else)))
              ((mv okp terms) (fty-check-list-call else))
@@ -2710,54 +2628,42 @@
                   "The non-recursive branch ~x0 of the function ~x1 ~
                    does not have the required form. ~
                    See the user documentation."
-                  else fn))
-       ((er (list body-items body-type body-limit) :iferr (irr))
+                  else gin.fn))
+       ((er (stmt-gout body) :iferr (irr))
         (atc-gen-stmt then
-                      nil
-                      (cons nil inscope)
-                      t
-                      affect
-                      fn
-                      prec-fns
-                      prec-tags
-                      prec-objs
-                      proofs
+                      (make-stmt-gin
+                       :var-term-alist nil
+                       :inscope (cons nil gin.inscope)
+                       :loop-flag t
+                       :affect affect
+                       :fn gin.fn
+                       :prec-fns gin.prec-fns
+                       :prec-tags gin.prec-tags
+                       :prec-objs gin.prec-objs
+                       :proofs gin.proofs)
                       ctx
                       state))
-       ((unless (type-case body-type :void))
+       ((unless (type-case body.type :void))
         (raise "Internal error: ~
                 the loop body ~x0 of ~x1 ~ returns type ~x2."
-               then fn body-type)
+               then gin.fn body.type)
         (acl2::value (irr)))
-       (body-stmt (make-stmt-compound :items body-items))
-       (stmt (make-stmt-while :test test-expr :body body-stmt))
-       ((when (eq measure-for-fn 'quote))
+       (body-stmt (make-stmt-compound :items body.items))
+       (stmt (make-stmt-while :test test0.expr :body body-stmt))
+       ((when (eq gin.measure-for-fn 'quote))
         (raise "Internal error: the measure function is QUOTE.")
         (acl2::value (irr)))
-       (measure-call (pseudo-term-fncall measure-for-fn measure-formals))
-       (limit `(binary-+ '1 (binary-+ ,body-limit ,measure-call))))
-    (acl2::value (list stmt test then affect body-limit limit)))
+       (measure-call (pseudo-term-fncall gin.measure-for-fn
+                                         gin.measure-formals))
+       (limit `(binary-+ '1 (binary-+ ,body.limit ,measure-call))))
+    (acl2::value (make-lstmt-gout :stmt stmt
+                                  :test-term test
+                                  :body-term then
+                                  :affect affect
+                                  :limit-body body.limit
+                                  :limit-all limit)))
   :measure (pseudo-term-count term)
-  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
-  ///
-
-  (more-returns
-   (val (and (consp val)
-             (true-listp val))
-        :name cons-true-listp-of-atc-gen-loop-stmt-val
-        :rule-classes :type-prescription
-        ;;  for speed:
-        :hints (("Goal" :induct (atc-gen-loop-stmt term
-                                                   inscope
-                                                   fn
-                                                   measure-for-fn
-                                                   measure-formals
-                                                   prec-fns
-                                                   prec-tags
-                                                   prec-objs
-                                                   proofs
-                                                   ctx
-                                                   state))))))
+  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4057,18 +3963,23 @@
                                        prec-fns
                                        ctx
                                        state))
-       ((er (list items type limit)) (atc-gen-stmt body
-                                                   nil
-                                                   (list typed-formals)
-                                                   nil
-                                                   affect
-                                                   fn
-                                                   prec-fns
-                                                   prec-tags
-                                                   prec-objs
-                                                   proofs
-                                                   ctx
-                                                   state))
+       ((er (stmt-gout items+type+limit))
+        (atc-gen-stmt body
+                      (make-stmt-gin
+                       :var-term-alist nil
+                       :inscope (list typed-formals)
+                       :loop-flag nil
+                       :affect affect
+                       :fn fn
+                       :prec-fns prec-fns
+                       :prec-tags prec-tags
+                       :prec-objs prec-objs
+                       :proofs proofs)
+                      ctx
+                      state))
+       (items (stmt-gout->items items+type+limit))
+       (type (stmt-gout->type items+type+limit))
+       (limit (stmt-gout->limit items+type+limit))
        ((when (and (type-case type :void)
                    (not affect)))
         (acl2::value
@@ -5240,21 +5151,16 @@
           (mv '(_) nil nil names-to-avoid)))
        ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
        (body (ubody+ fn wrld))
-       ((er (list loop-stmt
-                  test-term
-                  body-term
-                  loop-affect
-                  body-limit
-                  loop-limit))
+       ((er (lstmt-gout loop))
         (atc-gen-loop-stmt body
-                           (list typed-formals)
-                           fn
-                           measure-of-fn
-                           measure-formals
-                           prec-fns
-                           prec-tags
-                           prec-objs
-                           proofs
+                           (make-lstmt-gin :inscope (list typed-formals)
+                                           :fn fn
+                                           :measure-for-fn measure-of-fn
+                                           :measure-formals measure-formals
+                                           :prec-fns prec-fns
+                                           :prec-tags prec-tags
+                                           :prec-objs prec-objs
+                                           :proofs proofs)
                            ctx
                            state))
        ((er (list local-events
@@ -5269,21 +5175,21 @@
                       names-to-avoid)
                   (atc-gen-fn-result-thm fn
                                          nil
-                                         loop-affect
+                                         loop.affect
                                          typed-formals
                                          prec-fns
                                          prec-tags
                                          prec-objs
                                          names-to-avoid
                                          wrld))
-                 (loop-test (stmt-while->test loop-stmt))
-                 (loop-body (stmt-while->body loop-stmt))
+                 (loop-test (stmt-while->test loop.stmt))
+                 (loop-body (stmt-while->body loop.stmt))
                  ((mv exec-stmt-while-events
                       exec-stmt-while-for-fn
                       exec-stmt-while-for-fn-thm
                       names-to-avoid)
                   (atc-gen-exec-stmt-while-for-loop fn
-                                                    loop-stmt
+                                                    loop.stmt
                                                     prog-const
                                                     names-to-avoid
                                                     wrld))
@@ -5312,7 +5218,7 @@
                   (atc-gen-loop-test-correct-thm fn
                                                  typed-formals
                                                  loop-test
-                                                 test-term
+                                                 loop.test-term
                                                  fn-thms
                                                  prec-tags
                                                  prec-objs
@@ -5323,16 +5229,16 @@
                       names-to-avoid)
                   (atc-gen-loop-body-correct-thm fn
                                                  typed-formals
-                                                 loop-affect
+                                                 loop.affect
                                                  loop-body
-                                                 test-term
-                                                 body-term
+                                                 loop.test-term
+                                                 loop.body-term
                                                  prec-fns
                                                  prec-tags
                                                  prec-objs
                                                  prog-const
                                                  fn-thms
-                                                 body-limit
+                                                 loop.limit-body
                                                  names-to-avoid
                                                  wrld))
                  ((mv correct-local-events
@@ -5342,7 +5248,7 @@
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
                                             typed-formals
-                                            loop-affect
+                                            loop.affect
                                             loop-test
                                             loop-body
                                             prec-fns
@@ -5357,7 +5263,7 @@
                                             natp-of-measure-of-fn-thm
                                             correct-test-thm
                                             correct-body-thm
-                                            loop-limit
+                                            loop.limit-all
                                             names-to-avoid
                                             wrld))
                  (progress-start?
@@ -5387,13 +5293,13 @@
           (acl2::value (list nil nil nil nil nil names-to-avoid))))
        (info (make-atc-fn-info :out-type nil
                                :in-types (strip-cdrs typed-formals)
-                               :loop? loop-stmt
-                               :affect loop-affect
+                               :loop? loop.stmt
+                               :affect loop.affect
                                :result-thm fn-result-thm
                                :correct-thm fn-correct-thm
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
-                               :limit loop-limit)))
+                               :limit loop.limit-all)))
     (acl2::value (list local-events
                        exported-events
                        (acons fn info prec-fns)

@@ -90,6 +90,56 @@ both expand into
         (t (find-bad-d-arg-types (cdr d-arg-types)
                                  (cdr d-arg-preds)))))
 
+(defun find-next-type (var l acc)
+  (cond ((endp l) acc)
+        ((keywordp (car l))
+         (find-next-type var (cdr l) (cons (car l) (cons var acc))))
+        ((endp acc) (find-next-type var (cdr l) acc))
+        (t acc)))
+
+; (find-next-type 'x '(:nat y :int) nil)
+; (find-next-type 'x '(:nat :int y :int) nil)
+; (find-next-type 'x '(u v :nat :int y :int) nil)
+
+(defun process-typed-args-aux (l acc)
+  (cond ((endp l) (rev acc))
+        ((keywordp (car l))
+         (process-typed-args-aux (cdr l) acc))
+        (t (process-typed-args-aux
+            (cdr l)
+            (append (find-next-type (car l) (cdr l) nil) acc)))))
+
+(defun process-typed-args (l)
+  (process-typed-args-aux l nil))
+
+; (process-typed-args nil)
+; (process-typed-args '(x :nat y :int))
+; (process-typed-args '(x :nat :int y :int))
+; (process-typed-args '(x u v :nat :int y z :int))
+; (process-typed-args '(x y z))
+
+(defun skip-keywords (l)
+  (cond ((endp l) l)
+        ((keywordp (car l))
+         (skip-keywords (cdr l)))
+        (t l)))
+
+(defun proper-argsp (l)
+  (or (endp l)
+      (and (consp (cdr l))
+           (acl2::legal-variablep (first l))
+           (if (acl2::keywordp (second l))
+               (proper-argsp (skip-keywords (cddr l)))
+             (proper-argsp (cdr l))))))
+
+; (check (proper-argsp nil))
+; (check (! (proper-argsp '(x))))
+; (check (proper-argsp '(x :nat)))
+; (check (proper-argsp '(x :nat :int)))
+; (check (proper-argsp '(x y :nat :int)))
+; (check (! (proper-argsp '(x y :nat :int z))))
+; (check (proper-argsp '(x y :nat :int u z :foo)))
+
 (defmacro definec-core (name d? &rest args)
   `(with-output
     :stack :push :off :all :on (error comment)
@@ -101,23 +151,25 @@ both expand into
           (d? ',d?)
           (args ',args)
           (f-args (car args))
+          ((unless (proper-argsp f-args))
+           (er hard 'definec
+               "~%The arguments to ~x0 are not well formed.
+See the documentation for example arguments: ~x1"
+               name f-args))
+          (f-argsp (process-typed-args f-args))
           (f-type (map-intern-type (second args) pkg))
-          (d-args (evens f-args))
-          (d-arg-types (odds f-args))
+          (d-args (evens f-argsp))
+          (def-args (remove-duplicates d-args))
+          (d-arg-types (odds f-argsp))
           (d-arg-types (map-intern-types d-arg-types pkg))
           (d-arg-preds (map-preds d-arg-types tbl atbl))
           (pred (pred-of-type f-type tbl atbl))
           (ic (make-input-contract d-args d-arg-preds))
-          (oc (make-contract name d-args pred))
-          (defunc `(defunc-core ,name ,d? ,d-args
+          (oc (make-contract name def-args pred))
+          (defunc `(defunc-core ,name ,d? ,def-args
                      :input-contract ,ic
                      :output-contract ,oc
                      ,@(cddr args)))
-          ((when (oddp (len f-args)))
-           (er hard 'definec
-               "~%The argumets to ~x0 should alternate between variables and types,
-but ~x0 has an odd number of arguments: ~x1"
-               name f-args))
           (bad-type
            (find-bad-d-arg-types d-arg-types d-arg-preds))
           ((when bad-type)
@@ -139,12 +191,7 @@ Example:
 (definec f (x :nat y :nat) :nat
   (+ x y))
 
-and
-
-(definec f (x nat y nat) nat
-  (+ x y))
-
-both expand into
+expands into
 
 
 (DEFUNC F (X Y)
@@ -157,6 +204,7 @@ both expand into
            (NATP (F X Y)))
   :RULE-CLASSES ((:FORWARD-CHAINING :TRIGGER-TERMS ((F X Y)))))
 
+
 |#
 
 (include-book "xdoc/top" :dir :system)
@@ -165,59 +213,76 @@ both expand into
   :parents (acl2::acl2-sedan acl2::macro-libraries acl2s::defunc)
   :short "Function definitions with contracts extending @(see defunc)."
   :long
-  "
+"
 <h3>Examples</h3>
 
 @({
 
-  (definec f (x :nat y :nat) :nat
-    (+ x y))
-
-  (definec len (a :all) :nat
+  (definec my-len (a :all) :nat
     (if (atom a)
         0
-      (+ 1 (len (rest a)))))
+      (+ 1 (my-len (rest a)))))
 
-  (definec app (x :tl y :tl) :tl
-    (if (endp x)
-        y
-      (cons (car x) (app (cdr x) y))))
+  ; An alternate, but equivalent, definition of my-len
+  (definec my-len (a :all) :nat
+    (match a
+      (:atom 0)
+      ((& . r) (1+ (my-len r)))))
 
-  (definec square-list (l nat-list) nat-list
-    (if (endp l)
-        nil
-      (app (list (* (car l) (car l)))
-           (square-list (cdr l))))
+  ; Notice that both x and y are nats
+  (definec f (x y :nat) :nat
+    (+ x y))
+
+  ; Both x and y are true-lists
+  (definec my-app (x y :tl) :tl
+    (match x
+      (nil y)
+      ((f . r) (cons f (my-app r y)))))
+
+  ; All is the universal type
+  (definec my-atom (x :all) :bool
+    (atom x))
+
+  ; Factorial
+  (definec my-fact (x :nat) :pos
+    (match x
+      ((:or 0 1) 1)
+      (& (* x (my-fact (1- x))))))
+
+  ; list-sum
+  (definec list-sum (l :rational-list) :rational
+    (match l
+      (nil 0)
+      ((f . r) (+ f (list-sum r)))))
+
+  ; Average: notice that l is a both a rational-list and a cons
+  (definec average (l :rational-list :cons) :rational
+    (/ (list-sum l) (len l)))
+
+  ; Square a list, with some extra keyword arguments
+  (definec square-list (l :nat-list) :nat-list
+    (match l
+      (nil nil)
+      ((f . r) (app (list (* f f)) (square-list r))))
     :verbose t
     :skip-tests t)
-
 })
 
 <h3>Purpose</h3>
 <p>
 The macro @(see definec) is an extension of @(see defunc)
 that makes it more convient to specify simple contracts.
-For example, the expansions of
+For example, the expansion of
 </p>
 
 @({
 
-  (definec f (x :nat y :nat) :nat
+  (definec f (x y :nat) :nat
     (+ x y))
 })
 
 <p>
-and
-</p>
-
-@({
-
-(definec f (x nat y nat) nat
-  (+ x y))
-})
-
-<p>
-are equivalent and include the following events.
+includes the following events.
 </p>
 
 @({
@@ -236,12 +301,12 @@ are equivalent and include the following events.
 
 <p> Notice that nat was turned into natp. We convert type names into
 the corresponding predicates using @(see defdata) and we
-support all (the type of the ACL2 universe), tl (the type of
-true-lists), int (the type of integers), bool (the type of booleans)
+support :all (the type of the ACL2 universe), :tl (the type of
+true-lists), :int (the type of integers), :bool (the type of booleans)
 and all other types @(see defdata) knows.  </p>
 
 <p>
-When specifying types one can use keywords or regular symbols,
+When specifying types one must use keywords,
 as shown above. It is important to put a space between
 the variable name and the type, e.g., x:nat will lead to errors.
 </p>

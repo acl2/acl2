@@ -191,6 +191,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
+
+   (xdoc::p
+    "A new utility @(tsee untranslate$) has been added,
+     which is a logic-mode guard-verified version of @(tsee untranslate).
+     See the documentation for details,
+     including functional differences with @(tsee untranslate).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
