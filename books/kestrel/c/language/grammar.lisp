@@ -42,6 +42,9 @@
      to turn the grammar in the @('grammar.abnf') file
      into an ACL2 representation.")
    (xdoc::p
+    "We use @(tsee acl2::add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output.")
+   (xdoc::p
     "We show that the grammar is well-formed, closed, and ASCII."))
 
   (make-event
@@ -49,6 +52,8 @@
        (abnf::parse-grammar-from-file (str::cat (cbd) "grammar.abnf") state)
      (acl2::value `(defconst *grammar*
                      (abnf::abstract-rulelist ',tree)))))
+
+  (acl2::add-const-to-untranslate-preprocess *grammar*)
 
   (defruled rulelist-wfp-of-*grammar*
     (abnf::rulelist-wfp *grammar*))
