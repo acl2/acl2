@@ -655,7 +655,7 @@
           (cw! "(Phase ~@0.)~%"
                (b* ((pair (svtv-chase-phase-labelpair phase svtv-chase-data.phaselabels)))
                  (if (equal pair phase)
-                     (msg "~x0~%" phase)
+                     (msg "~x0" phase)
                    (msg "~x0 = ~x1" pair phase)))))
        ((mv type vars expr)
         (svtv-chase-deps var phase rsh mask)))
