@@ -652,7 +652,11 @@
        (evaldata svtv-chase-data.evaldata)
        ((4vec val) (svtv-chase-eval var phase))
        (- (svtv-chase-print-signal nil var rsh mask val modidx)
-          (cw! "(Phase ~x0.)~%" (svtv-chase-phase-labelpair phase svtv-chase-data.phaselabels)))
+          (cw! "(Phase ~@0.)~%"
+               (b* ((pair (svtv-chase-phase-labelpair phase svtv-chase-data.phaselabels)))
+                 (if (equal pair phase)
+                     (msg "~x0~%" phase)
+                   (msg "~x0 = ~x1" pair phase)))))
        ((mv type vars expr)
         (svtv-chase-deps var phase rsh mask)))
     (b* (((when (eq type :error))
