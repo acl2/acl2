@@ -36,13 +36,13 @@
      satisfy certain expected conditions.
      Eventually, these expected conditions
      should be proved to follow from suitable guards."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-fail ()
   :returns (nothing null)
-  :parents (concrete-to-abstract-syntax)
   :short "Called when abstraction fails."
   :long
   (xdoc::topstring-p
@@ -55,7 +55,6 @@
 
 (define abstract-terminals ((tree treep))
   :returns (nats nat-listp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('term') parse tree,
           where @('term') is a terminal numeric or character value notation,
           is generally abstracted to its list of natural numbers."
@@ -72,7 +71,6 @@
 
 (define abstract-terminal ((tree treep))
   :returns (nat natp :rule-classes (:rewrite :type-prescription))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('term') parse tree,
           where @('term') is a terminal numeric or character value notation
           that denotes a single natural number,
@@ -91,7 +89,6 @@
 
 (define abstract-grouped-terminals ((tree treep))
   :returns (nats nat-listp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('( term1 / ... / termN )') parse tree,
           where @('term1'), ..., @('termN') are
           terminal numeric or character value notations,
@@ -115,7 +112,6 @@
 
 (define abstract-grouped-terminal ((tree treep))
   :returns (nat natp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('( term1 / ... / termN )') parse tree,
           where @('term1'), ..., @('termN') are
           terminal numeric and character notations
@@ -136,7 +132,6 @@
 
 (define abstract-*-grouped-terminal ((trees tree-listp))
   :returns (nats nat-listp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('( term1 / ... / termN )') parse trees,
           where @('term1'), ..., @('termN') are
           terminal numeric or character value notations
@@ -159,7 +154,6 @@
 
 (define abstract-bit ((tree treep))
   :returns (bit (integer-range-p 0 2 bit))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('BIT') parse tree is abstracted to its bit."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -185,7 +179,6 @@
 
 (define abstract-digit ((tree treep))
   :returns (digit (integer-range-p 0 10 digit))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('DIGIT') parse tree is abstracted to its decimal digit."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -211,7 +204,6 @@
 
 (define abstract-hexdig ((tree treep))
   :returns (hexdig (integer-range-p 0 16 hexdig))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('HEXDIG') parse tree is abstracted to its hexadecimal digit."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -241,7 +233,6 @@
 
 (define abstract-*bit ((trees tree-listp))
   :returns (nat natp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('BIT') parse trees is abstracted to
           the big-endian value of its bits."
   (abstract-*bit-aux trees 0)
@@ -250,6 +241,7 @@
   :prepwork
   ((define abstract-*bit-aux ((trees tree-listp) (accumulator natp))
      :returns (nat natp)
+     :parents nil
      (b* (((when (endp trees)) (nfix accumulator))
           (bit (abstract-bit (car trees))))
        (abstract-*bit-aux (cdr trees)
@@ -260,7 +252,6 @@
 
 (define abstract-*digit ((trees tree-listp))
   :returns (nat natp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('DIGIT') parse trees is abstracted to
           the big-endian value of its decimal digits."
   (abstract-*digit-aux trees 0)
@@ -269,6 +260,7 @@
   :prepwork
   ((define abstract-*digit-aux ((trees tree-listp) (accumulator natp))
      :returns (nat natp)
+     :parents nil
      (b* (((when (endp trees)) (nfix accumulator))
           (digit (abstract-digit (car trees))))
        (abstract-*digit-aux (cdr trees)
@@ -279,7 +271,6 @@
 
 (define abstract-*hexdig ((trees tree-listp))
   :returns (nat natp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('HEXDIG') parse trees is abstracted to
           the big-endian value of its hexadecimal digits."
   (abstract-*hexdig-aux trees 0)
@@ -288,6 +279,7 @@
   :prepwork
   ((define abstract-*hexdig-aux ((trees tree-listp) (accumulator natp))
      :returns (nat natp)
+     :parents nil
      (b* (((when (endp trees)) (nfix accumulator))
           (hexdig (abstract-hexdig (car trees))))
        (abstract-*hexdig-aux (cdr trees)
@@ -298,7 +290,6 @@
 
 (define abstract-dot/dash-1*bit ((tree treep))
   :returns (nat natp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('(\".\" 1*BIT)') or @('(\"-\" 1*BIT)') parse tree
           is abstracted to the big-endian value of its bits."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
@@ -313,7 +304,6 @@
 
 (define abstract-dot/dash-1*digit ((tree treep))
   :returns (nat natp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('(\".\" 1*DIGIT)') or @('(\"-\" 1*DIGIT)') parse tree
           is abstracted to the big-endian value of its decimal digits."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
@@ -328,7 +318,6 @@
 
 (define abstract-dot/dash-1*hexdig ((tree treep))
   :returns (nat natp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('(\".\" 1*HEXDIG)') or @('(\"-\" 1*HEXDIG)') parse tree
           is abstracted to the big-endian value of its hexadecimal digits."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
@@ -343,7 +332,6 @@
 
 (define abstract-*-dot-1*bit ((trees tree-listp))
   :returns (nats nat-listp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('(\".\" 1*BIT)') parse trees
           is abstracted to the list of their corresponding big-endian values."
   (b* (((when (endp trees)) nil)
@@ -356,7 +344,6 @@
 
 (define abstract-*-dot-1*digit ((trees tree-listp))
   :returns (nats nat-listp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('(\".\" 1*DIGIT)') parse trees
           is abstracted to the list of their corresponding big-endian values."
   (b* (((when (endp trees)) nil)
@@ -369,7 +356,6 @@
 
 (define abstract-*-dot-1*hexdig ((trees tree-listp))
   :returns (nats nat-listp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('(\".\" 1*HEXDIG)') parse trees
           is abstracted to the list of their corresponding big-endian values."
   (b* (((when (endp trees)) nil)
@@ -382,7 +368,6 @@
 
 (define abstract-bin/dec/hex-val-rest-dot-p ((tree treep))
   :returns (yes/no booleanp)
-  :parents (concrete-to-abstract-syntax)
   :short "Discriminate
           between a @('(\".\" 1*BIT)')
           and a @('(\"-\" 1*BIT)') parse tree,
@@ -415,7 +400,6 @@
 (define abstract-bin-val-rest ((tree treep))
   :returns (result (or (nat-listp result)
                        (natp result)))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('[ 1*(\".\" 1*BIT) / (\"-\" 1*BIT) ]') parse tree
           is abstracted to
           either the list of its big-endian values (for the first alternative)
@@ -437,7 +421,6 @@
 (define abstract-dec-val-rest ((tree treep))
   :returns (result (or (nat-listp result)
                        (natp result)))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('[ 1*(\".\" 1*DIGIT) / (\"-\" 1*DIGIT) ]') parse tree
           is abstracted to
           either the list of its big-endian values (for the first alternative)
@@ -459,7 +442,6 @@
 (define abstract-hex-val-rest ((tree treep))
   :returns (result (or (nat-listp result)
                        (natp result)))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('[ 1*(\".\" 1*HEXDIG) / (\"-\" 1*HEXDIG) ]') parse tree
           is abstracted to
           either the list of its big-endian values (for the first alternative)
@@ -480,7 +462,6 @@
 
 (define abstract-bin-val ((tree treep))
   :returns (num-val num-val-p)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('bin-val') parse tree is abstracted to
           its corresponding numeric value notation."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
@@ -508,7 +489,6 @@
 
 (define abstract-dec-val ((tree treep))
   :returns (num-val num-val-p)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('dec-val') parse tree is abstracted to
           its corresponding numeric value notation."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
@@ -536,7 +516,6 @@
 
 (define abstract-hex-val ((tree treep))
   :returns (num-val num-val-p)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('hex-val') parse tree is abstracted to
           its corresponding numeric value notation."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
@@ -564,7 +543,6 @@
 
 (define abstract-bin/dec/hex-val ((tree treep))
   :returns (num-val num-val-p)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('(bin-val / dec-val / hex-val )') parse tree is abstracted to
           its corresponding numeric value notation."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
@@ -585,7 +563,6 @@
 
 (define abstract-num-val ((tree treep))
   :returns (num-val num-val-p)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('num-val') parse tree is abstracted to
           its corresponding numeric value notation."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
@@ -603,7 +580,6 @@
 
 (define abstract-quoted-string ((tree treep))
   :returns (charstring acl2::stringp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('quoted-string') parse tree is abstracted to
           its character string."
   (b* (((fun (fail)) (prog2$ (abstract-fail) ""))
@@ -622,7 +598,6 @@
 
 (define abstract-case-sensitive/insensitive-string ((tree treep))
   :returns (charstring acl2::stringp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('case-sensitive') or @('case-insensitive') parse tree
           is abstracted to its character string."
   (b* (((fun (fail)) (prog2$ (abstract-fail) ""))
@@ -640,7 +615,6 @@
 
 (define abstract-char-val ((tree treep))
   :returns (char-val char-val-p)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('char-val') parse tree is abstracted to
           its corresponding character value notation."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (char-val-sensitive "")))
@@ -663,7 +637,6 @@
 
 (define abstract-prose-val ((tree treep))
   :returns (prose-val prose-val-p)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('prose-val') parse tree is abstracted to
           its corresponding prose value notation."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (prose-val "")))
@@ -682,7 +655,6 @@
 
 (define abstract-alpha ((tree treep))
   :returns (letter characterp)
-  :parents (concrete-to-abstract-syntax)
   :short "An @('ALPHA') parse tree is abstracted to its corresponding letter."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (code-char 0)))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -700,7 +672,6 @@
 
 (define abstract-alpha/digit/dash ((tree treep))
   :returns (char characterp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('(ALPHA / DIGIT / \"-\")') parse tree
           is abstracted to its corresponding character."
   (b* (((fun (fail)) (prog2$ (abstract-fail) (code-char 0)))
@@ -723,7 +694,6 @@
 
 (define abstract-*-alpha/digit/dash ((trees tree-listp))
   :returns (chars character-listp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('(ALPHA / DIGIT / \"-\")') parse trees
           is abstracted to its corresponding list of characters."
   (b* (((when (endp trees)) nil)
@@ -737,7 +707,6 @@
 
 (define abstract-rulename ((tree treep))
   :returns (rulename rulenamep)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('rulename') parse tree is abstracted to
           its corresponding rule name."
   :long
@@ -764,7 +733,6 @@
 
 (define abstract-*digit-star-*digit ((tree treep))
   :returns (mv (min natp) (max natip))
-  :parents (concrete-to-abstract-syntax)
   :short "A @('(*DIGIT \"*\" *DIGIT)') parse tree is abstracted to
           (i) the big-endian value of its first @('*DIGIT') and
           (ii) either the big-endian value of its second @('*DIGIT')
@@ -790,7 +758,6 @@
 
 (define abstract-repeat ((tree treep))
   :returns (range repeat-rangep)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('repeat') parse tree is abstracted to
           its correspoding repetition range."
   :long
@@ -824,7 +791,6 @@
 
 (define abstract-?repeat ((tree treep))
   :returns (range repeat-rangep)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('[repeat]') parse tree is abstracted to
           its corresponding repetition range."
   :long
@@ -849,8 +815,7 @@
 
   (define abstract-alternation ((tree treep))
     :returns (alternation alternationp)
-    :parents (concrete-to-abstract-syntax)
-    :short "An @('alternation') parse tree is abstracted to
+      :short "An @('alternation') parse tree is abstracted to
             its corresponding alternation."
     :long "@(def abstract-alternation)"
     (b* (((fun (fail)) (abstract-fail))
@@ -870,8 +835,7 @@
 
   (define abstract-concatenation ((tree treep))
     :returns (concatenation concatenationp)
-    :parents (concrete-to-abstract-syntax)
-    :short "A @('concatenation') parse tree is abstracted to
+      :short "A @('concatenation') parse tree is abstracted to
             its corresponding concatenation."
     :long "@(def abstract-concatenation)"
     (b* (((fun (fail)) (abstract-fail))
@@ -891,8 +855,7 @@
 
   (define abstract-repetition ((tree treep))
     :returns (repetition repetitionp)
-    :parents (concrete-to-abstract-syntax)
-    :short "A @('repetition') parse tree is abstracted to
+      :short "A @('repetition') parse tree is abstracted to
             its corresponding repetition."
     :long "@(def abstract-repetition)"
     (b* (((fun (fail)) (prog2$ (abstract-fail)
@@ -916,8 +879,7 @@
 
   (define abstract-element ((tree treep))
     :returns (element elementp)
-    :parents (concrete-to-abstract-syntax)
-    :short "An @('element') parse tree is abstracted to
+      :short "An @('element') parse tree is abstracted to
             its corresponding element."
     :long "@(def abstract-element)"
     (b* (((fun (fail)) (prog2$ (abstract-fail) (element-group nil)))
@@ -945,8 +907,7 @@
 
   (define abstract-group/option ((tree treep))
     :returns (alternation alternationp)
-    :parents (concrete-to-abstract-syntax)
-    :short "A @('group') or @('option') parse tree is abstracted to
+      :short "A @('group') or @('option') parse tree is abstracted to
             its alternation inside the group or option."
     :long "@(def abstract-group/option)"
     (b* (((fun (fail)) (abstract-fail))
@@ -964,8 +925,7 @@
 
   (define abstract-alt-rest ((trees tree-listp))
     :returns (concatenations alternationp)
-    :parents (concrete-to-abstract-syntax)
-    :short "A list of zero or more
+      :short "A list of zero or more
             @('(*c-wsp \"/\" *c-wsp concatenation)') parse trees
             is abstracted to the list of its concatenations
             (i.e. an alternation)."
@@ -982,8 +942,7 @@
 
   (define abstract-alt-rest-comp ((tree treep))
     :returns (concatenation concatenationp)
-    :parents (concrete-to-abstract-syntax)
-    :short "A @('(*c-wsp \"/\" *c-wsp concatenation)') parse tree
+      :short "A @('(*c-wsp \"/\" *c-wsp concatenation)') parse tree
             is abstracted to its concatenation."
     :long "@(def abstract-alt-rest-comp)"
     (b* (((fun (fail)) (abstract-fail))
@@ -1002,8 +961,7 @@
 
   (define abstract-conc-rest ((trees tree-listp))
     :returns (repetitions concatenationp)
-    :parents (concrete-to-abstract-syntax)
-    :short "A list of zero or more
+      :short "A list of zero or more
             @('(1*c-wsp repetition)') parse trees
             is abstracted to the list of its repetitions
             (i.e. a concatenation)."
@@ -1020,8 +978,7 @@
 
   (define abstract-conc-rest-comp ((tree treep))
     :returns (repetition repetitionp)
-    :parents (concrete-to-abstract-syntax)
-    :short "A @('(1*c-wsp repetition)') parse tree
+      :short "A @('(1*c-wsp repetition)') parse tree
             is abstracted to its repetition."
     :long "@(def abstract-conc-rest-comp)"
     (b* (((fun (fail)) (prog2$ (abstract-fail)
@@ -1046,7 +1003,6 @@
 
 (define abstract-defined-as ((tree treep))
   :returns (incremental booleanp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('defined-as') parse tree is abstracted to
           the boolean indicating whether the rule is incremental or not."
   (b* (((fun (fail)) (abstract-fail))
@@ -1065,7 +1021,6 @@
 
 (define abstract-elements ((tree treep))
   :returns (alternation alternationp)
-  :parents (concrete-to-abstract-syntax)
   :short "An @('elements') parse tree is abstracted to its alternation."
   (b* (((fun (fail)) (abstract-fail))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -1081,7 +1036,6 @@
 
 (define abstract-rule ((tree treep))
   :returns (rule rulep)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('rule') parse tree is abstracted to its corresponding rule."
   (b* (((fun (fail)) (prog2$ (abstract-fail)
                              (rule (rulename "") nil nil)))
@@ -1111,7 +1065,6 @@
 
 (define abstract-rule-/-*cwsp-cnl ((tree treep))
   :returns (rule? rule-optionp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('( rule / (*c-wsp c-nl) )') parse tree is abstracted to
           either its rule (for the first alternative)
           or nothing (for the second alternative)."
@@ -1132,7 +1085,6 @@
 
 (define abstract-*-rule-/-*cwsp-cnl ((trees tree-listp))
   :returns (rules rulelistp)
-  :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('( rule / (*c-wsp c-nl) )') parse trees
           is abstracted to the list of its corresponding rules."
   (b* (((fun (fail)) (abstract-fail))
@@ -1149,7 +1101,6 @@
 
 (define abstract-rulelist ((tree treep))
   :returns (rules rulelistp)
-  :parents (concrete-to-abstract-syntax)
   :short "A @('rulelist') parse tree is abstracted to
           its corresponding list of rules."
   (b* (((fun (fail)) (abstract-fail))
