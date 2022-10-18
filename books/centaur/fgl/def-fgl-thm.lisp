@@ -38,7 +38,7 @@
 (include-book "config")
 
 (defconst *fgl-thm-keywords*
-  '(:concl :hyp :rule-classes :hints))
+  '(:concl :hyp :rule-classes :hints :parents :short :long))
 
 (define fgl-thm-check-keyword-args ((args keyword-value-listp)
                                     (thm-keywords symbol-listp))
@@ -166,7 +166,7 @@ This probably will someday need to change.</p>
 
 
 (defconst *fgl-param-thm-keywords*
-  '(:concl :hyp :rule-classes :hints
+  '(:concl :hyp :rule-classes :hints :parents :short :long
     :param-bindings :param-hyp :split-params :solve-params :split-concl-p :repeat-concl-p))
 
 (defun fgl-param-thm-fn (args)
