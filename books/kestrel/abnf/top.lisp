@@ -11,12 +11,10 @@
 (in-package "ABNF")
 
 (include-book "notation/top")
-(include-book "operations/top")
-(include-book "parsing-primitives-seq")
-(include-book "parsing-primitives-defresult")
 (include-book "grammar-parser/top")
+(include-book "operations/top")
+(include-book "parsing-tools/top")
 (include-book "parser-and-abstractor-validation")
-(include-book "parser-generators")
 (include-book "examples/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

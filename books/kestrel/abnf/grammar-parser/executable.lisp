@@ -11,7 +11,7 @@
 (in-package "ABNF")
 
 (include-book "../notation/concrete-syntax")
-(include-book "../parsing-primitives-seq")
+(include-book "../parsing-tools/primitives-seq")
 
 (include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
