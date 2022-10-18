@@ -1239,7 +1239,7 @@ examples.</p>")
                           ;; support the :non-executable xarg by wrapping the
                           ;; body in the required throw form
                           `(prog2$ (acl2::throw-nonexec-error
-                                    ',name (list . ,formal-names))
+                                    ',name-fn (list . ,formal-names))
                                    ,extended-body)
                         extended-body))
        ;; [Shilpi] Added to support :verify-guards :after-returns.
