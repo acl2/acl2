@@ -207,14 +207,14 @@
                                             map)
                    nil)
                   inputs)))
-       (val-env (with-fast-alist inputs
+       (val-env (with-fast-alist override-vals
                  (svtv-name-lhs-map-eval-x
                   (svtv-name-lhs-map-keys-change-override
                    (svtv-fsm-env-inversemap (alist-keys (svex-env-fix override-vals))
                                             map)
                    :val)
                   override-vals)))
-       (test-env (with-fast-alist inputs
+       (test-env (with-fast-alist override-tests
                  (svtv-name-lhs-map-eval-x
                   (svtv-name-lhs-map-keys-change-override
                    (svtv-fsm-env-inversemap (alist-keys (svex-env-fix override-tests))
@@ -287,14 +287,14 @@
                                               map)
                      nil)
                     inputs)))
-       (val-subst (with-fast-alist inputs
+       (val-subst (with-fast-alist override-vals
                     (svtv-name-lhs-map-subst-x
                      (svtv-name-lhs-map-keys-change-override
                       (svtv-fsm-env-inversemap (svex-alist-keys override-vals)
                                                map)
                       :val)
                      override-vals)))
-       (test-subst (with-fast-alist inputs
+       (test-subst (with-fast-alist override-tests
                      (svtv-name-lhs-map-subst-x
                       (svtv-name-lhs-map-keys-change-override
                        (svtv-fsm-env-inversemap (svex-alist-keys override-tests)
