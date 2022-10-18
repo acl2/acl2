@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "parser")
+(include-book "executable")
 
 (local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 (local (include-book "kestrel/utilities/lists/primitive-theorems" :dir :system))

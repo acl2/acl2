@@ -13,7 +13,7 @@
 ; Added by Matt K. 12/31/2021 to avoid ACL2(r) failure:
 ; cert_param: (non-acl2r)
 
-(include-book "semantics")
+(include-book "../notation/semantics")
 
 (include-book "kestrel/fty/nat-result" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)

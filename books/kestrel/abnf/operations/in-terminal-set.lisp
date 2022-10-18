@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "../semantics")
+(include-book "../notation/semantics")
 
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)

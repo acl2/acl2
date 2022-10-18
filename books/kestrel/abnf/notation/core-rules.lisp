@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ core-rules
-  :parents (abnf)
+  :parents (notation concrete-syntax)
   :short "Core rules of ABNF."
   :long
   (xdoc::topstring

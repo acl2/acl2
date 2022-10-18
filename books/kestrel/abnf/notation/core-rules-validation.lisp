@@ -11,9 +11,9 @@
 (in-package "ABNF")
 
 (include-book "core-rules")
-(include-book "operations/well-formedness")
-(include-book "operations/closure")
-(include-book "operations/in-terminal-set")
+(include-book "../operations/well-formedness")
+(include-book "../operations/closure")
+(include-book "../operations/in-terminal-set")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

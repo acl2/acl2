@@ -12,7 +12,7 @@
 
 (include-book "../atj" :ttags ((:open-output-channel!) (:oslib) (:quicklisp) :quicklisp.osicat))
 
-(include-book "kestrel/abnf/parser" :dir :system)
+(include-book "kestrel/abnf/grammar-parser/executable" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
