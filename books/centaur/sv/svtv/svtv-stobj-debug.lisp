@@ -693,12 +693,13 @@
               (open-input-channel-p *standard-oi* :object state)
               (or (svtv-cycle-output-phase (defsvtv-args->cycle-phases args))
                   (not (defsvtv-args->cycle-phases args))))
-  (b* (((mv err pipeline-setup svtv-data)
+  (b* ((args (defsvtv-args-expand-stages args))
+       ((mv err pipeline-setup svtv-data)
         (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
        ((when err)
         (er hard? 'svtv-chase$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
         (mv svtv-chase-data svtv-data state))
-       (labels (defsvtv-args->labels args))
+       (labels (subst nil 'acl2::? (defsvtv-args->labels args)))
        ((unless (symbol-listp labels))
         (er hard? 'svtv-chase$ "Expected labels to be a symbol list: ~x0~%" labels)
         (mv svtv-chase-data svtv-data state))
@@ -763,7 +764,7 @@
   :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args)))
               (open-input-channel-p *standard-oi* :object state))
   (b* (((mv err pipeline-setup svtv-data)
-        (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
+        (defsvtv-stobj-pipeline-setup (defsvtv-args-expand-stages args) svtv-data :skip-cycle t))
        ((when err)
         (er hard? 'svtv-debug$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
         (mv vcd-wiremap vcd-vals svtv-data state))
@@ -827,7 +828,7 @@
                                     (svtv-data 'svtv-data))
   :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args))))
   (b* (((mv err pipeline-setup svtv-data)
-        (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
+        (defsvtv-stobj-pipeline-setup (defsvtv-args-expand-stages args) svtv-data :skip-cycle t))
        ((when err)
         (er hard? 'svtv-run$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
         (mv nil svtv-data))
@@ -908,7 +909,7 @@
  (make-event
   (b* (((mv result svtv-data
             state)
-        (svtv-data-run-defsvtv$
+        (svtv-run-defsvtv$
          (defsvtv$-phasewise my-svtv
            :design *my-design*
            :phases
@@ -924,6 +925,49 @@
         (mv (msg "Wrong answer: expected ~x0 result ~x1~%" expected result)
             nil state svtv-data)))
     (mv nil '(value-triple :ok) state svtv-data))))
+
+(local
+ (make-event
+  (b* (((mv result svtv-data state)
+        (svtv-run-defsvtv$
+         (defsvtv$ my-svtv
+           :design *my-design*
+           :phases
+           `((:label the-phase
+             ,@'(:inputs (("in" in)))
+             :outputs (("out" out)))
+            (:label the-next-phase
+             :inputs (("in" in2))
+             :outputs (("out" out2)))))
+         :env '((in . 5) (in2 . 9))))
+       (expected '((OUT . #ux1A) (OUT2 . #ux16)))
+       ((unless (equal result expected))
+        (mv (msg "Wrong answer: expected ~x0 result ~x1~%" expected result)
+            nil state svtv-data)))
+    (mv nil '(value-triple :ok) state svtv-data))))
+
+(local
+ (defsvtv$ my-svtv
+   :design *my-design*
+   :phases
+   `((:label the-phase
+      ,@'(:inputs (("in" in)))
+      :outputs (("out" out)))
+     (:label the-next-phase
+      :inputs (("in" in2))
+      :outputs (("out" out2))))))
+
+(local
+ (make-event
+  (b* (((mv result svtv-data state)
+        (svtv-run$ (my-svtv) '((in . 5) (in2 . 9))))
+       (expected '((OUT . #ux1A) (OUT2 . #ux16)))
+       ((unless (equal result expected))
+        (mv (msg "Wrong answer: expected ~x0 result ~x1~%" expected result)
+            nil state svtv-data)))
+    (mv nil '(value-triple :ok) state svtv-data))))
+
+ 
 
 #||
 

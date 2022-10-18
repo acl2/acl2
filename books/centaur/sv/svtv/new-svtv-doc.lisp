@@ -247,15 +247,16 @@ higher-level discussion; here, we provide a reference for the arguments.</p>
 the hierarchical hardware model.  One or the other of @(':design') or @(':mod')
 should be given, but not both; they mean exactly the same thing.</li>
 
-<li>@(':phases') describes what happens at each phase, or each clock cycle if
+<li>@(':stages') (or equivalently, but perhaps deprecated, @(':phases'))
+describes what happens at each phase, or each clock cycle if
 the @(':cycle-phases') argument (below) is used: what inputs and overrides are
 set and what outputs are sampled.  Additionally, each phase may be given a
-label for documentation purposes.  As an alternative to @(':phases'), arguments
+label for documentation purposes.  As an alternative to @(':stages'), arguments
 @(':inputs'), @(':overrides'), and @(':outputs') may be provided at the top
 level with a timing diagram format, described below; this is the same format as
 was used in the previous version @('defsvtv') and ESIM's @('defstv'), but using
-@(':phases') is recommended since it tends to be easier to edit.  The format of
-the @(':phases') argument is described in its own section below.</li>
+@(':stages') is recommended since it tends to be easier to edit.  The format of
+the @(':stages') argument is described in its own section below.</li>
 
 <li>@(':cycle-phases') optionally describes a clock cycle. Its value must be a
 list of @('svtv-cyclephase') objects.  A typical clock cycle has two phases
@@ -288,7 +289,7 @@ corresponds to the following cycle-phases value:
 <li>@(':parents'), @(':short'), @(':long'), and @(':labels') pertain to
 documentation; if any of @(':parents'), @(':short'), or @(':long') are given
 then additional xdoc will also be generated to show a timing diagram.
-@(':labels') may only be used without @(':phases') (alongside @(':inputs'),
+@(':labels') may only be used without @(':stages') (alongside @(':inputs'),
 @(':outputs') and @(':overrides')), which has its own syntax for providing
 phase labels; if provided, these label the phases in that timing diagram.</li>
 
@@ -338,7 +339,7 @@ avoid providing conditional overrides on these derived clock signals.  It may
 be important to avoid building conditional overrides on such signals because
 they can prevent important simplifications that reduce the size of the
 expressions produced.  Additionally, if these clock signals are set in the
-@(':phases') argument and not in the @(':cycle-phases'), their assignments in
+@(':stages') argument and not in the @(':cycle-phases'), their assignments in
 each phase will initially be used to simplify the nextstate before composing
 the pipeline.</li>
 
@@ -359,13 +360,21 @@ can force this with
 
 </ul>
 
-<h3>@(':phases') argument format</h3>
+<h3>@(':stages') argument format</h3>
+
+<p>The @(':stages') (or @(':phases')) argument may either be evaluated or not.
+The decision to evaluate or not is done by checking the @('caar') of the
+argument: if it is a keyword symbol, then this is consistent with the format of
+a literal phases list but not consistent with any untranslated term, so then it
+will not be evaluated; otherwise it will.  The following description of the
+argument format pertains to the result of evaluating the argument, or the
+literal form if not evaluated.</p>
 
 <p>The following example shows the main features of the @(':phases') argument
 format:</p>
 
 @({
-   :phases
+   :stages
    (;; Phase 0:
     (:label p
      :inputs ((\"clk\" 0 :toggle 1)  ;; will toggle each phase until end or until reassigned
@@ -471,7 +480,7 @@ phases and value is toggled.</p>
 
 <p>Previous versions of this utility -- @('defsvtv') and ESIM's
 @('acl2::defstv') -- used another format for specifying stimulus and output
-sampling.  Instead of a @(':phases') argument, these utilities took
+sampling.  Instead of a @(':stages') argument, these utilities took
 @(':inputs'), @(':outputs'), @(':overrides'), and @(':labels').  The format of
 the first three is described in @(see svtv-stimulus-format). The @(':labels')
 argument is a list of symbols giving names to each phase for documentation
