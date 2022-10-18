@@ -20,6 +20,7 @@
 (include-book "concrete-syntax")
 (include-book "concrete-syntax-validation")
 (include-book "syntax-abstraction")
+(include-book "meta-circular-validation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,5 +100,14 @@
                     "validation of the concrete syntax")
     ", via some of the "
     (xdoc::seetopic "operations" "grammar operations")
-    "."))
+    ".")
+   (xdoc::p
+    "With a formalization of the ABNF notation in hand,
+     we develop a "
+    (xdoc::seetopic "grammar-parser" "verified parser of ABNF grammars")
+    ", whose verification rests on the formalization of the ABNF notation.
+     The parser is not part of the formalization of the ABNF notation,
+     but we use it to "
+    (xdoc::seetopic "meta-circular-validation" "validate the meta-circularity")
+    " with which [RFC] defines the syntax of ABNF."))
   :order-subtopics t)

@@ -14,7 +14,6 @@
 (include-book "grammar-parser/top")
 (include-book "operations/top")
 (include-book "parsing-tools/top")
-(include-book "parser-and-abstractor-validation")
 (include-book "examples/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
