@@ -35,23 +35,43 @@
 ;; order to have their def-fgl-thms exported.
 
 (include-book "std/alists/alist-defuns" :dir :system)
+(include-book "config")
+
+(defconst *fgl-thm-keywords*
+  '(:concl :hyp :rule-classes :hints))
+
+(define fgl-thm-check-keyword-args ((args keyword-value-listp)
+                                    (thm-keywords symbol-listp))
+  :mode :program
+  (if (atom args)
+      nil
+    (if (or (acl2::assoc-symbol-name-equal (car args) *fgl-config-fields*)
+            (member-eq (car args) thm-keywords))
+        (fgl-thm-check-keyword-args (cddr args) thm-keywords)
+      (car args))))
+
 
 (defun fgl-thm-fn (args)
   (declare (xargs :mode :program))
-  (let* ((concl (if (keywordp (car args))
-                    (cadr (assoc-keyword :concl args))
-                  (car args)))
-         (args (if (keywordp (car args))
-                   args
-                 (cdr args)))
-         (body (let ((look (assoc-keyword :hyp args)))
-                 (if look
-                     `(implies ,(cadr look) ,concl)
-                   concl)))
-         (rule-classes (let ((look (assoc-keyword :rule-classes args)))
-                         (and look
-                              `(:rule-classes ,(cadr look)))))
-         (hints (cadr (assoc-keyword :hints args))))
+  (b* ((concl (if (keywordp (car args))
+                  (cadr (assoc-keyword :concl args))
+                (car args)))
+       (args (if (keywordp (car args))
+                 args
+               (cdr args)))
+       ((unless (keyword-value-listp args))
+        (er hard? 'fgl-thm-fn "Argument list (excluding theorem body) must be a keyword-value-list."))
+       (bad-key (fgl-thm-check-keyword-args args *fgl-thm-keywords*))
+       ((when bad-key)
+        (er hard 'fgl-thm-fn "Unrecognized keyword: ~x0" bad-key))
+       (body (let ((look (assoc-keyword :hyp args)))
+               (if look
+                   `(implies ,(cadr look) ,concl)
+                 concl)))
+       (rule-classes (let ((look (assoc-keyword :rule-classes args)))
+                       (and look
+                            `(:rule-classes ,(cadr look)))))
+       (hints (cadr (assoc-keyword :hints args))))
     `(thm
       ,body
       :hints (,@hints
@@ -145,14 +165,23 @@ This probably will someday need to change.</p>
           (fgl-param-thm-cases (cdr param-bindings) param-hyp))))
 
 
+(defconst *fgl-param-thm-keywords*
+  '(:concl :hyp :rule-classes :hints
+    :param-bindings :param-hyp :split-params :solve-params :split-concl-p :repeat-concl-p))
+
 (defun fgl-param-thm-fn (args)
   (declare (xargs :mode :program))
-  (let* ((concl (if (keywordp (car args))
+  (b* ((concl (if (keywordp (car args))
                     (cadr (assoc-keyword :concl args))
                   (car args)))
          (args (if (keywordp (car args))
                    args
                  (cdr args)))
+       ((unless (keyword-value-listp args))
+        (er hard? 'fgl-thm-fn "Argument list (excluding theorem body) must be a keyword-value-list."))
+       (bad-key (fgl-thm-check-keyword-args args *fgl-param-thm-keywords*))
+       ((when bad-key)
+        (er hard 'fgl-thm-fn "Unrecognized keyword: ~x0" bad-key))
          (body (let ((look (assoc-keyword :hyp args)))
                  (if look
                      `(implies ,(cadr look) ,concl)
