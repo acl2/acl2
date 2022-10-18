@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "parser")
+(include-book "grammar-parser/executable")
 (include-book "notation/syntax-abstraction")
 
 ; (depends-on "notation/core-rules.abnf")

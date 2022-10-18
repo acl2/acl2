@@ -17,7 +17,7 @@
 (include-book "../operations/in-terminal-set")
 (include-book "../notation/core-rules")
 (include-book "../notation/concrete-syntax")
-(include-book "../parser")
+(include-book "../grammar-parser/executable")
 (include-book "../notation/syntax-abstraction")
 
 ; (depends-on "smtp.abnf")
