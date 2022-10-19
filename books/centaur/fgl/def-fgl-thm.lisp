@@ -167,7 +167,7 @@ This probably will someday need to change.</p>
 
 (defconst *fgl-param-thm-keywords*
   '(:concl :hyp :rule-classes :hints :parents :short :long
-    :param-bindings :param-hyp :split-params :solve-params :split-concl-p :repeat-concl-p))
+    :param-bindings :param-hyp :split-params :solve-params :split-concl :repeat-concl))
 
 (defun fgl-param-thm-fn (args)
   (declare (xargs :mode :program))
@@ -199,8 +199,9 @@ This probably will someday need to change.</p>
                               ',(cadr (assoc-keyword :param-hyp args)))
                              :split-params ,(cadr (assoc-keyword :split-params args))
                              :solve-params ,(cadr (assoc-keyword :solve-params args))
-                             :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
-                             :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args))
+                             :split-concl ,(let ((look (assoc-keyword :split-concl args)))
+                                             (or (not look) (cadr look)))
+                             :repeat-concl ,(cadr (assoc-keyword :repeat-concl args))
                              :fgl-config (default-fgl-config . ,args))
               '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
       ,@rule-classes)))
@@ -245,10 +246,23 @@ proving that case split provided covers all cases.</li>
 
 <li>@(':solve-params') provides the @(see fgl-sat-check) object for proving each case.</li>
 
-<li>@(':repeat-concl-p') controls whether the conclusion is (if nil)
+<li>@(':repeat-concl') controls whether the conclusion is (if nil)
 rewritten/symbolically executed once and then solved separately for each case,
 or (if nonnil) rewritten/symbolically executed (and also solved) separately for
 each case.</li>
+
+<li>@(':hints') gives a list of hints (computed or subgoal) that are provided
+before the casesplit and FGL interpreter clause processor hints.  Practically
+speaking, if these hints don't trigger immediately, then they won't trigger
+until after the casesplit and FGL interpreter hints, since those occur
+unconditionally.</li>
+
+<li>@(':split-concl') pertains to cases where previous hints have allowed ACL2
+to clausify the conjecture -- normally, the case split happens on the original,
+unclausified conjecture.  If @(':split-concl') is non-nil (the default), then
+the last literal in the clause is considered the conclusion and previous
+literals are bundled into the hypothesis; if nil, then the whole clause is
+bundled into the conclusion and the hyp is just T.</li>
 
 </ul>
 
