@@ -12088,41 +12088,11 @@
   :hints (("Goal" :use (:instance bvlt-of-bvmult-of-expt-arg3 (k y) (lowsize (lg k)))
            :in-theory (disable bvlt-of-bvmult-of-expt-arg3))))
 
-(defthm append-of-take-and-subrange-alt
-  (implies (and (natp n)
-                (< m n) ;gen?
-                (natp m))
-           (equal (append (take m x) (subrange m n x) y)
-                  (append (take (+ 1 n) x) y)))
-  :hints (("Goal" :use (:instance append-of-take-and-subrange)
-           :in-theory (e/d (;list::car-append list::cdr-append LIST::NTH-APPEND
-                            )
-                           (append-of-take-and-subrange
-                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
-                            )))))
-
-(DEFTHM APPEND-SUBRANGE-SUBRANGE-ADJACENT-alt
-  (IMPLIES (AND (< E2 (LEN LST))
-                (EQUAL S2 (+ 1 E1))
-                (<= S1 E1)
-                (<= S2 E2)
-                (NATP E1)
-                (NATP S1)
-                (NATP S2)
-                (NATP E2))
-           (EQUAL (APPEND (SUBRANGE S1 E1 LST) (SUBRANGE S2 E2 LST) y)
-                  (append (SUBRANGE S1 E2 LST) y)))
-  :hints (("Goal" :in-theory (enable  ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;why isn't the non-alt one enough?
-                              equal-of-append
-                                      ))))
-
 (defthm equal-of-+-of-unary-minus
   (implies (and (acl2-numberp x)
                 (acl2-numberp y))
            (equal (equal '0 (binary-+ x (unary-- y)))
                   (equal y x))))
-
-
 
 ;see LIST::NTHCDR-WHEN-<=
 ;seemed quite slow!  do we need it?
