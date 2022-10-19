@@ -34,7 +34,7 @@
                                    bv-array-write-nest-with-val-at-index
                                    term-should-be-trimmed-axe-plus-one
                                    term-should-be-trimmed-axe
-                                   should-commute-args-dag
-                                   should-commute-args-increasing-dag
+                                   should-commute-axe-argsp
+                                   should-commute-axe-args-increasingp
                                    no-state-to-step-for-loop-lifter-p ;jvm-specific
                                    ))
