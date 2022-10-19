@@ -256,7 +256,7 @@
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexpr-ginp)
 
@@ -266,8 +266,8 @@
   :short "Outputs for @(tsee atc-gen-expr-pure)."
   ((expr expr)
    (type type)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexpr-goutp)
 
@@ -278,7 +278,7 @@
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred bexpr-ginp)
 
@@ -287,8 +287,8 @@
 (fty::defprod bexpr-gout
   :short "Outputs for @(tsee atc-gen-expr-bool)."
   ((expr expr)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred bexpr-goutp)
 
@@ -311,7 +311,7 @@
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid (w state)))
        (formula `(equal (exec-expr-pure ',expr compst)
                         ,term))
-       (formula (acl2::untranslate$ formula nil state))
+       (formula (untranslate$ formula nil state))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-const
                                      (:e expr-kind)
                                      (:e expr-const->get)
@@ -892,7 +892,7 @@
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexprs-ginp)
 
@@ -902,8 +902,8 @@
   :short "Outputs for @(tsee atc-gen-expr-pure-list)."
   ((exprs expr-list)
    (types type-list)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexprs-goutp)
 
@@ -966,7 +966,7 @@
    (fn symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred expr-ginp)
 
@@ -978,8 +978,8 @@
    (type typep)
    (affect symbol-listp)
    (limit pseudo-termp)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred expr-goutp)
 
@@ -1495,7 +1495,7 @@
    (prec-tags atc-string-taginfo-alistp)
    (prec-objs atc-string-objinfo-alistp)
    (proofs booleanp)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred stmt-ginp)
 
@@ -1506,8 +1506,8 @@
   ((items block-item-listp)
    (type typep)
    (limit pseudo-termp)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred stmt-goutp)
 
@@ -2878,7 +2878,7 @@
    (prec-tags atc-string-taginfo-alistp)
    (prec-objs atc-string-objinfo-alistp)
    (proofs booleanp)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred lstmt-ginp)
 
@@ -2892,8 +2892,8 @@
    (affect symbol-listp)
    (limit-body pseudo-termp)
    (limit-all pseudo-termp)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred lstmt-goutp)
 
