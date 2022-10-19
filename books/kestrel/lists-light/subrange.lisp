@@ -134,8 +134,7 @@
 
 (theory-invariant (incompatible (:rewrite take-of-nthcdr-becomes-subrange) (:definition subrange)))
 
-;rename take-of-subrange
-(defthm take-of-subrange-gen
+(defthm take-of-subrange
   (implies (and (<= i (+ 1 (- end start)))
                 (natp start)
                 (natp end)
