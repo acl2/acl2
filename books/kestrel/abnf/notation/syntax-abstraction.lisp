@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ syntax-abstraction
-  :parents (abnf)
+  :parents (notation)
   :short "An executable mapping from
           the concrete syntax of ABNF to the abstract syntax of ABNF."
   :long

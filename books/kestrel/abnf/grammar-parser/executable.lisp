@@ -10,38 +10,13 @@
 
 (in-package "ABNF")
 
-(include-book "concrete-syntax")
-(include-book "parsing-primitives-seq")
+(include-book "../notation/concrete-syntax")
+(include-book "../parsing-tools/primitives-seq")
 
 (include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ grammar-parser
-  :parents (abnf)
-  :short "A verified executable parser of ABNF grammars."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "It may be possible to derive this parser from @(tsee parse-grammar*)
-     (or a variant of it that resolves the ambiguity discussed there)
-     via transformational refinements,
-     but here we write an implementation directly
-     and we prove its correctness.")
-   (xdoc::p
-    "The implementation and verification techniques employed for this parser
-     seem more general than the parser.
-     They should be applicable to parsers of other languages specified in ABNF,
-     e.g. to HTTP parsers.
-     It may also be possible to build a parser generator
-     that turns ABNF grammars
-     (satisfying certain restrictions, as with typical parser generators)
-     into verified executable parsers,
-     i.e. executable parsers accompanied by proofs of correctness."))
-  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

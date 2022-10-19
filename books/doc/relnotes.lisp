@@ -130,6 +130,11 @@
    (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
 
    (xdoc::p
+    "The library has been refactored to organize its constituents more clearly.
+     Some parts of the documentation have also been improved and extended
+     in the process of doing this refactoring.")
+
+   (xdoc::p
     "The parsing generation tools have been slightly improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

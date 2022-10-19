@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax
-  :parents (abnf)
+  :parents (notation)
   :short "Abstract syntax of ABNF."
   :long
   (xdoc::topstring-p

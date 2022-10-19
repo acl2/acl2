@@ -10,15 +10,15 @@
 
 (in-package "ABNF")
 
-(include-book "../abstract-syntax")
-(include-book "../semantics")
+(include-book "../notation/abstract-syntax")
+(include-book "../notation/semantics")
 (include-book "../operations/well-formedness")
 (include-book "../operations/closure")
 (include-book "../operations/in-terminal-set")
-(include-book "../core-rules")
-(include-book "../concrete-syntax")
-(include-book "../parser")
-(include-book "../syntax-abstraction")
+(include-book "../notation/core-rules")
+(include-book "../notation/concrete-syntax")
+(include-book "../grammar-parser/executable")
+(include-book "../notation/syntax-abstraction")
 
 ; (depends-on "smtp.abnf")
 

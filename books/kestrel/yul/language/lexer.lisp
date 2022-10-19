@@ -13,7 +13,7 @@
 
 (include-book "grammar-new")
 
-(include-book "kestrel/abnf/parser-generators" :dir :system)
+(include-book "kestrel/abnf/parsing-tools/generators" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

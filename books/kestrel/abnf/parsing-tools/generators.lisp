@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "parsing-primitives-defresult")
+(include-book "primitives-defresult")
 
 (include-book "kestrel/fty/pos-list" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)

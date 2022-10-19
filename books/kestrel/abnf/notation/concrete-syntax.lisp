@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax
-  :parents (abnf)
+  :parents (notation)
   :short "Concrete syntax of ABNF."
   :long
   (xdoc::topstring-p

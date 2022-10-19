@@ -10,31 +10,49 @@
 
 (in-package "ABNF")
 
-(include-book "parser")
+(include-book "../grammar-parser/executable")
 (include-book "syntax-abstraction")
 
-; (depends-on "core-rules.abnf")
-; (depends-on "concrete-syntax-rules.abnf")
+; (depends-on "../notation/core-rules.abnf")
+; (depends-on "../notation/concrete-syntax-rules.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parser-and-abstractor-validation
+(defxdoc+ meta-circular-validation
   :parents (abnf)
-  :short "A validation of the parser and abstractor."
+  :short "A validation of the meta-circularity in
+          the concrete syntax definition of ABNF."
   :long
-  (xdoc::topstring-p
-   "Running the parser and abstractor
-    on the concrete syntax of the core rules and of the concrete syntax rules
-    causes no error
-    and yields the same abstract syntax
-    of the core rules and of the concrete syntax rules
-    directly defined in the formalization of the "
-   (xdoc::seetopic "concrete-syntax" "concrete syntax")
-   ". This provides a testing validation of the parser and abstractor.")
-  :order-subtopics t)
+  (xdoc::topstring
+   (xdoc::p
+    "[RFC] defines the concrete syntax of ABNF meta-circularly, using ABNF.
+     Our formalization of the "
+    (xdoc::seetopic "concrete-syntax" "concrete syntax")
+    " of ABNF is not meta-circular,
+     because it would be impossible in a theorem prover like ACL2.
+     Nonetheless, here we provide a validation of the meta-circularity.")
+   (xdoc::p
+    "We use the "
+    (xdoc::seetopic "grammar-parser" "verified grammar parser")
+    " and the "
+    (xdoc::seetopic "syntax-abstraction" "executable syntax abstractor")
+    " to parse and abstract the core rules and the concrete syntax rules,
+     from the respective grammar files,
+     and we show that we obtain exactly the same rules, in abstract syntax,
+     that we manually define for "
+    (xdoc::seetopic "core-rules" "the core rules")
+    " and for "
+    (xdoc::seetopic "concrete-syntax-rules" "the concrete syntax rules")
+    ". In other words, the same grammar rules that we write manually
+     are obtained by correctly processing the grammar files
+     (where `correctly' refers to the fact that
+     the grammar parser is verified)."))
+  :order-subtopics t
+  :default-parent t)
 
-(defsection *core-rules-parse-tree*
-  :parents (parser-and-abstractor-validation)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection *core-rules-parsed*
   :short "Parse tree of the text that contains the core rules."
   :long
   (xdoc::topstring
@@ -51,15 +69,18 @@
      to keep this constant unexpanded in output."))
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "core-rules.abnf") state)
+       (parse-grammar-from-file
+        (string-append (cbd) "../notation/core-rules.abnf")
+        state)
      (value `(progn
-               (defconst *core-rules-parse-tree* ',tree)
-               (add-const-to-untranslate-preprocess *core-rules-parse-tree*)
-               (defthm treep-of-*core-rules-parse-tree*
-                 (treep *core-rules-parse-tree*)))))))
+               (defconst *core-rules-parsed* ',tree)
+               (add-const-to-untranslate-preprocess *core-rules-parsed*)
+               (defthm treep-of-*core-rules-parsed*
+                 (treep *core-rules-parsed*)))))))
 
-(defsection *concrete-syntax-rules-parse-tree*
-  :parents (parser-and-abstractor-validation)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection *concrete-syntax-rules-parsed*
   :short "Parse tree of the text that contains
           the concrete syntax rules of ABNF."
   :long
@@ -77,19 +98,21 @@
      to keep this constant unexpanded in output."))
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "concrete-syntax-rules.abnf")
-                              state)
+       (parse-grammar-from-file
+        (string-append (cbd) "../notation/concrete-syntax-rules.abnf")
+        state)
      (value `(progn
-               (defconst *concrete-syntax-rules-parse-tree*
+               (defconst *concrete-syntax-rules-parsed*
                  ',tree)
                (add-const-to-untranslate-preprocess
-                *concrete-syntax-rules-parse-tree*)
-               (defthm treep-of-*concrete-syntax-rules-parse-tree*
-                 (treep *concrete-syntax-rules-parse-tree*)))))))
+                *concrete-syntax-rules-parsed*)
+               (defthm treep-of-*concrete-syntax-rules-parsed*
+                 (treep *concrete-syntax-rules-parsed*)))))))
 
-(defval *core-rules-abstracted*
-  :parents (parser-and-abstractor-validation)
-  :short "Rule list that @(tsee *core-rules-parse-tree*) abstracts to."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *core-rules-parsed-and-abstracted*
+  :short "Rule list that @(tsee *core-rules-parsed*) abstracts to."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -107,19 +130,20 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-  (abstract-rulelist *core-rules-parse-tree*)
+  (abstract-rulelist *core-rules-parsed*)
   ///
 
-  (add-const-to-untranslate-preprocess *core-rules-abstracted*)
+  (add-const-to-untranslate-preprocess *core-rules-parsed-and-abstracted*)
 
-  (defrule *core-rules-abstracted*-correct
-    (equal *core-rules-abstracted* *core-rules*)
+  (defrule *core-rules-parsed-and-abstracted*-correct
+    (equal *core-rules-parsed-and-abstracted* *core-rules*)
     :rule-classes nil))
 
-(defval *concrete-syntax-rules-abstracted*
-  :parents (parser-and-abstractor-validation)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *concrete-syntax-rules-parsed-and-abstracted*
   :short "Rule list that
-          @(tsee *concrete-syntax-rules-parse-tree*) abstracts to."
+          @(tsee *concrete-syntax-rules-parsed*) abstracts to."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -138,12 +162,12 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-  (abstract-rulelist *concrete-syntax-rules-parse-tree*)
+  (abstract-rulelist *concrete-syntax-rules-parsed*)
   ///
 
-  (add-const-to-untranslate-preprocess *concrete-syntax-rules-abstracted*)
+  (add-const-to-untranslate-preprocess *concrete-syntax-rules-parsed-and-abstracted*)
 
-  (defrule *concrete-syntax-rules-abstracted*-correct
-    (equal *concrete-syntax-rules-abstracted*
+  (defrule *concrete-syntax-rules-parsed-and-abstracted*-correct
+    (equal *concrete-syntax-rules-parsed-and-abstracted*
            *concrete-syntax-rules*)
     :rule-classes nil))

@@ -12,8 +12,8 @@
 
 (include-book "unicode-characters")
 
-(include-book "kestrel/abnf/parser" :dir :system)
-(include-book "kestrel/abnf/syntax-abstraction" :dir :system)
+(include-book "kestrel/abnf/grammar-parser/executable" :dir :system)
+(include-book "kestrel/abnf/notation/syntax-abstraction" :dir :system)
 (include-book "kestrel/abnf/operations/well-formedness" :dir :system)
 (include-book "kestrel/abnf/operations/closure" :dir :system)
 (include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)

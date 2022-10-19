@@ -52,17 +52,18 @@
   (symbol-listp (make-arg-keywords count))
   :hints (("Goal" :in-theory (enable make-arg-keywords))))
 
-;; Instantiate TEMPLATE by replacing :arg1 through :argn with the corresponding ARGS.
-;; For now, this is a really dumb replacement, since the template may be an untranslated term.
-(defund replace-call (args template)
+;; Instantiate TEMPLATE by replacing :arg1 through :argn with the corresponding
+;; elements of ARGS (using 1-based numbering).  For now, this is a really
+;; dumb/aggressive replacement, since the template may be an untranslated term.
+(defund instantiate-template-with-args (template args)
   (declare (xargs :guard (true-listp args)))
   (replace-symbols-in-tree template
                            (pairlis$ (make-arg-keywords (len args))
                                      args)))
 
-;; Renames function symbols in TERM if indicated by ALIST.  Functions not mapped to anything ALIST are left alone.
-;; (RENAME-FNs  '(foo '1 (baz (foo x y))) '((foo . bar)))
-;; This is the version for translated terms.
+;; Replaces function symbols in TERM according to ALIST, which maps functions
+;; symbols to templates mentioning :arg1, etc.  This is the version for
+;; translated terms.
 (mutual-recursion
  (defun replace-calls (term alist)
    (declare (xargs :guard (and (pseudo-termp term)
@@ -75,13 +76,15 @@
        (let* ((fn (ffn-symb term))
               (new-args (replace-calls-lst (fargs term) alist)))
          (if (flambdap fn)
-             ;;if it's a lambda, replace calls in the body:
+             ;; Replace calls in the body:
              `((lambda ,(lambda-formals fn) ,(replace-calls (lambda-body fn) alist))
                ,@new-args) ;todo: use make-lambda here?
-           ;;if it's not a lambda:
+           ;; Not a lambda:
            (let ((res (assoc-eq fn alist)))
              (if res
-                 (replace-call new-args (cdr res))
+                 ;; Replace this call:
+                 (instantiate-template-with-args (cdr res) new-args)
+               ;; Don't replace this call:
                (fcons-term fn new-args))))))))
 
  ;;Replaces function symbols in TERMS if indicated by ALIST.
@@ -103,7 +106,7 @@
  (defun replace-calls-in-untranslated-term-aux (term
                                                 alist
                                                 permissivep ;whether, when TERM fails to translate, we should simply return it unchanged (used when applying a heuristic)
-                                                count
+                                                count ; forces termination
                                                 wrld ;this may have fake function entries in it, so it may be different from (w state)
                                                 state ; needed for magic-macroexpand (why?)
                                                 )
@@ -232,7 +235,7 @@
                       (let ((res (assoc-eq fn alist)))
                         (if res
                             ;; Replace this call:
-                            (replace-call new-args (cdr res))
+                            (instantiate-template-with-args (cdr res) new-args)
                           ;; Don't replace:
                           (fcons-term fn new-args))))))))))))))
 
@@ -250,7 +253,7 @@
              (replace-calls-in-untranslated-terms-aux (rest terms) alist permissivep (+ -1 count) wrld state))))))
 
 (defund replace-calls-in-untranslated-term (term
-                                            alist ; the replacement to apply
+                                            alist ; the replacement to apply, maps function symbols to templates (untranslated forms mentioning :arg1, etc)
                                             wrld ; must contain real or fake entries for all functions in TERM and in the cdrs of ALIST
                                             state ; needed for magic-macroexpand (why?)
                                             )

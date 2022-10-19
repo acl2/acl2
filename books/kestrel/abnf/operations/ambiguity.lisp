@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "../semantics")
+(include-book "../notation/semantics")
 
 (local (include-book "std/lists/top" :dir :system))
 
