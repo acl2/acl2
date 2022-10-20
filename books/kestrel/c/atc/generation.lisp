@@ -5076,7 +5076,7 @@
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
-                                       (wrld plist-worldp))
+                                       state)
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (correct-body-thm "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -5091,7 +5091,8 @@
      we plan to change the loop correctness theorem
      to make use of this theorem,
      instead of proving the whole loop, including its body."))
-  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-body-thm (add-suffix correct-thm "-BODY"))
        ((mv correct-body-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-body-thm
@@ -5113,8 +5114,8 @@
                    (>= ,limit-var ,limit)
                    ,@hyps
                    ,@diff-pointer-hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)
-                   ,(untranslate test-term nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)
+                   ,(untranslate$ test-term nil state)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
@@ -5627,7 +5628,7 @@
                                                  fn-thms
                                                  loop.limit-body
                                                  names-to-avoid
-                                                 wrld))
+                                                 state))
                  ((mv correct-local-events
                       correct-exported-events
                       natp-of-measure-of-fn-thm
