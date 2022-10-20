@@ -2182,6 +2182,21 @@
    (use-arithmetic-5 t))
 
   (def-rp-rule :disabled-for-acl2 t
+    logbit-to-bits-without-hyps
+    (implies t
+             (equal (acl2::logbit index x)
+                    (bits (ifix x) (nfix index) 1)))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-RSH
+                              4VEC-ZERO-EXT
+                              4VEC-SHIFT-CORE)
+                             (;;4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                              4VEC-ZERO-EXT-IS-4VEC-CONCAT)))))
+  
+  (def-rp-rule :disabled-for-acl2 t
     logbit-to-bits
     (implies (and (natp index)
                   (integerp x))
