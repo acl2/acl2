@@ -35,6 +35,7 @@
 (include-book "kestrel/std/system/add-suffix-to-fn-lst" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/genvar-dollar" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
@@ -4005,12 +4006,12 @@
   (b* ((wrld (w state))
        (name (cdr (assoc-eq fn fn-thms)))
        (formals (strip-cars typed-formals))
-       (compst-var (genvar 'atc "COMPST" nil formals))
-       (fenv-var (genvar 'atc "FENV" nil formals))
-       (limit-var (genvar 'atc "LIMIT" nil formals))
+       (compst-var (genvar$ 'atc "COMPST" nil formals state))
+       (fenv-var (genvar$ 'atc "FENV" nil formals state))
+       (limit-var (genvar$ 'atc "LIMIT" nil formals state))
        (result-var (if (type-case type :void)
                        nil
-                     (genvar 'atc "RESULT" nil formals)))
+                     (genvar$ 'atc "RESULT" nil formals state)))
        ((mv formals-bindings hyps subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals
                                          compst-var
@@ -4953,7 +4954,7 @@
                                            names-to-avoid
                                            wrld))
        (formals (strip-cars typed-formals))
-       (compst-var (genvar 'atc "COMPST" nil formals))
+       (compst-var (genvar$ 'atc "COMPST" nil formals state))
        ((mv formals-bindings hyps & instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (hyps `(and (compustatep ,compst-var)
@@ -5100,9 +5101,9 @@
                                            names-to-avoid
                                            wrld))
        (formals (formals+ fn wrld))
-       (compst-var (genvar 'atc "COMPST" nil formals))
-       (fenv-var (genvar 'atc "FENV" nil formals))
-       (limit-var (genvar 'atc "LIMIT" nil formals))
+       (compst-var (genvar$ 'atc "COMPST" nil formals state))
+       (fenv-var (genvar$ 'atc "FENV" nil formals state))
+       (limit-var (genvar$ 'atc "LIMIT" nil formals state))
        ((mv formals-bindings hyps subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
@@ -5282,9 +5283,9 @@
                                            names-to-avoid
                                            wrld))
        (formals (formals+ fn wrld))
-       (compst-var (genvar 'atc "COMPST" nil formals))
-       (fenv-var (genvar 'atc "FENV" nil formals))
-       (limit-var (genvar 'atc "LIMIT" nil formals))
+       (compst-var (genvar$ 'atc "COMPST" nil formals state))
+       (fenv-var (genvar$ 'atc "FENV" nil formals state))
+       (limit-var (genvar$ 'atc "LIMIT" nil formals state))
        ((mv formals-bindings hyps subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
