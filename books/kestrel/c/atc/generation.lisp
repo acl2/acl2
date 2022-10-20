@@ -47,6 +47,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
+(local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -3161,11 +3162,12 @@
                                (prec-tags atc-string-taginfo-alistp)
                                (prec-objs atc-string-objinfo-alistp)
                                (names-to-avoid symbol-listp)
-                               (wrld plist-worldp))
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+                               state)
+  :guard (not (eq fn 'quote))
+  :returns (mv (events pseudo-event-form-listp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorem about the result(s) of @('fn')."
   :long
   (xdoc::topstring
@@ -3295,7 +3297,8 @@
      has the same length as the corresponding input array.
      This is necessary for the correctness proofs of
      functions that call this function."))
-  (b* ((results1 (and type?
+  (b* ((wrld (w state))
+       (results1 (and type?
                       (not (type-case type? :void))
                       (list (cons nil type?))))
        (results2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
@@ -3322,7 +3325,7 @@
                            "-RESULT")))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (guard (untranslate (uguard+ fn wrld) t wrld))
+       (guard (untranslate$ (uguard+ fn wrld) t state))
        (formula `(implies ,guard ,conclusion))
        (hints `(("Goal"
                  ,@(and (irecursivep+ fn wrld)
@@ -4405,7 +4408,7 @@
                                          prec-tags
                                          prec-objs
                                          names-to-avoid
-                                         wrld))
+                                         state))
                  ((mv fn-correct-local-events
                       fn-correct-exported-events
                       fn-correct-thm)
@@ -5562,7 +5565,7 @@
                                          prec-tags
                                          prec-objs
                                          names-to-avoid
-                                         wrld))
+                                         state))
                  (loop-test (stmt-while->test loop.stmt))
                  (loop-body (stmt-while->body loop.stmt))
                  ((mv exec-stmt-while-events
