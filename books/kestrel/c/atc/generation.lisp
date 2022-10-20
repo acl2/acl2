@@ -3852,7 +3852,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
-                                  (wrld plist-worldp))
+                                  state)
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp).")
                (name "A @(tsee symbolp)."))
@@ -4002,7 +4002,8 @@
      so we should be able to use simpler hints there eventually.")
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
-  (b* ((name (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (name (cdr (assoc-eq fn fn-thms)))
        (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
@@ -4024,7 +4025,7 @@
                    (>= ,limit-var ,limit)
                    ,@hyps
                    ,@diff-pointer-hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)))
        (exec-fun-args (fsublis-var-lst subst
                                        (atc-filter-exec-fun-args formals
                                                                  prec-objs)))
@@ -4423,7 +4424,7 @@
                                             fn-thms
                                             fn-fun-env-thm
                                             limit
-                                            wrld))
+                                            state))
                  (progress-start?
                   (and (evmac-input-print->= print :info)
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
