@@ -125,6 +125,20 @@
 ;; ---------------------------------------------------------------------------
 ;; misc lemmas
 
+(def-rp-rule rid-of-bool->bit
+  (and (equal (bool->bit (logbitp 0 x))
+              (logbit 0 x))
+       (implies (bitp x)
+                (equal (bool->bit (equal x 1))
+                       x))
+       (implies (bitp x)
+                (equal (bool->bit (equal x 0))
+                       (loghead 1 (lognot x)))))
+  :hints (("Goal"
+           :in-theory (e/d (BOOL->BIT)
+                           (+-is-sum)))))
+
+
 (def-rp-rule sign-ext-compress
   (implies (bitp x)
            (and (equal (svl::4vec-concat$ 1 x (rp::-- x))
@@ -512,6 +526,15 @@
                     (bit-of num start)))
     :hints (("Goal"
              :in-theory (e/d (bits-is-bit-of-nosyntaxp) ()))))
+
+  (def-rp-rule bits-of-ifix-is-bit-of
+    (implies (and (syntaxp (atom (ex-from-rp num)))
+                  (natp start))
+             (equal (svl::bits (ifix num) start 1)
+                    (bit-of num start)))
+    :hints (("Goal"
+             :in-theory (e/d (BIT-OF
+                              bits-is-bit-of-nosyntaxp) ()))))
 
   (def-rp-rule integerp-of-nth
     (implies (and (integer-listp lst)
@@ -1840,6 +1863,8 @@
             :in-theory (e/d (SV::4VEC->UPPER
                              SV::4VEC->LOWER
                              sv::4vec-times) ()))))
+
+
 
 
 

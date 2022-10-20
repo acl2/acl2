@@ -1129,7 +1129,7 @@ nil
 
          (string (str::cat "<p>Original Verilog Definition: <code>" string "</code></p>"))
          (string (str::cat string
-                           "<p> Source file: <a href=\"file://"(vl-location->filename minloc)"\">" (vl-location->filename minloc) "</a><br />Lines: " (str::int-to-dec-string (vl-location->line minloc)) "-" (str::int-to-dec-string (vl-location->line maxloc)) ".</p>"))
+                           "<p> Source <a href=\"file://"(vl-location->filename minloc)"\">file</a>:" (vl-location->filename minloc) "<br />Lines: " (str::int-to-dec-string (vl-location->line minloc)) "-" (str::int-to-dec-string (vl-location->line maxloc)) ".</p>"))
 
          )
       (mv `((,(car vl-type-names) . ,string) ,@rest)
@@ -1391,7 +1391,7 @@ nil
 <p> More arguments can be passed to change other entries in the same call:</p>
 @({(change-|t_main| main \"data[0].dword[3]\" 12 \"uop.size\" 0)})
 
-<p> If a field is repeated in the arguments or a field is passed that has an overlap with a previos argument then the most recent one will take override the previous one(s). </p>
+<p> If a field is repeated in the arguments or a field is passed that has an overlap with a previos argument, then the most recent one will take override the previous one(s). </p>
 
 <h3> Debug Functions </h3>
 
@@ -1406,9 +1406,9 @@ nil
                                \"data[1].dword\"
                                \"data[2].*\"))
 })
-When there is a \".*\" at the end of a skipped argument (e.g., \"data[2].*\"), then the value of that argument (e.g., \"data[2]\") will be included but not its fields. Without the \".*\", then all of that field (e.g., \"data[0]\") will be excluded.  </li>
+When there is a \".*\" at the end of a skipped argument (e.g., \"data[2].*\"), then the value of that argument (e.g., \"data[2]\") will be included but not its fields. Without the \".*\", then nothing about that field (e.g., \"data[0]\") will be included.  </li>
 
-<li> A depth limit (natural number). When set to a large number, the debug functions will dive into the children and call the debug functions of all the subfields. Users can set this to a small natural number to limit the depth of the function calls. In that case, the debug functions dive into that many levels only.
+<li> A depth limit (natural number). When set to a large number, the debug functions will dive into the children and call the debug functions of all the subfields. Users can set this to a small natural number to limit the depth of the function calls. In that case, the debug functions dive upto the specified level only.
 @({
 (|t_main|-debug main :exclude (\"uop.size\"
                                \"data[2].*\")
