@@ -1,7 +1,7 @@
 ; BV Library: logior
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -82,6 +82,17 @@
   (equal (< (logior i j) 0)
          (or (< (ifix i) 0)
              (< (ifix j) 0)))
+  :hints (("Goal" :cases ((< J 0)
+                          (and (not (< j 0))
+                               (< I 0)))
+           :in-theory (enable logior))))
+
+(defthm <-of-0-and-logior
+  (equal (< 0 (logior i j))
+         (and (not (< (ifix i) 0))
+              (not (< (ifix j) 0))
+              (or (< 0 (ifix i))
+                  (< 0 (ifix j)))))
   :hints (("Goal" :cases ((< J 0)
                           (and (not (< j 0))
                                (< I 0)))
