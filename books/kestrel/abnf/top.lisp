@@ -12,6 +12,7 @@
 
 (include-book "notation/top")
 (include-book "grammar-parser/top")
+(include-book "grammar-definer/top")
 (include-book "operations/top")
 (include-book "parsing-tools/top")
 (include-book "examples/top")
@@ -59,20 +60,26 @@
      "Executable operations on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
+     "A @(tsee defgrammar) tool
+      for building ACL2 representations of grammar from files,
+      using the aforementioned verified parser,
+      and for automatically proving
+      certain properties such as well-formedness.")
+    (xdoc::li
      "Some basic parsing primitives usable as part of larger parsers.")
     (xdoc::li
      "Some very preliminary tools to generate
       parsing functions from grammar rules.")
     (xdoc::li
-     "Examples of use of the parser and some grammar operations
+     "Examples of use of @(tsee defgrammar) and some grammar operations
       on a few real-world ABNF grammars (e.g. for HTTP)."))
 
    (xdoc::p
     "Besides the aforementioned examples,
-     the parser and some grammar operations have been used on "
+     @(tsee defgrammar) and some grammar operations have been used on "
     (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
     ", "
-    (xdoc::seetopic "yul::concrete-syntax" "an ABNF grammar of Yul")
+    (xdoc::seetopic "yul::concrete-syntax" "two ABNF grammars of Yul")
     ", and "
     (xdoc::seetopic "c::grammar" "an ABNF grammar of a subset of C")
     ". The parsing generation tools have been used to generate part of "

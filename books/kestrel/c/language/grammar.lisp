@@ -11,10 +11,7 @@
 
 (in-package "C")
 
-(include-book "kestrel/abnf/grammar-parser/executable" :dir :system)
-(include-book "kestrel/abnf/notation/syntax-abstraction" :dir :system)
-(include-book "kestrel/abnf/operations/well-formedness" :dir :system)
-(include-book "kestrel/abnf/operations/closure" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
 (include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
 ; (depends-on "grammar.abnf")
@@ -33,7 +30,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *grammar*
+(abnf::defgrammar *grammar*
   :short "The grammar of C, in ACL2."
   :long
   (xdoc::topstring
@@ -46,20 +43,9 @@
      to keep this constant unexpanded in output.")
    (xdoc::p
     "We show that the grammar is well-formed, closed, and ASCII."))
-
-  (make-event
-   (mv-let (tree state)
-       (abnf::parse-grammar-from-file (str::cat (cbd) "grammar.abnf") state)
-     (acl2::value `(defconst *grammar*
-                     (abnf::abstract-rulelist ',tree)))))
-
-  (acl2::add-const-to-untranslate-preprocess *grammar*)
-
-  (defruled rulelist-wfp-of-*grammar*
-    (abnf::rulelist-wfp *grammar*))
-
-  (defruled rulelist-closedp-of-*grammar*
-    (abnf::rulelist-closedp *grammar*))
+  :file "grammar.abnf"
+  :closure t
+  ///
 
   (defruled ascii-only-*grammar*
     (abnf::rulelist-in-termset-p *grammar* (acl2::integers-from-to 0 127))))
