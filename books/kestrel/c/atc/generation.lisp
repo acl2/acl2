@@ -177,7 +177,7 @@
         (atc-gen-appconds (cdr targets) wrld))
        (meas (measure+ target wrld))
        (name (packn-pos (list 'natp-of-measure-of- target) :keyword))
-       (formula (untranslate `(natp ,meas) nil wrld))
+       (formula `(natp ,meas))
        (appcond (make-evmac-appcond :name name :formula formula))
        ((mv appconds fn-appconds) (atc-gen-appconds (cdr targets) wrld)))
     (mv (cons appcond appconds)
