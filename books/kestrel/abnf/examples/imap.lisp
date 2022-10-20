@@ -10,15 +10,8 @@
 
 (in-package "ABNF")
 
-(include-book "../notation/abstract-syntax")
-(include-book "../notation/semantics")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
+(include-book "../grammar-definer/defgrammar")
 (include-book "../operations/in-terminal-set")
-(include-book "../notation/core-rules")
-(include-book "../notation/concrete-syntax")
-(include-book "../grammar-parser/executable")
-(include-book "../notation/syntax-abstraction")
 
 ; (depends-on "imap.abnf")
 
@@ -36,7 +29,9 @@
   :order-subtopics t
   :default-parent t)
 
-(defsection *imap-grammar-rules*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar *imap-grammar-rules*
   :short "The IMAP grammar rules from RFC 3501."
   :long
   (xdoc::topstring
@@ -51,14 +46,4 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-
-  (make-event
-   (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "imap.abnf") state)
-     (value `(defconst *imap-grammar-rules*
-               (abstract-rulelist ',tree)))))
-
-  (add-const-to-untranslate-preprocess *imap-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*imap-grammar-rules*
-    (rulelist-wfp *imap-grammar-rules*)))
+  :file "imap.abnf")
