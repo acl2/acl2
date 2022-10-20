@@ -122,10 +122,12 @@
                one-way-unify
                packn
                packn-pos
+               pos
                pos-listp
                pos-option
                pos-optionp
                prefixp
+               pseudo-event-form-list
                pseudo-event-form-listp
                pseudo-event-formp
                pseudo-event-form
@@ -177,6 +179,7 @@
                tuple
                ubody+
                uguard+
+               untranslate$
                untranslate-lst
                variablep
                well-founded-relation+

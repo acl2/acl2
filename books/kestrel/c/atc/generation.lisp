@@ -46,6 +46,8 @@
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
+(local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
+(local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -155,9 +157,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-appconds ((targets symbol-listp) (wrld plist-worldp))
-  :returns (mv (appconds "A @(tsee evmac-appcond-listp).")
-               (fn-appconds "A @(tsee symbol-symbol-alistp)."))
-  :mode :program
+  :returns (mv (appconds evmac-appcond-listp)
+               (fn-appconds symbol-symbol-alistp :hyp (symbol-listp targets)))
   :short "Generate the applicability conditions."
   :long
   (xdoc::topstring
@@ -177,11 +178,17 @@
         (atc-gen-appconds (cdr targets) wrld))
        (meas (measure+ target wrld))
        (name (packn-pos (list 'natp-of-measure-of- target) :keyword))
-       (formula (untranslate `(natp ,meas) nil wrld))
+       (formula `(natp ,meas))
        (appcond (make-evmac-appcond :name name :formula formula))
        ((mv appconds fn-appconds) (atc-gen-appconds (cdr targets) wrld)))
     (mv (cons appcond appconds)
-        (acons target name fn-appconds))))
+        (acons target name fn-appconds)))
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atc-gen-appconds
+    :hints
+    (("Goal"
+      :in-theory (enable acl2::alistp-when-symbol-symbol-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,7 +263,7 @@
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexpr-ginp)
 
@@ -266,8 +273,8 @@
   :short "Outputs for @(tsee atc-gen-expr-pure)."
   ((expr expr)
    (type type)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexpr-goutp)
 
@@ -278,7 +285,7 @@
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred bexpr-ginp)
 
@@ -287,8 +294,8 @@
 (fty::defprod bexpr-gout
   :short "Outputs for @(tsee atc-gen-expr-bool)."
   ((expr expr)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred bexpr-goutp)
 
@@ -311,7 +318,7 @@
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid (w state)))
        (formula `(equal (exec-expr-pure ',expr compst)
                         ,term))
-       (formula (acl2::untranslate$ formula nil state))
+       (formula (untranslate$ formula nil state))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-const
                                      (:e expr-kind)
                                      (:e expr-const->get)
@@ -892,7 +899,7 @@
   ((inscope atc-symbol-type-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexprs-ginp)
 
@@ -902,8 +909,8 @@
   :short "Outputs for @(tsee atc-gen-expr-pure-list)."
   ((exprs expr-list)
    (types type-list)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexprs-goutp)
 
@@ -966,7 +973,7 @@
    (fn symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred expr-ginp)
 
@@ -978,8 +985,8 @@
    (type typep)
    (affect symbol-listp)
    (limit pseudo-termp)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred expr-goutp)
 
@@ -1495,7 +1502,7 @@
    (prec-tags atc-string-taginfo-alistp)
    (prec-objs atc-string-objinfo-alistp)
    (proofs booleanp)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred stmt-ginp)
 
@@ -1506,8 +1513,8 @@
   ((items block-item-listp)
    (type typep)
    (limit pseudo-termp)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred stmt-goutp)
 
@@ -2878,7 +2885,7 @@
    (prec-tags atc-string-taginfo-alistp)
    (prec-objs atc-string-objinfo-alistp)
    (proofs booleanp)
-   (thm-index acl2::pos)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred lstmt-ginp)
 
@@ -2892,8 +2899,8 @@
    (affect symbol-listp)
    (limit-body pseudo-termp)
    (limit-all pseudo-termp)
-   (events acl2::pseudo-event-form-list)
-   (thm-index acl2::pos)
+   (events pseudo-event-form-list)
+   (thm-index pos)
    (names-to-avoid symbol-list))
   :pred lstmt-goutp)
 
@@ -3111,10 +3118,10 @@
                                   (init-fun-env-thm symbolp)
                                   (names-to-avoid symbol-listp)
                                   (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorem saying that
           looking up a certain C function in the function environment
           yields the information for that function."
@@ -3155,11 +3162,12 @@
                                (prec-tags atc-string-taginfo-alistp)
                                (prec-objs atc-string-objinfo-alistp)
                                (names-to-avoid symbol-listp)
-                               (wrld plist-worldp))
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+                               state)
+  :guard (not (eq fn 'quote))
+  :returns (mv (events pseudo-event-form-listp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorem about the result(s) of @('fn')."
   :long
   (xdoc::topstring
@@ -3289,7 +3297,8 @@
      has the same length as the corresponding input array.
      This is necessary for the correctness proofs of
      functions that call this function."))
-  (b* ((results1 (and type?
+  (b* ((wrld (w state))
+       (results1 (and type?
                       (not (type-case type? :void))
                       (list (cons nil type?))))
        (results2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
@@ -3316,7 +3325,7 @@
                            "-RESULT")))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (guard (untranslate (uguard+ fn wrld) t wrld))
+       (guard (untranslate$ (uguard+ fn wrld) t state))
        (formula `(implies ,guard ,conclusion))
        (hints `(("Goal"
                  ,@(and (irecursivep+ fn wrld)
@@ -3843,7 +3852,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
-                                  (wrld plist-worldp))
+                                  state)
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp).")
                (name "A @(tsee symbolp)."))
@@ -3993,7 +4002,8 @@
      so we should be able to use simpler hints there eventually.")
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
-  (b* ((name (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (name (cdr (assoc-eq fn fn-thms)))
        (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
@@ -4015,7 +4025,7 @@
                    (>= ,limit-var ,limit)
                    ,@hyps
                    ,@diff-pointer-hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)))
        (exec-fun-args (fsublis-var-lst subst
                                        (atc-filter-exec-fun-args formals
                                                                  prec-objs)))
@@ -4399,7 +4409,7 @@
                                          prec-tags
                                          prec-objs
                                          names-to-avoid
-                                         wrld))
+                                         state))
                  ((mv fn-correct-local-events
                       fn-correct-exported-events
                       fn-correct-thm)
@@ -4414,7 +4424,7 @@
                                             fn-thms
                                             fn-fun-env-thm
                                             limit
-                                            wrld))
+                                            state))
                  (progress-start?
                   (and (evmac-input-print->= print :info)
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
@@ -4454,8 +4464,8 @@
 
 (define atc-gen-loop-measure-fn ((fn symbolp)
                                  (names-to-avoid symbol-listp)
-                                 (wrld plist-worldp))
-  :guard (irecursivep+ fn wrld)
+                                 state)
+  :guard (irecursivep+ fn (w state))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp).")
                (formals "A @(tsee symbol-listp).")
@@ -4491,7 +4501,8 @@
      This facilitates the generation of
      the loop function's termination theorem
      expressed over the  generated measure function."))
-  (b* ((name (packn-pos (list 'measure-of- fn) fn))
+  (b* ((wrld (w state))
+       (name (packn-pos (list 'measure-of- fn) fn))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name 'function names-to-avoid wrld))
        (measure-term (measure+ fn wrld))
@@ -4500,7 +4511,7 @@
         (evmac-generate-defun
          name
          :formals measure-vars
-         :body (untranslate measure-term nil wrld)
+         :body (untranslate$ measure-term nil state)
          :verify-guards nil
          :enable nil)))
     (mv event name measure-vars names-to-avoid)))
@@ -4901,7 +4912,7 @@
                                        (prec-tags atc-string-taginfo-alistp)
                                        (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
-                                       (wrld plist-worldp))
+                                       state)
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (correct-test-thm "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -4933,7 +4944,8 @@
      does not yield an error,
      and so this other conjunct here serves to
      eliminate the case that that check fails."))
-  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-test-thm (add-suffix correct-thm "-TEST"))
        ((mv correct-test-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-test-thm
@@ -4947,7 +4959,7 @@
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    ,@hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)))
        (concl `(and (not (errorp (exec-expr-pure ',loop-test ,compst-var)))
                     (equal (test-value (exec-expr-pure ',loop-test ,compst-var))
                            ,test-term)))
@@ -5064,7 +5076,7 @@
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
-                                       (wrld plist-worldp))
+                                       state)
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (correct-body-thm "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -5079,7 +5091,8 @@
      we plan to change the loop correctness theorem
      to make use of this theorem,
      instead of proving the whole loop, including its body."))
-  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-body-thm (add-suffix correct-thm "-BODY"))
        ((mv correct-body-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-body-thm
@@ -5101,8 +5114,8 @@
                    (>= ,limit-var ,limit)
                    ,@hyps
                    ,@diff-pointer-hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)
-                   ,(untranslate test-term nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)
+                   ,(untranslate$ test-term nil state)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
@@ -5199,8 +5212,8 @@
                                   (correct-body-thm symbolp)
                                   (limit pseudo-termp)
                                   (names-to-avoid symbol-listp)
-                                  (wrld plist-worldp))
-  :guard (irecursivep+ fn wrld)
+                                  state)
+  :guard (irecursivep+ fn (w state))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp).")
                (natp-of-measure-of-fn-thm "A @(tsee symbolp).")
@@ -5260,7 +5273,8 @@
     "Similarly to @(tsee atc-gen-cfun-correct-thm),
      we stage the proof of the lemma in two phases:
      see the documentation of that function for motivation."))
-  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-lemma (add-suffix correct-thm "-LEMMA"))
        ((mv correct-lemma names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-lemma
@@ -5283,7 +5297,7 @@
                    (>= ,limit-var ,limit)
                    ,@hyps
                    ,@diff-pointer-hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
@@ -5519,7 +5533,7 @@
             measure-formals
             names-to-avoid)
         (if proofs
-            (atc-gen-loop-measure-fn fn names-to-avoid wrld)
+            (atc-gen-loop-measure-fn fn names-to-avoid state)
           (mv '(_) nil nil names-to-avoid)))
        ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
        (body (ubody+ fn wrld))
@@ -5556,7 +5570,7 @@
                                          prec-tags
                                          prec-objs
                                          names-to-avoid
-                                         wrld))
+                                         state))
                  (loop-test (stmt-while->test loop.stmt))
                  (loop-body (stmt-while->body loop.stmt))
                  ((mv exec-stmt-while-events
@@ -5598,7 +5612,7 @@
                                                  prec-tags
                                                  prec-objs
                                                  names-to-avoid
-                                                 wrld))
+                                                 state))
                  ((mv body-local-events
                       correct-body-thm
                       names-to-avoid)
@@ -5615,7 +5629,7 @@
                                                  fn-thms
                                                  loop.limit-body
                                                  names-to-avoid
-                                                 wrld))
+                                                 state))
                  ((mv correct-local-events
                       correct-exported-events
                       natp-of-measure-of-fn-thm
@@ -5640,7 +5654,7 @@
                                             correct-body-thm
                                             loop.limit-all
                                             names-to-avoid
-                                            wrld))
+                                            state))
                  (progress-start?
                   (and (evmac-input-print->= print :info)
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))

@@ -10584,12 +10584,6 @@
                 (declare (ignorable ,@(strip-cars sigma)))
                 ,body-term))))
 
-(defun make-do-measure-lambda$ (sigma mterm)
-  `(lambda$ (alist)
-            (if (alistp alist)
-                ,(sublis-var sigma mterm)
-                0)))
-
 (defun make-initial-do-body-alist (twvts vars alist)
 
 ; We return a term that evaluates to an alist the binds the vars in twvts to
@@ -21359,16 +21353,18 @@
                                        loop$."
                                       msg))
                           (t
-                           (let ((do-body-term (cmp-do-body translated-do-body
-                                                            twvts vars wrld))
-                                 (measure-term
-                                  (if mform
-                                      translated-mform
-                                    (guess-do-body-measure
-                                     translated-do-body)))
-                                 (fin-body-term (cmp-do-body
-                                                 translated-fin-body
-                                                 twvts vars wrld)))
+                           (let* ((do-body-term (cmp-do-body translated-do-body
+                                                             twvts vars wrld))
+                                  (measure-term
+                                   (if mform
+                                       translated-mform
+                                     (guess-do-body-measure
+                                      translated-do-body)))
+                                  (untrans-measure
+                                   (or mform measure-term))
+                                  (fin-body-term (cmp-do-body
+                                                  translated-fin-body
+                                                  twvts vars wrld)))
                              (cond
                               ((eq (car do-body-term) :fail)
                                (trans-er+? cform x ctx
@@ -21493,7 +21489,7 @@
                                                do-fn
                                                finally-fn
                                                (loop$-default values)
-                                               (kwote measure-term)
+                                               (kwote untrans-measure)
                                                (kwote x))))))))
                                       )))))))))))))))))))))))))))
 

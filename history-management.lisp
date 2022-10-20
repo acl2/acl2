@@ -6589,6 +6589,17 @@
           (pe-fn2 logical-name wrld channel new-ev-wrld
                   state)))))))
 
+(defun print-undefined-primitive-msg (name channel wrld state)
+  (fms "~x0 is built into ACL2 without a defining event.~#1~[  See :DOC ~
+        ~x0.~/~]~|"
+       (list (cons #\0 name)
+             (cons #\1 (if (assoc-eq name
+                                     (global-val 'documentation-alist
+                                                 wrld))
+                           0
+                         1)))
+       channel state nil))
+
 (defun pe-fn (logical-name state)
   (io? history nil (mv erp val state)
        (logical-name)
@@ -6618,15 +6629,7 @@
 ; asking for the full command, so we give it to them.
 
            (pprogn
-            (fms "~x0 is built into ACL2 without a defining event.~#1~[  See ~
-                  :DOC ~x0.~/~]~|"
-                 (list (cons #\0 logical-name)
-                       (cons #\1 (if (assoc-eq logical-name
-                                               (global-val 'documentation-alist
-                                                           wrld))
-                                     0
-                                   1)))
-                 channel state nil)
+            (print-undefined-primitive-msg logical-name channel wrld state)
             (value :invisible)))
           (t
            (let ((fn (deref-macro-name logical-name (macro-aliases wrld))))
