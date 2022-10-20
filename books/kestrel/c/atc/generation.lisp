@@ -5212,8 +5212,8 @@
                                   (correct-body-thm symbolp)
                                   (limit pseudo-termp)
                                   (names-to-avoid symbol-listp)
-                                  (wrld plist-worldp))
-  :guard (irecursivep+ fn wrld)
+                                  state)
+  :guard (irecursivep+ fn (w state))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp).")
                (natp-of-measure-of-fn-thm "A @(tsee symbolp).")
@@ -5273,7 +5273,8 @@
     "Similarly to @(tsee atc-gen-cfun-correct-thm),
      we stage the proof of the lemma in two phases:
      see the documentation of that function for motivation."))
-  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-lemma (add-suffix correct-thm "-LEMMA"))
        ((mv correct-lemma names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-lemma
@@ -5296,7 +5297,7 @@
                    (>= ,limit-var ,limit)
                    ,@hyps
                    ,@diff-pointer-hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
@@ -5653,7 +5654,7 @@
                                             correct-body-thm
                                             loop.limit-all
                                             names-to-avoid
-                                            wrld))
+                                            state))
                  (progress-start?
                   (and (evmac-input-print->= print :info)
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
