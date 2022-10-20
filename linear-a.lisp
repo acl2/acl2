@@ -3524,9 +3524,10 @@
 ; The next group of "show-" functions is convenient for system debugging and is
 ; used (specifically, show-poly-lst is used) by brr.  (Show-poly poly) will
 ; create a list structure that prints so as to show a polynomial in the
-; conventional notation.  The term enclosed in an extra set of parentheses is
-; the leading term of the poly.  An example show-poly is '(3 J + (I) + 77 <= 4
-; M + 2 N).
+; conventional notation.  If optional argument parp is true (which is the
+; default), then the term enclosed in an extra set of parentheses is the
+; leading term of the poly.  An example show-poly is '(3 J + (I) + 77 <= 4 M +
+; 2 N).
 
 (defun show-poly2 (pair lst)
   (let ((n (abs (cdr pair)))
@@ -3549,21 +3550,24 @@
          (show-poly1 (cdr alist) lhs (show-poly2 (car alist) rhs)))
         (t (show-poly1 (cdr alist) (show-poly2 (car alist) lhs) rhs))))
 
-(defun show-poly (poly)
-  (let* ((pair (show-poly1
-                   (cond ((null (access poly poly :alist)) nil)
-                         (t (cons (cons (list (caar (access poly poly :alist)))
-                                        (cdar (access poly poly :alist)))
-                                  (cdr (access poly poly :alist)))))
-                   (cond ((= (access poly poly :constant) 0)
-                          nil)
-                         ((logical-< 0 (access poly poly :constant)) nil)
-                         (t (cons (- (access poly poly :constant)) nil)))
-                   (cond ((= (access poly poly :constant) 0)
-                          nil)
-                         ((logical-< 0 (access poly poly :constant))
-                          (cons (access poly poly :constant) nil))
-                         (t nil))))
+(defun show-poly-fn (poly parp)
+  (let* ((pair
+          (show-poly1
+           (cond ((null (access poly poly :alist)) nil)
+                 (t (cons (cons (if parp
+                                    (list (caar (access poly poly :alist)))
+                                  (caar (access poly poly :alist)))
+                                (cdar (access poly poly :alist)))
+                          (cdr (access poly poly :alist)))))
+                 (cond ((= (access poly poly :constant) 0)
+                        nil)
+                       ((logical-< 0 (access poly poly :constant)) nil)
+                       (t (cons (- (access poly poly :constant)) nil)))
+                 (cond ((= (access poly poly :constant) 0)
+                        nil)
+                       ((logical-< 0 (access poly poly :constant))
+                        (cons (access poly poly :constant) nil))
+                       (t nil))))
          (lhs (car pair))
          (rhs (cdr pair)))
 
@@ -3574,13 +3578,19 @@
     (append (or lhs '(0))
             (cons (access poly poly :relation) (or rhs '(0))))))
 
-(defun show-poly-lst (poly-lst)
-  (cond ((null poly-lst) nil)
-        (t (cons (show-poly (car poly-lst))
-                 (show-poly-lst (cdr poly-lst))))))
+(defmacro show-poly (poly &optional (parp 't))
+  `(show-poly-fn ,poly ,parp))
 
-;
+(defun show-poly-lst-fn (poly-lst parp)
+  (cond ((null poly-lst) nil)
+        (t (cons (show-poly-fn (car poly-lst) parp)
+                 (show-poly-lst-fn (cdr poly-lst) parp)))))
+
+(defmacro show-poly-lst (poly-lst &optional (parp 't))
+  `(show-poly-lst-fn ,poly-lst ,parp))
+
 ; (defun show-pot-lst (pot-lst)
+; ; See print-pot-lst for a variant of this defun.
 ;   (cond
 ;    ((null pot-lst) nil)
 ;    (t (cons
@@ -3590,7 +3600,7 @@
 ;                       (show-poly-lst
 ;                        (access linear-pot (car pot-lst) :positives))))
 ;        (show-pot-lst (cdr pot-lst))))))
-;
+
 ; (defun show-type-alist (type-alist)
 ;   (cond ((endp type-alist) nil)
 ;         (t (cons (list (car (car type-alist))
