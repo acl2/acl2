@@ -61,6 +61,7 @@
 (include-book "pos-list")
 (include-book "pos-option")
 (include-book "pseudo-event-form")
+(include-book "pseudo-event-form-list")
 (include-book "set")
 (include-book "string-list-result")
 (include-book "string-result")

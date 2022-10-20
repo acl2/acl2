@@ -52,8 +52,8 @@
    the target in @('targets') for which C code is being generated."
 
   "@('prec-tags') is an alist
-   from ACL2 @(tsee defstruct) symbols to their associated information.
-   The @(tsee defstruct) symbols are the ones in @('targets') that precede,
+   from ACL2 @(tsee defstruct) names to their associated information.
+   The @(tsee defstruct)s are the ones in @('targets') that precede,
    in the latter list,
    the target in @('targets') for which C code is being generated.
    The @('prec-tags') alist is always a subset of the "
@@ -70,6 +70,26 @@
    and in the right order;
    furthermore, it makes it easier and more efficient
    to retrieve information about all the target @(tsee defstruct)s of interest."
+
+  "@('prec-objs') is an alist
+   from ACL2 @(tsee defobject) names to their associated information.
+   The @(tsee defobject)s are the ones in @('targets') that precede,
+   in the latter list,
+   the target in @('targets') for which C code is being generated.
+   The @('prec-objs') alist is always a subset of the "
+  (xdoc::seetopic "defobject-table-definition" "@(tsee defobject) table")
+  " that is constructed by @(tsee defobject) calls
+   and that is part of the ACL2 world prior to calling ATC:
+   the @('prec-objs') is initially empty,
+   gets extended as targets that are @(tsee defobject) names are processed,
+   and eventually contains all the @(tsee defobject) table information
+   for the @(tsee defobject) targets passed to ATC.
+   The reason for using the @('prec-objs') alist this way,
+   instead of using the @(tsee defobject) table directly,
+   is so that we can ensure that all the targets are supplied to ATC,
+   and in the right order;
+   furthermore, it makes it easier and more efficient
+   to retrieve information about all the target @(tsee defobject)s of interest."
 
   (xdoc::evmac-topic-implementation-item-input "output-file")
 
