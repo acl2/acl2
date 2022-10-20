@@ -56,9 +56,8 @@
    The @(tsee defstruct)s are the ones in @('targets') that precede,
    in the latter list,
    the target in @('targets') for which C code is being generated.
-   The @('prec-tags') alist is always a subset of the "
-  (xdoc::seetopic "defstruct-table-definition" "@(tsee defstruct) table")
-  " that is constructed by @(tsee defstruct) calls
+   The @('prec-tags') alist is always a subset of the @(tsee defstruct) table
+   that is constructed by @(tsee defstruct) calls
    and that is part of the ACL2 world prior to calling ATC:
    the @('prec-tags') is initially empty,
    gets extended as targets that are @(tsee defstruct) names are processed,
@@ -76,9 +75,8 @@
    The @(tsee defobject)s are the ones in @('targets') that precede,
    in the latter list,
    the target in @('targets') for which C code is being generated.
-   The @('prec-objs') alist is always a subset of the "
-  (xdoc::seetopic "defobject-table-definition" "@(tsee defobject) table")
-  " that is constructed by @(tsee defobject) calls
+   The @('prec-objs') alist is always a subset of the @(tsee defobject) table
+   that is constructed by @(tsee defobject) calls
    and that is part of the ACL2 world prior to calling ATC:
    the @('prec-objs') is initially empty,
    gets extended as targets that are @(tsee defobject) names are processed,

@@ -29,7 +29,9 @@
   :order-subtopics t
   :default-parent t)
 
-(defsection *http-grammar-rules*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar *http-grammar-rules*
   :short "The HTTP grammar rules from RFC 7230."
   :long
   (xdoc::topstring
@@ -44,17 +46,9 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
+  :file "http.abnf")
 
-  (make-event
-   (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "http.abnf") state)
-     (value `(defconst *http-grammar-rules*
-               (abstract-rulelist ',tree)))))
-
-  (add-const-to-untranslate-preprocess *http-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*http-grammar-rules*
-    (rulelist-wfp *http-grammar-rules*)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *all-http-grammar-rules*
   :short "All the HTTP grammar rules,
@@ -117,6 +111,8 @@
                                                 *rule_SP*
                                                 *rule_VCHAR*))))
     :rule-classes nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *all-http-message-grammar-rules*
   :short "All the HTTP grammar rules

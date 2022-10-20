@@ -37,7 +37,7 @@
      @(tsee untranslate), using a @('preprocess-fn')
      argument of @('nil') to avoid certain hard errors.)"))
 
-  (defun untranslate$ (term iff-flg state)
+  (defund untranslate$ (term iff-flg state)
     (declare (xargs :stobjs state
                     :guard (pseudo-termp term)))
     (let* ((wrld (w state))

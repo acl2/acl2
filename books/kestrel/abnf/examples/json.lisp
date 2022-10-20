@@ -10,16 +10,11 @@
 
 (in-package "ABNF")
 
-(include-book "../notation/abstract-syntax")
-(include-book "../notation/semantics")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
+(include-book "../grammar-definer/defgrammar")
 (include-book "../operations/in-terminal-set")
 (include-book "../operations/plugging")
-(include-book "../notation/core-rules")
-(include-book "../notation/concrete-syntax")
-(include-book "../grammar-parser/executable")
-(include-book "../notation/syntax-abstraction")
+
+(local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
 
 ; (depends-on "json.abnf")
 
@@ -36,7 +31,9 @@
   :order-subtopics t
   :default-parent t)
 
-(defsection *json-grammar-rules*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar *json-grammar-rules*
   :short "The JSON grammar rules from RFC 7159."
   :long
   (xdoc::topstring
@@ -47,21 +44,13 @@
      to build an ACL2 representation of the JSON grammar rules,
      excluding the referenced ABNF core rules.")
    (xdoc::p
-    "The JSON grammar rules are well-formed and closed.")
+    "The JSON grammar rules are well-formed.")
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
+  :file "json.abnf")
 
-  (make-event
-   (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "json.abnf") state)
-     (value `(defconst *json-grammar-rules*
-               (abstract-rulelist ',tree)))))
-
-  (add-const-to-untranslate-preprocess *json-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*json-grammar-rules*
-    (rulelist-wfp *json-grammar-rules*)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *all-json-grammar-rules*
   :short "All the JSON grammar rules, including the referenced ABNF core rules."
@@ -106,7 +95,4 @@
              num-val-in-termset-p
              char-val-in-termset-p
              char-insensitive-in-termset-p)
-    :disable ((:e integers-from-to))
-    :prep-books
-    ((local
-      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+    :disable ((:e integers-from-to))))

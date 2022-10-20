@@ -10,11 +10,10 @@
 
 (in-package "YUL")
 
-(include-book "kestrel/abnf/grammar-parser/executable" :dir :system)
-(include-book "kestrel/abnf/notation/syntax-abstraction" :dir :system)
-(include-book "kestrel/abnf/operations/well-formedness" :dir :system)
-(include-book "kestrel/abnf/operations/closure" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
 (include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
+
+(local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
 
 ; (depends-on "grammar-old.abnf")
 
@@ -36,7 +35,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *grammar-old*
+(abnf::defgrammar *grammar-old*
   :short "The parsed ABNF grammar of Yul."
   :long
   (xdoc::topstring
@@ -50,19 +49,9 @@
     ", and only "
     (xdoc::seetopic "abnf::in-terminal-set" "generates terminals")
     " in the Unicode character set."))
-
-  (make-event
-   (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "grammar-old.abnf")
-                                    state)
-     (acl2::value `(defconst *grammar-old*
-                     (abnf::abstract-rulelist ',tree)))))
-
-  (defruled rulelist-wfp-of-*grammar-old*
-    (abnf::rulelist-wfp *grammar-old*))
-
-  (defruled rulelist-closedp-of-*grammar-old*
-    (abnf::rulelist-closedp *grammar-old*))
+  :file "grammar-old.abnf"
+  :closure t
+  ///
 
   (defruled unicode-only-*grammar-old*
     (abnf::rulelist-in-termset-p *grammar-old*
@@ -74,7 +63,4 @@
              abnf::char-val-in-termset-p
              abnf::char-insensitive-in-termset-p
              abnf::char-sensitive-in-termset-p)
-    :disable ((:e acl2::integers-from-to))
-    :prep-books
-    ((local
-      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+    :disable ((:e acl2::integers-from-to))))
