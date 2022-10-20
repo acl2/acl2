@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; These forms are redudant except when doing a devel regression.  They seem
+;; These forms are redundant except when doing a devel regression.  They seem
 ;; necessary, because this book supports verifying the guards of some system
 ;; functions, which means this book must certify with a "devel" copy of ACL2,
 ;; in which certain functions are in :program mode:

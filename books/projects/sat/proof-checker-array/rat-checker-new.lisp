@@ -425,7 +425,7 @@
   (implies (solutionp solution formula)
            (not (ATp formula *empty-clause*))))
 
-; redudant even with name-from-paper
+; redundant even with name-from-paper
 (defthm *empty-clause*-lemma
   (implies (solutionp solution formula)
            (not (ATp formula *empty-clause*))))
@@ -621,7 +621,7 @@
 ;;                 (assignmentp solution))
 ;;            (truep (evaluate-clause (negate-assignment assignment) solution))))
 
-; redudant event with name-from-paper
+; redundant event with name-from-paper
 (defthm ATp-lemma-induction
   (implies (and (falsep (evaluate-formula formula
                                           (unit-propagation formula
@@ -763,7 +763,7 @@
                             (assignment (exists-solution-witness formula))
                             (formula (cons clause formula)))))))
 
-; redudant even with name-from-paper
+; redundant even with name-from-paper
 (defthm ATp-lemma
   (implies (and (ATp formula clause)
                 (exists-solution formula)
@@ -1463,7 +1463,7 @@
            :in-theory (disable RATp solutionp clausep)
            :use ((:instance (:definition exists-solution))))))
 
-; redudant even with name-from-paper
+; redundant even with name-from-paper
 (defthm RATp-lemma
   (implies (and (formulap formula)
                 (clausep clause)
