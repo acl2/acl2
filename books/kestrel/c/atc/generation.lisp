@@ -3117,10 +3117,10 @@
                                   (init-fun-env-thm symbolp)
                                   (names-to-avoid symbol-listp)
                                   (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorem saying that
           looking up a certain C function in the function environment
           yields the information for that function."
