@@ -10576,16 +10576,29 @@
    (standard-co state)
    state))
 
-(defun pr-fn (name state)
-  (cond ((and (symbolp name)
-              (not (keywordp name)))
+(defun pr-fn (name0 state)
+  (cond ((and (symbolp name0)
+              (not (keywordp name0)))
          (let* ((wrld (w state))
-                (name (deref-macro-name name (macro-aliases wrld)))
-                (numes (strip-cars
-                        (getpropc name 'runic-mapping-pairs nil wrld)))
-                (wrld-segment (world-to-next-event
-                               (cdr (decode-logical-name name wrld)))))
-           (pr-body wrld-segment numes wrld state)))
+                (name (deref-macro-name name0 (macro-aliases wrld))))
+           (cond
+            ((assoc-eq name *primitive-formals-and-guards*)
+             (pprogn
+              (if (eq name name0)
+                  state
+                (fms "~x0 is a macro alias for ~x1."
+                     (list (cons #\0 name0)
+                           (cons #\1 name))
+                     (standard-co state) state nil))
+              (print-undefined-primitive-msg name
+                                             (standard-co state)
+                                             wrld state)
+              (value :invisible)))
+            (t (let* ((numes (strip-cars
+                              (getpropc name 'runic-mapping-pairs nil wrld)))
+                      (wrld-segment (world-to-next-event
+                                     (cdr (decode-logical-name name wrld)))))
+                 (pr-body wrld-segment numes wrld state))))))
         (t (er soft 'pr
                "The argument to PR must be a non-keyword symbol.  Perhaps you ~
                 should use PR! instead."))))
@@ -11060,6 +11073,7 @@
                                           :wonp
                                           :rewritten-rhs
                                           :poly-list
+                                          :pot-lst
                                           :failure-reason
                                           :lemma
                                           :type-alist
@@ -11073,6 +11087,7 @@
         (:wonp '(get-brr-local 'wonp state))
         (:rewritten-rhs '(get-brr-local 'brr-result state))
         (:poly-list '(brr-result state))
+        (:pot-list '(get-brr-local 'pot-list state))
         (:failure-reason '(get-brr-local 'failure-reason state))
         (:lemma '(get-brr-local 'lemma state))
         (:type-alist '(get-brr-local 'type-alist state))

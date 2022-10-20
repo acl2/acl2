@@ -547,7 +547,7 @@ ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
 # skip the models/y86/ books, even for the "all" target.  In
-# particular, we exclude GCL: in one ANSI GCL ACL2(h) regression,
+# particular, we exclude GCL: in one ANSI GCL ACL2 regression,
 # certification runs were still proceeding after more than 10 hours
 # for each of four books under models/y86/
 # (y86-basic/common/x86-state, y86-two-level/common/x86-state,
@@ -1154,7 +1154,7 @@ OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 #
 # Example (just remove "# " at the beginning of each line):
 #
-# make -k -j 4 NO_RESCAN=1 ACL2=acl2h \
+# make -k -j 4 NO_RESCAN=1 ACL2=acl2 \
 # ACL2_BOOK_CERTS=" \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
@@ -1560,10 +1560,10 @@ special: $(BOOKS_SPECIAL_OUT)
 # can be done from the ACL2 sources directory as follows.
 
 # ; uses Makefile
-# (time nice make -j 8 regression ACL2=acl2ch)
+# (time nice make -j 8 regression ACL2=acl2)
 
 # ; uses Makefile.legacy
-# (time nice make ACL2_JOBS=8 regression-legacy-hons ACL2=acl2ch)
+# (time nice make ACL2_JOBS=8 regression-legacy-hons ACL2=acl2)
 
 # The resulting of .cert files can be obtained by running the command
 
@@ -1743,7 +1743,7 @@ git_status:
 #
 #   - Sol Swords <sswords@cs.utexas.edu> has provided significant support for
 #     cert.pl, notably extending it to operate on Windows, and adding features
-#     such as automatically tracking books that rely on ACL2(h).
+#     such as automatically tracking books that rely on ACL2(r).
 #
 #   - David Rager <ragerdl@cs.utexas.edu> provided significant early beta
 #     testing and worked to ensure the Makefile works with ACL2(p) and in
