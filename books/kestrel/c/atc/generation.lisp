@@ -46,6 +46,7 @@
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
+(local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -155,9 +156,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-appconds ((targets symbol-listp) (wrld plist-worldp))
-  :returns (mv (appconds "A @(tsee evmac-appcond-listp).")
-               (fn-appconds "A @(tsee symbol-symbol-alistp)."))
-  :mode :program
+  :returns (mv (appconds evmac-appcond-listp)
+               (fn-appconds symbol-symbol-alistp :hyp (symbol-listp targets)))
   :short "Generate the applicability conditions."
   :long
   (xdoc::topstring
@@ -181,7 +181,13 @@
        (appcond (make-evmac-appcond :name name :formula formula))
        ((mv appconds fn-appconds) (atc-gen-appconds (cdr targets) wrld)))
     (mv (cons appcond appconds)
-        (acons target name fn-appconds))))
+        (acons target name fn-appconds)))
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atc-gen-appconds
+    :hints
+    (("Goal"
+      :in-theory (enable acl2::alistp-when-symbol-symbol-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
