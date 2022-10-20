@@ -4464,8 +4464,8 @@
 
 (define atc-gen-loop-measure-fn ((fn symbolp)
                                  (names-to-avoid symbol-listp)
-                                 (wrld plist-worldp))
-  :guard (irecursivep+ fn wrld)
+                                 state)
+  :guard (irecursivep+ fn (w state))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp).")
                (formals "A @(tsee symbol-listp).")
@@ -4501,7 +4501,8 @@
      This facilitates the generation of
      the loop function's termination theorem
      expressed over the  generated measure function."))
-  (b* ((name (packn-pos (list 'measure-of- fn) fn))
+  (b* ((wrld (w state))
+       (name (packn-pos (list 'measure-of- fn) fn))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name 'function names-to-avoid wrld))
        (measure-term (measure+ fn wrld))
@@ -4510,7 +4511,7 @@
         (evmac-generate-defun
          name
          :formals measure-vars
-         :body (untranslate measure-term nil wrld)
+         :body (untranslate$ measure-term nil state)
          :verify-guards nil
          :enable nil)))
     (mv event name measure-vars names-to-avoid)))
@@ -5529,7 +5530,7 @@
             measure-formals
             names-to-avoid)
         (if proofs
-            (atc-gen-loop-measure-fn fn names-to-avoid wrld)
+            (atc-gen-loop-measure-fn fn names-to-avoid state)
           (mv '(_) nil nil names-to-avoid)))
        ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
        (body (ubody+ fn wrld))
