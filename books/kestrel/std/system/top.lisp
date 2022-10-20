@@ -20,6 +20,7 @@
 (include-book "event-name-queries")
 (include-book "fresh-logical-name-with-dollars-suffix")
 (include-book "function-queries")
+(include-book "genvar-dollar")
 (include-book "getprops")
 (include-book "included-books")
 (include-book "install-not-normalized-dollar")
