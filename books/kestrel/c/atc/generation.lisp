@@ -4912,7 +4912,7 @@
                                        (prec-tags atc-string-taginfo-alistp)
                                        (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
-                                       (wrld plist-worldp))
+                                       state)
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (correct-test-thm "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
@@ -4944,7 +4944,8 @@
      does not yield an error,
      and so this other conjunct here serves to
      eliminate the case that that check fails."))
-  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((wrld (w state))
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-test-thm (add-suffix correct-thm "-TEST"))
        ((mv correct-test-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-test-thm
@@ -4958,7 +4959,7 @@
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    ,@hyps
-                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+                   ,(untranslate$ (uguard+ fn wrld) nil state)))
        (concl `(and (not (errorp (exec-expr-pure ',loop-test ,compst-var)))
                     (equal (test-value (exec-expr-pure ',loop-test ,compst-var))
                            ,test-term)))
@@ -5609,7 +5610,7 @@
                                                  prec-tags
                                                  prec-objs
                                                  names-to-avoid
-                                                 wrld))
+                                                 state))
                  ((mv body-local-events
                       correct-body-thm
                       names-to-avoid)
