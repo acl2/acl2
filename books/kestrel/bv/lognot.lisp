@@ -1,7 +1,7 @@
 ; BV Library: lognot
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -44,12 +44,24 @@
          (ifix i))
   :hints (("Goal" :in-theory (enable lognot))))
 
-(defthm <-of-lognot-and-0
-  (equal (< (lognot i) 0)
-         (if (integerp i)
-             (<= 0 i)
-           t))
-  :hints (("Goal" :in-theory (enable lognot))))
+(defthm <-of-lognot-arg1-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< (lognot i) k)
+                  ;; could say (<= (- k) (ifix i)) if we knew k was an integer
+                  (< (+ -1 (- k)) ; gets computed
+                     (ifix i))))
+  :hints (("Goal" :cases ((< (+ -1 (- k))
+                             (ifix i)))
+           :in-theory (enable lognot))))
+
+(defthm <-of-lognot-arg2-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< k (lognot i))
+                  (< (ifix i)
+                     (+ -1 (- k)) ; gets computed
+                     )))
+  :hints (("Goal" :cases ((< (ifix i) (+ -1 (- k))))
+           :in-theory (enable lognot))))
 
 (defthm lognot-of-all-ones
   (implies (natp n)

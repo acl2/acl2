@@ -77,28 +77,28 @@
 
 ;; only for use by Axe
 (defthmd add-commutative-axe
-  (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'add x y acl2::dag-array))
+  (implies (acl2::axe-syntaxp (acl2::should-commute-axe-argsp 'add x y acl2::dag-array))
            (equal (add x y p)
                   (add y x p)))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
 ;; only for use by Axe
 (defthmd add-commutative-2-axe
-  (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'add x y acl2::dag-array))
+  (implies (acl2::axe-syntaxp (acl2::should-commute-axe-argsp 'add x y acl2::dag-array))
            (equal (add x (add y z p) p)
                   (add y (add x z p) p)))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
 ;; only for use by Axe
 (defthmd mul-commutative-axe
-  (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'mul x y acl2::dag-array))
+  (implies (acl2::axe-syntaxp (acl2::should-commute-axe-argsp 'mul x y acl2::dag-array))
            (equal (mul x y p)
                   (mul y x p)))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
 ;; only for use by Axe
 (defthmd mul-commutative-2-axe
-  (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'mul x y acl2::dag-array))
+  (implies (acl2::axe-syntaxp (acl2::should-commute-axe-argsp 'mul x y acl2::dag-array))
            (equal (mul x (mul y z p) p)
                   (mul y (mul x z p) p)))
   :rule-classes ((:rewrite :loop-stopper nil)))
