@@ -44,6 +44,8 @@
    (xdoc::p
     "We show that the grammar is well-formed, closed, and ASCII."))
   :file "grammar.abnf"
+  :untranslate t
+  :well-formedness t
   :closure t
   ///
 
