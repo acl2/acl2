@@ -19,7 +19,68 @@
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination std::split-///)
+
+(defrulel true-listp-of-split-///
+  (b* (((mv pre-/// post-///) (std::split-/// ctx x)))
+    (implies (true-listp x)
+             (and (true-listp pre-///)
+                  (true-listp post-///)))))
+
+(in-theory (disable std::split-///))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel partition-rest-and-keyword-args1-results
+  (implies (true-listp x)
+           (b* (((mv rest keypart) (acl2::partition-rest-and-keyword-args1 x)))
+             (and (true-listp rest)
+                  (true-listp keypart)))))
+
+(defrulel partition-rest-and-keyword-arg2-results
+  (implies (symbol-alistp alist)
+           (b* ((alist1
+                 (acl2::partition-rest-and-keyword-args2 keypart keys alist)))
+             (implies (not (equal alist1 t))
+                      (symbol-alistp alist1)))))
+
+(defrulel partition-rest-and-keyword-args-results
+  (implies (true-listp x)
+           (b* (((mv erp rest keypart)
+                 (partition-rest-and-keyword-args x keys)))
+             (implies (not erp)
+                      (and (true-listp rest)
+                           (symbol-alistp keypart))))))
+
+(local (in-theory (disable partition-rest-and-keyword-args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel alistp-when-symbol-alistp
+  (implies (symbol-alistp x)
+           (alistp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel consp-of-cdr-iff-cdr-when-true-listp
+  (implies (true-listp x)
+           (iff (consp (cdr x))
+                (cdr x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defgrammar-anyp (x)
+  :returns (yes/no booleanp)
+  (declare (ignore x))
+  t
+  ///
+  (defrule defgrammar-anyp-holds
+    (defgrammar-anyp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,7 +114,6 @@
 
 (define defgrammar-process-name (name (ctx ctxp) state)
   :returns (mv erp nothing state)
-  :mode :program
   :short "Process the @('*name*') input."
   (b* (((unless (legal-constantp name))
         (acl2::er-soft+ ctx t nil
@@ -63,11 +123,18 @@
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
                 (msg "The constant name ~x0 specified as first input" name)
-                'const
+                'acl2::const
                 nil
                 t
                 nil)))
-    (value nil)))
+    (value nil))
+  ///
+
+  (defret defgrammar-process-name-symbol-when-not-error
+    (implies (not erp)
+             (acl2::symbolp name)))
+
+  (in-theory (disable defgrammar-process-name-symbol-when-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,61 +155,66 @@
 
 (define defgrammar-process-inputs ((args true-listp) (ctx ctxp) state)
   :returns (mv erp
-               (val "A @('(tuple (name acl2::symbolp)
-                                 (file acl2::stringp)
-                                 (untranslate booleanp)
-                                 (well-formedness booleanp)
-                                 (closure booleanp)
-                                 parents
-                                 short
-                                 long
-                                 (other-events true-listp)
-                                 val)').")
+               (val (std::tuple (name acl2::symbolp)
+                                (file acl2::stringp)
+                                (untranslate booleanp)
+                                (well-formedness booleanp)
+                                (closure booleanp)
+                                (parents defgrammar-anyp)
+                                (short defgrammar-anyp)
+                                (long defgrammar-anyp)
+                                (other-events true-listp)
+                                val)
+                    :hyp (true-listp args))
                state)
-  :mode :program
   :short "Process all the inputs."
-  (b* (((mv args other-events) (std::split-/// ctx args))
+  (b* (((acl2::fun (irr)) (list nil "" nil nil nil nil nil nil nil))
+       ((mv args other-events) (std::split-/// ctx args))
        ((mv erp name options)
         (partition-rest-and-keyword-args args *defgrammar-allowed-options*))
        ((when (or erp
                   (not (consp name))
                   (not (endp (cdr name)))))
-        (acl2::er-soft+ ctx t nil
+        (acl2::er-soft+ ctx t (irr)
                         "The inputs must be the constant name ~
                          followed by the options ~&0 ~
                          and possibly /// followed by other events."
                         *defgrammar-allowed-options*))
        (name (car name))
-       ((er &) (defgrammar-process-name name ctx state))
+       ((er & :iferr (irr)) (defgrammar-process-name name ctx state))
        (file-option (assoc-eq :file options))
        ((unless (consp file-option))
-        (acl2::er-soft+ ctx t nil
+        (acl2::er-soft+ ctx t (irr)
                         "The :FILE input must be supplied."))
        (file (cdr file-option))
        ((er &) (acl2::ensure-value-is-string$ file
                                               "The :FILE input"
-                                              t nil))
+                                              t
+                                              (irr)))
        (untranslate-option (assoc-eq :untranslate options))
        (untranslate (if (consp untranslate-option)
                         (cdr untranslate-option)
                       t))
        ((er &) (acl2::ensure-value-is-boolean$ untranslate
                                                "The :UNTRANSLATE input"
-                                               t nil))
+                                               t
+                                               (irr)))
        (well-formedness-option (assoc-eq :well-formedness options))
        (well-formedness (if (consp well-formedness-option)
                             (cdr well-formedness-option)
                           t))
        ((er &) (acl2::ensure-value-is-boolean$ well-formedness
                                                "The :WELL-FORMEDNESS input"
-                                               t nil))
+                                               t
+                                               (irr)))
        (closure-option (assoc-eq :closure options))
        (closure (if (consp closure-option)
                     (cdr closure-option)
                   nil))
        ((er &) (acl2::ensure-value-is-boolean$ closure
                                                "The :CLOSURE input"
-                                               t nil))
+                                               t
+                                               (irr)))
        (parents-option (assoc-eq :parents options))
        (parents (if (consp parents-option)
                     (cdr parents-option)
@@ -163,7 +235,16 @@
                  parents
                  short
                  long
-                 other-events))))
+                 other-events)))
+  :prepwork
+  ((local (in-theory (enable defgrammar-process-name-symbol-when-not-error
+                             acl2::ensure-value-is-string
+                             acl2::ensure-value-is-boolean))))
+
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,8 +307,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defgrammar-fn ((args true-listp) (ctx ctxp) state)
-  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
-  :mode :program
+  :returns (mv erp
+               (event pseudo-event-formp :hyp (true-listp args))
+               state)
   :parents (defgrammar-implementation)
   :short "Process the inputs and generate the events."
   (b* (((er (list name
@@ -238,7 +320,8 @@
                   parents
                   short
                   long
-                  other-events))
+                  other-events)
+            :iferr '(_))
         (defgrammar-process-inputs args ctx state)))
     (defgrammar-gen-everything
       name
