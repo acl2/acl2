@@ -4307,15 +4307,17 @@
                         (names-to-avoid symbol-listp)
                         (ctx ctxp)
                         state)
+  :guard (not (eq fn 'quote))
   :returns (mv erp
-               (val "A @('(tuple (fundef fundefp)
-                                 (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (updated-prec-fns atc-symbol-fninfo-alistp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
+               (val (tuple (fundef fundefp)
+                           (local-events pseudo-event-form-listp)
+                           (exported-events pseudo-event-form-listp)
+                           (updated-prec-fns atc-symbol-fninfo-alistp)
+                           (updated-names-to-avoid symbol-listp)
+                           val)
+                    :hyp (and (atc-symbol-fninfo-alistp prec-fns)
+                              (symbol-listp names-to-avoid)))
                state)
-  :mode :program
   :short "Generate a C function definition
           from a non-recursive ACL2 function, with accompanying theorems."
   :long
@@ -4333,24 +4335,23 @@
      another 1 from there to @(tsee exec-block-item-list)
      in the @(':compound') case,
      and then we use the limit for the block."))
-  (b* ((name (symbol-name fn))
+  (b* (((acl2::fun (irr))
+        (list (ec-call (fundef-fix :irrelevant)) nil nil nil nil))
+       (name (symbol-name fn))
        ((unless (paident-stringp name))
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t (irr)
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
        (wrld (w state))
-       ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
-       ((er params) (atc-gen-param-declon-list
-                     typed-formals fn prec-objs ctx state))
+       ((er typed-formals :iferr (irr))
+        (atc-typed-formals fn prec-tags prec-objs ctx state))
+       ((er params :iferr (irr))
+        (atc-gen-param-declon-list typed-formals fn prec-objs ctx state))
        (body (ubody+ fn wrld))
-       ((er affect) (atc-find-affected fn
-                                       body
-                                       typed-formals
-                                       prec-fns
-                                       ctx
-                                       state))
-       ((er (stmt-gout body))
+       ((er affect :iferr (irr))
+        (atc-find-affected fn body typed-formals prec-fns ctx state))
+       ((er (stmt-gout body) :iferr (irr))
         (atc-gen-stmt body
                       (make-stmt-gin
                        :var-term-alist nil
@@ -4368,17 +4369,17 @@
                       state))
        ((when (and (type-case body.type :void)
                    (not affect)))
-        (acl2::value
-         (raise "Internal error: ~
-                 the function ~x0 returns void and affects no variables."
-                fn)))
+        (raise "Internal error: ~
+                the function ~x0 returns void and affects no variables."
+               fn)
+        (acl2::value (irr)))
        ((unless (or (type-nonchar-integerp body.type)
                     (type-case body.type :struct)
                     (type-case body.type :void)))
-        (acl2::value
-         (raise "Internal error: ~
-                 the function ~x0 has return type ~x1."
-                fn body.type)))
+        (raise "Internal error: ~
+                the function ~x0 has return type ~x1."
+               fn body.type)
+        (acl2::value (irr)))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
        (fundef (make-fundef :tyspec tyspec
