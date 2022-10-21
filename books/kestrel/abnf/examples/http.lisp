@@ -46,7 +46,9 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-  :file "http.abnf")
+  :file "http.abnf"
+  :untranslate t
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

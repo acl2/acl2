@@ -118,7 +118,9 @@
   :long
   (xdoc::topstring-p
    "We parse the grammar file to obtain an ABNF grammar value.")
-  :file "lexical-grammar.abnf")
+  :file "lexical-grammar.abnf"
+  :untranslate t
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,7 +129,9 @@
   :long
   (xdoc::topstring-p
    "We parse the grammar file to obtain an ABNF grammar value.")
-  :file "syntactic-grammar.abnf")
+  :file "syntactic-grammar.abnf"
+  :untranslate t
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -35,7 +35,14 @@
      replacement of untranslate.  (Technical Note:
      @('Untranslate$) calls @('untranslate1') instead of
      @(tsee untranslate), using a @('preprocess-fn')
-     argument of @('nil') to avoid certain hard errors.)"))
+     argument of @('nil') to avoid certain hard errors.)")
+   (xdoc::p
+    "If the call to @('untranslate1') causes a hard error,
+     so does @('untranslate$');
+     this is achieved by passing @('nil')
+     as the @('hard-error-returns-nilp') argument of @(tsee magic-ev-fncall).
+     If the @(tsee magic-ev-fncall) fails,
+     we also stop with a hard error."))
 
   (defund untranslate$ (term iff-flg state)
     (declare (xargs :stobjs state
@@ -54,10 +61,12 @@
 
             nil))
       (mv-let
-        (erp val)
-        (magic-ev-fncall 'untranslate1
-                         (list term iff-flg tbl fn wrld)
-                         state t t)
+          (erp val)
+          (magic-ev-fncall 'untranslate1
+                           (list term iff-flg tbl fn wrld)
+                           state
+                           nil
+                           t)
         (if erp ; probably rare
             (er hard? 'untranslate$ "~@0" val)
           val)))))
