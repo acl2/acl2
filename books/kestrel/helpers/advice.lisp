@@ -212,7 +212,9 @@
     ("add-use-hint" . :add-use-hint)
     ("use-lemma" . :use-lemma)))
 
-(defconst *rec-types* (strip-cdrs *rec-to-symbol-alist*))
+(defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
+
+(defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
 
 ;; todo: strengthen
 (defun recommendationp (rec)
@@ -225,16 +227,16 @@
              (confidence-percent (nth 3 rec))
              ;; (book-map (nth 4 rec))
              ;; this (possibly) gets populated when we try the rec:
-             ;; todo: consider :unknown until we decide if any include-books are needed
              (pre-commands (nth 5 rec)))
          (and (stringp name)
-              (member-eq type *rec-types*)
+              (member-eq type *all-rec-types*)
               ;; object
               (and (rationalp confidence-percent)
                    (<= 0 confidence-percent)
                    (<= confidence-percent 100))
               ;; book-map
-              (true-listp pre-commands)))))
+              (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
+                  (true-listp pre-commands))))))
 
 (defun make-rec (name type object confidence-percent book-map pre-commands)
   (declare (xargs :guard t)) ; todo: strengthen

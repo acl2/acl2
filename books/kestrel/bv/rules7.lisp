@@ -20,6 +20,8 @@
 (include-book "trim")
 (local (include-book "rules"))
 
+;; move these 4?:
+
 (defthmd bvcat-of-bitnot-and-bitnot
   (equal (bvcat 1 (bitnot x) 1 (bitnot y))
          (bvnot 2 (bvcat 1 x 1 y))))
