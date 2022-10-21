@@ -99,6 +99,7 @@
                fsublis-var
                fsublis-var-lst
                genvar
+               genvar$
                get-ruleset
                implode
                impossible
