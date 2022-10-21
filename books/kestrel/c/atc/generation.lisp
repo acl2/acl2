@@ -3854,10 +3854,9 @@
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
                                   state)
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (exported-events "A @(tsee pseudo-event-form-listp).")
-               (name "A @(tsee symbolp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
+               (name symbolp :hyp (symbol-symbol-alistp fn-thms)))
   :short "Generate the correctness theorem for a C function."
   :long
   (xdoc::topstring
@@ -4130,7 +4129,12 @@
                                :formula formula
                                :hints hints
                                :enable nil)))
-    (mv (list local-event) (list exported-event) name)))
+    (mv (list local-event) (list exported-event) name))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable acl2::symbol-listp-of-strip-cdrs-when-symbol-symbol-alistp
+            acl2::symbol-alistp-when-symbol-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
