@@ -102,9 +102,9 @@
 
   (xdoc::evmac-topic-implementation-item-input "untranslate")
 
-  (xdoc::evmac-topic-implementation-item-input "well-formedness")
+  (xdoc::evmac-topic-implementation-item-input "well-formed")
 
-  (xdoc::evmac-topic-implementation-item-input "closure")))
+  (xdoc::evmac-topic-implementation-item-input "closed")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,8 +142,8 @@
   :short "Keyword options accepted by @(tsee defgrammar)."
   (list :file
         :untranslate
-        :well-formedness
-        :closure
+        :well-formed
+        :closed
         :parents
         :short
         :long)
@@ -158,8 +158,8 @@
                (val (std::tuple (name acl2::symbolp)
                                 (file acl2::stringp)
                                 (untranslate booleanp)
-                                (well-formedness booleanp)
-                                (closure booleanp)
+                                (well-formed booleanp)
+                                (closed booleanp)
                                 (parents defgrammar-anyp)
                                 (short defgrammar-anyp)
                                 (long defgrammar-anyp)
@@ -198,20 +198,20 @@
                                          "The :UNTRANSLATE input"
                                          t
                                          (irr)))
-       (well-formedness-option (assoc-eq :well-formedness options))
-       (well-formedness (if (consp well-formedness-option)
-                            (cdr well-formedness-option)
-                          nil))
-       ((er &) (ensure-value-is-boolean$ well-formedness
-                                         "The :WELL-FORMEDNESS input"
+       (well-formed-option (assoc-eq :well-formed options))
+       (well-formed (if (consp well-formed-option)
+                        (cdr well-formed-option)
+                      nil))
+       ((er &) (ensure-value-is-boolean$ well-formed
+                                         "The :WELL-FORMED input"
                                          t
                                          (irr)))
-       (closure-option (assoc-eq :closure options))
-       (closure (if (consp closure-option)
-                    (cdr closure-option)
-                  nil))
-       ((er &) (ensure-value-is-boolean$ closure
-                                         "The :CLOSURE input"
+       (closed-option (assoc-eq :closed options))
+       (closed (if (consp closed-option)
+                   (cdr closed-option)
+                 nil))
+       ((er &) (ensure-value-is-boolean$ closed
+                                         "The :CLOSED input"
                                          t
                                          (irr)))
        (parents-option (assoc-eq :parents options))
@@ -229,8 +229,8 @@
     (value (list name
                  file
                  untranslate
-                 well-formedness
-                 closure
+                 well-formed
+                 closed
                  parents
                  short
                  long
@@ -254,8 +254,8 @@
 (define defgrammar-gen-everything ((name acl2::symbolp)
                                    (file acl2::stringp)
                                    (untranslate booleanp)
-                                   (well-formedness booleanp)
-                                   (closure booleanp)
+                                   (well-formed booleanp)
+                                   (closed booleanp)
                                    parents
                                    short
                                    long
@@ -275,13 +275,13 @@
        (untranslate-event?
         (and untranslate
              (list `(add-const-to-untranslate-preprocess ,name))))
-       (well-formedness-event?
-        (and well-formedness
+       (well-formed-event?
+        (and well-formed
              (list `(defthm ,(packn-pos (list 'rulelist-wfp-of- name) name)
                       (rulelist-wfp ,name)
                       :hints (("Goal" :in-theory '((:e rulelist-wfp))))))))
-       (closure-event?
-        (and closure
+       (closed-event?
+        (and closed
              (list `(defthm ,(packn-pos (list 'rulelist-closedp-of- name) name)
                       (rulelist-closedp ,name)
                       :hints (("Goal" :in-theory '((:e rulelist-closedp))))))))
@@ -295,8 +295,8 @@
                   (list :long long))
            ,defconst-event
            ,@untranslate-event?
-           ,@well-formedness-event?
-           ,@closure-event?
+           ,@well-formed-event?
+           ,@closed-event?
            ,@other-events)))
     (value event))
   :guard-debug t)
@@ -312,8 +312,8 @@
   (b* (((er (list name
                   file
                   untranslate
-                  well-formedness
-                  closure
+                  well-formed
+                  closed
                   parents
                   short
                   long
@@ -324,8 +324,8 @@
       name
       file
       untranslate
-      well-formedness
-      closure
+      well-formed
+      closed
       parents
       short
       long

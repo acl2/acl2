@@ -66,8 +66,8 @@
      "(defgrammar *name*"
      "            :file ..."
      "            :untranslate ..."
-     "            :well-formedness ..."
-     "            :closure ..."
+     "            :well-formed ..."
+     "            :closed ..."
      "            :parents ..."
      "            :short ..."
      "            :long ..."
@@ -146,7 +146,7 @@
       "It is normally advisable to untranslate the constant in output."))
 
     (xdoc::desc
-     "@(':well-formedness') &mdash; default @('nil')"
+     "@(':well-formed') &mdash; default @('nil')"
      (xdoc::p
       "Specifies whether @('defgrammar') should generate a theorem
        saying that the grammar is "
@@ -167,7 +167,7 @@
       "It is normally expected for a grammar to be well-formed."))
 
     (xdoc::desc
-     "@(':closure') &mdash; default @('nil')"
+     "@(':closed') &mdash; default @('nil')"
      (xdoc::p
       "Specifies whether @('defgrammar') should generate a theorem
        saying that the grammar is "
@@ -235,7 +235,7 @@
      (xdoc::codeblock
       "(rulelist-wfp *name*)")
      (xdoc::p
-      "This is generated iff the @(':well-formedness') input is @('t')."))
+      "This is generated iff the @(':well-formed') input is @('t')."))
 
     (xdoc::desc
      "@('rulelist-closedp-of-*name*')"
@@ -244,7 +244,7 @@
      (xdoc::codeblock
       "(rulelist-closedp *name*)")
      (xdoc::p
-      "This is generated iff the @(':closure') input is @('t')."))
+      "This is generated iff the @(':closed') input is @('t')."))
 
     (xdoc::desc
      "@('<other-events>')"

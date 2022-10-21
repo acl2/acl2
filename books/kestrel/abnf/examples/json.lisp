@@ -50,7 +50,7 @@
      to keep this constant unexpanded in output."))
   :file "json.abnf"
   :untranslate t
-  :well-formedness t)
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

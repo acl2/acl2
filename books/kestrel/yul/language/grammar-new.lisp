@@ -51,8 +51,8 @@
     " in the ASCII character set."))
   :file "grammar-new.abnf"
   :untranslate t
-  :well-formedness t
-  :closure t
+  :well-formed t
+  :closed t
   ///
 
   (defruled ascii-only-*grammar-new*

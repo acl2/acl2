@@ -51,8 +51,8 @@
     " in the Unicode character set."))
   :file "grammar-old.abnf"
   :untranslate t
-  :well-formedness t
-  :closure t
+  :well-formed t
+  :closed t
   ///
 
   (defruled unicode-only-*grammar-old*

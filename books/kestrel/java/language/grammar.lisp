@@ -120,7 +120,7 @@
    "We parse the grammar file to obtain an ABNF grammar value.")
   :file "lexical-grammar.abnf"
   :untranslate t
-  :well-formedness t)
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,7 +131,7 @@
    "We parse the grammar file to obtain an ABNF grammar value.")
   :file "syntactic-grammar.abnf"
   :untranslate t
-  :well-formedness t)
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
