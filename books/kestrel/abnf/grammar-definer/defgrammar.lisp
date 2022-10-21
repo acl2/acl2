@@ -193,7 +193,7 @@
        (untranslate-option (assoc-eq :untranslate options))
        (untranslate (if (consp untranslate-option)
                         (cdr untranslate-option)
-                      t))
+                      nil))
        ((er &) (ensure-value-is-boolean$ untranslate
                                          "The :UNTRANSLATE input"
                                          t
@@ -201,7 +201,7 @@
        (well-formedness-option (assoc-eq :well-formedness options))
        (well-formedness (if (consp well-formedness-option)
                             (cdr well-formedness-option)
-                          t))
+                          nil))
        ((er &) (ensure-value-is-boolean$ well-formedness
                                          "The :WELL-FORMEDNESS input"
                                          t
