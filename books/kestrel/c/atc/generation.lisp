@@ -49,6 +49,7 @@
 
 (local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
 (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
+(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -4472,11 +4473,11 @@
                                  (names-to-avoid symbol-listp)
                                  state)
   :guard (irecursivep+ fn (w state))
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp).")
-               (formals "A @(tsee symbol-listp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (event pseudo-event-formp)
+               (name symbolp)
+               (formals symbol-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate a measure function for a recursive target function."
   :long
   (xdoc::topstring
