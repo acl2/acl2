@@ -45,4 +45,6 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-  :file "smtp.abnf")
+  :file "smtp.abnf"
+  :untranslate t
+  :well-formedness t)
