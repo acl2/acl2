@@ -48,6 +48,11 @@
     (implies (atc-symbol-type-alistp x)
              (symbol-listp (strip-cars x))))
 
+  (defruled type-listp-of-strip-cdrs-when-atc-symbol-type-alistp
+    (implies (atc-symbol-type-alistp x)
+             (type-listp (strip-cdrs x)))
+    :enable atc-symbol-type-alistp)
+
   (defruled symbol-alistp-when-atc-symbol-type-alistp
     (implies (atc-symbol-type-alistp x)
              (symbol-alistp x))))
