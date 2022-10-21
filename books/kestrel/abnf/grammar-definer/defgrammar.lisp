@@ -116,11 +116,11 @@
   :returns (mv erp nothing state)
   :short "Process the @('*name*') input."
   (b* (((unless (legal-constantp name))
-        (acl2::er-soft+ ctx t nil
-                        "The first input must be a legal constant name, ~
-                         but ~x0 is not a legal constant name."
-                        name))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+        (er-soft+ ctx t nil
+                  "The first input must be a legal constant name, ~
+                   but ~x0 is not a legal constant name."
+                  name))
+       ((er &) (ensure-symbol-is-fresh-event-name$
                 name
                 (msg "The constant name ~x0 specified as first input" name)
                 'acl2::const
@@ -148,7 +148,7 @@
         :short
         :long)
   ///
-  (assert-event (acl2::keyword-listp *defgrammar-allowed-options*))
+  (assert-event (keyword-listp *defgrammar-allowed-options*))
   (assert-event (no-duplicatesp-eq *defgrammar-allowed-options*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -168,53 +168,52 @@
                     :hyp (true-listp args))
                state)
   :short "Process all the inputs."
-  (b* (((acl2::fun (irr)) (list nil "" nil nil nil nil nil nil nil))
+  (b* (((fun (irr)) (list nil "" nil nil nil nil nil nil nil))
        ((mv args other-events) (std::split-/// ctx args))
        ((mv erp name options)
         (partition-rest-and-keyword-args args *defgrammar-allowed-options*))
        ((when (or erp
                   (not (consp name))
                   (not (endp (cdr name)))))
-        (acl2::er-soft+ ctx t (irr)
-                        "The inputs must be the constant name ~
-                         followed by the options ~&0 ~
-                         and possibly /// followed by other events."
-                        *defgrammar-allowed-options*))
+        (er-soft+ ctx t (irr)
+                  "The inputs must be the constant name ~
+                   followed by the options ~&0 ~
+                   and possibly /// followed by other events."
+                  *defgrammar-allowed-options*))
        (name (car name))
        ((er & :iferr (irr)) (defgrammar-process-name name ctx state))
        (file-option (assoc-eq :file options))
        ((unless (consp file-option))
-        (acl2::er-soft+ ctx t (irr)
-                        "The :FILE input must be supplied."))
+        (er-soft+ ctx t (irr) "The :FILE input must be supplied."))
        (file (cdr file-option))
-       ((er &) (acl2::ensure-value-is-string$ file
-                                              "The :FILE input"
-                                              t
-                                              (irr)))
+       ((er &) (ensure-value-is-string$ file
+                                        "The :FILE input"
+                                        t
+                                        (irr)))
        (untranslate-option (assoc-eq :untranslate options))
        (untranslate (if (consp untranslate-option)
                         (cdr untranslate-option)
                       t))
-       ((er &) (acl2::ensure-value-is-boolean$ untranslate
-                                               "The :UNTRANSLATE input"
-                                               t
-                                               (irr)))
+       ((er &) (ensure-value-is-boolean$ untranslate
+                                         "The :UNTRANSLATE input"
+                                         t
+                                         (irr)))
        (well-formedness-option (assoc-eq :well-formedness options))
        (well-formedness (if (consp well-formedness-option)
                             (cdr well-formedness-option)
                           t))
-       ((er &) (acl2::ensure-value-is-boolean$ well-formedness
-                                               "The :WELL-FORMEDNESS input"
-                                               t
-                                               (irr)))
+       ((er &) (ensure-value-is-boolean$ well-formedness
+                                         "The :WELL-FORMEDNESS input"
+                                         t
+                                         (irr)))
        (closure-option (assoc-eq :closure options))
        (closure (if (consp closure-option)
                     (cdr closure-option)
                   nil))
-       ((er &) (acl2::ensure-value-is-boolean$ closure
-                                               "The :CLOSURE input"
-                                               t
-                                               (irr)))
+       ((er &) (ensure-value-is-boolean$ closure
+                                         "The :CLOSURE input"
+                                         t
+                                         (irr)))
        (parents-option (assoc-eq :parents options))
        (parents (if (consp parents-option)
                     (cdr parents-option)
@@ -278,14 +277,12 @@
              (list `(add-const-to-untranslate-preprocess ,name))))
        (well-formedness-event?
         (and well-formedness
-             (list `(defthm ,(acl2::packn-pos (list 'rulelist-wfp-of- name)
-                                              name)
+             (list `(defthm ,(packn-pos (list 'rulelist-wfp-of- name) name)
                       (rulelist-wfp ,name)
                       :hints (("Goal" :in-theory '((:e rulelist-wfp))))))))
        (closure-event?
         (and closure
-             (list `(defthm ,(acl2::packn-pos (list 'rulelist-closedp-of- name)
-                                              name)
+             (list `(defthm ,(packn-pos (list 'rulelist-closedp-of- name) name)
                       (rulelist-closedp ,name)
                       :hints (("Goal" :in-theory '((:e rulelist-closedp))))))))
        (event
