@@ -12,12 +12,15 @@
 (in-package "ACL2")
 
 (include-book "subrange-def")
+(include-book "repeat-def")
 (local (include-book "nthcdr"))
 (local (include-book "cons"))
 (local (include-book "nth"))
 (local (include-book "len"))
 (local (include-book "take"))
+(local (include-book "take2"))
 (local (include-book "append"))
+(local (include-book "repeat"))
 (local (include-book "true-list-fix"))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -141,6 +144,21 @@
                 (natp i))
            (equal (take i (subrange start end lst))
                   (subrange start (+ start i -1) lst)))
+  :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange)))))
+
+;todo: combine with the regular rule
+(defthm take-of-subrange-too-big
+  (implies (and (< (+ 1 (- end start)) i)
+                (natp start)
+                (natp end)
+                (natp i))
+           (equal (take i (subrange start end lst))
+                  (if (< end (nfix start))
+                      (repeat i nil)
+                    ;;usual case:
+                    (append (subrange start end lst)
+                            (repeat (- i (+ 1 (- end start)))
+                                    nil)))))
   :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange)))))
 
 (defthm subrange-out-of-order-or-singleton
@@ -482,3 +500,15 @@
   :hints (("Goal" :in-theory (enable  ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;why isn't the non-alt one enough?
                               equal-of-append
                                       ))))
+
+(defthm subrange-of-repeat
+  (implies (and (< end n)
+;                (<= start end)
+                (natp start)
+                (natp end)
+                (natp n))
+           (equal (subrange start end (repeat n x))
+                  (repeat (+ 1 (- end start)) x)))
+  :hints (("Goal" :in-theory (e/d (subrange repeat)
+                                  (;anti-subrange
+                                   )))))
