@@ -364,8 +364,14 @@ implementations.")
 
 ; Warning: Keep this in sync with system-call+.
 
+; Unlike system-call+, we allow an error to occur.
+
   #+gcl
-  (si::system
+  (when (not (fboundp 'si::system))
+    (error "SYSTEM-CALL is not defined in this version of GCL."))
+
+  #+gcl
+  (si::system ; if undefined, ignore compiler warning; see check above
    (let ((result string))
      (dolist
       (x arguments)
@@ -384,12 +390,12 @@ implementations.")
       (x arguments)
       (setq result (concatenate 'string result " " x)))
     #-unix
-    (excl::shell result)
+    (excl::run-shell-commad result)
     #+unix
 
-; In Allegro CL in Unix, we can avoid spawning a new shell by calling run-shell-command
-; on a simple vector.  So we parse the resulting string "cmd arg1 ... argk" and
-; run with the simple vector #(cmd cmd arg1 ... argk).
+; In Allegro CL in Unix, we can avoid spawning a new shell by calling
+; run-shell-command on a simple vector.  So we parse the resulting string "cmd
+; arg1 ... argk" and run with the simple vector #(cmd cmd arg1 ... argk).
 
     (excl::run-shell-command
      (let ((lst nil)
@@ -413,11 +419,15 @@ implementations.")
        (setq result (nreverse lst))
        (setq result (coerce (cons (car result) result) 'vector)))))
   #+cmu
-  (ext:process-exit-code
-   (common-lisp-user::run-program string arguments :output t))
+  (let ((ans (ext:process-exit-code
+              (common-lisp-user::run-program string arguments :output t))))
+    (if (integerp ans) ans 1))
   #+sbcl
-  (sb-ext:process-exit-code
-   (sb-ext:run-program string arguments :output t :search t))
+  (let ((ans (sb-ext:process-exit-code
+              (sb-ext:run-program string arguments
+                                  :output t
+                                  :search t))))
+    (if (integerp ans) ans 1))
   #+clisp
   (let ((result (ext:run-program string :arguments arguments)))
     (or result 0))
@@ -484,6 +494,18 @@ implementations.")
 
 ; Warning: Keep this in sync with system-call.
 
+; Unlike system-call, we catch Lisp errors and treat the status as 1 in those
+; cases.
+
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  (declare (ignore string arguments))
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  (error "SYSTEM-CALL is not yet defined in this Lisp.")
+
+  #+gcl
+  (when (not (fboundp 'si::system))
+    (error "SYSTEM-CALL is not defined in this version of GCL."))
+
   (let* (exit-code ; assigned below
          #+(or gcl clisp)
          (tmp-file (format nil
@@ -492,24 +514,23 @@ implementations.")
                                 (f-get-global 'tmp-dir *the-live-state*))
                                "/tmp")
                            (getpid$)))
-         no-error
          (output-string
           (our-ignore-errors
-           (prog1
-               #+gcl ; does wildcard expansion
-             (progn (setq exit-code
-                          (si::system
-                           (let ((result string))
-                             (dolist
-                               (x arguments)
-                               (setq result (concatenate 'string result " " x)))
-                             (concatenate 'string result " > " tmp-file))))
-                    (read-file-by-lines tmp-file t))
-             #+lispworks ; does wildcard expansion (see comment below)
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (system::call-system-showing-output
+           #+gcl ; does wildcard expansion
+           (progn (setq exit-code
+; If si::system is undefined, ignore compiler warning; see check above.
+                        (si::system
+                         (let ((result string))
+                           (dolist
+                             (x arguments)
+                             (setq result (concatenate 'string result " " x)))
+                           (concatenate 'string result " > " tmp-file))))
+                  (read-file-by-lines tmp-file t))
+           #+lispworks ; does wildcard expansion (see comment below)
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (system::call-system-showing-output
 
 ; It was tempting to use (cons string arguments).  This would cause the given
 ; command, string, to be applied to the given arguments, without involving the
@@ -519,106 +540,91 @@ implementations.")
 ; which will find commands (presumably including built-ins and also using the
 ; user's path).
 
-                      (let ((result string))
-                        (dolist
-                          (x arguments)
-                          (setq result (concatenate 'string result " " x)))
-                        result)
-                      :output-stream s
-                      :prefix ""
-                      :show-cmd nil
-                      :kill-process-on-abort t))
-               #+windows ; process is returned above, not exit code
-               (setq exit-code nil))
-             #+allegro ; does wildcard expansion
-             (multiple-value-bind
-                 (stdout-lines stderr-lines exit-status)
-                 (excl.osi::command-output
-                  (let ((result string))
-                    (dolist
-                      (x arguments)
-                      (setq result (concatenate 'string result " " x)))
-                    result))
-               (declare (ignore stderr-lines))
-               (setq exit-code exit-status)
-               (let ((acc nil))
-                 (loop for line in stdout-lines
-                       do
-                       (setq acc
-                             (if acc
-                                 (concatenate 'string
-                                              acc
-                                              (string #\Newline)
-                                              line)
-                               line)))
-                 acc))
-             #+cmu
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let (temp)
-                       (if (ignore-errors
-                             (progn
-                               (setq temp
-                                     (ext:process-exit-code
-                                      (common-lisp-user::run-program
-                                       string arguments
-                                       :output s)))
-                               1))
-                           temp
-                         1))))
-             #+sbcl
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let (temp)
-                       (if (ignore-errors
-                             (progn
-                               (setq temp
-                                     (sb-ext:process-exit-code
-                                      (sb-ext:run-program string arguments
-                                                          :output s
-                                                          :search t)))
-                               1))
-                           temp
-                         1))))
-             #+clisp
-             (progn (setq exit-code
-                          (or (ext:run-program string
-                                               :arguments arguments
-                                               :output tmp-file)
-                              0))
-                    (read-file-by-lines tmp-file t))
-             #+ccl
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let* ((proc
-                             (ccl::run-program string arguments
-                                               :output s
-                                               :wait t))
-                            (status (multiple-value-list
-                                     (ccl::external-process-status proc))))
-                       (if (not (and (consp status)
-                                     (eq (car status) :EXITED)
-                                     (consp (cdr status))
-                                     (integerp (cadr status))))
-                           1 ; just some non-zero exit code here
-                         (cadr status)))))
-             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
-             (declare (ignore string arguments))
-             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
-             (error "SYSTEM-CALL is not yet defined in this Lisp.")
-             (setq no-error t)))))
-    (values (cond ((integerp exit-code)
-                   exit-code)
-                  ((null exit-code)
-                   (if no-error 0 1))
-                  (t (format t
-                             "WARNING: System-call produced non-integer, ~
-                              non-nil exit code:~%~a~%"
-                             exit-code)
-                     0))
+                    (let ((result string))
+                      (dolist
+                        (x arguments)
+                        (setq result (concatenate 'string result " " x)))
+                      result)
+                    :output-stream s
+                    :prefix ""
+                    :show-cmd nil
+                    :kill-process-on-abort t)))
+           #+allegro ; does wildcard expansion
+           (multiple-value-bind
+            (stdout-lines stderr-lines exit-status)
+            (excl.osi::command-output
+             (let ((result string))
+               (dolist
+                 (x arguments)
+                 (setq result (concatenate 'string result " " x)))
+               result))
+            (declare (ignore stderr-lines))
+            (setq exit-code exit-status)
+            (let ((acc nil))
+              (loop for line in stdout-lines
+                    do
+                    (setq acc
+                          (if acc
+                              (concatenate 'string
+                                           acc
+                                           (string #\Newline)
+                                           line)
+                            line)))
+              acc))
+           #+cmu
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (let (temp)
+                     (if (progn
+                           (setq temp
+                                 (ext:process-exit-code
+                                  (common-lisp-user::run-program
+                                   string arguments
+                                   :output s)))
+                           1)
+                         temp
+                       1))))
+           #+sbcl
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (let (temp)
+                     (if (progn
+                           (setq temp
+                                 (sb-ext:process-exit-code
+                                  (sb-ext:run-program string arguments
+                                                      :output s
+                                                      :search t)))
+                           1)
+                         temp
+                       1))))
+           #+clisp
+           (progn (setq exit-code
+                        (or (ext:run-program string
+                                             :arguments arguments
+                                             :output tmp-file)
+                            0))
+                  (read-file-by-lines tmp-file t))
+           #+ccl
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (let* ((proc
+                           (ccl::run-program string arguments
+                                             :output s
+                                             :wait t))
+                          (status (multiple-value-list
+                                   (ccl::external-process-status proc))))
+                     (if (not (and (consp status)
+                                   (eq (car status) :EXITED)
+                                   (consp (cdr status))
+                                   (integerp (cadr status))))
+                         1 ; just some non-zero exit code here
+                       (cadr status))))))))
+    (values (if (integerp exit-code)
+                exit-code
+              1)
             (if (stringp output-string)
                 output-string
               ""))))

@@ -50,7 +50,9 @@
     (xdoc::seetopic "abnf::in-terminal-set" "generates terminals")
     " in the ASCII character set."))
   :file "grammar-new.abnf"
-  :closure t
+  :untranslate t
+  :well-formed t
+  :closed t
   ///
 
   (defruled ascii-only-*grammar-new*

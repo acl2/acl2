@@ -24,9 +24,15 @@
                           chars=>nats
                           defmacro+
                           defxdoc+
+                          ensure-symbol-is-fresh-event-name$
+                          ensure-value-is-boolean$
+                          ensure-value-is-string$
+                          er-soft+
                           explode
+                          fun
                           implode
                           integers-from-to
+                          keyword-listp
                           legal-constantp
                           lnfix
                           maybe-msgp
@@ -45,6 +51,7 @@
                           nat-list-resultp
                           nats=>chars
                           nats=>string
+                          packn-pos
                           patbind-fun
                           pos-list
                           pos-listp

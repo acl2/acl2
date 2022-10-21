@@ -66,8 +66,8 @@
      "(defgrammar *name*"
      "            :file ..."
      "            :untranslate ..."
-     "            :well-formedness ..."
-     "            :closure ..."
+     "            :well-formed ..."
+     "            :closed ..."
      "            :parents ..."
      "            :short ..."
      "            :long ..."
@@ -121,7 +121,7 @@
        or relative to the current working directory."))
 
     (xdoc::desc
-     "@(':untranslate') &mdash; default @('t')"
+     "@(':untranslate') &mdash; default @('nil')"
      (xdoc::p
       "Specifies whether the constant should be untranslated in output.")
      (xdoc::p
@@ -143,11 +143,10 @@
         any @(tsee add-const-to-untranslate-preprocess) event,
         and ACL2's untranslation is unmodified."))
      (xdoc::p
-      "This input is @('t') by default because
-       it is normally advisable to untranslate the constant in output."))
+      "It is normally advisable to untranslate the constant in output."))
 
     (xdoc::desc
-     "@(':well-formedness') &mdash; default @('t')"
+     "@(':well-formed') &mdash; default @('nil')"
      (xdoc::p
       "Specifies whether @('defgrammar') should generate a theorem
        saying that the grammar is "
@@ -165,11 +164,10 @@
       xdoc::*evmac-section-generated-title*
       "' section for the details of this theorem.")
      (xdoc::p
-      "This input is @('t') by default because
-       it is normally expected for a grammar to be well-formed."))
+      "It is normally expected for a grammar to be well-formed."))
 
     (xdoc::desc
-     "@(':closure') &mdash; default @('nil')"
+     "@(':closed') &mdash; default @('nil')"
      (xdoc::p
       "Specifies whether @('defgrammar') should generate a theorem
        saying that the grammar is "
@@ -187,8 +185,7 @@
       xdoc::*evmac-section-generated-title*
       "' section for the details of this theorem.")
      (xdoc::p
-      "This input is @('nil') by default because
-       a grammar may or may not be closed:
+      "A grammar may or may not be closed:
        it could a component of a larger grammar,
        which is closed even though not all of its components are"))
 
@@ -238,7 +235,7 @@
      (xdoc::codeblock
       "(rulelist-wfp *name*)")
      (xdoc::p
-      "This is generated iff the @(':well-formedness') input is @('t')."))
+      "This is generated iff the @(':well-formed') input is @('t')."))
 
     (xdoc::desc
      "@('rulelist-closedp-of-*name*')"
@@ -247,7 +244,7 @@
      (xdoc::codeblock
       "(rulelist-closedp *name*)")
      (xdoc::p
-      "This is generated iff the @(':closure') input is @('t')."))
+      "This is generated iff the @(':closed') input is @('t')."))
 
     (xdoc::desc
      "@('<other-events>')"

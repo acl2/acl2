@@ -1,6 +1,6 @@
 ; Error Checking Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,12 +24,17 @@
    (other-event-names-to-avoid symbol-listp)
    (error-erp (not (null error-erp)) "Flag to return in case of error.")
    (error-val "Value to return in case of error.")
-   (ctx "Context for errors.")
+   (ctx ctxp)
    state)
-  :returns (mv (erp "@('nil') or @('error-erp').")
-               (updated-event-names-to-avoid "A @(tsee symbol-listp).")
+  :returns (mv (erp (implies erp (equal erp error-erp)))
+               (val (and (implies erp (equal val error-val))
+                         (implies (and (not erp)
+                                       error-erp
+                                       (symbolp sym)
+                                       (symbol-listp
+                                        other-event-names-to-avoid))
+                                  (symbol-listp val))))
                state)
-  :mode :program
   :parents (error-checking)
   :short "Cause an error if a symbol
           cannot be used as the name of a new event of a certain type,
